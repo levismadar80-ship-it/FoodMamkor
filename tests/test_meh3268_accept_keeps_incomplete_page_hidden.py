@@ -110,7 +110,11 @@ def test_admin_message_says_the_page_did_not_go_live(monkeypatch):
 
     sent = []
     monkeypatch.setattr(an.settings, "admin_whatsapp_to", "+972500000000")
-    monkeypatch.setattr(an, "send_text", lambda to, msg, **k: sent.append(msg) or True)
+    # MEH-3589: the admin ping is the AdminUpdateV1 template; read its detail.
+    monkeypatch.setattr(
+        "app.services.admin_whatsapp.send_template",
+        lambda to, tpl, **k: sent.append(tpl.detail) or True,
+    )
     monkeypatch.setattr(an, "send_email", lambda *a, **k: None)
 
     an.notify_admin_owner_invite_accepted(

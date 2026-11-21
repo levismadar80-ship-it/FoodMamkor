@@ -30,8 +30,9 @@ from typing import TypeVar
 from uuid import UUID
 
 from app.config import settings
+from app.services.admin_whatsapp import ping_admin
 from app.services.email import send_email
-from app.services.whatsapp import send_template, send_text
+from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import (
     AdminBusinessPendingV1,
     ProducerApprovedV1,
@@ -239,8 +240,8 @@ def notify_admin_new_recipe(
 
     MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
     queue was poll-only while producer registration already notified.
-    REUSES: notify_admin_new_producer below — same free-text send_text
-    to settings.admin_whatsapp_to + email to settings.admin_email, no
+    REUSES: notify_admin_new_producer below — same admin WhatsApp (ping_admin since
+    MEH-3589; free-text send_text before) + email to settings.admin_email, no
     Meta template needed. Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks
     the submission).
@@ -260,25 +261,12 @@ def notify_admin_new_recipe(
     )
     # Per-channel guards (not one shared try) — a WhatsApp raise must not
     # skip the email, matching notify_admin_new_producer's independence.
-    try:
-        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
-        if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
-                logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
-            else:
-                # send_template returned False without raising — keep the MEH-977
-                # observability contract: log WITH recipe context.
-                logger.warning(
-                    "[WHATSAPP] Recipe-pending notification NOT delivered for "
-                    f"'{safe_title}' (business '{safe_name}')"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            "[NOTIFY] Admin recipe-pending WhatsApp FAILED for "
-            f"'{safe_title}' (business '{safe_name}'): {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "מתכון חדש לאישור",
+        f"{safe_title} · בית עסק: {safe_name}",
+        test_cause=test_cause,
+    )
 
     try:
         if settings.admin_email:
@@ -317,20 +305,12 @@ def notify_admin_claim_link_requested(
         f"\nעיר: {safe_city}"
         f"\nלשליחת קישור חדש: {settings.frontend_url}/admin/producers"
     )
-    try:
-        if settings.admin_whatsapp_to:
-            if not send_text(
-                settings.admin_whatsapp_to, message, test_cause=test_cause
-            ):
-                logger.warning(
-                    f"[WHATSAPP] Claim-link request NOT delivered for '{safe_name}'"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            f"[NOTIFY] Claim-link request WhatsApp FAILED for '{safe_name}': {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "בקשה לקישור חדש לדרישת בעלות",
+        f"{safe_name}, {safe_city}",
+        test_cause=test_cause,
+    )
     try:
         if settings.admin_email:
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
@@ -369,18 +349,10 @@ def notify_admin_draft_claimed(
         f"\nעיר: {safe_city}"
         f"\nלאדמין: {settings.frontend_url}/admin/producers"
     )
-    try:
-        if settings.admin_whatsapp_to:
-            if not send_text(
-                settings.admin_whatsapp_to, message, test_cause=test_cause
-            ):
-                logger.warning(
-                    f"[WHATSAPP] Draft-claimed alert NOT delivered for '{safe_name}'"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(f"[NOTIFY] Draft-claimed WhatsApp FAILED for '{safe_name}': {e}")
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "טיוטה נקלטה", f"{safe_name} · {safe_owner}, {safe_city}", test_cause=test_cause
+    )
     try:
         if settings.admin_email:
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
@@ -559,8 +531,8 @@ def notify_admin_producer_sensitive_edit(
     change `vegan_scope` the next day. This closes the observability gap
     WITHOUT touching the save: no status flip, no re-moderation, no schema.
 
-    REUSES: notify_admin_producer_resubmit above 1:1 — same free-text send_text
-    to settings.admin_whatsapp_to + email to settings.admin_email, per-channel
+    REUSES: notify_admin_producer_resubmit above 1:1 — same admin WhatsApp (ping_admin since
+    MEH-3589; free-text send_text before) + email to settings.admin_email, per-channel
     try blocks (a WhatsApp raise must not skip the email), fire-and-forget as a
     BackgroundTask. Fail-open per MEH-1051/977: a Meta/Resend outage is logged,
     never surfaced to the owner who already got her 200.
@@ -577,21 +549,10 @@ def notify_admin_producer_sensitive_edit(
     )
     message = f"🔎 עסק מאושר עדכן פרטים רגישים: {safe_name} — {fields}"
 
-    try:
-        if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
-                logger.info("[WHATSAPP] Sensitive-edit notification sent to admin")
-            else:
-                logger.warning(
-                    "[WHATSAPP] Sensitive-edit notification NOT delivered for "
-                    f"'{safe_name}'"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            f"[NOTIFY] Admin sensitive-edit WhatsApp FAILED for '{safe_name}': {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "עסק מאושר עדכן פרטים רגישים", f"{safe_name}: {fields}", test_cause=test_cause
+    )
 
     try:
         if settings.admin_email:
@@ -615,7 +576,7 @@ def notify_admin_new_category_request(
     """Ping admin (WhatsApp + email) that a new category was requested.
 
     MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same free-text
-    send_text to settings.admin_whatsapp_to + email to settings.admin_email,
+    ping_admin (MEH-3589; free-text send_text before) + email to settings.admin_email,
     no Meta template needed. Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     submission). `producer_name` is None/empty for anonymous submissions.
@@ -635,25 +596,12 @@ def notify_admin_new_category_request(
     )
     # Per-channel guards (not one shared try) — a WhatsApp raise must not
     # skip the email, matching notify_admin_new_recipe's independence.
-    try:
-        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
-        if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
-                logger.info("[WHATSAPP] Category-request notification sent to admin")
-            else:
-                # send_template returned False without raising — keep the MEH-977
-                # observability contract: log WITH request context.
-                logger.warning(
-                    "[WHATSAPP] Category-request notification NOT delivered for "
-                    f"'{safe_requested}' (business '{safe_business}')"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            "[NOTIFY] Admin category-request WhatsApp FAILED for "
-            f"'{safe_requested}' (business '{safe_business}'): {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "בקשת קטגוריה חדשה",
+        f"{safe_requested} · בית עסק: {safe_business}",
+        test_cause=test_cause,
+    )
 
     try:
         if settings.admin_email:
@@ -679,7 +627,7 @@ def notify_admin_new_business_suggestion(
     """Ping admin (WhatsApp + email) that a visitor suggested a business.
 
     MEH-2633 — mirrors notify_admin_new_category_request above 1:1: free-text
-    send_text to settings.admin_whatsapp_to + email to settings.admin_email,
+    ping_admin (MEH-3589; free-text send_text before) + email to settings.admin_email,
     no Meta template, per-channel try blocks (a WhatsApp raise must not skip
     the email), fire-and-forget as a BackgroundTask. Fail-open per MEH-977: an
     outage is logged, never surfaced to the visitor who already got their 201.
@@ -713,24 +661,10 @@ def notify_admin_new_business_suggestion(
     )
     # Per-channel guards (not one shared try) — a WhatsApp raise must not skip
     # the email, matching notify_admin_new_category_request's independence.
-    try:
-        if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
-                logger.info("[WHATSAPP] Business-suggestion notification sent to admin")
-            else:
-                # send_template returned False without raising — keep the MEH-977
-                # observability contract: log WITH request context.
-                logger.warning(
-                    "[WHATSAPP] Business-suggestion notification NOT delivered "
-                    f"for '{safe_business}' ({safe_city})"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            "[NOTIFY] Admin business-suggestion WhatsApp FAILED for "
-            f"'{safe_business}' ({safe_city}): {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        headline, f"{safe_business} · עיר: {safe_city} · ממליצים: {safe_suggester}"
+    )
 
     try:
         if settings.admin_email:
@@ -808,7 +742,7 @@ def notify_admin_owner_invite_accepted(
     approved one only gained an owner.
 
     REUSES: notify_admin_producer_resubmit above 1:1 — same free-text
-    `send_text` to settings.admin_whatsapp_to plus email to
+    ping_admin (MEH-3589; free-text `send_text` before) plus email to
     settings.admin_email, no Meta template, per-channel try blocks so a
     WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
     BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
@@ -841,23 +775,8 @@ def notify_admin_owner_invite_accepted(
         f"בעלת העסק: {safe_email}\n"
         f"לצפייה: {settings.frontend_url}/admin/producers"
     )
-    try:
-        if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
-                logger.info("[WHATSAPP] Owner-invite-accepted notification sent")
-            else:
-                # send_template returned False without raising — keep the MEH-977
-                # observability contract: log WITH business context.
-                logger.warning(
-                    "[WHATSAPP] Owner-invite-accepted notification NOT delivered "
-                    f"for '{safe_name}'"
-                )
-        else:
-            logger.debug(f"[WHATSAPP] Would send: {message}")
-    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(
-            f"[NOTIFY] Owner-invite-accepted WhatsApp FAILED for '{safe_name}': {e}"
-        )
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin("בעלת עסק אישרה את ההזמנה", headline, test_cause=test_cause)
 
     try:
         if settings.admin_email:

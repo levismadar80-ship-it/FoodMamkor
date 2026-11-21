@@ -762,8 +762,10 @@ class TestDraftClaimedMessage:
         monkeypatch.setattr(
             n, "send_email", lambda to, subject, body, test_cause=False: sent.append(("email", to, subject, body))
         )
+        # MEH-3589: the admin ping is the AdminUpdateV1 template.
         monkeypatch.setattr(
-            n, "send_text", lambda to, body, test_cause=False: sent.append(("wa", to, body)) or True
+            "app.services.admin_whatsapp.send_template",
+            lambda to, tpl, test_cause=False: sent.append(("wa", to, tpl)) or True,
         )
         return n, sent
 
@@ -782,7 +784,10 @@ class TestDraftClaimedMessage:
         assert lines[2] == "עיר: חדרה"
         assert lines[3].startswith("לאדמין: ") and lines[3].endswith("/admin/producers")
         assert len(lines) == 4
-        assert wa[0][2] == body
+        tpl = wa[0][2]
+        assert tpl.topic == "טיוטה נקלטה"
+        assert tpl.detail == "מאפיית הבוקר · רותם https://evil, חדרה"
+        assert "\n" not in tpl.topic + tpl.detail
 
     def test_test_cause_sends_nothing(self, monkeypatch):
         n, sent = self._capture(monkeypatch)

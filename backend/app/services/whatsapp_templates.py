@@ -306,6 +306,29 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     city: str
 
 
+
+class AdminUpdateV1(WhatsAppTemplate):
+    """MEH-3589: every other ADMIN ping — one template for all of them.
+
+    MEH-3147 moved the three «waiting for approval» pings to
+    AdminBusinessPendingV1; the other eight (new recipe, claim-link request,
+    draft claimed, sensitive edit, content edit, category request, business
+    suggestion, owner invite accepted) were still free-text `send_text`,
+    which Meta delivers only inside the 24h window. Sent only through
+    `services/admin_whatsapp.ping_admin` — tests/test_meh3589_admin_whatsapp.py
+    fails on a `send_text` to the admin anywhere in app/.
+
+    UTILITY category, no buttons. Body: whatsapp_template_bodies.META_BODIES.
+        {{1}} topic  — what happened, e.g. «מתכון חדש לאישור»
+        {{2}} detail — which business / item, one line
+    # DO NOT put a newline or a tab in a parameter (Meta 132000) — ping_admin
+    # flattens both.
+    """
+
+    name: ClassVar[str] = "admin_update_v1"
+    topic: str
+    detail: str
+
 # --- MEH-3296: on-site product orders ---------------------------------------
 #
 # UTILITY category, no buttons. Bodies are the approved copy table of 14/11

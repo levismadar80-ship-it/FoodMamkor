@@ -20,6 +20,7 @@ from uuid import uuid4
 
 from app.models.models import ProducerRecipe
 from conftest import auth_header, make_producer, make_user
+from tests._admin_ping import TARGET as ADMIN_PING, ping_text  # MEH-3589
 
 # ---------- helpers (REUSES: tests/test_producer_recipes.py) ----------
 
@@ -75,7 +76,7 @@ class TestNotifyAdminNewRecipeService:
 
         wa_mock = MagicMock(return_value=True)
         email_mock = MagicMock()
-        monkeypatch.setattr(svc, "send_text", wa_mock)
+        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@test.com")
@@ -84,10 +85,11 @@ class TestNotifyAdminNewRecipeService:
 
         wa_mock.assert_called_once()
         assert wa_mock.call_args.args[0] == "+972500000001"
-        message = wa_mock.call_args.args[1]
+        message = ping_text(wa_mock)
         assert "לחם שאור" in message
         assert "בית עסק: חוות הזית" in message
-        assert "/admin/recipes" in message
+        # MEH-3589: the template links to /admin; the email keeps the exact path.
+        assert "/admin/recipes" in email_mock.call_args.args[2]
 
         email_mock.assert_called_once()
         assert email_mock.call_args.args[0] == "admin@test.com"
@@ -99,7 +101,7 @@ class TestNotifyAdminNewRecipeService:
 
         wa_mock = MagicMock()
         email_mock = MagicMock()
-        monkeypatch.setattr(svc, "send_text", wa_mock)
+        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "")
         monkeypatch.setattr(settings, "admin_email", "")
@@ -115,9 +117,7 @@ class TestNotifyAdminNewRecipeService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        monkeypatch.setattr(
-            svc, "send_text", MagicMock(side_effect=RuntimeError("wa down"))
-        )
+        monkeypatch.setattr(ADMIN_PING, MagicMock(side_effect=RuntimeError("wa down")))
         email_mock = MagicMock()
         monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
@@ -134,7 +134,7 @@ class TestNotifyAdminNewRecipeService:
         from app.config import settings
 
         wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(svc, "send_text", wa_mock)
+        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", MagicMock())
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "")
@@ -143,9 +143,9 @@ class TestNotifyAdminNewRecipeService:
             "עסק\nלאישור: https://evil.example", "מתכון\nשורה מזויפת"
         )
 
-        message = wa_mock.call_args.args[1]
-        # Exactly the 3 legitimate lines — injected newlines flattened.
-        assert len(message.splitlines()) == 3
+        message = ping_text(wa_mock)
+        # Topic + detail, one line each (MEH-3589) — injected newlines flattened.
+        assert len(message.splitlines()) == 2
         assert "evil.example" in message.splitlines()[1]  # inline, not a line
 
     def test_fail_open_never_raises(self, monkeypatch):
@@ -155,7 +155,7 @@ class TestNotifyAdminNewRecipeService:
         from app.config import settings
 
         wa_mock = MagicMock(side_effect=RuntimeError("boom"))
-        monkeypatch.setattr(svc, "send_text", wa_mock)
+        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@test.com")
 

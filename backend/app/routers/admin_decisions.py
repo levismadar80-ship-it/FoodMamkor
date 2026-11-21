@@ -39,7 +39,6 @@ from app.services.admin_producer_emails import (
     _producer_changes_requested_body,
     _producer_rejected_body,
     _producer_rejected_html,
-    _rejection_reason_suffix,
 )
 from app.services.auth_notifications import (
     notify_producer_approved,
@@ -55,7 +54,6 @@ from app.services.producer_approval import (
 )
 from app.services.producer_queries import attach_badge_fields
 from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
-from app.services.whatsapp import send_text
 
 logger = logging.getLogger(__name__)
 
@@ -188,13 +186,8 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     # MEH-2852: the business page just appeared.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
-    # Notify admin via WhatsApp
-    if settings.admin_whatsapp_to:
-        _send_whatsapp(
-            settings.admin_whatsapp_to,
-            f'✅ העסק "{p_name}" אושר במהמקור.',
-            test_cause=p_test,
-        )
+    # MEH-3589: no WhatsApp to the admin about her own decision — the screen
+    # already shows it, and it was free text Meta rarely delivered.
 
     return {"detail": "Producer approved"}
 
@@ -324,7 +317,6 @@ def reject_producer(
 
     # MEH-226: email fires post-commit only — a Resend failure must not roll
     # back a decision the admin already made.
-    reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     # MEH-2952: a test business / test owner → nothing sent.
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
@@ -344,13 +336,8 @@ def reject_producer(
             test_cause=p_test,
         )
 
-    # Notify admin via WhatsApp
-    if settings.admin_whatsapp_to:
-        _send_whatsapp(
-            settings.admin_whatsapp_to,
-            f'❌ העסק "{producer.name}" נדחה.{reason_text}',
-            test_cause=p_test,
-        )
+    # MEH-3589: no WhatsApp to the admin about her own decision — the screen
+    # already shows it, and it was free text Meta rarely delivered.
 
     return {
         "detail": "Producer rejected",
@@ -432,13 +419,8 @@ def request_producer_changes(
         test_cause=p_test,
     )
 
-    # Notify admin via WhatsApp
-    if settings.admin_whatsapp_to:
-        _send_whatsapp(
-            settings.admin_whatsapp_to,
-            f"📝 נשלחה בקשת השלמה ל-{p_name}",
-            test_cause=p_test,
-        )
+    # MEH-3589: no WhatsApp to the admin about her own decision — the screen
+    # already shows it, and it was free text Meta rarely delivered.
 
     return {
         "detail": "בקשת השלמה נשלחה",
@@ -527,15 +509,3 @@ def _send_notification_email(
     """
     # MEH-2952: `test_cause` — the business the mail is about is a test row.
     send_email(to_email, subject, body, html=html, test_cause=test_cause)
-
-
-def _send_whatsapp(to: str, body: str, test_cause: bool = False) -> None:
-    """Send WhatsApp admin notification via Meta Cloud API.
-
-    MEH-508: send_text is fail-open (False on missing config or HTTP error,
-    no exception raised), so the previous try/except + configured-check
-    collapse to a single call. Service-level logger emits the warning.
-
-    MEH-2952: `test_cause` — the business the ping is about is a test row.
-    """
-    send_text(to, body, test_cause=test_cause)

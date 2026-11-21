@@ -28,12 +28,12 @@ from typing import Any
 from fastapi import BackgroundTasks, HTTPException
 
 from app.config import ai_fast_request_kwargs, settings
+from app.services.admin_whatsapp import ping_admin
 from app.services.auth_notifications import _sanitize_wa_param, _skip_test_cause
 from app.services.email import send_email
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
-from app.services.whatsapp import send_text
 
 log = logging.getLogger(__name__)
 
@@ -269,11 +269,13 @@ def notify_admin_content_edit(
     if test_cause:  # MEH-2952
         return _skip_test_cause("notify_admin_content_edit", None)
     message = content_edit_message(name, changed, flagged)
-    try:
-        if settings.admin_whatsapp_to:
-            send_text(settings.admin_whatsapp_to, message, test_cause=test_cause)
-    except Exception:  # noqa: BLE001
-        log.exception("[NOTIFY] content-edit WhatsApp failed for '%s'", name)
+    # MEH-3589: the approved admin template, never free text (24h window).
+    ping_admin(
+        "עסק מאושר עדכן תוכן" + (" (סומן ע״י AI)" if flagged else ""),
+        f"{_sanitize_wa_param(name)}: "
+        + " · ".join(CONTENT_FIELD_LABELS.get(f, f) for f in changed),
+        test_cause=test_cause,
+    )
     try:
         if settings.admin_email:
             send_email(

@@ -310,7 +310,10 @@ def test_lowercase_status_is_parsed_and_call_is_bounded(monkeypatch):
 def test_test_cause_skips_every_send(monkeypatch):
     monkeypatch.setattr(mod.settings, "admin_email", "a@example.com")
     monkeypatch.setattr(mod.settings, "admin_whatsapp_to", "+972500000000")
-    with patch.object(mod, "send_email") as mail, patch.object(mod, "send_text") as wa:
+    with (
+        patch.object(mod, "send_email") as mail,
+        patch("app.services.admin_whatsapp.send_template") as wa,
+    ):
         mod.notify_admin_content_edit("משק", ["description"], True, test_cause=True)
     mail.assert_not_called()
     wa.assert_not_called()
