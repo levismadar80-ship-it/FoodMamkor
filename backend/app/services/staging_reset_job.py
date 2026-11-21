@@ -20,6 +20,8 @@ History:  MEH-3630 (creation).
 from __future__ import annotations
 
 import logging
+import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -52,12 +54,18 @@ def enabled() -> bool:
 
 
 def _run_script() -> None:
-    subprocess.run(
-        [sys.executable, *SCRIPT],
-        cwd=BACKEND_ROOT,
-        check=True,
-        timeout=TIMEOUT_SECONDS,
+    """Run the reset; on timeout kill the whole process group, seed steps too."""
+    proc = subprocess.Popen(
+        [sys.executable, *SCRIPT], cwd=BACKEND_ROOT, start_new_session=True
     )
+    try:
+        code = proc.wait(timeout=TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+        raise
+    if code != 0:
+        raise subprocess.CalledProcessError(code, proc.args)
 
 
 def run() -> None:
@@ -65,7 +73,9 @@ def run() -> None:
     from app.database import engine
 
     try:
-        with engine.connect() as conn:
+        # AUTOCOMMIT: no transaction stays open for the half hour the reset may
+        # take, so idle_in_transaction_session_timeout cannot drop the lock.
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
             got = conn.execute(
                 text("SELECT pg_try_advisory_lock(:k)"), {"k": ADVISORY_LOCK_KEY}
             ).scalar_one()

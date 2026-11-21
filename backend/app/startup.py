@@ -993,6 +993,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # (The staging weekly reset takes an advisory lock anyway — MEH-3630.)
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
 
