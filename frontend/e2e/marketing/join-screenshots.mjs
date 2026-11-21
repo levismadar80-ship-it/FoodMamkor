@@ -131,6 +131,19 @@ const SLUG = "ruach-hasadeh";
 //      looked.
 const TEST_ROW = "(בדיקה)";
 
+// TEST_ROW IS ONE SPELLING, NOT THE WHOLE SET (run 3, 21/11). A frame passed
+// with «דמו גולדן — סדנת בוקר … לבדיקות האוטומטיות» in it, and search-diet
+// would have passed with «דמו QA — מטבח…»: neither carries "(בדיקה)". So a
+// frame is also refused on the other names test fixtures are given. «דמו» is
+// matched as a whole word only, so «דמות» or «לדוגמה» (MARKER_CSS) never hit.
+const TEST_MARKS = [/\(בדיקה\)/, /לבדיקות/, /(^|[^א-ת])דמו($|[^א-ת])/, /\bQA\b/];
+function testMarkLine(text) {
+  return (text || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => TEST_MARKS.some((re) => re.test(l)));
+}
+
 // A WRITTEN FILE IS NOT A CAPTURED SHOT — ASSERT THE PIXELS.
 //
 // On 2026-11-08 this script reported «✓ page-hero.webp» five times and wrote
@@ -161,7 +174,7 @@ const FLAT_FRAME_STDEV = 2;
 // while its data is still in flight, so `waitFor({state:"visible"})` is
 // satisfied by an empty page. This asks the frame directly whether it is
 // still loading.
-const LOADING_TEXT = /בטעינה|טעינת|טוען/;
+const LOADING_TEXT = /בטעינה|טעינת|טוען|מכינים את התמונה/;
 const SKELETON_SELECTOR = '[class*="skeleton"], [class*="animate-pulse"]';
 
 // Throws when the framed element is still a loading state. Runs BEFORE the
@@ -590,6 +603,15 @@ const CLIPS = [
     name: "clip-return",
     route: "/group-buys",
     steps: async (page) => {
+      // Same as the group-buy still: the demo group buy is funded on purpose,
+      // and the «פתוחות להצטרפות» tab lists status=open only, so the clip
+      // opened on «עדיין אין קבוצות רכישה פעילות» (run 3, 21/11).
+      const demo = page.locator('[data-testid="group-buy-card"]:has-text("מאפיית רוח השדה")');
+      const onOpenTab = await demo.first().isVisible().catch(() => false);
+      if (!onOpenTab) {
+        await page.getByRole("button", { name: "הגיעו ליעד", exact: true }).click();
+        await demo.first().waitFor({ state: "visible", timeout: 10_000 });
+      }
       await page.waitForTimeout(1500);
       await slowScroll(page, 700);
       await page.goto(`${BASE}/he/experiences`, { waitUntil: "domcontentloaded" });
@@ -1107,13 +1129,9 @@ async function captureStills(browser) {
         }
       }
       const framed = await el.innerText().catch(() => "");
-      if (framed.includes(TEST_ROW)) {
-        const line =
-          framed
-            .split("\n")
-            .map((l) => l.trim())
-            .find((l) => l.includes(TEST_ROW)) ?? TEST_ROW;
-        throw new Error(`"${TEST_ROW}" is inside the frame: «${line.slice(0, 60)}»`);
+      const line = testMarkLine(framed);
+      if (line) {
+        throw new Error(`a test business is inside the frame: «${line.slice(0, 60)}»`);
       }
       const outFile = path.join(OUT, shot.file);
       const unpin = await pinChromeForElementShot(el);
@@ -1272,12 +1290,9 @@ async function captureClips(browser) {
         await poll;
       }
       seen.push(await viewportText(page));
-      const dirty = seen.find((t) => t.includes(TEST_ROW));
+      const dirty = seen.map(testMarkLine).find(Boolean);
       if (dirty) {
-        throw new Error(
-          `"${TEST_ROW}" is on screen in this clip — ` +
-            `«${dirty.slice(Math.max(0, dirty.indexOf(TEST_ROW) - 40), dirty.indexOf(TEST_ROW) + 20)}»`,
-        );
+        throw new Error(`a test business is on screen in this clip — «${dirty.slice(0, 60)}»`);
       }
       entry.duration_s = Math.round(((Date.now() - recordingFrom) / 1000 - (entry.trim_start_s ?? 0)) * 10) / 10;
       await context.close(); // flushes the .webm
