@@ -15,7 +15,7 @@
 
 // DO NOT point at /og-image.png — 1.26 MB; WhatsApp drops a preview that heavy
 // (MEH-2827). The PNGs stay in public/ only for links shared before the switch.
-export const SITE_OG_IMAGE_PATH = Object.freeze({ he: "/og-image.jpg", en: "/og-image-en.jpg" });
+const SITE_OG_IMAGE_PATH = Object.freeze({ he: "/og-image.jpg", en: "/og-image-en.jpg" });
 
 /**
  * The site preview image for a locale (relative; metadataBase makes it absolute).
