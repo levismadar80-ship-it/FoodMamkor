@@ -6676,6 +6676,18 @@
             "minimum": 1.0,
             "title": "Qty",
             "type": "integer"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
           }
         },
         "required": [
@@ -6710,6 +6722,17 @@
           "unit_price_agorot": {
             "title": "Unit Price Agorot",
             "type": "integer"
+          },
+          "variant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Name"
           }
         },
         "required": [
@@ -6833,6 +6856,14 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "variants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuVariantOut"
+            },
+            "title": "Variants",
+            "type": "array"
           }
         },
         "required": [
@@ -6881,6 +6912,41 @@
           "alcohol_ok"
         ],
         "title": "OrderMenuSlotOut",
+        "type": "object"
+      },
+      "OrderMenuVariantOut": {
+        "description": "MEH-3617: one size or flavour, with the price the order route stores.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "price_is_estimate": {
+            "title": "Price Is Estimate",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price_agorot",
+          "price_is_estimate",
+          "in_stock"
+        ],
+        "title": "OrderMenuVariantOut",
         "type": "object"
       },
       "OrderQuoteIn": {
@@ -17255,6 +17321,14 @@
               }
             ],
             "title": "Storage Info"
+          },
+          "variants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantOut"
+            },
+            "title": "Variants",
+            "type": "array"
           }
         },
         "required": [
@@ -17513,6 +17587,118 @@
           }
         },
         "title": "ProductUpdate",
+        "type": "object"
+      },
+      "ProductVariantIn": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "in_stock": {
+            "default": true,
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 40,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_agorot": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 100.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Agorot"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProductVariantIn",
+        "type": "object"
+      },
+      "ProductVariantOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_stock": {
+            "default": true,
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProductVariantOut",
+        "type": "object"
+      },
+      "ProductVariantsIn": {
+        "additionalProperties": false,
+        "description": "The whole list, in the order the page shows it. Empty = no variants.",
+        "properties": {
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantIn"
+            },
+            "maxItems": 20,
+            "title": "Variants",
+            "type": "array"
+          }
+        },
+        "title": "ProductVariantsIn",
+        "type": "object"
+      },
+      "ProductVariantsOut": {
+        "properties": {
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantOut"
+            },
+            "title": "Variants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "variants"
+        ],
+        "title": "ProductVariantsOut",
         "type": "object"
       },
       "ProfileUpdate": {
@@ -34538,6 +34724,65 @@
         "summary": "Cancel Own Order",
         "tags": [
           "product-orders"
+        ]
+      }
+    },
+    "/products/{product_id}/variants": {
+      "put": {
+        "description": "Replace the product's whole list. An id of an existing variant keeps\nthat row (renamed, repriced, moved); any other row is deleted. Order lines\nthat named a deleted variant keep their copied name (SET NULL).",
+        "operationId": "put_product_variants_products__product_id__variants_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductVariantsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductVariantsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Product Variants",
+        "tags": [
+          "product-variants"
         ]
       }
     },

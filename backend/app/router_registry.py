@@ -52,6 +52,7 @@ from app.routers import (
     product_order_business,
     product_order_buyer,
     product_order_offer,
+    product_variants,
     product_orders,
     rescue,
     rescue_pilot,
@@ -149,6 +150,9 @@ def _register_flagged_features(app: FastAPI) -> None:
     # fields, and the public order menu. Same flag, same 404 while off.
     app.include_router(product_order_offer.me_router)
     app.include_router(product_order_offer.public_router)
+    # MEH-3617: a product's sizes or flavours (owner or admin). Not behind
+    # the ordering flag: the business page shows them either way.
+    app.include_router(product_variants.router)
     # MEH-3263: stage 2b — the order itself: the buyer sends and follows it,
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
