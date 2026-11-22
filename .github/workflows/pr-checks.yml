@@ -250,8 +250,16 @@ jobs:
               # Without this line a PR touching only the tool skips both.
               - 'scripts/check_api_contract.py'
               - 'Dockerfile'
+              # MEH-3694: pytest reads .github itself — tests/test_meh3599_jobs_map.py
+              # reads every workflow's cron lines, tests/test_meh2952_is_test_guards.py
+              # reads .github/scripts. So any .github change still runs the backend legs.
+              - '.github/**'
+            # MEH-3694 (Sapir 22/11): only THIS file. The frontend/backend jobs
+            # below are defined here, so an edit here can break them; an edit to
+            # e2e.yml, staging-health.yml or any other workflow cannot. Before,
+            # every workflow-only PR paid for build + vitest + knip + tsc.
             workflows:
-              - '.github/workflows/**'
+              - '.github/workflows/pr-checks.yml'
             # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
             # If the two lists diverge the gate silently stops covering a manifest.
             deps:
