@@ -53,12 +53,8 @@ These are necessary but not sufficient. Each one passed during the
 
 ## Precedent incidents
 
-- MEH-371 STEP 9 (2026-04-27) — DSN gap caught pre-merge via
-  dashboard verify protocol
-- MEH-376 (2026-04-27, retroactive) — closed Done as false-PASS,
-  retroactively verified via MEH-379+380+381 dashboard receipt
-- MEH-379+380+381 (2026-04-27) — three CSP gaps caught via
-  dashboard receipt during production verify
+MEH-371, MEH-376 (a false-PASS Done), MEH-379–381 (three CSP gaps), all
+27/04/2026.
 
 ## Verification template (paste in PR body)
 

@@ -42,7 +42,6 @@ const ALLOWED = {
   "app/[locale]/map/components/MapKey.jsx": 1, // map key panel title
   "app/[locale]/messages/page.js": 1, // small aside label
   "app/[locale]/producers/[category]/[region]/page.js": 2, // chip-row labels
-  "app/[locale]/register/producer/RegisterPreflight.jsx": 1, // form step
   // MEH-3294: the six form-step h2s moved with their frames, one per file.
   "app/[locale]/register/producer/steps/AccountStep.jsx": 1,
   "app/[locale]/register/producer/steps/CategoryStep.jsx": 1,

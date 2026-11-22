@@ -255,7 +255,7 @@ beforeEach(() => {
 // production entry path before reaching frame 01.
 async function renderWizard() {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -276,19 +276,10 @@ async function fillDetailsToStory() {
   fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(nextBtn()); // → CATEGORY
   fireEvent.click(await screen.findByTestId("pick-category")); // select category id 1
-  fireEvent.click(nextBtn()); // → STORY
-  await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
+  // MEH-3656: a business submits from CATEGORY — the story step left its path.
+  await screen.findByTestId("register-category-submit"); // submitting-frame marker
 }
 
-// MEH-1471: the attribution dropdown on the STORY step. MEH-2183 made it
-// OPTIONAL (no submit gate), but the flows below still pick a key so they keep
-// asserting the populated payload. The <select> stores English keys (labels
-// come from i18n, mocked to key paths), so change the value directly.
-function selectReferral(value = "instagram") {
-  fireEvent.change(screen.getByTestId("register-referral-source"), {
-    target: { value },
-  });
-}
 
 // MEH-2640: four describe blocks left this file with the UI they tested —
 // «address location confirmation» (MEH-1808), «draggable confirmation pin»
@@ -315,39 +306,28 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
     expect(screen.getByText(`${K}.validation.email_invalid`)).toBeInTheDocument();
   });
 
-  it("advances ACCOUNT → DETAILS → CATEGORY → STORY, and back DETAILS → ACCOUNT", async () => {
+  it("advances ACCOUNT → DETAILS → CATEGORY (the submitting frame), and back DETAILS → ACCOUNT", async () => {
     await renderWizard();
     await fillAccountToDetails();
     expect(screen.getByText(`${K}.steps.business.title`)).toBeInTheDocument(); // DETAILS
     // back → ACCOUNT
     fireEvent.click(screen.getByText(`${K}.actions.back`));
     expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
-    // forward again, all the way to STORY
+    // forward again, all the way to the last frame
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByText(`${K}.story_card.title`)).toBeInTheDocument(); // reassurance card present
+    // MEH-3656: CATEGORY is the last business frame — it carries «הצטרפו»,
+    // and no story frame follows it.
+    expect(screen.getByText(`${K}.actions.submit`)).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.actions.next`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.story_card.title`)).not.toBeInTheDocument();
   });
 
-  it("char-count updates N/160 as the tagline is typed", async () => {
+  it("submit body carries city, fulfilment booleans (+ producer_name, category_ids, declaration_accepted) on the new-registration path", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByText("0/160")).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "חמישה" }, // 5 chars
-    });
-    expect(screen.getByText("5/160")).toBeInTheDocument();
-  });
-
-  it("submit body carries city, fulfilment booleans, short_description (+ producer_name, category_ids, declaration_accepted) on the new-registration path", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    // tagline (short_description)
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral(); // MEH-1471: required attribution key
     // declarations gate: ToS + binding declaration (non-agri → no farmer checkbox)
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
@@ -364,11 +344,11 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
       // delivery controls is asserted instead — the helper picks "onsite".
       has_physical_location: true,
       offers_delivery: false,
-      short_description: "הכי טרי שיש",
       category_ids: [1],
-      // MEH-1471: attribution key rides along; no free text (not "other").
-      referral_source: "instagram",
-      referral_source_other: "",
+      // MEH-3656: the story and attribution are no longer asked at signup;
+      // they reach the server empty, which it accepts (schemas registration.py).
+      short_description: "",
+      referral_source: "",
     });
     expect(body).toHaveProperty("declaration_accepted", true);
     // MEH-2923: the grower line travels on its own; no agri category here.
@@ -409,12 +389,10 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
     expect(document.getElementById("register-phone-error")).toBeInTheDocument();
   });
 
-  it("STORY submit validation error is exposed as role=alert", async () => {
+  it("submit validation error on the last frame is exposed as role=alert", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    // MEH-1471: pick the required attribution so the gate reaches the ToS check.
-    selectReferral();
     // submit without checking the declaration boxes → blocked at the ToS gate
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.terms_required`);
@@ -422,68 +400,30 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
   });
 });
 
-// MEH-914: the photo-to-publish disclosure is copy on a critical flow (register).
-// Assert it renders on the STORY step so the line can't be silently dropped;
-// testid mirrors E2E-LOCATORS for future Playwright reuse (data-testid contract).
-describe("RegisterProducerClient — photo-to-publish disclosure (MEH-914)", () => {
-  it("renders the photo disclosure on the STORY step", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    const note = screen.getByTestId("photo-disclosure-story");
-    expect(note).toBeInTheDocument();
-    expect(note).toHaveTextContent(`${K}.photo_disclosure`);
-  });
-});
-
-// MEH-994: pre-flight entry screen — must render BEFORE frame 01 on both auth
-// states; the upgrade (logged-in) variant hides the account-creation checklist
-// line because those users never see the ACCOUNT frame.
-describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
-  it("renders the pre-flight first; frame 01 mounts only after מתחילים", async () => {
+// MEH-3656: the MEH-994 pre-flight screen is gone — the wizard opens on frame 01.
+// Its organizer door (MEH-2917) moved onto the account frame.
+describe("RegisterProducerClient — no pre-flight screen (MEH-3656)", () => {
+  it("opens straight on the account frame, with no pre-flight screen", async () => {
     render(<RegisterProducerClient />);
-    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
-    // wizard not mounted yet — no ACCOUNT frame, no stepper walk possible
-    expect(screen.queryByTestId("register-frame-account")).not.toBeInTheDocument();
-    // anonymous path → account-creation prep line present
-    expect(screen.getByTestId("register-preflight-account-item")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("register-preflight-start"));
     expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight-start")).not.toBeInTheDocument();
+    // Key-level: any pre-flight copy except the organizer door, under any testid.
+    expect(document.body.textContent).not.toMatch(/preflight\.(?!organizer_link)/);
   });
 
-  it("upgrade path shows the pre-flight too, minus the account-creation line", async () => {
-    authState.user = { email: "p@example.com" };
+  it("keeps the organizer door on the account frame, as a link to the organizer route", async () => {
     render(<RegisterProducerClient />);
-    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
-    expect(screen.queryByTestId("register-preflight-account-item")).not.toBeInTheDocument();
-  });
-
-  // MEH-2983: someone who lands here without context gets a quiet way to the
-  // /join page, placed AFTER «מתחילים» so it never moves the button (#4341).
-  it("links to /join below «מתחילים»", async () => {
-    render(<RegisterProducerClient />);
-    const start = await screen.findByTestId("register-preflight-start");
-    const link = screen.getByTestId("register-preflight-join-link");
-    expect(link.getAttribute("href")).toBe("/join");
-    expect(link).toHaveTextContent(`${K}.preflight.join_link`);
-    // after the button in document order
-    expect(start.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  // MEH-2917: the organizer door lives on the preflight (Sapir 11/11), and
-  // the group-buy note sits there too — before step 1.
-  it("links organizers to their own sign-up and tells group-buy organizers before step 1", async () => {
-    render(<RegisterProducerClient />);
-    await screen.findByTestId("register-preflight");
+    await screen.findByText(`${K}.steps.account.title`);
     const link = screen.getByTestId("register-preflight-organizer-link");
     expect(link.getAttribute("href")).toBe("/register/organizer");
     expect(link.textContent).toBe(`${K}.preflight.organizer_link`);
-    expect(screen.getByTestId("register-preflight-group-buy-note").textContent).toBe(
-      `${K}.preflight.group_buy_note`,
-    );
-    // a link, not the checkbox MEH-2640 removed: the preflight holds no checkbox at all
-    expect(within(screen.getByTestId("register-preflight")).queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("drops the organizer door once she leaves the account frame", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-preflight-organizer-link")).not.toBeInTheDocument();
   });
 });
 
@@ -495,10 +435,6 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
 // takes the non-upgrade path → inbox screen, never a false "הצטרפת!").
 describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)", () => {
   async function fillStoryAndSubmit() {
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral(); // MEH-1471: required field on STORY
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -667,10 +603,6 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 // MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
 // the tick it answered a question the owner had already decided.
 
-// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a dropdown on the
-// final (STORY) step, directly above the ToS checkbox. Default has no
-// preselection. MEH-2183 removed the submit gate, so leaving it empty submits;
-// "other" reveals an optional free-text input, and both values ride the body.
 // MEH-2183: four locked copy lines, one per wizard surface. These assert
 // PRESENCE at the right step — the VALUES are locked in he.json/en.json and
 // t() is mocked to the key path here, so this pins placement, not wording.
@@ -682,16 +614,24 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
     );
   });
 
-  it("DETAILS carries the free-forever hint", async () => {
+  // MEH-3656: the free-forever line left DETAILS with the other helper lines
+  // («חינם להצטרף» stays in the page subtitle). Absence is asserted so it does
+  // not creep back onto the crowded frame.
+  it("DETAILS no longer carries the free-forever hint or its helper notes", async () => {
     await renderWizard();
     await fillAccountToDetails();
-    expect(screen.getByTestId("register-details-free-hint")).toHaveTextContent(
-      `${K}.steps.business.free_hint`,
+    expect(screen.queryByTestId("register-details-free-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-pricing-link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-fulfilment-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-delivery-note")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-fulfilment-whatsapp-note")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-external-order")).not.toBeInTheDocument();
+    // The testids above no longer exist anywhere, so they alone would stay green
+    // if the copy came back under a new one. The keys are what the mocked t()
+    // renders, so this is the check that can go red.
+    expect(document.body.textContent).not.toMatch(
+      /fields\.(free_hint|multi_hint|areas_note|hours_hint|whatsapp_note|external_order_form)/,
     );
-    // MEH-3166: the hint links to the price list, in a new tab so the form survives.
-    const pricing = screen.getByTestId("register-pricing-link");
-    expect(pricing.getAttribute("href")).toMatch(/\/join\/pricing$/);
-    expect(pricing).toHaveAttribute("target", "_blank");
   });
 
   // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy
@@ -699,7 +639,7 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
   // assertion is inverted rather than dropped — a deletion with no guard is one
   // careless re-add away from coming back. Asserting absence discriminates: put
   // the <p> back and this reddens.
-  it("STORY has no photo-next hint (deleted, MEH-2185), and the submit hint sits above the button", async () => {
+  it("the last frame has no photo-next hint (deleted, MEH-2185), and the submit hint sits above the button", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
@@ -717,95 +657,22 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
   });
 });
 
-describe("RegisterProducerClient — referral source (MEH-1471)", () => {
-  // MEH-2183: this REPLACES the MEH-1471 "blocks submit while empty" test —
-  // the gate it asserted is gone, so the assertion is inverted rather than
-  // dropped. It discriminates: run it against the pre-MEH-2183 component and
-  // it fails on BOTH counts (api.post is never called, and a role="alert"
-  // carries the removed referral_source_required key).
-  it("submits with an EMPTY attribution — the field is optional (MEH-2183)", async () => {
+// MEH-3656: the MEH-1471 «referral source» block is gone with the dropdown —
+// a business is no longer asked where she heard of us at signup (MEH-3653).
+// The server still accepts the field as optional.
+describe("RegisterProducerClient — no attribution question at signup (MEH-3656)", () => {
+  it("the submitting frame has no attribution dropdown, and the body carries none", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    // consent boxes checked; the attribution dropdown is deliberately UNTOUCHED
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    expect(screen.getByTestId("register-referral-source")).toHaveValue("");
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    // The payload shape is UNCHANGED — the key still rides, carrying "" so the
-    // backend stores NULL (MEH-1471 upgrade path).
-    const [, body] = api.post.mock.calls[0];
-    expect(body).toMatchObject({ referral_source: "", referral_source_other: "" });
-    // ...and no blocking error was painted on the way.
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("renders the optional hint under the attribution label (MEH-2183)", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    expect(
-      screen.getByTestId("register-referral-optional-hint"),
-    ).toHaveTextContent(`${K}.fields.referral_source.optional_hint`);
-    // The `required` attribute went with the gate — leaving it would announce
-    // an optional field as required (IS-5568).
-    expect(screen.getByTestId("register-referral-source")).not.toBeRequired();
-  });
-
-  it("selecting 'other' reveals the free-text input and submits both values", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    // no free-text input until 'other' is chosen
-    expect(
-      screen.queryByTestId("register-referral-source-other"),
-    ).not.toBeInTheDocument();
-    selectReferral("other");
-    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
-      target: { value: "שמעתי עליכם בשוק" },
-    });
+    expect(screen.queryByTestId("register-referral-source")).not.toBeInTheDocument();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body).toMatchObject({
-      referral_source: "other",
-      referral_source_other: "שמעתי עליכם בשוק",
-    });
-  });
-
-  it("switching away from 'other' hides the free-text input and sends no other text", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    selectReferral("other");
-    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
-      target: { value: "טקסט זמני" },
-    });
-    selectReferral("google"); // switch to a non-other key
-    expect(
-      screen.queryByTestId("register-referral-source-other"),
-    ).not.toBeInTheDocument();
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body).toMatchObject({
-      referral_source: "google",
-      referral_source_other: "",
-    });
+    expect(api.post.mock.calls[0][1].referral_source).toBe("");
   });
 });
 
-// MEH-952: the producer-license required-error must surface next to the field on
-// CATEGORY (not only as the generic backend-422 line two frames later on STORY).
-// These tests use an OVERRIDING /categories mock with a license-required name
-// ("חלב וגבינות" ∈ LICENSE_REQUIRED_CATEGORIES) — the shared beforeEach seeds a
-// license-neutral one. The backend stays the unchanged backstop (not under test).
 describe("RegisterProducerClient — license-required error placement (MEH-952)", () => {
   // Walk ACCOUNT → DETAILS → CATEGORY and select the (license-required) category.
   async function reachCategoryAndPick() {
@@ -824,38 +691,36 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     await renderWizard();
     await reachCategoryAndPick();
     // license left blank → next is blocked
-    fireEvent.click(screen.getByTestId("register-category-next"));
-    // still on CATEGORY (did NOT advance to STORY)
+    fireEvent.click(screen.getByTestId("register-category-submit"));
+    // still on CATEGORY, and nothing was sent (MEH-3656: CATEGORY submits)
     expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
-    expect(
-      screen.queryByPlaceholderText(`${K}.fields.tagline_placeholder`),
-    ).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
     // blocking error surfaced inline (role=alert, the verbatim backend-mirror key)
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
   });
 
-  it("clears the error and advances once a license number is entered", async () => {
+  it("clears the error and submits once a license number is entered", async () => {
     api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
     await renderWizard();
     await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
     // typing a number clears the blocking error (onChange), then advance succeeds
     fireEvent.change(screen.getByLabelText(`${K}.fields.license_required_label`), {
       target: { value: "1234567" },
     });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("register-category-next"));
-    expect(
-      await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`),
-    ).toBeInTheDocument(); // STORY reached
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByTestId("register-category-submit"));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1]).toMatchObject({ producer_license_number: "1234567" });
   });
 
   it("does not resurface the error when the category is deselected and re-selected", async () => {
     api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
     await renderWizard();
     await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-next")); // blocked → error shown
+    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked → error shown
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
     // deselect (licenseRequired → false, branch unmounts) then re-select (remounts):
     // toggleCategory clears the flag, so no phantom error before the next click.
@@ -877,7 +742,7 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     await reachCategoryAndPick();
     const licenseInput = screen.getByTestId("register-category-license");
     expect(document.activeElement).not.toBe(licenseInput); // control
-    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
     expect(document.activeElement).toBe(licenseInput);
     expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
@@ -960,7 +825,7 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     fireEvent.click(screen.getByTestId("register-details-next"));
     await screen.findByTestId("register-frame-category");
     // advance with zero categories picked
-    fireEvent.click(screen.getByTestId("register-category-next"));
+    fireEvent.click(screen.getByTestId("register-category-submit"));
     expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
     expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
     expect(screen.getByTestId("register-category-error")).toHaveTextContent(
@@ -995,19 +860,18 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
 
     // the other tab writes; keys absent from the draft are left untouched
     seedForeignDraft({ producer_name: "", city: "חיפה" });
     fireEvent.click(screen.getByTestId("register-draft-continue")); // producer_name → ""
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
 
     // navigated back to the step that owns the field — no request went out
     expect(api.post).not.toHaveBeenCalled();
     expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
-    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
     // focused, marked, and explained
     const nameInput = screen.getByTestId("register-details-name");
     expect(document.activeElement).toBe(nameInput);
@@ -1035,7 +899,6 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     // missing fields → the summary list, landing on the first) is unchanged.
     seedForeignDraft({ producer_name: "", city: "" });
     fireEvent.click(screen.getByTestId("register-draft-continue"));
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
 
@@ -1046,6 +909,34 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     expect(notice).toHaveTextContent(`${K}.validation.city_required`);
     // wizard order decides the landing field: producer_name precedes city
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+  });
+
+  // MEH-3656 (fresh review): a business no longer sees the story fields or the
+  // store link, so values restored from an older draft must not be posted —
+  // a 2-letter tagline would 422 on a field she cannot see or fix.
+  it("does not post story fields or a store link restored from an older draft", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({
+      city: "חיפה",
+      description: "תיאור ישן",
+      short_description: "אב",
+      external_order_form: "https://shop.example.com",
+      referral_source: "other",
+      referral_source_other: "חברה",
+    });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const body = api.post.mock.calls[0][1];
+    expect(body.description, "description").toBe("");
+    expect(body.short_description, "short_description").toBe("");
+    expect(body.external_order_form, "external_order_form").toBeNull();
+    expect(body.referral_source, "referral_source").toBe("");
+    expect(body.referral_source_other, "referral_source_other").toBe("");
   });
 
   // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
@@ -1061,7 +952,6 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     await fillDetailsToStory();
     seedForeignDraft({ producer_name: "", city: "חיפה" });
     fireEvent.click(screen.getByTestId("register-draft-continue"));
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`)); // bounce
     await screen.findByTestId("register-frame-details");

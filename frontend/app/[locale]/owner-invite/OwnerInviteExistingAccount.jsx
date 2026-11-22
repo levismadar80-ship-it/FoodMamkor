@@ -51,8 +51,8 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   const [codeSent, setCodeSent] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [code, setCode] = useState("");
-  const [terms, setTerms] = useState(false);
-  const [declaration, setDeclaration] = useState(false);
+  // MEH-3662: one box carries both the terms and the declaration.
+  const [consented, setConsented] = useState(false);
   const [farmer, setFarmer] = useState(false);
   const [message, setMessage] = useState(/** @type {string|null} */ (null));
   const [submitting, setSubmitting] = useState(false);
@@ -93,8 +93,7 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   const submit = async (e) => {
     e.preventDefault();
     if (!codeSent || !code.trim()) return setMessage(t("code_required"));
-    if (!terms) return setMessage(tReg("validation.terms_required"));
-    if (!declaration) return setMessage(tReg("validation.declaration_required"));
+    if (!consented) return setMessage(tReg("validation.terms_required"));
     if (farmerRequired && !farmer) return setMessage(tReg("validation.farmer_required"));
     setMessage(null);
     setSubmitting(true);
@@ -102,8 +101,8 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
       const res = await api.post("/auth/owner-invite/accept-existing", {
         token,
         code: code.trim(),
-        terms_accepted: terms,
-        declaration_accepted: declaration && (!farmerRequired || farmer),
+        terms_accepted: consented,
+        declaration_accepted: consented && (!farmerRequired || farmer),
         ...(farmerRequired && { farmer_declaration_accepted: farmer }),
       });
       clearOwnerInviteToken();
@@ -171,10 +170,8 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
       />
 
       <OwnerInviteConsents
-        terms={terms}
-        onTerms={setTerms}
-        declaration={declaration}
-        onDeclaration={setDeclaration}
+        consent={consented}
+        onConsent={setConsented}
         farmerRequired={farmerRequired}
         farmer={farmer}
         onFarmer={setFarmer}

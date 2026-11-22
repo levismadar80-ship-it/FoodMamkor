@@ -119,6 +119,7 @@ export default function RescueSection({ producer }) {
       <SectionHeading size="content">{t("section.title")}</SectionHeading>
       <LoginPromptModal
         open={loginOpen}
+        reason="rescue"
         onClose={() => setLoginOpen(false)}
         title={t("login_prompt_title")}
         message={t("login_prompt_message")}

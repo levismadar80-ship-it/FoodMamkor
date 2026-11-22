@@ -16,11 +16,14 @@ import PasswordInput from "@/components/PasswordInput";
 import Input from "@/components/ui/Input";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
-import { safeInternalRedirect } from "@/lib/safe-redirect";
+import { isReturnablePath, safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EmailTypoHint from "@/components/EmailTypoHint";
+import { rememberReturnPath } from "@/lib/post-auth-return";
+import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
+import { trackEvent } from "@/lib/analytics";
 import SeedMark from "@/components/brand/SeedMark";
 
 // MEH-3676: display-scale size (DESIGN.md Icons), same as /login.
@@ -157,6 +160,9 @@ function RegisterPageBody() {
       // `form` alone is exactly how the consent was being dropped. The
       // backend stamps users.terms_accepted_at + terms_version from this.
       await register({ ...form, terms_accepted: agreedToTerms });
+      // MEH-3661: the verification link brings her back here, not to "/".
+      rememberReturnPath(redirectTo);
+      trackEvent("consumer_signup_submitted", { method: "email", has_redirect: isReturnablePath(redirectTo) });
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
@@ -176,6 +182,12 @@ function RegisterPageBody() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // MEH-3661: one place for an OAuth success — measure it, then go back.
+  const oauthDone = (method) => {
+    trackEvent("consumer_signup_submitted", { method, has_redirect: isReturnablePath(redirectTo) });
+    router.push(redirectTo);
   };
 
   const set = (field) => (e) => {
@@ -347,48 +359,29 @@ function RegisterPageBody() {
               {googleConfigured && (
                 <GoogleAuthButton
                   termsAccepted
-                  onSuccess={() => router.push(redirectTo)}
+                  onSuccess={() => oauthDone("google")}
                   onError={(msg) => setOauthError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
                   termsAccepted
-                  onSuccess={() => router.push(redirectTo)}
+                  onSuccess={() => oauthDone("apple")}
                   onError={(msg) => setOauthError(msg)}
                 />
               )}
-              <p
-                data-testid="register-oauth-terms"
+              <OAuthTermsLine
+                termsKey={oauthTermsKey(googleConfigured, appleConfigured)}
+                testId="register-oauth-terms"
                 className="text-sm leading-relaxed text-fg-muted text-start"
-              >
-                {t.rich(`auth.login.${oauthTermsKey(googleConfigured, appleConfigured)}`, {
-                  tos: (chunks) => (
-                    <Link href="/terms" target="_blank" className="text-primary underline">
-                      {chunks}
-                    </Link>
-                  ),
-                  privacy: (chunks) => (
-                    <Link href="/privacy" target="_blank" className="text-primary underline">
-                      {chunks}
-                    </Link>
-                  ),
-                })}
-              </p>
+              />
               {oauthError && (
                 <InlineMessage data-testid="register-oauth-error">
                   {oauthError}
                 </InlineMessage>
               )}
             </div>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
-              </div>
-            </div>
+            <OrDivider className="my-5" labelClassName="bg-background" />
           </>
         )}
 
