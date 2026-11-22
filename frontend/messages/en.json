@@ -1023,30 +1023,31 @@
         "how": "How would you like to get it?",
         "pickup": "Pickup",
         "delivery": "Delivery",
-        "when": "When suits you?",
-        "when_pick": "Choose a time",
+        "when": "When?",
+        "more_slots": "More times",
         "slot": "{day}, {from}–{until}",
         "no_slots": "No times are open right now. You can ask the business on WhatsApp.",
         "city": "City",
         "address": "Delivery address",
         "name": "Full name",
-        "phone": "Mobile phone · we send a verification code and order updates to it",
+        "phone": "Mobile phone",
+        "phone_help": "We send a code and order updates to it on WhatsApp",
         "needs_city": "Enter a city to see the total and send the request.",
         "send_code": "Send code",
         "send_code_again": "Send a new code",
         "code": "Verification code",
         "code_sent": "We sent a code on WhatsApp to this number.",
         "code_failed": "We couldn't send a code. Please try again in a moment.",
-        "note": "Note to the business (optional)",
+        "add_note": "+ Add a note",
+        "note": "Note for the business",
         "age": "I am 18 or older",
         "delivery_fee": "Delivery: ₪{fee}",
-        "total": "Total: ₪{total}",
-        "total_estimate": "Total, approximately: ₪{total}",
-        "payment_line": "You pay the business directly: {methods}. No payment on the site.",
+        "payment_line": "You pay the business directly ({methods}), not on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
-        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}",
-        "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
+        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
         "send": "Send the request",
+        "send_total": "Send the request · ₪{total}",
+        "send_total_estimate": "Send the request · about ₪{total}",
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
@@ -1712,6 +1713,7 @@
         "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
+        "copy": "Site copy",
         "reviews": "Reviews",
         "kashrut": "Kashrut",
         "reports": "Reports",
@@ -3103,6 +3105,14 @@
             "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
+        "copy": {
+          "q": "How do I find where a piece of text appears on the site?",
+          "steps": [
+            "On “Site copy”: every text on the site, grouped the way the code groups it.",
+            "Search by the text itself or by its key, and filter by screen.",
+            "Each group says which screens show it. The screen is read only: a text change is made in code."
+          ]
+        },
         "settings": {
           "q": "How do I turn on the holiday window, Friday market or vacation mode?",
           "steps": [
@@ -3182,6 +3192,20 @@
       "removed_toast": "Passkey removed",
       "eye_show": "Show password",
       "eye_hide": "Hide password"
+    },
+    "copy": {
+      "title": "Site copy",
+      "intro": "Every string on the site, by its group in the code. Read only: copy is changed in the code.",
+      "search": "Search text or key",
+      "all_screens": "All screens",
+      "shown_on": "Shown on:",
+      "every_screen": "every screen",
+      "more_screens": "and {count} more",
+      "no_screen": "No screen found that uses this group",
+      "count": "{count} strings",
+      "shown_of": "Showing {shown} of {count}",
+      "more_rows": "{count} more in this group. Narrow the search.",
+      "empty": "No copy matches the search"
     }
   },
   "events": {
@@ -5298,6 +5322,13 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "groups": {
+          "offer_heading": "Offer to customers",
+          "reviews_heading": "Customer reviews",
+          "content_heading": "Content",
+          "events_sub": "A one-time event, or an experience people sign up for",
+          "opportunities_sub": "A group buy, or surprise bags from what is left today"
+        },
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"

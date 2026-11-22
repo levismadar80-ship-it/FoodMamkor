@@ -270,6 +270,9 @@ export default function ProducerSections({
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
   const gridAll = orderProducts(gridUnsorted, productGroups);
+  // MEH-3666: «המוצר המוביל» needs something to lead. With no other product
+  // beside the signature card, the card stays and only the eyebrow goes.
+  const showSignatureLabel = gridAll.length > 0;
   // MEH-3055: chips only when 2+ groups actually hold products (Etsy shows its
   // sections as filters; one group is no choice at all). Counted over the GRID
   // (signature product excluded): a group whose only product is the signature
@@ -471,10 +474,12 @@ export default function ProducerSections({
               <div className="min-w-0">
                 {/* MEH-1463: accent eyebrow so the card reads as "the signature
                     product", not just a bigger unlabeled row. */}
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-                  {t("producer.detail.sections.products.signature_label")}
-                </p>
+                {showSignatureLabel && (
+                  <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+                    {t("producer.detail.sections.products.signature_label")}
+                  </p>
+                )}
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}

@@ -136,8 +136,8 @@ def send_order(
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ) -> Any:
-    """Send an order request. A guest and a logged-in buyer take the same
-    path: both prove the phone with a code."""
+    """Send an order request. The phone is proved with a code, except for a
+    logged-in buyer ordering to her own verified account phone (MEH-3680)."""
     created = create_order(db, body, user)
     _private(response)
     return {**buyer_view(db, created.order), "status_token": created.status_token}

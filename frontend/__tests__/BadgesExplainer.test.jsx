@@ -36,6 +36,11 @@ vi.mock("@/components/BadgeRow", () => ({
 
 import BadgesExplainer from "@/app/[locale]/about/badges/BadgesExplainer";
 
+const LONG_TEXT = {
+  verified: he.about.consumer.verification.body_1,
+  recommended: he.about.consumer.editors_pick.body_1,
+};
+
 function renderPage() {
   return render(
     <NextIntlClientProvider locale="he" messages={he}>
@@ -67,7 +72,10 @@ describe("BadgesExplainer (MEH-2701)", () => {
       const group = screen.getByTestId(`badges-group-${BADGE_CONFIG[key].evidence}`);
       expect(within(group).getByTestId(`badges-item-${key}`)).toBe(items[0]);
       expect(items[0].textContent).toContain(heBadgeCopy(BADGE_CONFIG[key]).label);
-      expect(items[0].textContent).toContain(heBadgeCopy(BADGE_CONFIG[key]).tooltip);
+      // MEH-3667: «מאומת» and «בחירת העורכות» show the full /about text
+      // instead of the one-line tooltip (AboutTrustCards.test.jsx pins it).
+      const body = LONG_TEXT[key] ?? heBadgeCopy(BADGE_CONFIG[key]).tooltip;
+      expect(items[0].textContent).toContain(body);
     }
   });
 
@@ -120,13 +128,13 @@ describe("MEH-2827 · badges shown exactly as readers see them", () => {
     expect(item.querySelector(".p")).toBeNull();
   });
 
-  it("«מובילת קהילה» is listed FIRST in the automatic group, with its tooltip text", () => {
+  it("«מובילת קהילה» is listed FIRST in the automatic group, with the full /about text (MEH-3667)", () => {
     renderPage();
     const group = screen.getByTestId("badges-group-system");
     const first = group.querySelector("ul > li");
     expect(first.getAttribute("data-testid")).toBe("badges-item-community_leader");
     expect(first.textContent).toContain(he.trust.tier_4.label);
-    expect(first.querySelector("p").textContent).toBe(he.trust.tier_4.tooltip);
+    expect(first.querySelector("p").textContent).toBe(he.about.consumer.community_leader.body_1);
   });
 });
 
