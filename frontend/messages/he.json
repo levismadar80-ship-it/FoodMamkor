@@ -5461,7 +5461,7 @@
         "counter": "{done} מתוך {total}",
         "improve_headline": "לשפר את העמוד",
         "open_cta": "להשלמה",
-        "license_note": "בלי מספר רישיון לא נוכל לאשר את העמוד",
+        "license_note": "בלי מספר רישיון העמוד יעלה בלי התג ״מאומת״",
         "draft_steps": {
           "details": "פרטי העסק",
           "image": "תמונה של העסק או המוצרים",

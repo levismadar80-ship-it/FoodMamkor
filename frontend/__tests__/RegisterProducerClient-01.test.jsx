@@ -660,15 +660,31 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
   });
 });
 
-// MEH-3656: the MEH-1471 «referral source» block is gone with the dropdown —
-// a business is no longer asked where she heard of us at signup (MEH-3653).
-// The server still accepts the field as optional.
-describe("RegisterProducerClient — no attribution question at signup (MEH-3656)", () => {
-  it("the submitting frame has no attribution dropdown, and the body carries none", async () => {
+// MEH-3697: the MEH-1471 «referral source» question came back to the business
+// path, on its last step (CATEGORY). MEH-3656 had dropped it with the story
+// step and no dashboard screen asked it (Sapir 22/11). Still optional.
+describe("RegisterProducerClient — attribution question on the last step (MEH-3697)", () => {
+  it("a business sees the dropdown on the submitting frame and its pick is posted", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.queryByTestId("register-referral-source")).not.toBeInTheDocument();
+    const select = screen.getByTestId("register-referral-source");
+    fireEvent.change(select, { target: { value: "other" } });
+    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
+      target: { value: "חברה מהשוק" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1].referral_source).toBe("other");
+    expect(api.post.mock.calls[0][1].referral_source_other).toBe("חברה מהשוק");
+  });
+
+  it("left empty, the submit still goes through with an empty source (optional)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-referral-source")).toBeInTheDocument();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -917,6 +933,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
   // MEH-3656 (fresh review): a business no longer sees the story fields or the
   // store link, so values restored from an older draft must not be posted —
   // a 2-letter tagline would 422 on a field she cannot see or fix.
+  // MEH-3697: the referral source is asked on this frame again, so a value
+  // restored from the draft is visible and editable, and it is posted.
   it("does not post story fields or a store link restored from an older draft", async () => {
     seedForeignDraft({ city: "חיפה" });
     await renderWizard();
@@ -938,8 +956,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     expect(body.description, "description").toBe("");
     expect(body.short_description, "short_description").toBe("");
     expect(body.external_order_form, "external_order_form").toBeNull();
-    expect(body.referral_source, "referral_source").toBe("");
-    expect(body.referral_source_other, "referral_source_other").toBe("");
+    expect(body.referral_source, "referral_source").toBe("other");
+    expect(body.referral_source_other, "referral_source_other").toBe("חברה");
   });
 
   // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
