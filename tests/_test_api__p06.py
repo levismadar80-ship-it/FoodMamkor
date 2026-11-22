@@ -384,31 +384,6 @@ class TestSanitizationIntegration:
         assert "</script>" not in (row.description or "")
         assert "טקסט נקי" in (row.description or "")
 
-    @pytest.mark.skip(reason="home-products router unmounted (MEH-1406, done); restore or delete with the feature in MEH-796")
-    def test_home_product_description_sanitized(self, client, db, monkeypatch):
-        from app.models.models import HomeProduct
-        # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
-        monkeypatch.setattr(
-            "app.routers.home_products.validate_home_product",
-            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
-        )
-        user = make_user(db, email="xss-hp@test.com")
-        resp = client.post(
-            "/home-products",
-            json={
-                "title": "עוגה ביתית",
-                "description": "<img src=x onerror=alert(1)>טעימה ביותר",
-                "price": "30",
-            },
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 201, resp.text
-        row = db.query(HomeProduct).filter(HomeProduct.user_id == user.id).first()
-        assert row is not None
-        assert "<img" not in (row.description or "")
-        assert "onerror" not in (row.description or "")
-        assert "טעימה ביותר" in (row.description or "")
-
     def test_contact_message_sanitized(self, client, db):
         resp = client.post(
             "/contact",
@@ -769,83 +744,10 @@ class TestBOLA:
     """Regression suite for MEH-386 — Broken Object Level Authorization.
 
     Two confirmed findings:
-      1. GET /home-products/{id} exposed hidden/deactivated listings to public.
+      1. GET /home-products/{id} exposed hidden/deactivated listings to public
+         (feature removed, MEH-796 — its tests went with it).
       2. POST /category-requests accepted spoofed producer_id from anonymous callers.
     """
-
-    @pytest.mark.skip(reason="home-products router unmounted (MEH-1406, done); restore or delete with the feature in MEH-796")
-    def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
-        """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
-        from app.models.models import HomeProduct
-        monkeypatch.setattr(
-            "app.routers.home_products.validate_home_product",
-            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
-        )
-        user = make_user(db, email="bola-hidden@test.com")
-        create = client.post(
-            "/home-products",
-            json={"title": "עוגה", "description": "טעימה", "price": "25"},
-            headers=auth_header(user),
-        )
-        assert create.status_code == 201
-        pid = create.json()["id"]
-
-        # Simulate auto-hide (3 negative ratings sets is_hidden=True)
-        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
-        hp.is_hidden = True
-        db.commit()
-
-        # Anonymous fetch → 404 (not 200)
-        resp = client.get(f"/home-products/{pid}")
-        assert resp.status_code == 404
-
-    @pytest.mark.skip(reason="home-products router unmounted (MEH-1406, done); restore or delete with the feature in MEH-796")
-    def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
-        """Owner of a hidden listing can still view it."""
-        from app.models.models import HomeProduct
-        monkeypatch.setattr(
-            "app.routers.home_products.validate_home_product",
-            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
-        )
-        user = make_user(db, email="bola-owner@test.com")
-        create = client.post(
-            "/home-products",
-            json={"title": "גבינה", "description": "טרייה", "price": "40"},
-            headers=auth_header(user),
-        )
-        assert create.status_code == 201
-        pid = create.json()["id"]
-
-        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
-        hp.is_hidden = True
-        db.commit()
-
-        # Owner fetch → 200
-        resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
-        assert resp.status_code == 200
-
-    @pytest.mark.skip(reason="home-products router unmounted (MEH-1406, done); restore or delete with the feature in MEH-796")
-    def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
-        """A deactivated listing (is_active=False) must 404 for anonymous callers."""
-        monkeypatch.setattr(
-            "app.routers.home_products.validate_home_product",
-            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
-        )
-        user = make_user(db, email="bola-inactive@test.com")
-        create = client.post(
-            "/home-products",
-            json={"title": "לחם", "description": "מחמצת", "price": "35"},
-            headers=auth_header(user),
-        )
-        assert create.status_code == 201
-        pid = create.json()["id"]
-
-        # Soft-delete via DELETE endpoint
-        client.delete(f"/home-products/{pid}", headers=auth_header(user))
-
-        # Anonymous fetch → 404
-        resp = client.get(f"/home-products/{pid}")
-        assert resp.status_code == 404
 
     def test_category_request_producer_id_not_spoofable_anonymous(self, client, db):
         """An anonymous caller cannot spoof a producer_id on a category request."""

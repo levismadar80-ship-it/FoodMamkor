@@ -10,7 +10,7 @@
 // were updated in place — they encoded the uncapped default that caused
 // the suspension, not a behaviour worth preserving.
 import { describe, expect, it } from "vitest";
-import { DEFAULT_MAX_WIDTH, optimizeCloudinary } from "@/lib/cloudinary";
+import { DEFAULT_MAX_WIDTH, isCloudinaryUrl, optimizeCloudinary } from "@/lib/cloudinary";
 
 const BASE = "https://res.cloudinary.com/demo/image/upload/v1/foo.jpg";
 const CAPPED =
@@ -132,5 +132,25 @@ describe("optimizeCloudinary — default width cap (MEH-2001)", () => {
     const already =
       "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_limit,w_400/v1/foo.jpg";
     expect(optimizeCloudinary(already)).toBe(already);
+  });
+});
+
+// MEH-3613 (CodeQL js/incomplete-url-substring-sanitization): the host is
+// checked, not a substring of the URL.
+describe("isCloudinaryUrl / optimizeCloudinary host check", () => {
+  it.each([
+    "https://evil.example/?res.cloudinary.com/demo/image/upload/v1/foo.jpg",
+    "https://evil.example/res.cloudinary.com/demo/image/upload/v1/foo.jpg",
+    "https://res.cloudinary.com.evil.example/demo/image/upload/v1/foo.jpg",
+    "https://res.cloudinary.com@evil.example/demo/image/upload/v1/foo.jpg",
+    "/images/res.cloudinary.com/foo.jpg",
+  ])("leaves %s unchanged", (url) => {
+    expect(isCloudinaryUrl(url)).toBe(false);
+    expect(optimizeCloudinary(url)).toBe(url);
+  });
+
+  it("still optimizes a real res.cloudinary.com URL", () => {
+    expect(isCloudinaryUrl(BASE)).toBe(true);
+    expect(optimizeCloudinary(BASE)).toBe(CAPPED);
   });
 });

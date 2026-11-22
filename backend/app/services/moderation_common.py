@@ -10,8 +10,8 @@ Does NOT: hold a client or cache one (each service keeps its own `_client`,
           (moderation_prompt.wrap_submission); report a fail-open to Sentry by
           itself (the caller passes its own report_fail_open, so a test that
           patches it on the service module still sees the call).
-Related:  services/experience_moderation.py, services/producer_recipe_moderation.py,
-          services/home_product_moderation.py (callers);
+Related:  services/experience_moderation.py, services/producer_recipe_moderation.py
+          (callers);
           services/moderation_fail_open.py (classify_failure);
           tests/test_moderation_common.py.
 History:  MEH-3619 (creation: three copies of the same client, parser and

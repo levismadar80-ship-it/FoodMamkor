@@ -1,4 +1,4 @@
-> **⛔ CLOSED 2026-11-07 (MEH-2796).** Sapir chose to archive `docs/MANUAL_TESTING.md` (now `docs/archive/MANUAL_TESTING-until-2026-11-07.md`) instead of finishing the conversion. New behaviour gets an automated test at the time it ships (workflow rule 10), and real-device-only items live in `docs/RELEASE_CHECKLIST.md`. This file, the matrix and the two `scripts/qa/*-manual-testing.py` generators are frozen history.
+> **⛔ CLOSED 2026-11-07 (MEH-2796).** Sapir chose to archive `docs/MANUAL_TESTING.md` (now `docs/archive/MANUAL_TESTING-until-2026-11-07.md`) instead of finishing the conversion. New behaviour gets an automated test at the time it ships (workflow rule 10), and real-device-only items live in `docs/RELEASE_CHECKLIST.md`. This file, the matrix and the two `scripts/qa/*-manual-testing.py` generators are frozen history. **The two generators were deleted on 21/11/2026 (MEH-3615):** their input file is archived, so they could no longer run. Restore with `git checkout 3a5c2a3e3 -- scripts/qa/`.
 
 # MEH-1171 — Conversion progress (checkpoint file)
 

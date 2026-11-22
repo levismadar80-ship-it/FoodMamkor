@@ -203,6 +203,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           images={images}
           producerId={producer.id}
           producerName={producer.name}
+          logoUrl={producer.logo_url}
           verified={producer.verification_tier === "verified"}
           verificationDocType={producer.verification_doc_type}
           verifiedAt={producer.verified_at}
