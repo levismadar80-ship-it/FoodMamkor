@@ -52,6 +52,29 @@ export function urlForLocalePath(path, locale) {
 }
 
 /**
+ * MEH-3638: metadata for a page whose MAIN content is user-written Hebrew
+ * (a business, recipe, event, organizer, experience, group buy). The /en
+ * version of such a page translates only the chrome around it, and Google's
+ * multilingual guide treats a template-only translation as a duplicate of the
+ * original. So until real translated content exists (MEH-3637):
+ *   - no hreflang pair — the two URLs are not two languages of one page;
+ *   - canonical stays self-referencing;
+ *   - /en gets `noindex, follow` (links on it still count).
+ * The Hebrew page is unchanged apart from the dropped `en` alternate.
+ *
+ * Returns `{ alternates, robots? }` — spread it into the metadata object
+ * BEFORE any stricter robots of the page's own (a 404 or a test business
+ * stays `index: false, follow: false`).
+ */
+export const UNTRANSLATED_ROBOTS = Object.freeze({ index: false, follow: true });
+
+export function buildUntranslatedEntityMeta(path, currentLocale) {
+  const meta = { alternates: { canonical: urlForLocalePath(path, currentLocale) } };
+  if (currentLocale !== routing.defaultLocale) meta.robots = { ...UNTRANSLATED_ROBOTS };
+  return meta;
+}
+
+/**
  * Build the alternates object for Next.js Metadata API.
  *   { canonical: <self-referencing URL>,
  *     languages: { 'he-IL': <HE URL>, 'en': <EN URL>, 'x-default': <HE URL> } }

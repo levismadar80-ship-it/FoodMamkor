@@ -6,7 +6,7 @@ import GroupBuyDetailClient from "./GroupBuyDetailClient";
 import { GroupBuyMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { fetchSsrEntity } from "@/lib/ssr-entity-fetch";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, OG_LOCALE } from "@/lib/i18n-seo";
 import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildGroupBuyJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Product + Offer JSON-LD
 
@@ -33,7 +33,8 @@ export async function generateMetadata(props) {
     getTranslations({ locale, namespace: "seo.group_buy" }),
   ]);
   const path = `/group-buys/${id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
   // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
   // notFound() alone streams 200 + 404 UI, because the shared
   // app/[locale]/loading.js boundary flushes the shell first — bots would
@@ -81,6 +82,7 @@ export async function generateMetadata(props) {
       ],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 
