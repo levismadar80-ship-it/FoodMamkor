@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import ToolsPage from "@/app/[locale]/producer/dashboard/tools/page";
+import DashboardLayout from "@/app/[locale]/producer/dashboard/DashboardLayoutClient";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 const { AUTH } = vi.hoisted(() => ({ AUTH: { user: { id: 1, name: "דנה", role: "producer" }, loading: false } }));
@@ -37,10 +38,11 @@ vi.mock("next-intl", () => {
   };
 });
 // A stable router too: the fetch effect depends on it.
-const { ROUTER } = vi.hoisted(() => ({ ROUTER: { push: () => {}, replace: () => {} } }));
+const { ROUTER, NAV } = vi.hoisted(() => ({ ROUTER: { push: () => {}, replace: () => {} }, NAV: { pathname: "/producer/dashboard/tools" } }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
   useRouter: () => ROUTER,
+  usePathname: () => NAV.pathname,
 }));
 vi.mock("@/components/producer/RequestReviewCard", () => ({ default: () => <div data-testid="request-review-stub" /> }));
 vi.mock("@/components/producer/BusinessQrCard", () => ({ default: () => null }));
@@ -155,5 +157,28 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const card = await screen.findByTestId("tool-group-opportunities");
     expect(within(card).getAllByTestId("new-tool-pill")).toHaveLength(1);
     expect(within(screen.getByTestId("tool-group-events")).queryByTestId("new-tool-pill")).toBeNull();
+  });
+
+  // MEH-2728, moved here from DashboardOrganizerTabs (MEH-3669): that test read
+  // tools/page.js as text and stopped seeing the hrefs once they moved into
+  // the group items. This one renders the page, opens every card, and takes
+  // the spokes from what is on screen.
+  it("every tool the page links to keeps the «כלים» tab lit", async () => {
+    state.rescue = true;
+    const { unmount } = render(<ToolsPage />);
+    await screen.findByTestId("tools-grid");
+    for (const btn of within(screen.getByTestId("tools-grid")).queryAllByRole("button")) fireEvent.click(btn);
+    const spokes = [...new Set(hrefs(screen.getByTestId("tools-grid")))];
+    unmount();
+    expect(spokes).toEqual(expect.arrayContaining([
+      "/producer/dashboard/events", "/producer/dashboard/experiences", "/producer/dashboard/group-buys",
+      "/producer/dashboard/rescue", "/producer/dashboard/reviews", "/producer/dashboard/recipes",
+    ]));
+    for (const spoke of spokes) {
+      NAV.pathname = spoke;
+      const view = render(<DashboardLayout><div /></DashboardLayout>);
+      expect(screen.getByTestId("dashboard-tab-tools").getAttribute("aria-current"), spoke).toBe("page");
+      view.unmount();
+    }
   });
 });
