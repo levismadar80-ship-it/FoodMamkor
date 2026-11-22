@@ -67,7 +67,11 @@ class FillRates:
 def measure(db: Session, now: datetime) -> FillRates:
     """Businesses (not organizers, not test rows, not owned by a test
     account, as admin_pending_reminder filters) created in the last 7 days."""
-    since = (now - timedelta(days=WINDOW_DAYS)).astimezone(timezone.utc).replace(tzinfo=None)
+    since = (
+        (now - timedelta(days=WINDOW_DAYS))
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
     rows = (
         db.query(Producer)
         .filter(
@@ -82,7 +86,9 @@ def measure(db: Session, now: datetime) -> FillRates:
         signups=len(rows),
         with_referral=sum(1 for p in rows if (p.referral_source or "").strip()),
         with_location=sum(
-            1 for p in rows if MISSING_LOCATION not in submission_missing_items(p, email_verified=True)
+            1
+            for p in rows
+            if MISSING_LOCATION not in submission_missing_items(p, email_verified=True)
         ),
     )
 
@@ -136,7 +142,10 @@ def check_signup_fill(db: Session, now: datetime | None = None) -> FillRates | N
     zero = rates.zero_fields()
     logger.info(
         "[SIGNUP-FILL] signups=%d referral=%d location=%d zero=%s",
-        rates.signups, rates.with_referral, rates.with_location, zero,
+        rates.signups,
+        rates.with_referral,
+        rates.with_location,
+        zero,
     )
     if not zero:
         return None
