@@ -492,9 +492,7 @@
       "/producer/dashboard/preview",
       "/producers",
       "/producers/[category]/[region]",
-      "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer"
+      "/producers/diet/[dietSlug]"
     ],
     "business_features": [
       "/join"
@@ -674,8 +672,6 @@
       "/producers",
       "/producers/[category]/[region]",
       "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer",
       "/registration/[token]",
       "/rescue",
       "/rescue/[offerId]",
@@ -1151,9 +1147,7 @@
       "/producer/dashboard/preview",
       "/producers",
       "/producers/[category]/[region]",
-      "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer"
+      "/producers/diet/[dietSlug]"
     ],
     "guides": [
       "/about/for-businesses/guides",
@@ -1201,9 +1195,7 @@
       "/producer/dashboard/preview",
       "/producers",
       "/producers/[category]/[region]",
-      "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer"
+      "/producers/diet/[dietSlug]"
     ],
     "location": [
       "/"
@@ -1748,8 +1740,6 @@
       "/producers",
       "/producers/[category]/[region]",
       "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer",
       "/rescue/[offerId]"
     ],
     "producers": [
@@ -2330,9 +2320,7 @@
       "/producer/dashboard/preview",
       "/producers",
       "/producers/[category]/[region]",
-      "/producers/diet/[dietSlug]",
-      "/register/organizer",
-      "/register/producer"
+      "/producers/diet/[dietSlug]"
     ],
     "weekly_summary_unsubscribe": [
       "/unsubscribe/weekly"

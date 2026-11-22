@@ -76,9 +76,6 @@ test.describe("Producer register wizard (5-frame)", () => {
     // beforeEach mock pins id 1 to a license-required category (Milk & Cheese).
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
-    // MEH-952: "חלב וגבינות" is a license-required category — the number is now
-    // gated inline on CATEGORY (blocking error), so fill it before advancing.
-    await page.getByTestId("register-category-license").fill("1234567");
 
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
     for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
@@ -134,7 +131,6 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
     await page.getByTestId("register-details-next").click();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
-    await page.getByTestId("register-category-license").fill("1234567"); // MEH-952: license gate on CATEGORY
 
     // ── CATEGORY: submit WITHOUT the declarations → submit error as role="alert" ──
     await page.getByTestId("register-category-submit").click();
@@ -143,10 +139,9 @@ test.describe("Producer register wizard (5-frame)", () => {
     await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible(); // did NOT silently advance to CONFIRM
   });
 
-  // MEH-971 chunk 1: the license-pending opt-in relaxes the CATEGORY advance
-  // gate. Two cases in one flow — unchecked + empty license → blocked;
-  // checked → submits with no license number entered (MEH-3656: CATEGORY submits).
-  test("license-pending opt-in bypasses the CATEGORY license gate", async ({ page }) => {
+  // Sapir 22/11: signup asks no licence number — the dashboard does. A
+  // licence-required category submits with no licence field and no opt-in.
+  test("a licence-required category submits with no licence field", async ({ page }) => {
     await page.goto("/register/producer");
 
     // ACCOUNT → DETAILS
@@ -164,26 +159,19 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
     await page.getByTestId("register-details-next").click();
 
-    // CATEGORY: pick a license-required category, leave the license empty.
+    // CATEGORY: pick a license-required category.
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
 
-    // Consent boxes ticked up front, so the only thing that can block is the licence.
-    // Every box except the opt-in, selected without a branch in the test body.
-    const consent = page
-      .getByTestId("register-frame-category")
-      .locator('input[type="checkbox"]:not([data-testid="register-license-pending-optin"])');
+    await expect(page.getByTestId("register-category-license")).toHaveCount(0);
+    await expect(page.getByTestId("register-license-pending-optin")).toHaveCount(0);
+    const consent = page.getByTestId("register-frame-category").locator('input[type="checkbox"]');
     await expect(consent).not.toHaveCount(0);
     for (const cb of await consent.all()) await cb.check();
 
-    // (a) unchecked + empty license → submit BLOCKED (stays on CATEGORY).
+    const posted = page.waitForRequest((r) => r.url().includes("/auth/register") && r.method() === "POST");
     await page.getByTestId("register-category-submit").click();
-    await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible();
-
-    // (b) check the opt-in → submit SUCCEEDS (no license entered).
-    await page.getByTestId("register-license-pending-optin").check();
-    await page.getByTestId("register-category-submit").click();
+    expect((await posted).postDataJSON()).toMatchObject({ license_pending: true });
     await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
   });
 });
