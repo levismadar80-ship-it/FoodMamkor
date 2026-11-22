@@ -17,9 +17,6 @@ Never raises, and is a no-op when ``sentry_sdk`` is absent or
 uninitialised (sandbox, tests, local dev), mirroring
 ``capture_background_exception``.
 
-Not wired into ``home_product_moderation``: its router is unmounted
-(``router_registry.py``, MEH-1406) and the subsystem is being removed
-(MEH-796), so it can never fail open in production.
 """
 
 from __future__ import annotations

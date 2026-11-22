@@ -630,7 +630,7 @@ use states its tier in the PR body:
 - **א׳ new tool** → add an entry to `frontend/lib/business-features.js`, with
   the he/en copy from the issue's approved table. No tile unless the issue says
   so (max 4 tiles per group — Sapir decides).
-- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`.
+- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`. A new `codeRef` file with the same copy fails `tool-copy-sync-guard.sh` (MEH-3643); a tool going live owes a line in `docs/release/whats-new-pending.md` (`whats-new-pending-guard.sh`).
 - **ג׳ internal** (bug, design, perf) → no registry change; CHANGELOG only.
 
 If the issue states no tier and the PR touches a business-facing tool →

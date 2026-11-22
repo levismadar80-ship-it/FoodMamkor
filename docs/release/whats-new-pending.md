@@ -1,0 +1,11 @@
+# «מה חדש» — טיוטות שמחכות לגרסה הבאה
+
+> MEH-3643 · 21/11/2026. כל PR ל-staging שהופך כלי ל-live (כלי חדש ב-`frontend/lib/business-features.js`,
+> או כלי שה-`status` שלו עובר ל-`"live"`) מוסיף כאן שורה אחת. בזמן הגרסה, ה-thread של הגרסה מעביר את
+> השורות לרשומה ב-`frontend/lib/whats-new.js`, אחרי שספיר אישרה את הנוסח מילה במילה, ומרוקן את הרשימה.
+> `scripts/checks/whats-new-pending-guard.sh` נכשל על כלי שעלה בלי שורה, ועל PR לגרסה שמשאיר כאן שורות.
+>
+> פורמט: `- <tool_id>: <שורה אחת לבעלת עסק>`. כלי שאין בו חדשות לבתי עסק: שורה בגוף ה-PR,
+> `Whats-new: <tool_id> none — <סיבה>`.
+
+<!-- items below this line -->

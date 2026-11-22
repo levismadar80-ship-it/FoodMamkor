@@ -108,7 +108,8 @@ const actionIds = (card) =>
   within(card)
     .queryAllByRole("button")
     .map((b) => b.getAttribute("data-testid"))
-    .filter(Boolean);
+    // MEH-3592: the card also carries the settings disclosure; only state moves count here.
+    .filter((id) => id?.startsWith("group-buy-action-"));
 
 beforeEach(() => {
   get.mockClear();
