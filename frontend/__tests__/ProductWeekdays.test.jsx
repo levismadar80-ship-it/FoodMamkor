@@ -143,7 +143,9 @@ function renderSheet(products, picks, onChange = () => {}) {
   return render(withIntl(<OrderSheet producer={{ id: PRODUCER }} menu={menu} picks={picks} onChange={onChange} onClose={() => {}} />));
 }
 
-const slotOptions = () => [...screen.getByTestId("order-sheet-slot").querySelectorAll("option")].filter((o) => o.value);
+// MEH-3658: slots are radio buttons; `value` is each one's data-value.
+const slotOptions = () => [...screen.getByTestId("order-sheet-slot").querySelectorAll("[role=radio]")].map((b) => ({ value: b.getAttribute("data-value") }));
+const pickedSlot = () => screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")?.getAttribute("data-value") ?? "";
 
 describe("OrderSheet — days (MEH-3618)", () => {
   it("null masks: both slots, as before", () => {
@@ -160,12 +162,13 @@ describe("OrderSheet — days (MEH-3618)", () => {
   it("a picked slot the cart stops allowing is dropped, not kept hidden", () => {
     const products = [product(BREAD, "חלה"), product(CAKE, "עוגה", bit(FRI))];
     const { rerender } = renderSheet(products, { [BREAD]: 1 });
-    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: THU_SLOT.start } });
-    expect(screen.getByTestId("order-sheet-slot").value).toBe(THU_SLOT.start);
+    fireEvent.click(screen.getByTestId("order-sheet-slot").querySelector(`[data-value="${THU_SLOT.start}"]`));
+    expect(pickedSlot()).toBe(THU_SLOT.start);
     const menu = { producer_id: PRODUCER, min_order_agorot: null, cancel_cutoff_hours: 12, lead_time_hours: 0, business_id_number: "512345678", products, slots: SLOTS };
     rerender(withIntl(<OrderSheet producer={{ id: PRODUCER }} menu={menu} picks={{ [BREAD]: 1, [CAKE]: 1 }} onChange={() => {}} onClose={() => {}} />));
     expect(slotOptions().map((o) => o.value)).toEqual([FRI_SLOT.start]);
-    expect(screen.getByTestId("order-sheet-slot").value).toBe("");
+    // The dropped Thursday is not kept; the one slot left is picked for her (MEH-3658).
+    expect(pickedSlot()).toBe(FRI_SLOT.start);
   });
 
   it("a way with no slot on the product's day is not offered; the sheet opens on the one that has", () => {

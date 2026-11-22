@@ -92,7 +92,9 @@ class OrderCreateIn(BaseModel):
     slot_start: datetime
     customer_name: str = Field(..., max_length=120)
     phone: str = Field(..., min_length=9, max_length=20)
-    code: str = Field(..., pattern=r"^[0-9]{6}$")
+    # MEH-3680: optional only for a logged-in buyer whose account phone is
+    # verified and equals `phone`; create_order demands it from everyone else.
+    code: str | None = Field(default=None, pattern=r"^[0-9]{6}$")
     delivery_city: str | None = Field(default=None, max_length=100)
     delivery_address: str | None = Field(default=None, max_length=300)
     note: str | None = Field(default=None, max_length=500)

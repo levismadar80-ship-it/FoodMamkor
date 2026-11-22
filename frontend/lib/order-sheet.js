@@ -113,12 +113,29 @@ export function orderBody(f) {
     slot_start: f.slotStart,
     customer_name: f.name.trim(),
     phone: f.phone.trim(),
-    code: f.code.trim(),
+    // MEH-3680: no code for a buyer ordering to her own verified phone.
+    ...(f.code.trim() ? { code: f.code.trim() } : {}),
     ...(delivery ? { delivery_city: f.city.trim(), delivery_address: f.address.trim() } : {}),
     ...(f.note.trim() ? { note: f.note.trim() } : {}),
     age_declared: f.ageDeclared,
     idempotency_key: f.key,
   };
+}
+
+/**
+ * MEH-3680: the same Israeli mobile in any notation (050-…, +972…, 972…).
+ * Mirrors backend/app/utils/phone.py::canonical_il_msisdn; a number that does
+ * not canonicalise matches nothing.
+ * @param {string | null | undefined} a @param {string | null | undefined} b
+ */
+export function sameIlPhone(a, b) {
+  const canon = (/** @type {string | null | undefined} */ v) => {
+    const d = String(v ?? "").replace(/\D/g, "");
+    const national = d.startsWith("972") ? d.slice(3) : d.startsWith("0") ? d.slice(1) : null;
+    return national && /^5\d{8}$/.test(national) ? national : null;
+  };
+  const x = canon(a);
+  return x !== null && x === canon(b);
 }
 
 /** @param {string} producerId @param {string} phone */
