@@ -34,7 +34,10 @@ import { useEffect, useRef } from "react";
  */
 export function useGsiRedrawOnResize(ref, draw) {
   const drawRef = useRef(draw);
-  drawRef.current = draw;
+  // Refreshed after each render, never during it (react-hooks/refs).
+  useEffect(() => {
+    drawRef.current = draw;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
