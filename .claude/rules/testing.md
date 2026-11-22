@@ -45,18 +45,12 @@ mismatches, 0 orphans.
   check — delete it. Assert counts that the change under test can falsify.
 - A guard that consults its own subject (`count()===0 → skip`, `if (!el)
   return`) can never fail; gate on something the product cannot move (project
-  name, env var, fixture). Lifting a quarantine is not the fix. Review question:
-  if the element vanished, does this go red?
-  In `frontend/e2e/**/*.spec.*` this is held by
-  `scripts/checks/e2e-self-skip-ratchet.mjs` (inside `npm run lint:ratchet`,
-  MEH-3520): a new skip or fixme, a new `expect` inside a branch or a new
-  branch in a test body fails the PR. A skip gated on something the product
-  cannot move takes `// eslint-disable-next-line <rule> -- <reason>`; the
-  reason is required. It does not see an alias (`const t = test`), a
-  `try/catch` around an `expect`, or a loop that runs zero times.
-  `scripts/checks/e2e-self-skip-guard.sh` (Repo guards, every PR) runs the
-  ratchet's self-test and fails a baseline total that rises, unless the
-  branch also changes the ratchet or its lint config (then it warns).
+  name, env var, fixture). Review question: if the element vanished, does this
+  go red? In `frontend/e2e/**/*.spec.*` this is held by
+  `scripts/checks/e2e-self-skip-ratchet.mjs` + `e2e-self-skip-guard.sh`
+  (MEH-3520; an allowed skip takes `// eslint-disable-next-line <rule> --
+  <reason>`). Blind spots: an alias (`const t = test`), a `try/catch` around an
+  `expect`, a loop that runs zero times.
 - A green VRT is not evidence the frame is unchanged (2% tolerance swallows
   copy changes; a pass writes no PNG) — read the rendered text. Tolerance is
   MEH-1765's call only.
@@ -107,14 +101,8 @@ operative half; a bare `.catch` is not enough. To prove something did **not**
 happen, await the unwanted event with a bound and require it times out. To
 wait for readiness, gate on that thing (`data-testid`, response, URL). The
 Cloudinary-401 cause is unestablished — don't state it as fact.
-
-### Sweep result (2026-08-09) — where this actually bites
-
-Only CI-run specs matter. `parity.spec.ts` is converted;
-`e2e/screenshots.spec.ts` (not run by CI) is ticketed; don't bulk-"fix" the
-`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` by MEH-3531,
-deleted by MEH-3614 — restore from git, [media-archive.md](../../docs/media-archive.md);
-the two in live use stay in `frontend/e2e/`).
+Only CI-run specs matter; don't bulk-"fix" the `qa-*.mjs` probes (deleted by
+MEH-3614 — restore from git, [media-archive.md](../../docs/media-archive.md)).
 
 ---
 
@@ -210,7 +198,7 @@ evidence actually run, against what I think it ran against?
 
 ### Why this is stated as a rule and not an anecdote — the count is the argument
 
-Eight instances in one week:
+Eight instances in one week (August 2026), the first four:
 
 1. **MEH-1909** — `ast` probe, `None` for all 14 real revisions.
 2. **ORDERS §3.0 (10/08)** — DNS probe whose own control also returned zero.
@@ -240,24 +228,16 @@ refactor and passes on most bugs; Google calls it a change-detector test.
 A green test is evidence only if it would go red when the code broke. Four
 mechanical checks, then one rule for the threads:
 
-- **A vitest test with no `expect` fails** (`expect.requireAssertions` in
-  `frontend/vitest.config.js`). "Does not throw" is
-  `expect(() => fn()).not.toThrow()`. Never switch the option off for a test.
-- **`scripts/checks/test-honesty-guard.sh`** (Repo guards, blocking) fails a
-  NEW pytest test with no assert / `pytest.raises` / mock `assert_*` /
-  asserting helper, a skip or xfail whose reason names no `MEH-<N>`, a
-  non-strict xfail, a vitest `.only`, a vitest `.skip`/`.todo` without a card.
-  "Not raising is the behaviour" → `# no-assert: <reason>` in the test.
+- **A vitest test with no `expect` fails** (`expect.requireAssertions`).
+  "Does not throw" is `expect(() => fn()).not.toThrow()`. Never switch it off.
+- **`scripts/checks/test-honesty-guard.sh`** (blocking; its header lists what
+  it fails). "Not raising is the behaviour" → `# no-assert: <reason>`.
   `test-honesty-baseline.txt` only shrinks.
-- **Mutation testing on the money-and-permissions set** — `[tool.mutmut]
-  only_mutate` in `backend/pyproject.toml`. A PR that changes one of those
-  files runs `bash scripts/mutation/run.sh` (≈1 h, one child, its own
-  `mehamakor_mutation` database) and pastes its table under `## Mutation`
-  (`mutation-guard.sh` warns, and fails from 22/11, without it). Every `NEW SURVIVOR` is killed by a
-  new test, or explained in `backend/mutation-survivors.txt` with a reason.
-  The weekly repo-health scan (MEH-3143) re-runs the whole set and opens a
-  card per new survivor. Google runs it the same way: changed code only, at
-  review time (Petrović et al., ICSE-SEIP 2018; TSE 2021).
+- **Mutation testing on the money-and-permissions set** (`[tool.mutmut]
+  only_mutate` in `backend/pyproject.toml`). A PR that changes one of those
+  files runs `bash scripts/mutation/run.sh` (≈1 h) and pastes its table under
+  `## Mutation`; `mutation-guard.sh` fails without it. Every `NEW SURVIVOR` is
+  killed by a new test or explained in `backend/mutation-survivors.txt`.
 - **Property tests for pure money and date math** (Hypothesis,
   `tests/test_meh3295_properties.py`). A new fee, rounding, cap or
   business-day function gets a rule checked against an independent oracle,
@@ -273,7 +253,11 @@ Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
 the PR. The independent pass is a **fresh reviewer subagent** given the diff and
 the card's acceptance_criteria; its findings are fixed or answered in the PR. Its
 brief always asks one more question: which docs describe what this diff changed
-(rule 11), and were they updated in it (MEH-3192 — no guard can see this). The
+(rule 11), and were they updated in it (MEH-3192 — no guard can see this). It
+also asks whether a new component or helper in the diff already exists under
+another name (`docs/CODE_INDEX.md`, the `frontend/components/CLAUDE.md` catalog),
+or shows a concept a second feature now shows, which the rule of two moves to
+`ui/` (MEH-3612; a re-implementation in other words passes `clone-ratchet`). The
 `claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
 its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
@@ -284,13 +268,10 @@ RED-tier PR (auth, schema/Alembic, security, central components, prod — ADR-01
 the rule-5a reviewer subagent is started with `model: "fable"`. If Fable is
 refused or its usage is exhausted, run the same reviewer on Opus and say so in
 the PR body — never skip the review. YELLOW/GREEN keep the default reviewer.
-Measured cost (14/11): ~120k tokens for a small PR, ~165–215k for a whole area;
-on 14/11 every Fable pass found a bug the earlier passes missed.
 
 **Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
-findings, stop the fix loop and hand Sapir the remaining findings as one list.
-They are reported, never dropped. Past round 3 the finder mostly surfaces
-pre-existing bugs, and those belong to their own cards.
+findings, stop the fix loop and hand Sapir the remaining findings as one list,
+never dropped.
 
 ---
 
@@ -330,14 +311,11 @@ the same E2E run since 20/11 (MEH-1932); before that GitHub never created one. "
 right after a push = gates still registering; retry once. Re-measure any
 as-of claim here before acting on it.
 
-**Two CI modes (MEH-3453), decided per run.** Private = the repo is private
-or the repo variable `CI_MODE=private`; public otherwise. Public: every job on
-`ubuntu-latest`, E2E as above with 4 shards on a PR (2 on staging/nightly),
-pytest and vitest 3 shards each. Private: every job on `self-hosted` (Sapir's
-PC runner), E2E only on a `run-e2e` PR, the nightly and a manual run (no E2E
-on a push to staging), WebKit weekly (Sunday 02:30 UTC), pytest and vitest 1
-shard. In private mode a PR without `run-e2e` gets no E2E job and no
-`E2E gate` job at all — that is the mode, not a broken trigger.
+**Two CI modes (MEH-3453), decided per run** (private = private repo or
+`CI_MODE=private`). Private runs on Sapir's `self-hosted` runner, with E2E only
+on a `run-e2e` PR, the nightly and a manual run: a PR without the label gets no
+E2E job and no `E2E gate` at all — that is the mode, not a broken trigger.
+Shard counts and schedules: `.github/workflows/e2e.yml`.
 **WebKit core blocks (MEH-3153).** `e2e-webkit-core` runs the specs in
 `frontend/e2e/webkit-core.txt` in WebKit (iPhone 13) on every push to staging
 (public mode) and on every `run-e2e` PR (both modes). It is a leg of `E2E gate`

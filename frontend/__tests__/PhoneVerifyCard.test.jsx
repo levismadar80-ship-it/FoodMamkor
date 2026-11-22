@@ -157,6 +157,17 @@ describe("PhoneVerifyCard — initial state (code row hidden)", () => {
   });
 });
 
+// MEH-3659: inside the draft checklist row the step is already named.
+describe("PhoneVerifyCard variant=inline", () => {
+  it("renders no title, no explainer and no box — only the send button", () => {
+    const { container } = render(<PhoneVerifyCard variant="inline" />);
+    expect(screen.queryByText(T("title"))).toBeNull();
+    expect(screen.queryByText(T("description"))).toBeNull();
+    expect(container.firstChild.className).toBe("");
+    expect(screen.getByRole("button", { name: T("send_cta") })).toBeEnabled();
+  });
+});
+
 describe("PhoneVerifyCard — send (:42-58)", () => {
   it("success: POSTs the send endpoint with no body, reveals the code row, arms the 60 s cooldown", async () => {
     await sendOk();

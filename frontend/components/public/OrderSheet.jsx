@@ -3,7 +3,7 @@
 /**
  * Module:   OrderSheet
  * Purpose:  The order request itself, opened from the order bar: how she
- *           gets it, when, her name and phone (proved by a WhatsApp code), a
+ *           gets it, when, her name and phone (proved by a WhatsApp code, unless it is her verified account phone), a
  *           note, the price with the delivery fee, the disclosure lines, and
  *           «שליחת הבקשה». On success the page moves to the order's status
  *           page, its token in the hash.
@@ -12,7 +12,12 @@
  *           live in OrderSheetPhone.jsx.
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
- * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»)
+ * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
+ *           MEH-3658 ways and slots as buttons, the note behind a link, the
+ *           total on the send button, four disclosure lines down to two
+ *           MEH-3618 (slots only on days every picked product is made)
+ *           MEH-3640 what she typed survives closing the sheet, and a line
+ *           says why «שליחת הבקשה» waits for a city
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -22,13 +27,14 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
-import Select from "@/components/ui/Select";
-import Textarea from "@/components/ui/Textarea";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import OrderSheetDayConflict from "@/components/public/OrderSheetDayConflict";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
+import { NoteField, SlotChoice, WayChoice } from "@/components/public/OrderSheetChoices";
 import { useRouter } from "@/i18n/navigation";
+import { useOptionalAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
-import { dayLabel, hhmm, rangeEnds, shekelsText } from "@/lib/product-orders";
+import { dayLabel, hhmm, shekelsText } from "@/lib/product-orders";
 import {
   cancelDeadline,
   fulfilmentsOffered,
@@ -36,14 +42,35 @@ import {
   orderBody,
   quoteBody,
   quoteOrder,
+  sameIlPhone,
   sendOrder,
   slotsFor,
 } from "@/lib/order-sheet";
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
+import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
 
 const QUOTE_DELAY_MS = 400;
+
+// MEH-3640 (Nielsen #3, user control): closing the sheet used to throw away
+// her name, phone and address. Kept here, per business, for this page visit
+// only: memory, never storage, because it is personal data. The code, the
+// slot and the age box are not kept: each belongs to one attempt.
+const KEPT_FIELDS = /** @type {const} */ (["fulfilment", "city", "address", "name", "phone", "note"]);
+/** @type {Map<string, Record<string, string>>} */
+const drafts = new Map();
+
+/** Tests only: start every case from an empty sheet. */
+export function forgetOrderDrafts() {
+  drafts.clear();
+}
+
+/** @param {Record<string, any>} form */
+function keptPart(form) {
+  return Object.fromEntries(KEPT_FIELDS.map((k) => [k, form[k]]));
+}
 const CONFLICT = 409;
+const UNPROCESSABLE = 422;
 
 /**
  * @param {{
@@ -51,28 +78,54 @@ const CONFLICT = 409;
  *   menu: import("@/lib/order-cart").OrderMenu,
  *   picks: Record<string, number>,
  *   onStale?: () => void,
+ *   onChange?: (key: string, qty: number) => void,
  *   onClose: () => void,
  * }} props
  */
-export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onClose }) {
+export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onChange = () => {}, onClose }) {
   const t = useTranslations("producer.detail.order_sheet");
   const locale = useLocale();
   const router = useRouter();
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
   const hasAlcohol = Object.keys(picks).some((key) => byId.get(splitKey(key).productId)?.contains_alcohol);
-  const ways = fulfilmentsOffered(menu, hasAlcohol);
-  const [form, setForm] = useState(() => ({
-    fulfilment: ways[0] ?? "pickup",
-    slot: "",
-    city: "",
-    address: "",
-    name: "",
-    phone: "",
-    code: "",
-    note: "",
-    age: false,
-  }));
+  const ways = cartWays(fulfilmentsOffered(menu, hasAlcohol), { slotsOf: (w) => slotsFor(menu, w, hasAlcohol), picks, byId }); // MEH-3618
+  // MEH-3680: a signed-in buyer starts with her name, and her phone when it is
+  // verified; to that phone she orders without a code (the route agrees).
+  const me = /** @type {any} */ (useOptionalAuth())?.user ?? null;
+  const [form, setForm] = useState(() => {
+    const blank = {
+      fulfilment: ways[0] ?? "pickup",
+      slot: "",
+      city: "",
+      address: "",
+      name: me?.name ?? "",
+      phone: me?.phone_verified ? (me.phone ?? "") : "",
+      code: "",
+      note: "",
+      age: false,
+    };
+    const kept = drafts.get(producer.id);
+    // A kept fulfilment the menu no longer offers falls back to the first.
+    if (kept && !(/** @type {string[]} */ (ways)).includes(kept.fulfilment)) return { ...blank, ...kept, fulfilment: blank.fulfilment };
+    return { ...blank, ...kept };
+  });
+  useEffect(() => {
+    drafts.set(producer.id, keptPart(form));
+  }, [producer.id, form]);
   const [key] = useState(newOrderKey);
+  // MEH-3680 review: the server refused the codeless send (her phone changed
+  // elsewhere, or the hourly bound) — from here on she proves it with a code.
+  const [codeAsked, setCodeAsked] = useState(false);
+  const verified = !codeAsked && Boolean(me?.phone_verified) && sameIlPhone(form.phone, me?.phone);
+  // Auth can resolve after the sheet opened: fill what is still empty.
+  useEffect(() => {
+    if (!me) return;
+    setForm((old) => ({
+      ...old,
+      name: old.name || (me.name ?? ""),
+      phone: old.phone || (me.phone_verified ? (me.phone ?? "") : ""),
+    }));
+  }, [me]);
   // The quote together with the request it answers: a total is shown, and
   // «שליחת הבקשה» enabled, only when it answers what is on the form now — a
   // pickup total must never stand in for a delivery (fresh review of #4837).
@@ -85,9 +138,14 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   /** @param {Partial<typeof form>} change */
   const set = (change) => setForm((old) => ({ ...old, ...change }));
 
-  const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
-  const delivery = form.fulfilment === "delivery";
-  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
+  // MEH-3618: only days on which every picked product is made.
+  const fulfilment = ways.includes(form.fulfilment) ? form.fulfilment : (ways[0] ?? form.fulfilment); // MEH-3618: a way the cart lost
+  const { slots, limiting } = cartSlots(slotsFor(menu, fulfilment, hasAlcohol), picks, byId);
+  // MEH-3618: a picked slot the cart no longer allows is dropped. MEH-3658: a
+  // single slot is picked for her; with more she taps one.
+  const slot = slots.some((s) => s.start === form.slot) ? form.slot : slots.length === 1 ? slots[0].start : "";
+  const delivery = fulfilment === "delivery";
+  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
   useQuote(needsCity ? null : body, setAnswer, setQuoteError, onStale);
   const quote = answer && answer.body === body ? answer.quote : null;
@@ -98,39 +156,32 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, slotStart: form.slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, fulfilment, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, key }),
       );
+      drafts.delete(producer.id);
       router.push(href);
     } catch (err) {
       const res = /** @type {any} */ (err)?.response;
       setError(detailToMessage(res?.data?.detail) || t("failed"));
       if (res?.status === CONFLICT) onStale();
+      if (verified && res?.status === UNPROCESSABLE) setCodeAsked(true);
       setBusy(false);
     }
   };
 
-  const deadline = form.slot ? cancelDeadline(form.slot, menu.cancel_cutoff_hours) : null;
+  const deadline = slot ? cancelDeadline(slot, menu.cancel_cutoff_hours) : null;
   return (
     <Dialog onClose={onClose} labelledBy="order-sheet-title" size="lg" as="form" onSubmit={submit} closeOnBackdrop={false} testId="order-sheet">
       <h2 id="order-sheet-title" className="text-xl font-bold text-text mb-4">{t("title")}</h2>
       <Lines picks={picks} byId={byId} />
       <div className="space-y-4 mt-4">
-        {ways.length > 1 && (
-          <Select label={t("how")} value={form.fulfilment} onChange={(e) => set({ fulfilment: e.target.value, slot: "" })} data-testid="order-sheet-fulfilment">
-            {ways.map((w) => <option key={w} value={w}>{t(w)}</option>)}
-          </Select>
-        )}
-        {slots.length === 0 ? (
+        <WayChoice ways={ways} value={fulfilment} onChange={(way) => set({ fulfilment: /** @type {typeof form.fulfilment} */ (way), slot: "" })} />
+        {limiting ? (
+          <OrderSheetDayConflict product={limiting} onRemove={() => removeFromCart(limiting.id, { picks, onChange, onClose })} />
+        ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <Select label={t("when")} required value={form.slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
-            <option value="" disabled>{t("when_pick")}</option>
-            {slots.map((s) => (
-              <option key={s.start} value={s.start}>
-                {t("slot", { day: dayLabel(s.start, locale), ...rangeEnds(s.start, s.end) })}
-              </option>
-            ))}
-          </Select>
+          <SlotChoice key={fulfilment} slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
         )}
         {delivery && (
           <>
@@ -139,8 +190,8 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
           </>
         )}
         <Input label={t("name")} required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" data-testid="order-sheet-name" />
-        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} onChange={set} />
-        <Textarea label={t("note")} value={form.note} onChange={(e) => set({ note: e.target.value })} maxLength={500} rows={2} data-testid="order-sheet-note" />
+        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
+        <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
           <label className="flex items-start gap-2 text-sm text-text">
             <input type="checkbox" required checked={form.age} onChange={(e) => set({ age: e.target.checked })} data-testid="order-sheet-age" />
@@ -153,12 +204,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
       {quoteError && <InlineMessage tone="error" className="mt-3">{quoteError}</InlineMessage>}
       {error && <InlineMessage tone="error" className="mt-3">{error}</InlineMessage>}
       <div className="mt-5 flex gap-3">
-        <Button type="submit" disabled={busy || slots.length === 0 || !quote} data-testid="order-sheet-send" className="flex-1">
+        <Button type="submit" disabled={busy || !slot || !quote} data-testid="order-sheet-send" className="flex-1">
           {busy && <ButtonSpinner />}
-          {t("send")}
+          {sendLabel(quote, t)}
         </Button>
         <Button type="button" variant="outlined" onClick={onClose} data-autofocus="">{t("close")}</Button>
       </div>
+      {needsCity && slots.length > 0 && (
+        <p className="mt-2 text-sm text-fg-muted" data-testid="order-sheet-needs-city">{t("needs_city")}</p>
+      )}
     </Dialog>
   );
 }
@@ -206,35 +260,42 @@ function Lines({ picks, byId }) {
   );
 }
 
+/** «שליחת הבקשה · 56 ₪» once the server priced what is on the form (MEH-3658). */
+function sendLabel(quote, t) {
+  if (!quote) return t("send");
+  return t(quote.has_estimate ? "send_total_estimate" : "send_total", { total: shekelsText(quote.total_agorot) });
+}
+
 function Totals({ quote, delivery, t }) {
-  if (!quote) return null;
+  if (!quote || !delivery) return null;
   return (
-    <div className="mt-4 space-y-1 text-sm" role="status" data-testid="order-sheet-totals">
-      {delivery && <p className="text-fg-muted">{t("delivery_fee", { fee: shekelsText(quote.delivery_fee_agorot) })}</p>}
-      <p className="font-bold text-text">
-        {t(quote.has_estimate ? "total_estimate" : "total", { total: shekelsText(quote.total_agorot) })}
-      </p>
-    </div>
+    <p className="mt-4 text-sm text-fg-muted" role="status" data-testid="order-sheet-totals">
+      {t("delivery_fee", { fee: shekelsText(quote.delivery_fee_agorot) })}
+    </p>
   );
 }
 
 function Disclosures({ producer, menu, deadline, locale, t }) {
   const methods = producer?.payment_info?.methods ?? [];
+  const payment = usePaymentText(methods, t);
+  const cancel = deadline ? t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` }) : "";
+  // MEH-3658: payment and cancel share one line; the seller and «not a party»
+  // share the other. Both are what distance selling asks for (MEH-3216) —
+  // shorter wording, nothing hidden behind a tap.
+  const terms = [payment, cancel].filter(Boolean).join(" ");
   return (
     <div className="mt-4 space-y-1 text-xs text-fg-muted" data-testid="order-sheet-disclosures">
+      {terms && <p data-testid="order-sheet-terms">{terms}</p>}
       {/* MEH-3216: the seller's identity before the order, as distance selling requires.
           The city only: the street address stays private (MEH-829). */}
       <p data-testid="order-sheet-seller">
         {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })}
       </p>
-      {methods.length > 0 && <PaymentLine methods={methods} t={t} />}
-      {deadline && <p>{t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` })}</p>}
-      <p>{t("platform_line")}</p>
     </div>
   );
 }
 
-function PaymentLine({ methods, t }) {
+function usePaymentText(methods, t) {
   const tm = useTranslations("whatsapp.question_chips.payment_methods");
-  return <p>{t("payment_line", { methods: methods.map((m) => tm(m)).join(", ") })}</p>;
+  return methods.length > 0 ? t("payment_line", { methods: methods.map((m) => tm(m)).join(", ") }) : "";
 }

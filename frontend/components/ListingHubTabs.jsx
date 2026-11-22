@@ -53,12 +53,16 @@ export const HUB_TABS = Object.freeze([
  * @param {string}   props.active    one of HUB_TABS[].value — the route showing
  * @param {function} [props.onSelect] called instead of navigating, for a tab
  *   whose route is the SAME client as the current one (`local`)
+ * @param {{ groupBuys?: number | null, rescue?: number | null }} [props.serverSupply]
+ *   MEH-3076: the gated hubs' item counts as the page's server read them. A
+ *   number decides that tab before the first paint (null / absent = unknown,
+ *   the client gate decides after paint as before).
  * @param {React.ReactNode} [props.action] the page's own trailing affordance
  *   (e.g. «הוסיפו אירוע»). One element: it sits beside the tabs from md and
  *   wraps below them when the row runs out of width, rather than being a
  *   second copy per breakpoint (frontend.md § One control, one element).
  */
-export default function ListingHubTabs({ active, onSelect = null, action = null }) {
+export default function ListingHubTabs({ active, onSelect = null, action = null, serverSupply = null }) {
   const t = useTranslations("events.list");
   // Each gate owns one endpoint and fails closed, so an unreachable backend
   // hides the tab rather than offering an empty shelf.
@@ -76,14 +80,22 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
   // «אירועים» nav entry, «קבוצות רכישה · סלי הפתעה» under «הזדמנויות». The
   // other group is one nav tap away, not a tab in this row.
   const group = hubGroupOf(active);
+  const serverHas = (gate) => typeof serverSupply?.[gate] === "number" && serverSupply[gate] > 0;
   const tabs = HUB_TABS.filter(
-    (tab) => tab.group === group && (!tab.gate || gates[tab.gate] || tab.value === active),
+    (tab) => tab.group === group && (!tab.gate || gates[tab.gate] || serverHas(tab.gate) || tab.value === active),
   );
-  // The row is drawn even with a single tab. Hiding it was tried and
-  // reverted in review (MEH-3125): the gates start false on the server and in
-  // the first client render, so a hidden row would mount AFTER paint on every
-  // visit with supply and push the list down (CLS). Only a tab is added
-  // inside an existing row, as before (MEH-3049).
+  // With an unknown supply the row is drawn even with a single tab. Hiding it
+  // then was tried and reverted in review (MEH-3125): the client gates start
+  // false on the server and in the first render, so a hidden row would mount
+  // AFTER paint on every visit with supply and push the list down (CLS).
+  // MEH-3076 (Sapir 21/11, «להחליט בשרת»): when the page's server read every
+  // other gated tab of this group, the row is decided before the first paint,
+  // so a lone tab is not drawn at all. The tab marks nothing a reader can
+  // switch to; the page's own H1 already says where she is.
+  const serverDecided = HUB_TABS.every(
+    (tab) => tab.group !== group || !tab.gate || tab.value === active || typeof serverSupply?.[tab.gate] === "number",
+  );
+  const loneTabDecided = tabs.length === 1 && serverDecided && !action;
 
   const isLocal = (tab) => Boolean(onSelect) && tab.local;
 
@@ -103,6 +115,8 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
     const tab = HUB_TABS.find((candidate) => candidate.value === value);
     if (tab && isLocal(tab)) onSelect(value);
   });
+
+  if (loneTabDecided) return null; // after every hook (rules-of-hooks)
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-4" data-testid="listing-hub-tabs">

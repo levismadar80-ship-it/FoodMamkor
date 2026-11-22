@@ -40,13 +40,5 @@ When editing any existing file (code, docs, config):
    line and explain what it was misread as — a different edit from the
    one requested, and it needs to be named as such.
 
-   _Source: MEH-1801 (2026-07-31) — the card asked to correct docs
-   describing `AGENTS.md` as a separate file needing a mirrored edit.
-   `grep -rniE "agents\.md"` found no such doc: `CHANGELOG.md:3832` and
-   `HANDOFF.md:2288/2318/7489` all already said symlink, one of them
-   spelling out "no second edit". The wrong claim was in the session's own
-   conversation. What shipped instead was a sharpening of `CLAUDE.md:24`,
-   whose "mirrors this file" is what got misread as "a synced copy"._
-
-Precedent: MEH-261/262 collision (24 Apr) — two sessions edited CLAUDE.md
-in parallel without checking for conflicts. Both succeeded by luck.
+   _Source: MEH-1801 — the "wrong doc" was right; the wrong claim was in
+   the session's own conversation._

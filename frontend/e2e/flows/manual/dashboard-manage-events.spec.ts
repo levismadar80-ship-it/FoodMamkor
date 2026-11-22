@@ -157,10 +157,12 @@ test.describe("my events", () => {
   const A = () => eventRow({});
   const B = () => eventRow({ id: EV_B, title: "סדנת מחמצת", category: "tasting", is_active: false });
 
-  // MT:MEH-1405:1 — reachable from the tools card; cancelled events stay listed, tagged.
+  // MT:MEH-1405:1 — reachable from the tools card («אירועים», MEH-3669); cancelled events stay listed, tagged.
   test("the tools card leads to «האירועים שלי», and the list shows active and cancelled events with their tags", async ({ page }) => {
     await stubManage(page, [A(), B()], []);
     await page.goto("/producer/dashboard/tools");
+    // MEH-3669: «האירועים שלי» sits inside the «אירועים» card, which opens in place.
+    await page.getByTestId("tool-group-events").getByRole("button").click();
     await page.getByRole("link", { name: /האירועים שלי/ }).click();
     await expect(page).toHaveURL(/\/producer\/dashboard\/events$/);
     await expect(page.getByRole("heading", { level: 1, name: "האירועים שלי" })).toBeVisible();

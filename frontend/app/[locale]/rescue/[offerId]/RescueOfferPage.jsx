@@ -3,13 +3,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Basket, Clock } from "@phosphor-icons/react";
+import { Basket } from "@phosphor-icons/react";
 
 import { Link } from "@/i18n/navigation";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EntityCover from "@/components/EntityCover";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerRow from "@/components/OwnerRow";
+import PickupLine from "@/components/offer-detail/PickupLine"; // MEH-3610
 import ShareButton from "@/components/ShareButton";
 import RatingCompact from "@/components/ui/RatingCompact";
 import EmptyState from "@/components/ui/EmptyState";
@@ -31,7 +32,8 @@ import RescueOfferDetails from "./RescueOfferDetails";
  *           same hook the business page's bag block uses.
  * Related:  ./RescueOfferAction.jsx, ./RescueOfferDetails.jsx,
  *           backend/app/routers/rescue.py get_offer
- * History:  MEH-3586 (creation)
+ * History:  MEH-3586 (creation) · MEH-3610 (pickup line = shared
+ *           components/offer-detail/PickupLine, the group buy's line)
  *
  * @param {{ offerId: string }} props
  */
@@ -123,11 +125,12 @@ export default function RescueOfferPage({ offerId }) {
           {/* TGTG puts the pickup window right under the name: it is the
               first thing a buyer decides on, and on a phone the «where»
               section starts below the fold. */}
-          <p className="flex items-center gap-1.5 text-base text-text mb-4" data-testid="rescue-offer-pickup">
-            <Clock aria-hidden="true" size={18} className="text-primary shrink-0" />
-            <b className="font-semibold">{t("offer_page.pickup_title")}</b>
-            <span className="numeric">{israelTime(offer.pickup_start)}–{israelTime(offer.pickup_end)}</span>
-          </p>
+          <PickupLine
+            label={t("offer_page.pickup_title")}
+            text={`${israelTime(offer.pickup_start)}–${israelTime(offer.pickup_end)}`}
+            testId="rescue-offer-pickup"
+            className="mb-4"
+          />
           <OwnerRow href={businessHref} name={producer.name} logoUrl={producer.logo_url} testId="rescue-offer-business">
             <span className="block font-semibold">{t("offer_page.business_link", { name: producer.name })}</span>
             {/* The business's own one-liner (Wolt's «about the venue» line): who packs the bag. */}

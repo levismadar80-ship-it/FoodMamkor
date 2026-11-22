@@ -11,7 +11,7 @@ describe("isUnverifiedEmailError (MEH-1164 B)", () => {
   it("matches the structured {code, message} 403 detail", () => {
     expect(
       isUnverifiedEmailError(
-        err(403, { code: EMAIL_UNVERIFIED_CODE, message: "יש לאמת את כתובת האימייל תחילה" })
+        err(403, { code: EMAIL_UNVERIFIED_CODE, message: "יש לאמת את כתובת המייל תחילה" })
       )
     ).toBe(true);
   });
@@ -21,7 +21,7 @@ describe("isUnverifiedEmailError (MEH-1164 B)", () => {
   });
 
   it("falls back to the legacy bare Hebrew string detail", () => {
-    expect(isUnverifiedEmailError(err(403, "יש לאמת את כתובת האימייל תחילה"))).toBe(true);
+    expect(isUnverifiedEmailError(err(403, "יש לאמת את כתובת המייל תחילה"))).toBe(true);
   });
 
   it("is false for a different 403 (role error)", () => {

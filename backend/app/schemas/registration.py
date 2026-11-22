@@ -33,6 +33,7 @@ from app.schemas.schemas import (
     EMAIL_MAX_LENGTH,
     PhoneNumberField,
     SanitizedBusinessNameField,
+    SanitizedImportedNameField,
     SanitizedPersonNameField,
     _cap_categories_validator,
     _contact_method_validator,
@@ -462,7 +463,8 @@ class GoogleAuthRequest(BaseModel):
 
 class AppleAuthRequest(BaseModel):
     id_token: str
-    name: SanitizedPersonNameField | None = None  # Apple sends it once
+    # MEH-3671: emoji dropped, not refused — the person cannot edit this name.
+    name: SanitizedImportedNameField | None = None  # Apple sends it once
     terms_accepted: bool = False  # MEH-2080 chunk 2, as GoogleAuthRequest
 
 
@@ -473,7 +475,8 @@ class AppleAuthRequest(BaseModel):
 class ProducerOAuthSignupRequest(BaseModel):
     provider: str = Field(pattern="^(google|apple)$")
     id_token: str
-    name: SanitizedPersonNameField | None = None  # Apple sends it once
+    # MEH-3671: emoji dropped, not refused — the person cannot edit this name.
+    name: SanitizedImportedNameField | None = None  # Apple sends it once
 
 
 class LoginRequest(BaseModel):

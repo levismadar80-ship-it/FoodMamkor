@@ -149,10 +149,16 @@ export default function AdminProducersToolbar({
       <Button onClick={() => onSearch()} variant="primary" size="sm">
         {t("common.search")}
       </Button>
-      <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
-      <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
-      <StaleToggle active={staleOnly} onToggle={setStaleOnly} />
-      <ToolbarActions onExport={onExport} />
+      {/* MEH-3076: on a phone the three filters and the two actions wrap in
+          rows of chips instead of stacking five full-width bars above the
+          table. `md:contents` drops the wrapper from md up, so the desktop
+          row is unchanged. */}
+      <div className="flex flex-wrap gap-2 md:contents" data-testid="admin-producers-toolbar-chips">
+        <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
+        <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
+        <StaleToggle active={staleOnly} onToggle={setStaleOnly} />
+        <ToolbarActions onExport={onExport} />
+      </div>
     </div>
   );
 }

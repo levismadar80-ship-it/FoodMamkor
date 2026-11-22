@@ -22,7 +22,8 @@
  *           Phosphor icons + action-noun titles); MEH-1357 (removed the
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
  *           in the dashboard shell nav; reviews card marked candidate-to-move);
- *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only).
+ *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
+ *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -32,7 +33,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, GoogleLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -41,11 +42,21 @@ import BusinessQrCard from "@/components/producer/BusinessQrCard";
 import ShareKitSection from "@/components/producer/ShareKitSection";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import NewToolPill from "@/components/producer/NewToolPill";
+import ToolGroupCard from "@/components/producer/ToolGroupCard";
+
+// MEH-3669: one look for every group heading and grid on the tab; the
+// «שיתוף» heading below already used this h2.
+const H2 = "font-headline-md text-lg font-bold text-text mb-4";
+const GRID = "grid grid-cols-1 md:grid-cols-3 gap-4";
+const CARD = "bg-surface border border-border rounded-lg p-5 hover:border-primary transition";
 
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
   const tShare = useTranslations("share");
+  const tNav = useTranslations("nav");
+  // MEH-3669: «קבוצת רכישה» already lives here; reuse it (messages-hygiene-guard).
+  const tType = useTranslations("home.whats_on.type");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-1777: a rejected fetch used to leave `data` null forever, and
@@ -137,6 +148,7 @@ export default function ProducerDashboardToolsPage() {
   // the tile, before the owner opens them. The tile stays a link so the
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
+  const rescueOn = rescueBagsEnabled();
   const lockedLine = producer.status === "pending" && (
     <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
       {t("quick_links.locked_until_approved")}
@@ -149,90 +161,85 @@ export default function ProducerDashboardToolsPage() {
           a screen reader landed on a page with no heading. The visible text is
           the existing nav label — no new copy. */}
       <h1 className="font-headline-lg text-xl font-bold text-text mb-6">{t("nav.tools")}</h1>
-      {/* Quick links. MEH-1102: the עריכת פרופיל card was removed — after
-          MEH-1095 it targeted /producer/dashboard/edit, duplicating the
-          עריכה nav tab one row above. */}
-      <div data-testid="tools-grid" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* MEH-1405: card now opens the manage list (create is reachable there). */}
-        <Link
-          href="/producer/dashboard/events"
-          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-        >
-          <CalendarPlus size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}<NewToolPill href="/producer/dashboard/events" /></p>
-          <p className="text-sm text-fg-muted">{t("quick_links.manage_events.sub")}</p>
-        </Link>
-        {/* MEH-1405: manage own experiences (list + edit + delete). */}
-        <Link
-          href="/producer/dashboard/experiences"
-          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-        >
-          <Sparkle size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}<NewToolPill href="/producer/dashboard/experiences" /></p>
-          <p className="text-sm text-fg-muted">{t("quick_links.manage_experiences.sub")}</p>
-        </Link>
-        {/* MEH-1357: the "הצגת העסק באתר" card was removed here — it duplicated
-            the persistent "צפייה בדף" link now in the dashboard shell nav
-            (layout.js). Verdict Sapir 18/07 (MEH-999 dogfood). */}
-        <Link
-          href="/producer/dashboard/group-buys"
-          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-        >
-          <UsersThree size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}<NewToolPill href="/producer/dashboard/group-buys" /></p>
-          <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
-          {lockedLine}
-        </Link>
-        {/* MEH-2649: the rescue-bags counter tool. The tile is flag-gated so
-            the dashboard is unchanged until the pilot is switched on — the
-            route itself 404s as well, this just avoids a dead link. */}
-        {rescueBagsEnabled() && (
-          <Link
-            href="/producer/dashboard/rescue"
-            data-testid="tools-rescue-tile"
-            className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-          >
-            <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
-            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}<NewToolPill href="/producer/dashboard/rescue" /></p>
-            <p className="text-sm text-fg-muted">{t("quick_links.rescue.sub")}</p>
-            {lockedLine}
-          </Link>
-        )}
-        {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
-        <Link
-          href="/producer/dashboard/recipes"
-          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-        >
-          <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
-          <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
-        </Link>
-        {/* MEH-3107: the tile now opens the dashboard's own reviews page
-            (unanswered first, reply in place) — MEH-1416's internal reply
-            surface. Before that:
-            MEH-1165 item 2: direct route to the public-page reviews section
-            (id="reviews", ProducerSections.jsx:320) — the reply UI lives there
-            and previously took 3+ taps via "הצגת העסק" + scroll.
-            MEH-1357: candidate-to-move per Sapir's 18/07 verdict — documented
-            only, no change now (full object-nav split is MEH-964 Phase 2). */}
-        {/* MEH-2784: an unapproved business has no public page yet
-            (producers.py:473 → 404), so the tile is hidden until approval,
-            the same rule as RequestReviewCard below. */}
+      {/* MEH-3669: grouped by what the owner came to do (Shopify / Open Food
+          Network pattern; research in the card). The four offer tiles are two
+          cards now, «אירועים» and «הזדמנויות» — the split the bottom nav shows
+          customers. The hrefs stay written here so DashboardPlacementGuard
+          still counts tab + row = 2 taps.
+          Earlier: MEH-1102 removed the עריכת פרופיל card (duplicate of the
+          עריכה tab); MEH-1357 the «הצגת העסק באתר» card (duplicate of the
+          shell's «צפייה בדף»); MEH-1405 the cards open the manage lists. */}
+      <div data-testid="tools-grid">
+        <section data-testid="tools-group-offer">
+          <h2 className={H2}>{t("quick_links.groups.offer_heading")}</h2>
+          <div className={GRID}>
+            <ToolGroupCard
+              testId="tool-group-events"
+              Icon={CalendarPlus}
+              title={tNav("events")}
+              sub={t("quick_links.groups.events_sub")}
+              items={[
+                { href: "/producer/dashboard/events", title: t("quick_links.manage_events.title"), sub: t("quick_links.manage_events.sub") },
+                { href: "/producer/dashboard/experiences", title: t("quick_links.manage_experiences.title"), sub: t("quick_links.manage_experiences.sub") },
+              ]}
+            />
+            {/* MEH-2649: bags are flag-gated — the route 404s while the pilot
+                is off, so the row would be a dead link. With bags off the
+                group holds one tool and the card links straight to it. */}
+            <ToolGroupCard
+              testId="tool-group-opportunities"
+              Icon={UsersThree}
+              title={tNav("opportunities")}
+              sub={rescueOn ? t("quick_links.groups.opportunities_sub") : tType("group_buy")}
+              items={[
+                { href: "/producer/dashboard/group-buys", title: t("quick_links.group_buys.title"), sub: t("quick_links.group_buys.sub") },
+                ...(rescueOn
+                  ? [{ href: "/producer/dashboard/rescue", title: t("quick_links.rescue.title"), sub: t("quick_links.rescue.sub") }]
+                  : []),
+              ]}
+              footer={lockedLine}
+            />
+          </div>
+        </section>
+        {/* MEH-2784 / MEH-1428: an unapproved business has no public page yet
+            (producers.py:473 → 404) and the review-request endpoint 403s, so
+            the whole group waits for approval. MEH-3107: the tile opens the
+            dashboard's own reviews page. */}
         {approved && (
-        <Link
-          href="/producer/dashboard/reviews"
-          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
-        >
-          <Star size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}<NewToolPill href="/producer/dashboard/reviews" /></p>
-          <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
-        </Link>
+          <section data-testid="tools-group-reviews" className="mt-8">
+            <h2 className={H2}>{t("quick_links.groups.reviews_heading")}</h2>
+            <div className={GRID}>
+              <Link href="/producer/dashboard/reviews" className={CARD}>
+                <Star size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}<NewToolPill href="/producer/dashboard/reviews" /></p>
+                <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
+              </Link>
+            </div>
+            <RequestReviewCard />
+          </section>
         )}
+        {/* MEH-590: producer recipes. MEH-3641: «הפרופיל שלכם בגוגל» sits here
+            too — every status (a pending business can prepare its Google
+            profile), never an organizer (the server 404s an organizer); the
+            reviews group waits for approval, so it cannot hold this tile. */}
+        <section data-testid="tools-group-content" className="mt-8">
+          <h2 className={H2}>{t("quick_links.groups.content_heading")}</h2>
+          <div className={GRID}>
+            <Link href="/producer/dashboard/recipes" className={CARD}>
+              <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
+              <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
+              <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
+            </Link>
+            {profile?.kind !== "organizer" && (
+              <Link href="/producer/dashboard/google-profile" data-testid="tools-google-profile-tile" className={CARD}>
+                <GoogleLogo size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.google_profile.title")}<NewToolPill href="/producer/dashboard/google-profile" /></p>
+                <p className="text-sm text-fg-muted">{t("quick_links.google_profile.sub")}</p>
+              </Link>
+            )}
+          </div>
+        </section>
       </div>
-      {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the
-          endpoint 403s for any other status, and a pending business's public
-          page does not exist yet, so the link would open a 404. */}
-      {producer.status === "approved" && <RequestReviewCard />}
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): sharing materials that are
           made once or now and then — the printable QR card (→ /qr-card) and
@@ -252,7 +259,7 @@ export default function ProducerDashboardToolsPage() {
         // scroll-mt clears the sticky header AND the sticky dashboard tab bar
         // (DashboardLayoutClient: top-[var(--chrome-top)]).
         <section id="share" data-testid="tools-share-section" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)+4rem)]">
-          <h2 className="font-headline-md text-lg font-bold text-text mb-4">{tShare("quiet_label")}</h2>
+          <h2 className={H2}>{tShare("quiet_label")}</h2>
           <BusinessQrCard
             producer={profile}
             isComplete={producerCompleteness(profile).missing.length === 0}

@@ -7,7 +7,7 @@ The handler (backend/app/routers/auth.py, ``resend_verify``) is:
 - rate-limited ``3/hour`` per client IP (``@limiter.limit("3/hour")``);
 - for an unverified user: rotates ``email_verify_token`` (24 h expiry) and
   sends ONE verify email to ``user.email`` carrying that token;
-- for an already-verified user: answers 200 "האימייל כבר מאומת" and sends
+- for an already-verified user: answers 200 "המייל כבר מאומת" and sends
   nothing.
 
 The send layer is recorded by replacing the router's alias
@@ -31,8 +31,8 @@ from app.utils.clock import utc_now
 from conftest import auth_header, make_user
 
 URL = "/auth/resend-verify"
-SENT_DETAIL = "אימייל אימות נשלח"
-ALREADY_VERIFIED_DETAIL = "האימייל כבר מאומת"
+SENT_DETAIL = "מייל אימות נשלח"
+ALREADY_VERIFIED_DETAIL = "המייל כבר מאומת"
 
 
 @pytest.fixture

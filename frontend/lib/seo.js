@@ -36,6 +36,7 @@ import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
 import { siteOgImageUrl } from "@/lib/og-site-image";
+import { toE164Phone } from "./utils";
 import { variantsOf } from "@/lib/product-variants";  // MEH-3617
 export { SITE_URL };
 
@@ -62,6 +63,17 @@ function producerSeoT(locale) {
   return SEO_T[loc];
 }
 const countryLabel = (locale) => producerSeoT(locale)("country");
+// MEH-3076: the business's first category in the page's language, for the
+// <title> and meta description (category_names.<slug>; the DB name when the
+// slug has no entry). The DB category names now DO have message keys, so the
+// HOT-006 note above no longer holds for them. JSON-LD keeps the DB name in
+// its own fields; its `name` follows buildTitle like the page title does.
+function localCategory(producer, locale) {
+  const first = producer?.categories?.[0];
+  const name = first?.name || "";
+  const names = (SEO_MESSAGES[locale] ?? SEO_MESSAGES.he).category_names ?? {};
+  return first?.slug && Object.hasOwn(names, first.slug) ? names[first.slug] : name;
+}
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
 
 // MEH-3035: English names for schema.org paymentAccepted (a language-neutral
@@ -113,7 +125,7 @@ export function serializeJsonLd(obj) {
 export function buildTitle(producer, locale = "he") {
   if (!producer?.name) return brandFor(locale);
 
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`title_${shape}`, { name: producer.name, category, city, brand: brandFor(locale) });
@@ -144,7 +156,7 @@ export function buildDescription(producer, locale = "he") {
   if (text) {
     return text.length > 160 ? text.slice(0, 157) + "..." : text;
   }
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`description_${shape}`, { name: producer.name, category, city });
@@ -470,6 +482,16 @@ export function buildJsonLd(producer, locale = "he") {
     )];
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
   }
+  // MEH-3638: Google requires `address` on a LocalBusiness. A delivery-only
+  // business still has a home city (shown on its page), so it gets the city
+  // and country — never a street, which it does not publish.
+  if (isDeliveryOnly && city) {
+    business.address = {
+      "@type": "PostalAddress",
+      addressLocality: city,
+      addressCountry: "IL",
+    };
+  }
   // MEH-3348: a business WITH a location that also delivers serves more than
   // its own city. Same two sources as the delivery-only arm above; the address
   // stays. Nothing is emitted when it does not deliver.
@@ -492,7 +514,7 @@ export function buildJsonLd(producer, locale = "he") {
     };
   }
 
-  if (producer.phone) business.telephone = producer.phone;
+  if (producer.phone) business.telephone = toE164Phone(producer.phone); // MEH-3638
 
   if (producer.website) {
     // HOT-017 (MEH-782): the old `startsWith("http")` check let a typo that
@@ -657,7 +679,7 @@ export function buildOrganizationNode() {
 
 /**
  * MEH-2851: the single WebSite node, shared by producer pages (buildJsonLd)
- * and the homepage (buildHomeJsonLd, which adds its SearchAction on top) —
+ * and the homepage (buildHomeJsonLd) —
  * the same one-owner shape as buildOrganizationNode (MEH-2192), so a field
  * cannot land on one surface and miss the other.
  *
@@ -680,30 +702,23 @@ function buildWebSiteNode(locale = "he") {
 
 /**
  * MEH-804: homepage site-level JSON-LD. Emits the Organization + WebSite
- * graph (the homepage previously carried no structured data at all) plus a
- * WebSite SearchAction so Google can surface the sitelinks search box keyed
- * to the site root. Shares the `#organization` / `#website` @ids with
+ * graph (the homepage previously carried no structured data at all). The
+ * SearchAction it used to add was removed in MEH-3638 (Google retired the
+ * sitelinks search box). Shares the `#organization` / `#website` @ids with
  * buildJsonLd() (seo.js:297-315) so the cross-page entity graph stays
  * consistent. Standalone — the homepage has no producer FoodEstablishment to
- * describe. SearchAction target uses /producers?q= — the one results page since
- * MEH-819 (ProducersClient.jsx reads `q`; /search 308s there).
+ * describe.
  */
 export function buildHomeJsonLd(locale = "he") {
   // MEH-2192: was a second, hand-written copy of the same node. Now the one
   // builder, so the two surfaces cannot describe the entity differently.
   const organization = buildOrganizationNode();
 
-  const webSite = {
-    ...buildWebSiteNode(locale),
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/producers?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
-  };
+  // MEH-3638: no SearchAction. Google retired the sitelinks search box on
+  // 21/11/2024 (developers.google.com/search/blog/2024/10/sitelinks-search-box);
+  // the markup did nothing since. The WebSite node stays — Google reads the
+  // site name from it.
+  const webSite = buildWebSiteNode(locale);
 
   return {
     "@context": "https://schema.org",

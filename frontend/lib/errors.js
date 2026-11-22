@@ -45,7 +45,7 @@ export const EMAIL_UNVERIFIED_CODE = "email_unverified";
 // Transition fallback: before the code field existed the detail was this bare
 // Hebrew string. Matching it too keeps detection working against any endpoint
 // or cached client that still emits the old shape.
-const EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת האימייל תחילה";
+const EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת המייל תחילה";
 
 /**
  * True when an axios-shaped error is the verified-email 403 gate.

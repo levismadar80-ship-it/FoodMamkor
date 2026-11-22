@@ -25,7 +25,7 @@ from app.auth import create_access_token, generate_fingerprint, hash_fingerprint
 from app.config import settings
 from app.models import User
 
-VERIFIED_DETAIL = "האימייל אומת בהצלחה"
+VERIFIED_DETAIL = "המייל אומת בהצלחה"
 SIGNUP_MARKER = "signup_marker"
 _MARKER_MAX_AGE = 24 * 3600  # the verify token's own lifetime
 

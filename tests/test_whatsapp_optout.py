@@ -26,7 +26,12 @@ from app.utils.phone import canonical_il_msisdn
 
 FAKE_APP_SECRET = "meh1339-test-secret-not-for-prod"
 FAKE_VERIFY_TOKEN = "meh1339-test-verify-token"
-CONFIRMATION = "העדכונים בוואטסאפ הופסקו. אפשר להפעיל אותם מחדש בעמוד המועדפים באתר."
+# MEH-3640: the approved wording, now that «הסר» stops every template.
+CONFIRMATION = (
+    "הפסקנו לשלוח לכם הודעות בוואטסאפ, חוץ מקודי אימות שתבקשו. "
+    "כדי לקבל שוב הודעות, שלחו לנו כאן כל הודעה. "
+    "את העדכונים מבתי עסק ששמרתם מפעילים מחדש בעמוד המועדפים."
+)
 
 
 # ============================================================

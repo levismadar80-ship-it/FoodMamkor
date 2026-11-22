@@ -22,7 +22,7 @@ This page links to those and does not repeat their numbers.
    │  sign-in                      ▼            ├─▶ Resend      (email)
    └──────────▶ Google / Apple   Postgres       ├─▶ WhatsApp Cloud API (Meta)
                                  (Railway)      ├─▶ Cloudinary  (signed upload, delete)
-                                                └─▶ Google Places (rating)
+                                                └─▶ Google Places (rating, owner's profile tool)
                     WhatsApp ──webhook──▶ backend (delivery receipts, opt-out)
 ```
 
@@ -32,7 +32,7 @@ This page links to those and does not repeat their numbers.
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
 | Outbox worker (MEH-3535) | `python -u -m app.worker`, a second Railway service from the same image (`railway.worker.json`). Every 30 s it sends the due rows of `email_outbox`, and every 2 minutes runs the on-site order tick. Owns them only once the web service has `OUTBOX_EXTERNAL_WORKER=true`; until then the web scheduler runs both (one minute / two minutes). Two dispatchers at once are safe: rows are taken with `SKIP LOCKED`. Watched by the web's overdue-job check (MEH-3332), which adds the worker's two slugs once the flag is true, so a dead worker emails the admin. | Railway · `backend/app/worker.py` |
-| Scheduler | APScheduler threads inside the backend process (the outbox ticks only while `OUTBOX_EXTERNAL_WORKER` is false): onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, the daily group-buy pickup reminder (17:00 Israel, MEH-3610), monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). Every job with its exact schedule: [JOBS.md](./JOBS.md), generated from the code. | `backend/app/startup.py` |
+| Scheduler | APScheduler threads inside the backend process (the outbox ticks only while `OUTBOX_EXTERNAL_WORKER` is false): onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, the daily group-buy pickup reminder (17:00 Israel, MEH-3610), monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) the Sunday stale-pages admin digest and the Sunday signup fill-rate check (a Sentry warning, MEH-3699), watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). Every job with its exact schedule: [JOBS.md](./JOBS.md), generated from the code. | `backend/app/startup.py` |
 | CI | GitHub Actions: the two required gates, E2E, uptime probe (site, API and the Google Places key, every 30 minutes), backup-restore check, weekly placeholder-search check (opens an issue when a search placeholder returns nothing). Two modes per run (MEH-3453): public repo → GitHub-hosted `ubuntu-latest`; private repo or repo variable `CI_MODE=private` → one `self-hosted` runner on Sapir's PC, with E2E only on `run-e2e` PRs + nightly and 1 test shard. | `.github/workflows/` |
 
 ## What talks to what
@@ -53,6 +53,7 @@ This page links to those and does not repeat their numbers.
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
 | Backend | Google Places | a business's Google rating | the rating line disappears |
+| Backend | Google Places | the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): search, link check, live comparison; only the place_id is stored; 10/hour per route | the tool says «לא זמין» (503); nothing else depends on it |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
 | Grafana Cloud k6, or a GitHub runner (`.github/workflows/load-test.yml`, manual only, MEH-3564) | Staging backend | k6 load test (`scripts/load-test.js`); results kept in Grafana Cloud when `K6_CLOUD_TOKEN` is set | the run goes red; nothing else depends on it. Refuses any URL but the staging backend |
 | Scheduled Claude Code task «בדיקת בריאות שבועית לריפו» (Thursday 09:00 Israel, MEH-3615) | GitHub (read the repo) · Linear (cards) · Sapir (one Hebrew report) | runs `scripts/health/weekly-repo-health.sh`: orphan folders, due `Re-check:` dates, Python dead code, knip totals, expiry dates; one card per new finding | no report that week; nothing in the product depends on it |
@@ -78,13 +79,14 @@ This page links to those and does not repeat their numbers.
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |
-| Product analytics | PostHog (EU), Clarity | consent-gated, no account data |
-| Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`) |
+| Product analytics | PostHog (EU), Clarity | consent-gated, no account data. Sign-in funnel events since MEH-3661: `login_prompt_shown`, `login_prompt_action`, `consumer_signup_submitted` (reason / method only) |
+| Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`). Also the Sunday signup fill-rate warning (`services/signup_fill_digest.py`, MEH-3699): a `warning` tagged `signup_fill_zero` only when a share is 0%, read by Claude's daily morning round instead of an email to the admin |
 | Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails; outside production only, a WhatsApp send the guard dropped is kept with its content (`blocked_nonprod`, /admin/whatsapp/blocked) |
 | Backups | Railway volume + the backup job (each run reports to Sentry: a Crons check-in to `production-db-backup`, and an error event on failure, MEH-3533) | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)); a copy restored anywhere but production has its personal details replaced by `scripts/anonymize_restored_db.sql` (MEH-3406) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
 | Answers to client-side reads made through `frontend/lib/use-api.js` (MEH-3536; SWR) | browser tab memory | one cache per tab, gone on reload; reads that depend on the signed-in account (`useUserApi`) are keyed by the user id, so the next account in the same tab never reads the previous one's entries. A logout does not empty it: the previous account's entries stay in memory, unread, until the tab reloads |
 | Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
+| The page a customer signed up from by email (MEH-3661) | browser `localStorage`, `post_auth_return`: an internal path and when it was stored | 24 hours (the verify link's own life); read by /verify-email to send her back, then cleared; only paths `isReturnablePath` allows (no auth screens, no token flows) |
 | Whether the account menus show «ההזמנות שלי» (MEH-3525) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored |
 
 ## What gives first under load
@@ -116,6 +118,9 @@ inventory.
    with its open list and the counts (MEH-2233). Each visit still makes one
    quiet client refresh after the page paints, so the backend load per visit
    is unchanged; only the first paint stops waiting for it.
+   `/map` is prerendered per locale since MEH-3628 and regenerated hourly
+   (its sr-only index reads `/producers`; the pins load in the browser). A
+   failed regeneration keeps the last good page.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
    offline. Nobody is told unless they look at Sentry.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,

@@ -39,6 +39,7 @@ export const HELP_TOPICS = [
   { id: "content", group: "more", href: "/admin/content", list: "ol" },
   { id: "outreach", group: "more", href: "/admin/outreach", list: "ol" },
   { id: "audit_log", group: "more", href: "/admin/audit-log", list: "ul" },
+  { id: "copy", group: "more", href: "/admin/copy", list: "ul" },
   { id: "settings", group: "more", href: "/admin/settings", list: "ul" },
   { id: "analytics", group: "more", href: "/admin/analytics", list: "ul" },
   { id: "billing", group: "more", href: "/admin/billing", list: "ul" },
