@@ -13,11 +13,7 @@ import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import { useAuth } from "@/lib/auth-context";
-import {
-  ensureFavoritesLoaded,
-  isFavorited as isFavoritedCache,
-  subscribeFavorites,
-} from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import { useUserLocation } from "@/lib/user-location";
@@ -131,17 +127,7 @@ export default function ProducerHeader({
       setFavorited(false);
       return undefined;
     }
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producer.id, setFavorited);
   }, [user, producer.id]);
 
   // Un-favoriting while the panel is open must not leave `alertsOpen` armed —
