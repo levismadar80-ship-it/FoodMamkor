@@ -1,0 +1,67 @@
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import he from "../messages/he.json";
+
+/**
+ * MEH-3720 — one «צרו קשר» pattern: the dashboard sheet offers WhatsApp ·
+ * email · form in that order, the welcome card opens that sheet, and /contact
+ * carries the same WhatsApp row above its email row.
+ */
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
+}));
+vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(""),
+  usePathname: () => "/contact",
+}));
+
+import SupportContactSheet from "@/components/SupportContactSheet";
+import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
+import ContactClient from "@/app/[locale]/contact/ContactClient";
+
+const wrap = (ui) => render(<NextIntlClientProvider locale="he" messages={he}>{ui}</NextIntlClientProvider>);
+
+describe("SupportContactSheet (MEH-3720)", () => {
+  it("lists WhatsApp, email, form — in that order — and the form row opens /contact?topic=business", () => {
+    wrap(<SupportContactSheet onClose={() => {}} />);
+    const sheet = screen.getByTestId("support-contact-sheet");
+    const rows = within(sheet).getAllByRole("link");
+    expect(rows.map((r) => r.dataset.testid)).toEqual(["support-whatsapp", "support-email", "support-form"]);
+    expect(rows[0].getAttribute("href")).toMatch(/^https:\/\/wa\.me\//);
+    expect(rows[1].getAttribute("href")).toBe("mailto:contact@mehamakor.co.il");
+    expect(rows[2]).toHaveAttribute("href", "/contact?topic=business");
+    expect(rows[2]).toHaveTextContent("טופס פנייה");
+  });
+
+  it("«סגרו» calls onClose", () => {
+    const onClose = vi.fn();
+    wrap(<SupportContactSheet onClose={onClose} />);
+    fireEvent.click(screen.getByRole("button", { name: "סגרו" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("OwnerWelcomeCard question line (MEH-3720)", () => {
+  it("opens the support sheet instead of linking straight to wa.me", () => {
+    const onSupport = vi.fn();
+    wrap(<OwnerWelcomeCard onClose={() => {}} onSupport={onSupport} />);
+    const line = screen.getByTestId("owner-welcome-whatsapp");
+    expect(line.tagName).toBe("BUTTON");
+    fireEvent.click(line);
+    expect(onSupport).toHaveBeenCalledOnce();
+  });
+});
+
+describe("/contact WhatsApp row (MEH-3720)", () => {
+  it("shows WhatsApp before the email address, with the sheet's copy", () => {
+    wrap(<ContactClient />);
+    const wa = screen.getByTestId("contact-whatsapp");
+    expect(wa).toHaveTextContent(he.dashboard.producer.status.support.whatsapp_label);
+    expect(wa.getAttribute("href")).toMatch(/^https:\/\/wa\.me\//);
+    const mail = screen.getAllByRole("link").find((a) => a.getAttribute("href") === "mailto:contact@mehamakor.co.il");
+    expect(wa.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

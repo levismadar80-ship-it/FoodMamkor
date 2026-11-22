@@ -5303,6 +5303,7 @@
           "whatsapp_label": "WhatsApp",
           "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
           "email_label": "Email",
+          "form_label": "Contact form",
           "close_cta": "Close"
         }
       },
