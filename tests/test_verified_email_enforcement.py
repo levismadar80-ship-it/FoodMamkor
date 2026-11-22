@@ -37,7 +37,7 @@ from app.utils.clock import utc_now
 # Kept here as constants so a copy/shape tweak in auth.py surfaces as a
 # failing assertion rather than silent drift.
 VERIFY_CODE = "email_unverified"
-VERIFY_MESSAGE = "יש לאמת את כתובת האימייל תחילה"
+VERIFY_MESSAGE = "יש לאמת את כתובת המייל תחילה"
 
 
 def _assert_verify_detail(resp):

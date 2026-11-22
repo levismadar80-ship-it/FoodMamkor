@@ -124,7 +124,7 @@ class OwnerNewEmail:
 def compose_owner_new_registration(m: OwnerNewEmail) -> Mail:
     title = _one_line(m.title)
     subject = f'הרשמה חדשה ל-"{title}"'
-    lines = [("שם", m.name), ("טלפון", m.phone), ("אימייל", m.email)]
+    lines = [("שם", m.name), ("טלפון", m.phone), ("מייל", m.email)]
     if m.party_size > 1:
         lines.append(("כמה אנשים", str(m.party_size)))
     if m.session_text:
@@ -313,9 +313,7 @@ def compose_waitlist_confirmation(m: VisitorEmail) -> Mail:
     title = _one_line(m.title)
     subject = f'נכנסתם לרשימת ההמתנה ל-"{title}"'
     rows = _rows(m)
-    note = (
-        "כרגע אין מקומות. אם יתפנה מקום, נשלח אימייל לראשונים ברשימה עם קישור להרשמה."
-    )
+    note = "כרגע אין מקומות. אם יתפנה מקום, נשלח מייל לראשונים ברשימה עם קישור להרשמה."
     body = (
         f"{subject}\n\n"
         + "\n".join(f"{k}: {v}" for k, v in rows)
