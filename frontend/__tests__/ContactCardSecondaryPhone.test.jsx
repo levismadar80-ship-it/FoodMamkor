@@ -27,7 +27,7 @@ vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
   return {
     EnvelopeSimple: Stub, FacebookLogo: Stub, Globe: Stub, InstagramLogo: Stub, Phone: Stub,
-    Receipt: Stub, WhatsappLogo: Stub, Bell: Stub, ChatCircle: Stub, CaretDown: Stub,
+    Receipt: Stub, WhatsappLogo: Stub, Megaphone: Stub, UsersThree: Stub, ChatCircle: Stub, CaretDown: Stub,
   };
 });
 

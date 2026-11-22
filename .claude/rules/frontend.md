@@ -92,7 +92,8 @@ writing a sibling.
 Formatting, links and validation each have ONE owner. Import it; a second
 `toLocaleDateString`, `wa.me/` builder or phone regex is the bug. When none
 fits, extend the owner. `SharedHelpersTableGuard.test.js` fails when a file or
-export named here no longer exists.
+export named here no longer exists. A WhatsApp URL built outside `utils.js` fails
+`scripts/checks/whatsapp-link-owner-guard.sh` (MEH-3603).
 
 | Need | Owner (`frontend/lib/`) | Exports |
 |---|---|---|
@@ -101,7 +102,7 @@ export named here no longer exists.
 | Price, price range | `utils.js` | `formatPrice`, `formatPriceRange` |
 | Phone: normalise · validate | `utils.js` · `validators.js` | `normalizePhone` · `validateIsraeliPhone` |
 | Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
-| WhatsApp link | `utils.js` | `getWhatsAppHref` |
+| WhatsApp link | `utils.js` | `getWhatsAppHref`, `getWhatsAppChatHref` (no prefilled text) |
 | A business's contact button (href, label) | `contact-method.js` | `getPrimaryContactHref`, `getPrimaryContactLabel` |
 | Phone call link (`tel:`) | `contact-method.js` | `telHref` |
 | Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |

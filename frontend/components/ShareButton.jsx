@@ -30,9 +30,11 @@ const ARIA_LABEL_KEY = {
   experience: "modal_title_experience", // MEH-2549
   recipe: "modal_title_recipe", // MEH-2558
   organizer: "modal_title_organizer", // MEH-3018
+  product: "modal_title_product", // MEH-3622
+  rescue: "modal_title_rescue", // MEH-3586
 };
 
-/** @param {{ url?: string, title?: string, description?: string, city?: string, category?: string, variant?: "default"|"quiet"|"overlay"|"outline", subject?: "business"|"event"|"experience"|"recipe"|"organizer" }} props */
+/** @param {{ url?: string, title?: string, description?: string, city?: string, category?: string, variant?: "default"|"quiet"|"overlay"|"outline", subject?: "business"|"event"|"experience"|"recipe"|"organizer"|"product"|"rescue" }} props */
 export default function ShareButton({
   url,
   title,

@@ -26,7 +26,8 @@ nearest row per business (`producer_queries.py::haversine_min_km`, MEH-1402),
 with **no fallback** to the legacy `producers.lat/lng` mirror since MEH-1938
 chunk 5a (the mirror carries `LEGACY(2026-10-15)` ahead of its drop). PostGIS is not
 installed on Railway's stock PostgreSQL — adding it would break the
-deploy. **Never add PostGIS.**
+deploy. **Never add PostGIS.** `scripts/checks/prose-rules-guard.sh` (R4) fails a geoalchemy2 import,
+a postgis `CREATE EXTENSION` or a postgis/geoalchemy dependency.
 _(Platform claim — **as of 2026-08-03, unverified**. Railway is unreachable from
 a CC session: `*.up.railway.app` egress returns `CONNECT tunnel failed, 403`
 (re-confirmed 2026-08-03), so no session can re-derive what the stock image
@@ -64,11 +65,12 @@ anthropic.Anthropic(
 )
 ```
 
-Used at **6 call sites** (enumerated 2026-08-03, MEH-1861 — this listed 2):
+Call sites (enumerated 2026-08-03, MEH-1861; three moderation copies became one helper 21/11, MEH-3619; `tests/test_anthropic_http_client.py` holds the full set):
 `routers/chat.py:173`, `routers/reviews.py:60`,
-`services/home_product_moderation.py:70`, `services/experience_moderation.py:69`,
-`services/producer_recipe_moderation.py:65`, `services/bio_generator.py:39`.
-All six comply. Don't "clean up" the
+`services/moderation_common.py` (`make_anthropic_client`, shared by the
+home-product, experience and recipe moderation services since MEH-3619),
+`services/bio_generator.py:39`.
+All comply. Don't "clean up" the
 kwarg — AI features silently break (the error is caught by the fail-open
 path, so there's no 5xx warning you). Full trap:
 [docs/LOCKED_DECISIONS.md](../../docs/LOCKED_DECISIONS.md).
@@ -94,7 +96,8 @@ Railway blocks outbound SMTP (`25`/`465`/`587`) — **as of 2026-08-03,
 unverified**, same reason as the PostGIS note above: no CC session can reach
 Railway to test a port. All email goes through
 `backend/app/services/email.py` → `send_email()` → Resend HTTP API.
-Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.**
+Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.** An `import smtplib` in `backend/app` fails
+`scripts/checks/prose-rules-guard.sh` (R4).
 
 ---
 

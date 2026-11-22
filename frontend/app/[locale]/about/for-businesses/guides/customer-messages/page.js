@@ -16,6 +16,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import GuideArticle from "@/components/GuideArticle";
 import { buildGuideMetadata } from "@/lib/guide-metadata";
+import { buildGuideBlocks } from "@/lib/guide-blocks";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
@@ -98,19 +99,6 @@ const BLOCKS_STRUCTURE = [
   { type: "p", key: "b68" },
 ];
 
-function buildBlocks(t) {
-  return BLOCKS_STRUCTURE.map((b) => {
-    if (b.type === "hr") return b;
-    if (b.count !== undefined) {
-      return {
-        type: b.type,
-        items: Array.from({ length: b.count }, (_, i) => t(`body.${b.key}.i${i}`)),
-      };
-    }
-    return { type: b.type, text: t(`body.${b.key}`) };
-  });
-}
-
 // MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
 export default async function CustomerMessagesGuidePage({ params }) {
   const { locale } = await params;
@@ -121,7 +109,7 @@ export default async function CustomerMessagesGuidePage({ params }) {
       title={t("title")}
       subtitle={t("subtitle")}
       readMinutes={6}
-      blocks={buildBlocks(t)}
+      blocks={buildGuideBlocks(BLOCKS_STRUCTURE, t)}
     />
   );
 }

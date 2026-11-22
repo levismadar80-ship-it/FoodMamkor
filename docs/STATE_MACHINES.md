@@ -158,8 +158,10 @@ it does not.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
-| join | logged-in user | `routers/group_buys.py` | row lock; public; open; before the deadline; capacity; one commit per user |
-| leave | the user | `routers/group_buys.py` | open or funded; before the deadline |
+| join | logged-in user | `routers/group_buys.py` | row lock; public; open or funded; before the deadline; joins not stopped by the business (`joins_closed_at`); people cap and units cap (`max_units`, `services/group_buy_capacity.py::refuse_unless_room`); one commit per user |
+| leave | the user | `routers/group_buys.py` | open or funded; before the deadline; in the last 24 h a leave that drops a funded group below its minimum is refused (`refuse_last_call_drop`, MEH-3592) |
+| stop / reopen joins | owner / admin | `routers/group_buy_capacity.py` `PATCH /settings` | open or funded; before the deadline. Writes `joins_closed_at`, not `status` |
+| waitlist row: waiting → offered | automatic, when a place frees (leave, smaller quantity, raised cap, reopened joins) | `services/group_buy_capacity.py::offer_freed_place` | `offered_at` stamped; offered again after 24 h if the place went to someone else; the row is deleted when she joins or leaves the list |
 | open → funded → open | automatic, on join / leave / account deletion | `routers/group_buys.py`, `services/group_buy_delist.py` | minimum reached / lost |
 | → fulfilled, → cancelled | owner / admin | `routers/group_buys.py` | transition table; cancel mails the participants |
 
@@ -178,6 +180,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
+| Queued email (`email_outbox.outcome`, MEH-3535) | pending → sent / skipped (a final non-send answer, or `stale` after 2 days) / failed (5 tries, a provider error or a crash on the row each spending one); a try that fails keeps it pending with a later `send_after` | the outbox dispatcher only (`services/email_outbox.py:dispatch_due`), run by the worker or the web scheduler |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
 ## Every status column
