@@ -5466,7 +5466,8 @@
           "details": "פרטי העסק",
           "image": "תמונה של העסק או המוצרים",
           "product": "מוצר ראשון"
-        }
+        },
+        "email_resend": "שלחו לי שוב"
       },
       "strength": {
         "heading": "חוזק פרופיל",
@@ -6004,7 +6005,8 @@
           "location": "מיקום או אזורי משלוח",
           "phone_verified": "אימות מספר הוואטסאפ",
           "description": "כמה מילים על השוק או האירועים",
-          "upcoming_event": "אירוע קרוב אחד לפחות"
+          "upcoming_event": "אירוע קרוב אחד לפחות",
+          "email_verified": "אישור כתובת האימייל"
         }
       },
       "request_review": {

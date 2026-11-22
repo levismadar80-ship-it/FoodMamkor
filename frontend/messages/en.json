@@ -5470,7 +5470,8 @@
           "details": "Business details",
           "image": "A photo of the business or products",
           "product": "First product"
-        }
+        },
+        "email_resend": "Send it again"
       },
       "strength": {
         "heading": "Profile strength",
@@ -6008,7 +6009,8 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification",
           "description": "A few words about the market or events",
-          "upcoming_event": "At least one upcoming event"
+          "upcoming_event": "At least one upcoming event",
+          "email_verified": "Confirm your email address"
         }
       },
       "request_review": {

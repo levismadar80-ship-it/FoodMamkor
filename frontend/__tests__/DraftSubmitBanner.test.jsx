@@ -80,6 +80,7 @@ const READY = {
   // Producer.lat/lng — the gate's producerPoints() no longer reads the columns.
   locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 32.0853, lng: 34.7818, precision: "exact" }],
   phone_verified: true,
+  owner_email_verified: true,
   has_physical_location: true,
 };
 
@@ -375,9 +376,49 @@ describe("DraftSubmitBanner — each missing item links to where it is filled in
     one.unmount();
 
     render(<DraftSubmitBanner producer={{}} />);
-    expect(
-      within(screen.getByTestId("draft-missing-list")).getAllByRole("link"),
-    ).toHaveLength(SUBMISSION_REQUIREMENTS.length);
+    const list = screen.getByTestId("draft-missing-list");
+    // MEH-3660: every requirement except the email one, which is confirmed in
+    // the mailbox and has no page to send her to — it is listed as text.
+    expect(within(list).getAllByRole("link")).toHaveLength(SUBMISSION_REQUIREMENTS.length - 1);
+    expect(within(list).getAllByRole("listitem")).toHaveLength(SUBMISSION_REQUIREMENTS.length);
+    expect(screen.queryByTestId("draft-missing-link-email_verified")).toBeNull();
+  });
+});
+
+// MEH-3659: inside the completeness card (variant="actions") the card owns the
+// list and the OTP card; this is one button that posts on the first tap.
+describe("DraftSubmitBanner variant=actions (MEH-3659)", () => {
+  it("one tap posts — no confirm step", async () => {
+    post.mockResolvedValue({ data: { detail: "ok" } });
+    const onSubmitted = vi.fn();
+    render(<DraftSubmitBanner variant="actions" producer={READY} onSubmitted={onSubmitted} />);
+    expect(screen.queryByTestId("draft-submit-confirm")).toBeNull();
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/producers/me/submit-for-review"));
+    expect(post).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
+
+  it("renders no list, no OTP card and no disabled hint, even when something is missing", () => {
+    render(<DraftSubmitBanner variant="actions" producer={{ ...READY, phone_verified: false }} />);
+    expect(screen.queryByTestId("draft-missing-list")).toBeNull();
+    expect(screen.queryByTestId("phone-verify-card")).toBeNull();
+    expect(screen.queryByTestId("draft-phone-verify")).toBeNull();
+    expect(screen.queryByText("cta_disabled_hint")).toBeNull();
+    expect(screen.getByTestId("draft-submit-cta")).toBeDisabled();
+  });
+
+  it("a server 422 does not leave a dead button — it stays tappable for a retry", async () => {
+    post.mockRejectedValueOnce({
+      response: { data: { detail: { code: "x", message: "m", params: { missing: ["phone_verified"] } } } },
+    });
+    render(<DraftSubmitBanner variant="actions" producer={READY} />);
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("draft-submit-cta")).not.toBeDisabled());
+    post.mockResolvedValueOnce({ data: { detail: "ok" } });
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
   });
 });
 
