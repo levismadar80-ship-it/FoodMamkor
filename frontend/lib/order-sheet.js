@@ -18,6 +18,7 @@ import { z } from "zod";
 
 import api from "@/lib/api";
 import { QuoteOrderRouteProductOrdersQuotePostResponse } from "@/lib/generated/api.zod";
+import { splitKey } from "@/lib/product-variants";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -74,7 +75,11 @@ export function cancelDeadline(slotStart, cutoffHours) {
  * @param {Record<string, number>} picks
  */
 function itemsOf(picks) {
-  return Object.entries(picks).map(([product_id, qty]) => ({ product_id, qty }));
+  // MEH-3617: a variant line carries its variant id. Never a price.
+  return Object.entries(picks).map(([key, qty]) => {
+    const { productId, variantId } = splitKey(key);
+    return variantId ? { product_id: productId, variant_id: variantId, qty } : { product_id: productId, qty };
+  });
 }
 
 /**

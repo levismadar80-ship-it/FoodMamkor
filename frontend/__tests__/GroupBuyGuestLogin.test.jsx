@@ -46,7 +46,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/format-date", () => ({
-  formatEventDate: () => "1 בינואר 2099",
+  formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099",
 }));
 
 // An open, joinable group buy with a far-future deadline.

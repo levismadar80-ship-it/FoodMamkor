@@ -42,6 +42,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      # MEH-3573: one grouped PR per ecosystem for security fixes, opened as
+      # soon as an alert appears (needs "Dependabot security updates" ON in
+      # Settings → Code security). The weekly security routine regenerates
+      # uv.lock / applies npm overrides where Dependabot cannot.
+      pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
       # schemathesis 4.24 slows the fuzz suite past the pytest job timeout
       # (MEH-1529). Dev-only test tool, no CVE — hold minor/patch bumps.
@@ -73,6 +81,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      # MEH-3573: one grouped PR per ecosystem for security fixes, opened as
+      # soon as an alert appears (needs "Dependabot security updates" ON in
+      # Settings → Code security). The weekly security routine regenerates
+      # uv.lock / applies npm overrides where Dependabot cannot.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
       # eslint 9->10 major is a tracked MANUAL migration (MEH-893). A fork does
       # not inherit the `@dependabot ignore this major version` comment command,

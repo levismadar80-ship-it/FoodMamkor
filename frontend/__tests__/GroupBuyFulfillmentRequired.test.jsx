@@ -204,3 +204,25 @@ describe("fill from an existing product", () => {
     expect(name).toHaveValue("גבינת עיזים קטנה");
   });
 });
+
+// MEH-3610: the create form carries the allergens and the pickup branch.
+describe("allergens on create", () => {
+  it("nothing ticked: allergens null (not declared), no branch", async () => {
+    const { pickup, form } = await openForm();
+    fireEvent.change(pickup, { target: { value: "מהמשק" } });
+    fireEvent.submit(form);
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].allergens).toBeNull();
+    expect(post.mock.calls[0][1].pickup_location_id).toBeNull();
+  });
+
+  it("two ticked: sent in the canonical order", async () => {
+    const { pickup, form } = await openForm();
+    fireEvent.change(pickup, { target: { value: "מהמשק" } });
+    fireEvent.click(screen.getByTestId("gb-new-allergen-sesame"));
+    fireEvent.click(screen.getByTestId("gb-new-allergen-gluten"));
+    fireEvent.submit(form);
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].allergens).toEqual(["gluten", "sesame"]);
+  });
+});

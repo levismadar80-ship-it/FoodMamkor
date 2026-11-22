@@ -9,11 +9,10 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import {
-  ensureFavoritesLoaded,
   isFavorited as isFavoritedCache,
   setFavoritedLocal,
-  subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import {
   clearPendingAction,
   consumePendingAction,
@@ -118,17 +117,7 @@ export default function ProducerUpdatesButton({
       setPrefs(null);
       return undefined;
     }
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producerId));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producerId));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producerId, setFavorited);
   }, [user, producerId]);
 
   // Prefs are only meaningful for a saved business (the PUT requires it).

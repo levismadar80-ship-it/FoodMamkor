@@ -26,7 +26,10 @@ vi.mock("next-intl", () => ({
     return t;
   },
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({
+  formatEventDate: () => "1 בינואר 2099",
+  formatDate: () => "1 בינואר 2099",
+}));
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_GOOGLE_CLIENT_ID: "cid" } }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: () => {} }));
 
