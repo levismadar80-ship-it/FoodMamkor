@@ -17,7 +17,8 @@ Related:  app/routers/product_order_buyer.py (the route),
           app/services/product_order_delivery.py (the delivery fee),
           app/services/product_order_actions.py (pickup code, views)
 History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3617 (a line may
-          name a size or flavour, priced from the variant row)
+          name a size or flavour, priced from the variant row); MEH-3618 (a slot
+          on a day one of the products is not made is refused)
 """
 
 import base64
@@ -54,6 +55,7 @@ from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
 from app.services import product_variants  # MEH-3617
+from app.services import product_weekdays  # MEH-3618
 from app.services.product_order_actions import assign_pickup_code
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.services.product_order_menu import offered_slots, takes_orders
@@ -394,6 +396,8 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
 
     slot = _slot(offered_slots(db, producer, row, now), body)
     lines = order_lines(db, body, bool(row.alcohol_licensed))
+    # MEH-3618: a product made only on some days, on the slot's Israel day.
+    product_weekdays.refuse_closed_day(db, [ln.product_id for ln in lines], slot.start)
     has_alcohol = any(line.contains_alcohol for line in lines)
     if has_alcohol and not body.age_declared:
         raise HTTPException(

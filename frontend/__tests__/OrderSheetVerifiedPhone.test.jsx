@@ -11,7 +11,7 @@ vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => auth.value }));
 
 import api from "@/lib/api";
-import OrderSheet from "@/components/public/OrderSheet";
+import OrderSheet, { forgetOrderDrafts } from "@/components/public/OrderSheet";
 import { orderBody, sameIlPhone } from "@/lib/order-sheet";
 
 const PRODUCER = "7e57a6f0-0000-4000-8000-000000000007";
@@ -65,6 +65,7 @@ describe("orderBody", () => {
 
 describe("OrderSheet for a signed-in buyer", () => {
   beforeEach(() => {
+    forgetOrderDrafts();
     vi.mocked(api.post).mockReset();
     vi.mocked(api.post).mockImplementation(async (url) =>
       url === "/product-orders/quote" ? { data: QUOTE } : { data: { id: ORDER, status_token: TOKEN } },

@@ -15,6 +15,9 @@
  * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
  *           MEH-3658 ways and slots as buttons, the note behind a link, the
  *           total on the send button, four disclosure lines down to two
+ *           MEH-3618 (slots only on days every picked product is made)
+ *           MEH-3640 what she typed survives closing the sheet, and a line
+ *           says why «שליחת הבקשה» waits for a city
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +28,7 @@ import Dialog from "@/components/ui/Dialog";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import OrderSheetDayConflict from "@/components/public/OrderSheetDayConflict";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
 import { NoteField, SlotChoice, WayChoice } from "@/components/public/OrderSheetChoices";
 import { useRouter } from "@/i18n/navigation";
@@ -44,8 +48,27 @@ import {
 } from "@/lib/order-sheet";
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
+import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
 
 const QUOTE_DELAY_MS = 400;
+
+// MEH-3640 (Nielsen #3, user control): closing the sheet used to throw away
+// her name, phone and address. Kept here, per business, for this page visit
+// only: memory, never storage, because it is personal data. The code, the
+// slot and the age box are not kept: each belongs to one attempt.
+const KEPT_FIELDS = /** @type {const} */ (["fulfilment", "city", "address", "name", "phone", "note"]);
+/** @type {Map<string, Record<string, string>>} */
+const drafts = new Map();
+
+/** Tests only: start every case from an empty sheet. */
+export function forgetOrderDrafts() {
+  drafts.clear();
+}
+
+/** @param {Record<string, any>} form */
+function keptPart(form) {
+  return Object.fromEntries(KEPT_FIELDS.map((k) => [k, form[k]]));
+}
 const CONFLICT = 409;
 const UNPROCESSABLE = 422;
 
@@ -55,30 +78,40 @@ const UNPROCESSABLE = 422;
  *   menu: import("@/lib/order-cart").OrderMenu,
  *   picks: Record<string, number>,
  *   onStale?: () => void,
+ *   onChange?: (key: string, qty: number) => void,
  *   onClose: () => void,
  * }} props
  */
-export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onClose }) {
+export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onChange = () => {}, onClose }) {
   const t = useTranslations("producer.detail.order_sheet");
   const locale = useLocale();
   const router = useRouter();
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
   const hasAlcohol = Object.keys(picks).some((key) => byId.get(splitKey(key).productId)?.contains_alcohol);
-  const ways = fulfilmentsOffered(menu, hasAlcohol);
+  const ways = cartWays(fulfilmentsOffered(menu, hasAlcohol), { slotsOf: (w) => slotsFor(menu, w, hasAlcohol), picks, byId }); // MEH-3618
   // MEH-3680: a signed-in buyer starts with her name, and her phone when it is
   // verified; to that phone she orders without a code (the route agrees).
   const me = /** @type {any} */ (useOptionalAuth())?.user ?? null;
-  const [form, setForm] = useState(() => ({
-    fulfilment: ways[0] ?? "pickup",
-    slot: "",
-    city: "",
-    address: "",
-    name: me?.name ?? "",
-    phone: me?.phone_verified ? (me.phone ?? "") : "",
-    code: "",
-    note: "",
-    age: false,
-  }));
+  const [form, setForm] = useState(() => {
+    const blank = {
+      fulfilment: ways[0] ?? "pickup",
+      slot: "",
+      city: "",
+      address: "",
+      name: me?.name ?? "",
+      phone: me?.phone_verified ? (me.phone ?? "") : "",
+      code: "",
+      note: "",
+      age: false,
+    };
+    const kept = drafts.get(producer.id);
+    // A kept fulfilment the menu no longer offers falls back to the first.
+    if (kept && !(/** @type {string[]} */ (ways)).includes(kept.fulfilment)) return { ...blank, ...kept, fulfilment: blank.fulfilment };
+    return { ...blank, ...kept };
+  });
+  useEffect(() => {
+    drafts.set(producer.id, keptPart(form));
+  }, [producer.id, form]);
   const [key] = useState(newOrderKey);
   // MEH-3680 review: the server refused the codeless send (her phone changed
   // elsewhere, or the hourly bound) — from here on she proves it with a code.
@@ -105,11 +138,14 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   /** @param {Partial<typeof form>} change */
   const set = (change) => setForm((old) => ({ ...old, ...change }));
 
-  const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
-  // MEH-3658: a single slot is picked for her; with more she taps one.
-  const slot = form.slot || (slots.length === 1 ? slots[0].start : "");
-  const delivery = form.fulfilment === "delivery";
-  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
+  // MEH-3618: only days on which every picked product is made.
+  const fulfilment = ways.includes(form.fulfilment) ? form.fulfilment : (ways[0] ?? form.fulfilment); // MEH-3618: a way the cart lost
+  const { slots, limiting } = cartSlots(slotsFor(menu, fulfilment, hasAlcohol), picks, byId);
+  // MEH-3618: a picked slot the cart no longer allows is dropped. MEH-3658: a
+  // single slot is picked for her; with more she taps one.
+  const slot = slots.some((s) => s.start === form.slot) ? form.slot : slots.length === 1 ? slots[0].start : "";
+  const delivery = fulfilment === "delivery";
+  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
   useQuote(needsCity ? null : body, setAnswer, setQuoteError, onStale);
   const quote = answer && answer.body === body ? answer.quote : null;
@@ -120,8 +156,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, fulfilment, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, key }),
       );
+      drafts.delete(producer.id);
       router.push(href);
     } catch (err) {
       const res = /** @type {any} */ (err)?.response;
@@ -138,11 +175,13 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
       <h2 id="order-sheet-title" className="text-xl font-bold text-text mb-4">{t("title")}</h2>
       <Lines picks={picks} byId={byId} />
       <div className="space-y-4 mt-4">
-        <WayChoice ways={ways} value={form.fulfilment} onChange={(way) => set({ fulfilment: /** @type {typeof form.fulfilment} */ (way), slot: "" })} />
-        {slots.length === 0 ? (
+        <WayChoice ways={ways} value={fulfilment} onChange={(way) => set({ fulfilment: /** @type {typeof form.fulfilment} */ (way), slot: "" })} />
+        {limiting ? (
+          <OrderSheetDayConflict product={limiting} onRemove={() => removeFromCart(limiting.id, { picks, onChange, onClose })} />
+        ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <SlotChoice key={form.fulfilment} slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
+          <SlotChoice key={fulfilment} slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
         )}
         {delivery && (
           <>
@@ -171,6 +210,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         </Button>
         <Button type="button" variant="outlined" onClick={onClose} data-autofocus="">{t("close")}</Button>
       </div>
+      {needsCity && slots.length > 0 && (
+        <p className="mt-2 text-sm text-fg-muted" data-testid="order-sheet-needs-city">{t("needs_city")}</p>
+      )}
     </Dialog>
   );
 }

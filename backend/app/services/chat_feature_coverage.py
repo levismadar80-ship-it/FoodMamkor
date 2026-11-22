@@ -77,6 +77,7 @@ NOT_FOR_CHAT: dict[str, str] = {
     "similar_businesses": _ON_THE_PAGE,
     "share_cards": _DASHBOARD,
     "qr_code": _DASHBOARD,
+    "google_profile": _DASHBOARD,  # MEH-3641
     "structured_data": "search-engine markup, invisible to visitors",
     "wa_prefill": _ON_THE_PAGE,
     "product_wa": _ON_THE_PAGE,

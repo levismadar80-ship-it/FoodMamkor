@@ -10,7 +10,7 @@ vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 
 import api from "@/lib/api";
-import OrderSheet from "@/components/public/OrderSheet";
+import OrderSheet, { forgetOrderDrafts } from "@/components/public/OrderSheet";
 import { cancelDeadline, fulfilmentsOffered, orderBody, slotsFor } from "@/lib/order-sheet";
 
 const PRODUCER = "7e57a6f0-0000-4000-8000-000000000007";
@@ -99,6 +99,7 @@ describe("OrderSheet", () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset();
     push.mockReset();
+    forgetOrderDrafts();
   });
 
   it("shows the server's total and the disclosure lines before sending", async () => {
@@ -322,5 +323,96 @@ describe("OrderSheet", () => {
     renderSheet();
     const help = screen.getByTestId("order-sheet-phone-help");
     expect(screen.getByTestId("order-sheet-phone").getAttribute("aria-describedby")).toBe(help.id);
+  });
+
+  // MEH-3640 (Nielsen #1): a greyed-out «שליחת הבקשה» says why.
+  it("says a city is missing only while a delivery has no city", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
+    pick("order-sheet-fulfilment", "delivery");
+    expect(screen.getByTestId("order-sheet-needs-city").textContent).toBe("כתבו עיר כדי לראות את הסכום ולשלוח את הבקשה.");
+    fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
+    expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
+  });
+
+  // MEH-3640 (Nielsen #3): closing the sheet keeps what she typed, not the code.
+  it("keeps the name, phone and address after closing and opening again", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    pick("order-sheet-fulfilment", "delivery");
+    fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
+    fireEvent.change(screen.getByTestId("order-sheet-address"), { target: { value: "הרצל 1" } });
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    first.unmount();
+    renderSheet();
+    expect(screen.getByTestId("order-sheet-fulfilment").querySelector("[aria-checked=true]").getAttribute("data-value")).toBe("delivery");
+    expect(screen.getByTestId("order-sheet-city").value).toBe("חיפה");
+    expect(screen.getByTestId("order-sheet-address").value).toBe("הרצל 1");
+    expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
+    expect(screen.getByTestId("order-sheet-phone").value).toBe("0501234567");
+  });
+
+  it("starts empty for another business", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    first.unmount();
+    renderSheet(undefined, { id: "7e57a6f0-0000-4000-8000-000000000008", payment_info: { methods: ["cash"] } });
+    expect(screen.getByTestId("order-sheet-name").value).toBe("");
+  });
+  it("never keeps the code, the slot or the age box", async () => {
+    vi.mocked(api.post).mockImplementation(async (url) => (url === "/product-orders/phone-code" ? { data: {} } : { data: QUOTE }));
+    const first = renderSheet({ [WINE]: 1 });
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
+    fireEvent.click(screen.getByTestId("order-sheet-age"));
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("order-sheet-send-code"));
+    fireEvent.change(await screen.findByTestId("order-sheet-code"), { target: { value: "123456" } });
+    first.unmount();
+    renderSheet({ [WINE]: 1 });
+    expect(screen.getByTestId("order-sheet-phone").value).toBe("0501234567");
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")).toBeNull();
+    expect(screen.getByTestId("order-sheet-age").checked).toBe(false);
+    expect(screen.queryByTestId("order-sheet-code")?.value ?? "").toBe("");
+  });
+
+  it("forgets the draft once the request was sent", async () => {
+    vi.mocked(api.post).mockImplementation(async (url) => {
+      if (url === "/product-orders/quote") return { data: QUOTE };
+      if (url === "/product-orders/phone-code") return { data: {} };
+      return { data: { id: ORDER, status_token: TOKEN } };
+    });
+    const first = renderSheet();
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("order-sheet-send-code"));
+    fireEvent.change(await screen.findByTestId("order-sheet-code"), { target: { value: "123456" } });
+    fireEvent.submit(screen.getByTestId("order-sheet"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    first.unmount();
+    renderSheet();
+    expect(screen.getByTestId("order-sheet-name").value).toBe("");
+  });
+
+  it("falls back to an offered way when the kept one is no longer offered", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    pick("order-sheet-fulfilment", "delivery");
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    first.unmount();
+    const pickupOnly = { ...MENU, slots: MENU.slots.filter((s) => s.fulfilment === "pickup") };
+    render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER, payment_info: { methods: ["cash"] } }} menu={pickupOnly} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    // One way left: no picker, and no delivery fields from the kept «משלוח».
+    expect(screen.queryByTestId("order-sheet-fulfilment")).toBeNull();
+    expect(screen.queryByTestId("order-sheet-city")).toBeNull();
+    await waitFor(() => expect(api.post).toHaveBeenLastCalledWith("/product-orders/quote", expect.objectContaining({ fulfilment: "pickup" })));
+    expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
   });
 });

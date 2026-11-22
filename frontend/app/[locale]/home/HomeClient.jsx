@@ -208,8 +208,11 @@ export default function HomeClient({
           Same idiom as ProducersClient.jsx's day-panel host, scoped to
           `max-md` so desktop keeps its exact pre-ticket spacing. MEH-2747
           removed that flex column; the class stays so phone spacing does not
-          move in the same PR (block flow, measured in qa-artifacts/MEH-2747). */}
-      <div className="mt-6 max-md:empty:hidden">
+          move in the same PR (block flow, measured in qa-artifacts/MEH-2747).
+          MEH-3076: on all widths now. At 1440 the two empty slots still left
+          24px of blank page above the next section (measured on staging), as an empty
+          box's top margin collapses with its neighbour's instead of away. */}
+      <div className="mt-6 empty:hidden">
         <LocationBanner
           hasCity={!!userCity}
           onOpenModal={() => setLocationModalOpen(true)}
@@ -228,7 +231,7 @@ export default function HomeClient({
           MEH-879: 2nd banner precedence — reports visibility (so Location
           yields) and is suppressed when the Friday strip is showing. */}
       {/* MEH-2635: `empty:hidden` — see the location banner slot above. */}
-      <div className="mt-4 max-md:empty:hidden">
+      <div className="mt-4 empty:hidden">
         <HolidayBanner
           suppressed={fridayMode && fridayVisible}
           onVisibilityChange={setHolidayVisible}
