@@ -22,12 +22,16 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ ...authState, loading: false }),
 }));
 const push = vi.hoisted(() => vi.fn());
+// One router object for every render, as in Next.js. A fresh object per call
+// changed the redirect effect's `router` dependency on each re-render, so a
+// second render (a hook settling) fired push() twice — red on CI shard 3/3.
+const router = vi.hoisted(() => ({ push, replace: vi.fn() }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,
   usePathname: () => "/admin",
-  useRouter: () => ({ push, replace: vi.fn() }),
+  useRouter: () => router,
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...p }) => <a href={typeof href === "string" ? href : "#"} {...p}>{children}</a>,
 }));
