@@ -97,7 +97,7 @@
         "success_main": "✓ If the email exists in our system — a reset link will be sent",
         "success_contact_prefix": "Didn't receive it? Contact us:",
         "email_placeholder": "Your email",
-        "submit_sending": "Sending...",
+        "submit_sending": "Sending…",
         "submit": "Send reset link",
         "back_to_login": "Back to login",
         "errors": {
@@ -105,7 +105,7 @@
         }
       },
       "reset": {
-        "loading": "Loading...",
+        "loading": "Loading…",
         "invalid_link": "The reset link is invalid",
         "request_new_link": "Request a new link",
         "title": "New password",
@@ -116,8 +116,8 @@
         "toggle_show": "Show password",
         "toggle_hide": "Hide password",
         "success_title": "✓ Password updated successfully",
-        "success_subtitle": "Redirecting you to the login page...",
-        "submit_updating": "Updating...",
+        "success_subtitle": "Redirecting you to the login page…",
+        "submit_updating": "Updating…",
         "submit": "Update password",
         "errors": {
           "too_short": "Password must be at least {min} characters",
@@ -129,11 +129,11 @@
       }
     },
     "verifyEmail": {
-      "loading_title": "Verifying...",
+      "loading_title": "Verifying…",
       "loading_subtitle": "Please wait",
-      "fallback_loading": "Loading...",
+      "fallback_loading": "Loading…",
       "success_title": "Email verified",
-      "success_subtitle": "Redirecting you to the site...",
+      "success_subtitle": "Redirecting you to the site…",
       "success_cta": "Continue to the site",
       "success_login_subtitle": "Now log in with your email and password and pick up where you left off.",
       "success_login_cta": "Log in to continue",
@@ -145,7 +145,7 @@
       }
     },
     "login": {
-      "loading": "Loading...",
+      "loading": "Loading…",
       "title": "Sign in to Mehamakor",
       "welcome": "Good to see you again",
       "reason_favorites": "Sign in to see your favorites.",
@@ -221,7 +221,7 @@
         },
         "actions": {
           "submit": "Join",
-          "submitting": "Signing up..."
+          "submitting": "Signing up…"
         },
         "email_sent": {
           "title": "Check your inbox",
@@ -256,8 +256,8 @@
           "organizer_link": "Organizing a market or event? You have your own sign-up",
           "group_buy_note": "Organizing a neighbourhood group buy? On the site only businesses open group buys, and you can join a business's group buy from its page."
         },
-        "loading": "Loading...",
-        "loading_form": "Loading registration form...",
+        "loading": "Loading…",
+        "loading_form": "Loading registration form…",
         "default_description": "Local business. More details coming soon.",
         "prefill_notice": "We pre-filled your business details — you can update any field before continuing.",
         "upgrade_banner": {
@@ -402,6 +402,7 @@
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
+          "combined": "I am over 18 and accept the <tos>Terms of Use</tos>, the <privacy>Privacy Policy</privacy> and the <declaration>licensing declaration</declaration>",
           "declaration": "Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.",
           "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
@@ -409,7 +410,7 @@
           "next": "Next →",
           "back": "Previous step",
           "submit": "Join →",
-          "submitting": "Submitting...",
+          "submitting": "Submitting…",
           "write_later": "I'll write this later",
           "edit_description": "Edit description",
           "add_license": "I have a producer license ↓",
@@ -496,18 +497,18 @@
       "delivery_cta": "Deliveries to me",
       "delivery_cta_city": "Deliveries to {city}",
       "surprise_me": "Surprise me",
-      "searching": "Searching...",
+      "searching": "Searching…",
       "geo_failure": "We couldn't detect your location — you can pick a city manually"
     },
     "search": {
-      "placeholder": "Search fresh veggies, grass-fed beef...",
+      "placeholder": "Search fresh veggies, grass-fed beef…",
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -619,6 +620,27 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish",
+    "kph": "Coffee"
   },
   "seo": {
     "home": {
@@ -801,7 +823,7 @@
       "verified_popover_link": "How do we verify?"
     },
     "detail": {
-      "loading_fresh": "Loading fresh businesses...",
+      "loading_fresh": "Loading fresh businesses…",
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
       "back_to_map": "Back to map",
@@ -1008,7 +1030,8 @@
         "city": "City",
         "address": "Delivery address",
         "name": "Full name",
-        "phone": "Mobile phone · we send a verification code to it",
+        "phone": "Mobile phone · we send a verification code and order updates to it",
+        "needs_city": "Enter a city to see the total and send the request.",
         "send_code": "Send code",
         "send_code_again": "Send a new code",
         "code": "Verification code",
@@ -1025,7 +1048,9 @@
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
-        "failed": "The request was not sent. Please try again."
+        "failed": "The request was not sent. Please try again.",
+        "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
+        "day_conflict_remove": "Remove «{name}» from the order"
       }
     },
     "card": {
@@ -1152,19 +1177,19 @@
       "ingredients_label": "Ingredients",
       "ingredients_placeholder": "500g flour\n10g salt\n350ml water",
       "instructions_label": "Instructions",
-      "instructions_placeholder": "Mix the flour with the salt...",
+      "instructions_placeholder": "Mix the flour with the salt…",
       "prep_time_label": "Prep time (min)",
       "cook_time_label": "Cook time (min)",
       "servings_label": "Number of servings",
       "image_label": "Image",
       "image_remove": "Remove image",
-      "image_uploading": "Uploading...",
+      "image_uploading": "Uploading…",
       "image_upload": "Upload image",
       "related_products_label": "Related products",
       "related_products_hint": "(recipes promote your products)",
-      "products_loading": "Loading products...",
+      "products_loading": "Loading products…",
       "no_products": "You don't have any products yet. You can publish the recipe without linking products.",
-      "submit_saving": "Saving...",
+      "submit_saving": "Saving…",
       "submit": "Save recipe",
       "cancel": "Cancel",
       "toast_updated": "Recipe updated",
@@ -1179,7 +1204,7 @@
       "heading": "My recipes",
       "btn_close_form": "Close",
       "btn_open_form": "+ Publish new recipe",
-      "loading": "Loading...",
+      "loading": "Loading…",
       "empty_title": "You haven't published any recipes yet",
       "empty_description": "A recipe promotes your products — share how your customers use them at home.",
       "empty_cta": "+ Publish new recipe",
@@ -1200,7 +1225,7 @@
     "edit": {
       "back": "Back to recipes",
       "heading": "Edit recipe",
-      "loading": "Loading...",
+      "loading": "Loading…",
       "not_found": "Recipe not found"
     }
   },
@@ -1229,10 +1254,11 @@
       "days_left": "{days} days left",
       "expired": "Expired",
       "cta_funded_details": "Details",
-      "cta_join": "I want to join!"
+      "cta_join": "I want to join!",
+      "pickup_when": "Pickup: {when}"
     },
     "detail": {
-      "loading": "Loading...",
+      "loading": "Loading…",
       "not_found_title": "Group buy not found",
       "back_to_list": "Back to group buys",
       "back_to_list_arrow": "← Back to group buys",
@@ -1255,22 +1281,23 @@
       "how_unlock": "Once {min} participants join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
-      "submitting": "Joining...",
+      "submitting": "Joining…",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
       "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
-      "cancelling": "Cancelling...",
+      "cancelling": "Cancelling…",
       "cancel_cta": "Cancel my commitment",
       "cancel_confirm": "Cancel your commitment?",
       "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
-      "full": "The group is full — joining is no longer possible",
+      "full": "This group is full",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
       "errors": {
-        "cancel_failed": "Cancellation failed"
+        "cancel_failed": "Cancellation failed",
+        "action_failed": "That didn't work, please try again"
       },
       "toast_cancelled": "Your participation was cancelled",
       "goal_reached": "The group reached its goal",
@@ -1280,7 +1307,28 @@
       "how_after_goal": "Even after the goal is reached, people can keep joining until the deadline",
       "how_after_goal_max": "Even after the goal is reached, people can keep joining, up to {max} participants or until the deadline",
       "how_funded_price": "The group already reached its goal: anyone who joins now gets the group price",
-      "quantity_label_unit": "Quantity ({unit})"
+      "quantity_label_unit": "Quantity ({unit})",
+      "units_left": "Left in this group: {count} {unit}",
+      "unit_fallback": "units",
+      "line_total": "Estimated total: {qty} {unit} × {price} = {total}",
+      "full_member": "This group is full. Your place is kept.",
+      "quantity_update": "Update quantity",
+      "quantity_updated_toast": "Quantity updated",
+      "waitlisted": "You're on the waitlist. If a place frees up, we'll email you.",
+      "waitlist_leave": "Leave the waitlist",
+      "waitlist_cta": "Join the waitlist",
+      "waitlist_hint": "When a place frees up, people on the list get an email in the order they signed up. The place goes to whoever joins first.",
+      "joins_closed": "The business has stopped new joins for this group",
+      "funded_subtitle_closed": "The group reached its goal. Joining is closed.",
+      "committed_qty_unit": " ({count} {unit})",
+      "cancel_title": "Cancelling",
+      "cancel_body_open": "You can leave at any time until {date}.",
+      "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
+      "pickup_place_label": "Pickup place",
+      "cancel_until_short": "You can leave until {date}",
+      "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
+      "add_to_calendar": "Add to calendar",
+      "calendar_title": "Pickup: {title}"
     },
     "dashboard": {
       "status": {
@@ -1294,7 +1342,7 @@
       "btn_close_form": "Close",
       "btn_open_form": "+ New group buy",
       "approval_required_hint": "Opening a group buy will be available once the business is approved",
-      "loading": "Loading...",
+      "loading": "Loading…",
       "empty_title": "Group buys = wholesale price for your customers",
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
@@ -1334,13 +1382,22 @@
         "delivery_placeholder": "e.g. To Zichron Yaakov and Binyamina on Sunday, ₪20",
         "fulfillment_helper": "Participants see this before they join. Fill in at least one. No delivery? Leave it blank.",
         "fulfillment_required": "Fill in pickup or delivery",
-        "submitting": "Creating...",
+        "submitting": "Creating…",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining",
         "prefill_label": "Fill from an existing product",
         "prefill_placeholder": "Choose a product",
         "prefill_helper": "The name and regular price fill in, and you can change them.",
-        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins."
+        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins.",
+        "max_units_label": "Maximum quantity (optional)",
+        "max_units_tooltip": "How many units you can supply in total. Once they run out nobody can join, and people can go on a waitlist. Leave empty for no limit.",
+        "max_units_placeholder": "e.g. 40",
+        "pickup_window_legend": "Pickup time (optional)",
+        "pickup_window_start": "Pickup starts",
+        "pickup_window_end": "Until",
+        "pickup_window_helper": "Shown on the card and the group page, so people know when to come.",
+        "pickup_window_both": "Fill in both the start and the end of pickup",
+        "pickup_window_order": "Pickup must end after it starts"
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -1358,6 +1415,26 @@
         "deliver_body": "The group will be marked as completed.",
         "toast_cancelled": "Group buy cancelled",
         "toast_fulfilled": "Group buy marked as delivered"
+      },
+      "settings": {
+        "toggle": "Joining settings",
+        "max_people": "Maximum participants",
+        "max_units": "Maximum quantity",
+        "no_cap": "No limit",
+        "caps_hint": "You can raise or lower them, but not below what has already been ordered. Empty = no limit.",
+        "save": "Save",
+        "stop": "Stop new joins",
+        "reopen": "Reopen joining",
+        "closed_note": "Joining is stopped. People who already joined stay in the group.",
+        "saved": "Settings saved",
+        "failed": "Couldn't save, please try again"
+      },
+      "safety": {
+        "place_label": "Pickup branch",
+        "place_none": "No branch, just the pickup text",
+        "place_help": "Shown on the group page with a map, and in the reminder participants get before pickup.",
+        "allergens_title": "Allergens",
+        "allergens_help": "Tick what the product contains. What you tick shows on the group page. With nothing ticked, it says no allergens were listed."
       }
     },
     "availability": {
@@ -1444,7 +1521,7 @@
   },
   "map": {
     "client": {
-      "loading_map": "Loading map...",
+      "loading_map": "Loading map…",
       "title": "Map of businesses",
       "errors": {
         "no_gps": "Your browser doesn't support GPS",
@@ -1460,7 +1537,7 @@
       },
       "city_search": {
         "label": "Filter by city",
-        "placeholder": "Search city..."
+        "placeholder": "Search city…"
       },
       "business_count": "{count, plural, =0 {No local businesses in your area} one {1 local business in your area} other {# local businesses in your area}}",
       "subhead": "{region}",
@@ -1493,7 +1570,7 @@
       "subheading": "Choose a city to filter by delivery",
       "other": {
         "label": "Other city",
-        "placeholder": "Type city name..."
+        "placeholder": "Type city name…"
       },
       "skip": "Skip"
     },
@@ -1545,7 +1622,7 @@
       "heading_ssr": "Businesses on the map"
     },
     "homepage_mini": {
-      "loading": "Loading map...",
+      "loading": "Loading map…",
       "pre_launch_hint": "Coming very soon — first businesses join this week",
       "aria": "Map preview",
       "dot_caption": "Every business on the map",
@@ -1600,10 +1677,10 @@
   },
   "admin": {
     "common": {
-      "loading": "Loading...",
-      "loading_f": "Loading...",
-      "saving": "Saving...",
-      "sending": "Sending...",
+      "loading": "Loading…",
+      "loading_f": "Loading…",
+      "saving": "Saving…",
+      "sending": "Sending…",
       "save": "Save",
       "saved": "✓ Saved",
       "saved_check": "Saved ✓",
@@ -1619,7 +1696,7 @@
       "back_to_dashboard": "Admin dashboard",
       "back_home": "Back to site",
       "error_loading": "Error loading data",
-      "error_generic": "Error",
+      "error_generic": "Something went wrong. Try again in a moment.",
       "no_data": "No data yet",
       "no_results": "No data yet",
       "items_pending_label": "{count} items awaiting approval",
@@ -1635,6 +1712,7 @@
         "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
+        "copy": "Site copy",
         "reviews": "Reviews",
         "kashrut": "Kashrut",
         "reports": "Reports",
@@ -1683,7 +1761,7 @@
         "records_count": "{count} records"
       },
       "toolbar": {
-        "search_placeholder": "Search by name or city...",
+        "search_placeholder": "Search by name or city…",
         "all_statuses": "All statuses",
         "active": "Active",
         "pending": "Pending",
@@ -1818,7 +1896,7 @@
         },
         "submit_create": "Create business",
         "submit_update": "Save changes",
-        "uploading": "Uploading...",
+        "uploading": "Uploading…",
         "category_cap_hint": "Your first pick shows on the business card · up to 5 categories",
         "primary_badge": "Primary",
         "photos": {
@@ -2160,7 +2238,7 @@
     "users": {
       "title": "Users",
       "count": "{count} users",
-      "search_placeholder": "Search by email or name...",
+      "search_placeholder": "Search by email or name…",
       "role_filter": {
         "all": "All roles",
         "consumer": "Consumer",
@@ -2200,7 +2278,7 @@
       "confirm": {
         "promote": "Are you sure you want to grant admin permissions to {name}?",
         "demote": "Are you sure you want to remove admin permissions from {name}?",
-        "submitting": "...",
+        "submitting": "…",
         "confirm": "Confirm",
         "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone.",
         "block": "Block {name}? They won't be able to sign in until the block is lifted.",
@@ -2267,7 +2345,7 @@
         "reject_title": "Reject recipe",
         "changes_label": "Notes for editing",
         "reject_label": "Reason for rejection",
-        "changes_placeholder": "e.g.: Exact quantities missing from the ingredients...",
+        "changes_placeholder": "e.g.: Exact quantities missing from the ingredients…",
         "reject_placeholder": "e.g.: Content not relevant to the platform",
         "submit": "Confirm"
       },
@@ -2321,7 +2399,7 @@
         "reject_title": "Reject experience",
         "changes_label": "Notes for editing",
         "reject_label": "Reason for rejection",
-        "changes_placeholder": "e.g.: Description is too short, exact address missing...",
+        "changes_placeholder": "e.g.: Description is too short, exact address missing…",
         "reject_placeholder": "e.g.: Content not relevant to the platform",
         "submit": "Confirm"
       },
@@ -2348,7 +2426,7 @@
         "registered": "Registered"
       },
       "filters": {
-        "city_placeholder": "Filter by city...",
+        "city_placeholder": "Filter by city…",
         "new_lead": "+ New lead"
       },
       "columns": {
@@ -2360,7 +2438,7 @@
         "status": "Status",
         "actions": "Actions"
       },
-      "loading_leads": "Loading leads...",
+      "loading_leads": "Loading leads…",
       "empty": "No leads to display. Click \"+ New lead\" to start.",
       "actions": {
         "prefill": "Prep profile",
@@ -2377,7 +2455,7 @@
         "delete_failed": "Could not delete — try again",
         "lead_added": "Lead added",
         "duplicate": "A similar lead already exists",
-        "generic_error": "Something went wrong",
+        "generic_error": "Something went wrong. Try again in a moment.",
         "copied": "Text copied",
         "copy_failed": "Could not copy — copy manually"
       },
@@ -2392,7 +2470,7 @@
         "website_placeholder": "Website (optional)",
         "notes_placeholder": "Internal notes",
         "name_required": "Name is required",
-        "submit_saving": "Saving...",
+        "submit_saving": "Saving…",
         "submit": "Add"
       },
       "modal_script": {
@@ -2401,7 +2479,7 @@
       },
       "modal_wa": {
         "title": "WhatsApp message to {name}",
-        "preparing": "Preparing profile link...",
+        "preparing": "Preparing profile link…",
         "copy": "Copy",
         "open": "Open in WhatsApp",
         "close": "Close"
@@ -2458,7 +2536,7 @@
       "reject_modal": {
         "title": "Reject request",
         "placeholder": "Reason for rejection (optional)",
-        "submitting": "Sending...",
+        "submitting": "Sending…",
         "submit": "Reject"
       },
       "reminders": {
@@ -2480,14 +2558,14 @@
         "date_label": "Certificate expiry (as printed on it)",
         "hint": "After this date the badge leaves the site on its own.",
         "submit": "Approve",
-        "submitting": "Approving..."
+        "submitting": "Approving…"
       },
       "revoke_modal": {
         "title": "Revoke kashrut badge",
         "body": "The badge leaves the business page right away, and the owner sees the reason on her dashboard.",
         "placeholder": "Reason (e.g. the certificate was withdrawn)",
         "submit": "Revoke badge",
-        "submitting": "Revoking..."
+        "submitting": "Revoking…"
       }
     },
     "reports": {
@@ -2529,7 +2607,7 @@
       "tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
       "tooltip_label": "Reviews moderation info",
       "count": "{filtered} of {total}",
-      "search_placeholder": "Search by business, user, title or text...",
+      "search_placeholder": "Search by business, user, title or text…",
       "filter_aria": "Filter by rating",
       "all_ratings": "All ratings",
       "columns": {
@@ -2540,11 +2618,11 @@
         "date": "Date",
         "actions": "Actions"
       },
-      "loading": "Loading reviews...",
+      "loading": "Loading reviews…",
       "empty": "No reviews to display",
       "stars_aria": "{stars} stars",
       "delete_aria": "Delete review by {user}",
-      "deleting": "Deleting...",
+      "deleting": "Deleting…",
       "delete": "Delete",
       "confirm_delete": "Delete the review by {user} on {producer}?",
       "default_user": "User",
@@ -2613,13 +2691,13 @@
       },
       "tests": {
         "not_configured": "✗ Not configured",
-        "testing": "Testing...",
+        "testing": "Testing…",
         "connected": "✓ Connected",
         "test_btn": "Test"
       },
       "save": {
         "confirm_prefix": "Save the following changes?",
-        "saving": "Saving...",
+        "saving": "Saving…",
         "submit": "Save settings",
         "nothing_to_save_title": "No changes to save",
         "unsaved_count": "{count} unsaved changes"
@@ -2677,7 +2755,7 @@
       "page_editor": {
         "title_placeholder": "Title",
         "body_placeholder": "Content (Markdown supported)",
-        "saving": "Saving...",
+        "saving": "Saving…",
         "save": "Save",
         "saved": "Saved ✓"
       }
@@ -3026,6 +3104,14 @@
             "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
+        "copy": {
+          "q": "How do I find where a piece of text appears on the site?",
+          "steps": [
+            "On “Site copy”: every text on the site, grouped the way the code groups it.",
+            "Search by the text itself or by its key, and filter by screen.",
+            "Each group says which screens show it. The screen is read only: a text change is made in code."
+          ]
+        },
         "settings": {
           "q": "How do I turn on the holiday window, Friday market or vacation mode?",
           "steps": [
@@ -3105,6 +3191,20 @@
       "removed_toast": "Passkey removed",
       "eye_show": "Show password",
       "eye_hide": "Hide password"
+    },
+    "copy": {
+      "title": "Site copy",
+      "intro": "Every string on the site, by its group in the code. Read only: copy is changed in the code.",
+      "search": "Search text or key",
+      "all_screens": "All screens",
+      "shown_on": "Shown on:",
+      "every_screen": "every screen",
+      "more_screens": "and {count} more",
+      "no_screen": "No screen found that uses this group",
+      "count": "{count} strings",
+      "shown_of": "Showing {shown} of {count}",
+      "more_rows": "{count} more in this group. Narrow the search.",
+      "empty": "No copy matches the search"
     }
   },
   "events": {
@@ -3130,8 +3230,8 @@
       "view_calendar": "Calendar",
       "filter_city_label": "Search by city",
       "filter_city_placeholder": "City or town name",
-      "loading_events": "Loading events...",
-      "loading_experiences": "Loading experiences...",
+      "loading_events": "Loading events…",
+      "loading_experiences": "Loading experiences…",
       "empty_events_title": "No events match this filter — yet",
       "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
       "empty_experiences_title": "New experiences on the way",
@@ -3164,7 +3264,7 @@
       "other": "Other"
     },
     "detail": {
-      "loading": "Loading event...",
+      "loading": "Loading event…",
       "not_found": "We couldn't find this event",
       "back_to_all": "← Back to all events",
       "register": "Register →",
@@ -3217,7 +3317,7 @@
       "other": "Other"
     },
     "detail": {
-      "loading": "Loading experience...",
+      "loading": "Loading experience…",
       "not_found": "We couldn't find this experience",
       "back_to_all": "← Back to all experiences",
       "all_experiences": "← All experiences",
@@ -3256,8 +3356,8 @@
       "field_title": "Experience title",
       "field_title_placeholder": "Example: Sourdough bread baking workshop",
       "field_description": "Detailed description",
-      "field_description_placeholder": "Tell us about the experience — what you'll learn, what to expect, who it's for...",
-      "checking_content": "Checking content...",
+      "field_description_placeholder": "Tell us about the experience — what you'll learn, what to expect, who it's for…",
+      "checking_content": "Checking content…",
       "rejected_fallback": "This content isn't a fit for the platform",
       "field_category": "Category",
       "category_none": "None",
@@ -3274,7 +3374,7 @@
       "location_home": "Private home",
       "location_public": "Public venue",
       "field_city": "City",
-      "field_city_placeholder": "Search city...",
+      "field_city_placeholder": "Search city…",
       "field_address": "Address (private — only you and the team see it)",
       "field_address_placeholder": "Street, number",
       "field_price": "Price per person (₪) — leave empty for free",
@@ -3285,7 +3385,7 @@
       "field_min_participants_placeholder": "e.g. 4",
       "field_min_participants_hint": "Optional. The experience page will show how many sign-ups it needs to go ahead",
       "field_requirements": "What to bring / prerequisites",
-      "field_requirements_placeholder": "Apron, closed shoes, ability to stand for two hours...",
+      "field_requirements_placeholder": "Apron, closed shoes, ability to stand for two hours…",
       "is_recurring": "Recurring experience (weekly / monthly)",
       "recurring_placeholder": "Example: Every Friday 9:00–12:00",
       "sessions_title": "Dates",
@@ -3295,7 +3395,7 @@
       "sessions_max": "You can add up to 12 upcoming dates.",
       "sessions_remove_confirm": "{count, plural, one {One person is signed up for this date. Removing it cancels the sign-up, and they will get an email.} other {# people are signed up for this date. Removing it cancels their sign-ups, and they will get an email.}}",
       "cancel": "Cancel",
-      "submitting": "Submitting...",
+      "submitting": "Submitting…",
       "cannot_publish": "Cannot publish",
       "submit_cta": "Submit for review",
       "toast_submitted": "Experience submitted for review",
@@ -3493,9 +3593,9 @@
         "email_label": "Email",
         "email_placeholder": "you@example.com",
         "message_label": "How can we help?",
-        "message_placeholder": "Tell us what you'd like to talk about...",
+        "message_placeholder": "Tell us what you'd like to talk about…",
         "submit": "Send",
-        "submit_loading": "Sending...",
+        "submit_loading": "Sending…",
         "success_toast": "Thanks! We'll get back to you soon",
         "email_direct": "Or reach us directly by email:"
       }
@@ -3506,11 +3606,11 @@
       "title": "Where are you?",
       "subtitle": "Pick a city or share your location — we'll show local businesses near you",
       "search_label": "Search city",
-      "search_placeholder": "Type a city name...",
+      "search_placeholder": "Type a city name…",
       "aria_label": "Choose a city",
       "close_aria": "Close",
       "geo_button": "Near me",
-      "geo_loading": "Finding...",
+      "geo_loading": "Finding…",
       "geo_denied": "We don't have location access — pick a city instead",
       "geo_failure": "We couldn't detect your location — pick a city instead",
       "skip": "Not now",
@@ -3526,9 +3626,9 @@
       "name_placeholder": "Suggested category name *",
       "name_example": "For example: fermented drinks",
       "examples_placeholder": "Product examples (optional)",
-      "examples_hint": "Kombucha, kefir, water kefir...",
+      "examples_hint": "Kombucha, kefir, water kefir…",
       "submit": "Submit request",
-      "submit_loading": "Sending...",
+      "submit_loading": "Sending…",
       "close": "Close",
       "toasts": {
         "success": "Thanks! Request received. In the meantime, pick the closest category.",
@@ -3540,7 +3640,7 @@
       "placeholder": "What's inaccurate? Hours, phone, address — every detail helps",
       "email_label": "Email for a reply (optional)",
       "submit": "Send",
-      "submit_loading": "Sending...",
+      "submit_loading": "Sending…",
       "close": "Close",
       "toasts": {
         "success": "Thanks! We'll check and update soon",
@@ -3658,7 +3758,7 @@
       "toggle_show": "Show password",
       "toggle_hide": "Hide password",
       "min_length": "At least {min} characters",
-      "checking": "Checking...",
+      "checking": "Checking…",
       "not_breached": "Not breached online",
       "different_from_current": "Different from current — verified on server",
       "strength": {
@@ -3804,7 +3904,7 @@
     "body_placeholder": "How was your experience?",
     "submit": "Publish review",
     "submit_update": "Update review",
-    "submit_saving": "Saving...",
+    "submit_saving": "Saving…",
     "cancel": "Cancel",
     "reply_heading": "Business reply",
     "reply_add": "Add reply",
@@ -3819,7 +3919,7 @@
     "login_prompt_title": "Write a review",
     "login_prompt_message": "To write a review, sign in to your account. Reviews here are written only after contacting the business through Mehamakor.",
     "contact_first_toast": "To write a review, first contact the business with one of the buttons here.",
-    "loading": "Loading reviews...",
+    "loading": "Loading reviews…",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
     "owner_empty_description": "Customers who contacted you through your page can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
@@ -3902,7 +4002,7 @@
     },
     "field_message_label": "How can we help?",
     "submit": "Send",
-    "submit_loading": "Sending...",
+    "submit_loading": "Sending…",
     "open_mail_fallback": "Open email directly →",
     "error_default": "The form failed to send. You can email us directly at the address below.",
     "mailto_subject": "Inquiry via the website",
@@ -3934,7 +4034,7 @@
   "search": {
     "hero": {
       "submit_aria": "Search",
-      "loading": "Loading results...",
+      "loading": "Loading results…",
       "no_results_for": "No results for",
       "no_results_hint": "Try different words, or browse all businesses and filter there.",
       "no_results_cta": "Browse all businesses →",
@@ -3948,7 +4048,7 @@
       "corrected_search_as_typed": "Search for “<bdi>{original}</bdi>” instead"
     },
     "smart": {
-      "loading": "Loading results...",
+      "loading": "Loading results…",
       "no_results_for": "No results for",
       "section_producers": "Businesses",
       "section_products": "Products",
@@ -3958,17 +4058,17 @@
     },
     "cities_autocomplete": {
       "remove_aria": "Remove {city}",
-      "placeholder": "Type a city name...",
+      "placeholder": "Type a city name…",
       "commit_hint": "Pick a city from the list to add it",
       "region_added": "Added",
       "region_remove_title": "Remove {region} cities"
     },
     "city_search": {
-      "placeholder": "Search city...",
+      "placeholder": "Search city…",
       "clear_aria": "Clear city"
     },
     "address_search": {
-      "placeholder": "Search address...",
+      "placeholder": "Search address…",
       "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual.",
       "provider_down_hint": "Address search is unavailable right now. You can continue with the town only — we'll place the business at the town centre and you can refine it later."
     },
@@ -4018,7 +4118,7 @@
   "report": {
     "trigger": "Report business",
     "form_heading": "Report business",
-    "reason_placeholder": "Tell us what the issue is...",
+    "reason_placeholder": "Tell us what the issue is…",
     "submit": "Send report",
     "cancel": "Cancel",
     "error_generic": "Submission error",
@@ -4033,6 +4133,7 @@
     "modal_title_experience": "Share this experience",
     "modal_title_recipe": "Share this recipe",
     "modal_title_organizer": "Share this organizer page",
+    "modal_title_product": "Share this product",
     "modal_title_rescue": "Share this bag",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
@@ -4068,7 +4169,7 @@
   "whatsapp": {
     "button": {
       "default_message": "Hi, I saw \"{productTitle}\" on Mehamakor and would love to hear more!",
-      "opening": "Opening..."
+      "opening": "Opening…"
     },
     "share_button": {
       "default_message": "I found {name} on Mehamakor — {url}",
@@ -4113,6 +4214,10 @@
     "disclaimer": {
       "body": "lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which is responsible for its products, its licensing, and its prices.",
       "terms_link": "Full details — Terms of Use"
+    },
+    "not_a_party": {
+      "named": "You deal directly with {name}. Mehamakor is not the seller and not a party to the transaction.",
+      "unnamed": "You deal directly with the business. Mehamakor is not the seller and not a party to the transaction."
     }
   },
   "location": {
@@ -4132,7 +4237,7 @@
       "close": "Close story panel",
       "generating": "Generating",
       "download": "Download",
-      "uploading": "Uploading...",
+      "uploading": "Uploading…",
       "save_cloudinary": "Save to Cloudinary",
       "copy_caption": "Copy caption",
       "copied": "Copied!",
@@ -4487,6 +4592,14 @@
           "registrations": {
             "label": "Signing up for an event or workshop:",
             "value": "Name, phone, and email. The details go to the business only for that sign-up, and are deleted 30 days after the date."
+          },
+          "orders": {
+            "label": "Orders and surprise bags:",
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+          },
+          "messages": {
+            "label": "WhatsApp and email messages:",
+            "value": "When you write to us on WhatsApp, we keep the phone number and the message text so we can reply. For WhatsApp messages we send, we keep the number, the message type and the delivery status. An email we send keeps its address and content only until it is sent, and the record of the send is deleted after 30 days. When you delete your account, the WhatsApp messages linked to its phone number are deleted."
           }
         }
       },
@@ -4758,7 +4871,7 @@
         "b48": "What not to do",
         "b49": {
           "i0": "**Don't:** Don't open with \"Welcome.\" That's wasted space. Use it for the story.",
-          "i1": "**Don't:** Don't write in passive voice. \"We believe...\" or \"I started in 2019...\" beats \"The company was founded in 2019...\"",
+          "i1": "**Don't:** Don't write in passive voice. \"We believe…\" or \"I started in 2019…\" beats \"The company was founded in 2019…\"",
           "i2": "**Don't:** Don't mention competitors. \"Better than X\" signals insecurity.",
           "i3": "**Don't:** Don't promise things you can't prove. \"The best product in the area\" — you can be sued for that.",
           "i4": "**Don't:** No emojis in the text. For emphasis use a heading, bold, or italics — not emojis."
@@ -4919,7 +5032,7 @@
         "b25": "Two extremes that don't work:",
         "b26": "**The first extreme:** an over-formatted reply. \"Greetings. Thank you for your inquiry. The full catalog will be sent in a separate file. For any further questions, please email us.\"",
         "b27": "**The problem:** the customer feels like she's talking to a robot. Or to a company that doesn't have time.",
-        "b28": "**The second extreme:** a completely ad-libbed reply. \"Hi Dana! How fun that you asked. So we make pita every day at 6 in the morning, we have 3 kinds — whole wheat, regular, and a new green pita with zaatar we just tried this week and it really came out tasty, if you want I can send you a photo...\"",
+        "b28": "**The second extreme:** a completely ad-libbed reply. \"Hi Dana! How fun that you asked. So we make pita every day at 6 in the morning, we have 3 kinds — whole wheat, regular, and a new green pita with zaatar we just tried this week and it really came out tasty, if you want I can send you a photo…\"",
         "b29": "**The problem:** it takes you 10 minutes per message. Not sustainable.",
         "b30": "**The right mix:**",
         "b31": {
@@ -4963,7 +5076,7 @@
         "b61": "Thanks for asking! If you need anything in the future — I'm here.",
         "b63": "What not to do",
         "b64": {
-          "i0": "**Don't:** Don't apologize if you replied within the standard (4 hours during work hours). An apology creates the impression of \"I hurt something.\" If you replied in a reasonable time — give a direct reply without \"sorry that...\"",
+          "i0": "**Don't:** Don't apologize if you replied within the standard (4 hours during work hours). An apology creates the impression of \"I hurt something.\" If you replied in a reasonable time — give a direct reply without \"sorry that…\"",
           "i1": "**Don't:** Don't send a \"?\" if the customer hasn't replied. It feels pressured. Send a full sentence or nothing.",
           "i2": "**Don't:** Don't post private customer messages in WhatsApp statuses — even without a name. Others will see it, understand that you share private chats, and won't write to you.",
           "i3": "**Don't:** Don't write in all caps. In English it's shouting. In Hebrew it reads as angry.",
@@ -5231,6 +5344,10 @@
         "rescue": {
           "title": "Rescue bags",
           "sub": "Publish today's surplus and hand it over against a code"
+        },
+        "google_profile": {
+          "title": "Google profile",
+          "sub": "Link your profile and check the details match"
         }
       },
       "pulse": {
@@ -5306,19 +5423,13 @@
       "completeness": {
         "red_headline": "A few key details left before you're live",
         "red_sub": "Location and contact details help customers find and reach you",
-        "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
-        "yellow_high_headline": "Almost there — {percent}% ready",
         "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
         "green_headline": "Profile complete",
-        "next_step_prefix": "Next step:",
         "cta": "Complete profile",
-        "cta_aria": "Complete your profile",
-        "ring_aria": "Profile completeness: {percent}%",
         "checklist_aria": "Profile completion progress",
         "checklist_done": "Done",
         "checklist_todo": "Still needed",
-        "checklist_sub": "A few more steps and your profile is ready for inquiries",
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
@@ -5339,7 +5450,18 @@
           "hours": "Opening hours"
         },
         "chip_required": "Required",
-        "chip_recommended": "Recommended"
+        "chip_recommended": "Recommended",
+        "draft_headline": "{count, plural, one {One more step before review} other {# more steps before review}}",
+        "draft_ready": "All set",
+        "counter": "{done} of {total}",
+        "improve_headline": "Improve your page",
+        "open_cta": "Complete",
+        "license_note": "We can't approve the page without a licence number",
+        "draft_steps": {
+          "details": "Business details",
+          "image": "A photo of the business or products",
+          "product": "First product"
+        }
       },
       "strength": {
         "heading": "Profile strength",
@@ -5463,6 +5585,17 @@
         "saved": "Saved",
         "upload_error": "Image upload failed. Please try again.",
         "save_error": "Save failed. Please try again."
+      },
+      "logo": {
+        "label": "Logo",
+        "where": "Shown beside the business name on the business page and the bag page",
+        "hint": "A square logo on a light background works best.",
+        "cta": "Upload a logo",
+        "replace_cta": "Replace logo",
+        "remove_cta": "Remove logo",
+        "uploading": "Uploading the logo…",
+        "upload_error": "The logo upload failed. Try again.",
+        "save_error": "Saving failed. Try again."
       },
       "location": {
         "heading": "Map location",
@@ -5881,7 +6014,7 @@
         "label": "City",
         "hint": "Shown on your organizer page under your name.",
         "save": "Save",
-        "saving": "Saving...",
+        "saving": "Saving…",
         "saved": "City updated",
         "error": "Couldn't save — try again"
       },
@@ -6416,6 +6549,9 @@
         "kind_helper": "Branch — a fixed shop or point of sale. Pickup point — where customers collect an order. Market stand — a stall at a market on set days.",
         "label_label": "Label",
         "label_hint": "The name customers see next to the point",
+        "pickup_note_label": "Pickup instructions",
+        "pickup_note_hint": "Shown to anyone collecting here, for example on the bag page and in the email after reserving. Not shown for an approximate point. You can leave it empty.",
+        "pickup_note_placeholder": "For example: come in through the back door and say the code at the counter",
         "label_placeholder": "e.g. The stall at Hanamal Market",
         "city_label": "City",
         "city_placeholder": "e.g. Haifa",
@@ -6732,7 +6868,7 @@
     "panel_close_label": "Close the assistant window",
     "log_label": "Conversation with the assistant",
     "input_label": "Type a question",
-    "input_placeholder": "Type a question...",
+    "input_placeholder": "Type a question…",
     "send_label": "Send question",
     "business": {
       "page_title": "Ask the assistant about {name}",
@@ -6864,7 +7000,7 @@
   "claim": {
     "loading": "Loading the page…",
     "kicker": "We prepared a page for you on Mehamakor",
-    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "explainer": "The page is not on the site yet. Once it is yours, complete it and send it for review.",
     "invalid": {
       "title": "This link is not active",
       "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
@@ -7089,6 +7225,8 @@
       "leftover_upcoming": "After pickup time ends, what wasn't collected will show here.",
       "allergens_title": "Allergens in the bag",
       "allergens_help": "What you tick is shown to buyers on the bag card, next to «as declared by the business».",
+      "pickup_note_pointer": "Pickup instructions, such as which entrance to use, go next to the address. They show on the bag page and in the buyer's email.",
+      "pickup_note_pointer_link": "Edit locations",
       "cancel_offer": "Cancel the bag",
       "cancel_offer_title": "Cancel today's bag?",
       "cancel_offer_none": "Nobody has reserved yet.",
@@ -7118,6 +7256,7 @@
       "worth_one": "Estimated value ₪{min}",
       "pickup_title": "Pickup today",
       "address_title": "Where to pick up",
+      "pickup_note": "Pickup instructions: {note}",
       "inside_title": "What's inside",
       "inside_body": "It's a surprise: the bag holds what's left today, so it changes from day to day.",
       "inside_typical": "Usually includes:",
@@ -7139,7 +7278,8 @@
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
-      "bar_cta": "Reserve the bag"
+      "bar_cta": "Reserve the bag",
+      "calendar_title": "Surprise bag pickup: {business_name}"
     }
   },
   "holidays": {
@@ -7245,11 +7385,11 @@
   "contact_cta": {
     "whatsapp": "Message on WhatsApp",
     "phone": "Call",
-    "website": "Order on the website",
+    "website": "Order on the business's site",
     "email": "Send an email",
     "instagram": "Message on Instagram",
     "facebook": "Message on Facebook",
-    "external_order": "Order",
+    "external_order": "Order on the business's site",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
   },
   "registration": {
@@ -7299,7 +7439,7 @@
       "phone": "Phone",
       "email": "Email",
       "submit": "Send sign-up",
-      "submitting": "Sending...",
+      "submitting": "Sending…",
       "privacy": "Your details go to the host only for this sign-up, and are deleted 30 days after the date.",
       "success": "You're signed up. We sent a confirmation email with a cancellation link.",
       "required": "This field is required",
@@ -7319,7 +7459,7 @@
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",
       "confirm": "Cancel the sign-up",
-      "cancelling": "Cancelling...",
+      "cancelling": "Cancelling…",
       "done": "Your sign-up was cancelled.",
       "not_found": "This link isn't valid or has expired.",
       "generic": "Something went wrong. Try again.",
@@ -7458,9 +7598,9 @@
     },
     "items": {
       "gallery_story": {
-        "label": "Photo gallery, About and Behind the business",
+        "label": "Photo gallery, logo, About and Behind the business",
         "tile_title": "Gallery and story",
-        "tile_line": "Photos, \"About\" and \"Behind the business\""
+        "tile_line": "Logo, photos, \"About\" and \"Behind the business\""
       },
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
@@ -7671,6 +7811,9 @@
       },
       "experiences": {
         "label": "Experiences and visits at your place, with sign-up on the site"
+      },
+      "google_profile": {
+        "label": "Link your Google profile and check its details match"
       }
     },
     "total_line": "{count} tools, all of them free during the launch period. Tap a card to see all its tools.",
@@ -7679,13 +7822,13 @@
   "owner_invite": {
     "loading": "Loading the invite…",
     "title": "The page for {business} is ready",
-    "subtitle": "This is how the page will look on the site. All that is left is to review it, set a password and approve.",
-    "preview_note": "Something not quite right? You can fix it from the dashboard right after you approve, or write to us.",
-    "email_label": "Email address (your username)",
+    "subtitle": "This is how the page will look on the site.",
+    "preview_note": "Something not right? Fix it in the dashboard after you approve.",
+    "email_label": "Email",
     "email_required": "An email address is required.",
     "send_code": "Send a verification code",
     "sending_code": "Sending…",
-    "code_sent": "We sent a code to this address. Did not arrive? Check the address and your spam folder, or write to us.",
+    "code_sent": "We sent a code. Not there? Check your spam folder.",
     "code_label": "Verification code",
     "code_required": "Request a verification code and enter it.",
     "password_label": "New password",
@@ -7807,12 +7950,12 @@
     "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
     "resend_cta": "Didn't get a code? Send again",
-    "sending": "Sending...",
+    "sending": "Sending…",
     "resend_in": "You can resend a code in {seconds}s",
     "code_label": "Verification code",
     "code_placeholder": "6-digit code",
     "confirm_cta": "Verify",
-    "confirming": "Verifying...",
+    "confirming": "Verifying…",
     "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
     "error_invalid": "Wrong or expired code. Please try again.",
     "error_no_phone": "No phone number on your profile. Add one, then verify.",
@@ -7843,8 +7986,43 @@
     "line": "{qty} × {name}",
     "back": "Back",
     "failed": "That didn't work. Please try again.",
+    "write_review": "Write a review",
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
+  },
+  "product_variants": {
+    "from": "From ",
+    "choose": "Choose",
+    "chosen": "{count, plural, one {One chosen} other {# chosen}}",
+    "list_title": "Options",
+    "pick_hint": "Pick an option and add it",
+    "editor_title": "Options (sizes or flavours)",
+    "editor_where": "Shown on the business page under the product name; customers ordering on the site pick one.",
+    "editor_hint": "Without a price, the option sells at the product's price. Empty = one product, no choice.",
+    "name_label": "Option name",
+    "name_placeholder": "e.g. Large",
+    "price_label": "Price in ₪ (optional)",
+    "price_placeholder": "e.g. 45",
+    "in_stock": "In stock",
+    "add": "Add an option",
+    "remove": "Remove {name}",
+    "move_up": "Move up: {name}",
+    "move_down": "Move down: {name}",
+    "cap": "Up to {max} options per product.",
+    "save": "Save options",
+    "saved": "Options saved",
+    "save_failed": "The options were not saved. Please try again.",
+    "price_invalid": "The price must be a number from 1 to 10,000, for example 45"
+  },
+  "product_weekdays": {
+    "editor_title": "Days the product is available",
+    "editor_where": "Shown on the business page under the product's name. Site orders can only pick a time on one of these days.",
+    "every_day": "Every day",
+    "days_short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+    "days_long": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    "none_picked": "Pick at least one day, or «Every day»",
+    "line_one": "Available on {day}s",
+    "line_many": "Available on {days}"
   },
   "price_unit": {
     "unit": "per unit",
@@ -7921,6 +8099,64 @@
       "cancelled": "Cancelled",
       "expired": "No reply in time",
       "no_show": "Not collected"
+    }
+  },
+  "google_profile": {
+    "back": "Back to tools",
+    "title": "Your Google profile",
+    "lead": "Many customers search Google first. A Google business profile with a link to your page here helps them find you.",
+    "loading": "Loading…",
+    "load_error": "We couldn't load this tool. Try again.",
+    "retry": "Try again",
+    "unavailable": "The connection to Google isn't available right now, so the profile can't be linked or checked. The guide below works without it.",
+    "guide_title": "How to open or update a Google profile",
+    "step_1": "Go to Google Business Profile, and open a profile for your business or verify one that already exists.",
+    "step_2": "In the «Website» field, paste the link to your page on Mehamakor.",
+    "step_3": "Check that the name, phone and opening hours match your page here.",
+    "open_google": "Open Google Business Profile",
+    "copy_link": "Copy the link to your page",
+    "copied": "Link copied",
+    "link_after_approval": "The link to your page will appear here once your business is approved.",
+    "review_rule": "You may ask customers to write a Google review. You may not offer a discount, a gift or anything else for it, or ask only for good reviews. That breaks Google's rules.",
+    "link_title": "Link the profile to your page",
+    "not_linked": "Not linked yet. Once linked, you can check that Google shows the same details as here, and the Google rating appears on your page once it has at least 20 reviews.",
+    "search_label": "Business name on Google",
+    "search_helper": "Leave it empty and we'll search by your business name and city.",
+    "search": "Search Google",
+    "none": "We didn't find a profile like that. Try the name exactly as it appears on Google.",
+    "pick": "This is my business",
+    "linked": "Your Google profile is linked to your page.",
+    "unlink": "Unlink",
+    "check_title": "Does Google show the same details?",
+    "check_intro": "We'll compare the name, phone and website on Google with your page here.",
+    "run_check": "Check",
+    "run_again": "Check again",
+    "field_name": "Name",
+    "field_phone": "Phone",
+    "field_website": "Website",
+    "ours": "Here",
+    "google": "On Google",
+    "verdict_same": "Same",
+    "verdict_different": "Different",
+    "verdict_missing": "Missing on Google",
+    "fix_hint": "Fix it on Google or on your page here, so customers see the same details in both places.",
+    "hours_title": "Opening hours",
+    "hours_note": "Each side writes hours differently, so compare them yourself.",
+    "empty_value": "—"
+  },
+  "my_group_buys": {
+    "title": "My group buys",
+    "empty": "You haven't joined a group buy yet.",
+    "empty_cta": "To group buys",
+    "load_error": "We couldn't load your group buys.",
+    "quantity_unit": "{count} {unit}",
+    "quantity": "Quantity: {count}",
+    "deadline": "Joining closes {date}",
+    "status": {
+      "open": "Open to join",
+      "funded": "Reached its goal",
+      "fulfilled": "Completed",
+      "cancelled": "Cancelled"
     }
   }
 }

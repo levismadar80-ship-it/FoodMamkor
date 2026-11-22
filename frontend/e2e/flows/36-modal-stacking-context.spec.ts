@@ -25,7 +25,7 @@ import { detailPath, openDetail, pickProducer, watchPageErrors, REQUIREMENTS } f
  * (`pointer-events-auto`), and that pill is what was measured returning at the
  * header centre BEFORE the portal — so on this surface the assertion is known
  * to be falsifiable rather than assumed to be. Evidence:
- * `frontend/qa-meh-2215-stacking-probe.mjs`, whose run reported
+ * `qa-meh-2215-stacking-probe.mjs [deleted probe, docs/media-archive.md]`, whose run reported
  * `nav.pointer-events-auto` at the header centre and `button.flex-1` (a tab)
  * at the tab-bar centre, with a luma delta of 0.0 on both — i.e. neither
  * surface darkened, so neither was under the scrim.

@@ -23,7 +23,7 @@ description · heuristic/lens violated · location (file:line OR screenshot area
 Severity: 0 polish · 1 cosmetic · 2 minor friction · 3 clear usability/brand-LOCK violation · 4 blocker (broken/unusable/legal).
 
 ## Capture (our infra)
-Widths 375 / 768 / 1280 / 1440, fold + full. staging SSO/Vercel-protected → CC-web env: Network=Custom + staging.mehamakor.online; Playwright headers x-vercel-protection-bypass=$VERCEL_AUTOMATION_BYPASS_SECRET + x-vercel-set-bypass-cookie=true; target /he. Prefer DOM/text probe over PNGs. Real entity for dynamic routes; skip "twt". (Original doc said web_fetch live page — superseded: prod stale, staging gated.)
+Widths 375 / 768 / 1280 / 1440, fold + full. staging SSO/Vercel-protected → CC-web env: Network=Custom + staging.mehamakor.online; Playwright: `scopeBypassToOrigin(context, BASE, …)` from `frontend/e2e/_bypass-scope.mjs` (bypass cookie, never `extraHTTPHeaders`, MEH-3607; `.claude/rules/testing.md` staging step 2); target /he. Prefer DOM/text probe over PNGs. Real entity for dynamic routes; skip "twt". (Original doc said web_fetch live page — superseded: prod stale, staging gated.)
 
 ## Output flow
 findings table severity-sorted → dedup vs Linear LIVE → tickets (template 06/07) → CC draft PRs off staging → Sapir merges. Skeptic Mode: file:line evidence, Phase 0 design-vs-code, STOP on scope/asset/central-component.

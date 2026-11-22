@@ -17,6 +17,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import OfferCard from "@/components/ui/OfferCard";
 import { GroupBuyProgressMark } from "@/components/ui/SeedProgressMark";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 /**
  * Module:   RescueSection
@@ -118,6 +119,7 @@ export default function RescueSection({ producer }) {
       <SectionHeading size="content">{t("section.title")}</SectionHeading>
       <LoginPromptModal
         open={loginOpen}
+        reason="rescue"
         onClose={() => setLoginOpen(false)}
         title={t("login_prompt_title")}
         message={t("login_prompt_message")}
@@ -235,6 +237,7 @@ export default function RescueSection({ producer }) {
               >
                 {t("section.cta")}
               </Button>
+              <NotAPartyLine name={producer?.name} testId="rescue-not-a-party" />
               {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
                   confirmation, where confirm.terms still carries it. */}
               {cancelUntil && (

@@ -16,14 +16,20 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import ProductFacts from "@/components/public/ProductFacts";
+import ShareButton from "@/components/ShareButton";
+import { usePreviewMode } from "@/lib/preview-mode";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
+import ProductVariantsBlock from "@/components/public/ProductVariantsBlock";  // MEH-3617
 import {
   formatPriceRange,
   getWhatsAppHref,
   normalizePhone,
+  priceLabelText,
   withReferralParams,
 } from "@/lib/utils";
 import {
@@ -160,6 +166,14 @@ const OVERLAY_CONTROL_CLS =
   "flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-text " +
   "transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/40";
 
+/** MEH-3622: this page's address with `?product=<id>` — the route, the slug
+ *  and the locale prefix stay whatever the visitor is on. */
+export function productShareUrl(productId) {
+  if (typeof window === "undefined") return undefined;
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}?product=${encodeURIComponent(productId)}`;
+}
+
 export default function ProductSheet({
   product,
   producer,
@@ -171,6 +185,10 @@ export default function ProductSheet({
   total = 1,
   onPrev,
   onNext,
+  // MEH-3617: the order cart's view of this product (menu row, picks, change)
+  // when the business takes orders; null otherwise. Only read by the variants
+  // block — a product with two or more variants is added from here.
+  order = null,
 }) {
   const t = useTranslations();
   // MEH-1524: the source line is defined once, under whatsapp.question_chips,
@@ -182,6 +200,7 @@ export default function ProductSheet({
   // The chevron POSITIONS do not: they are logical (start-/end-) and mirror
   // themselves, same as Lightbox.jsx:209,218.
   const isRtl = useLocale() === "he";
+  const isPreview = usePreviewMode(); // MEH-3622: no share button in the owner's preview
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
   const scrollRef = useRef(null);
@@ -343,7 +362,8 @@ export default function ProductSheet({
   const dietKeys = productDietKeys(product);
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
-  // free-text price_range is DATA (MEH-1140 — never reformatted) and renders
+  // free-text price_range is DATA (MEH-1140 — never reformatted, except a
+  // bare number or range, MEH-3076 priceLabelText) and renders
   // in the natural direction, since forcing dir="ltr" corrupts a
   // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
   const numericPrice =
@@ -353,7 +373,7 @@ export default function ProductSheet({
   // MEH-2924: no price at all = a seasonal price, said in words — never «₪».
   const freeTextPrice = numericPrice
     ? null
-    : product.price_range || t("product_price.varies");
+    : priceLabelText(product.price_range) || t("product_price.varies");
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).
@@ -437,6 +457,23 @@ export default function ProductSheet({
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
+        {/* MEH-3622: share THIS product — the page's own URL + `?product=<id>`,
+            which the page already opens on arrival (PR #3972). Wolt and Etsy
+            give every item its own link; a post about one cake should open
+            the cake. Mirrors the close button: start corner, same inset.
+            Hidden in the owner's preview (MEH-2916): there the page URL is the
+            dashboard preview or a private draft link. The URL is built only
+            when the button is clicked, never rendered, so SSR is not a concern. */}
+        {!isPreview && (
+          <div className="absolute top-3 start-3 z-10" data-testid="product-sheet-share">
+            <ShareButton
+              variant="overlay"
+              subject="product"
+              url={productShareUrl(product.id)}
+              title={product.name}
+            />
+          </div>
+        )}
 
         {/* Scroll body. The description is the reason this sheet exists, so it
             is the thing allowed to grow — the CTA lives in the footer below,
@@ -565,6 +602,7 @@ export default function ProductSheet({
             <h2 className="font-headline-md text-xl font-bold text-text">
               {product.name}
             </h2>
+            <ProductWeekdaysLine product={product} className="-mt-2 text-sm text-fg-muted" />
 
             {/* Quiet text pills. Per-PRODUCT flags, so no "100%" language and no
                 whole-business claim — MEH-1508 owns the producer-level facility
@@ -621,6 +659,12 @@ export default function ProductSheet({
                 {freeTextPrice}
               </p>
             )}
+            <ProductVariantsBlock
+              product={product}
+              orderable={order?.orderable ?? null}
+              picks={order?.picks}
+              onChange={order?.onChange}
+            />
           </div>
         </div>
 
@@ -637,7 +681,7 @@ export default function ProductSheet({
                   }
                 : {})}
               // The WhatsApp testid is load-bearing outside this ticket's scope
-              // (frontend/e2e/_qa-archive/qa-meh1901-sheet.mjs:87 queries it), so a WA
+              // (qa-meh1901-sheet.mjs:87 [deleted probe, docs/media-archive.md] queries it), so a WA
               // primary keeps it byte-for-byte; other channels get the neutral
               // id. `data-method` is the stable discriminator either way.
               data-testid={waIsPrimary ? "product-sheet-wa-cta" : "product-sheet-cta"}

@@ -36,6 +36,7 @@ import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
 import { siteOgImageUrl } from "@/lib/og-site-image";
+import { variantsOf } from "@/lib/product-variants";  // MEH-3617
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -61,6 +62,17 @@ function producerSeoT(locale) {
   return SEO_T[loc];
 }
 const countryLabel = (locale) => producerSeoT(locale)("country");
+// MEH-3076: the business's first category in the page's language, for the
+// <title> and meta description (category_names.<slug>; the DB name when the
+// slug has no entry). The DB category names now DO have message keys, so the
+// HOT-006 note above no longer holds for them. JSON-LD keeps the DB name in
+// its own fields; its `name` follows buildTitle like the page title does.
+function localCategory(producer, locale) {
+  const first = producer?.categories?.[0];
+  const name = first?.name || "";
+  const names = (SEO_MESSAGES[locale] ?? SEO_MESSAGES.he).category_names ?? {};
+  return first?.slug && Object.hasOwn(names, first.slug) ? names[first.slug] : name;
+}
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
 
 // MEH-3035: English names for schema.org paymentAccepted (a language-neutral
@@ -112,7 +124,7 @@ export function serializeJsonLd(obj) {
 export function buildTitle(producer, locale = "he") {
   if (!producer?.name) return brandFor(locale);
 
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`title_${shape}`, { name: producer.name, category, city, brand: brandFor(locale) });
@@ -143,7 +155,7 @@ export function buildDescription(producer, locale = "he") {
   if (text) {
     return text.length > 160 ? text.slice(0, 157) + "..." : text;
   }
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`description_${shape}`, { name: producer.name, category, city });
@@ -333,30 +345,11 @@ function buildOfferCatalog(producer, locale = "he") {
 
   const itemListElement = ordered
     .filter((p) => p?.name?.trim())
-    .slice(0, OFFER_CATALOG_MAX)
-    .map((p) => {
-      const item = { "@type": "Product", name: p.name.trim() };
-      if (p.description?.trim()) item.description = p.description.trim();
-      const image = absoluteUrl(p.image_url);
-      if (image) item.image = image;
-
-      const offer = { "@type": "Offer", itemOffered: item };
-      // Only a NUMERIC price becomes a priceSpecification. `price_range` is a
-      // free-text DB label (models.py:1076, LEGACY) — "20-30 ₪", "משתנה" —
-      // and putting it in minPrice would emit a price that is not a number.
-      // maxPrice falls back to minPrice so a single-price product still
-      // yields a well-formed specification rather than a half-open range.
-      const minPrice = toPrice(p.price_min);
-      if (minPrice != null) {
-        offer.priceSpecification = {
-          "@type": "PriceSpecification",
-          minPrice,
-          maxPrice: toPrice(p.price_max) ?? minPrice,
-          priceCurrency: "ILS",
-        };
-      }
-      return offer;
-    });
+    // MEH-3617: a product with sizes or flavours is one Offer per variant,
+    // each named «{product} · {variant}» at its own price. The cap counts
+    // offers, so it is taken after the variants are spread.
+    .flatMap((p) => (variantsOf(p).length ? variantsOf(p).map((v) => variantOffer(p, v)) : [productOffer(p)]))
+    .slice(0, OFFER_CATALOG_MAX);
 
   if (itemListElement.length === 0) return null;
   return {
@@ -369,6 +362,46 @@ function buildOfferCatalog(producer, locale = "he") {
     name: producerSeoT(locale)("offer_catalog_name"),
     itemListElement,
   };
+}
+
+/**
+ * MEH-3617: one variant as an Offer. Its own price, or the product's.
+ * @param {any} p
+ * @param {{ name: string, price_agorot?: number | null, in_stock?: boolean }} v
+ */
+function variantOffer(p, v) {
+  const offer = productOffer({ ...p, name: `${p.name.trim()} · ${v.name}` });
+  if (typeof v.price_agorot === "number") {
+    const price = String(v.price_agorot / 100);
+    offer.priceSpecification = { "@type": "PriceSpecification", minPrice: price, maxPrice: price, priceCurrency: "ILS" };
+  }
+  if (v.in_stock === false) offer.availability = "https://schema.org/OutOfStock";
+  return offer;
+}
+
+/** @param {any} p */
+function productOffer(p) {
+  const item = { "@type": "Product", name: p.name.trim() };
+  if (p.description?.trim()) item.description = p.description.trim();
+  const image = absoluteUrl(p.image_url);
+  if (image) item.image = image;
+
+  const offer = { "@type": "Offer", itemOffered: item };
+  // Only a NUMERIC price becomes a priceSpecification. `price_range` is a
+  // free-text DB label (models.py:1076, LEGACY) — "20-30 ₪", "משתנה" —
+  // and putting it in minPrice would emit a price that is not a number.
+  // maxPrice falls back to minPrice so a single-price product still
+  // yields a well-formed specification rather than a half-open range.
+  const minPrice = toPrice(p.price_min);
+  if (minPrice != null) {
+    offer.priceSpecification = {
+      "@type": "PriceSpecification",
+      minPrice,
+      maxPrice: toPrice(p.price_max) ?? minPrice,
+      priceCurrency: "ILS",
+    };
+  }
+  return offer;
 }
 
 /** MEH-3348: where a delivering business delivers — "Israel" when nationwide,

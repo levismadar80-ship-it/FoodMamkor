@@ -161,6 +161,15 @@ describe("RescueOfferPage — an available bag", () => {
     expect(screen.getAllByTestId("rescue-reserve")).toHaveLength(1);
   });
 
+  // MEH-3570: the bag page reserves too, so it names the seller and says
+  // Mehamakor is not a party, the same line as the business page section.
+  it("under the reserve button: the deal is with the business, Mehamakor is not a party", async () => {
+    await renderWith(offer());
+    expect(screen.getByTestId("rescue-not-a-party").textContent).toBe(
+      "את העסקה עושים ישירות מול מאפיית ההצלה. מהמקור לא המוכרת ולא צד לעסקה.",
+    );
+  });
+
   it("a range of worth reads as a line, not a struck figure", async () => {
     await renderWith(offer({ value_max_agorot: 7000 }));
     expect(screen.queryByTestId("rescue-offer-worth")).toBeNull();
@@ -191,6 +200,33 @@ describe("RescueOfferPage — an available bag", () => {
   it("no description → no empty line", async () => {
     await renderWith(offer({ producer: { ...offer().producer, short_description: null } }));
     expect(screen.queryByTestId("rescue-offer-business-about")).toBeNull();
+  });
+});
+
+describe("RescueOfferPage — pickup note (MEH-3593)", () => {
+  it("no note → no line", async () => {
+    await renderWith(offer({ pickup_note: null }));
+    expect(screen.queryByTestId("rescue-offer-pickup-note")).toBeNull();
+  });
+  it("a note → one line with it", async () => {
+    await renderWith(offer({ pickup_note: "דלת אחורית" }));
+    expect(screen.getByTestId("rescue-offer-pickup-note").textContent).toBe(
+      lookup("rescue.offer_page.pickup_note").replace("{note}", "דלת אחורית"),
+    );
+  });
+});
+
+describe("RescueOfferPage — the business's logo (MEH-3611)", () => {
+  it("a logo → it sits in the business row's circle, not cropped", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, logo_url: "https://res.cloudinary.com/x/image/upload/logo.png" } }));
+    const img = screen.getByTestId("rescue-offer-business").querySelector("img");
+    expect(img?.getAttribute("src")).toContain("logo.png");
+    expect(img?.className).toContain("object-contain");
+  });
+
+  it("no logo → the letter avatar, no image", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, logo_url: null } }));
+    expect(screen.getByTestId("rescue-offer-business").querySelector("img")).toBeNull();
   });
 });
 
@@ -235,6 +271,20 @@ describe("RescueOfferPage — what is inside and allergens", () => {
     expect(screen.getByTestId("rescue-offer-allergens-declared").textContent).toContain(
       lookup("settings.products.form.allergen_gluten"),
     );
+  });
+  // MEH-3610: the pickup window under the title is the shared PickupLine.
+  it("the pickup window reads label, then the window", async () => {
+    await renderWith(offer());
+    const line = screen.getByTestId("rescue-offer-pickup").textContent;
+    expect(line.startsWith(`${lookup("rescue.offer_page.pickup_title")} `)).toBe(true);
+    expect(line).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}$/);
+  });
+  // MEH-3610: the bag draws the group buy's AllergenSection, which reads only
+  // known codes; the bag's own copy printed whatever key the list held.
+  it("an unknown allergen code is not printed as a raw key", async () => {
+    await renderWith(offer({ allergens: ["not_a_code"] }));
+    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared"));
+    expect(screen.queryByTestId("rescue-offer-allergens-declared")).toBeNull();
   });
 });
 
@@ -300,6 +350,40 @@ describe("RescueOfferPage — reserving", () => {
     ]);
     await renderWith(offer());
     await waitFor(() => expect(screen.getByTestId("rescue-offer-reserved").textContent).toContain("7310"));
+  });
+
+  it("a reserved bag offers «הוספה ליומן» for its pickup window (MEH-3616 button)", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      {
+        id: "r1", offer_id: "o1", producer_id: "p1", qty: 1, status: "reserved", pickup_code: "7310",
+        price_agorot: 2500, cancel_until: iso(HOUR / 2), pickup_start: iso(HOUR), pickup_end: iso(3 * HOUR),
+        reviewed: false, cancelled_by_business: false,
+      },
+    ]);
+    await renderWith(offer());
+    const btn = await screen.findByTestId("rescue-offer-add-to-calendar");
+    expect(btn.textContent).toBe(lookup("events.detail.add_to_calendar"));
+  });
+
+  it("no reservation → no calendar button", async () => {
+    await renderWith(offer());
+    expect(screen.getByTestId("rescue-reserve")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-offer-add-to-calendar")).toBeNull();
+  });
+
+  it("a handed bag → no calendar button (the pickup already happened)", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      {
+        id: "r1", offer_id: "o1", producer_id: "p1", qty: 1, status: "handed", pickup_code: "7310",
+        price_agorot: 2500, cancel_until: iso(HOUR / 2), pickup_start: iso(HOUR), pickup_end: iso(3 * HOUR),
+        reviewed: true, cancelled_by_business: false,
+      },
+    ]);
+    await renderWith(offer());
+    await waitFor(() => expect(screen.getByTestId("rescue-offer-reserved")).toBeTruthy());
+    expect(screen.queryByTestId("rescue-offer-add-to-calendar")).toBeNull();
   });
 
   it("a reservation on ANOTHER bag of the same business is not shown on this one", async () => {

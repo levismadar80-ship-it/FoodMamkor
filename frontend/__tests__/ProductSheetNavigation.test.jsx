@@ -48,6 +48,8 @@ vi.mock("next/image", () => ({
 // The two carets carry a testid EACH — several specs below ask which glyph
 // landed on which side, and a shared stub would erase the answer.
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
   Phone: () => <span data-testid="icon-phone" />,
