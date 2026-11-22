@@ -487,9 +487,12 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
  * @summary Admin List Group Buys
  */
 export const adminListGroupBuysAdminGroupBuysGetResponseCommitsCountDefault = 0;
+export const adminListGroupBuysAdminGroupBuysGetResponseJoinsClosedDefault = false;
 export const adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault = false;
+export const adminListGroupBuysAdminGroupBuysGetResponseUserWaitlistedDefault = false;
 
 export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListGroupBuysAdminGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -498,9 +501,21 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-3610: the branch a group buy is picked up from, as public as the\nbusiness made it. An `approximate` branch gives the city only — no street\nand no pin (MEH-829, the product_order_views.pickup_address rule).')),/*#__PURE__*/ zod.null()])),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -510,6 +525,7 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -518,7 +534,8 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
-  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault)
+  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault),
+  "user_waitlisted": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserWaitlistedDefault)
 }).check(/*#__PURE__*/ zod.describe('Full detail — includes whether the current user has committed.'))
 export const AdminListGroupBuysAdminGroupBuysGetResponse = /*#__PURE__*/ zod.array(AdminListGroupBuysAdminGroupBuysGetResponseItem)
 
@@ -975,6 +992,8 @@ export const listProducersAdminProducersGetResponseProductsItemIsNoAddedSugarDef
 export const listProducersAdminProducersGetResponseProductsItemIsVeganDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemNoAllergensDefault = false;
+export const listProducersAdminProducersGetResponseProductsItemVariantsItemInStockDefault = true;
+export const listProducersAdminProducersGetResponseProductsItemVariantsDefault = [];
 export const listProducersAdminProducersGetResponseProductsDefault = [];
 export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
@@ -1115,8 +1134,10 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), listProducersAdminProducersGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseOffersDeliveryDefault),
@@ -1172,7 +1193,13 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), listProducersAdminProducersGetResponseProductsItemVariantsDefault)
 })), listProducersAdminProducersGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
@@ -1277,6 +1304,8 @@ export const adminCreateProducerAdminProducersPostResponseProductsItemIsNoAddedS
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemNoAllergensDefault = false;
+export const adminCreateProducerAdminProducersPostResponseProductsItemVariantsItemInStockDefault = true;
+export const adminCreateProducerAdminProducersPostResponseProductsItemVariantsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
@@ -1417,8 +1446,10 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminCreateProducerAdminProducersPostResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseOffersDeliveryDefault),
@@ -1474,7 +1505,13 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminCreateProducerAdminProducersPostResponseProductsItemVariantsDefault)
 })), adminCreateProducerAdminProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
@@ -1576,6 +1613,8 @@ export const pendingProducersAdminProducersPendingGetResponseProductsItemIsNoAdd
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemNoAllergensDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseProductsItemVariantsItemInStockDefault = true;
+export const pendingProducersAdminProducersPendingGetResponseProductsItemVariantsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
@@ -1716,8 +1755,10 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), pendingProducersAdminProducersPendingGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseOffersDeliveryDefault),
@@ -1773,7 +1814,13 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), pendingProducersAdminProducersPendingGetResponseProductsItemVariantsDefault)
 })), pendingProducersAdminProducersPendingGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
@@ -1938,6 +1985,8 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNo
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemNoAllergensDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemVariantsItemInStockDefault = true;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemVariantsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
@@ -2078,8 +2127,10 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminGetProducerAdminProducersProducerIdGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOffersDeliveryDefault),
@@ -2135,7 +2186,13 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminGetProducerAdminProducersProducerIdGetResponseProductsItemVariantsDefault)
 })), adminGetProducerAdminProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
@@ -2237,6 +2294,8 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemI
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemNoAllergensDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemVariantsItemInStockDefault = true;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemVariantsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
@@ -2377,8 +2436,10 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminUpdateProducerAdminProducersProducerIdPutResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseOffersDeliveryDefault),
@@ -2434,7 +2495,13 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemVariantsDefault)
 })), adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
@@ -2555,7 +2622,8 @@ export const AdminListLocationsAdminProducersProducerIdLocationsGetResponseItem 
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 export const AdminListLocationsAdminProducersProducerIdLocationsGetResponse = /*#__PURE__*/ zod.array(AdminListLocationsAdminProducersProducerIdLocationsGetResponseItem)
 
@@ -2580,7 +2648,8 @@ export const AdminCreateLocationAdminProducersProducerIdLocationsPostResponse = 
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 
 
@@ -2610,7 +2679,8 @@ export const AdminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutRe
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 
 
@@ -2817,6 +2887,8 @@ export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroups
 export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault = false;
 export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault = false;
 export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseVariantsItemInStockDefault = true;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseVariantsDefault = [];
 
 export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2841,7 +2913,13 @@ export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroups
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseVariantsDefault)
 })
 export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem)
 
@@ -2887,6 +2965,8 @@ export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponse
 export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault = false;
 export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault = false;
 export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseVariantsItemInStockDefault = true;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseVariantsDefault = [];
 
 export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2911,7 +2991,13 @@ export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponse
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseVariantsDefault)
 })
 export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponse = /*#__PURE__*/ zod.array(AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem)
 
@@ -2926,6 +3012,8 @@ export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponse
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseNoAllergensDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseVariantsItemInStockDefault = true;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseVariantsDefault = [];
 
 export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2950,7 +3038,13 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseVariantsDefault)
 })
 
 
@@ -2970,6 +3064,8 @@ export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupP
 export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault = false;
 export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault = false;
 export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseVariantsItemInStockDefault = true;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseVariantsDefault = [];
 
 export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2994,7 +3090,13 @@ export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupP
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseVariantsDefault)
 })
 
 
@@ -4751,8 +4853,10 @@ export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostRespon
  * @summary List Group Buys
  */
 export const listGroupBuysGroupBuysGetResponseCommitsCountDefault = 0;
+export const listGroupBuysGroupBuysGetResponseJoinsClosedDefault = false;
 
 export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listGroupBuysGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -4761,9 +4865,21 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listGroupBuysGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-3610: the branch a group buy is picked up from, as public as the\nbusiness made it. An `approximate` branch gives the city only — no street\nand no pin (MEH-829, the product_order_views.pickup_address rule).')),/*#__PURE__*/ zod.null()])),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -4773,6 +4889,7 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListGroupBuysGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListGroupBuysGroupBuysGetResponseItem)
@@ -4800,9 +4917,12 @@ export const CountGroupBuysByStatusGroupBuysCountsGetResponse = /*#__PURE__*/ zo
  * @summary Get Group Buy
  */
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault = 0;
+export const getGroupBuyGroupBuysGroupBuyIdGetResponseJoinsClosedDefault = false;
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault = false;
+export const getGroupBuyGroupBuysGroupBuyIdGetResponseUserWaitlistedDefault = false;
 
 export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -4811,9 +4931,21 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-3610: the branch a group buy is picked up from, as public as the\nbusiness made it. An `approximate` branch gives the city only — no street\nand no pin (MEH-829, the product_order_views.pickup_address rule).')),/*#__PURE__*/ zod.null()])),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -4823,6 +4955,7 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -4831,7 +4964,8 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
-  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault)
+  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault),
+  "user_waitlisted": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserWaitlistedDefault)
 }).check(/*#__PURE__*/ zod.describe('Full detail — includes whether the current user has committed.'))
 
 
@@ -4842,9 +4976,21 @@ export const CancelCommitGroupBuysGroupBuyIdCommitDeleteResponse = /*#__PURE__*/
 
 
 /**
+ * @summary Update Commit
+ */
+export const UpdateCommitGroupBuysGroupBuyIdCommitPatchResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Commit To Group Buy
  */
 export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Update Group Buy Settings
+ */
+export const UpdateGroupBuySettingsGroupBuysGroupBuyIdSettingsPatchResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -4854,6 +5000,18 @@ export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__P
   "detail": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.enum(['open', 'funded', 'cancelled', 'fulfilled'])
 })
+
+
+/**
+ * @summary Leave Waitlist
+ */
+export const LeaveWaitlistGroupBuysGroupBuyIdWaitlistDeleteResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Join Waitlist
+ */
+export const JoinWaitlistGroupBuysGroupBuyIdWaitlistPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5174,6 +5332,8 @@ export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsNoAdde
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVeganDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVegetarianDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemNoAllergensDefault = false;
+export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemVariantsItemInStockDefault = true;
+export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemVariantsDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault = 0;
 export const readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault = 0;
@@ -5285,8 +5445,10 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), readDraftPreviewProducerPreviewTokenGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseOffersDeliveryDefault),
@@ -5330,7 +5492,13 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), readDraftPreviewProducerPreviewTokenGetResponseProductsItemVariantsDefault)
 })), readDraftPreviewProducerPreviewTokenGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault),
@@ -5503,6 +5671,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), listProducersProducersGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
@@ -5606,6 +5775,8 @@ export const createProducerProducersPostResponseProductsItemIsNoAddedSugarDefaul
 export const createProducerProducersPostResponseProductsItemIsVeganDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVegetarianDefault = false;
 export const createProducerProducersPostResponseProductsItemNoAllergensDefault = false;
+export const createProducerProducersPostResponseProductsItemVariantsItemInStockDefault = true;
+export const createProducerProducersPostResponseProductsItemVariantsDefault = [];
 export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
@@ -5717,8 +5888,10 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), createProducerProducersPostResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseOffersDeliveryDefault),
@@ -5762,7 +5935,13 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), createProducerProducersPostResponseProductsItemVariantsDefault)
 })), createProducerProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReportCountDefault),
@@ -5846,6 +6025,8 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsNoAdde
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemNoAllergensDefault = false;
+export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemVariantsItemInStockDefault = true;
+export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemVariantsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
@@ -5957,8 +6138,10 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getProducerBySlugProducersBySlugSlugGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseOffersDeliveryDefault),
@@ -6002,7 +6185,13 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), getProducerBySlugProducersBySlugSlugGetResponseProductsItemVariantsDefault)
 })), getProducerBySlugProducersBySlugSlugGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault),
@@ -6101,6 +6290,8 @@ export const getMyProducerProducersMeGetResponseProductsItemIsNoAddedSugarDefaul
 export const getMyProducerProducersMeGetResponseProductsItemIsVeganDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemNoAllergensDefault = false;
+export const getMyProducerProducersMeGetResponseProductsItemVariantsItemInStockDefault = true;
+export const getMyProducerProducersMeGetResponseProductsItemVariantsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
@@ -6230,8 +6421,10 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getMyProducerProducersMeGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseOffersDeliveryDefault),
@@ -6276,7 +6469,13 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), getMyProducerProducersMeGetResponseProductsItemVariantsDefault)
 })), getMyProducerProducersMeGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6368,6 +6567,8 @@ export const updateMyProducerProducersMePutResponseProductsItemIsNoAddedSugarDef
 export const updateMyProducerProducersMePutResponseProductsItemIsVeganDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemNoAllergensDefault = false;
+export const updateMyProducerProducersMePutResponseProductsItemVariantsItemInStockDefault = true;
+export const updateMyProducerProducersMePutResponseProductsItemVariantsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
@@ -6497,8 +6698,10 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), updateMyProducerProducersMePutResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseOffersDeliveryDefault),
@@ -6543,7 +6746,13 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), updateMyProducerProducersMePutResponseProductsItemVariantsDefault)
 })), updateMyProducerProducersMePutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6587,7 +6796,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *   - share_visits (MEH-3331): visits through a link the owner shared, same shape
  *   - follower_count + new_followers_this_week
  *   - average_rating + total_reviews (from the producers.avg_rating aggregate)
- *   - home_products_count (active only, scoped to the owning user)
  *   - views_by_day: 30-entry zero-filled daily series for the line chart
  *   - top_cities: top 5 cities the views come from (NULL excluded)
  *   - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
@@ -6664,8 +6872,10 @@ export const DashboardProducersMeDashboardGetResponse = /*#__PURE__*/ zod.unknow
  * @summary List My Group Buys
  */
 export const listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault = 0;
+export const listMyGroupBuysProducersMeGroupBuysGetResponseJoinsClosedDefault = false;
 
 export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -6674,9 +6884,21 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyGroupBuysProducersMeGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-3610: the branch a group buy is picked up from, as public as the\nbusiness made it. An `approximate` branch gives the city only — no street\nand no pin (MEH-829, the product_order_views.pickup_address rule).')),/*#__PURE__*/ zod.null()])),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -6686,6 +6908,7 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyGroupBuysProducersMeGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListMyGroupBuysProducersMeGroupBuysGetResponseItem)
@@ -6747,7 +6970,8 @@ export const ListMyLocationsProducersMeLocationsGetResponseItem = /*#__PURE__*/ 
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 export const ListMyLocationsProducersMeLocationsGetResponse = /*#__PURE__*/ zod.array(ListMyLocationsProducersMeLocationsGetResponseItem)
 
@@ -6772,7 +6996,8 @@ export const CreateMyLocationProducersMeLocationsPostResponse = /*#__PURE__*/ zo
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 
 
@@ -6802,7 +7027,8 @@ export const UpdateMyLocationProducersMeLocationsLocationIdPutResponse = /*#__PU
   "order_cutoff_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()]))
+  "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address / opening_hours / phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the /producers/me/locations CRUD.'))
 
 
@@ -7000,6 +7226,8 @@ export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseI
 export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault = false;
 export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault = false;
 export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseVariantsItemInStockDefault = true;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseVariantsDefault = [];
 
 export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7024,7 +7252,13 @@ export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseI
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseVariantsDefault)
 })
 export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem)
 
@@ -7053,6 +7287,8 @@ export const setMyProductOrderProducersMeProductOrderPutResponseIsNoAddedSugarDe
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVeganDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVegetarianDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseNoAllergensDefault = false;
+export const setMyProductOrderProducersMeProductOrderPutResponseVariantsItemInStockDefault = true;
+export const setMyProductOrderProducersMeProductOrderPutResponseVariantsDefault = [];
 
 export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7077,7 +7313,13 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), setMyProductOrderProducersMeProductOrderPutResponseVariantsDefault)
 })
 export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/ zod.array(SetMyProductOrderProducersMeProductOrderPutResponseItem)
 
@@ -7107,7 +7349,8 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7162,7 +7405,8 @@ export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#_
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7201,7 +7445,8 @@ export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7240,7 +7485,8 @@ export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7279,7 +7525,8 @@ export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7318,7 +7565,8 @@ export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7357,7 +7605,8 @@ export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostR
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7396,7 +7645,8 @@ export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__P
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -7422,6 +7672,8 @@ export const listMyProductsProducersMeProductsGetResponseIsNoAddedSugarDefault =
 export const listMyProductsProducersMeProductsGetResponseIsVeganDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVegetarianDefault = false;
 export const listMyProductsProducersMeProductsGetResponseNoAllergensDefault = false;
+export const listMyProductsProducersMeProductsGetResponseVariantsItemInStockDefault = true;
+export const listMyProductsProducersMeProductsGetResponseVariantsDefault = [];
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7446,7 +7698,13 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), listMyProductsProducersMeProductsGetResponseVariantsDefault)
 })
 export const ListMyProductsProducersMeProductsGetResponse = /*#__PURE__*/ zod.array(ListMyProductsProducersMeProductsGetResponseItem)
 
@@ -7461,6 +7719,8 @@ export const createMyProductProducersMeProductsPostResponseIsNoAddedSugarDefault
 export const createMyProductProducersMeProductsPostResponseIsVeganDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVegetarianDefault = false;
 export const createMyProductProducersMeProductsPostResponseNoAllergensDefault = false;
+export const createMyProductProducersMeProductsPostResponseVariantsItemInStockDefault = true;
+export const createMyProductProducersMeProductsPostResponseVariantsDefault = [];
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7485,7 +7745,13 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), createMyProductProducersMeProductsPostResponseVariantsDefault)
 })
 
 
@@ -7523,6 +7789,8 @@ export const updateMyProductProducersMeProductsProductIdPutResponseIsNoAddedSuga
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseNoAllergensDefault = false;
+export const updateMyProductProducersMeProductsProductIdPutResponseVariantsItemInStockDefault = true;
+export const updateMyProductProducersMeProductsProductIdPutResponseVariantsDefault = [];
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7547,7 +7815,13 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), updateMyProductProducersMeProductsProductIdPutResponseVariantsDefault)
 })
 
 
@@ -7561,6 +7835,8 @@ export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsNoAd
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVeganDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVegetarianDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseNoAllergensDefault = false;
+export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseVariantsItemInStockDefault = true;
+export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseVariantsDefault = [];
 
 export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -7585,7 +7861,13 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), setMyProductGroupProducersMeProductsProductIdGroupPutResponseVariantsDefault)
 })
 
 
@@ -8004,6 +8286,8 @@ export const getProducerProducersProducerIdGetResponseProductsItemIsNoAddedSugar
 export const getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemNoAllergensDefault = false;
+export const getProducerProducersProducerIdGetResponseProductsItemVariantsItemInStockDefault = true;
+export const getProducerProducersProducerIdGetResponseProductsItemVariantsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
@@ -8115,8 +8399,10 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getProducerProducersProducerIdGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseOffersDeliveryDefault),
@@ -8160,7 +8446,13 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
-  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), getProducerProducersProducerIdGetResponseProductsItemVariantsDefault)
 })), getProducerProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReportCountDefault),
@@ -8272,6 +8564,8 @@ export const GetKashrutCertProducersProducerIdKashrutCertBadgeCodeGetResponse = 
  * site, a seeded test row, ordering never switched on, or switched off.
  * @summary Get Order Menu
  */
+export const getOrderMenuProducersProducerIdOrderMenuGetResponseProductsItemVariantsDefault = [];
+
 export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/ zod.object({
   "business_id_number": /*#__PURE__*/ zod.string(),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
@@ -8287,7 +8581,14 @@ export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_max_agorot": /*#__PURE__*/ zod.int(),
   "price_min_agorot": /*#__PURE__*/ zod.int(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean()
+}).check(/*#__PURE__*/ zod.describe('MEH-3617: one size or flavour, with the price the order route stores.'))), getOrderMenuProducersProducerIdOrderMenuGetResponseProductsItemVariantsDefault)
 })),
   "slots": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "alcohol_ok": /*#__PURE__*/ zod.boolean(),
@@ -8457,7 +8758,8 @@ export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
@@ -8471,6 +8773,7 @@ export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string(),
@@ -8523,7 +8826,8 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
@@ -8537,6 +8841,7 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8563,7 +8868,8 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
@@ -8577,6 +8883,7 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8603,7 +8910,8 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
@@ -8617,9 +8925,28 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * Replace the product's whole list. An id of an existing variant keeps
+ * that row (renamed, repriced, moved); any other row is deleted. Order lines
+ * that named a deleted variant keep their copied name (SET NULL).
+ * @summary Put Product Variants
+ */
+export const putProductVariantsProductsProductIdVariantsPutResponseVariantsItemInStockDefault = true;
+
+export const PutProductVariantsProductsProductIdVariantsPutResponse = /*#__PURE__*/ zod.object({
+  "variants": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), putProductVariantsProductsProductIdVariantsPutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}))
 })
 
 
@@ -8736,6 +9063,7 @@ export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "location_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4\'s row has no\nplace to put them and serializing them would publish more than the screen\nneeds.')),
@@ -8775,6 +9103,50 @@ export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
   "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say "נותרו 2 מתוך 6", and nothing here reveals who reserved.'))
+
+
+/**
+ * One of today's bags, for its own page (MEH-3586). Public — no auth.
+ *
+ * A sold-out, cancelled or closed bag still answers, with `state` saying
+ * why; another day's bag, a test or unapproved business, or a town outside
+ * the pilot answers 404 — the same set the list never shows.
+ * @summary Get Offer
+ */
+export const getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault = 0;
+
+export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer": /*#__PURE__*/ zod.object({
+  "avg_rating": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The bag page\'s business block (MEH-3586): the summary plus the public\nbusiness rating, so a buyer can judge who packs the bag. The same two\nnumbers the business page shows; never the bag reviews, which feed only\nthe pilot metrics (RescueReview\'s docstring).')),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "state": /*#__PURE__*/ zod.enum(['available', 'sold_out', 'cancelled', 'ended']),
+  "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('`GET /rescue/offers/{id}` — one of today\'s bags for its own page.\n\n`state` is why a bag can or cannot be reserved now; the list omits every\nbag that is not `available`, the page explains it instead. `lat`/`lng`\nare the pickup point (exact precision by construction) for the map.'))
 
 
 /**
@@ -9352,6 +9724,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "order_cutoff_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getFavoritesUsersMeFavoritesGetResponseProducerLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
@@ -9435,6 +9808,27 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
 
 
 /**
+ * The caller's group buys: running ones by nearest deadline, then the
+ * rest, newest deadline first.
+ * @summary List Own Group Buys
+ */
+export const ListOwnGroupBuysUsersMeGroupBuysGetResponse = /*#__PURE__*/ zod.object({
+  "group_buys": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "joined_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "quantity": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string(),
+  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('A group buy the caller joined, and her own quantity in it.')))
+})
+
+
+/**
  * Change the current user's password.
  *
  * Rejects OAuth-only accounts (no existing password_hash) with a
@@ -9480,7 +9874,8 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_unit": /*#__PURE__*/ zod.string(),
   "qty": /*#__PURE__*/ zod.int(),
-  "unit_price_agorot": /*#__PURE__*/ zod.int()
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
@@ -9494,6 +9889,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()

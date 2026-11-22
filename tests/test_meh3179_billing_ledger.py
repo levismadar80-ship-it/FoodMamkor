@@ -29,6 +29,9 @@ from test_rescue import _seed_offer
 @pytest.fixture(autouse=True)
 def _no_emails(monkeypatch):
     """The sign-up routes queue emails; none of them is under test here."""
+    from _queued_mail import route_queued_mail_to_senders  # MEH-3535
+
+    route_queued_mail_to_senders(monkeypatch)
     import app.routers.registrations as r
 
     for name in (

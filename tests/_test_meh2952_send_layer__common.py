@@ -296,6 +296,9 @@ SEND_NAMES = frozenset(
         "send_email_result",
         "_send_email",
         "_send_notification_email",
+        # MEH-3535: queueing an email is sending it, later. Same flag rule.
+        "enqueue_email",
+        "_queue_mail",
     }
 )
 FLAG = "test_cause"
@@ -493,10 +496,15 @@ BUS, OWN, CON, AUTH, NONE = "business", "owner", "consumer", "auth", "none"
 # (file, enclosing function, callee) → (count, group, where test_cause comes from)
 PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # --- admin.py: business moderation (owner mail + admin WhatsApp ping) ---
-    ("routers/admin_decisions.py", "approve_producer", "_send_notification_email"): (
+    # MEH-3535: queued inside _persist_approval's before_commit.
+    (
+        "routers/admin_decisions.py",
+        "_queue_approved_email",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
-        "producer.is_test or owner.is_test (p_test)",
+        "producer.is_test or owner.is_test (test_cause)",
     ),
     ("routers/admin_decisions.py", "reject_producer", "_send_notification_email"): (
         1,
@@ -512,10 +520,10 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
+    ("routers/admin_decisions.py", "_send_notification_email", "enqueue_email"): (
         1,
         OWN,
-        "wrapper param",
+        "wrapper param (MEH-3535: queued, sent by the outbox)",
     ),
     # MEH-3589: no admin WhatsApp echo of her own decisions (email only).
     # --- other routers ---
@@ -548,6 +556,27 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         NONE,
         "public contact form",
+    ),
+    # --- MEH-3535: the email outbox ---
+    ("routers/registrations.py", "register_for_event", "_queue_mail"): (
+        2,
+        CON,
+        "producer.is_test (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "register_for_experience", "_queue_mail"): (
+        2,
+        CON,
+        "host_test_cause(host) (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "_queue_mail", "enqueue_email"): (
+        1,
+        CON,
+        "wrapper param",
+    ),
+    ("services/email_outbox.py", "_handle", "send_email_result"): (
+        1,
+        NONE,
+        "a row caused by a test row is never queued (enqueue_email, MEH-2952)",
     ),
     # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
     ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
@@ -784,11 +813,6 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "ops alert to the admin; no business or user row behind it",
     ),
-    ("services/rating_dispatcher.py", "_default_sender", "send_text"): (
-        1,
-        NONE,
-        "unwired (no caller in the app)",
-    ),
     ("services/onboarding_followup.py", "send_due_followups", "send_email"): (
         1,
         OWN,
@@ -941,6 +965,31 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_expired",
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_producer_late_joiner",
+        "_send_email",
+    ): (1, OWN, "wrapper param ← gb.producer.is_test (MEH-3592)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_waitlist_place",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3592)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_pickup_changed",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3597)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_pickup_reminder",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3610)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_allergens_changed",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3610)"),
     (
         "services/rescue_business_emails.py",
         "send_business_reservation_email",

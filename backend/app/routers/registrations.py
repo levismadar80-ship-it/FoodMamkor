@@ -26,7 +26,9 @@ Rules:
 
 from __future__ import annotations
 
+import logging
 from datetime import date, time
+from collections.abc import Callable
 from typing import Any
 import secrets
 from uuid import UUID
@@ -55,16 +57,20 @@ from app.services.registration_emails import (
     OwnerNewEmail,
     VisitorEmail,
     send_owner_cancellation,
-    send_owner_new_registration,
-    send_visitor_confirmation,
-    send_waitlist_confirmation,
+    compose_owner_new_registration,
+    compose_visitor_confirmation,
+    compose_waitlist_confirmation,
+    Mail,
     send_waitlist_offer,
 )
+from app.services.email_outbox import enqueue_email  # MEH-3535
+from app.sentry import capture_background_exception  # MEH-3535
 from app.services import registration_waitlist as waitlist  # MEH-3314
 from app.services.registrations import registered_counts
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.utils.clock import israel_now, israel_today, utc_now
 
+_log = logging.getLogger(__name__)
 router = APIRouter(tags=["registrations"])
 
 _CLOSED = {"code": "registration_closed", "message": "ההרשמה סגורה"}
@@ -276,6 +282,33 @@ def _gate(data: RegistrationCreate, *, full: bool, left: int | None) -> None:
         raise HTTPException(status_code=409, detail=_FULL)
 
 
+# MEH-3535: kind → composer. The kind is what an email_outbox row says it is.
+_COMPOSERS: dict[str, Callable[[Any], Mail]] = {
+    "visitor_confirmation": compose_visitor_confirmation,
+    "waitlist_confirmation": compose_waitlist_confirmation,
+    "owner_new_registration": compose_owner_new_registration,
+}
+
+
+def _queue_mail(
+    db: Session, kind: str, to: str, m: Any, test_cause: bool = False
+) -> None:
+    """Queue one sign-up email in the caller's transaction (no commit).
+
+    MEH-3535 review: a sign-up never fails because of its email. A composer
+    or queue error is reported and the sign-up is kept, as before the queue
+    (a BackgroundTask that failed after the 201). The row is added last, so
+    an error leaves nothing half-added in the session."""
+    try:
+        mail = _COMPOSERS[kind](m)
+        enqueue_email(
+            db, kind, to, mail.subject, mail.body, html=mail.html, test_cause=test_cause
+        )
+    except Exception as exc:  # noqa: BLE001 — reported, never raised
+        capture_background_exception(exc, task="email_outbox_enqueue")
+        _log.error("[EMAIL-OUTBOX] could not queue %s", kind, exc_info=True)
+
+
 def _left(cap: int | None, occupied: int) -> int | None:
     return None if cap is None else max(cap - occupied, 0)
 
@@ -291,7 +324,6 @@ def register_for_event(
     request: Request,
     event_id: UUID,
     data: RegistrationCreate,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> RegistrationCreatedOut:
     event = _event_for_signup(db, event_id)
@@ -310,13 +342,15 @@ def register_for_event(
     if not full:
         # MEH-3179: counted in the same transaction; never fails the sign-up.
         billing_ledger.record_event_registration(db, reg, event)
-    db.commit()
 
     producer = db.get(Producer, event.producer_id)
     place = ", ".join(p for p in (event.location, event.city) if p)  # type: ignore[misc]
     item_url = f"{settings.frontend_url}/events/{event.id}"
-    background_tasks.add_task(
-        send_waitlist_confirmation if full else send_visitor_confirmation,
+    # MEH-3535: the emails are queued in the sign-up's own transaction and
+    # sent by the outbox dispatcher — committed together or not at all.
+    _queue_mail(
+        db,
+        "waitlist_confirmation" if full else "visitor_confirmation",
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=event.title,  # type: ignore[arg-type]
@@ -331,6 +365,7 @@ def register_for_event(
         test_cause=bool(producer and producer.is_test),
     )
     if full:
+        db.commit()
         return waitlist.WAITLISTED  # the owner reads the waitlist in her list
     owner_email = _owner_email_for_event(db, event)
     if owner_email:
@@ -339,8 +374,9 @@ def register_for_event(
             if event.max_participants is not None
             else None
         )
-        background_tasks.add_task(
-            send_owner_new_registration,
+        _queue_mail(
+            db,
+            "owner_new_registration",
             owner_email,
             OwnerNewEmail(
                 title=event.title,  # type: ignore[arg-type]
@@ -355,6 +391,7 @@ def register_for_event(
             ),
             test_cause=bool(producer and producer.is_test),  # MEH-2952
         )
+    db.commit()
     return RegistrationCreatedOut()
 
 
@@ -369,7 +406,6 @@ def register_for_experience(
     request: Request,
     experience_id: UUID,
     data: RegistrationCreate,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> RegistrationCreatedOut:
     ex = _experience_for_signup(db, experience_id)
@@ -399,7 +435,6 @@ def register_for_experience(
         billing_ledger.record_experience_registration(
             db, reg, ex, ledger_host.producer_id if ledger_host else None
         )
-    db.commit()
 
     host = db.get(User, ex.host_user_id)
     business = host.producer if host else None
@@ -409,8 +444,10 @@ def register_for_experience(
     # address is already on the page.
     if ex.location_type == "public" and ex.address:
         place = ", ".join(p for p in (ex.address, ex.city) if p)  # type: ignore[misc]
-    background_tasks.add_task(
-        send_waitlist_confirmation if full else send_visitor_confirmation,
+    # MEH-3535: queued in the sign-up's transaction, as in register_for_event.
+    _queue_mail(
+        db,
+        "waitlist_confirmation" if full else "visitor_confirmation",
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=ex.title,  # type: ignore[arg-type]
@@ -434,6 +471,7 @@ def register_for_experience(
         test_cause=host_test_cause(host),
     )
     if full:
+        db.commit()
         return waitlist.WAITLISTED
     if host and host.email:
         spots = (
@@ -441,8 +479,9 @@ def register_for_experience(
             if ex.max_participants is not None
             else None
         )
-        background_tasks.add_task(
-            send_owner_new_registration,
+        _queue_mail(
+            db,
+            "owner_new_registration",
             host.email,  # type: ignore[arg-type]
             OwnerNewEmail(
                 title=ex.title,  # type: ignore[arg-type]
@@ -461,6 +500,7 @@ def register_for_experience(
             ),
             test_cause=host_test_cause(host),  # MEH-2952
         )
+    db.commit()
     return RegistrationCreatedOut()
 
 

@@ -117,6 +117,7 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string logo_url "nullable — MEH-3611, VARCHAR(500); the business logo, saved by PUT /producers/me"
         string secondary_phone "nullable — MEH-3339, VARCHAR(20); optional second number, same format as phone; one text line, no CTA reads it"
         string secondary_phone_label "nullable — MEH-3339, VARCHAR(30); its label (e.g. להזמנות); requires secondary_phone"
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
@@ -248,7 +249,7 @@ erDiagram
     product_order_notifications {
         uuid id PK
         uuid order_id FK "CASCADE (MEH-3296)"
-        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before review_request"
         string channel "whatsapp email"
         string outcome "pending sent failed skipped"
         timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
@@ -256,6 +257,22 @@ erDiagram
         string last_error "short code, never message text"
         timestamp sent_at
         timestamp created_at
+    }
+
+    email_outbox {
+        uuid id PK
+        string kind "producer_approved, visitor_confirmation, ... (MEH-3535)"
+        string to_email "nullable; cleared when finished"
+        string subject "nullable; cleared when finished"
+        text body "nullable; cleared when finished"
+        text html "nullable; cleared when finished"
+        string reply_to "nullable; cleared when finished"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved by a retry"
+        int attempts "max 5, backoff 2 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at "deleted after 30 days"
     }
 
     product_order_items {
@@ -268,6 +285,17 @@ erDiagram
         string price_unit "unit|kg|100g|bottle|box|pack"
         int qty "1..99"
         boolean contains_alcohol
+        uuid variant_id FK "nullable, SET NULL (MEH-3617)"
+        string variant_name "copied at order time (MEH-3617)"
+    }
+
+    product_variants {
+        uuid id PK "MEH-3617"
+        uuid product_id FK "CASCADE"
+        string name "40, unique per product (case-insensitive, checked in the schema)"
+        int price_agorot "nullable = the product's price"
+        boolean in_stock "default true"
+        int position "order on the page"
     }
 
     product_order_events {
@@ -713,6 +741,8 @@ erDiagram
     product_orders ||--o{ product_order_events : "status log"
     product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
+    products ||--o{ product_variants : "sizes or flavours, max 10 (MEH-3617)"
+    product_variants |o--o{ product_order_items : "SET NULL on delete; name copied"
 
     rescue_offers {
         uuid id PK "MEH-2644"

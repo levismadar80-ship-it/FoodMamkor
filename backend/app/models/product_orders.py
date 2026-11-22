@@ -100,6 +100,7 @@ PRODUCT_ORDER_NOTICE_KINDS = (
     "closed",  # to the buyer: declined, cancelled by the business, or expired
     "buyer_cancelled",  # to the business
     "day_before",  # to the buyer: tomorrow's hand-over
+    "review_request",  # to the buyer, by email: a day after the hand-over (MEH-3624)
 )
 PRODUCT_ORDER_NOTICE_CHANNELS = ("whatsapp", "email")
 PRODUCT_ORDER_NOTICE_STATUSES = ("pending", "sent", "failed", "skipped")
@@ -423,6 +424,8 @@ class ProductOrderItem(Base):
         ),
         Index("ix_product_order_items_order_id", "order_id"),
         Index("ix_product_order_items_product_id", "product_id"),
+        # MEH-3617: deleting a variant (or its product) SETs NULL here.
+        Index("ix_product_order_items_variant_id", "variant_id"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -448,6 +451,14 @@ class ProductOrderItem(Base):
     contains_alcohol = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-3617: the chosen size or flavour. The name is a snapshot, like
+    # `name`: a later rename or delete of the variant leaves the order as sent.
+    variant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_variants.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    variant_name = Column(String(40), nullable=True)
 
     order = relationship("ProductOrder", back_populates="items")
     product = relationship("Product")
