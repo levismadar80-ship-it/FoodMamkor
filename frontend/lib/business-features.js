@@ -89,6 +89,10 @@ export const BUSINESS_FEATURES = [
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
   { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  // MEH-3641: «הפרופיל שלכם בגוגל» — guide, owner self-link of the place_id,
+  // live check. Copy chosen by Claude on Sapir's delegation (21/11). No tile:
+  // «found» already has its 4.
+  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "tools", href: "/producer/dashboard/google-profile" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
