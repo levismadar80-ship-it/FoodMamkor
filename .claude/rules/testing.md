@@ -101,7 +101,8 @@ timestamp built from the UTC clock is green at most hours and red at one.
 No **unbounded** `waitForLoadState("networkidle")` / `waitUntil: "networkidle"`
 in `e2e/flows/**` or `e2e/visual/**` (the globs `playwright.config.ts` runs).
 The only sanctioned form is a bounded, caught wait
-(`e2e/visual/parity.spec.ts`, ~5 s) — don't "fix" it. The `timeout` is the
+(`e2e/visual/parity.spec.ts`, ~5 s) — don't "fix" it. `scripts/checks/prose-rules-guard.sh` (R5)
+fails a `networkidle` in those globs with no `timeout` in its statement. The `timeout` is the
 operative half; a bare `.catch` is not enough. To prove something did **not**
 happen, await the unwanted event with a bound and require it times out. To
 wait for readiness, gate on that thing (`data-testid`, response, URL). The
@@ -111,8 +112,9 @@ Cloudinary-401 cause is unestablished — don't state it as fact.
 
 Only CI-run specs matter. `parity.spec.ts` is converted;
 `e2e/screenshots.spec.ts` (not run by CI) is ticketed; don't bulk-"fix" the
-`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` since
-MEH-3531; the two in live use stay in `frontend/e2e/`).
+`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` by MEH-3531,
+deleted by MEH-3614 — restore from git, [media-archive.md](../../docs/media-archive.md);
+the two in live use stay in `frontend/e2e/`).
 
 ---
 
@@ -368,9 +370,23 @@ Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
 
 ### 2. Send the Vercel Deployment Protection headers
 
-`extraHTTPHeaders: { "x-vercel-protection-bypass":
-process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
-"true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
+Once, from an API request, to get the bypass cookie (MEH-3607):
+`await scopeBypassToOrigin(context, BASE, { "x-vercel-protection-bypass":
+process.env.VERCEL_AUTOMATION_BYPASS_SECRET })` from
+`frontend/e2e/_bypass-scope.mjs`, once per browser context, before the first
+`goto`. It sends the secret once, from an API request with no redirects, and
+Vercel answers with a host-only `_vercel_jwt` cookie, so the browser never
+holds the secret. An API-only harness uses `request.newContext({ baseURL })`
+with the header, which reaches the target only. Control: `/he` → 200 with the
+cookie, 302 → `vercel.com/sso-api` without.
+
+**Never put the secret in a browser context's `extraHTTPHeaders`.** It goes to
+every host the page loads (map tiles, Cloudinary, analytics). A
+`route.fallback({ headers })` on the origin is not enough either, because the
+header follows a redirect to another origin (MEH-3607, reproduced 21/11).
+`scripts/checks/bypass-scope-guard.sh` (Repo guards) blocks the first form.
+`staging.mehamakor.online` answers 307 to `staging.mehamakor.co.il`, and the
+helper sets the cookie on the host where the redirects stop.
 Never write the secret to a file, commit, PR body or log.
 
 ### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
@@ -419,7 +435,7 @@ the tip of staging by 20/11; the old ones are in history at the commit named in
   `## Screenshots` section with the links). `pr-evidence-guard.sh` checks it
   for every UI PR (rule 23).
 - `scripts/checks/heavy-media-guard.sh` fails any image or video tracked
-  outside `frontend/public/`, `frontend/e2e/visual/`, `design-reference/`,
+  outside `frontend/public/`, `frontend/e2e/visual/`,
   `logo/` and `docs/research/screenshots/2026-05/`. A new folder that the
   product or a test really reads goes into its `ALLOW_RE`, with the reason.
 - Text evidence (`.md`, `.json`, `.log`) still goes in `qa-artifacts/MEH-XXXX/`.

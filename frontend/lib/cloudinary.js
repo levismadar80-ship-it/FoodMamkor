@@ -39,9 +39,22 @@ function usableWidth(width) {
   return Number.isInteger(width) && width > 0 ? width : null;
 }
 
+// MEH-3613 (CodeQL js/incomplete-url-substring-sanitization): a URL is a
+// Cloudinary delivery URL when its HOST is res.cloudinary.com — not when the
+// string merely appears somewhere in it (`https://evil.example/?res.cloudinary.com`).
+// A relative or unparsable URL is not one.
+export function isCloudinaryUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    return new URL(url).hostname === "res.cloudinary.com";
+  } catch {
+    return false;
+  }
+}
+
 export function optimizeCloudinary(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
-  if (!url.includes("res.cloudinary.com")) return url;
+  if (!isCloudinaryUrl(url)) return url;
   // Already transformed — leave it alone.
   if (/\/upload\/[^/]*(f_auto|q_auto)/.test(url)) return url;
 

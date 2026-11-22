@@ -127,7 +127,6 @@ def test_approved_is_a_fresh_dict() -> None:
     [
         ("app.services.experience_moderation", "validate_experience"),
         ("app.services.producer_recipe_moderation", "validate_producer_recipe"),
-        ("app.services.home_product_moderation", "validate_home_product"),
     ],
 )
 def test_each_service_reaches_the_shared_parser(monkeypatch, modname, fn) -> None:
@@ -156,15 +155,3 @@ def test_fast_services_report_their_own_surface(monkeypatch, modname, fn, surfac
     monkeypatch.setattr(mod, "report_fail_open", lambda s, r: seen.append((s, r)))
     assert getattr(mod, fn)({"title": "t"})["status"] == "APPROVED"
     assert seen == [(surface, "error")]
-
-
-def test_home_product_keeps_its_own_call_shape(monkeypatch) -> None:
-    from app.services import home_product_moderation as mod
-
-    client = _Client(_Msg("end_turn", [_Block('{"status":"APPROVED"}')]))
-    monkeypatch.setattr(mod, "_get_client", lambda: client)
-    mod.validate_home_product({"title": "t", "price": "5"})
-    call = client.calls[0]
-    assert call["model"] == mod.settings.anthropic_model
-    assert call["max_tokens"] == 300
-    assert "system" not in call

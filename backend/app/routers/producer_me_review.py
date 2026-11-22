@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from app.auth import create_review_invite_token, require_producer
+from app.auth import require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
@@ -37,6 +37,7 @@ from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services.submission_gate import submission_missing_items
 from app.services.trust_tier import VALID_BADGE_CODES
+from app.services.review_invite import review_invite_url
 from app.routers.producer_me import (
     OTP_NOT_SENT,
     _test_cause,
@@ -391,10 +392,8 @@ def get_review_invite_link(
             status_code=403,
             detail="קישור לבקשת ביקורת זמין רק לעסק מאושר",
         )
-    base = settings.frontend_url.rstrip("/")
-    path = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
-    token = create_review_invite_token(producer.id)  # type: ignore[arg-type]
-    return ReviewInviteLinkOut(url=f"{base}{path}?rt={token}")
+    # MEH-3620: one builder for this URL, shared with the buyer's order page.
+    return ReviewInviteLinkOut(url=review_invite_url(producer))
 
 
 # ---------------------------------------------------------------------------

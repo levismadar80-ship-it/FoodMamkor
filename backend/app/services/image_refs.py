@@ -43,6 +43,7 @@ SCALAR_URL_SOURCES: tuple[Any, ...] = (
     Event.image_url,
     Experience.image_url,
     Producer.owner_photo_url,
+    Producer.logo_url,  # MEH-3611
     ProducerRecipe.image_url,
     RescueReview.photo_url,
     KashrutBadgeRequest.cert_url,
