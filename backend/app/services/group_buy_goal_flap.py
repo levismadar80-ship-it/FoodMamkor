@@ -26,13 +26,14 @@ from app.config import settings
 from app.models.models import GroupBuy, GroupBuyCommit, User
 from app.services.email import send_email
 from app.services.group_buy_notifications import send_funded_notifications
+from app.services.group_buy_pickup_text import pickup_lines
 from app.utils.clock import utc_now
 
 # DO NOT interpolate a participant list, phone, or email into the body below
 #        (MEH-1651 privacy contract, group_buy_notifications.py header).
 
 
-def _participant_emails(
+def participant_emails(
     db: Session, gb: GroupBuy, leaving_user_id: Any = None
 ) -> list[str]:
     # The session does not autoflush, so the leaver's row may still be there:
@@ -90,7 +91,7 @@ def notify_below_goal(
     below goal. Returns how many participants were queued."""
     if gb.funded_notified_at is None or gb.below_goal_notified_at is not None:
         return 0
-    emails = _participant_emails(db, gb, leaving_user_id)
+    emails = participant_emails(db, gb, leaving_user_id)
     gb.below_goal_notified_at = utc_now()
     if emails:
         f = _facts(gb)
@@ -113,7 +114,7 @@ def notify_back_at_goal(
     every participant, once — only if they were told it dropped."""
     if gb.below_goal_notified_at is None or gb.refunded_notified_at is not None:
         return 0
-    emails = _participant_emails(db, gb)
+    emails = participant_emails(db, gb)
     gb.refunded_notified_at = utc_now()
     if emails:
         f = _facts(gb)
@@ -126,5 +127,8 @@ def notify_back_at_goal(
             f["group_buy_id"],
             str(gb.producer_id),
             test_cause=f["test_cause"],
+            pickup=pickup_lines(
+                gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note
+            ),  # MEH-3597
         )
     return len(emails)
