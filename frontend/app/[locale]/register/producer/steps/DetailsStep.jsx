@@ -5,13 +5,11 @@
  * reads from the wizard arrives as a prop of the same name. State lives in
  * RegisterProducerClient.jsx — this file holds no hooks.
  */
-import { Link } from "@/i18n/navigation";
 import { X } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
 import { validateIsraeliPhone } from "@/lib/validators";
-import { PRICING_PATH } from "@/lib/pricing";
 import Button from "@/components/ui/Button";
 import { CROSS_STEP_REQUIRED, FULFILMENT_AXES, STEP, fulfilmentHasAxis, toggleFulfilmentAxis } from "../registerProducerShared";
 
@@ -22,21 +20,6 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
             <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.business.title"), STEP.DETAILS)}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
-            </p>
-            {/* MEH-2183: the no-cost promise, stated on the step where the
-                seller starts investing real effort. */}
-            <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.business.free_hint")}{" "}
-              {/* MEH-3166: new tab, so a half-filled form is not lost. */}
-              <Link
-                href={PRICING_PATH}
-                target="_blank"
-                rel="noopener"
-                data-testid="register-pricing-link"
-                className="underline underline-offset-2 text-primary rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                {t("pricing.link_short")}
-              </Link>
             </p>
 
             <Input
@@ -136,6 +119,12 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 business question — she runs markets, she has no counter and
                 no deliveries — and MEH-2460 already hid the delivery axis this
                 replaces for the same reason. The gate below skips with her. */}
+            {/* MEH-3656: the helper lines that sat here (free_hint + pricing
+                link, multi_hint, areas_note, hours_hint, whatsapp_note) and the
+                optional store link are gone — six fields and six notes on one
+                phone screen was the load Sapir named (MEH-3653). Delivery areas,
+                hours and the store link are edited in the dashboard; «חינם»
+                is already in the page subtitle. */}
             {!isOrganizer && (
             <fieldset className="pt-1 space-y-3" data-testid="register-fulfilment">
               <legend className="block text-sm font-medium text-text mb-1 text-start">
@@ -168,58 +157,14 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                   </span>
                 </label>
               ))}
-              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hint">
-                {t("auth.register.producer.fields.fulfilment.multi_hint")}
-              </p>
               {fulfilmentError && (
                 <p className="text-xs text-error" data-testid="register-fulfilment-error">
                   {fulfilmentError}
                 </p>
               )}
-              {/* MEH-2640: the delivery-areas picker moved to the dashboard
-                  she lands in anyway. ProducerDashboardDelivery's editor
-                  already owns that list — see the dashboard delivery editor
-                  cited in the PR — so this is a pointer, not a promise of
-                  something unbuilt. */}
-              <p className="text-xs text-fg-muted text-start" data-testid="register-delivery-note">
-                {t("auth.register.producer.fields.fulfilment.areas_note")}
-              </p>
-              {/* MEH-2447: say what the card will show, and that WhatsApp
-                  orders already arrive through the contact button (B11).
-                  The hours hint only once a choice with a place to come to
-                  is picked: a delivery-only card never shows «קנייה במקום»
-                  (has_physical_location=false → sells_on_site false). */}
-              {fulfilmentHasAxis(fulfilment, "onsite") && (
-                <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hours-hint">
-                  {t("auth.register.producer.fields.fulfilment.hours_hint")}
-                </p>
-              )}
-              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-whatsapp-note">
-                {t("auth.register.producer.fields.fulfilment.whatsapp_note")}
-              </p>
             </fieldset>
             )}
 
-            {/* MEH-2938: the store / order-form link, optional. Same column the
-                dashboard's contact card edits (external_order_form, MEH-296);
-                the server keeps its http(s)-only guard. */}
-            {!isOrganizer && (
-              <Input
-                id="register-external-order"
-                data-testid="register-external-order"
-                type="url"
-                dir="ltr"
-                inputMode="url"
-                label={t("auth.register.producer.fields.external_order_form_label")}
-                placeholder="https://"
-                maxLength={500}
-                value={form.external_order_form || ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setAndSave((prev) => ({ ...prev, external_order_form: v }));
-                }}
-              />
-            )}
 
             <div className="flex gap-3">
               {!isUpgrade && (

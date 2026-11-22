@@ -93,7 +93,7 @@ describe("E2E click preconditions (MEH-3486 · MEH-3488)", () => {
     const all = specs(FLOWS).filter((f) => !f.endsWith("_pick-city.ts"));
     const offenders = all.flatMap((f) => cityPickOffenders(f, fs.readFileSync(f, "utf8")));
     const users = all.filter((f) => /pickCity\(/.test(fs.readFileSync(f, "utf8")));
-    expect(users.length, "control: pickCity has no callers — the scan is looking in the wrong place").toBeGreaterThanOrEqual(8);
+    expect(users.length, "control: pickCity has no callers — the scan is looking in the wrong place").toBeGreaterThanOrEqual(7); // MEH-3656: 8 → 7, manual/register-producer lost its CATEGORY walk with the story step
     expect(offenders, "use pickCity() from e2e/flows/_pick-city.ts").toEqual([]);
   });
 
