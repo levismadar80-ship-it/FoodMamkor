@@ -77,9 +77,47 @@ Backend runtime variables (Railway) are listed in `backend/app/config.py` and
 | Cloudflare R2 | token scoped to Object R/W on `mehamakor-backups` only | DB backups | — |
 | Cloudinary | `Root` key disabled; app key rotated 24/10 | Images | — |
 | Google Cloud | project "My First Project" | Places API key (rating line) | Needs 2-step verification on the Google account before the console opens |
-| Meta (WhatsApp) | developers.facebook.com app | Webhook | Verify token is checked only on re-verification. Copy it from Railway if the webhook is ever edited |
+| Meta (WhatsApp) | developers.facebook.com app | Webhook | Verify token is checked only on re-verification. Copy it from Railway if the webhook is ever edited · **Who owns which Meta asset: §5b** |
 | Linear, Sentry, PostHog | Sapir | Tasks, errors, analytics | Sentry: the Developer ($0) plan allows **one** cron monitor and **one** uptime monitor, and both are full — see `docs/audits/2026-11-sentry-crons.md` |
 | ~~UptimeRobot~~ | — | **Nothing.** No code or workflow uses it | `.github/workflows/uptime.yml:5` says so in as many words: *«No account»*. It is a GitHub Actions probe that opens an issue on failure (MEH-2202). If an UptimeRobot account exists, nothing here depends on it |
+
+### 5b. Meta: business portfolios and assets (22/11/2026, MEH-3710)
+
+Recorded after Meta restricted portfolio `1814713552900594` on 22/11 (ads and
+audiences only; Instagram and WhatsApp kept working). Nothing said which
+Facebook account owned which portfolio, so it had to be rediscovered.
+Seen in Sapir's Chrome on 22/11 (Business Support Home → «החשבונות שלי»).
+`?` = not yet checked; fill it from that owner's login, never from the API.
+
+| Asset | ID | Owner / where | Status 22/11 |
+|---|---|---|---|
+| Facebook account «Sapir Schnapp» | — | Sapir | No advertising issues |
+| Portfolio «מהמקור» | `1422363846599298` | Sapir · **0 assets** | No advertising issues |
+| Portfolio «מהמקור \| אוכל מקומי» | `2686992615091560` | Sapir · **0 assets** | No advertising issues |
+| **Portfolio «meha_makor»** | **`1814713552900594`** | **Smadar's Facebook account** (Sapir is not a member on her own login) | **Restricted: ads + audiences** (Meta mail 22/11 11:54) |
+| Instagram `meha_makor` | IG user `17841427777150370` | ? (probably in `1814713552900594`) | Working |
+| Facebook Page «מהמקור» | Page `1088677131001002` | ? | Working |
+| WhatsApp Business (WABA + number) | Railway `WHATSAPP_BUSINESS_ID`, `WHATSAPP_PHONE_NUMBER_ID` | ? | Working |
+| Meta app + system user (Graph API token for posting) | ? | ? | Token still set as a network secret in Claude's cloud environment; nothing uses it |
+
+Sapir's two portfolios are empty, so every live asset is most likely in
+Smadar's. To close the `?` rows, Smadar opens business.facebook.com →
+Business settings: the assets of `1814713552900594`, «System users», and
+«People» (is Sapir a member, with what role).
+
+**What reached Meta automatically** (scheduled tasks in the Claude project, not repo code):
+
+| What | How | State |
+|---|---|---|
+| «בית עסק חדש ← פוסט» (IG + FB Page) | Graph API, system-user token | Off since 19/11 |
+| Two scheduled reels (24/11, 1/12) | Graph API | Off since 19/11 |
+| Weekly social review, week-1 prep | read / drafts | Off since 19/11 |
+| Comment scout | Chrome, read-only; posting only on approval | Off |
+| Repeated reel upload + delete on 20/11 (by hand, on request) | Graph API; Meta refused the delete twice | Done |
+| WhatsApp sends from the site | WhatsApp Cloud API, `backend/app/services/whatsapp.py` | **Live**, not part of the restriction |
+
+Before any automation toward Meta is switched back on, it goes through
+MEH-3324 / MEH-3327, not a scheduled task.
 
 ### 5a. Wired in the code, and missing from this register until 17/11
 
