@@ -4621,6 +4621,166 @@
         "title": "GooglePlaceIdOut",
         "type": "object"
       },
+      "GoogleProfileCandidate": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "formatted_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formatted Address"
+          },
+          "place_id": {
+            "title": "Place Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id"
+        ],
+        "title": "GoogleProfileCandidate",
+        "type": "object"
+      },
+      "GoogleProfileCandidatesOut": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleProfileCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidates"
+        ],
+        "title": "GoogleProfileCandidatesOut",
+        "type": "object"
+      },
+      "GoogleProfileCheckOut": {
+        "properties": {
+          "hours_google": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Hours Google",
+            "type": "array"
+          },
+          "hours_ours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours Ours"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleProfileRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "GoogleProfileCheckOut",
+        "type": "object"
+      },
+      "GoogleProfileRow": {
+        "properties": {
+          "field": {
+            "enum": [
+              "name",
+              "phone",
+              "website"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "google": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google"
+          },
+          "ours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ours"
+          },
+          "verdict": {
+            "enum": [
+              "same",
+              "different",
+              "missing"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "verdict"
+        ],
+        "title": "GoogleProfileRow",
+        "type": "object"
+      },
+      "GoogleProfileStatusOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "GoogleProfileStatusOut",
+        "type": "object"
+      },
       "GoogleRatingOut": {
         "properties": {
           "google_maps_uri": {
@@ -6257,6 +6417,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -7322,6 +7493,17 @@
       },
       "OrderMenuProductOut": {
         "properties": {
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "contains_alcohol": {
             "title": "Contains Alcohol",
             "type": "boolean"
@@ -8567,10 +8749,17 @@
       "OwnerInviteExistingAccept": {
         "properties": {
           "code": {
-            "maxLength": 12,
-            "minLength": 1,
-            "title": "Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 12,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
           },
           "declaration_accepted": {
             "title": "Declaration Accepted",
@@ -8580,6 +8769,19 @@
             "default": false,
             "title": "Farmer Declaration Accepted",
             "type": "boolean"
+          },
+          "google_id_token": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Id Token"
           },
           "terms_accepted": {
             "title": "Terms Accepted",
@@ -8594,7 +8796,6 @@
         },
         "required": [
           "token",
-          "code",
           "terms_accepted",
           "declaration_accepted"
         ],
@@ -16963,6 +17164,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -17764,6 +17976,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -17980,6 +18203,17 @@
               }
             ],
             "title": "Allergens"
+          },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
           },
           "description": {
             "anyOf": [
@@ -32234,6 +32468,159 @@
           }
         ],
         "summary": "Dashboard",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/google-profile": {
+      "get": {
+        "operationId": "get_google_profile_producers_me_google_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleProfileStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Google Profile",
+        "tags": [
+          "producer-management"
+        ]
+      },
+      "put": {
+        "description": "Link (a place_id) or unlink (null). A link is accepted only when the\nGoogle name or phone matches the business: 409 otherwise, 503 when Google\ncannot be asked. Unlinking always works.",
+        "operationId": "put_google_profile_producers_me_google_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GooglePlaceIdIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GooglePlaceIdOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Google Profile",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/google-profile/candidates": {
+      "get": {
+        "operationId": "search_google_profile_producers_me_google_profile_candidates_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleProfileCandidatesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Search Google Profile",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/google-profile/check": {
+      "get": {
+        "description": "Live comparison. Nothing from Google is stored.",
+        "operationId": "check_google_profile_producers_me_google_profile_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleProfileCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Check Google Profile",
         "tags": [
           "producer-management"
         ]

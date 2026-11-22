@@ -39,6 +39,7 @@ import RecipeCard from "@/components/public/RecipeCard";
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
 import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import { shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
@@ -477,6 +478,7 @@ export default function ProducerSections({
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
+                <ProductWeekdaysLine product={signatureProduct} />{/* MEH-3618 */}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
@@ -592,6 +594,7 @@ export default function ProducerSections({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
+                      <ProductWeekdaysLine product={product} />{/* MEH-3618 */}
                       {/* MEH-1901: the row clamp goes from one line to two. One
                           line was too little to judge whether the sheet is worth
                           opening; the full text now lives in the sheet either

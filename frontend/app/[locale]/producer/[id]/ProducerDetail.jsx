@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -175,7 +177,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
             ...(primaryCategory
-              ? [{ href: categoryListingHref(primaryCategory.id), label: primaryCategory.name }]
+              ? [{ href: categoryListingHref(primaryCategory.id), label: categoryLabel(t, primaryCategory) }]
               : []),
             { label: producer.name },
           ]}
@@ -334,6 +336,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           menu={orderCart.menu}
           picks={orderCart.picks}
           onStale={orderCart.reload}
+          onChange={orderCart.change}
           onClose={() => setOrderSheetOpen(false)}
         />
       )}

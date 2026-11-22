@@ -193,8 +193,8 @@ const PAIRS = [
  * key in the nested literal, then delete the line.
  */
 const KNOWN_UNDECLARED_NESTED = {
-  "ProducerListOut.categories": ["producer_count", "slug"],
-  "ProducerDetailOut.categories": ["producer_count", "slug"],
+  "ProducerListOut.categories": ["producer_count"],
+  "ProducerDetailOut.categories": ["producer_count"],
 };
 
 /**
