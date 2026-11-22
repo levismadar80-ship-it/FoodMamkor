@@ -37,6 +37,8 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
@@ -100,6 +102,7 @@ vi.mock("@/components/ReportButton", () => ({ default: () => null }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => null }));
 
 import ProducerSections from "@/app/[locale]/producer/[id]/components/ProducerSections";
+import { productShareUrl } from "@/components/public/ProductSheet";
 import { seedColorFor } from "@/lib/brand-seeds";
 
 const baseProps = {
@@ -515,7 +518,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     // in this .jsx file would be the one hit — a reference to a key that no
     // longer exists anywhere in the contract. The test still sends the real
     // stale key to the component; it just does not spell it. The gate does not
-    // scan *.mjs, which is why e2e/_qa-archive/qa-meh1855-price-signature.mjs keeps the
+    // scan *.mjs, which is why qa-meh1855-price-signature.mjs [deleted probe, docs/media-archive.md] keeps the
     // literal in its ALIAS_ONLY fixture — a stale payload, not a contract key.
     const STALE_ALIAS_KEY = ["starting", "price", "label"].join("_");
 
@@ -851,6 +854,16 @@ describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () 
     withSearch("");
     render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
     expect(screen.queryByTestId("product-sheet")).toBeNull();
+  });
+
+  // MEH-3622: the link the sheet's share button builds is the link this page
+  // opens — a rename of the param on either side breaks this round trip.
+  it.each(["/ruti", "/en/ruti"])("the share link built on %s opens that product", (path) => {
+    window.history.replaceState(null, "", `${path}?utm_source=x`);
+    const shared = new URL(productShareUrl(22));
+    window.history.replaceState(null, "", `${shared.pathname}${shared.search}`);
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "גבינה");
   });
 });
 

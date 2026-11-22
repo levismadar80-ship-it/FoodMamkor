@@ -65,7 +65,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import Producer, User
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import frame
 from app.services.producer_insights import WeeklyNumbers, weekly_numbers
 
 logger = logging.getLogger(__name__)
@@ -237,35 +237,19 @@ def build_email(m: SummaryEmail) -> tuple[str, str, str]:
     )
     # REUSES: backend/app/services/registration_emails.py:37 — the card shell
     # (logo, green heading band, outline button), plus an unsubscribe footer.
-    html = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
-  <tr><td align="center">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
-      <tr><td style="text-align:right;padding:0 4px 14px;">{email_logo_html()}</td></tr>
-      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{e(subject)}</td></tr>
+    html = frame(
+        e(subject),
+        "",
+        f"""\
           <tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.8;">
             {e(intro)}
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:8px;font-size:15px;color:#1c1a17;">{rows_html}</table>
           </td></tr>
           <tr><td style="padding:16px 22px 24px;text-align:center;"><a href="{e(m.insights_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לכל הנתונים</a></td></tr>
-        </table>
-      </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;line-height:1.6;">
-        {e(footer)}<br>
-        <a href="{e(m.unsubscribe_url)}" style="color:#5C584F;text-decoration:underline;">{e(stop)}</a><br>
-        צוות מהמקור
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>"""
+""",
+        f"""{e(footer)}<br>
+        <a href="{e(m.unsubscribe_url)}" style="color:#5C584F;text-decoration:underline;">{e(stop)}</a>""",
+    )
     return subject, plain, html
 
 

@@ -109,7 +109,7 @@ export const frankRuhlLibreLatin = localFont({
 // honours it, which is why the emitted CSS changes here: the intent is being
 // restored, not dropped. What that face did NOT do on Linux is capture Hebrew —
 // `local(Arial)` finds no font literally named Arial, so it never loaded and
-// Hebrew still reached Heebo (measured: `e2e/_qa-archive/qa-meh2029-font-resolution.mjs`).
+// Hebrew still reached Heebo (measured: `qa-meh2029-font-resolution.mjs [deleted probe, docs/media-archive.md]`).
 // On a machine that HAS real Arial it would load, which is the case MEH-1831
 // was written about and which cannot be measured from this sandbox.
 export const dmSans = localFont({
