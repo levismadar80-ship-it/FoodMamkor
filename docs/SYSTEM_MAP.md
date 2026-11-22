@@ -78,13 +78,14 @@ This page links to those and does not repeat their numbers.
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |
-| Product analytics | PostHog (EU), Clarity | consent-gated, no account data |
+| Product analytics | PostHog (EU), Clarity | consent-gated, no account data. Sign-in funnel events since MEH-3661: `login_prompt_shown`, `login_prompt_action`, `consumer_signup_submitted` (reason / method only) |
 | Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`) |
 | Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails; outside production only, a WhatsApp send the guard dropped is kept with its content (`blocked_nonprod`, /admin/whatsapp/blocked) |
 | Backups | Railway volume + the backup job (each run reports to Sentry: a Crons check-in to `production-db-backup`, and an error event on failure, MEH-3533) | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)); a copy restored anywhere but production has its personal details replaced by `scripts/anonymize_restored_db.sql` (MEH-3406) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
 | Answers to client-side reads made through `frontend/lib/use-api.js` (MEH-3536; SWR) | browser tab memory | one cache per tab, gone on reload; reads that depend on the signed-in account (`useUserApi`) are keyed by the user id, so the next account in the same tab never reads the previous one's entries. A logout does not empty it: the previous account's entries stay in memory, unread, until the tab reloads |
 | Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
+| The page a customer signed up from by email (MEH-3661) | browser `localStorage`, `post_auth_return`: an internal path and when it was stored | 24 hours (the verify link's own life); read by /verify-email to send her back, then cleared; only paths `isReturnablePath` allows (no auth screens, no token flows) |
 | Whether the account menus show «ההזמנות שלי» (MEH-3525) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored |
 
 ## What gives first under load
