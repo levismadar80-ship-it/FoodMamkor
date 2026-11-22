@@ -73,4 +73,8 @@ meh-3535-expected-tables-65	applied	.github/workflows/pr-checks.yml	MEH-3535: em
 meh-3153-webkit-core	applied	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-20	applied by Claude in Chrome in 0b55272ae (sha256 4c36ed67…, verified byte for byte)
 meh-3153-webkit-deps	applied	.github/workflows/e2e.yml	MEH-3153 webkit deps: runs on a cache hit too	2026-11-21	applied by Claude in Chrome in bc3d7f455 (sha256 ad68750b…, verified byte for byte)
 meh-3555-uptime-journey	applied	.github/workflows/uptime.yml	smoke_production.py --quick	2026-11-21	uptime tick also walks the user journey
-load-test	applied	.github/workflows/load-test.yml	grafana/run-k6-action	-	manual k6 load test, cloud or runner (MEH-3564)
+load-test	applied	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	-	manual k6 load test, cloud or runner; stack ID added 21/11 (MEH-3564)
+meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66 once MEH-3535 (email_outbox) took 65 on staging
+meh-3617-expected-tables-66	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
+meh-3592-expected-tables	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
+release-train-3-expected-tables-67	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2cf40e0ef, sha256 matched the prepared file
