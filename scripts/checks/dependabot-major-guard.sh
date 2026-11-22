@@ -76,7 +76,9 @@ check() {
   local from to pkg
   read -r pkg from to < <(python3 - "$title" <<'PY'
 import re, sys
-m = re.search(r"\bbump (?!the )(\S+) from v?(\S+) to v?(\S+)", sys.argv[1], re.I)
+t = sys.argv[1]
+m = re.search(r"\bbump (?!the )(\S+) from v?(\S+) to v?(\S+)", t, re.I) or re.search(
+    r"\bupdate (\S+) requirement from [<>=~^!]*v?(\S+) to [<>=~^!]*v?(\S+)", t, re.I)
 print(" ".join(m.groups()) if m else "")
 PY
 )
@@ -117,6 +119,8 @@ self_test() {
   run_case "2.0.55 → 2.1.9 minor" PASS "$db" "chore(deps): bump sqlalchemy from 2.0.55 to 2.1.9" "" "$lock"
   run_case "patch 2.53.2 → 2.53.3" PASS "$db" "bump resend from 2.53.2 to 2.53.3" "" "$lock"
   run_case "v-prefixed actions bump v3 → v4" FAIL "dependabot/github_actions/x" "chore(ci-deps): bump dorny/paths-filter from v3.0.4 to v4.0.3" "" ".github/workflows/pr-checks.yml"
+  run_case "requirement title, minor (hypothesis 6.155.2 → 6.170.15)" PASS "$db" "chore(deps): update hypothesis requirement from >=6.155.2 to >=6.170.15 in /backend" "" "$lock"
+  run_case "requirement title, major" FAIL "$db" "chore(deps): update httpx requirement from >=0.28.1 to >=1.0.0 in /backend" "" "$lock"
   run_case "grouped PR skipped" PASS "$db" "chore(deps): bump the pip-minor-patch group in /backend with 4 updates" "" "$lock"
   run_case "not a dependabot PR skipped" PASS "feature/meh-1-x" "bump anthropic from 0.107.1 to 2.10.0" "" "$lock"
   run_case "label as a substring does not count" FAIL "$db" "bump anthropic from 0.107.1 to 2.10.0" "not-major-reviewed" "$lock"
