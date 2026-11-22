@@ -43,7 +43,6 @@ export default function GoogleProfileTool() {
 
   useEffect(() => {
     let alive = true;
-    setFailed(false);
     api
       .get("/producers/me/google-profile")
       .then(({ data }) => alive && setStatus(data))
@@ -63,7 +62,11 @@ export default function GoogleProfileTool() {
       <div className="space-y-6">
         <div data-testid="google-profile-load-error" className="space-y-3">
           <InlineMessage tone="error" variant="box">{t("load_error")}</InlineMessage>
-          <Button size="sm" onClick={() => setAttempt((n) => n + 1)}>{t("retry")}</Button>
+          <Button size="sm" onClick={() => {
+            // Reset here, not in the effect: a synchronous set in an effect re-renders twice (react-hooks/set-state-in-effect).
+            setFailed(false);
+            setAttempt((n) => n + 1);
+          }}>{t("retry")}</Button>
         </div>
         {guide}
       </div>

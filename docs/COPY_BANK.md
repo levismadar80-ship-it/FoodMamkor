@@ -1340,7 +1340,7 @@ The full text of the price-list page is `pricing.page.*` in `messages/he.json` /
 
 ## Section — «not a party» line at the commit button (MEH-3570)
 
-One line under the rescue reserve button and the on-site sign-up button. The group-buy join card already carries `DirectoryDisclaimer` (MEH-3398), and the order sheet its own `platform_line` (MEH-3216), so neither gets this line.
+One line under the rescue reserve button and the on-site sign-up button. The group-buy join card already carries `DirectoryDisclaimer` (MEH-3398), and the order sheet its own not-a-party sentence at the end of `seller_line` (MEH-3216; `platform_line` until MEH-3658), so neither gets this line.
 
 | Key | Hebrew |
 |---|---|
