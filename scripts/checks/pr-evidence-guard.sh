@@ -9,7 +9,9 @@
 #                       screenshots are no longer committed)
 #             rule 38 — UI change → a `Self-check:` line (or `## Self-check`) in the body
 #             rule 22 — Hebrew added to he.json → a `Copy approved:` line in the body
-#             rule 40 — frontend/ or backend/app change → the `run-e2e` label
+#             rule 40 — frontend/ or backend/app change → the `run-e2e` label,
+#                       unless every such file is a unit test (MEH-3694:
+#                       frontend/__tests__/** or *.test.* outside frontend/e2e/)
 #             rule 5a — frontend/ or backend/app change → a `Reviewer:` line
 #                       (the fresh reviewer subagent ran and what it found)
 #             ADR-016 — RED change (backend/alembic/versions/, backend/app/auth.py,
@@ -118,6 +120,15 @@ is_ui_file() {
   return 0
 }
 
+# is_unit_test_file PATH — a frontend unit test (vitest). The E2E suite does not
+# run it and it ships nothing, so it alone does not need the `run-e2e` label
+# (MEH-3694, Sapir 22/11). frontend/e2e/** is the E2E suite itself and still does.
+is_unit_test_file() {
+  case "$1" in frontend/e2e/*) return 1 ;; esac
+  case "$1" in frontend/__tests__/*|frontend/*.test.js|frontend/*.test.jsx|frontend/*.test.ts|frontend/*.test.tsx|frontend/*.test.mjs) return 0 ;; esac
+  return 1
+}
+
 # answered LABEL BODY — a line `LABEL: <something>` or a heading `## LABEL`.
 answered() {
   grep -qiE "^[[:space:]]*([-*][[:space:]]+)?(\*\*)?$1:(\*\*)?[[:space:]]*(\*\*)?[[:space:]]*[^[:space:]*]|^#{2,3}[[:space:]]+$1[[:space:]]*\$" <<<"$2"
@@ -142,7 +153,7 @@ reviewed() {
 }
 
 check() {
-  local body labels files rc he ui="" code="" router="" red="" missing=()
+  local body labels files rc he ui="" code="" e2e_code="" router="" red="" missing=()
   body="$(pr_body)"; rc=$?
   if [ "$rc" -eq 1 ]; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
   [ "$rc" -eq 3 ] && missing+=("this is a pull_request event but its payload could not be read")
@@ -160,7 +171,7 @@ check() {
     while IFS= read -r f; do
       [ -z "$f" ] && continue
       is_ui_file "$f" && ui="$f"
-      case "$f" in frontend/*|backend/app/*) code="$f" ;; esac
+      case "$f" in frontend/*|backend/app/*) code="$f"; is_unit_test_file "$f" || e2e_code="$f" ;; esac
       case "$f" in backend/app/routers/*|backend/app/auth.py) router="$f" ;; esac
       case "$f" in backend/alembic/versions/*|backend/app/auth.py|backend/app/routers/upload.py) red="$f" ;; esac
     done <<<"$files"
@@ -174,7 +185,9 @@ check() {
       answered "Copy approved" "$body" || missing+=("rule 22: Hebrew added to $HE_FILE but no 'Copy approved:' line (where Sapir approved it)")
     fi
     if [ -n "$code" ]; then
-      grep -qxF "run-e2e" <<<"$labels" || missing+=("rule 40: $code changed but the PR has no run-e2e label")
+      if [ -n "$e2e_code" ]; then
+        grep -qxF "run-e2e" <<<"$labels" || missing+=("rule 40: $e2e_code changed but the PR has no run-e2e label")
+      fi
       reviewed "$body" || missing+=("rule 5a: $code changed but no 'Reviewer:' line (the fresh reviewer subagent: model + what it found)")
     fi
     if [ -n "$red" ] && reviewed "$body" \
@@ -222,6 +235,12 @@ self_test() {
   run_case "Self-check as a heading"            PASS $'## Self-check\n1. green\nReviewer: x\n'"$shots" "run-e2e" "$ui" ""
   run_case "UI change, no run-e2e label"        FAIL "$good" "bug"     "$ui" ""
   run_case "test-only frontend change, label"   PASS "Reviewer: x" "run-e2e" "frontend/__tests__/A.test.js" ""
+  run_case "one unit test, no label (MEH-3694)" PASS "Reviewer: x" ""        "frontend/__tests__/A.test.js" ""
+  run_case "many unit tests, no label"          PASS "Reviewer: x" ""        $'frontend/__tests__/A.test.js\nfrontend/lib/b.test.ts\ndocs/x.md' ""
+  run_case "unit test, no Reviewer line"        FAIL ""            ""        "frontend/__tests__/A.test.js" ""
+  run_case "unit test + lib file, no label"     FAIL "Reviewer: x" ""        $'frontend/__tests__/A.test.js\nfrontend/lib/a.js' ""
+  run_case "e2e spec only, no label"            FAIL "Reviewer: x" ""        "frontend/e2e/flows/a.spec.ts" ""
+  run_case "e2e *.test.ts, no label"            FAIL "Reviewer: x" ""        "frontend/e2e/x.test.ts" ""
   run_case "backend change, no label"           FAIL ""      ""        "backend/app/main.py" ""
   run_case "backend change, label + reviewer"   PASS "Reviewer: Sonnet, none" "run-e2e" "backend/app/main.py" ""
   run_case "backend change, no Reviewer line"   FAIL ""      "run-e2e" "backend/app/main.py" ""
