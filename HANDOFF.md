@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-21 — סוד העקיפה של Vercel: עוגייה בלבד, ושומר שחוסם כותרת בדפדפן (PR #5085, #5100)
+
+**שורה אחת:** ‏#5085 ו-#5100 בתוך רכבת השחרור 2 (#5063), יחד עם #5057. בדפדפן אין יותר את `x-vercel-protection-bypass`: הסוד נשלח פעם אחת בבקשת API, ו-Vercel מחזיר עוגיית `_vercel_jwt` לאתר הזה בלבד.
+
+**מה צריך לדעת לפני עבודה:**
+- **סקריפט חדש מול staging:** קוראים ל-`scopeBypassToOrigin(context, BASE, headers)` מ-`frontend/e2e/_bypass-scope.mjs` לפני ה-`goto` הראשון. סוד ב-`extraHTTPHeaders` של הקשר דפדפן נחסם ב-`bypass-scope-guard.sh`. בקשת API (‏`request.newContext`) מותרת.
+- **חבילת ה-E2E מול יעד מרוחק:** ‏`global-setup.ts` כותב את העוגייה ל-`e2e/.auth/bypass.json`. ‏spec שמגדיר `storageState` משלו צריך לכלול את הקובץ הזה, אחרת הוא נתקע בחומת ה-SSO.
+- **`staging.mehamakor.online`** מפנה ל-`staging.mehamakor.co.il`, והעוגייה נקבעת על ה-host שבו ההפניות נעצרות.
+- **לא מכוסה:** סקריפטים ישנים תחת `frontend/qa-artifacts/` עדיין שמים את הכותרות בדפדפן. השומר מדלג על התיקייה, ושום CI לא מריץ אותם. לפני שמריצים אחד מול staging, מעבירים אותו לעוגייה.
+- **פתוח אצל ספיר:** החלפת הסוד, עם סוד ל-CI וסוד לסקריפטי ה-QA (‏MEH-3607).
 ## 2026-11-21 — רישיון לא חוסם אישור, ומהמקור לא צד לעסקה (MEH-3026)
 
 **שורה אחת:** ממצאי בדיקת v1.5.1 תוקנו. #5024, #5026, #5027, #5028, #5029, #5031 ו-#5034 נכנסו ב-v1.5.11; ‏#5033 ו-#5047 נכנסו ברכבת 3 (#5117).
