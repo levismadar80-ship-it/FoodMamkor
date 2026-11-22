@@ -130,7 +130,8 @@ vi.mock("@phosphor-icons/react", () => {
     SignOut: stub("SignOut"),
     ArrowUpLeft: stub("ArrowUpLeft"),
     Gauge: stub("Gauge"),
-    Receipt: stub("Receipt"), // MEH-3525 «ההזמנות שלי»
+    Receipt: stub("Receipt"),
+    UsersThree: stub("UsersThree"), // MEH-3609 «הקבוצות שלי»
   };
 });
 

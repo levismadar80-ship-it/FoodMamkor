@@ -3,7 +3,7 @@ Module:   admin_producer_reads
 Purpose:  What the admin business screens READ: the business list with its
           queue order and per-row enrichment, one business, the licence-expiry
           list and the /admin/stats counters.
-Touches:  producers, users, home_products (read only).
+Touches:  producers, users (read only).
 Does NOT: write anything, or register routes — routers/admin.py keeps every
           route, its admin dependency and its docstring (the openapi
           description). Admin writes stay in routers/admin.py.
@@ -24,7 +24,7 @@ from fastapi import HTTPException
 from sqlalchemy import ColumnElement, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.models import HomeProduct, Producer, User
+from app.models import Producer, User
 from app.schemas.schemas import LicenseExpiryReminderOut, LicenseExpiryReminderRow
 from app.services.admin_draft_missing import attach_draft_missing  # MEH-3409
 from app.services.page_freshness import stale_clause
@@ -327,10 +327,4 @@ def admin_stats(db: Session) -> dict[str, Any]:
         .filter(is_business())  # MEH-2459
         .count(),
         "total_users": db.query(User).count(),
-        "total_home_products": db.query(HomeProduct)
-        .filter(HomeProduct.is_active.is_(True))
-        .count(),
-        "hidden_home_products": db.query(HomeProduct)
-        .filter(HomeProduct.is_hidden.is_(True))
-        .count(),
     }

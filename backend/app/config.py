@@ -187,6 +187,9 @@ class Settings(BaseSettings):
     # in Vercel, set together with this one (it is inlined at build time).
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
+    # MEH-3605: the rescue pickup-code WhatsApp digest (MEH-2756). Off until
+    # Meta approves rescue_codes_digest_v1; read by services/rescue_digest.py.
+    rescue_digest_enabled: bool = False
 
     # MEH-3393: monthly page-freshness email to owners + the Sunday admin
     # digest of pages unconfirmed for 60 days. Off until

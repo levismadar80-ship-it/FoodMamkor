@@ -6,7 +6,7 @@ Covers:
 - POST /producers/{id}/whatsapp-click (anonymous, rate limited, persisted)
 - GET /producers/me/analytics (7d/30d/total windows, views_by_day, top_cities,
   search_appearances, follower_count, new_followers_this_week, average_rating,
-  total_reviews, home_products_count)
+  total_reviews)
 - Extended GET /admin/dashboard (new_users_this_week, new_producers_this_week,
   total_events, total_experiences, pending_moderation_count, daily_active_users,
   top_cities, server_health)
@@ -454,7 +454,7 @@ class TestProducerAnalytics:
         for key in (
             "profile_views", "search_appearances", "whatsapp_clicks",
             "follower_count", "new_followers_this_week",
-            "average_rating", "total_reviews", "home_products_count",
+            "average_rating", "total_reviews",
             "views_by_day", "top_cities",
         ):
             assert key in body, f"missing key: {key}"
@@ -617,35 +617,6 @@ class TestProducerAnalytics:
         ).json()
         assert body["follower_count"] == 4
         assert body["new_followers_this_week"] == 2
-
-    def test_analytics_home_products_count_scopes_to_owner(self, client, db):
-        p = make_producer(db)
-        user = make_user(db, email="owner7@test.com", role="producer")
-        user.producer_id = p.id
-        db.commit()
-
-        # Owner's own home product (should be counted)
-        db.add(HomeProduct(
-            user_id=user.id, title="שלי", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=True,
-        ))
-        # Inactive one (should NOT be counted)
-        db.add(HomeProduct(
-            user_id=user.id, title="לא פעיל", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=False,
-        ))
-        # Other user's (should NOT be counted)
-        other = make_user(db, email="other@test.com")
-        db.add(HomeProduct(
-            user_id=other.id, title="של אחרת", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=True,
-        ))
-        db.commit()
-
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
-        assert body["home_products_count"] == 1
 
     def test_analytics_no_longer_returns_the_two_dead_fields(self, client, db):
         # MEH-2529: `profile_strength` (a second completeness score, MEH-57)
@@ -824,7 +795,6 @@ class TestAdminDashboardAnalytics:
         for key in (
             "total_users", "new_users_this_week",
             "total_producers", "new_producers_this_week",
-            "total_home_products",
             "total_events", "total_experiences",
             "pending_moderation_count",
         ):
@@ -943,8 +913,9 @@ class TestAdminDashboardAnalytics:
 
     def test_admin_dashboard_pending_moderation_sum(self, client, db):
         admin = make_user(db, role="admin")
-        # Seed one pending producer, one open report, one flagged home product,
-        # one pending experience → badge = 4
+        # Seed one pending producer, one open report, one pending experience →
+        # badge = 3. A FLAGGED home product is seeded too and must NOT count:
+        # that queue went with the neighbour listings (MEH-3646, MEH-796).
         make_producer(db, name="Pending1", status="pending")
         p = make_producer(db, status="approved")
         db.add(Report(producer_id=p.id, reporter_id=admin.id, reason="test"))
@@ -963,7 +934,9 @@ class TestAdminDashboardAnalytics:
         db.commit()
 
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
-        assert body["stats"]["pending_moderation_count"] >= 4
+        assert body["stats"]["pending_moderation_count"] == 3
+        assert "flagged_home_products" not in body["stats"]
+        assert "total_home_products" not in body["stats"]
 
     def test_admin_dashboard_requires_admin(self, client, db):
         consumer = make_user(db, email="c-only@test.com", role="consumer")
