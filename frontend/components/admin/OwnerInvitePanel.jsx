@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
+import { getWhatsAppHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import OwnerDetachControl from "@/components/admin/OwnerDetachControl";
 
@@ -238,7 +239,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
       })
     : "";
   const whatsappHref = minted
-    ? `https://wa.me/?text=${encodeURIComponent(messageText)}`
+    ? getWhatsAppHref("", messageText)
     : null;
 
   // v3: the same message, on the clipboard. Most of these businesses are

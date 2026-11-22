@@ -70,6 +70,9 @@ WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
 # MEH-3312: the evening-before reminder, 17:00 on the Israel clock.
 REGISTRATION_REMINDER_CRON = "0 17 * * *"
 REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3610: the group-buy pickup reminder, the same evening hour.
+GROUP_BUY_PICKUP_REMINDER_CRON = "0 17 * * *"
+GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -137,6 +140,9 @@ UNMONITORED_SLUGS = frozenset(
         "product-orders-tick",
         # MEH-3535: the email queue tick. No Sentry monitor (plan limit).
         "email-outbox-tick",
+        # MEH-3610: the pickup reminder before a funded group's pickup. No
+        # Sentry monitor (plan limit, MEH-3332).
+        "group-buy-pickup-reminder-daily",
     }
 )
 

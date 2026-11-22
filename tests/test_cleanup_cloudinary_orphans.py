@@ -207,6 +207,7 @@ class TestSourceConstants:
             ("Experience", "image_url"),
             # MEH-3247: added when the registry moved to services/image_refs.py.
             ("Producer", "owner_photo_url"),
+            ("Producer", "logo_url"),  # MEH-3611
             ("ProducerRecipe", "image_url"),
             ("RescueReview", "photo_url"),
             ("KashrutBadgeRequest", "cert_url"),
@@ -221,9 +222,10 @@ class TestSourceConstants:
             ("HomeProduct", "images"),
         ]
 
-    def test_total_source_count_is_thirteen(self):
+    def test_total_source_count_is_fourteen(self):
         # MEH-3247: 10 scalar + 2 array = 12 (was 8). MEH-3377: +1 scalar.
-        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 13
+        # MEH-3611: +1 scalar (the business logo).
+        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 14
 
 
 class TestAddScalarUrls:
