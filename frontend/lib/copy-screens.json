@@ -673,6 +673,7 @@
       "/producers/[category]/[region]",
       "/producers/diet/[dietSlug]",
       "/registration/[token]",
+      "/rescue",
       "/rescue/[offerId]",
       "/settings"
     ],
