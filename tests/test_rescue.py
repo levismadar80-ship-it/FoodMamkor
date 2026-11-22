@@ -409,7 +409,7 @@ class TestHandOver:
         now = utc_now()
         _, _, order = self._reserved(client, db, shop, email="late@example.com")
         early = client.post(
-            f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+            f"/rescue/orders/{order['id']}/no-show", headers=auth_header(shop["owner"])
         )
         assert early.status_code == 409
 
@@ -420,10 +420,32 @@ class TestHandOver:
         offer.pickup_end = now - timedelta(hours=1)
         db.commit()
         late = client.post(
-            f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+            f"/rescue/orders/{order['id']}/no-show", headers=auth_header(shop["owner"])
         )
         assert late.status_code == 200
         assert late.json()["status"] == "no_show"
+
+    def test_old_no_show_spelling_is_a_hidden_alias(
+        self, client, db, shop, rescue_on
+    ):
+        """MEH-3709: /no_show still answers (a browser on the old bundle during
+        the release), with the same owner check, and is not in the contract."""
+        now = utc_now()
+        _, buyer, order = self._reserved(client, db, shop, email="alias@example.com")
+        offer = (
+            db.query(RescueOffer).filter(RescueOffer.id == order["offer_id"]).first()
+        )
+        offer.pickup_start = now - timedelta(hours=3)
+        offer.pickup_end = now - timedelta(hours=1)
+        db.commit()
+        old = f"/rescue/orders/{order['id']}/no_show"
+        assert client.post(old, headers=auth_header(buyer)).status_code == 403
+        r = client.post(old, headers=auth_header(shop["owner"]))
+        assert r.status_code == 200
+        assert r.json()["status"] == "no_show"
+        paths = client.get("/openapi.json").json()["paths"]
+        assert "/rescue/orders/{order_id}/no-show" in paths
+        assert "/rescue/orders/{order_id}/no_show" not in paths
 
     # ── MEH-2865: handed / no_show lock like cancel_order ──────────────────
 
@@ -532,7 +554,7 @@ class TestHandOver:
         self._ended(db, order)
         r, seen = self._statements(
             lambda: client.post(
-                f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+                f"/rescue/orders/{order['id']}/no-show", headers=auth_header(shop["owner"])
             )
         )
         assert r.status_code == 200, r.text
