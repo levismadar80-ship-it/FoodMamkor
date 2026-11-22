@@ -59,6 +59,7 @@ REAL_NAMES = [
     "TALA — רוקחות טבעית",
     "🍞 לחם אלחנן",
 ]
+REAL_NAMES_STORED = {"🍞 לחם אלחנן": "לחם אלחנן"}
 
 # Phones. `_phone_validator` (schemas.py:244) strips only [\s()-] and validates
 # the DIGIT projection, so the stored value is the input minus those three
@@ -114,7 +115,10 @@ class TestRealSheetRoundTrip:
         for name in REAL_NAMES:
             r = _post(client, h, name=name)
             assert r.status_code == 201, f"{name!r} -> {r.status_code} {r.text[:200]}"
-            assert r.json()["name"] == name, f"{name!r} did not round-trip"
+            # MEH-3671: a lead name drops its emoji on save (Sapir 22/11, no
+            # emoji in names); everything else round-trips byte-identical.
+            want = REAL_NAMES_STORED.get(name, name)
+            assert r.json()["name"] == want, f"{name!r} did not round-trip"
 
     # FINDING-1 fixed by MEH-3317 (was xfail(strict=True)).
     def test_ampersand_in_name_round_trips(self, client, db):
@@ -208,13 +212,17 @@ class TestWebsiteScheme:
         [
             ("havivian.co.il", "https://havivian.co.il"),
             ("www.example.co.il", "https://www.example.co.il"),
-            ("machine.co.il/show.asp?table=users&id=17703",
-             "https://machine.co.il/show.asp?table=users&id=17703"),
+            (
+                "machine.co.il/show.asp?table=users&id=17703",
+                "https://machine.co.il/show.asp?table=users&id=17703",
+            ),
             ("קטלוג ב-Drive (קישור בביו)", None),
             ("meshekfine.co.il · mypips.app/finerotem", None),
         ],
     )
-    def test_scheme_less_website_is_normalised_or_dropped(self, client, db, raw, stored):
+    def test_scheme_less_website_is_normalised_or_dropped(
+        self, client, db, raw, stored
+    ):
         """MEH-3318: a bare domain gains https://; prose is dropped and the
         lead is still saved."""
         h = auth_header(_admin(db, f"web-n-{abs(hash(raw)) % 10**6}@example.com"))
@@ -394,7 +402,9 @@ class TestListFilters:
         _post(client, h, name="ללא עיר בכלל")  # city is NULL
 
         with_city = [
-            x["id"] for x in client.get("/admin/outreach", headers=h).json() if x["city"]
+            x["id"]
+            for x in client.get("/admin/outreach", headers=h).json()
+            if x["city"]
         ]
         assert len(with_city) == 2
         for wildcard in ("%", "_"):
@@ -528,7 +538,9 @@ class TestPrefillToken:
             "שם ישן"
         )
 
-        client.patch(f"/admin/outreach/{minted['id']}", json={"name": "שם חדש"}, headers=h)
+        client.patch(
+            f"/admin/outreach/{minted['id']}", json={"name": "שם חדש"}, headers=h
+        )
         assert client.get(f"/register/producer/prefill/{token}").json()["name"] == (
             "שם חדש"
         )
@@ -538,7 +550,10 @@ class TestPrefillToken:
         minted, token = self._lead_with_token(client, h, name="נמחק")
         assert client.get(f"/register/producer/prefill/{token}").status_code == 200
 
-        assert client.delete(f"/admin/outreach/{minted['id']}", headers=h).status_code == 204
+        assert (
+            client.delete(f"/admin/outreach/{minted['id']}", headers=h).status_code
+            == 204
+        )
         assert client.get(f"/register/producer/prefill/{token}").status_code == 404
 
 
@@ -556,21 +571,31 @@ class TestAdminOnly:
         lead_id = self._lead_id(client, db)
         assert client.get("/admin/outreach").status_code == 401
         assert client.get("/admin/outreach/metrics/summary").status_code == 401
-        assert client.post("/admin/outreach", json={"name": "אנונימי"}).status_code == 401
         assert (
-            client.patch(f"/admin/outreach/{lead_id}", json={"status": "contacted"}).status_code
+            client.post("/admin/outreach", json={"name": "אנונימי"}).status_code == 401
+        )
+        assert (
+            client.patch(
+                f"/admin/outreach/{lead_id}", json={"status": "contacted"}
+            ).status_code
             == 401
         )
         assert client.delete(f"/admin/outreach/{lead_id}").status_code == 401
-        assert client.post(f"/admin/outreach/{lead_id}/prefill-token").status_code == 401
+        assert (
+            client.post(f"/admin/outreach/{lead_id}/prefill-token").status_code == 401
+        )
 
     def test_authenticated_non_admin_is_403(self, client, db):
         lead_id = self._lead_id(client, db)
         h = auth_header(make_user(db, role="consumer", email="guard-c@example.com"))
         assert client.get("/admin/outreach", headers=h).status_code == 403
-        assert client.get("/admin/outreach/metrics/summary", headers=h).status_code == 403
         assert (
-            client.post("/admin/outreach", json={"name": "צרכנית"}, headers=h).status_code
+            client.get("/admin/outreach/metrics/summary", headers=h).status_code == 403
+        )
+        assert (
+            client.post(
+                "/admin/outreach", json={"name": "צרכנית"}, headers=h
+            ).status_code
             == 403
         )
         assert (
@@ -581,7 +606,9 @@ class TestAdminOnly:
         )
         assert client.delete(f"/admin/outreach/{lead_id}", headers=h).status_code == 403
         assert (
-            client.post(f"/admin/outreach/{lead_id}/prefill-token", headers=h).status_code
+            client.post(
+                f"/admin/outreach/{lead_id}/prefill-token", headers=h
+            ).status_code
             == 403
         )
 
@@ -593,7 +620,9 @@ class TestAdminOnly:
         h = auth_header(make_user(db, role="producer", email="guard-p@example.com"))
         assert client.get("/admin/outreach", headers=h).status_code == 403
         assert (
-            client.post(f"/admin/outreach/{lead_id}/prefill-token", headers=h).status_code
+            client.post(
+                f"/admin/outreach/{lead_id}/prefill-token", headers=h
+            ).status_code
             == 403
         )
 
@@ -615,7 +644,9 @@ class TestRegistrationDoesNotCloseTheLoop:
         lead = _post(
             client, h, name="חוות הבדיקה", city="תל אביב", phone="050-1234567"
         ).json()
-        client.patch(f"/admin/outreach/{lead['id']}", json={"status": "contacted"}, headers=h)
+        client.patch(
+            f"/admin/outreach/{lead['id']}", json={"status": "contacted"}, headers=h
+        )
 
         payload = valid_producer_register_payload() | {
             "email": "loop-owner@example.com",
@@ -625,7 +656,10 @@ class TestRegistrationDoesNotCloseTheLoop:
             # auth.py requires a phone for that channel.
             "phone": "0501234567",
         }
-        assert client.post("/auth/register/producer", json=payload).status_code in (200, 201)
+        assert client.post("/auth/register/producer", json=payload).status_code in (
+            200,
+            201,
+        )
 
         after = client.get("/admin/outreach", headers=h).json()
         assert [x["status"] for x in after if x["id"] == lead["id"]] == ["contacted"]

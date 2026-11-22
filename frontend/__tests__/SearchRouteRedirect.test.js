@@ -1,6 +1,7 @@
 /**
  * MEH-819: /search is gone; the one results page is /producers. The header,
- * the sitelinks SearchAction and old links all end up there. This reads the
+ * and old links all end up there (the sitelinks SearchAction was removed in
+ * MEH-3638). This reads the
  * real next.config.js redirects, so a dropped rule goes red here, not in a
  * crawler report.
  */

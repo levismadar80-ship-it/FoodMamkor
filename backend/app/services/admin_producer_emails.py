@@ -11,7 +11,7 @@ import logging
 from html import escape as _html_escape
 
 from app.config import settings
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import frame
 from app.services.onboarding_followup import SITE_DOMAIN
 
 logger = logging.getLogger(__name__)
@@ -92,11 +92,9 @@ def _approval_links(slug: str | None) -> tuple[str, str]:
 def _producer_approved_body(name: str, slug: str | None) -> str:
     """MEH-2134: copy approved by Sapir 20/08/2026, shipped verbatim.
 
-    Signed `ספיר שנפ | מייסדת` in the first person, matching
-    `pending_nudge.py:149` and all four `onboarding_followup.py` steps —
-    one mailbox, one sender. `_producer_rejected_body` deliberately keeps the
-    institutional sign-off: an institutional "no" is kinder than a personal
-    one, and that asymmetry is a decision, not an oversight. (The literal is
+    MEH-3594 (Sapir, 21/11): signed with the team sign-off, like
+    `_producer_rejected_body` and every other email; until then it carried
+    the founder's personal signature. (The literal is
     spelled out nowhere in this docstring so that the sign-off census below
     counts signatures, not prose.)
 
@@ -147,11 +145,11 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
         f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
-        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"העמוד שלך כבר מופיע באתר.\n"
         f"{view_page}"
         f"{dashboard}"
         f"{community}"
-        f"\nספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}"
+        f"\nצוות מהמקור"
     )
 
 
@@ -245,43 +243,19 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         else ""
     )
 
-    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
-    logo = email_logo_html()
-    return (
-        "<!DOCTYPE html>\n"
-        '<html dir="rtl" lang="he">\n'
-        '<head><meta charset="UTF-8">'
-        '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "</head>\n"
-        '<body style="margin:0;padding:0;background:#F5F0E8;'
-        'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
-        '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#F5F0E8;padding:24px 12px;"><tr><td align="center">\n'
-        '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#ffffff;border-radius:12px;text-align:right;'
-        'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
-        '<td style="text-align:right;direction:rtl;padding:32px 24px;">\n'
-        f"{logo}\n"
-        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
-        'margin:0 0 16px;direction:rtl;">היי,</p>\n'
+    # MEH-3621: the one email frame (email_layout.frame), logo included.
+    return frame(
+        "היי,",
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
         f'העסק שלך "{safe_name}" אושר במהמקור! '
-        "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.</p>\n"
+        "העמוד שלך כבר מופיע באתר.</p>\n"
         f"{button}\n"
         '<p style="margin:0 0 24px;direction:rtl;">'
         f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
         'font-size:15px;text-decoration:underline;direction:rtl;">'
         f"{_html_escape(_APPROVED_HTML_DASHBOARD_LABEL)}</a></p>\n"
-        f"{community}\n"
-        '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
-        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
-        'margin:0;direction:rtl;">'
-        f"ספיר שנפ<br>מייסדת | מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
-        "</td></tr></table>\n"
-        "</td></tr></table>\n"
-        "</body>\n"
-        "</html>"
+        f"{community}\n",
     )
 
 
@@ -375,25 +349,9 @@ def _producer_rejected_html(
         if reason
         else ""
     )
-    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
-    logo = email_logo_html()
-    return (
-        "<!DOCTYPE html>\n"
-        '<html dir="rtl" lang="he">\n'
-        '<head><meta charset="UTF-8">'
-        '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "</head>\n"
-        '<body style="margin:0;padding:0;background:#F5F0E8;'
-        'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
-        '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#F5F0E8;padding:24px 12px;"><tr><td align="center">\n'
-        '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#ffffff;border-radius:12px;text-align:right;'
-        'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
-        '<td style="text-align:right;direction:rtl;padding:32px 24px;">\n'
-        f"{logo}\n"
-        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
-        f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
+    # MEH-3621: the one email frame (email_layout.frame), logo included.
+    return frame(
+        f"שלום {safe_name},",
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
         "תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה.</p>\n"
@@ -406,11 +364,7 @@ def _producer_rejected_html(
         '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
         '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
-        f"בברכה,<br>צוות מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
-        "</td></tr></table>\n"
-        "</td></tr></table>\n"
-        "</body>\n"
-        "</html>"
+        f"{_html_escape(SITE_DOMAIN)}</p>\n",
     )
 
 

@@ -1,0 +1,16 @@
+# MEH-3668: emoji frozen in backend string literals. Only shrinks.
+# path<TAB>codepoint<TAB>count
+backend/app/routers/marketing.py	U+1F33F	2
+backend/app/services/auth_emails.py	U+1F331	4
+backend/app/services/auth_emails.py	U+1F33F	5
+backend/app/services/onboarding_followup.py	U+1F4D6	3
+backend/app/services/onboarding_followup.py	U+2705	2
+backend/app/services/pending_nudge.py	U+1F4C5	1
+backend/app/services/pending_nudge.py	U+1F4CD	1
+backend/app/services/pending_nudge.py	U+1F4F7	2
+backend/app/services/pending_nudge.py	U+1F6D2	1
+backend/app/services/pending_nudge.py	U+2705	1
+backend/app/services/pending_nudge.py	U+270D	1
+backend/app/services/rescue_emails.py	U+1F331	3
+backend/app/services/rescue_emails.py	U+1F4CD	1
+backend/app/services/rescue_emails.py	U+1F557	1

@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MAP_REFERRER } from "@/lib/map-view-state";
@@ -66,6 +68,7 @@ function categoryTint(hex, alpha) {
  */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
+  const tRoot = useTranslations();
   const router = useRouter();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
@@ -94,7 +97,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // otherwise). Mirrors ProducerCard.jsx.
   const userLoc = useUserLocation();
   // MEH-1243 (🔒 §3): Hebrew unit, digits-first, no "ממך" suffix — rendered
-  // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ". (MEH-1307 dropped the
+  // inside the <bdi dir="ltr"> below. e.g. "1.2 ק״מ". (MEH-1307 dropped the
   // "ממך" tail everywhere, so no per-call suffix flag is needed anymore.)
   // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
   // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx). No
@@ -182,12 +185,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Meta line — category FIRST (muted glyph + truncating text), distance
             LAST (flex-shrink-0, never truncates). MEH-1296: sits directly under
             the name, above the rating row. The distance <bdi> has no dir override
-            so it auto-resolves to RTL and reads digits-first ("1.2 ק"מ"). 🔒 §3. */}
+            so it auto-resolves to RTL and reads digits-first ("1.2 ק״מ"). 🔒 §3. */}
         <p className="text-sm leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
           {category?.name && (
             <span className="inline-flex items-center gap-1 min-w-0">
               <CategoryIcon size={14} weight="regular" aria-hidden="true" className="shrink-0 text-fg-muted" />
-              <span className="truncate">{category.name}</span>
+              <span className="truncate">{categoryLabel(tRoot, category)}</span>
             </span>
           )}
           {distanceLabel && (

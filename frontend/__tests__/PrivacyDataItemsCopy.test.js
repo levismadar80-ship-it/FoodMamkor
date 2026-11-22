@@ -97,7 +97,7 @@ describe("MEH-2777 — the registration sign-up line is on the page", () => {
     const item = msgs.privacy.sections.data.items.registrations;
     expect(item.value).toContain(window);
     // The three fields the form actually collects (RegistrationCta.jsx).
-    const fields = _l === "he" ? ["שם", "טלפון", "אימייל"] : ["Name", "phone", "email"];
+    const fields = _l === "he" ? ["שם", "טלפון", "מייל"] : ["Name", "phone", "email"];
     for (const f of fields) expect(item.value).toContain(f);
   });
 });

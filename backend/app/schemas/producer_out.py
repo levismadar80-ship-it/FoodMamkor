@@ -452,6 +452,9 @@ class ProducerDetailOut(ProducerListOut):
     # page (MEH-1334, dormant variants). NULL = card stays compact.
     owner_bio: str | None = None
     owner_photo_url: str | None = None
+    # MEH-3611: the business's logo beside its name; null = no logo. Detail
+    # only — the list cards do not show it.
+    logo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-1543: optional weekly order-acceptance window (JSONB). NULL = feature
@@ -751,3 +754,7 @@ class ProducerOwnerOut(_ZonesOut, ProducerDetailOut):
     # client mirror (lib/submission-gate.js) reads this count. Filled by
     # GET/PUT /producers/me; 0 for every other serializer path.
     upcoming_events_count: int = 0
+    # MEH-3660: a user owning this business confirmed her email — the submit
+    # gate's last requirement. Filled by GET/PUT /producers/me; False for every
+    # other serializer path (fail-closed, like the gate).
+    owner_email_verified: bool = False

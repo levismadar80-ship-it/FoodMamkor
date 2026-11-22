@@ -751,3 +751,14 @@ def test_an_expired_token_is_a_401_not_an_anonymous_signup(client, db):
     )
     assert r.status_code == 401, r.text
     assert _entries(db, p.id) == []
+
+
+def test_the_city_email_html_signs_once():
+    """MEH-3594: the frame footer signs; the body must not sign a second time."""
+    from uuid import uuid4
+
+    from app.services.email_layout import text_to_html
+
+    subject, body = svc._email_copy("מאפיית הכפר", "חיפה", uuid4(), uuid4())
+    html = text_to_html(subject, body)
+    assert html.count("צוות מהמקור") == 1, html

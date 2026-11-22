@@ -98,8 +98,10 @@ TEST_URL=https://staging.mehamakor.co.il PW_WEBKIT=1 \
 ### Trap 4 — staging needs the bypass secret
 
 `VERCEL_AUTOMATION_BYPASS_SECRET` must be set (it already is in this environment).
-`playwright.config.ts` forwards it as `x-vercel-protection-bypass` for non-local
-targets. Without it **every request 302s to `vercel.com/sso-api`** and the run fails
+In the WebKit TLS-proxy mode, `playwright.config.ts` still sends it as
+`x-vercel-protection-bypass` (the proxy origin is local, so Vercel's bypass cookie
+cannot apply there). Every other remote run uses the cookie that `global-setup.ts`
+writes to `e2e/.auth/bypass.json` (MEH-3629). Without it **every request 302s to `vercel.com/sso-api`** and the run fails
 in a way that looks like the site being broken rather than the auth wall.
 
 ### Trap 5 — the Chromium half of the pair is broken in this sandbox, and its install fails *silently*

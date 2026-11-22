@@ -34,6 +34,8 @@ MAX_LOCATIONS = 20
 MAX_UPCOMING_EVENTS = 30
 MAX_UPCOMING_EXPERIENCES = 30
 MAX_OPEN_GROUP_BUYS = 30
+# MEH-3617: sizes or flavours of ONE product (product_variants).
+MAX_VARIANTS_PER_PRODUCT = 10
 # MEH-3055: product groups live in producers.product_groups (JSONB), so this
 # is a request-list cap, not a table cap.
 MAX_PRODUCT_GROUPS = 20
@@ -64,6 +66,7 @@ _CAP_DETAIL = {
     "events": f"אפשר להוסיף עד {MAX_UPCOMING_EVENTS} אירועים עתידיים. כדי להוסיף אירוע חדש, צריך קודם למחוק אחד קיים.",
     "experiences": f"אפשר להוסיף עד {MAX_UPCOMING_EXPERIENCES} חוויות עתידיות. כדי להוסיף חוויה חדשה, צריך קודם למחוק אחת קיימת.",
     "group_buys": f"אפשר להוסיף עד {MAX_OPEN_GROUP_BUYS} קבוצות רכישה פתוחות. כדי להוסיף קבוצה חדשה, צריך קודם לסגור אחת קיימת.",
+    "variants": f"אפשר להוסיף עד {MAX_VARIANTS_PER_PRODUCT} אפשרויות למוצר אחד. כדי להוסיף אפשרות חדשה, צריך קודם למחוק אחת קיימת.",
 }
 
 GALLERY_IMAGES_DETAIL = f"אפשר להוסיף עד {MAX_GALLERY_IMAGES} תמונות. כדי להוסיף תמונה חדשה, צריך קודם למחוק אחת קיימת."
@@ -91,6 +94,7 @@ CAPS = {
     "events": MAX_UPCOMING_EVENTS,
     "experiences": MAX_UPCOMING_EXPERIENCES,
     "group_buys": MAX_OPEN_GROUP_BUYS,
+    "variants": MAX_VARIANTS_PER_PRODUCT,
 }
 
 

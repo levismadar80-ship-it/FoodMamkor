@@ -16,7 +16,9 @@ Related:  app/routers/product_order_buyer.py (the route),
           app/services/product_order_phone.py (the phone proof),
           app/services/product_order_delivery.py (the delivery fee),
           app/services/product_order_actions.py (pickup code, views)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3617 (a line may
+          name a size or flavour, priced from the variant row); MEH-3618 (a slot
+          on a day one of the products is not made is refused)
 """
 
 import base64
@@ -42,11 +44,18 @@ from app.models.product_orders import (
     ProducerOrderSettings,
     ProductOrder,
     ProductOrderItem,
+    ProductOrderPhoneCode,
 )
-from app.schemas.product_order_buy import OrderCreateIn, OrderQuoteIn
+from app.schemas.product_order_buy import (
+    DUPLICATE_PRODUCT_DETAIL,
+    OrderCreateIn,
+    OrderQuoteIn,
+)
 from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
+from app.services import product_variants  # MEH-3617
+from app.services import product_weekdays  # MEH-3618
 from app.services.product_order_actions import assign_pickup_code
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.services.product_order_menu import offered_slots, takes_orders
@@ -58,6 +67,7 @@ from app.services.product_order_state import (
     record_created,
 )
 from app.utils.clock import utc_now
+from app.utils.phone import canonical_il_msisdn
 
 # Sapir's decisions of 14/11: three open orders to one phone across the site;
 # two no-shows in ninety days close ordering to that phone; a request the
@@ -190,13 +200,13 @@ def _agorot(shekels: Decimal) -> int:
 def order_lines(
     db: Session, body: OrderCreateIn | OrderQuoteIn, alcohol_licensed: bool
 ) -> list[ProductOrderItem]:
-    """One order line per requested product, priced from the DB.
+    """One order line per requested product (and variant), priced from the DB.
 
     A price range is stored at its HIGH end and marked an estimate: the
     buyer is told the most she might pay, and the business sets the final
     total when it confirms. A weighed product is an estimate at any price.
     """
-    wanted = {line.product_id: line.qty for line in body.items}
+    wanted = {line.product_id for line in body.items}
     products = (
         db.query(Product)
         .filter(
@@ -215,16 +225,37 @@ def order_lines(
         raise _conflict(PRODUCT_GONE_DETAIL)
     by_id: dict[Any, Product] = {p.id: p for p in products}
     lines = []
+    seen: set[tuple[Any, Any]] = set()
     for line in body.items:  # the buyer's own order of lines
         product = by_id[line.product_id]
+        # MEH-3617: which size or flavour, and its price — never the client's.
+        try:
+            variant = product_variants.choose(product, line.variant_id).variant
+        except product_variants.VariantRefused as refused:
+            raise HTTPException(
+                status_code=refused.status_code, detail=refused.detail
+            ) from refused
+        # The schema compares the ids as sent; a product's single variant can
+        # be sent bare and by id, so twins are compared on what was resolved
+        # (else one line slips past the per-line qty cap).
+        resolved = (product.id, variant.id if variant is not None else None)
+        if resolved in seen:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=DUPLICATE_PRODUCT_DETAIL,
+            )
+        seen.add(resolved)
         low = _agorot(product.price_min)  # type: ignore[arg-type]
         high = _agorot(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
+        price, is_range = product_variants.unit_price(low, high, variant)
         lines.append(
             ProductOrderItem(
                 product_id=product.id,
                 name=product.name,
-                unit_price_agorot=max(low, high),
-                price_is_estimate=high != low
+                variant_id=variant.id if variant is not None else None,
+                variant_name=variant.name if variant is not None else None,
+                unit_price_agorot=price,
+                price_is_estimate=is_range
                 or product.price_unit in WEIGHED_PRICE_UNITS,  # MEH-2936
                 price_unit=product.price_unit,
                 qty=line.qty,
@@ -301,6 +332,44 @@ def _locked_business(
     return producer, row
 
 
+def account_phone_verified(user: User | None, phone: str) -> bool:
+    """True when `user` is logged in, her account phone is verified
+    (MEH-3301 `phone_verified_at`), and it is the same number as `phone`
+    once both are in canonical form. A phone change clears the timestamp, so
+    an old verification never covers a new number."""
+    if user is None or not user.phone_verified:
+        return False
+    return canonical_il_msisdn(str(user.phone)) == phone
+
+
+def _codeless_orders_left(db: Session, phone: str) -> bool:
+    """MEH-3680 review: without a code, orders to one phone were bounded by
+    the 3 codes an hour. The codeless path keeps that bound: from the 4th
+    order to `phone` within an hour a code is asked again (no new refusal)."""
+    since = utc_now() - timedelta(hours=1)
+    count = (
+        db.query(func.count(ProductOrder.id))
+        .filter(ProductOrder.customer_phone == phone, ProductOrder.created_at >= since)
+        .scalar()
+    )
+    return int(count or 0) < phone_codes.CODES_PER_PHONE_PER_HOUR
+
+
+def _phone_proof(
+    db: Session, body: OrderCreateIn, user: User | None, phone: str
+) -> ProductOrderPhoneCode | None:
+    """The code row that proves `phone`, or None when her account already
+    does (MEH-3680). A missing code is refused without counting a wrong try."""
+    if account_phone_verified(user, phone) and _codeless_orders_left(db, phone):
+        return None
+    if body.code is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=phone_codes.CODE_WRONG_DETAIL,
+        )
+    return phone_codes.check_code(db, phone, body.code)
+
+
 def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created:
     """Write the order and return it with the buyer's status token."""
     phone = phone_codes.canonical_phone(body.phone)
@@ -312,7 +381,9 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     if replay is not None:
         return Created(replay, token)
     # Nothing is written before this line: a wrong code commits its own try.
-    code_row = phone_codes.check_code(db, phone, body.code)
+    # MEH-3680: a logged-in buyer ordering to her own verified phone already
+    # proved it; everyone else proves it with a code, as before.
+    code_row = _phone_proof(db, body, user, phone)
 
     producer, row = _locked_business(db, body.producer_id)
     now = utc_now()
@@ -325,6 +396,8 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
 
     slot = _slot(offered_slots(db, producer, row, now), body)
     lines = order_lines(db, body, bool(row.alcohol_licensed))
+    # MEH-3618: a product made only on some days, on the slot's Israel day.
+    product_weekdays.refuse_closed_day(db, [ln.product_id for ln in lines], slot.start)
     has_alcohol = any(line.contains_alcohol for line in lines)
     if has_alcohol and not body.age_declared:
         raise HTTPException(
@@ -373,7 +446,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         apply_transition(db, order, "confirmed", SYSTEM)
         order.final_total_agorot = subtotal  # type: ignore[assignment]
         assign_pickup_code(db, order)
-    if not phone_codes.consume(db, code_row):
+    if code_row is not None and not phone_codes.consume(db, code_row):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=CODE_USED_DETAIL

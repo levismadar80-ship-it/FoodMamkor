@@ -13,7 +13,8 @@
  *           MEH-3442 cereal/nut detail; MEH-3444 storage; MEH-3445 «אין»;
  *           MEH-3450 (moved here; one closed row «פרטים על המוצר» with the
  *           allergen line always visible under its title — Sapir 19/11 18:07);
- *           MEH-3443 (ticked «מכיל» words emphasised inside the ingredients).
+ *           MEH-3443 (ticked «מכיל» words emphasised inside the ingredients);
+ *           MEH-3585 (no «לא ציין» line per product — once per list instead).
  */
 import { CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -82,11 +83,6 @@ export default function ProductFacts({ product }) {
           {t(`${FACTS}.no_allergens`)}
         </span>
       )}
-      {!hasAllergens && !hasMayContain && !declaredNone && (
-        <span className="block text-sm text-text" data-testid="product-sheet-allergens-undeclared">
-          {t(`${FACTS}.allergens_undeclared`)}
-        </span>
-      )}
     </>
   );
 
@@ -95,6 +91,15 @@ export default function ProductFacts({ product }) {
       {t(`${FACTS}.declared_by_business`)}
     </p>
   );
+
+  // MEH-3585: nothing declared → nothing here. The «לא ציין אלרגנים» line took
+  // a heading and two lines on every such product (Sapir 21/11); it is said
+  // ONCE above the product list instead (ProducerSections, the way Wolt /
+  // Deliveroo say «allergies? ask the venue» once per menu). Not a legal
+  // requirement for non-prepacked food (MoH allergen guidance v2, 29/06/2025:
+  // deferred to 2032). What the owner DID declare still shows on every product
+  // (MEH-3450).
+  if (!declaredAnything) return null;
 
   // Nothing to fold away (no ingredients, no storage): the allergen answer
   // alone, as before — a row that opens onto one grey line is a dead tap.

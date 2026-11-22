@@ -133,6 +133,39 @@ class TestDraftMissingOnTheDraftsList:
         assert len(_organizer_event_selects(four)) == len(_organizer_event_selects(one))
 
 
+    # --- MEH-3660: the owner's email confirmation -------------------------
+
+    def test_business_draft_owner_unconfirmed_lists_email_confirmed_does_not(self, client, db):
+        admin = make_user(db, role="admin")
+        unconfirmed = make_producer(db, status="draft", name="בעלים לא אישרה")
+        confirmed = make_producer(db, status="draft", name="בעלים אישרה")
+        _own(db, unconfirmed, email_verified=False)
+        _own(db, confirmed)
+        rows = _drafts(client, admin)
+        assert "email_verified" in rows[str(unconfirmed.id)]["draft_missing"]
+        assert "email_verified" not in rows[str(confirmed.id)]["draft_missing"]
+
+    def test_organizer_draft_with_unconfirmed_owner_is_not_asked_for_email(self, client, db):
+        admin = make_user(db, role="admin")
+        o = make_producer(db, status="draft", name="מארגנת")
+        o.kind = "organizer"
+        _own(db, o, email_verified=False)
+        assert "email_verified" not in _drafts(client, admin)[str(o.id)]["draft_missing"]
+
+    def test_owner_email_lookup_is_one_query_at_one_draft_and_at_four(self, client, db):
+        admin = make_user(db, role="admin")
+        _own(db, make_producer(db, status="draft", name="עסק 0"))
+        with _count_selects() as one:
+            _drafts(client, admin)
+        for i in range(3):
+            _own(db, make_producer(db, status="draft", name=f"עסק {i + 1}"))
+        with _count_selects() as four:
+            assert len(_drafts(client, admin)) == 4
+        email_reads = lambda st: [s for s in st if "FROM users" in s and "users.email_verified IS" in s]  # noqa: E731
+        assert len(email_reads(one)) == 1
+        assert len(email_reads(four)) == 1
+
+
 class TestTheFieldIsAdminOnly:
     def test_public_detail_does_not_carry_it(self, client, db):
         p = make_producer(db, status="approved")

@@ -354,7 +354,7 @@ def notify_admin_producer_resubmit(
 
     MEH-2210 — `resubmission_count` is set ONLY on the rejected → pending
     transition (POST /producers/me/request-review from `rejected`); the
-    message then reads "🔁 שליחה חוזרת #{n}" so the admin can tell a
+    message then reads "שליחה חוזרת #{n}" so the admin can tell a
     re-application from the MEH-1236 "I finished completing" ping, which
     keeps calling this with two arguments and is otherwise unchanged.
 
@@ -376,7 +376,7 @@ def notify_admin_producer_resubmit(
     safe_name = _sanitize_wa_param(producer_name) or "ללא שם"
     safe_city = (_sanitize_wa_param(city) if city else "") or "לא צוין"
     if resubmission_count is not None:
-        headline = f"🔁 שליחה חוזרת #{resubmission_count}: {safe_name}, {safe_city}"
+        headline = f"שליחה חוזרת #{resubmission_count}: {safe_name}, {safe_city}"
         subject = f"מהמקור - שליחה חוזרת #{resubmission_count}: {safe_name}"
     else:
         headline = f"העסק {safe_name} השלים את הפרטים — מוכן לבדיקה חוזרת"
@@ -491,6 +491,7 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     "vegetarian_scope": "הצהרת צמחונות",
     "gluten_free_facility": "הצהרת ללא גלוטן",
     "whatsapp_group": "קישור לעדכונים בוואטסאפ",  # MEH-2626
+    "google_place_id": "הפרופיל בגוגל",  # MEH-3641: the owner linked or unlinked it
     # MEH-2073 chunk 2: not a column — the event of the LAST location row being
     # deleted, which leaves an approved business with no primary location, no
     # pin on the map and nothing to submit. Phrased as a full clause because it
@@ -529,7 +530,7 @@ def notify_admin_producer_sensitive_edit(
     fields = ", ".join(
         SENSITIVE_FIELD_LABELS.get(field, field) for field in changed_fields
     )
-    message = f"🔎 עסק מאושר עדכן פרטים רגישים: {safe_name} — {fields}"
+    message = f"עסק מאושר עדכן פרטים רגישים: {safe_name} — {fields}"
 
     # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
@@ -725,14 +726,14 @@ def notify_admin_owner_invite_accepted(
     safe_name = _sanitize_wa_param(producer_name)
     safe_email = _sanitize_wa_param(owner_email)
     if published:
-        headline = f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
+        headline = f"{safe_name} אישרה את הדף — והדף עלה לאוויר"
     elif missing:
         headline = (
-            f"⚠️ {safe_name} אישרה את הדף וקיבלה גישה, אבל הדף לא עלה לאוויר."
+            f"{safe_name} אישרה את הדף וקיבלה גישה, אבל הדף לא עלה לאוויר."
             f" חסר: {', '.join(missing)}"
         )
     else:
-        headline = f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
+        headline = f"{safe_name} אישרה את הדף וקיבלה גישה"
     subject = f"מהמקור - {safe_name} אישרה את ההזמנה"
     message = (
         f"{headline}\n"

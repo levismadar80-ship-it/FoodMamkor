@@ -2,13 +2,11 @@
 import { isOwnerPreview } from "@/lib/owner-preview";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
 import ExperienceDetailClient from "./ExperienceDetailClient";
 import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
-import { API_URL } from "@/lib/env";
-import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { fetchSsrEntity } from "@/lib/ssr-entity-fetch";
+import { buildUntranslatedEntityMeta, OG_LOCALE } from "@/lib/i18n-seo";
 import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Event JSON-LD
 
@@ -17,63 +15,15 @@ import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478:
 // gracefully falls back to seo.experience.title_fallback if API unreachable
 // or experience not found (404 path).
 // MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
-// decided in docs/audits/producer-detail-page-validation.md §6 — never throw,
-// never notFound() (the MEH-1754 class). Inline per the over-engineering guard.
+// decided in docs/audits/producer-detail-page-validation.md §6, with MEH-2101's
+// three-way table: 404 → notFound(), any other failure throws (5xx), a bad
+// payload still renders. Shared: lib/ssr-entity-fetch.js (MEH-3465).
 const ROUTE = "/[locale]/experiences/[id]";
 
-async function getExperience(id) {
-  // MEH-2101: `null` means ONE thing — this experience does not exist, and only a
-  // 404 may become notFound(). Every other failure THROWS, so it reaches
-  // app/[locale]/error.js and the response carries a 5xx.
-  //
-  // The old shape returned `null` for every `!res.ok` and swallowed the catch,
-  // so a 404, a 500, a 429 and a timeout were indistinguishable — all four
-  // rendered a soft 404 with no error status. That is not only a debugging
-  // problem: a 404 tells Google the page is GONE and de-indexing starts, while
-  // a 5xx says "try later". §6 of
-  // docs/audits/producer-detail-page-validation.md used to forbid throwing
-  // here; this ticket replaced that ruling with the three-way table.
-  let res;
-  try {
-    res = await serverFetch(`${API_URL}/experiences/${id}`, {
-      next: { revalidate: 60 },
-    });
-  } catch (err) {
-    // Network failure or timeout — not a missing experience. Report, then rethrow.
-    Sentry.captureException(err, { extra: { route: ROUTE, id } });
-    throw err;
-  }
-
-  // MEH-2552: 422 = the backend rejected the id itself (the param is a UUID,
-  // so /producer/1 can never exist) — a missing entity, not an outage.
-  if (res.status === 404 || res.status === 422) return null;
-
-  if (!res.ok) {
-    Sentry.captureMessage("SSR fetch failed", {
-      level: "error",
-      extra: { route: ROUTE, id, status: res.status },
-    });
-    /** @type {Error & { status?: number, entityId?: string }} */
-    const err = new Error(
-      `experience lookup failed: ${res.status} ${res.statusText} (id=${id})`
-    );
-    // Read by Sentry in app/[locale]/error.js; keeps id+status on the event.
-    err.status = res.status;
-    err.entityId = id;
-    throw err;
-  }
-
-  const data = await res.json();
-  const parsed = ExperienceMetadataSchema.safeParse(data);
-  if (!parsed.success) {
-    Sentry.captureMessage("SSR payload failed schema validation", {
-      level: "warning",
-      extra: { route: ROUTE, id, issues: parsed.error.issues },
-    });
-  }
-  // Raw, never `parsed.data` — the schema is minimal, so parsing would strip
-  // every undeclared key from the metadata input (MEH-901 class).
-  return data;
+function getExperience(id) {
+  // MEH-3465: the three-way fetch (null = missing, throw = unavailable) and
+  // its reporting live in lib/ssr-entity-fetch.js, shared by four pages.
+  return fetchSsrEntity({ path: "/experiences", id, route: ROUTE, noun: "experience", schema: ExperienceMetadataSchema });
 }
 
 export async function generateMetadata(props) {
@@ -84,7 +34,8 @@ export async function generateMetadata(props) {
     getTranslations({ locale, namespace: "seo.experience" }),
   ]);
   const path = `/experiences/${id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
   // MEH-2101: meant to yield a REAL 404 status. MEH-3199 measured 14/11 on a
   // local build, before and after: 200 + noindex for a missing id (see
   // not-found.js). A page-level
@@ -127,6 +78,7 @@ export async function generateMetadata(props) {
       images: experience?.image_url ? [experience.image_url] : [siteOgImageUrl(locale)],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 

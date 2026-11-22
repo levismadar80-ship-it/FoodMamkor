@@ -50,6 +50,7 @@ from app.schemas.product_order_offer import (
     ProductOrderingIn,
     ProductOrderingOut,
 )
+from app.services import product_variants  # MEH-3617
 from app.services.product_order_menu import offered_slots, takes_orders, windows
 from app.utils.clock import utc_now
 
@@ -196,6 +197,7 @@ def _agorot(shekels: Decimal) -> int:
 def _menu_product(product: Product) -> dict[str, Any]:
     low = _agorot(product.price_min)  # type: ignore[arg-type]
     high = _agorot(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
+    weighed = product.price_unit in WEIGHED_PRICE_UNITS
     return {
         "id": product.id,
         "name": product.name,
@@ -205,10 +207,12 @@ def _menu_product(product: Product) -> dict[str, Any]:
         "price_unit": product.price_unit,
         # A weighed product is an estimate even at one price a kilo: the
         # weight is only known when the order is packed.
-        "price_is_estimate": high != low
-        or product.price_unit in WEIGHED_PRICE_UNITS,  # MEH-2936
-        "in_stock": product.in_stock,
+        "price_is_estimate": high != low or weighed,  # MEH-2936
+        # MEH-3617: all variants out = the product is out.
+        "in_stock": product_variants.has_stock(product),
         "contains_alcohol": product.contains_alcohol,
+        "available_weekdays": product.available_weekdays,  # MEH-3618
+        "variants": product_variants.menu_variants(product, low, high, weighed),
     }
 
 

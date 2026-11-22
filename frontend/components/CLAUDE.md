@@ -38,11 +38,15 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
+| Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
+| Time-limited offer card (group buy, surprise bag): title + where, price + struck price, gold saving, beige status band | `ui/OfferCard.jsx` | `OfferCardOneOwnerGuard` |
+| Progress in the logo's seeds (group-buy joins, bags left today); `label={null}` when the count is written beside it | `ui/SeedProgressMark.jsx` | — |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
+| «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
@@ -57,6 +61,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
 | Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 | AI suggestion button + editable preview that hands text to a field (product description, review reply) | `AiTextSuggest.jsx` | — |
+| Offer page blocks, one look for a group buy and a rescue bag: pickup time under the title · «איפה ומתי» with the map · allergens · how it works (MEH-3597, MEH-3610) | `offer-detail/PickupLine.jsx` · `offer-detail/WhereSection.jsx` · `offer-detail/AllergenSection.jsx` · `offer-detail/HowSteps.jsx` | `GroupBuyBagParity` |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new
@@ -66,6 +71,29 @@ copies, but check the look against the page you are matching.
 Copying 8+ lines from another file fails `scripts/checks/clone-ratchet.sh` (MEH-3464). A
 genuinely new primitive goes in `ui/` with the `Module / Purpose / Does NOT`
 header, a row here, and a guard when a hand-written copy would be easy to write.
+
+**Rule of two (MEH-3612).** When a second feature needs to show a concept another
+feature already shows (allergens, a pickup time, a price with the regular price
+struck through), move that display to `ui/` with a row here **in the same PR**,
+and make both features use it. Don't copy it and don't write it again in your own
+words. `clone-ratchet` catches only near-verbatim copies, so a rewrite in different
+words passes it. Industry practice is to extract on the third use; here a feature's
+display is usually written inside its own file, where nobody searching `ui/` finds
+it, so two uses is the trigger. Known copies to fold the next time one of them is
+touched (21/11):
+- Allergens: `public/ProductFacts.jsx:38` (reads `lib/allergens.js`) and
+  `rescue/RescueSection.jsx:395` (its own `allergen_${code}` lookup).
+- Price with the regular price struck through: `rescue/BagRow.jsx:125`,
+  `HomeWhatsOn.jsx:533`, and the group-buy pages
+  (`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:293`,
+  `app/[locale]/group-buys/GroupBuysClient.jsx:105`).
+- Pickup time line: `rescue/BagRow.jsx:80` and `rescue/RescueSection.jsx:347`.
+
+**Say what you checked.** A PR that adds a file under `frontend/components`,
+`frontend/lib`, `frontend/hooks` or `backend/app/services` carries
+`Reuse: <what it reused or extended>` or `Reuse: none fit — <what was searched>`
+(this table, `docs/CODE_INDEX.md`). `scripts/checks/reuse-line-guard.sh` warns
+when the line is missing.
 
 ## Conventions specific to this dir
 - **Imports**: `useAuth` from `@/lib/auth-context`, `api` from `@/lib/api`.
