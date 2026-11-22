@@ -5367,19 +5367,13 @@
       "completeness": {
         "red_headline": "עוד כמה פרטים חשובים ואתם באוויר",
         "red_sub": "מיקום ופרטי קשר עוזרים ללקוחות למצוא אתכם ולפנות אליכם",
-        "yellow_low_headline": "העמוד שלך {percent}% מוכן",
         "yellow_low_sub": "עוד כמה פרטים ותוכלו להתחיל לקבל לקוחות",
-        "yellow_high_headline": "כמעט שם — {percent}% מוכן",
         "yellow_high_sub": "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהעמוד מלא",
         "green_headline": "העמוד מלא",
-        "next_step_prefix": "השלב הבא:",
         "cta": "להשלמת העמוד",
-        "cta_aria": "להשלמת העמוד שלך",
-        "ring_aria": "השלמת העמוד: {percent}%",
         "checklist_aria": "התקדמות השלמת העמוד",
         "checklist_done": "הושלם",
         "checklist_todo": "עדיין חסר",
-        "checklist_sub": "עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות",
         "steps": {
           "image": "תמונות",
           "location": "קטגוריות ומיקום",
@@ -5410,8 +5404,7 @@
         "draft_steps": {
           "details": "פרטי העסק",
           "image": "תמונה של העסק או המוצרים",
-          "product": "מוצר ראשון",
-          "phone_verified": "אימות מספר הוואטסאפ"
+          "product": "מוצר ראשון"
         }
       },
       "strength": {

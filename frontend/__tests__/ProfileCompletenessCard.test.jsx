@@ -28,7 +28,8 @@ vi.mock("next-intl", () => ({
       "draft_steps.details": "פרטי העסק",
       "draft_steps.image": "תמונה של העסק או המוצרים",
       "draft_steps.product": "מוצר ראשון",
-      "draft_steps.phone_verified": "אימות מספר הוואטסאפ",
+      // dashboard.producer.draft.missing (shared with the banner, MEH-3657)
+      phone_verified: "אימות מספר הוואטסאפ",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
