@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-21 — רישיון לא חוסם אישור, ומהמקור לא צד לעסקה (MEH-3026)
+
+**שורה אחת:** ממצאי בדיקת v1.5.1 תוקנו. #5024, #5026, #5027, #5028, #5029, #5031 ו-#5034 נכנסו ב-v1.5.11; ‏#5033 ו-#5047 נכנסו ברכבת 3 (#5117).
+
+**מה צריך לדעת לפני עבודה:**
+- **רישיון:** אל תחזירו חסימה על מספר רישיון חסר, לא באישור ולא בשמירה. ההשפעה היחידה היא שאין תג «מאומת» (ספיר 21/11).
+- **מהמקור לא «משווק»:** ההכרעה ב-`docs/legal/2026-11-not-a-marketer.md`. היא נפתחת מחדש אם האתר גובה כסף מלקוחות, מחזיק או שולח אוכל, או מוכר בשמו. נשענת על נוסח החוק בלבד, בלי פסיקה.
+- **סליקה (MEH-3180):** שני תנאים: החשבונית לבית העסק היא «דמי שימוש בכלים» ולא «עמלת מכירה», והעמלה תמיד נגבית מבית העסק ולא מנוכה מכסף הלקוחות.
+- **כפתור שריון או הרשמה חדש:** שימו מתחתיו `frontend/components/public/NotAPartyLine.jsx`.
+
 ## 2026-11-21 — WebKit חוסם ב-staging, וקוד אימות בוואטסאפ נבדק ב-staging (PR #4982)
 
 **שורה אחת:** ‏#4982 מוזג. ה-job ‏`e2e-webkit-core` (iPhone 13) חוסם עכשיו כל PR עם `run-e2e` וכל דחיפה ל-staging, ו-webhook המסירה של וואטסאפ נבדק מקצה לקצה ב-staging.
