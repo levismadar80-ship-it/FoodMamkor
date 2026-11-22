@@ -1,7 +1,8 @@
 // @ts-check
-import { producerPath } from "./producer-path";
 // §10 "Meet a Producer" selector — extracted from use-home-page.js for unit
 // testability (MEH-542). Reuses the existing is_recommended flag (no schema).
+
+import { producerPath } from "./producer-path";
 
 /**
  * Newest recommended producer with a usable short_description, mapped to the
