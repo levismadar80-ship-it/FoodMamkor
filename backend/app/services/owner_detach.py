@@ -32,7 +32,7 @@ def send_owner_detached_email(
         "החשבון עצמו נשאר: אפשר להמשיך להתחבר, והמועדפים והביקורות שלך שמורים.",
         "אם זה נעשה בטעות, אפשר להשיב למייל הזה ונסדר את זה.",
     ]
-    body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nספיר שנפ\nמייסדת | מהמקור"
+    body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nצוות מהמקור"
     paragraphs = "".join(
         f'<p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">'
         f"{html_escape(line)}</p>"
@@ -42,7 +42,6 @@ def send_owner_detached_email(
         html_escape(greeting),
         f"""\
             {paragraphs}
-            <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:12px 0 0;">ספיר שנפ<br>מייסדת | מהמקור</p>
         """,
     )
     send_email(email, subject, body, html=html_body, test_cause=test_cause)

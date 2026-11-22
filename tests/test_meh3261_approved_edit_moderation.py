@@ -176,10 +176,10 @@ def test_product_rejected_is_422_and_unchanged(client, db):
 def test_message_copy():
     assert (
         mod.content_edit_message("משק", ["description", "images"], True)
-        == "📝 עסק מאושר עדכן תוכן: משק — תיאור · תמונות — טקסט סומן ע״י AI"
+        == "עסק מאושר עדכן תוכן: משק — תיאור · תמונות — טקסט סומן ע״י AI"
     )
     assert mod.content_edit_message("משק", ["products"], False) == (
-        "📝 עסק מאושר עדכן תוכן: משק — מוצרים"
+        "עסק מאושר עדכן תוכן: משק — מוצרים"
     )
 
 

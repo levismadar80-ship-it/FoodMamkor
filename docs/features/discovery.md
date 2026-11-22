@@ -13,6 +13,7 @@
 * `frontend/components/SearchCorrectionNote.jsx` — שורת «מציגים תוצאות עבור…» כשהחיפוש תיקן מקלדת הפוכה, ו«לחפש בכל זאת» (MEH-3415).
 * `frontend/components/FilterSheet.jsx` — גיליון הסינון בנייד.
 * `frontend/lib/diet-pages.js` · `frontend/lib/category-registry.js` — הרישומים שמהם הדפים נגזרים.
+* `frontend/lib/category-label.js` — השם המוצג של קטגוריה לפי השפה: `category_names.<slug>` ב-`frontend/messages/`, ושם ה-DB כשאין ערך. ב-/en שמות באנגלית, ב-/he כמו קודם (MEH-3076).
 * `frontend/components/DeliveryChecker.jsx` · `frontend/lib/delivery-coverage.js` — בדיקת משלוח.
 * `frontend/lib/nextDelivery.js` · `frontend/components/NextDeliveryLine.jsx` — «המשלוח הבא: יום שלישי 24.11» מתחת לכל כותרת יום ובתשובת «מגיעים אלייך?» (MEH-3485). תאריך לפי ימי המשלוח של העיר ושעת סגירת ההזמנות כשיש אחת ברורה; בלי תאריך בחופשה או בלי יום.
 * `backend/app/services/producer_listing.py` · `backend/app/services/producer_queries.py` — הרשימה, הסינון והמיון בשרת.

@@ -183,6 +183,13 @@ shape** — see *Seed layer* below (MEH-2833); they are never UI colours. There 
 (no red/amber/slate) — see *Elevation & Depth* for how state is expressed
 instead, and *Do's and Don'ts* for why.
 
+**Category colours (map pins, category chips, the /map legend) are six, one per
+group** (MEH-3076, Sapir 21/11 «צבע לקבוצה»): meat & fish `#c04040` · fruit &
+vegetables primary `#2e6853` · dairy & eggs `#4a90d9` (glyph tint `#3b72ad`) ·
+bread `#896714` (accent) · pantry `#c8821e` (honey, glyph tint `#A8681A`) ·
+care & home `#9b59b6`. The glyph, not the colour, tells two categories of one
+group apart. Owner: `lib/category-registry.js` `CATEGORY_GROUP_STYLES`.
+
 - **Primary (`#2e6853`):** Deep forest green. The single brand accent —
   primary CTAs, the logo, links, "available today" affordances. Also serves
   the `success` role; we do not maintain a separate success green.
@@ -408,6 +415,13 @@ fixed per name) · success moments (bloom + seeds opening out) · footer seed ro
 (on-dark) · no-photo card plate (name + one seed, colour fixed per business) ·
 missing recipe/product/event image (same rule) · 404 and every «not found»
 page (the full logo, small).
+**Beside text (MEH-3676, approved by Sapir 22/11):** the bloom closes the
+/login and /register hero line «טרי · מקומי · מהמקור» (on-dark set, 40px,
+desktop only) and leads the dashboard row «מה חדש במהמקור» (16px, before the
+unread dot). Only beside a string that names מהמקור, never in place of an icon
+that carries meaning: below ~24px the sand seed all but disappears on cream, so
+the mark is decoration, never a signal. Replacing the «מאומת» seal with it is
+held for after launch (MEH-3677).
 
 ## Layout
 
@@ -891,7 +905,7 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   > - **CATEGORY chips** (all `ChipScrollRow variant="category"` surfaces —
   >   `/map`, `/producers`, `/events`, and future — MEH-1465), selected:
   >   A chip with no registry colour (`chip.iconColor` absent, e.g. `/events` or
-  >   an admin category with no `CATEGORY_STYLES` row) falls back to
+  >   an admin category outside `lib/category-taxonomy.js`, so with no `CATEGORY_STYLES` row) falls back to
   >   `--cat-ring` = the DEFAULT category green (`primary` `#2e6853`).
   >   - `background: color-mix(in srgb, var(--cat-ring) 12%, #fff);`
   >   - `border: 1.5px solid var(--cat-ring);`
@@ -900,7 +914,8 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   >     stays neutral).
   >   - `font-weight: 600;`
   >   - `--cat-ring:` the category's registry tint = `textColor ?? color`
-  >     (`lib/category-registry.js` `CATEGORY_STYLES`). Every value clears WCAG
+  >     (`lib/category-registry.js` `CATEGORY_STYLES`; since MEH-3076 the
+  >     colour is the category's GROUP colour, `CATEGORY_GROUP_STYLES`). Every value clears WCAG
   >     1.4.11 ≥3:1 on **both** white and cream `#F5F0E8` (MEH-1181 audit).
   >   - **a ✓ replaces the chip's glyph, in `--cat-ring`** (MEH-2500). The tint
   >     alone was the only selection cue, and each category has its own, so a

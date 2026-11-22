@@ -45,7 +45,7 @@ def test_body_carries_every_approved_line_and_both_interpolations():
     )
     assert "הפרופיל של מאפיית שקד נשלח לבדיקה ב-18/08/2026." in body
     assert "מה עכשיו? הצוות שלנו עובר על הפרטים ומאשר עד 3 ימי עסקים." in body
-    assert "ברגע שהעסק מאושר — הוא עולה לאתר ונעדכן אתכם במייל." in body
+    assert "כשהעסק יאושר הוא יעלה לאתר ונעדכן אתכם במייל." in body
     assert "בינתיים אפשר להמשיך לעדכן את הפרופיל בלוח הבקרה — כל שינוי נשמר." in body
     # 20/11: the dashboard the line names is linked.
     assert "/producer/dashboard\n" in body

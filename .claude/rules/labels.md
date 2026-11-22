@@ -25,16 +25,10 @@ The contract encodes it once, and a CI guard blocks any new label that omits
 either field.
 
 **What counts as a label: a term the owner can attach to her business or product
-as a claim about it. Editorial prose that merely names a diet category is not a
-label and is not bound by this contract — the test is whether a business gets
-marked by it, not whether the words appear on screen.** MEH-2047 is the worked
-pair: the *chip* «דל פחמימות» was withdrawn from every surface because no
-standard defines it and an owner cannot substantiate it, while the phrase
-«תפריט דל פחמימות» correctly survives in the locked intro copy of the
-no-added-sugar landing page, where it describes who that page suits and attaches
-to nobody. Deleting the second on the strength of the first would be a scope
-error in the opposite direction — under-claiming — and it needs a copy decision,
-not this rule.
+as a claim about it.** Editorial prose that names a diet category and attaches
+to nobody is not a label (MEH-2047: the chip «דל פחמימות» was withdrawn, the
+phrase «תפריט דל פחמימות» in a landing page's intro rightly stays).
+
 
 ---
 
@@ -57,58 +51,11 @@ not this rule.
 | `editorial` | A named editor's opinion. Nobody asserted it and nothing was checked — and it **cannot be bought** (ADR-030). | `recommended` (בחירת העורכות, MEH-1492; plural since MEH-3397). |
 | `system` | Derived by the system: not asserted by anyone, not verified against anything. | `new` (BADGE_CONFIG — computed from `days_since_created <= 30`). Also the intended home for a computed distance / availability. |
 
-> **All four values are now in active use.** `editorial` was added by MEH-1753,
-> which brought `BADGE_CONFIG` under this contract and found `recommended` fitting
-> neither existing value: the owner cannot set it, and no document is checked, so
-> filing it under `admin-verified` would repeat the very over-claim MEH-1492
-> fixed — that value reads as an earned status. `system` was **reserved with no
-> example** until the same pass gave it one in `new`.
->
-> _(This block previously read "Two evidence values are in active use … `system`
-> is reserved", and the `system` row was missing its Example cell entirely — a
-> three-column table with a two-cell row. Both corrected under MEH-1753 from the
-> live config, not from the spec.)_
 
-### The `license` ruling (MEH-2191, 26/08) — ⚠️ RETIRED 29/08, the badge it ruled on no longer renders
-
-| Label | scope | evidence | Rationale |
-|---|---|---|---|
-| `license` (רישיון יצרן) | `business` | `admin-verified` | The claim is established by the manual per-business approval against the documents — the DNA lock («עסקים מורשים בלבד» + «אישור ידני לכל עסק»), not by the owner typing a number. |
-
-**Why this row existed at all.** MEH-1753 brought all twelve `BADGE_CONFIG`
-entries under this contract (**eleven since 29/08**), and `license` was the **one
-cell of the twelve that was derived rather than looked up**: the badge gates on the same
-`verification_tier === "verified"` admin check as `verified` (MEH-1162), so the
-values were read off the `verified` row — a defensible inference, and still an
-inference. CC flagged it instead of quietly minting policy (rule 24), and this
-row is the lookup that replaces the derivation.
-
-`has_producer_license` **alone** is self-declared — a producer typing
-`000000000` earned the chip before MEH-1162 added the verified gate. The
-`admin-verified` value describes the gate, never the field, which is the same
-distinction the kashrut precedent (MEH-1711) draws.
-
-**Measured at ruling time:** `frontend/lib/badges.js` already carried
-`scope: "business"` · `evidence: "admin-verified"`, so the ruling **matched** the
-derived cell and no code changed.
-
-> **⚠️ The `license` badge was removed from every reader surface on 29/08 (PR
-> #3156), three days after this ruling. The row above is kept, not deleted, and
-> it is now history rather than a live cell.**
->
-> The ruling is not wrong and was not reversed — it answered *what the label
-> claimed and who established it*, which is this contract's question. #3156
-> answered a different one: whether the claim should occupy a badge slot at all
-> beside the ADR-022 verified seal, which asserts the same fact with the same
-> evidence. It should not, so the entry left `BADGE_CONFIG` and the field now
-> lights no badge. Same shape as the `organic` and `products` retirements
-> recorded in `badges.js`.
->
-> **What this changes for a reader of this file:** `license` is no longer one of
-> the claims the guard scans, so do not look for it in `BADGE_CONFIG`. The
-> paragraph above about `has_producer_license` being self-declared **still
-> stands and is the reason the badge went** — it is the distinction #3156 acted
-> on, not a claim this retirement withdraws.
+The `license` badge (MEH-2191 ruling) left `BADGE_CONFIG` on 29/08 (#3156); its
+history is in [docs/rules-history/2026-11-21/labels.md](../../docs/rules-history/2026-11-21/labels.md).
+`has_producer_license` alone is self-declared: `admin-verified` describes the
+admin gate, never the field.
 
 ---
 
@@ -168,12 +115,6 @@ required *CI gate*). It asserts every entry in `ATTRIBUTE_LABELS` / `CHIPS_CONFI
 `TOGGLE_CHIPS` declares a valid `scope` and `evidence`, and self-checks that the
 validator actually rejects a missing/invalid field.
 
-Implemented as a vitest test (not a `.github/workflows/pr-checks.yml` step) because
-`.github/workflows/**` is denied to CC's filesystem tools (security.md: deny =
-tool × path; MEH-671) and vitest already gates every PR — and
-because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
-(`NoEmojiInComponents.test.js`), is itself a vitest test. Same mechanism, real gate.
-
 **Adding a new label:** add the object with `scope` + `evidence` + `hasSubtext` to
 `FILTER_AXES` for a filter chip, with its words under `filter_axes.<key>` in
 `messages/{he,en}.json` (`ChipCopyMessages.test.jsx` fails on a missing one,
@@ -188,50 +129,22 @@ fails on a missing one (MEH-2740).
 
 ## Indicators & counters (MEH-1549)
 
-The contract above governs **labels** — a string that names a property. It says
-nothing about the other thing a consumer surface renders: an **indicator** that
-stands in for content it doesn't show. Those need a rule of their own, because a
-label that hides its scope over-claims, while an indicator that hides its content
-simply cannot be read at all.
-
 > **Every counter, truncation, or abbreviation on a consumer surface must carry
 > either interactive disclosure (tap/hover) or self-explanatory subtext.**
 
-An indicator is anything whose rendered form is a stand-in: `+4`, `‎…`, a bare
-number, an initialism, a shortened list. The reader can see that something was
-withheld but not what — so the surface must offer a way to find out, in place. A
-`title` attribute does not count (invisible on touch); the disclosure has to work
-by tap, since mobile is the primary surface.
-
-| | Example | Verdict |
-|---|---|---|
-| ✅ | `badge-overflow` `+N` on ProducerCard — a `<button>` wrapped in `ui/Popover` listing the hidden badge labels (MEH-1547) | Interactive disclosure. The reader taps `+3` and learns it means כשר · משלוח · מוצרים. |
-| ❌ | the same `+N` as a static `<span>` (its shape before MEH-1547) | Dead end. Sapir's own QA: *"אני לא מבינה מה זה"* — if the founder can't decode it, no consumer will. |
-
-The two routes are alternatives, not a ranking: a counter sitting beside copy that
-already explains it ("3 מוצרים בקטלוג") needs no popover. What is never acceptable
-is an indicator that is *only* a glyph or a number, with the thing it replaces
-unreachable from that surface.
-
-**Why this belongs next to the scope contract:** both encode the same failure —
-a surface showing less than it implies. Scope answers *what does this apply to*;
-disclosure answers *what is behind this*. Same review question, same file.
+An indicator stands in for content it doesn't show (`+4`, `…`, a bare number,
+an initialism). A `title` attribute does not count (invisible on touch); the
+disclosure works by tap. A counter beside copy that already explains it
+(«3 מוצרים בקטלוג») needs no popover. Worked case: `badge-overflow` `+N` on
+ProducerCard is a `<button>` in `ui/Popover` (MEH-1547); as a static `<span>`
+it was a dead end.
 
 ### The guard
 
-`frontend/__tests__/LabelScopeContract.test.js` carries the assertion (same file,
-same reasoning as above: `.github/workflows/**` is denied to CC's filesystem tools
-(security.md: deny = tool × path), vitest already gates
-every PR). It renders `ProducerCard` with a producer earning 5 badges and asserts
-the `badge-overflow` element is interactive — a `<button>` (or `role="button"`)
-carrying `aria-haspopup`.
-
-Proven fail→pass: against the pre-MEH-1547 markup (a static `<span>` with neither
-attribute) the assertion fails on all three counts; against the shipped component
-it passes. A future refactor that flattens the `+N` back to a `<span>` re-reds it.
-
-**Adding a new indicator:** give it a disclosure affordance or adjacent explanatory
-copy, and extend the guard if it's a new overflow surface.
+`frontend/__tests__/LabelScopeContract.test.js` renders `ProducerCard` with 5
+badges and asserts `badge-overflow` is a button carrying `aria-haspopup`. A new
+indicator gets a disclosure or adjacent copy; a new overflow surface extends the
+guard.
 
 ---
 
@@ -246,9 +159,3 @@ copy, and extend the guard if it's a new overflow surface.
 
 Cross-refs: `backend/app/services/producer_listing.py` (`_kosher_condition`
 verified-only pattern).
-
-_(`frontend/lib/badges.js` used to be listed here as a cross-reference. It is
-**in-contract** as of MEH-1753 and is documented above under "Where the metadata
-lives" — which is the point of that ticket: all four precedents this file
-encodes are badge incidents, so the badge surface was the one governed by the
-rule its own history wrote and not covered by the guard.)_

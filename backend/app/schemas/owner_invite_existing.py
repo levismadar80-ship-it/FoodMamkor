@@ -7,7 +7,8 @@ Does NOT: carry an email or a password — the signed-in account supplies the
           rejected a password field on the invite page).
 Related:  backend/app/schemas/schemas.py OwnerInviteAccept (the new-account
           sibling) · backend/app/routers/producer_owner_invite_existing.py
-History:  MEH-3256 (creation).
+History:  MEH-3256 (creation); MEH-3675 (`google_id_token` in place of the
+          code, for a fresh Google sign-in).
 """
 
 from typing import Any
@@ -23,7 +24,11 @@ class OwnerInviteExistingCodeRequest(BaseModel):
 
 class OwnerInviteExistingAccept(BaseModel):
     token: str = Field(min_length=1, max_length=512)
-    code: str = Field(min_length=1, max_length=12)
+    # MEH-3675: one of the two. `code` is the email code; `google_id_token`
+    # is a fresh Google sign-in of this same account, which replaces it.
+    # Neither present → the router's «צריך לבקש קוד» 422, as before.
+    code: str | None = Field(default=None, min_length=1, max_length=12)
+    google_id_token: str | None = Field(default=None, min_length=1, max_length=4096)
     # Both consents are hers to sign here too: the ToS again (the current
     # version), and the licensing declaration for THIS business.
     terms_accepted: bool

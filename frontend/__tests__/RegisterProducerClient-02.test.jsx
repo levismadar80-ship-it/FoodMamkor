@@ -255,7 +255,7 @@ beforeEach(() => {
 // production entry path before reaching frame 01.
 async function renderWizard() {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -276,8 +276,8 @@ async function fillDetailsToStory() {
   fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(nextBtn()); // → CATEGORY
   fireEvent.click(await screen.findByTestId("pick-category")); // select category id 1
-  fireEvent.click(nextBtn()); // → STORY
-  await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
+  // MEH-3656: a business submits from CATEGORY — the story step left its path.
+  await screen.findByTestId("register-category-submit"); // submitting-frame marker
 }
 
 // MEH-1471: the attribution dropdown on the STORY step. MEH-2183 made it
@@ -317,10 +317,10 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
     expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
   });
 
-  it("logged-in consumer (role consumer) still sees the preflight — no gate", async () => {
+  it("logged-in consumer (role consumer) still gets the wizard — no gate", async () => {
     authState.user = { email: "c@example.com", role: "consumer" };
     render(<RegisterProducerClient />);
-    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
+    expect(await screen.findByTestId("register-hero-heading")).toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate-admin")).not.toBeInTheDocument();
   });
@@ -522,10 +522,6 @@ async function fillWizardAndSubmit() {
   await renderWizard();
   await fillAccountToDetails();
   await fillDetailsToStory();
-  fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-    target: { value: "הכי טרי שיש" },
-  });
-  selectReferral();
   screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
   fireEvent.click(screen.getByText(`${K}.actions.submit`));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -681,10 +677,6 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
 // assertion and lives in e2e/flows/28-register-success-state.spec.ts at 1440.
 describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk F)", () => {
   async function fillStoryAndSubmit() {
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -718,8 +710,8 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await fillAccountToDetails(); // ACCOUNT → DETAILS
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
-    await fillDetailsToStory(); // DETAILS → CATEGORY → STORY
-    expect(scrollToSpy).toHaveBeenCalledTimes(3);
+    await fillDetailsToStory(); // DETAILS → CATEGORY (MEH-3656: the last frame)
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
   });
 
   it("inbox-check branch (no access_token) scrolls to the top", async () => {
@@ -901,10 +893,6 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     await fillDetailsToStory();
     // whatever the submit path sends, `city_known` is wizard state, not payload
     api.post.mockResolvedValue({ data: {} });
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -921,63 +909,6 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
 // seen. The committed frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp
 // is that view AFTER the fix; the before frame was not committed, so the before
 // state is cited as the probe's numbers rather than as a file.
-/**
- * MEH-2927 (pilot B3d) — ticking «יש לי רישיון ייצור» must not move «הבא».
- *
- * The hint below the checkbox used to mount on the tick, which pushed the
- * button row down 36px in document space at the exact moment the thumb was on
- * it. Reserved instead: the element is always rendered and hidden with
- * `visibility`, so its real height — however many lines it wraps to — is held
- * either way.
- *
- * 🔴 HONEST LIMIT, stated rather than glossed: jsdom computes no layout, so
- * this file asserts the CLASS CONTRACT (always mounted, `invisible` only when
- * unchecked). That discriminates on this change — the old code rendered
- * nothing at all when unchecked — but it is NOT evidence about rendered
- * pixels. The pixel measurement is in qa-meh2927-register-chrome.mjs [deleted probe, docs/media-archive.md],
- * where a stylesheet exists, and its numbers are in the PR.
- */
-describe("MEH-2927 · the licence hint reserves its space (B3d)", () => {
-  const hint = () => screen.queryByTestId("register-license-pending-hint");
-
-  async function reachLicenceCategory() {
-    // Same override as the MEH-530 block above (:774): the default
-    // /categories fixture is «ביצים», which needs no licence, so the block
-    // under test would never render. Id 1 is what the CategorySelector stub
-    // selects.
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
-    await fillAccountToDetails();
-    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.change(ph("producer_name"), { target: { value: "משק בדיקה" } });
-    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
-    fireEvent.click(nextBtn());
-    await screen.findByTestId("register-frame-category");
-    fireEvent.click(await screen.findByTestId("pick-category"));
-  }
-
-  it("the hint is in the DOM before the box is ticked, holding its height", async () => {
-    await reachLicenceCategory();
-    const optin = screen.queryByTestId("register-license-pending-optin");
-    if (!optin) return expect.unreachable("the licence opt-in did not render");
-
-    expect(hint(), "mounted while unchecked — that is what reserves the space").toBeTruthy();
-    expect(hint().className).toContain("invisible");
-  });
-
-  it("…and becomes visible when it is ticked, without being re-mounted", async () => {
-    await reachLicenceCategory();
-    const optin = screen.queryByTestId("register-license-pending-optin");
-    if (!optin) return expect.unreachable("the licence opt-in did not render");
-
-    const before = hint();
-    fireEvent.click(optin);
-    expect(hint().className).not.toContain("invisible");
-    expect(hint(), "the same node, not a new one").toBe(before);
-  });
-});
-
 describe("RegisterProducerClient — a step change starts at the top (MEH-2927)", () => {
   // Uses the module-level `scrollToSpy` (see its note at the top of the file)
   // rather than a second vi.spyOn over it — stacking a spy on a spy is the one
@@ -1022,12 +953,11 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
 
     // another tab blanks the business name; «continue» merges it back in
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ producer_name: "", city: "חיפה" }));
     fireEvent.click(screen.getByTestId("register-draft-continue"));
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     scrollToSpy.mockClear();
 
@@ -1040,37 +970,6 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
     // …and the step effect left the viewport to MEH-1807.
     expect(scrollToSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe("STORY step — card preview (MEH-3074)", () => {
-  it("offers a closed, inert preview of the real card, fed from the form", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    fireEvent.change(screen.getByTestId("register-story-tagline"), {
-      target: { value: "לחם מחמצת" },
-    });
-
-    const details = screen.getByTestId("register-card-preview");
-    expect(details.tagName).toBe("DETAILS");
-    expect(details.hasAttribute("open")).toBe(false);
-    expect(details.querySelector("summary").textContent).toBe(`${K}.card_preview.summary`);
-    // Closed: the card is not mounted at all, so none of its effects run.
-    expect(screen.queryByTestId("preview-card")).toBeNull();
-
-    details.open = true;
-    fireEvent(details, new Event("toggle"));
-    expect(screen.getByTestId("register-card-preview-body").hasAttribute("inert")).toBe(true);
-
-    const producer = JSON.parse(screen.getByTestId("preview-card").dataset.producer);
-    expect(producer.name).toBe("העסק שלי");
-    expect(producer.city).toBe("תל אביב");
-    expect(producer.short_description).toBe("לחם מחמצת");
-    expect(producer.categories.map((c) => c.id)).toEqual([1]);
-    expect(producer.has_physical_location).toBe(true);
-    expect(producer.offers_delivery).toBe(false);
-    expect(producer.images).toEqual([]);
   });
 });
 

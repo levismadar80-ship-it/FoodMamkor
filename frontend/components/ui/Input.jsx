@@ -54,7 +54,7 @@ import { fieldClasses, FieldShell } from "./field";
  * aria-invalid.
  *
  * @example
- * <Input type="email" label="אימייל" helperText="לא נשתף עם אף אחד" />
+ * <Input type="email" label="מייל" helperText="לא נשתף עם אף אחד" />
  * <Input type="text" label="שם" error="שדה חובה" />
  *
  * `ref` reaches the native <input> (MEH-3146), for a caller that focuses it.
