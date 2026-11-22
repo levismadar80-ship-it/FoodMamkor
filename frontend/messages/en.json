@@ -505,10 +505,10 @@
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -620,6 +620,27 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish",
+    "kph": "Coffee"
   },
   "seo": {
     "home": {
@@ -5380,19 +5401,13 @@
       "completeness": {
         "red_headline": "A few key details left before you're live",
         "red_sub": "Location and contact details help customers find and reach you",
-        "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
-        "yellow_high_headline": "Almost there — {percent}% ready",
         "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
         "green_headline": "Profile complete",
-        "next_step_prefix": "Next step:",
         "cta": "Complete profile",
-        "cta_aria": "Complete your profile",
-        "ring_aria": "Profile completeness: {percent}%",
         "checklist_aria": "Profile completion progress",
         "checklist_done": "Done",
         "checklist_todo": "Still needed",
-        "checklist_sub": "A few more steps and your profile is ready for inquiries",
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
@@ -5413,7 +5428,18 @@
           "hours": "Opening hours"
         },
         "chip_required": "Required",
-        "chip_recommended": "Recommended"
+        "chip_recommended": "Recommended",
+        "draft_headline": "{count, plural, one {One more step before review} other {# more steps before review}}",
+        "draft_ready": "All set",
+        "counter": "{done} of {total}",
+        "improve_headline": "Improve your page",
+        "open_cta": "Complete",
+        "license_note": "We can't approve the page without a licence number",
+        "draft_steps": {
+          "details": "Business details",
+          "image": "A photo of the business or products",
+          "product": "First product"
+        }
       },
       "strength": {
         "heading": "Profile strength",

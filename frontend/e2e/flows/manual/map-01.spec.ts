@@ -26,9 +26,9 @@ import {
   CHAT_OPEN_EN,
   AXES,
   icu,
-  CAT_MEAT,
   CATEGORIES,
-  EMPTY_LEGEND_NAME,
+  EMPTY_LEGEND_GROUP,
+  MEAT_LEGEND_GROUP,
   producer,
   branch,
   P_HAIFA,
@@ -520,7 +520,7 @@ test.describe("manual › legend: empty-viewport categories disabled, desktop (M
     await shell.getByTestId("map-legend-toggle").click();
     const panel = shell.getByTestId("map-legend-panel");
     await expect(panel).toBeVisible();
-    const empty = legendRow(shell, EMPTY_LEGEND_NAME);
+    const empty = legendRow(shell, EMPTY_LEGEND_GROUP);
     await expect(empty).toHaveCount(1);
     // All-on default: the empty row is active → muted, still clickable.
     await expect(empty).toHaveAttribute("aria-pressed", "true");
@@ -540,7 +540,7 @@ test.describe("manual › legend: empty-viewport categories disabled, desktop (M
     await expect(panel.getByRole("button", { name: MP.show_all, exact: true })).toBeVisible();
     // A live row: toggling meat OFF leaves the dairy businesses (the
     // uncategorised P_ASH drops out too — the filter reads categories[0]).
-    const meat = legendRow(shell, CAT_MEAT.name);
+    const meat = legendRow(shell, MEAT_LEGEND_GROUP);
     await expect(meat).toBeEnabled();
     await expect(meat).not.toHaveClass(/opacity-60/);
     await meat.click();
@@ -564,10 +564,10 @@ test.describe("manual › legend: empty-viewport categories disabled, desktop (M
     await shell.getByTestId("map-legend-toggle").click();
     // Leave ONLY meat active: toggle every other row off (rows toggle OFF from
     // the all-on default — see the test above).
-    const meat = legendRow(shell, CAT_MEAT.name);
+    const meat = legendRow(shell, MEAT_LEGEND_GROUP);
     const rows = shell.getByTestId("map-legend-row");
-    const names = await rows.allTextContents();
-    for (const name of names.filter((n) => n !== CAT_MEAT.name)) await legendRow(shell, name).click();
+    const groups = await rows.evaluateAll((els) => els.map((el) => el.getAttribute("data-group") ?? ""));
+    for (const group of groups.filter((g) => g !== MEAT_LEGEND_GROUP)) await legendRow(shell, group).click();
     await expect(meat).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => cardNames(shell)).toEqual(MEAT.map((p) => p.name));
     await clickCanvasCorner(shell);
@@ -583,7 +583,7 @@ test.describe("manual › legend: empty-viewport categories disabled, desktop (M
     await expect(meat).toHaveAttribute("aria-pressed", "true");
     await expect(meat, "an active row at 0 must stay clickable").toBeEnabled();
     await expect(meat).toHaveClass(/opacity-60/);
-    await expect(legendRow(shell, EMPTY_LEGEND_NAME)).toBeDisabled();
+    await expect(legendRow(shell, EMPTY_LEGEND_GROUP)).toBeDisabled();
     // Toggling the last active row off resets to "all" (toggleCategory returns
     // null for an empty set) — the way out of the empty filter.
     await meat.click();
