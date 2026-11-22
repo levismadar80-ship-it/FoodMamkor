@@ -408,7 +408,7 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 1 מתוך 3")).toBeVisible();
     await page.getByRole("button", { name: "הבא" }).click();
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
-    await page.getByPlaceholder("חיפוש לפי אימייל או שם…").fill("משתמשת 4");
+    await page.getByPlaceholder("חיפוש לפי מייל או שם…").fill("משתמשת 4");
     await page.keyboard.press("Enter");
     await expect.poll(() => listCalls.at(-1)?.search).toBe("משתמשת 4");
     await expect(page.getByText("עמוד 1 מתוך 1")).toBeVisible();

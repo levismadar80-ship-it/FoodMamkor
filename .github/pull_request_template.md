@@ -17,6 +17,15 @@ Example:
 - [ ] Docs / config only (skip mobile testing)
 - [ ] Hotfix (direct to `main` — back-merge to `staging` immediately after)
 
+## Reuse
+
+<!-- Adds a file under frontend/components, frontend/lib, frontend/hooks or backend/app/services?
+Search docs/CODE_INDEX.md and the catalog in frontend/components/CLAUDE.md first, then fill in:
+"Reuse: <what you reused or extended>" or "Reuse: none fit — <what you searched>".
+scripts/checks/reuse-line-guard.sh warns when this is empty (MEH-3612). -->
+
+Reuse:
+
 ---
 
 ## Builder model

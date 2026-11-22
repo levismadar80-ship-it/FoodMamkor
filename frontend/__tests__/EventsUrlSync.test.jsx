@@ -76,7 +76,19 @@ vi.mock("@phosphor-icons/react", () => {
     ].map((name) => [name, Stub]),
   );
 });
-vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
+// The row's save heart reads the auth context; not the subject here.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
+// MEH-3626: one row per category, so the chip row is drawn once the list is
+// in (a loading list no longer draws every chip, then drops the empty ones).
+vi.mock("@/lib/api", async () => {
+  const { EVENT_CATEGORIES: E, EXPERIENCE_CATEGORIES: X } = await import("@/lib/event-categories");
+  const data = [...E, ...X].filter((c) => c.key).map((c, i) => ({
+    id: i + 1, title: `event ${i + 1}`, event_date: "2026-12-01", event_time: "10:00",
+    city: "חיפה", category: c.key, price: 0, producer_name: "בית עסק", description: "",
+  }));
+  return { default: { get: vi.fn(() => Promise.resolve({ data })) } };
+});
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
 vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "" }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
@@ -185,13 +197,14 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
     expect(new URLSearchParams(window.location.search).get("city")).toBe(CITY);
   });
 
-  it("rejects a category outside the initial tab's vocabulary (cross-tab guard)", () => {
+  it("rejects a category outside the initial tab's vocabulary (cross-tab guard)", async () => {
     // An experiences-only category must NOT seed on the events tab.
     params = { city: CITY, category: CROSS_TAB_CAT };
     setUrl(`/events?city=${CITY}&category=${CROSS_TAB_CAT}`);
     render(<EventsClient />);
 
     expect(cityInput()).toHaveValue(CITY); // city still seeds
+    await screen.findByTestId("chip-row"); // MEH-3626: drawn once the list is in
     // category rejected → the "all" sentinel chip is active, not the cross-tab one
     expect(chipRow().querySelector('[data-key="all"]').dataset.active).toBe("true");
     expect(chipRow().querySelector(`[data-key="${CROSS_TAB_CAT}"]`)).toBeNull();
@@ -199,6 +212,7 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
 
   it("changing category then city writes the updated query via replaceState", async () => {
     render(<EventsClient />);
+    await screen.findByTestId("chip-row"); // MEH-3626: drawn once the list is in
     replaceSpy.mockClear();
 
     fireEvent.click(chip(EVENT_CAT_ALT));

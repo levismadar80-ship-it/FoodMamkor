@@ -1,6 +1,6 @@
 // @ts-check
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import MapClient from "./MapClient";
 import { fetchProducersForSSR } from "@/lib/map-ssr-producers";
@@ -43,10 +43,16 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function MapPage() {
+export default async function MapPage({ params }) {
+  // MEH-3628: the locale is passed explicitly and set for the request, as on
+  // /rescue (MEH-3049). getTranslations() with no locale fell back to
+  // headers(), which made /map render per request (ƒ): it could not be
+  // prefetched, so every tap on «מפה» showed the full-page logo loader.
+  const { locale } = await params;
+  setRequestLocale(locale);
   // MEH-473: page-level metadata translation deferred to Wave 6 (SEO).
   // sr-only nav strings are functional UI, translated here.
-  const t = await getTranslations();
+  const t = await getTranslations({ locale });
   const producers = await fetchProducersForSSR();
 
   return (

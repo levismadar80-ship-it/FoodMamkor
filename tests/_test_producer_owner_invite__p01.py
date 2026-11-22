@@ -607,7 +607,7 @@ class TestInviteEmail:
         assert "הקישור תקף ל-7 ימים" in body
         assert "https://example.com/owner-invite/abc" in body
         assert "/privacy" in body
-        assert "ספיר שנפ" in body
+        assert "צוות מהמקור" in body
         # The plain-text part keeps the raw value (text renders no markup); the
         # HTML part must not.
         assert "<script>מחלבה" in body

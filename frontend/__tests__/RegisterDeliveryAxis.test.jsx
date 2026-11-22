@@ -42,7 +42,6 @@ import api from "@/lib/api";
 // this file walks through. Plain-string lookups are unchanged.
 // MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
 // file's mocks do not feed; its wiring is covered in RegisterProducerClient-01/-02.test.jsx.
-vi.mock("@/components/RegisterCardPreview", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key, values) => {

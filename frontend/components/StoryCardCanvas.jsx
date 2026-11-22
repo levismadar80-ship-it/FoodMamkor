@@ -418,7 +418,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
 
   const caption = `${t("caption_prefix")}\n${t("caption_from", { name: producer.name, city: producer.city || t("default_country") })} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
-  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
+  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n${t("caption_link", { url: `${SITE_HOST}/p/${producer.slug || ""}` })}`;
 
   const copyCaption = () => {
     // MEH-1428: this had no rejection path at all — `navigator.clipboard` is

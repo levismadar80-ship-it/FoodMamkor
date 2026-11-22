@@ -6,8 +6,11 @@ import { useTranslations } from "next-intl";
 import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import { useResendVerification } from "@/lib/use-resend-verification";
+import InlineMessage from "@/components/ui/InlineMessage";
 import {
   MISSING_CATEGORY,
+  MISSING_EMAIL_VERIFIED,
   MISSING_IMAGE,
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
@@ -221,8 +224,14 @@ function buildSteps(producer, missingLabels) {
 // business in draft sees exactly what blocks «שליחה לבדיקה» and nothing else —
 // the recommended items wait for «לשפר את העמוד» after she submits
 // (Shopify setup guide / Airbnb: only what blocks publishing, before publishing).
-// Category + location arrive from signup, so they share one «פרטי העסק» row
-// that is already ✓ for almost everyone; it opens only if one is missing.
+// Category + location share one «פרטי העסק» row; it opens only if one is missing.
+// MEH-3697: a business with a place to visit gets its town's centre as an
+// approximate point at signup (producer_queries.create_primary_branch_location,
+// MEH-2480), so its location is there. A delivery-only business is not: the
+// delivery cities left the form (MEH-2640), so right after signup its location
+// is missing — and «פרטי העסק», which she has just filled, would tell her
+// nothing. When only the location is missing the row reads the banner's
+// «מיקום או אזורי משלוח» instead (same key, no new copy).
 function buildDraftRows(producer) {
   const missing = new Set(submissionMissingItems(producer));
   const categoryMissing = missing.has(MISSING_CATEGORY);
@@ -234,13 +243,49 @@ function buildDraftRows(producer) {
     {
       key: "details",
       done: !categoryMissing && !locationMissing,
+      gateLabel: !categoryMissing && locationMissing ? MISSING_LOCATION : undefined,
       href: categoryMissing ? `${EDIT_HUB}#profile-categories` : locationHref,
     },
     { key: "image", done: !missing.has(MISSING_IMAGE), href: `${EDIT_HUB}#profile-images` },
     { key: "product", done: !missing.has(MISSING_PRODUCT), href: `${EDIT_HUB}#profile-products` },
     // The OTP card opens inside this row — no navigation.
     { key: "phone_verified", done: !missing.has(MISSING_PHONE_VERIFIED), inline: true },
+    // MEH-3660: only while the owner's email is unconfirmed (a Google signup
+    // never sees it). Last, so the resend comes after the page work.
+    ...(missing.has(MISSING_EMAIL_VERIFIED) ? [{ key: "email_verified", done: false, inline: true }] : []),
   ];
+}
+
+/** The open email row: one resend button, then «✓ נשלח!» (MEH-3660). */
+function EmailResend({ t }) {
+  // «✓ נשלח!» is the site's resend wording; one key for it (MEH-3657).
+  const tVerify = useTranslations("auth.verify");
+  const { resendSent, resendSending, resendError, handleResend } = useResendVerification();
+  if (resendSent) {
+    return (
+      <p className="text-sm text-primary font-medium" data-testid="completeness-email-sent" role="status">
+        {tVerify("sent")}
+      </p>
+    );
+  }
+  // A failed send (429, network) keeps the button: the message says why, and
+  // the owner can try again without reloading the dashboard.
+  return (
+    <div className="flex flex-col items-start gap-2">
+      {resendError && (
+        <InlineMessage data-testid="completeness-email-error">{resendError}</InlineMessage>
+      )}
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={resendSending}
+        data-testid="completeness-email-resend"
+        className={`${PRIMARY_BTN} disabled:opacity-50`}
+      >
+        {t("email_resend")}
+      </button>
+    </div>
+  );
 }
 
 const ROW_LINK =
@@ -257,7 +302,7 @@ function RowMark({ done }) {
 }
 
 /** Draft rows whose label lives under dashboard.producer.draft.missing. */
-const SHARED_GATE_LABELS = new Set(["phone_verified"]);
+const SHARED_GATE_LABELS = new Set(["phone_verified", "email_verified"]);
 
 /**
  * One list for both modes. Done rows: ✓ + label (still a link, so she can
@@ -364,13 +409,18 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
         <Checklist
           rows={rows}
           label={t("checklist_aria")}
-          labelOf={(row) => (SHARED_GATE_LABELS.has(row.key) ? tMissing(row.key) : t(`draft_steps.${row.key}`))}
+          labelOf={(row) =>
+            row.gateLabel ? tMissing(row.gateLabel)
+              : SHARED_GATE_LABELS.has(row.key) ? tMissing(row.key)
+                : t(`draft_steps.${row.key}`)}
           t={t}
           openContent={(r) =>
             r.key === "phone_verified" ? (
               <div data-testid="draft-phone-verify">
                 <PhoneVerifyCard variant="inline" onVerified={() => onPhoneVerified?.()} />
               </div>
+            ) : r.key === "email_verified" ? (
+              <EmailResend t={t} />
             ) : null
           }
         />

@@ -15134,6 +15134,11 @@
             ],
             "title": "Owner Bio"
           },
+          "owner_email_verified": {
+            "default": false,
+            "title": "Owner Email Verified",
+            "type": "boolean"
+          },
           "owner_photo_url": {
             "anyOf": [
               {

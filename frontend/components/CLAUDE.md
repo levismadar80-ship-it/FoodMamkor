@@ -72,6 +72,29 @@ Copying 8+ lines from another file fails `scripts/checks/clone-ratchet.sh` (MEH-
 genuinely new primitive goes in `ui/` with the `Module / Purpose / Does NOT`
 header, a row here, and a guard when a hand-written copy would be easy to write.
 
+**Rule of two (MEH-3612).** When a second feature needs to show a concept another
+feature already shows (allergens, a pickup time, a price with the regular price
+struck through), move that display to `ui/` with a row here **in the same PR**,
+and make both features use it. Don't copy it and don't write it again in your own
+words. `clone-ratchet` catches only near-verbatim copies, so a rewrite in different
+words passes it. Industry practice is to extract on the third use; here a feature's
+display is usually written inside its own file, where nobody searching `ui/` finds
+it, so two uses is the trigger. Known copies to fold the next time one of them is
+touched (21/11):
+- Allergens: `public/ProductFacts.jsx:38` (reads `lib/allergens.js`) and
+  `rescue/RescueSection.jsx:395` (its own `allergen_${code}` lookup).
+- Price with the regular price struck through: `rescue/BagRow.jsx:125`,
+  `HomeWhatsOn.jsx:533`, and the group-buy pages
+  (`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:293`,
+  `app/[locale]/group-buys/GroupBuysClient.jsx:105`).
+- Pickup time line: `rescue/BagRow.jsx:80` and `rescue/RescueSection.jsx:347`.
+
+**Say what you checked.** A PR that adds a file under `frontend/components`,
+`frontend/lib`, `frontend/hooks` or `backend/app/services` carries
+`Reuse: <what it reused or extended>` or `Reuse: none fit — <what was searched>`
+(this table, `docs/CODE_INDEX.md`). `scripts/checks/reuse-line-guard.sh` warns
+when the line is missing.
+
 ## Conventions specific to this dir
 - **Imports**: `useAuth` from `@/lib/auth-context`, `api` from `@/lib/api`.
   Translations via `useTranslations` / `useLocale` from `next-intl` — the

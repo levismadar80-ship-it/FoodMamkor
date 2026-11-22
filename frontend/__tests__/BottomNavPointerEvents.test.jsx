@@ -23,6 +23,8 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
   usePathname: () => "/about",
+  // MEH-3628: BottomNav prefetches a tab on touch through useRouter.
+  useRouter: () => ({ prefetch: () => {}, push: () => {}, replace: () => {} }),
 }));
 
 vi.mock("next-intl", () => ({

@@ -144,6 +144,21 @@ export function normalizePhone(phone) {
 }
 
 /**
+ * MEH-3638: an Israeli phone (mobile OR landline) in E.164 — "+972…" — for
+ * schema.org `telephone`, where Google asks for the international form.
+ * Unlike normalizePhone (mobile-only, for wa.me) this keeps 02/03/04/08/09
+ * landlines and 07x numbers. Anything that is not 9–10 local digits is
+ * returned unchanged rather than guessed at.
+ */
+export function toE164Phone(phone) {
+  if (!phone) return "";
+  const digits = String(phone).replace(/\D/g, "");
+  const local = digits.startsWith("972") ? digits.slice(3) : digits.replace(/^0/, "");
+  if (!/^[2-9]\d{7,8}$/.test(local)) return String(phone).trim();
+  return `+972${local}`;
+}
+
+/**
  * MEH-1140: single canonical shekel price format for every display surface.
  *
  * Canon (DECIDED in the ticket — do not re-litigate per surface):

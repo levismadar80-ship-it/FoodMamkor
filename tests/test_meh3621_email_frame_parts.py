@@ -16,7 +16,8 @@ def test_empty_rows_leave_no_empty_body_cell() -> None:
 
 def test_footer_html_sits_above_the_signature() -> None:
     html = frame("כותרת", "גוף", footer_html='<a href="https://x.example/u">להפסקה</a>')
-    assert html.index("להפסקה") < html.index("צוות מהמקור</td>")
+    # MEH-3594: the signature is email_signoff_html() (flower mark + name).
+    assert html.index("להפסקה") < html.index("צוות מהמקור</span></td>")
     assert "להפסקה" not in frame("כותרת", "גוף")
 
 

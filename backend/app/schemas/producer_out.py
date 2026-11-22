@@ -754,3 +754,7 @@ class ProducerOwnerOut(_ZonesOut, ProducerDetailOut):
     # client mirror (lib/submission-gate.js) reads this count. Filled by
     # GET/PUT /producers/me; 0 for every other serializer path.
     upcoming_events_count: int = 0
+    # MEH-3660: a user owning this business confirmed her email — the submit
+    # gate's last requirement. Filled by GET/PUT /producers/me; False for every
+    # other serializer path (fail-closed, like the gate).
+    owner_email_verified: bool = False

@@ -135,7 +135,7 @@ Rule of thumb: if you could replace it with "the listing" → `בית עסק`. I
 |---|---|---|
 | WhatsApp (Hebrew) | **`וואטסאפ`** | **LOCKED** (Sapir, 2026-06-13) — `ווטסאפ` is non-canonical |
 | WhatsApp (Latin in copy) | TBD — allow vs always Hebraize | **PENDING Sapir** |
-| Email | **`אימייל`** | **LOCKED** (Sapir, 2026-06-13) — standalone `מייל` is non-canonical |
+| Email | **`מייל`** | **LOCKED** (Sapir, 2026-11-21, MEH-3665) — `אימייל` is non-canonical; `brand-lexicon-guard.sh` rule `email-term` |
 | `וואצאפ` / `ווצאפ` (tsadi forms) | **FORBIDDEN** | never use — not currently present, keep it that way |
 | Hebrew punctuation | gershayim `״`, geresh `׳`, em-dash `—` | per DESIGN.md |
 
@@ -147,39 +147,33 @@ in the follow-up sub-MEH. **Still open:** whether Latin `WhatsApp` inside
 Hebrew copy (`he.json:260, 2722`) is allowed or must be Hebraized — separate
 Sapir decision, kept PENDING above.
 
-> **Open (MEH-3652, 21/11/2026):** the lock below was never enforced and the
-> site drifted: on 21/11 `he.json` had standalone «מייל» in 38 non-admin
-> strings and «אימייל» in 40. Sapir decides whether to enforce the lock or
-> retire it; until then both spellings stand.
+### LOCKED — Email (Sapir, 2026-11-21 — replaces the 2026-06-13 lock)
 
-### LOCKED — Email (Sapir, 2026-06-13)
-
-Canonical: **`אימייל`**. Standalone `מייל` (~51× — `כתובת מייל`, `תיבת המייל`,
-`במייל`) is **non-canonical**; normalize to `אימייל` in the follow-up sub-MEH.
+Canonical: **`מייל`** (`כתובת המייל`, `במייל`, `שלחו מייל`). `אימייל` is
+**non-canonical**. Reason: the Israeli-sites research on the MEH-3665 card
+found «מייל» the common form in Hebrew interfaces; Sapir approved the call on
+21/11. The 2026-06-13 lock said the opposite and is retired; MEH-3665
+swept the product to `מייל` and `brand-lexicon-guard.sh` (rule `email-term`)
+now fails a new `אימייל` in shipped copy.
 
 ---
 
 ## 4. RTL directional-arrow rule
 
-> **Open (MEH-3652, 21/11/2026):** this section and `docs/DESIGN.md:1053`
-> disagree. DESIGN.md gives «לכל האירועים ←» as its example of a forward link,
-> and in a right-to-left line `←` points in the reading direction. On 21/11
-> `he.json` had 24 forward/CTA strings with `←` and 25 with `→`. Sapir decides
-> which glyph means "forward"; until then neither is enforced.
+**LOCKED (Sapir, 2026-11-21, MEH-3665 — replaces the 2026-06-13 lock):** Hebrew
+reads right to left, so «forward» points left. In Hebrew copy **`←`** (U+2190)
+is the glyph for forward / continue / next / "leads to" (e.g. `לכל האירועים ←`,
+`פרטים טכניים ← אמינות`). **`→`** (U+2192) is used **only** for back /
+previous (e.g. `→ חזרה`).
 
-**LOCKED (Sapir, 2026-06-13):** in Hebrew copy the canonical directional glyph
-is **`→`** (U+2192) — use it for forward / continue / next / general CTAs
-(e.g. `הבא →`, `הצטרפי →`). **`←`** (U+2190) is allowed **only** as a
-documented exception:
+- **carousel / gallery prev/next** arrows (`ImageGallery.jsx`, `Lightbox.jsx`)
+  follow the same rule as a pair — never flip one arrow without its partner.
+- English copy (`en.json`) is LTR and keeps `→` for forward.
 
-- **back / previous** navigation (e.g. `← הקודם`, `← חזרה`)
-- **carousel / gallery prev** arrows (`ImageGallery.jsx`, `Lightbox.jsx`) —
-  the prev/next pair stays physically paired.
-
-Everywhere else `←` is **non-canonical**: the 32 forward/CTA `←` strings in
-`he.json` are normalize-to-`→` candidates for the follow-up sub-MEH. Paired
-gallery controls apply the rule to **both** directions together — never flip
-one arrow without its partner.
+`brand-lexicon-guard.sh` rule `forward-arrow` fails a Hebrew word followed by
+`→`. It catches the common shape only: a Latin word or a number right before
+the arrow (`ב-WhatsApp → …`, `(30%) → …`), or a quote in gershayim
+(`״שלום״ → …`), is not caught.
 
 > The em-dash `—` (U+2014) is the correct connective dash in Hebrew copy (per
 > DESIGN.md), distinct from any arrow glyph — leave em-dashes alone.
