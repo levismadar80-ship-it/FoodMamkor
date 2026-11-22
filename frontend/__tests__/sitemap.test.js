@@ -49,7 +49,9 @@ describe("sitemap noindex exclusion (MEH-803)", () => {
 });
 
 describe("MEH-2461 — organizer pages in the sitemap", () => {
-  it("lists /organizers/{slug} for both locales from GET /organizers, never under /producers", async () => {
+  // MEH-3638: an organizer page's main content is Hebrew, so it is listed once,
+  // in Hebrew, with no hreflang pair (its /en twin is noindex).
+  it("lists /organizers/{slug} once, in Hebrew, from GET /organizers, never under /producers", async () => {
     global.fetch = vi.fn((url) =>
       Promise.resolve({
         ok: true,
@@ -60,8 +62,8 @@ describe("MEH-2461 — organizer pages in the sitemap", () => {
     );
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls).toContain(`${BASE}/organizers/gelem`);
-    expect(urls).toContain(`${BASE}/en/organizers/gelem`);
-    expect(urls.filter((u) => u.includes("gelem"))).toHaveLength(2);
+    expect(urls).not.toContain(`${BASE}/en/organizers/gelem`);
+    expect(urls.filter((u) => u.includes("gelem"))).toHaveLength(1);
   });
 
   it("control: GET /organizers down → no organizer URLs, sitemap still builds", async () => {
@@ -127,18 +129,19 @@ describe("MEH-2787 — the sitemap lists every approved business", () => {
     });
   }
 
-  it("walks past 100: 150 businesses → 150 URLs per locale", async () => {
+  // MEH-3638: business pages are Hebrew-only in the sitemap (no /en twin).
+  it("walks past 100: 150 businesses → 150 Hebrew URLs, no /en twins", async () => {
     global.fetch = mockCatalog(150);
     const urls = (await sitemap()).map((e) => e.url);
 
     const he = urls.filter((u) => /^https:\/\/mehamakor\.co\.il\/biz-\d+$/.test(u));
     const en = urls.filter((u) => /^https:\/\/mehamakor\.co\.il\/en\/biz-\d+$/.test(u));
     expect(he).toHaveLength(150);
-    expect(en).toHaveLength(150);
+    expect(en).toHaveLength(0);
     // the 101st and the last are the ones a single fetch would have lost
     expect(urls).toContain(`${BASE}/biz-100`);
     expect(urls).toContain(`${BASE}/biz-149`);
-    expect(urls).toContain(`${BASE}/en/biz-149`);
+    expect(urls).not.toContain(`${BASE}/en/biz-149`);
   });
 
   it("asks for pages with limit+offset, and stops on a short page", async () => {
@@ -380,5 +383,58 @@ describe("MEH-0000: /producers survives a backend that is down at build time", (
     const urls = (await sitemap()).map((e) => e.url);
     const exact = urls.filter((u) => u === `${BASE}/producers`);
     expect(exact).toHaveLength(1);
+  });
+});
+
+// MEH-3638: Google's multilingual guide — the hreflang pair stays on pages
+// that are really translated (static pages), and every <loc> is URL-escaped.
+describe("MEH-3638 — sitemap follows Google's multilingual + sitemap rules", () => {
+  const hebrewOrganizer = "פרדס-בית-הראשונים";
+  const stubWith = (organizers, producers = []) => {
+    global.fetch = vi.fn((url) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: { get: () => "0" },
+        json: async () => {
+          const u = String(url);
+          if (u.endsWith("/organizers")) return organizers;
+          if (u.includes("/producers?limit=100")) return producers;
+          return [];
+        },
+      }),
+    );
+  };
+
+  it("a Hebrew organizer slug is percent-encoded in <loc>", async () => {
+    stubWith([{ slug: hebrewOrganizer }]);
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).toContain(`${BASE}/organizers/${encodeURIComponent(hebrewOrganizer)}`);
+    expect(urls.some((u) => /[\u0590-\u05FF]/.test(u))).toBe(false);
+  });
+
+  it("an already-encoded slug is not encoded twice", async () => {
+    stubWith([{ slug: encodeURIComponent(hebrewOrganizer) }]);
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).toContain(`${BASE}/organizers/${encodeURIComponent(hebrewOrganizer)}`);
+    expect(urls.some((u) => u.includes("%25"))).toBe(false);
+  });
+
+  it("a business entry carries no hreflang; a static page keeps both languages", async () => {
+    stubWith([], [{ id: "p1", slug: "biz-1", name: "עסק" }]);
+    const list = await sitemap();
+    const biz = list.find((e) => e.url === `${BASE}/biz-1`);
+    expect(biz).toBeDefined();
+    expect(biz.alternates).toBeUndefined();
+    const map = list.find((e) => e.url === `${BASE}/map`);
+    expect(map.alternates.languages).toEqual({ "he-IL": `${BASE}/map`, en: `${BASE}/en/map` });
+    expect(list.map((e) => e.url)).toContain(`${BASE}/en/map`);
+  });
+
+  it("no entry claims a lastModified it cannot know", async () => {
+    stubWith([{ slug: "gelem" }], [{ id: "p1", slug: "biz-1", name: "עסק" }]);
+    const list = await sitemap();
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.filter((e) => "lastModified" in e)).toEqual([]);
   });
 });

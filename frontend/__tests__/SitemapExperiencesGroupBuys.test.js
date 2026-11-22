@@ -1,7 +1,7 @@
 /**
  * MEH-2478 — /experiences/[id] and /group-buys/[id] reach the sitemap, the
- * same way /events/[id] and /organizers/[slug] do: one entry per locale, each
- * carrying the full hreflang alternates map.
+ * same way /events/[id] and /organizers/[slug] do. Since MEH-3638 that is one
+ * Hebrew entry with no hreflang map (the /en twin translates only the chrome).
  *
  * What is listed is decided by the endpoint the hub itself lists from:
  *   - GET /experiences already returns only approved, upcoming, not-cancelled
@@ -50,20 +50,18 @@ const urlsOf = (list) => list.map((e) => e.url);
 describe("sitemap — experience detail pages (MEH-2478)", () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it("1 experience → listed in both locales with hreflang alternates", async () => {
+  // MEH-3638: Hebrew main content → listed once, in Hebrew, no hreflang pair.
+  it("1 experience → listed once, in Hebrew, with no hreflang alternates", async () => {
     stubFetch({ experiences: [{ id: "ex-1", title: "קטיף בכרם", event_date: "2099-11-01" }] });
     const list = await entries();
     const urls = urlsOf(list);
     expect(urls).toContain(`${BASE}/experiences/ex-1`);
-    expect(urls).toContain(`${BASE}/en/experiences/ex-1`);
+    expect(urls).not.toContain(`${BASE}/en/experiences/ex-1`);
     const he = list.find((e) => e.url === `${BASE}/experiences/ex-1`);
-    expect(he.alternates.languages).toEqual({
-      "he-IL": `${BASE}/experiences/ex-1`,
-      en: `${BASE}/en/experiences/ex-1`,
-    });
+    expect(he.alternates).toBeUndefined();
   });
 
-  it("many experiences → one pair of entries each", async () => {
+  it("many experiences → one Hebrew entry each", async () => {
     stubFetch({
       experiences: [
         { id: "ex-1", event_date: "2099-11-01" },
@@ -72,7 +70,7 @@ describe("sitemap — experience detail pages (MEH-2478)", () => {
       ],
     });
     const urls = urlsOf(await entries());
-    expect(urls.filter((u) => /\/experiences\/ex-\d$/.test(u))).toHaveLength(6);
+    expect(urls.filter((u) => /\/experiences\/ex-\d$/.test(u))).toHaveLength(3);
   });
 
   it("0 experiences → no experience detail URL", async () => {
@@ -86,14 +84,14 @@ describe("sitemap — experience detail pages (MEH-2478)", () => {
 describe("sitemap — group-buy detail pages (MEH-2478)", () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it("open group buy before its deadline → listed in both locales with alternates", async () => {
+  it("open group buy before its deadline → listed once, in Hebrew, no alternates", async () => {
     stubFetch({ groupBuys: [{ id: "gb-1", status: "open", deadline: FUTURE }] });
     const list = await entries();
     const urls = urlsOf(list);
     expect(urls).toContain(`${BASE}/group-buys/gb-1`);
-    expect(urls).toContain(`${BASE}/en/group-buys/gb-1`);
-    const en = list.find((e) => e.url === `${BASE}/en/group-buys/gb-1`);
-    expect(en.alternates.languages["he-IL"]).toBe(`${BASE}/group-buys/gb-1`);
+    expect(urls).not.toContain(`${BASE}/en/group-buys/gb-1`);
+    const he = list.find((e) => e.url === `${BASE}/group-buys/gb-1`);
+    expect(he.alternates).toBeUndefined();
   });
 
   it("an open group buy past its deadline is NOT listed (expired), the live one is", async () => {

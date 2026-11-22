@@ -139,11 +139,11 @@ def send_welcome_email(
     producer_body = (
         f"שלום {first_name},\n\n"
         f"ברוכים הבאים למהמקור! 🌿\n\n"
-        f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
-        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
+        f"העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא\n"
+        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).\n\n"
         f"אחרי האישור יגיע מייל עם הקישור לעסק שלך,\n"
         f"ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
-        f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
+        f"ללוח הבקרה: {settings.frontend_url}/producer/dashboard\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
 
@@ -174,7 +174,7 @@ def send_welcome_email(
         f"שלום {first_name_html},",
         f"""\
             <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).</p>
             <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעסק שלך, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
             <div style="text-align:center;margin:0 0 28px;">
             <a href="{settings.frontend_url}/producer/dashboard"
@@ -300,7 +300,7 @@ def send_deletion_email(email: str, name: str, test_cause: bool = False) -> None
         # Neutral plural (Sapir, 04/11/2026): every reader-facing imperative in
         # this module is plural or infinitive, never feminine or masculine
         # singular. Was "צור" (MEH-1965), then "צרי".
-        f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיידית.\n\n"
+        f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיד.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     send_email(email, "מהמקור - החשבון שלך נמחק", body, test_cause=test_cause)
@@ -426,8 +426,7 @@ def send_owner_invite_email(
         f"הקישור תקף ל-7 ימים ונועד לשימוש אישי.\n\n"
         f"המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.\n\n"
         f"איך אנחנו שומרים על המידע: {privacy_url}\n\n"
-        f"ספיר שנפ\n"
-        f"מייסדת | מהמקור"
+        f"צוות מהמקור"
     )
     # MEH-440-followup: escape anything that reaches the HTML part. `business`
     # is an admin-entered business name and `first_name` an admin-entered
@@ -454,7 +453,6 @@ def send_owner_invite_email(
             אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
             <a href="{link}" style="color:#2e6853;">{link}</a>
             </p>
-            <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:0;">ספיר שנפ<br>מייסדת | מהמקור</p>
             """
         ),
     )
@@ -475,7 +473,7 @@ def send_owner_invite_code_email(
     one before any account exists.
 
     Deliberately short and unsigned: no name, no link, no privacy paragraph,
-    no «ספיר שנפ» signature. It can be sent to an address nobody has verified
+    no signature. It can be sent to an address nobody has verified
     yet, including one entered by mistake, so it says as little as possible
     about who is inviting whom. Copy is LOCKED (<hebrew_copy> v3).
 

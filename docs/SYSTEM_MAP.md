@@ -118,6 +118,9 @@ inventory.
    with its open list and the counts (MEH-2233). Each visit still makes one
    quiet client refresh after the page paints, so the backend load per visit
    is unchanged; only the first paint stops waiting for it.
+   `/map` is prerendered per locale since MEH-3628 and regenerated hourly
+   (its sr-only index reads `/producers`; the pins load in the browser). A
+   failed regeneration keeps the last good page.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
    offline. Nobody is told unless they look at Sentry.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,

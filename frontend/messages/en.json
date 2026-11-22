@@ -366,16 +366,13 @@
             }
           }
         },
-        "card_preview": {
-          "summary": "How your card will look on the site"
-        },
         "story_card": {
           "title": "Your story becomes your business page",
           "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
         },
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
         "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you within 3 business days of sending.",
-        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
+        "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we never sell them, and share them only with the service providers that run the site (<privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
@@ -401,7 +398,7 @@
           "and": "and ",
           "privacy_link": "the Privacy Policy",
           "combined": "I am over 18 and accept the <tos>Terms of Use</tos>, the <privacy>Privacy Policy</privacy> and the <declaration>licensing declaration</declaration>",
-          "declaration": "Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.",
+          "declaration": "Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor checks licences only for businesses with the “verified” badge. The details we gave are true, and we will update them if anything changes.",
           "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
         "actions": {
@@ -411,7 +408,6 @@
           "submitting": "Submitting…",
           "write_later": "I'll write this later",
           "edit_description": "Edit description",
-          "add_license": "I have a producer license ↓",
           "close": "Close"
         },
         "errors": {
@@ -5149,7 +5145,8 @@
             "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
             "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
             "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
-            "i4": "The dashboard home shows how many orders reached you through the site this month."
+            "i4": "The dashboard home shows how many orders reached you through the site this month.",
+            "i5": "New tool in the «Tools» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
           },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
@@ -7096,8 +7093,9 @@
       "city_placeholder": "e.g. Haifa",
       "loading": "Loading today's bags…",
       "failed": "We couldn't load the bags right now. Try refreshing.",
-      "empty": "No rescue bags today. Worth checking again this afternoon.",
-      "empty_city": "No rescue bags in {city} today. Worth checking again this afternoon.",
+      "empty_title": "No rescue bags yet today",
+      "empty_title_city": "No rescue bags in {city} yet today",
+      "empty_subtitle": "Worth checking again this afternoon",
       "count": "{count, plural, one {one bag} other {# bags}}"
     },
     "row": {
