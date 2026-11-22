@@ -23,7 +23,7 @@ import RecipeDetail from "@/components/public/RecipeDetail";
 import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildRecipeBreadcrumbJsonLd, ogImage, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 import { BRAND_NAME } from "@/lib/constants";
 import { siteOgImageUrl } from "@/lib/og-site-image";
@@ -99,7 +99,8 @@ export async function generateMetadata(props) {
     getTranslations("recipes.detail"),
   ]);
   const path = `/${slug}/recipes/${recipe_id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
   if (!producer || !recipe) {
     // MEH-476 followup: 404 paths should not be indexed even though they
     // still emit valid hreflang (so cross-locale 404s are linked).
@@ -142,6 +143,7 @@ export async function generateMetadata(props) {
       images: recipe.image_url ? [ogImage(recipe.image_url)] : [siteOgImageUrl(locale)],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 
