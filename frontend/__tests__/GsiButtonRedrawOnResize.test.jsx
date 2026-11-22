@@ -20,6 +20,8 @@
  *
  * Shown failing: with the useGsiRedrawOnResize calls removed from both buttons,
  * the "redraws at 288" cases are red (renderButton called once, width 361).
+ * Without the rAF coalescing the burst draws [361, 288, 288]; without the
+ * cleanup's removeEventListener the unmount case is red.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup, act } from "@testing-library/react";
@@ -49,9 +51,11 @@ const WIDE = 361;
 const NARROW = 288;
 let layoutWidth = WIDE;
 let draws = [];
+let drawsAChild = true;
 
 function installFakeGsi() {
   draws = [];
+  drawsAChild = true;
   window.google = {
     accounts: {
       id: {
@@ -59,6 +63,7 @@ function installFakeGsi() {
         cancel: () => {},
         renderButton: (el, opts) => {
           draws.push(opts.width);
+          if (!drawsAChild) return;
           const child = document.createElement("div");
           child.dataset.width = String(opts.width);
           el.replaceChildren(child);
@@ -80,12 +85,19 @@ function patchOffsetWidth() {
   });
 }
 
-function shrinkScreen() {
+// The hook redraws on the next animation frame; this waits one frame past it.
+const nextFrame = () => act(() => new Promise((r) => window.requestAnimationFrame(() => r())));
+
+// 390 → 350 → 320 inside one frame, as a drag or setViewportSize can fire.
+async function shrinkScreen() {
   layoutWidth = NARROW;
   act(() => {
-    window.innerWidth = 320;
-    window.dispatchEvent(new Event("resize"));
+    for (const w of [350, 320]) {
+      window.innerWidth = w;
+      window.dispatchEvent(new Event("resize"));
+    }
   });
+  await nextFrame();
 }
 
 async function freshButtons() {
@@ -118,7 +130,8 @@ describe("MEH-3687 — Google button follows the screen width", () => {
       render(<Button />);
       expect(draws).toEqual([WIDE]);
 
-      shrinkScreen();
+      await shrinkScreen();
+      // One redraw for the burst, at the new layout width.
       expect(draws).toEqual([WIDE, NARROW]);
     });
 
@@ -130,6 +143,7 @@ describe("MEH-3687 — Google button follows the screen width", () => {
         window.innerHeight = 500;
         window.dispatchEvent(new Event("resize"));
       });
+      await nextFrame();
       expect(draws).toEqual([WIDE]);
     });
   }
@@ -138,15 +152,32 @@ describe("MEH-3687 — Google button follows the screen width", () => {
     delete window.google;
     const { GoogleAuthButton } = await freshButtons();
     render(<GoogleAuthButton />);
-    shrinkScreen();
+    await shrinkScreen();
     expect(draws).toEqual([]);
   });
 
-  it("no redraw after unmount", async () => {
+  it("no redraw while GSI is loaded but the slot holds no button", async () => {
+    drawsAChild = false;
+    const { GoogleAuthButton } = await freshButtons();
+    render(<GoogleAuthButton />);
+    expect(draws).toEqual([WIDE]);
+    await shrinkScreen();
+    expect(draws).toEqual([WIDE]);
+  });
+
+  it("unmount removes the resize listener it added", async () => {
+    const add = vi.spyOn(window, "addEventListener");
+    const remove = vi.spyOn(window, "removeEventListener");
     const { GoogleAuthButton } = await freshButtons();
     const { unmount } = render(<GoogleAuthButton />);
+    const added = add.mock.calls.filter(([type]) => type === "resize").map(([, fn]) => fn);
+    expect(added.length).toBeGreaterThan(0);
     unmount();
-    shrinkScreen();
+    const removed = remove.mock.calls.filter(([type]) => type === "resize").map(([, fn]) => fn);
+    for (const fn of added) expect(removed).toContain(fn);
+    add.mockRestore();
+    remove.mockRestore();
+    await shrinkScreen();
     expect(draws).toEqual([WIDE]);
   });
 });

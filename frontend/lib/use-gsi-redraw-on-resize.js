@@ -26,6 +26,9 @@ import { useEffect, useRef } from "react";
  * Only a change of window.innerWidth counts: a height-only resize (the phone's
  * address bar sliding away while scrolling) must not make the button flicker.
  *
+ * A burst of resize events (a desktop window being dragged) is folded into one
+ * redraw on the next animation frame: each redraw is a new GSI iframe.
+ *
  * @param {{ current: HTMLElement | null }} ref  the slot passed to renderButton
  * @param {() => void} draw  calls renderButton on ref.current
  */
@@ -36,8 +39,10 @@ export function useGsiRedrawOnResize(ref, draw) {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     let lastWidth = window.innerWidth;
+    let frame = 0;
 
-    const onResize = () => {
+    const redraw = () => {
+      frame = 0;
       if (window.innerWidth === lastWidth) return;
       lastWidth = window.innerWidth;
       const el = ref.current;
@@ -46,8 +51,14 @@ export function useGsiRedrawOnResize(ref, draw) {
       el.replaceChildren();
       drawRef.current();
     };
+    const onResize = () => {
+      if (!frame) frame = window.requestAnimationFrame(redraw);
+    };
 
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, [ref]);
 }
