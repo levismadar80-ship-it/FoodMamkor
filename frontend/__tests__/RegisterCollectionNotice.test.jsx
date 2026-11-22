@@ -111,7 +111,7 @@ const ph = (key) => screen.getByPlaceholderText(lookup(`auth.register.producer.f
 
 async function reachStoryFrame() {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
   fireEvent.change(ph("name"), { target: { value: "טסט" } });
   fireEvent.change(ph("email"), { target: { value: "t@example.com" } });
   fireEvent.change(ph("password"), { target: { value: "Abcdefgh1234" } });
@@ -124,8 +124,8 @@ async function reachStoryFrame() {
   fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(screen.getByTestId("register-details-next"));
   fireEvent.click(await screen.findByTestId("pick-category"));
-  fireEvent.click(screen.getByTestId("register-category-next"));
-  return screen.findByTestId("register-frame-story");
+  // MEH-3656: a business submits from CATEGORY — the story step left its path.
+  return screen.findByTestId("register-frame-category");
 }
 
 describe("MEH-2200 — Amendment-13 collection notice", () => {
@@ -144,7 +144,7 @@ describe("MEH-2200 — Amendment-13 collection notice", () => {
 
   it("is absent from the account frame and appears only at the submitting frame", async () => {
     render(<RegisterProducerClient />);
-    fireEvent.click(await screen.findByTestId("register-preflight-start"));
+    await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
     // Falsifiable by the change under test: a notice rendered unconditionally
     // outside the step guard would fail here.
     expect(screen.queryByTestId("register-collection-notice")).not.toBeInTheDocument();

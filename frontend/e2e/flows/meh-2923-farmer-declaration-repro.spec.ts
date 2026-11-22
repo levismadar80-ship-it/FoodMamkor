@@ -27,7 +27,6 @@ test.use({ trace: "retain-on-failure" });
 
 async function reachStory(page) {
   await page.goto("/register/producer");
-  await page.getByTestId("register-preflight-start").click();
   await page.getByTestId("register-account-name").fill("טסט מגדלת");
   await page.getByTestId("register-account-email").fill(`farmer+${Date.now()}@mehamakor.online`);
   await page.getByTestId("register-account-password").fill("Abcdefgh1234");
@@ -40,9 +39,8 @@ async function reachStory(page) {
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-3").click();
-  await page.getByTestId("register-category-next").click();
-  await expect(page.getByTestId("register-frame-story")).toBeVisible();
-  await page.getByTestId("register-story-tagline").fill("ירקות מהשדה");
+  // MEH-3656: CATEGORY is the last business frame — it carries the consent
+  // boxes and «הצטרפו»; the story step left the business path.
 }
 
 test.describe("MEH-2923 grower declaration — 2 of 3 boxes on «ירקות»", () => {
@@ -73,18 +71,18 @@ test.describe("MEH-2923 grower declaration — 2 of 3 boxes on «ירקות»", 
 
   test("three boxes are shown for «ירקות» (control: the grower box exists)", async ({ page }) => {
     await reachStory(page);
-    await expect(page.getByTestId("register-frame-story").getByRole("checkbox")).toHaveCount(3);
+    await expect(page.getByTestId("register-frame-category").getByRole("checkbox")).toHaveCount(3);
   });
 
   for (const skip of [0, 1, 2]) {
     test(`box #${skip + 1} left unticked → no submit, a visible message`, async ({ page }) => {
       await reachStory(page);
-      const boxes = await page.getByTestId("register-frame-story").getByRole("checkbox").all();
+      const boxes = await page.getByTestId("register-frame-category").getByRole("checkbox").all();
       for (const [i, cb] of boxes.entries()) if (i !== skip) await cb.check();
-      await page.getByTestId("register-story-submit").click();
+      await page.getByTestId("register-category-submit").click();
       await page.waitForTimeout(1500);
       const confirm = await page.getByTestId("register-frame-confirm").isVisible();
-      const alert = page.getByTestId("register-frame-story").getByRole("alert");
+      const alert = page.getByTestId("register-frame-category").getByRole("alert");
       const alertText = (await alert.count()) ? await alert.first().innerText() : "";
       await page.screenshot({ path: `test-results/meh-2923-skip-${skip + 1}.png`, fullPage: false });
       console.log(`MEH-2923 skip#${skip + 1}: confirm=${confirm} posts=${posts.length} alert="${alertText}" body=${posts[0] || ""}`);
@@ -96,8 +94,8 @@ test.describe("MEH-2923 grower declaration — 2 of 3 boxes on «ירקות»", 
 
   test("all three ticked → one POST that carries the grower line on its own (chunk 4)", async ({ page }) => {
     await reachStory(page);
-    for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) await cb.check();
-    await page.getByTestId("register-story-submit").click();
+    for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) await cb.check();
+    await page.getByTestId("register-category-submit").click();
     await expect.poll(() => posts.length).toBe(1);
     const body = JSON.parse(posts[0]);
     expect(body.declaration_accepted).toBe(true);

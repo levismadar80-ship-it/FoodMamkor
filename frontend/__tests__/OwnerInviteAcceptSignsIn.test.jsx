@@ -43,6 +43,18 @@ vi.mock("@/lib/api", () => ({
 
 // The live strength checklist is not the subject here; a plain field keeps
 // the debounced /auth/check-password call out of the test.
+// MEH-3662: the Google block renders only with a client id.
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, env: { ...actual.env, NEXT_PUBLIC_GOOGLE_CLIENT_ID: "test-client-id" } };
+});
+
+// MEH-3662: the page now renders «המשך עם Google»; Google's script is not
+// loaded here, so the button is a stand-in.
+vi.mock("@/components/GoogleAuthButton", () => ({
+  default: () => <button type="button" data-testid="google-button" />,
+}));
+
 vi.mock("@/components/PasswordInput", () => ({
   default: ({ value, onChange }) => (
     <input data-testid="pw" type="password" value={value} onChange={onChange} />
@@ -87,8 +99,7 @@ async function fillAndSubmit() {
   fireEvent.click(await screen.findByTestId("owner-invite-send-code"));
   fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
   fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
-  fireEvent.click(screen.getByTestId("owner-invite-terms"));
-  fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+  fireEvent.click(screen.getByTestId("owner-invite-consent"));
   fireEvent.submit(screen.getByTestId("owner-invite-form"));
   await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
 }
@@ -142,9 +153,10 @@ describe("owner invite — a reload after the code was sent keeps the code usabl
   it("still retracts the code when she changes the address after the reload", async () => {
     await sendCodeThenReload();
     fireEvent.change(screen.getByTestId("owner-invite-email"), { target: { value: "other@example.com" } });
-    fireEvent.change(screen.getByTestId("owner-invite-code"), { target: { value: "123456" } });
-    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
-    expect(screen.getByTestId("owner-invite-submit").disabled).toBe(true);
+    // MEH-3662: with the code retracted she is back on the first step — no
+    // code field, no submit — rather than looking at a disabled button.
+    expect(screen.queryByTestId("owner-invite-code")).toBeNull();
+    expect(screen.queryByTestId("owner-invite-submit")).toBeNull();
   });
 
   it("forgets the sent code for a different invite link", async () => {
@@ -169,8 +181,7 @@ describe("owner invite — a reload after the code was sent keeps the code usabl
     expect(window.sessionStorage.getItem(NOTE_KEY)).not.toContain("123456");
     fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
     fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
-    fireEvent.click(screen.getByTestId("owner-invite-terms"));
-    fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+    fireEvent.click(screen.getByTestId("owner-invite-consent"));
     fireEvent.submit(screen.getByTestId("owner-invite-form"));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
     expect(window.sessionStorage.getItem(NOTE_KEY)).toBeNull();
@@ -225,8 +236,7 @@ describe("owner invite — the grower declaration is sent on its own", () => {
     fireEvent.click(await screen.findByTestId("owner-invite-send-code"));
     fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
     fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
-    fireEvent.click(screen.getByTestId("owner-invite-terms"));
-    fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+    fireEvent.click(screen.getByTestId("owner-invite-consent"));
     fireEvent.click(screen.getByTestId("owner-invite-farmer"));
     fireEvent.submit(screen.getByTestId("owner-invite-form"));
     await waitFor(() => expect(acceptBody()).toBeTruthy());
@@ -237,5 +247,82 @@ describe("owner invite — the grower declaration is sent on its own", () => {
   it("any other business does not send the key", async () => {
     await fillAndSubmit();
     expect(acceptBody()).not.toHaveProperty("farmer_declaration_accepted");
+  });
+});
+
+// MEH-3662 — the form shows one step at a time: the address, then the code,
+// then the password and the consent box. Each cell is asserted both ways.
+describe("owner invite — one step at a time", () => {
+  async function open() {
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", TOKEN);
+    wrap(<OwnerInviteClient />);
+    await screen.findByTestId("owner-invite-form");
+  }
+
+  it("starts with the address and the send button only", async () => {
+    await open();
+    expect(screen.getByTestId("owner-invite-email")).toBeTruthy();
+    expect(screen.getByTestId("owner-invite-send-code")).toBeTruthy();
+    expect(screen.getByTestId("owner-invite-google")).toBeTruthy();
+    expect(screen.queryByTestId("owner-invite-code")).toBeNull();
+    expect(screen.queryByTestId("pw")).toBeNull();
+    expect(screen.queryByTestId("owner-invite-consent")).toBeNull();
+    expect(screen.queryByTestId("owner-invite-submit")).toBeNull();
+  });
+
+  it("shows the code field after a send, and the rest only after six digits", async () => {
+    await open();
+    fireEvent.click(screen.getByTestId("owner-invite-send-code"));
+    fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "12345" } });
+    expect(screen.queryByTestId("pw")).toBeNull();
+    expect(screen.queryByTestId("owner-invite-submit")).toBeNull();
+    fireEvent.change(screen.getByTestId("owner-invite-code"), { target: { value: "123456" } });
+    expect(screen.getByTestId("pw")).toBeTruthy();
+    expect(screen.getByTestId("owner-invite-consent")).toBeTruthy();
+    expect(screen.getByTestId("owner-invite-submit")).toBeTruthy();
+  });
+
+  it("Enter on the first step sends the code instead of an error", async () => {
+    await open();
+    fireEvent.submit(screen.getByTestId("owner-invite-form"));
+    await screen.findByTestId("owner-invite-code");
+    const sends = api.post.mock.calls.filter(([url]) => url === "/auth/owner-invite/email-code");
+    expect(sends).toHaveLength(1);
+    expect(screen.queryByTestId("owner-invite-error")).toBeNull();
+  });
+
+  it("one box sends both the terms and the declaration", async () => {
+    await fillAndSubmit();
+    const accept = api.post.mock.calls.find(([url]) => url === "/auth/owner-invite/accept");
+    expect(accept[1]).toMatchObject({ terms_accepted: true, declaration_accepted: true });
+  });
+
+  it("refuses to send without the box", async () => {
+    await open();
+    fireEvent.click(screen.getByTestId("owner-invite-send-code"));
+    fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
+    fireEvent.submit(screen.getByTestId("owner-invite-form"));
+    expect(screen.getByTestId("owner-invite-error").textContent).toBe(
+      he.auth.register.producer.validation.terms_required,
+    );
+    expect(api.post.mock.calls.some(([url]) => url === "/auth/owner-invite/accept")).toBe(false);
+  });
+
+  it("keeps the declaration closed until she opens it, without ticking the box", async () => {
+    await open();
+    fireEvent.click(screen.getByTestId("owner-invite-send-code"));
+    fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
+    const text = screen.getByTestId("owner-invite-declaration-text");
+    const toggle = screen.getByTestId("owner-invite-declaration-toggle");
+    expect(text.hidden).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+    expect(text.hidden).toBe(false);
+    expect(text.textContent).toBe(he.auth.register.producer.terms.declaration);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("owner-invite-consent").checked).toBe(false);
+    fireEvent.click(toggle);
+    expect(text.hidden).toBe(true);
   });
 });
