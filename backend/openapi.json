@@ -36729,7 +36729,7 @@
         ]
       }
     },
-    "/rescue/orders/{order_id}/no_show": {
+    "/rescue/orders/{order_id}/no-show": {
       "post": {
         "description": "The business records that nobody came for the bag — only after\n`pickup_end`: before that the buyer may still be on their way, and a\nno-show blocks reserving again. The buyer is mailed each time (MEH-3226).",
         "operationId": "mark_no_show_rescue_orders__order_id__no_show_post",
