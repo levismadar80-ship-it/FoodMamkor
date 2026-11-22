@@ -823,6 +823,10 @@ delivery_waitlist      (id uuid PK, producer_id uuid FK→producers CASCADE,
                         wants_to_host bool NOT NULL DEFAULT false,
                         host_confirm_sent_at nullable, host_confirmed_at nullable,  -- MEH-2673
                         UNIQUE(producer_id,city_key,email), INDEX(producer_id,city_key))  -- MEH-2618
+category_requests      (id uuid PK, requested_name varchar(100), examples text nullable,
+                        producer_id uuid FK→producers SET NULL nullable (indexed),
+                        status varchar(20) default 'pending' (indexed), admin_notes text nullable,
+                        created_at, reviewed_at nullable)  -- MEH-141 (a business asks for a missing category at sign-up)
 ```
 
 > **MEH-2618 — `delivery_waitlist` (30/10/2026):** «תודיעו לי כשתגיעו ל{עיר}». A visitor whose city the business does not deliver to leaves an **email + city** under the delivery checker's negative verdict — no account needed (Oddbox-style waitlist). `city` is her own spelling (used in her email); `city_key` is `app.data.cities.city_key`, the ONE comparison form (MEH-2456). `user_id` is set when she was signed in, and her empty profile `users.city` is filled from the form (never overwritten). `notified_at` is the once-only guard: when `PUT /producers/me` adds a city to `delivery_area_cities`, `services/delivery_waitlist.notify_cities` runs as a BackgroundTask (the same hop as the `delivery_area` favorite alert), mails every un-notified entry whose `city_key` matches, and stamps it; a send that raises leaves the row un-notified so the next add retries. Nothing is sent for a non-live business (`is_business()`, MEH-2513). Unsubscribe = a signed stateless token (`sub` = entry id, scope `delivery_waitlist_unsubscribe`, same pattern as the newsletter's) → `/delivery-waitlist/unsubscribe?token=` → `POST /delivery-waitlist/unsubscribe` deletes the row. Migration `d4e7a1b2c3f5`; **`EXPECTED_TABLES` 43 → 44**. **MEH-2673 (05/11/2026):** `wants_to_host` = she ticked «אשמח לארח נקודת מסירה ב{עיר}» **and clicked the confirmation link** mailed to that address (Sapir 05/11: the waitlist has no email verification, so the box alone must not hand a typed-in stranger's email to a business). Ticking sends `services/delivery_waitlist.send_host_confirmation` as a BackgroundTask (signed token, scope `delivery_waitlist_host_confirm`, distinct from the unsubscribe scope so neither link can do the other's job) → `/delivery-waitlist/host-confirm?token=` → `POST /delivery-waitlist/host-confirm` sets the flag and stamps `host_confirmed_at` (the consent record). The confirmation token expires after 7 days (`exp`, checked in `_decode`; unsubscribe tokens still never expire), and `host_confirm_sent_at` caps the mail at one per ENTRY per 24 h plus `HOST_CONFIRM_ADDRESS_CAP` (3) per ADDRESS per 24 h across every business and city — each link confirms one entry only, so a second business the same day still gets its own mail, while a re-submitted form cannot flood an inbox (serialised per address with `pg_advisory_xact_lock`; index `ix_delivery_waitlist_email_host_sent`). The POST answers `host_confirm: sent | already_sent | limit_reached | confirmed | null` so the form never claims a mail that was not sent (`already_sent` = this entry's link is already in the inbox; `limit_reached` = the address cap, nothing sent for this one); an expired link is **410** and, since the token still names the entry, the endpoint mails a fresh link to the same address under the same cooldown/cap and answers `{detail, resent: bool}` (no dead end, no confirmation); a bad or unsubscribed one is 400. Only ever False → True; an unticked repeat signup never clears it. The owner reads the list as `pickup_hosts` on `GET /producers/me/analytics`. Migration `e5a9c3d17b28` (additive column, `EXPECTED_TABLES` unchanged). The sibling for signed-in users stays `favorite_alerts.notify_delivery_area` (+ `whatsapp_opt_in`); the form points a signed-in visitor there for WhatsApp.
@@ -934,7 +938,7 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
 
 > **MEH-3216 stage 5c — the price before sending:** `POST /product-orders/quote` `{producer_id, items[{product_id, qty}] (≤30), fulfilment, delivery_city? (required for a delivery)}` → `{subtotal_agorot, delivery_fee_agorot, total_agorot, has_estimate}`. The same pricing as `POST /product-orders` (`services/product_order_create.py::order_lines`, a range at its high end; the fee from `services/product_order_delivery.py::quote`) and the same Hebrew refusals for what a quote can know: 404 business not taking orders, 409 a product no longer orderable, below the minimum, above 100,000 ₪, city not served / no published fee. Writes nothing; no phone, slot or age check. 60/minute per IP, `Cache-Control: no-store`, 404 while `PRODUCT_ORDERS_ENABLED` is off.
 
-> **MEH-3296 — on-site ordering, stage 3: messages and timers (15/11/2026):** still dark behind `PRODUCT_ORDERS_ENABLED`. Revision `a8d2c6f4e1b7` on `f7c1a5e9b3d2`, additive: table `product_order_notifications` (an **outbox**: one row per message an order owes, UNIQUE per order × kind × channel, so a retry or a double move never writes a second). Every status move writes its rows **in the same transaction** through `services/product_order_outbox.py::on_status`, called from `product_order_state.py` (`apply_transition` and `record_created`). What is owed: new order → WhatsApp + email to the business, and a reminder after 4 active hours if still pending; confirmed → WhatsApp to the buyer, plus «מחר» 24 h before the slot when the slot is at least 26 h away; change proposed, declined / expired / cancelled by the business → WhatsApp to the buyer; cancelled by the buyer → email to the business. An account deletion sends nothing to the buyer. **Dispatcher** (`dispatch_due`, at least once): picks due `pending` rows with `SKIP LOCKED`, sends, marks, commits per row; a 5xx / network failure retries after 5 min doubling, up to 5 tries; a 4xx (e.g. a template Meta has not approved) is final `failed`; a row more than 6 h late is `skipped`, and a reminder whose order moved on is `skipped`. Test businesses and test buyers are never messaged (`is_test`). The buyer link is `/he/order/{id}#t={token}`: the token sits in the fragment, never sent to a server. **Shabbat and chagim** are computed from the Hebrew calendar (`services/hebrew_calendar.py`, arithmetic, no library, Israel one-day festivals): rest runs 14:00 on the eve to 21:00 on the day, adjacent days merged. The 24-hour answer window and the 4-hour reminder count only hours outside rest (`product_order_clock.active_deadline`); no hand-over slot is offered inside rest; a Shabbat-observant business gets no message during rest (postponed to its end) and takes no new order then (409 «ההזמנות נפתחות שוב במוצאי שבת»). **Timer** (`services/product_order_sweeper.py::expire_due`): moves `pending` / `change_proposed` past `expires_at` to `expired` as `system`. Both run every 2 minutes in the app scheduler, each step guarded on its own, and the job is registered **only while the flag is on**. An order the business auto-confirms tells the business by email only («הזמנה חדשה התקבלה ואושרה»; the WhatsApp template asks for approval, so it is not sent). The business WhatsApp goes to `producers.phone` in international form; a landline gets email only. The account-deletion case is recognised only when the system cancels with its own note. The six WhatsApp templates (`ProductOrder*V1` in `whatsapp_templates.py`) must be approved by Meta before buyers get messages; until then those rows end `failed` and the business still gets its email. Not in this stage: the purge of closed guest orders (stage 6), any screen.
+> **MEH-3296 — on-site ordering, stage 3: messages and timers (15/11/2026):** still dark behind `PRODUCT_ORDERS_ENABLED`. Revision `a8d2c6f4e1b7` on `f7c1a5e9b3d2`, additive: table `product_order_notifications` (an **outbox**: one row per message an order owes, UNIQUE per order × kind × channel, so a retry or a double move never writes a second). Every status move writes its rows **in the same transaction** through `services/product_order_outbox.py::on_status`, called from `product_order_state.py` (`apply_transition` and `record_created`). What is owed: new order → WhatsApp + email to the business, and a reminder after 4 active hours if still pending; confirmed → WhatsApp to the buyer, plus «מחר» 24 h before the slot when the slot is at least 26 h away; change proposed, declined / expired / cancelled by the business → WhatsApp to the buyer; cancelled by the buyer → email to the business. An account deletion sends nothing to the buyer. **Dispatcher** (`dispatch_due`, at least once): picks due `pending` rows with `SKIP LOCKED`, sends, marks, commits per row; a 5xx / network failure retries after 5 min doubling, up to 5 tries; a 4xx (e.g. a template Meta has not approved) is final `failed`; a row more than 6 h late is `skipped`, and a reminder whose order moved on is `skipped`. Test businesses and test buyers are never messaged (`is_test`). The buyer link is `/he/order/{id}#t={token}`: the token sits in the fragment, never sent to a server. **Shabbat and chagim** are computed from the Hebrew calendar (`services/hebrew_calendar.py`, arithmetic, no library, Israel one-day festivals): rest runs 14:00 on the eve to 21:00 on the day, adjacent days merged. The 24-hour answer window and the 4-hour reminder count only hours outside rest (`product_order_clock.active_deadline`); no hand-over slot is offered inside rest; a Shabbat-observant business gets no message during rest (postponed to its end) and takes no new order then (409 «ההזמנות נפתחות שוב במוצאי שבת»). **Timer** (`services/product_order_sweeper.py::expire_due`): moves `pending` / `change_proposed` past `expires_at` to `expired` as `system`. Both run every 2 minutes in the app scheduler, each step guarded on its own, and the job is registered **only while the flag is on**. An order the business auto-confirms tells the business by email only («הזמנה חדשה התקבלה ואושרה»; the WhatsApp template asks for approval, so it is not sent). The business WhatsApp goes to `producers.phone` in international form; a landline gets email only. The account-deletion case is recognised only when the system cancels with its own note. The six WhatsApp templates (`ProductOrder*V1` in `whatsapp_templates.py`; WhatsApp Manager shows five as UTILITY and `product_order_change_v1` as MARKETING, MEH-3596) must be approved by Meta before buyers get messages; until then those rows end `failed` and the business still gets its email. Not in this stage: the purge of closed guest orders (stage 6), any screen.
 
 > **MEH-3624 — «איך היה?» email (21/11/2026):** revision `e0436e1e20e3` on `d6a8c0e2f4b5` widens the `kind` CHECK of `product_order_notifications` with `review_request` (expand-only; downgrade deletes those rows first). A move to `handed` owes an **email** to a buyer **with an account**, 24 h later (`REVIEW_REQUEST_AFTER`): subject «איך היה אצל {business}?», body with the verified-review link from `services/review_invite.py` (`?rt=`, MEH-3620). At most **one per buyer per business, ever** (a second order from the same place is `asked_before`). At send time it is `skipped` when the order is not `handed` or the business is not `approved` (`not_live`), the buyer has no **verified** email (`no_address`), she is blocked or owns the business (`not_eligible`), or she already has a review of that business (`already_reviewed`). Rolling the backend back past this revision without the downgrade: close the owed rows first (`docs/release/ROLLBACK.md` §2b step 6). A guest gets no email; her order page shows «כתבו ביקורת». No WhatsApp: that needs a new Meta template.
 
@@ -983,6 +987,24 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
 > **MEH-2738 — rescue bags: the business cancels the bag (06/11/2026):** `POST /rescue/offers/{id}/cancel` is now refused once `pickup_end` passed (409 «זמן האיסוף חלף»); a bag already handed stays handed (unchanged: only `reserved` orders are cancelled); after the commit each buyer whose reservation went with it gets **one** email (`send_business_cancel_email`, fail-open, links to `/rescue`). `GET /rescue/orders/mine` also returns the caller's reservations **the business cancelled**, with a new required bool **`cancelled_by_business`** (False on every other row). There is no column saying who cancelled: a buyer's cancel returns its bags to `qty_left` and the business cancel does not, so the business-cancelled bags are `(qty_total − qty_left) − bags on orders never cancelled`, stamped with the offer's latest `cancelled_at`. That also handles the case where the buyer cancelled first and nobody else held a bag. No schema change.
 
 ---
+
+### Admin, messaging, outreach — tables that had no schema line (added MEH-3604, 21/11/2026, from the models)
+
+Generated once from `Base.metadata`; the model file is the authority. Read it for types and indexes.
+
+```sql
+admin_audit_log                (id PK, actor_id, action, target_type nullable, target_id nullable, details nullable, ip nullable, created_at)  -- models/admin_ops.py
+admin_checklist_items          (id PK, position, label, hint nullable, active, updated_at)  -- models/admin_ops.py
+admin_passkeys                 (id PK, user_id FK→users CASCADE, credential_id, public_key, sign_count, aaguid nullable, backup_eligible, backup_state, transports nullable, name nullable, created_at, last_used_at nullable)  -- models/admin_passkeys.py
+admin_recovery_codes           (id PK, user_id FK→users CASCADE, code_hash, used_at nullable, created_at)  -- models/admin_passkeys.py
+group_buy_commits              (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, phone nullable, created_at)  -- models/events.py
+group_buy_waitlist             (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, offered_at nullable, created_at; UNIQUE(group_buy_id, user_id))  -- models/events.py (MEH-3592)
+inbound_messages               (id PK, from_phone, body, received_at, meta_message_id nullable, bot_replied, bot_replied_at nullable, bot_template_sent nullable, human_replied)  -- models/admin_ops.py
+outbound_messages              (id PK, to_phone, kind, meta_message_id nullable, status, error_code nullable, error_message nullable, created_at, updated_at nullable)  -- models/admin_ops.py
+outreach_leads                 (id PK, name, phone nullable, instagram nullable, website nullable, city nullable, category nullable, notes nullable, source nullable, status nullable, prefill_token nullable, prefill_token_expires_at nullable, suggested_by_name nullable, suggested_by_email nullable, suggester_wants_update, suggestion_reason nullable, suggester_thanked_at nullable, created_at nullable, updated_at nullable)  -- models/admin_ops.py
+producer_name_change_requests  (id PK, producer_id FK→producers CASCADE, current_name, requested_name, reason nullable, status, admin_notes nullable, created_at, reviewed_at nullable)  -- models/admin_ops.py
+producer_review_checks         (id PK, producer_id FK→producers CASCADE, item_id FK→admin_checklist_items RESTRICT, label_snapshot, checked_by FK→users SET NULL nullable, checked_at)  -- models/admin_ops.py
+```
 
 ## API Endpoints
 
@@ -2507,23 +2529,13 @@ GET    /holiday-mode             public, 60/min. 200 {enabled, key}, read from t
 
 ---
 
-## Notifications (Twilio + Resend)
+## Notifications
 
-| Trigger | Channel | Target | File |
-|---|---|---|---|
-| Producer registers | WhatsApp | Admin | `admin_decisions.py._send_whatsapp` |
-| Producer approved/rejected | Email + WhatsApp | Producer + admin | `admin_decisions.py` (copy: `services/admin_producer_emails.py`) |
-| Experience submitted | Email | Admin (FLAGGED subject if Claude flagged) | `experience_notifications.py` |
-| Experience approved | Email | Host | `experience_notifications.py` |
-| Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |
-| Experience rejected | Email | Host (reason verbatim) | `experience_notifications.py` |
-| Recipe approved / changes-requested / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
-| Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
-| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
-| Contact form | Email | Admin | `marketing.py` |
+Every email, WhatsApp message and push a user receives — its trigger, channel,
+recipient and the code that sends it — is in
+[NOTIFICATIONS.md](./NOTIFICATIONS.md), generated from the code (MEH-3594).
+This file used to carry a hand-written table here; it had drifted (it still
+named Twilio) and was removed under MEH-3604 so the fact has one home.
 
 **«הסר» stops every WhatsApp template (MEH-3640).** `whatsapp.send_template` / `send_template_result` skip a recipient whose latest `inbound_messages` row is an opt-out word (`user_phone_verify.is_opted_out`), outcome `opted_out`, never retried. Exempt: `OtpCodeV1` (a code the person asked for) and `send_text` (only ever an in-window reply). Any later inbound message clears it.
 
@@ -2564,22 +2576,12 @@ design). No env var, no retry, no Google.
 
 ## Env vars
 
-Critical:
-- `DATABASE_URL` — Railway Postgres reference
-- `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
-- `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
-- `ENV` — `development|staging|production`
-- `CORS_ORIGINS` — comma-separated, production MUST set explicitly
+Every env var the code reads, backend and frontend, is in
+[ENVIRONMENT.md](./ENVIRONMENT.md), generated from the code (MEH-3598). The
+hand-written list that was here (it still gave a 4.6-era model default) was
+removed under MEH-3604 so the fact has one home. Which value is set in which
+environment: [DEPLOYMENT.md](./DEPLOYMENT.md) §1.
 
-Integrations:
-- `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`
-- `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`
-- `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_WHATSAPP_FROM` / `ADMIN_WHATSAPP_TO`
-- `RESEND_API_KEY` — Resend.com API key; `ADMIN_EMAIL` — notification recipient; `CONTACT_EMAIL` — public contact form recipient (falls back to `ADMIN_EMAIL`)
-- `ANTHROPIC_MODEL` (defaults to `claude-opus-4-6`)
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ---
 

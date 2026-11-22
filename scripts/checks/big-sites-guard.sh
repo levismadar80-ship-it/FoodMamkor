@@ -50,7 +50,7 @@ is_ui_file() {
     *) return 1 ;;
   esac
   case "$1" in
-    *__tests__*|*.test.*|*.spec.*) return 1 ;;
+    *__tests__*|*.test.*|*.spec.*|*.md) return 1 ;;  # .md: a note for authors, never rendered (#5069)
   esac
   return 0
 }
@@ -111,6 +111,7 @@ self_test() {
   echo "big-sites-guard self-test:"
   check "ui file, no section → warns"      "WARNING"  "## What"$'\n'"x"  "frontend/components/HubShell.jsx"
   check "ui file, heading → ok"            "OK — PR body"  "## Big sites"$'\n'"Eventbrite…"  "frontend/app/[locale]/events/page.js"
+  check "markdown under components → ok" "OK"  ""  "frontend/components/CLAUDE.md"
   check "ui file, n/a line → ok"           "OK — PR body"  "Big sites: n/a — restores intended behaviour"  "frontend/components/Footer.jsx"
   check "heading inside text is not one"   "WARNING"  "we skipped ## Big sites here"  "frontend/components/Footer.jsx"
   check "test-only change → ok"            "no user-facing"  ""  "frontend/__tests__/HubShellHeroHeight.test.js"
