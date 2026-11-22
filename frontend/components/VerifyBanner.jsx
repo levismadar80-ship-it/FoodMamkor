@@ -5,6 +5,7 @@ import { useState } from "react";
 import { EnvelopeSimple, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import { usePathname } from "@/i18n/navigation";
 import { useResendVerification } from "@/lib/use-resend-verification";
 
 // MEH-1071: per-session dismiss key. sessionStorage (not localStorage) so the
@@ -45,9 +46,17 @@ export default function VerifyBanner() {
     () => typeof window !== "undefined" && sessionStorage.getItem(DISMISS_KEY) === "1"
   );
 
+  const pathname = usePathname();
+  // MEH-3660: a business in draft has «אישור כתובת האימייל» as a row in her
+  // dashboard checklist, so the banner would say it twice there.
+  const checklistOwnsIt =
+    pathname === "/producer/dashboard" &&
+    user?.producer_status === "draft" &&
+    user?.producer_kind !== "organizer";
+
   // Same condition the banner carried inside Header (user && !verified), now
   // also gated on the per-session dismiss.
-  if (!user || user.email_verified !== false || dismissed) return null;
+  if (!user || user.email_verified !== false || dismissed || checklistOwnsIt) return null;
 
   const handleDismiss = () => {
     if (typeof window !== "undefined") {

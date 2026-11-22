@@ -254,7 +254,7 @@ test.describe("contact channels — the wire", () => {
     const writes: Rec[] = [];
     await stubEdit(page, { writes });
     await openAt(page, "contact-channels");
-    const email = b(page).getByRole("textbox", { name: "אימייל" });
+    const email = b(page).getByRole("textbox", { name: "מייל" });
     await expect(email).toHaveValue("owner@example.com");
     await email.fill("");
     // MEH-3449: one first attempt in CI ended with no PUT at all, and 104 local
@@ -297,7 +297,7 @@ test.describe("contact channels — the wire", () => {
     await stubEdit(page, { writes });
     await openAt(page, "contact-channels");
     await b(page).getByLabel("טלפון", { exact: true }).fill("050-123-4567");
-    await b(page).getByRole("textbox", { name: "אימייל" }).fill("owner@example.com");
+    await b(page).getByRole("textbox", { name: "מייל" }).fill("owner@example.com");
     // MEH-2626: the field is the business's WhatsApp UPDATES link now
     // (dashboard.producer.contact_channels.field_whatsapp_group).
     await b(page).getByLabel("עדכונים בוואטסאפ", { exact: true }).fill("https://chat.whatsapp.com/ABCdef123");

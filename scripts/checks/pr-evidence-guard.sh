@@ -128,7 +128,8 @@ has_hebrew() { python3 -c 'import re,sys; sys.exit(0 if re.search("[א-ת]", sys
 
 is_ui_file() {
   case "$1" in frontend/app/*|frontend/components/*) ;; *) return 1 ;; esac
-  case "$1" in *__tests__*|*.test.*|*.spec.*) return 1 ;; esac
+  # .md: a note for authors, never rendered — not a UI change (#5069)
+  case "$1" in *__tests__*|*.test.*|*.spec.*|*.md) return 1 ;; esac
   return 0
 }
 
@@ -245,6 +246,8 @@ self_test() {
   echo "pr-evidence-guard --self-test"
   run_case "docs-only PR, empty body"           PASS ""      ""        "docs/README.md" ""
   run_case "UI change with everything"          PASS "$good" "run-e2e" "$ui" ""
+  run_case "Markdown under components only"     PASS "Reviewer: x" "run-e2e" "frontend/components/CLAUDE.md" ""
+  run_case "Markdown + a real component"        FAIL $'Self-check: ok\nReviewer: x' "run-e2e" $'frontend/components/CLAUDE.md\nfrontend/components/Header.jsx' ""
   run_case "UI change, no Screenshots line"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" ""
   run_case "Screenshots: with no link"          FAIL $'Self-check: ok\nReviewer: x\nScreenshots: attached' "run-e2e" "$ui" ""
   run_case "committed screenshots, no link"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" $'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a-375.webp\nqa-artifacts/MEH-1/a-1440.webp' ""

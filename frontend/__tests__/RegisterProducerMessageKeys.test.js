@@ -46,7 +46,8 @@ describe("MEH-2795 — the signup form never renders a raw key", () => {
   it("control: the scan actually found keys to check", () => {
     // Without this, "0 missing" would also be the answer if the regex broke.
     expect(keys.length).toBeGreaterThan(20);
-    expect(keys).toContain("auth.register.producer.fields.license_what_is_it");
+    // A key the last step reads (the licence field that anchored this left signup, Sapir 22/11).
+    expect(keys).toContain("auth.register.producer.terms.declaration");
   });
 
   it.each([

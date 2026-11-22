@@ -10,7 +10,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3598_env_map.py -->
 
-48 Settings fields · 14 direct backend reads · 25 frontend (site) · 25 frontend (tests and tooling).
+48 Settings fields · 14 direct backend reads · 26 frontend (site) · 25 frontend (tests and tooling).
 
 ### שרת: שדות `Settings` (`backend/app/config.py`)
 
@@ -92,6 +92,7 @@
 |---|---|
 | `BACKEND_URL` | `next.config.js` |
 | `EDGE_PROXY_SECRET` | `middleware.js` |
+| `NEXT_PHASE` | `lib/map-ssr-producers.js` |
 | `NEXT_PUBLIC_API_URL` | `lib/env.client.js`, `lib/env.server.js`, `middleware.js` +1 |
 | `NEXT_PUBLIC_APPLE_CLIENT_ID` | `lib/env.client.js`, `lib/env.server.js` |
 | `NEXT_PUBLIC_APPLE_REDIRECT_URI` | `lib/env.client.js`, `lib/env.server.js` |

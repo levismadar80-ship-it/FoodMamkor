@@ -30,7 +30,10 @@ on:
     # not re-run the gate and the stale green stands — the marker would never
     # block anything. Removing it would likewise not clear the red without a
     # push, which rule 30 does not permit CC to manufacture.
-    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    # `edited` (22/11, Sapir): pr-evidence-guard reads the PR body, so a line
+    # added to the body must re-run it. Without it the red stood until the next
+    # push, and that push spent a Vercel deployment for nothing (#5109).
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -44,10 +47,10 @@ concurrency:
   # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
   # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
   # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
-  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-edited | ...-code
   # Each action class cancels only its own kind, so a label toggle can never
   # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled' || github.event.action == 'edited') && github.event.action || 'code' }}
   cancel-in-progress: true
 
 jobs:

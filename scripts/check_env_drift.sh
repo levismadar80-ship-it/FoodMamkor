@@ -60,7 +60,11 @@ cd "$ROOT"
 # VERCEL_GIT_COMMIT_REF: a Vercel system variable (the deployed branch), set by
 # Vercel on every deployment, same class as VERCEL_ENV. Read by
 # frontend/lib/sentry-environment.js to label staging events "staging".
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_GIT_COMMIT_REF|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|E2E_CLOUDINARY_STUB|E2E_CLOUDINARY_COUNT|PATH|HOME|USER|PYTHONPATH)$'
+# NEXT_PHASE (MEH-3628): set by Next.js itself to the build/server phase
+# ("phase-production-build", ...), same class as NEXT_RUNTIME beside it. Read by
+# frontend/lib/map-ssr-producers.js so `next build` does not fetch producers while
+# prerendering /map. Never set by a human, so it does not belong in .env.example.
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|NEXT_PHASE|VERCEL_ENV|VERCEL_GIT_COMMIT_REF|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|E2E_CLOUDINARY_STUB|E2E_CLOUDINARY_COUNT|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")
