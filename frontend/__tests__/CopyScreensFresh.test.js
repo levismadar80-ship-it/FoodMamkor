@@ -41,6 +41,13 @@ describe("copy-screens.json", () => {
     expect(ignore.split("\n")).toContain("frontend/lib/copy-screens.json");
   });
 
+  it("the file the install hook wrote matches a fresh build of this tree", () => {
+    // npm ci ran postinstall before vitest, so the file exists in CI; if the
+    // hook stopped running this goes red (missing file) instead of passing.
+    const written = JSON.parse(fs.readFileSync(OUT, "utf8"));
+    expect(written).toEqual(build());
+  });
+
   it("names /map as a screen that reads the map group (real tree)", () => {
     const idx = build();
     expect(idx.screens).toContain("/map");

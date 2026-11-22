@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "node scripts/build-copy-screens.mjs",
+    "postinstall": "node -e \"const f='scripts/build-copy-screens.mjs';require('fs').existsSync(f)&&require('child_process').execFileSync(process.execPath,[f],{stdio:'inherit'})\"",
     "predev": "node scripts/build-copy-screens.mjs",
     "dev": "next dev -p 3000",
     "prebuild": "node scripts/build-copy-screens.mjs",

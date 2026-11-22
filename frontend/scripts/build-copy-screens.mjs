@@ -26,6 +26,9 @@
  *           which all start with `npm ci`) writes a fresh copy. A committed
  *           copy went stale on staging whenever two PRs that each changed
  *           which groups a page reads merged one after the other.
+ *           postinstall skips (does not fail) when this file is absent:
+ *           frontend/Dockerfile installs from package.json alone before it
+ *           copies the sources, and its later `npm run build` runs prebuild.
  * History:  MEH-3672 (creation, item 6 of MEH-3652). MEH-3693 (built at
  *           install/build time, no longer committed).
  */
