@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRevealSkip } from "@/lib/route-memory";
 import { useTranslations } from "next-intl";
+import { categoryLabel } from "@/lib/category-label";
 import FadeInSection from "@/components/FadeInSection";
 // MEH-2163: the no-photo glyph AND its fallback both come from the registry's
 // total lookup. The local `Leaf` import that used to supply the fallback here
@@ -92,6 +93,9 @@ export function HomeCategoryGrid({ categoryCards }) {
           // says whether it is the registry fallback (rendered lighter, below).
           const { glyph: LineArt, isFallback: glyphIsFallback } =
             resolveCategoryGlyph(card);
+          // MEH-3076: the shown name comes from the messages (en has its own,
+          // approved by Sapir 21/11); `card.name` stays the DB match key.
+          const label = categoryLabel(t, card);
           const cardClassName = [
             // MEH-3061 (Sapir 13/11): no card frame — a photo with its name under
             // it reads as navigation, not as one more business card (the business
@@ -112,7 +116,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
                 "text-base lg:text-sm [overflow-wrap:anywhere]",
               ].join(" ")}>
-                {card.name}
+                {label}
               </h3>
             </>
           );
@@ -176,7 +180,7 @@ export function HomeCategoryGrid({ categoryCards }) {
               {card.categoryId != null ? (
                 <Link
                   href={`/producers?category=${card.categoryId}`}
-                  aria-label={t("home.categories.aria", { name: card.name })}
+                  aria-label={t("home.categories.aria", { name: label })}
                   className={cardClassName}
                   data-testid="home-category-card"
                 >

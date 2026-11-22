@@ -143,8 +143,12 @@ describe("getPrimaryContactLabel", () => {
     expect(getPrimaryContactLabel({ primary_contact_method: "phone" }, tHe)).toBe(
       "התקשרו",
     );
+    // MEH-3640: both links leave the site, and the label says so.
     expect(getPrimaryContactLabel({ primary_contact_method: "website" }, tHe)).toBe(
-      "להזמנה באתר",
+      "להזמנה באתר של העסק",
+    );
+    expect(getPrimaryContactLabel({ primary_contact_method: "external_order" }, tHe)).toBe(
+      "להזמנה באתר של העסק",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "email" }, tHe)).toBe(
       "שליחת מייל",

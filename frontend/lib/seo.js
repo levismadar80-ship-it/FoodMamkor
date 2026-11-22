@@ -62,6 +62,17 @@ function producerSeoT(locale) {
   return SEO_T[loc];
 }
 const countryLabel = (locale) => producerSeoT(locale)("country");
+// MEH-3076: the business's first category in the page's language, for the
+// <title> and meta description (category_names.<slug>; the DB name when the
+// slug has no entry). The DB category names now DO have message keys, so the
+// HOT-006 note above no longer holds for them. JSON-LD keeps the DB name in
+// its own fields; its `name` follows buildTitle like the page title does.
+function localCategory(producer, locale) {
+  const first = producer?.categories?.[0];
+  const name = first?.name || "";
+  const names = (SEO_MESSAGES[locale] ?? SEO_MESSAGES.he).category_names ?? {};
+  return first?.slug && Object.hasOwn(names, first.slug) ? names[first.slug] : name;
+}
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
 
 // MEH-3035: English names for schema.org paymentAccepted (a language-neutral
@@ -113,7 +124,7 @@ export function serializeJsonLd(obj) {
 export function buildTitle(producer, locale = "he") {
   if (!producer?.name) return brandFor(locale);
 
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`title_${shape}`, { name: producer.name, category, city, brand: brandFor(locale) });
@@ -144,7 +155,7 @@ export function buildDescription(producer, locale = "he") {
   if (text) {
     return text.length > 160 ? text.slice(0, 157) + "..." : text;
   }
-  const category = producer.categories?.[0]?.name || "";
+  const category = localCategory(producer, locale);
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`description_${shape}`, { name: producer.name, category, city });

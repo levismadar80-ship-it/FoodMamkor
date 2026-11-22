@@ -268,9 +268,7 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
 
 async function gotoCategoryFrame(page: Page): Promise<void> {
   await page.goto("/register/producer");
-  await expect(page.getByTestId("register-preflight")).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId("register-preflight-start").click();
-  await expect(page.getByTestId("register-frame-account")).toBeVisible();
+  await expect(page.getByTestId("register-frame-account")).toBeVisible({ timeout: 15_000 });
   await page.getByTestId("register-account-name").fill("טסט בדיקה");
   await page.getByTestId("register-account-email").fill(`c12f+${Date.now()}@example.com`);
   await page.getByTestId("register-account-password").fill("Abcdefgh1234");
@@ -298,7 +296,29 @@ const licenceField = (page: Page) => page.getByTestId("register-category-license
 /** The licence <input> by its <label> («מספר רישיון ייצור», with «(מומלץ)» appended when a category needs one) — register's optional field and the admin form's alike. */
 const licenceInput = (page: Page) => page.getByLabel(/^מספר רישיון ייצור/);
 const optionalToggle = (page: Page) => page.getByRole("button", { name: "יש לי רישיון ייצור (אם רלוונטי) ↓" });
-const nextBtn = (page: Page) => page.getByTestId("register-category-next");
+// MEH-3656: CATEGORY is the submitting frame — «הצטרפו» replaces «הבא».
+const submitBtn = (page: Page) => page.getByTestId("register-category-submit");
+
+/**
+ * MEH-3656: "the licence gate lets it through" used to read as "STORY rendered".
+ * CATEGORY now submits, so the evidence is the POST itself: tick the consent
+ * boxes (never the licence-pending opt-in — that would bypass the very gate
+ * under test), press «הצטרפו», and require the register POST to leave. The
+ * 404 catch-all answers it, which is fine: the question is the gate, not the
+ * server.
+ */
+async function expectSubmitPassesLicenceGate(page: Page, stub: Stub): Promise<void> {
+  for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
+    if ((await cb.getAttribute("data-testid")) !== "register-license-pending-optin") await cb.check();
+  }
+  await submitBtn(page).click();
+  await expect
+    .poll(() => stub.unstubbed.filter((u) => u === "POST /api/auth/register/producer").length, {
+      message: "the licence gate must let the submit through",
+    })
+    .toBe(1);
+  await expect(page.getByRole("alert").filter({ hasText: LICENCE_REQUIRED_HE })).toHaveCount(0);
+}
 
 // ── MT:MEH-530:1-6, :61, :62 — /register/producer CATEGORY frame ───────────
 
@@ -314,7 +334,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
   // MEH-2640 (#3960): the register label is «מספר רישיון ייצור (משרד הבריאות)» on both paths and lost
   // its «(חובה)» suffix — on the register side, "required" is now the hint line, not the label.
   test("«לחמים ואפייה» reveals «מספר רישיון ייצור (משרד הבריאות)» with the Ministry-of-Health hint", async ({ page }) => {
-    await stubPublic(page);
+    const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await expect(licenceField(page)).toHaveCount(0);
     await pickCategory(page, "לחמים ואפייה");
@@ -323,16 +343,15 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await expect(page.getByTestId("register-license-required-hint")).toHaveText("הקטגוריה «לחמים ואפייה» דורשת רישיון ייצור ממשרד הבריאות"); // MEH-2928: the hint names the category
     await expect(optionalToggle(page), "no optional toggle on the required path").toHaveCount(0);
     await licenceField(page).fill("1234567");
-    await nextBtn(page).click();
-    await expect(page.getByTestId("register-frame-story"), "a filled licence advances").toBeVisible();
+    await expectSubmitPassesLicenceGate(page, stub); // a filled licence submits
   });
 
   // MT:MEH-530:2 — empty licence on a required category: blocked with the red error. D1: client gate, no request.
-  test("an empty licence on «לחמים ואפייה» stops at «הבא» and asks for the number or the «עדיין אין לי מספר רישיון» tick", async ({ page }) => {
+  test("an empty licence on «לחמים ואפייה» stops at «הצטרפו» and asks for the number or the «עדיין אין לי מספר רישיון» tick", async ({ page }) => {
     const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await pickCategory(page, "לחמים ואפייה");
-    await nextBtn(page).click();
+    await submitBtn(page).click();
     const alert = page.getByRole("alert").filter({ hasText: LICENCE_REQUIRED_HE });
     await expect(alert).toBeVisible();
     await expect(alert).toHaveClass(/text-error/);
@@ -345,8 +364,8 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
   });
 
   // MT:MEH-530:3 — a licence-free category: no field, a toggle; opened, the optional field; empty still advances.
-  test("«פירות וירקות» alone shows the optional toggle; opened, the field carries no required hint and empty still advances", async ({ page }) => {
-    await stubPublic(page);
+  test("«פירות וירקות» alone shows the optional toggle; opened, the field carries no required hint and empty still submits", async ({ page }) => {
+    const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await pickCategory(page, "פירות וירקות");
     await expect(licenceField(page)).toHaveCount(0);
@@ -356,8 +375,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await expect(optional).toBeVisible();
     await expect(page.getByText("מספר רישיון ייצור (משרד הבריאות)", { exact: true })).toBeVisible();
     await expect(page.getByTestId("register-license-required-hint")).toHaveCount(0);
-    await nextBtn(page).click();
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+    await expectSubmitPassesLicenceGate(page, stub);
   });
 
   // MT:MEH-530:4 — mixed: a free + a required category → the field turns required automatically.
@@ -373,9 +391,9 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await expect(optionalToggle(page)).toHaveCount(0);
   });
 
-  // MT:MEH-530:5 — «abc» → the inline format warning; «הבא» still advances; a valid number clears it. D3: gray, not orange.
+  // MT:MEH-530:5 — «abc» → the inline format warning; «הצטרפו» still submits; a valid number clears it. D3: gray, not orange.
   test("«abc» shows the 7-10-digits warning without blocking; «1234567» shows none", async ({ page }) => {
-    await stubPublic(page);
+    const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await pickCategory(page, "לחמים ואפייה");
     await licenceField(page).fill("abc");
@@ -384,9 +402,8 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await expect(warning, "D3 — the register warning is muted, not the blocking red").toHaveClass(/text-fg-muted/);
     // Scoped: the page carries an unrelated role="alert" (the chat widget) — the 12c lesson.
     await expect(page.getByRole("alert").filter({ hasText: LICENCE_REQUIRED_HE })).toHaveCount(0);
-    await nextBtn(page).click();
-    await expect(page.getByTestId("register-frame-story"), "the warning does not block the advance").toBeVisible();
-    await page.getByTestId("register-story-back").click();
+    await expectSubmitPassesLicenceGate(page, stub); // the warning does not block the submit
+    // The catch-all 404 leaves the seller on CATEGORY, so the same field is still here.
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
     await licenceField(page).fill("1234567");
     await expect(page.getByText("מספר רישיון ייצור הוא 7-10 ספרות")).toHaveCount(0);
@@ -409,19 +426,18 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await pickCategory(page, "דבש");
     await expect(licenceField(page)).toBeVisible();
     await expect(page.getByText("מספר רישיון ייצור (משרד הבריאות)", { exact: true })).toBeVisible();
-    await nextBtn(page).click();
+    await submitBtn(page).click();
     await expect(page.getByRole("alert").filter({ hasText: LICENCE_REQUIRED_HE })).toBeVisible();
   });
 
   // MT:MEH-530:62 — oil alone stays optional (card 743 split it from honey).
-  test("«שמנים» alone keeps the licence optional and advances empty", async ({ page }) => {
-    await stubPublic(page);
+  test("«שמנים» alone keeps the licence optional and submits empty", async ({ page }) => {
+    const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await pickCategory(page, "שמנים");
     await expect(licenceField(page)).toHaveCount(0);
     await expect(optionalToggle(page)).toBeVisible();
-    await nextBtn(page).click();
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+    await expectSubmitPassesLicenceGate(page, stub);
   });
 });
 
