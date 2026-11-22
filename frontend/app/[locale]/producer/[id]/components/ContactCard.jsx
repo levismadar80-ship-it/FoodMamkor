@@ -4,13 +4,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
-  Bell,
   EnvelopeSimple,
   FacebookLogo,
   Globe,
   InstagramLogo,
+  Megaphone,
   Phone,
   Receipt,
+  UsersThree,
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
@@ -132,19 +133,28 @@ const CHANNELS = [
   },
   { key: "facebook", Icon: FacebookLogo, href: (p) => contactHref("facebook", p) },
   { key: "external_order", Icon: Receipt, href: (p) => contactHref("external_order", p) },
-  // MEH-2626: the WhatsApp updates link (group or channel) — the «עדכונים»
-  // bell. REPLACES the untracked WhatsappLogo circle that sat here: a neutral
-  // Bell so it never reads as a second «שליחת הודעה» (MEH-1466 / MEH-1049),
-  // and a tap is now a contact click (method "whatsapp_group", reviews gate).
-  // `ariaKey`: the circle's visible name is the short «עדכונים»; the accessible
-  // name spells out what it opens and still starts with that word (WCAG 2.5.3).
+  // MEH-2626: the business's own WhatsApp link (group or channel).
+  // MEH-3585: no longer a «עדכונים» bell — the page's one bell is Mehamakor's
+  // own updates toggle (ProducerUpdatesButton, MEH-2526), and two bells with
+  // one name read as the same button twice (Sapir 21/11). The circle is named
+  // for what it opens, the way Google Business Profile / Facebook list a
+  // business's own channels: «ערוץ וואטסאפ» or «קבוצת וואטסאפ», each with its
+  // own icon. Still not the WhatsApp logo, so it never reads as a second
+  // «שליחת הודעה» (MEH-1466 / MEH-1049). A tap stays a contact click
+  // (method "whatsapp_group", reviews gate).
   {
     key: "whatsapp_group",
-    Icon: Bell,
+    Icon: Megaphone,
+    iconFor: (p) => (isWhatsappGroupChat(p) ? UsersThree : Megaphone),
+    labelKey: (p) => (isWhatsappGroupChat(p) ? "whatsapp_group_chat" : "whatsapp_channel"),
     href: whatsappUpdatesHref,
-    ariaKey: "producer.detail.whatsapp_updates.full",
   },
 ];
+
+/** MEH-3585: a chat.whatsapp.com invite is a group; anything else (whatsapp.com/channel/…) a channel. */
+function isWhatsappGroupChat(p) {
+  return /(^|\/\/)chat\.whatsapp\.com\//i.test(whatsappUpdatesHref(p) || "");
+}
 
 /** MEH-2775: "https://www.x.co.il/shop/" → "x.co.il" — the host people know. */
 function websiteHost(raw) {
@@ -306,7 +316,10 @@ export default function ContactCard({ producer, isVacation }) {
             // link role (axe aria-allowed-role), so a screen reader lost "link".
           >
             {channels.map((channel) => {
-              const { key, Icon, href } = channel;
+              const { key, href } = channel;
+              // MEH-3585: a channel may name and draw itself from its value.
+              const Icon = channel.iconFor?.(producer) ?? channel.Icon;
+              const labelKey = channel.labelKey?.(producer) ?? key;
 
               // MEH-1551: sole channel → a labeled quiet row (the visible label
               // IS the accessible name here, so no aria-label overriding it).
@@ -324,7 +337,7 @@ export default function ContactCard({ producer, isVacation }) {
                     // The visible value stays inside the name (WCAG 2.5.3).
                     aria-label={
                       value
-                        ? `${t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)} ${value}`
+                        ? `${t(`producer.detail.contact_card.aria.${labelKey}`)} ${value}`
                         : undefined
                     }
                     onClick={(e) => onChannelClick(e, channel)}
@@ -341,7 +354,7 @@ export default function ContactCard({ producer, isVacation }) {
                         {value}
                       </span>
                     ) : (
-                      t(`producer.detail.contact_card.single.${key}`)
+                      t(`producer.detail.contact_card.single.${labelKey}`)
                     )}
                   </a>
                 );
@@ -358,14 +371,14 @@ export default function ContactCard({ producer, isVacation }) {
                   data-testid={`contact-channel-${key}`}
                   // Same string as the visible name (WCAG 2.5.3 holds); kept so
                   // the accessible name is the name alone, not "name + icon".
-                  aria-label={t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)}
+                  aria-label={t(`producer.detail.contact_card.aria.${labelKey}`)}
                   onClick={(e) => onChannelClick(e, channel)}
                   className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <span className="flex items-center justify-center w-11 h-11 rounded-full bg-background text-primary-dark transition group-hover:bg-green-50 group-hover:text-primary">
                     <Icon size={18} aria-hidden="true" />
                   </span>
-                  {t(`producer.detail.contact_card.aria.${key}`)}
+                  {t(`producer.detail.contact_card.aria.${labelKey}`)}
                 </a>
               );
             })}

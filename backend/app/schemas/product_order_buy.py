@@ -67,7 +67,18 @@ class OrderLineIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID
+    # MEH-3617: the chosen size or flavour. None for a product with no
+    # variants, or with one (the server applies it). Never a price.
+    variant_id: UUID | None = None
     qty: int = Field(..., ge=1, le=PRODUCT_ORDER_MAX_QTY_PER_ITEM)
+
+
+def _no_twin_lines(items: list[OrderLineIn]) -> None:
+    """One line per product and variant: two sizes of one cake are two lines
+    (MEH-3617), the same size twice is a mistake."""
+    keys = [(line.product_id, line.variant_id) for line in items]
+    if len(set(keys)) != len(keys):
+        raise ValueError(DUPLICATE_PRODUCT_DETAIL)
 
 
 class OrderCreateIn(BaseModel):
@@ -115,9 +126,7 @@ class OrderCreateIn(BaseModel):
 
     @model_validator(mode="after")
     def _whole_order(self) -> "OrderCreateIn":
-        ids = [line.product_id for line in self.items]
-        if len(set(ids)) != len(ids):
-            raise ValueError(DUPLICATE_PRODUCT_DETAIL)
+        _no_twin_lines(self.items)
         if self.fulfilment == "delivery" and not (
             self.delivery_city and self.delivery_address
         ):
@@ -149,9 +158,7 @@ class OrderQuoteIn(BaseModel):
 
     @model_validator(mode="after")
     def _whole_quote(self) -> "OrderQuoteIn":
-        ids = [line.product_id for line in self.items]
-        if len(set(ids)) != len(ids):
-            raise ValueError(DUPLICATE_PRODUCT_DETAIL)
+        _no_twin_lines(self.items)
         if self.fulfilment == "delivery" and not self.delivery_city:
             raise ValueError(DELIVERY_NEEDS_CITY_DETAIL)
         return self
@@ -177,6 +184,7 @@ class BuyerRefIn(BaseModel):
 
 class OrderLineOut(BaseModel):
     name: str
+    variant_name: str | None = None  # MEH-3617: «{name} · {variant_name}»
     qty: int
     unit_price_agorot: int
     price_unit: str
@@ -219,6 +227,8 @@ class BuyerOrderOut(_OrderOut):
     # Present only while the order is confirmed or ready.
     pickup_code: str | None
     can_cancel: bool
+    # MEH-3620: the verified-review link, only once the order was handed.
+    review_url: str | None = None
 
 
 class OrderCreatedOut(BuyerOrderOut):

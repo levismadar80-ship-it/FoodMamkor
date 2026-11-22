@@ -11,8 +11,8 @@ import {
   ensureFavoritesLoaded,
   isFavorited as isFavoritedCache,
   setFavoritedLocal,
-  subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 // MEH-1334: post-login auto-complete — a guest's save intent survives the
 // login round-trip and finishes automatically (revision-2 #7).
 import {
@@ -81,17 +81,7 @@ export default function FavoriteButton({
     // MEH-1325: read from the shared favorites-cache instead of a per-mount
     // GET /users/me/favorites — mirrors CardHeart (ProducerCard.jsx). The cache
     // hydrates once; subscribing keeps this button in sync with card hearts.
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producerId));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producerId));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producerId, setFavorited);
   }, [user, producerId]);
 
   // MEH-1334 (revision-2 #7): finish a guest's save intent after sign-in.
