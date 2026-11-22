@@ -82,6 +82,11 @@ describe("order-sheet helpers", () => {
   });
 });
 
+const SEND_56 = "שליחת הבקשה · 56 ₪";
+const NOT_A_PARTY = "מהמקור לא המוכרת ולא צד לעסקה.";
+/** MEH-3658: ways and slots are buttons now, picked by their value. */
+const pick = (testId, value) => fireEvent.click(screen.getByTestId(testId).querySelector(`[data-value="${value}"]`));
+
 function renderSheet(picks = { [BREAD]: 2 }, producer = { id: PRODUCER, payment_info: { methods: ["bit", "cash"] } }, onStale = () => {}) {
   return render(
     <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
@@ -100,24 +105,25 @@ describe("OrderSheet", () => {
   it("shows the server's total and the disclosure lines before sending", async () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     renderSheet();
-    expect(await screen.findByText("סך הכול: 56 ₪")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe(SEND_56));
     expect(api.post).toHaveBeenCalledWith("/product-orders/quote", {
       producer_id: PRODUCER,
       items: [{ product_id: BREAD, qty: 2 }],
       fulfilment: "pickup",
     });
-    expect(screen.getByText("התשלום ישירות לבית העסק: ביט, מזומן. באתר לא משלמים.")).toBeTruthy();
-    expect(screen.getByText(/מהמקור מעבירה את הבקשה לבית העסק/)).toBeTruthy();
+    // No slot picked yet, so no cancel deadline: the payment sentence alone.
+    expect(screen.getByTestId("order-sheet-terms").textContent).toBe("משלמים ישירות לבית העסק (ביט, מזומן), לא באתר.");
+    expect(screen.getByTestId("order-sheet-seller").textContent).toContain(NOT_A_PARTY);
     expect(screen.queryByTestId("order-sheet-age")).toBeNull();
   });
 
   it("names the seller before the order: name, «מספר עוסק», and the city only when there is one", () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     const { unmount } = renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: "רחובות" });
-    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678 · רחובות");
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe(`המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678 · רחובות. ${NOT_A_PARTY}`);
     unmount();
     renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: " " });
-    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678");
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe(`המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678. ${NOT_A_PARTY}`);
   });
 
   it("asks for the age declaration when a line is alcohol", () => {
@@ -133,7 +139,7 @@ describe("OrderSheet", () => {
       return { data: { id: ORDER, status_token: TOKEN } };
     });
     renderSheet();
-    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: "2026-11-20T08:00:00Z" } });
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
     fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
     fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
     fireEvent.click(screen.getByTestId("order-sheet-send-code"));
@@ -152,14 +158,16 @@ describe("OrderSheet", () => {
         : { data: QUOTE },
     );
     renderSheet();
-    expect(await screen.findByText("סך הכול: 56 ₪")).toBeTruthy();
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe(SEND_56));
     expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
-    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    pick("order-sheet-fulfilment", "delivery");
     // No city yet: no total at all, and no sending.
     expect(screen.queryByTestId("order-sheet-totals")).toBeNull();
+    expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה");
     expect(screen.getByTestId("order-sheet-send").disabled).toBe(true);
     fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
-    expect(await screen.findByText("סך הכול: 86 ₪")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · 86 ₪"));
     expect(screen.getByText("משלוח: 30 ₪")).toBeTruthy();
     expect(api.post).toHaveBeenLastCalledWith("/product-orders/quote", expect.objectContaining({ delivery_city: "חיפה" }));
     expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
@@ -182,9 +190,139 @@ describe("OrderSheet", () => {
     fireEvent.submit(screen.getByTestId("order-sheet"));
     expect(await screen.findByText("המועד שנבחר כבר לא זמין. צריך לבחור מועד אחר")).toBeTruthy();
     // The quote lands after the refusal (it waits 400 ms); it must not wipe it.
-    expect(await screen.findByText("סך הכול: 56 ₪")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe(SEND_56));
     expect(screen.getByText("המועד שנבחר כבר לא זמין. צריך לבחור מועד אחר")).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  // MEH-3658 — the lighter sheet. State × count: ways 1 / 2, slots 1 / 2–4 / 5+
+  // × more closed / open, note closed / open.
+  it("shows no way switch when one way is offered, and the delivery one when two are", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const { unmount } = render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={{ ...MENU, slots: MENU.slots.slice(0, 2) }} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("order-sheet-fulfilment")).toBeNull();
+    unmount();
+    renderSheet();
+    const radios = screen.getByTestId("order-sheet-fulfilment").querySelectorAll("[role=radio]");
+    expect([...radios].map((b) => [b.textContent, b.getAttribute("aria-checked")])).toEqual([["איסוף עצמי", "true"], ["משלוח", "false"]]);
+  });
+
+  it("picks the only slot for her, and waits for a tap when there are several", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const { unmount } = render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={{ ...MENU, slots: MENU.slots.slice(0, 1) }} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    const only = screen.getByTestId("order-sheet-slot").querySelectorAll("[role=radio]");
+    expect(only).toHaveLength(1);
+    expect(only[0].getAttribute("aria-checked")).toBe("true");
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").disabled).toBe(false));
+    // The deadline follows the picked slot: the cancel sentence joins the line.
+    expect(screen.getByTestId("order-sheet-terms").textContent).toMatch(/^אפשר לבטל או לשנות עד /);
+    unmount();
+    renderSheet();
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe(SEND_56));
+    expect(screen.getByTestId("order-sheet-send").disabled).toBe(true);
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")).toBeNull();
+    pick("order-sheet-slot", "2026-11-20T10:00:00Z");
+    expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
+  });
+
+  it("shows four slots and «מועדים נוספים» for the rest", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const many = Array.from({ length: 6 }, (_, i) => slot(`2026-11-2${i}T08:00:00Z`, `2026-11-2${i}T09:00:00Z`));
+    const { unmount } = render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={{ ...MENU, slots: many }} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    const radios = () => screen.getByTestId("order-sheet-slot").querySelectorAll("[role=radio]");
+    expect(radios()).toHaveLength(4);
+    fireEvent.click(screen.getByTestId("order-sheet-more-slots"));
+    expect(radios()).toHaveLength(6);
+    expect(screen.queryByTestId("order-sheet-more-slots")).toBeNull();
+    unmount();
+    // Three slots (pickup in MENU): all shown, no «more».
+    renderSheet();
+    expect(radios()).toHaveLength(3);
+    expect(screen.queryByTestId("order-sheet-more-slots")).toBeNull();
+  });
+
+  it("keeps the note behind «+ הוספת הערה» until she opens it, and sends what she wrote", async () => {
+    vi.mocked(api.post).mockImplementation(async (url) => {
+      if (url === "/product-orders/quote") return { data: QUOTE };
+      return { data: { id: ORDER, status_token: TOKEN } };
+    });
+    renderSheet();
+    expect(screen.queryByTestId("order-sheet-note")).toBeNull();
+    expect(screen.getByTestId("order-sheet-add-note").textContent).toBe("+ הוספת הערה");
+    fireEvent.click(screen.getByTestId("order-sheet-add-note"));
+    expect(screen.queryByTestId("order-sheet-add-note")).toBeNull();
+    fireEvent.change(screen.getByTestId("order-sheet-note"), { target: { value: "בלי שומשום" } });
+    fireEvent.submit(screen.getByTestId("order-sheet"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    const sent = vi.mocked(api.post).mock.calls.find(([url]) => url === "/product-orders")[1];
+    expect(sent.note).toBe("בלי שומשום");
+  });
+
+  it("puts a short phone label with its help line, and the estimate on the button", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { ...QUOTE, has_estimate: true } });
+    renderSheet();
+    expect(screen.getByText("טלפון נייד")).toBeTruthy();
+    expect(screen.getByTestId("order-sheet-phone-help").textContent).toBe("נשלח אליו קוד ועדכונים על ההזמנה בוואטסאפ");
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · בערך 56 ₪"));
+  });
+  it("moves focus to the first new slot after «מועדים נוספים», and into the note when it opens", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const many = Array.from({ length: 6 }, (_, i) => slot(`2026-11-2${i}T08:00:00Z`, `2026-11-2${i}T09:00:00Z`));
+    render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={{ ...MENU, slots: many }} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("order-sheet-more-slots"));
+    expect(document.activeElement.getAttribute("data-value")).toBe("2026-11-24T08:00:00Z");
+    fireEvent.click(screen.getByTestId("order-sheet-add-note"));
+    expect(document.activeElement).toBe(screen.getByTestId("order-sheet-note"));
+  });
+
+  it("gives the slot group one tab stop, and arrow keys pick the next slot", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    const group = screen.getByTestId("order-sheet-slot");
+    expect(group.getAttribute("aria-required")).toBe("true");
+    const radios = () => [...group.querySelectorAll("[role=radio]")];
+    expect(radios().map((b) => b.tabIndex)).toEqual([0, -1, -1]);
+    fireEvent.keyDown(radios()[0], { key: "ArrowDown" });
+    expect(radios().map((b) => b.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    expect(document.activeElement).toBe(radios()[1]);
+    expect(radios().map((b) => b.tabIndex)).toEqual([-1, 0, -1]);
+    fireEvent.keyDown(radios()[1], { key: "ArrowUp" });
+    fireEvent.keyDown(radios()[0], { key: "ArrowUp" });
+    expect(radios()[2].getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("clears the picked slot when she switches the way", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    pick("order-sheet-slot", "2026-11-20T10:00:00Z");
+    pick("order-sheet-fulfilment", "delivery");
+    // One delivery slot: picked for her.
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]").getAttribute("data-value")).toBe("2026-11-21T08:00:00Z");
+    pick("order-sheet-fulfilment", "pickup");
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")).toBeNull();
+  });
+
+  it("ties the phone help line to the phone field", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    const help = screen.getByTestId("order-sheet-phone-help");
+    expect(screen.getByTestId("order-sheet-phone").getAttribute("aria-describedby")).toBe(help.id);
   });
 
   // MEH-3640 (Nielsen #1): a greyed-out «שליחת הבקשה» says why.
@@ -192,7 +330,7 @@ describe("OrderSheet", () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     renderSheet();
     expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
-    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    pick("order-sheet-fulfilment", "delivery");
     expect(screen.getByTestId("order-sheet-needs-city").textContent).toBe("כתבו עיר כדי לראות את הסכום ולשלוח את הבקשה.");
     fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
     expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
@@ -202,14 +340,14 @@ describe("OrderSheet", () => {
   it("keeps the name, phone and address after closing and opening again", async () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     const first = renderSheet();
-    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    pick("order-sheet-fulfilment", "delivery");
     fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
     fireEvent.change(screen.getByTestId("order-sheet-address"), { target: { value: "הרצל 1" } });
     fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
     fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
     first.unmount();
     renderSheet();
-    expect(screen.getByTestId("order-sheet-fulfilment").value).toBe("delivery");
+    expect(screen.getByTestId("order-sheet-fulfilment").querySelector("[aria-checked=true]").getAttribute("data-value")).toBe("delivery");
     expect(screen.getByTestId("order-sheet-city").value).toBe("חיפה");
     expect(screen.getByTestId("order-sheet-address").value).toBe("הרצל 1");
     expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
@@ -227,7 +365,7 @@ describe("OrderSheet", () => {
   it("never keeps the code, the slot or the age box", async () => {
     vi.mocked(api.post).mockImplementation(async (url) => (url === "/product-orders/phone-code" ? { data: {} } : { data: QUOTE }));
     const first = renderSheet({ [WINE]: 1 });
-    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: "2026-11-20T08:00:00Z" } });
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
     fireEvent.click(screen.getByTestId("order-sheet-age"));
     fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
     fireEvent.click(screen.getByTestId("order-sheet-send-code"));
@@ -235,7 +373,7 @@ describe("OrderSheet", () => {
     first.unmount();
     renderSheet({ [WINE]: 1 });
     expect(screen.getByTestId("order-sheet-phone").value).toBe("0501234567");
-    expect(screen.getByTestId("order-sheet-slot").value).toBe("");
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")).toBeNull();
     expect(screen.getByTestId("order-sheet-age").checked).toBe(false);
     expect(screen.queryByTestId("order-sheet-code")?.value ?? "").toBe("");
   });
@@ -247,7 +385,7 @@ describe("OrderSheet", () => {
       return { data: { id: ORDER, status_token: TOKEN } };
     });
     const first = renderSheet();
-    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: "2026-11-20T08:00:00Z" } });
+    pick("order-sheet-slot", "2026-11-20T08:00:00Z");
     fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
     fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
     fireEvent.click(screen.getByTestId("order-sheet-send-code"));
@@ -262,7 +400,7 @@ describe("OrderSheet", () => {
   it("falls back to an offered way when the kept one is no longer offered", async () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     const first = renderSheet();
-    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    pick("order-sheet-fulfilment", "delivery");
     fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
     first.unmount();
     const pickupOnly = { ...MENU, slots: MENU.slots.filter((s) => s.fulfilment === "pickup") };

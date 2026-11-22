@@ -233,7 +233,7 @@
       "producer": {
         "heading": "Give your business a home",
         "organizer_heading": "Publish your markets and events",
-        "subtitle": "About 5 minutes. Free to join. The customer comes straight to you",
+        "subtitle": "About 3 minutes. Free to join. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -247,7 +247,7 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 5 minutes",
+          "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
@@ -273,11 +273,11 @@
           "account": {
             "title": "1. Account details",
             "email_section": "Sign up with email",
-            "duration_hint": "About 5 minutes. You can stop and continue later."
+            "duration_hint": "You can stop and continue later."
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you'll complete the rest in your dashboard, before sending it for review.",
+            "subtitle": "You'll complete the rest in your dashboard, before sending it for review.",
             "free_hint": "Registration and your page are free. Every tool is free during the launch period."
           },
           "category": {
@@ -345,9 +345,9 @@
           "license_required_label": "Producer license number (Ministry of Health)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
           "license_names_last": "{rest} and {last}",
-          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Once you add the number, we can check it and give your business the “verified” badge.",
+          "license_what_is_it": "The number appears on your production licence. You can also add it later in your dashboard, and then we can check it and give your business the “verified” badge.",
           "license_pending_optin_label": "I don't have a license number yet",
-          "license_pending_optin_hint": "You can complete registration now. Once you add the number, we can check it and give your business the “verified” badge.",
+          "license_pending_optin_hint": "You can sign up now and add the number later. Once you add it, we can check it and give your business the “verified” badge.",
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
@@ -376,7 +376,7 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you within 3 business days of sending.",
         "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
@@ -505,10 +505,10 @@
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -621,6 +621,27 @@
     "workshop": "Workshop",
     "fermented": "Fermented"
   },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish",
+    "kph": "Coffee"
+  },
   "seo": {
     "home": {
       "description": "Mehamakor is where you find food from local businesses near you, all in one place."
@@ -693,7 +714,7 @@
       "title": "Join as a business",
       "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
       "og_title": "Your business. A page of its own.",
-      "og_description": "How local businesses get their own page on Mehamakor — about 5 minutes."
+      "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
     "share": {
       "title": "Spread the word",
@@ -1002,30 +1023,31 @@
         "how": "How would you like to get it?",
         "pickup": "Pickup",
         "delivery": "Delivery",
-        "when": "When suits you?",
-        "when_pick": "Choose a time",
+        "when": "When?",
+        "more_slots": "More times",
         "slot": "{day}, {from}–{until}",
         "no_slots": "No times are open right now. You can ask the business on WhatsApp.",
         "city": "City",
         "address": "Delivery address",
         "name": "Full name",
-        "phone": "Mobile phone · we send a verification code and order updates to it",
+        "phone": "Mobile phone",
+        "phone_help": "We send a code and order updates to it on WhatsApp",
         "needs_city": "Enter a city to see the total and send the request.",
         "send_code": "Send code",
         "send_code_again": "Send a new code",
         "code": "Verification code",
         "code_sent": "We sent a code on WhatsApp to this number.",
         "code_failed": "We couldn't send a code. Please try again in a moment.",
-        "note": "Note to the business (optional)",
+        "add_note": "+ Add a note",
+        "note": "Note for the business",
         "age": "I am 18 or older",
         "delivery_fee": "Delivery: ₪{fee}",
-        "total": "Total: ₪{total}",
-        "total_estimate": "Total, approximately: ₪{total}",
-        "payment_line": "You pay the business directly: {methods}. No payment on the site.",
+        "payment_line": "You pay the business directly ({methods}), not on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
-        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}",
-        "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
+        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
         "send": "Send the request",
+        "send_total": "Send the request · ₪{total}",
+        "send_total_estimate": "Send the request · about ₪{total}",
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
@@ -1691,6 +1713,7 @@
         "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
+        "copy": "Site copy",
         "reviews": "Reviews",
         "kashrut": "Kashrut",
         "reports": "Reports",
@@ -2470,7 +2493,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes about 3 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
       "thank_suggester": "Send thanks",
       "thank_disabled": {
@@ -3082,6 +3105,14 @@
             "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
+        "copy": {
+          "q": "How do I find where a piece of text appears on the site?",
+          "steps": [
+            "On “Site copy”: every text on the site, grouped the way the code groups it.",
+            "Search by the text itself or by its key, and filter by screen.",
+            "Each group says which screens show it. The screen is read only: a text change is made in code."
+          ]
+        },
         "settings": {
           "q": "How do I turn on the holiday window, Friday market or vacation mode?",
           "steps": [
@@ -3161,6 +3192,20 @@
       "removed_toast": "Passkey removed",
       "eye_show": "Show password",
       "eye_hide": "Hide password"
+    },
+    "copy": {
+      "title": "Site copy",
+      "intro": "Every string on the site, by its group in the code. Read only: copy is changed in the code.",
+      "search": "Search text or key",
+      "all_screens": "All screens",
+      "shown_on": "Shown on:",
+      "every_screen": "every screen",
+      "more_screens": "and {count} more",
+      "no_screen": "No screen found that uses this group",
+      "count": "{count} strings",
+      "shown_of": "Showing {shown} of {count}",
+      "more_rows": "{count} more in this group. Narrow the search.",
+      "empty": "No copy matches the search"
     }
   },
   "events": {
@@ -4317,7 +4362,7 @@
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business and contact details. About 5 minutes. Photos come later, from the dashboard.",
+      "step1_text": "A short form about your business and contact details. About 3 minutes. Photos come later, from the dashboard.",
       "step2_title": "A personal introduction",
       "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
@@ -4383,7 +4428,7 @@
       "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free to join · about 5 minutes · live within 3 business days"
+    "meta_line": "Free to join · about 3 minutes · live within 3 business days"
   },
   "about_business": {
     "meta_title": "FAQ for businesses",
@@ -4434,7 +4479,7 @@
       },
       "time": {
         "q": "How much time and effort does this take from me?",
-        "a": "Signing up takes about 5 minutes, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+        "a": "Signing up takes about 3 minutes, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
@@ -5277,6 +5322,13 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "groups": {
+          "offer_heading": "Offer to customers",
+          "reviews_heading": "Customer reviews",
+          "content_heading": "Content",
+          "events_sub": "A one-time event, or an experience people sign up for",
+          "opportunities_sub": "A group buy, or surprise bags from what is left today"
+        },
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
@@ -5379,19 +5431,13 @@
       "completeness": {
         "red_headline": "A few key details left before you're live",
         "red_sub": "Location and contact details help customers find and reach you",
-        "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
-        "yellow_high_headline": "Almost there — {percent}% ready",
         "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
         "green_headline": "Profile complete",
-        "next_step_prefix": "Next step:",
         "cta": "Complete profile",
-        "cta_aria": "Complete your profile",
-        "ring_aria": "Profile completeness: {percent}%",
         "checklist_aria": "Profile completion progress",
         "checklist_done": "Done",
         "checklist_todo": "Still needed",
-        "checklist_sub": "A few more steps and your profile is ready for inquiries",
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
@@ -5412,7 +5458,18 @@
           "hours": "Opening hours"
         },
         "chip_required": "Required",
-        "chip_recommended": "Recommended"
+        "chip_recommended": "Recommended",
+        "draft_headline": "{count, plural, one {One more step before review} other {# more steps before review}}",
+        "draft_ready": "All set",
+        "counter": "{done} of {total}",
+        "improve_headline": "Improve your page",
+        "open_cta": "Complete",
+        "license_note": "We can't approve the page without a licence number",
+        "draft_steps": {
+          "details": "Business details",
+          "image": "A photo of the business or products",
+          "product": "First product"
+        }
       },
       "strength": {
         "heading": "Profile strength",

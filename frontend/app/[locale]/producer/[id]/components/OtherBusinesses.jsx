@@ -2,6 +2,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import ProducerCard from "@/components/ProducerCard";
@@ -43,7 +45,7 @@ export default function OtherBusinesses({ producer, similarProducers = [], nearb
           <SectionHeading size="content" className="mb-1">{t("producer.detail.sections.similar.heading")}</SectionHeading>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-fg-muted mb-4">
-              {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
+              {t("producer.detail.sections.similar.in_area", { category: categoryLabel(t, producer.categories[0]) })}
             </p>
           )}
           <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">

@@ -567,82 +567,47 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== Trust group — "מה אומרים התגים" (MEH-2827, FinalAbout 08/11) ========
-          The three badge explanations used to be three full sections (heading +
-          one long paragraph each, with a chapter-sized gap between them and no
-          badge in sight). They are now ONE section: the Chapter mark, then three
-          cards in the /about/badges item idiom, each with the REAL badge face
-          beside its heading — the verified seal (BadgeRow's VerifiedChip, no
-          popover), the editor's-pick pill (COLOR_CLASSES.accent) and the
-          community TrustBadge.
+      {/* ======== Trust group — "מה אומרים התגים" (MEH-2827 → MEH-3667) ========
+          MEH-3667 (Sapir 21/11, «8 גם תתקן»): the three full badge cards
+          (1,201px at 390) moved to /about/badges, which explains every badge;
+          two pages carried the same text. What stays here is the chapter mark,
+          that page's own intro, the three badge faces and the link.
 
-          The anchors #verification (MEH-1336/1840 deep-links), #editors-pick
-          (the recommended-badge popover, BadgeRow) and #community-leader
-          (MEH-2527) move onto the cards and keep resolving; scroll-mt-24 keeps
-          the sticky header off them. SHOW_VERIFICATION still gates its card.
-          Body copy is the same words split into keys (AboutTrustCards.test.jsx
-          joins them back and compares to the old strings). */}
-      <FadeInSection as="section" data-testid="about-trust" {...REVEAL_PRESET} className="bg-background py-9 md:py-14">
+          The old anchors #verification, #editors-pick and #community-leader
+          stay on this section so links already out there still land on the
+          badges summary. In-app links now go to /about/badges#<anchor>
+          (lib/badges.js) or /about/process (BadgeRow, ImageGallery).
+          SHOW_VERIFICATION still gates the verified seal. */}
+      <FadeInSection as="section" data-testid="about-trust" {...REVEAL_PRESET} className="relative bg-background py-9 md:py-14">
+        {SHOW_VERIFICATION && <span id="verification" aria-hidden="true" className="absolute top-0 scroll-mt-24" />}
+        <span id="editors-pick" aria-hidden="true" className="absolute top-0 scroll-mt-24" />
+        <span id="community-leader" aria-hidden="true" className="absolute top-0 scroll-mt-24" />
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tBadges("h1")} as="h2" />
-          <div className="grid gap-3">
+          <p className="font-body-md text-fg-muted text-base leading-relaxed">{tBadges("intro")}</p>
+          <ul data-testid="about-badge-faces" className="mt-4 flex flex-wrap items-center gap-2">
             {SHOW_VERIFICATION && (
-              <article id="verification" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
-                  <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("verification.heading")}</h3>
-                  <VerifiedChip label={tTier("verified_label")} />
-                </div>
-                <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("verification.body_1")}</p>
-                <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("verification.body_2")}</p>
-                {/* MEH-1840: teaser to the full acceptance process — same key and
-                    target as before, now inside the card. */}
-                <LocaleLink
-                  href="/about/process"
-                  data-testid="verification-process-link"
-                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                >
-                  {tProcess("crosslink_from_about")}
-                  <ArrowLeft size={16} aria-hidden="true" />
-                </LocaleLink>
-              </article>
+              <li>
+                <VerifiedChip label={tTier("verified_label")} />
+              </li>
             )}
-            <article id="editors-pick" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
-                <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("editors_pick.heading")}</h3>
-                <span
-                  data-testid="editors-pick-chip"
-                  className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${COLOR_CLASSES.accent}`}
-                >
-                  {tBadgeCopy("recommended.label")}
-                </span>
-              </div>
-              <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("editors_pick.body_1")}</p>
-              <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("editors_pick.list_lead")}</p>
-              <ul className="mt-2 grid gap-2">
-                {["item_1", "item_2"].map((item) => (
-                  <li key={item} className="flex gap-2.5 font-body-md text-fg-muted text-base leading-relaxed">
-                    <span aria-hidden="true" className="mt-[0.7em] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                    <span>{t(`editors_pick.${item}`)}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-            <article id="community-leader" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
-                <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("community_leader.heading")}</h3>
-                {/* The TrustBadge tier-4 face without its tooltip wrapper: that
-                    wrapper puts aria-label on a role-less span (axe
-                    aria-prohibited-attr), and the card already explains the
-                    badge. AboutTrustCards.test.jsx renders the real TrustBadge
-                    and asserts these classes match it, so they cannot drift. */}
-                <span data-testid="community-chip" className="inline-flex items-center rounded-full border font-medium text-xs px-2 py-0.5 bg-warning-50 text-warning-700 border-warning-200">
-                  {tTrust("tier_4.label")}
-                </span>
-              </div>
-              <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("community_leader.body_1")}</p>
-              <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("community_leader.body_2")}</p>
-            </article>
-          </div>
+            <li>
+              <span
+                data-testid="editors-pick-chip"
+                className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${COLOR_CLASSES.accent}`}
+              >
+                {tBadgeCopy("recommended.label")}
+              </span>
+            </li>
+            <li>
+              {/* TrustBadge's tier-4 face without its tooltip wrapper (a
+                  role-less span with aria-label). AboutTrustCards.test.jsx
+                  asserts the classes match the real TrustBadge. */}
+              <span data-testid="community-chip" className="inline-flex items-center rounded-full border font-medium text-xs px-2 py-0.5 bg-warning-50 text-warning-700 border-warning-200">
+                {tTrust("tier_4.label")}
+              </span>
+            </li>
+          </ul>
           <LocaleLink
             href="/about/badges"
             data-testid="about-badges-link"

@@ -23,9 +23,11 @@ from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     PhoneNumberField,
     SanitizedLabelField,
+    SanitizedImportedNameField,
     SanitizedUrlField,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
     _normalize_contact_email,
     _normalize_instagram,
     clean_display_city,
@@ -54,7 +56,7 @@ class ProducerRecipeBase(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str) -> str | str | None:
-        return sanitize_text(v, max_length=200)
+        return reject_emoji(sanitize_text(v, max_length=200))
 
     @field_validator("title")
     @classmethod
@@ -105,7 +107,7 @@ class ProducerRecipeUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200) if v else v
+        return reject_emoji(sanitize_text(v, max_length=200)) if v else v
 
     @field_validator("description")
     @classmethod
@@ -232,7 +234,7 @@ LeadWebsiteField = Annotated[
 
 
 class OutreachLeadCreate(BaseModel):
-    name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
+    name: SanitizedImportedNameField = Field(..., min_length=1, max_length=200)
     phone: PhoneNumberField | None = None
     instagram: str | None = Field(None, max_length=100)
     website: LeadWebsiteField | None = None
@@ -255,7 +257,7 @@ class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
     enum-validated at the route layer."""
 
-    name: SanitizedLabelField | None = None
+    name: SanitizedImportedNameField | None = None
     phone: PhoneNumberField | None = None
     instagram: str | None = None
     website: LeadWebsiteField | None = None

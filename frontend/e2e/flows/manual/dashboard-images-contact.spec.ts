@@ -332,7 +332,6 @@ test("edits in two cards put both names in the unsaved banner, in card order", a
 
 test.describe("hours in the completeness card", () => {
   const cardRoot = (page: Page) => page.getByTestId("profile-completeness-card");
-  const ring = (page: Page) => cardRoot(page).getByRole("progressbar");
   async function overview(page: Page, profile: Record<string, unknown>, status: string) {
     await stubEdit(page, { profile, status });
     await page.goto("/producer/dashboard");
@@ -340,11 +339,10 @@ test.describe("hours in the completeness card", () => {
   }
 
   // MT:MEH-1884:1 — everything but hours → the card, with hours the one open step.
-  test("a full profile without hours shows the card at 86% with «שעות שפתוח למבקרים» open", async ({ page }) => {
+  test("a full profile without hours shows the card at 6 מתוך 7 with hours open", async ({ page }) => {
     await overview(page, { ...BASE, locations: [LOC_NO_HOURS] }, "pending");
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
-    await expect(cardRoot(page).getByTestId("completeness-chip-hours")).toBeVisible();
-    await expect(cardRoot(page)).toContainText("שעות שפתוח למבקרים");
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveText("6 מתוך 7");
+    await expect(cardRoot(page).getByTestId("completeness-open-hours")).toContainText("שעות שפתוח למבקרים");
   });
 
   // MT:MEH-1884:2 — with hours filled, an approved business no longer sees the card.
@@ -354,10 +352,10 @@ test.describe("hours in the completeness card", () => {
     await expect(cardRoot(page)).toHaveCount(0);
   });
 
-  // MT:MEH-1884:3 — drift D2: the ring DOES move — hours is a counted sixth step.
-  test("filling hours moves the ring from 86% to complete — hours is a counted step", async ({ page }) => {
+  // MT:MEH-1884:3 — hours is a counted step (MEH-3659: counter, not a ring).
+  test("filling hours moves the counter from 6 מתוך 7 to complete — hours is a counted step", async ({ page }) => {
     await overview(page, { ...BASE, locations: [LOC_NO_HOURS] }, "pending");
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveText("6 מתוך 7");
     await page.unrouteAll({ behavior: "ignoreErrors" });
     // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
     await page.route("**/producers/me/order-settings", (r) =>
@@ -365,6 +363,6 @@ test.describe("hours in the completeness card", () => {
     );
     await overview(page, { ...BASE, locations: [LOC_WITH_HOURS] }, "pending");
     await expect(cardRoot(page)).toContainText("העמוד מלא");
-    await expect(ring(page)).toHaveCount(0);
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveCount(0);
   });
 });

@@ -44,18 +44,10 @@ line below is house policy and not Anthropic's recommendation, it says so.
 
 ## What Anthropic says, for comparison
 
-- Opus 5.5 is the default model on subscription and API plans, and "most
-  workloads start with Claude Opus 5.5".
-- Haiku 5.5 is listed for "subagent tasks"; the Claude Code docs say to set
-  `model: haiku` for simple subagent work such as collecting the files that
-  import a module.
-- Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.2 default to `medium` effort.
-  For bugs in unfamiliar code, flaky tests and schema changes the docs suggest
-  `high` or `xhigh`.
-- Fable 5.2 is "the highest available capability"; no plan defaults to it.
-
-Not found in the documentation: any guidance specific to reading logs, and any
-per-call effort setting on the Agent tool.
+The table matches Anthropic's docs (Opus default, Haiku for simple subagent
+work, `high`/`xhigh` for unfamiliar bugs and schema changes) except where a
+line says "house policy". The 17/11 reading is in
+[docs/rules-history/2026-11-21/root/model-routing.md](../../docs/rules-history/2026-11-21/root/model-routing.md).
 
 ## Sources
 

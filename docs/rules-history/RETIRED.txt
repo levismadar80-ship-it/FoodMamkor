@@ -7,3 +7,16 @@ H The `license` ruling (MEH-2191, 26/08) — ⚠️ RETIRED 29/08, the badge it 
 N Maintenance — 90-day prune (MEH-1637) | 1 | Claims about a dependency's
 N Maintenance — 90-day prune (MEH-1637) | 2 | Claims already enforced mechanically
 N Maintenance — 90-day prune (MEH-1637) | 3 | Incident history no longer
+# 21/11/2026, MEH-3678 (rules prune round 2, Sapir: «כן תחקור מה כדאי לעשות לגביהם מאשרת מה שתחליט»):
+#   - workflow rule 7 (/compact): folded into rule 14, which now holds the thresholds and the "dump plan first" step.
+#   - workflow rule 8 (ultrathink): superseded by model-routing.md (effort per task).
+#   - workflow rule 16 (git worktrees): a how-to for a harness feature, no constraint.
+#   - workflow «Custom commands»: a list of .claude/commands/, which is the list.
+#   - workflow «Code execution principles»: a pointer CLAUDE.md already carries.
+#   - testing «Sweep result (2026-08-09)»: its one live sentence moved into the networkidle section.
+H Code execution principles (exec §7–13)
+H Custom commands
+H Sweep result (2026-08-09) — where this actually bites
+N Workflow rules 1–20 | 16 | Git worktrees for parallel
+N Workflow rules 1–20 | 7 | `/compact` discipline — proactive,
+N Workflow rules 1–20 | 8 | Use "ultrathink" for complex

@@ -99,7 +99,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
-| `/producer/dashboard/tools` | «כלים» tab: launcher for creation tools |
+| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content, share); «אירועים» and «הזדמנויות» open in place (MEH-3669) |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
 | `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
 | `/producer/dashboard/events` | Manage events |
@@ -139,6 +139,7 @@ left in v1" vs "what's planned for v2".
 | `/admin` | Admin dashboard: pending queue counts, stats, health |
 | `/admin/billing` | Billing: per-business results against the ADR-042 threshold (MEH-3180) |
 | `/admin/audit-log` | Admin audit log: who changed what in the admin area (MEH-3306, #4771) |
+| `/admin/copy` | Site copy: every string in `he.json` by group, with the screens that read it, search and a screen filter; read only (MEH-3672) |
 | `/admin/producers` | Businesses: search, approve, request changes, edit |
 | `/admin/producers/new` | Add a business by hand |
 | `/admin/producers/[id]/edit` | Edit a business |
@@ -181,7 +182,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | "קרוב אלי" (geolocation) — single re-used marker, no leak | `MapComponent.jsx` |
 | ✅ | v1 | Map ↔ list hover sync (bidirectional) | `MapClient.jsx` |
 | ✅ | v1 | Mobile bottom-sheet for selected producer | `MapClient.jsx` |
-| ✅ | v1 | Category legend = filter (toggleable) | `MapClient.jsx` |
+| ✅ | v1 | Category legend = filter (toggleable), one row per group since MEH-3076 | `map/components/MapPane.jsx` |
 | ✅ | v1 | Producer detail page with sticky contact sidebar | `frontend/app/[slug]/page.js`, `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — mobile column order fixed (name above fold), inline mobile CTA, IO StickyContactBar | `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — short_description subtitle + contact_name micro-line | `producer/[id]/ProducerDetail.jsx` |
