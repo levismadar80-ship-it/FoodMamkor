@@ -272,6 +272,13 @@ describe("RescueOfferPage — what is inside and allergens", () => {
       lookup("settings.products.form.allergen_gluten"),
     );
   });
+  // MEH-3610: the bag draws the group buy's AllergenSection, which reads only
+  // known codes; the bag's own copy printed whatever key the list held.
+  it("an unknown allergen code is not printed as a raw key", async () => {
+    await renderWith(offer({ allergens: ["not_a_code"] }));
+    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared"));
+    expect(screen.queryByTestId("rescue-offer-allergens-declared")).toBeNull();
+  });
 });
 
 describe("RescueOfferPage — a bag that cannot be reserved", () => {
