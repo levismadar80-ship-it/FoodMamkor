@@ -22,6 +22,8 @@ rules were condensed (the rules diet, MEH-2333, 26/10/2026).
 | [2026-11-21/rtl.md](./2026-11-21/rtl.md) | [`.claude/rules/rtl.md`](../../.claude/rules/rtl.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
 | [2026-11-21/testing.md](./2026-11-21/testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
 | [2026-11-21/workflow.md](./2026-11-21/workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/decisions.md](./2026-11-21/decisions.md) | [`.claude/rules/decisions.md`](../../.claude/rules/decisions.md) | round 2, 21/11, MEH-3678 |
+| [2026-11-21/root/model-routing.md](./2026-11-21/root/model-routing.md) · [root/file-preservation.md](./2026-11-21/root/file-preservation.md) | model-routing.md · file-preservation.md | round 2, MEH-3678 (not inventory-checked: no `---` preamble) |
 | [2026-11-21/root/CLAUDE.md](./2026-11-21/root/CLAUDE.md) | [`CLAUDE.md`](../../CLAUDE.md) | `1443c268b` (third trim; not inventory-checked — the guard reads one folder level) |
 
 **Why this split exists.** Everything in `.claude/rules/` without a `paths:`

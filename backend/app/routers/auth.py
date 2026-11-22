@@ -16,6 +16,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.auth import (
+    SESSION_INVALIDATED_BY_PASSWORD_CHANGE,
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
@@ -202,7 +203,7 @@ def refresh_token(
         if iat_claim < int(user.password_changed_at.timestamp()):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="session_invalidated_by_password_change",
+                detail=SESSION_INVALIDATED_BY_PASSWORD_CHANGE,
             )
 
     fp = generate_fingerprint()

@@ -27,6 +27,7 @@ from typing import Any
 
 from app.config import AI_MENU_MODEL, settings
 from app.schemas.menu_import import MenuRow
+from app.schemas.schemas import strip_emoji_from_name
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,9 @@ def to_rows(items: list[dict[str, Any]]) -> list[MenuRow]:
     for item in items[:MAX_ROWS]:
         if not isinstance(item, dict):
             continue
-        name = _text(item.get("name"), _NAME_MAX)
+        # MEH-3671: the model may decorate a dish name; the product schema
+        # refuses emoji in names, so it is dropped here, before review.
+        name = strip_emoji_from_name(_text(item.get("name"), _NAME_MAX) or "")
         if not name:
             continue
         uncertain = {f for f in item.get("uncertain_fields") or [] if f in _UNCERTAIN}

@@ -48,6 +48,7 @@ from app.schemas.schemas import (
     SanitizedLabelField,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
 )
 
 # MEH-3444: «אחסון ותוקף». The 300 cap is on the INPUT (before bleaching), so
@@ -219,7 +220,7 @@ class DeliveryZoneIn(BaseModel):
     zone on producers.delivery_zones and copies days / minimum / fee /
     threshold onto each of its cities' delivery_areas rows."""
 
-    name: str
+    name: Annotated[str, AfterValidator(reject_emoji)]  # MEH-3671
     cities: list[str] = Field(default_factory=list, max_length=MAX_CITIES_PER_ZONE + 1)
     delivery_days: DeliveryDaysField = None
     min_order: int | None = None
