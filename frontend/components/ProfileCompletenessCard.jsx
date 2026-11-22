@@ -224,8 +224,12 @@ function buildSteps(producer, missingLabels) {
 // business in draft sees exactly what blocks «שליחה לבדיקה» and nothing else —
 // the recommended items wait for «לשפר את העמוד» after she submits
 // (Shopify setup guide / Airbnb: only what blocks publishing, before publishing).
-// Category + location arrive from signup, so they share one «פרטי העסק» row
-// that is already ✓ for almost everyone; it opens only if one is missing.
+// Category + location share one «פרטי העסק» row; it opens only if one is missing.
+// MEH-3697: only the CATEGORY arrives from signup. The map pin (MEH-2640) and
+// the delivery cities left the form, so right after signup the location is
+// missing for almost every business — and «פרטי העסק», which she has just
+// filled, would tell her nothing. When only the location is missing the row
+// reads the banner's «מיקום או אזורי משלוח» instead (same key, no new copy).
 function buildDraftRows(producer) {
   const missing = new Set(submissionMissingItems(producer));
   const categoryMissing = missing.has(MISSING_CATEGORY);
@@ -237,6 +241,7 @@ function buildDraftRows(producer) {
     {
       key: "details",
       done: !categoryMissing && !locationMissing,
+      gateLabel: !categoryMissing && locationMissing ? MISSING_LOCATION : undefined,
       href: categoryMissing ? `${EDIT_HUB}#profile-categories` : locationHref,
     },
     { key: "image", done: !missing.has(MISSING_IMAGE), href: `${EDIT_HUB}#profile-images` },
@@ -402,7 +407,10 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
         <Checklist
           rows={rows}
           label={t("checklist_aria")}
-          labelOf={(row) => (SHARED_GATE_LABELS.has(row.key) ? tMissing(row.key) : t(`draft_steps.${row.key}`))}
+          labelOf={(row) =>
+            row.gateLabel ? tMissing(row.gateLabel)
+              : SHARED_GATE_LABELS.has(row.key) ? tMissing(row.key)
+                : t(`draft_steps.${row.key}`)}
           t={t}
           openContent={(r) =>
             r.key === "phone_verified" ? (

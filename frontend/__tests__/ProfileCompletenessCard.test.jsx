@@ -31,6 +31,7 @@ vi.mock("next-intl", () => ({
       email_resend: "שלחו לי שוב",
       // dashboard.producer.draft.missing (shared with the banner, MEH-3657)
       phone_verified: "אימות מספר הוואטסאפ",
+      location: "מיקום או אזורי משלוח",
       email_verified: "אישור כתובת האימייל",
       // auth.verify (the site's own resend wording, MEH-3657)
       sent: "✓ נשלח!",
@@ -232,6 +233,23 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#profile-categories`);
     rerender(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#locations`);
+  });
+
+  // MEH-3697: signup sends no map pin and no delivery cities (MEH-2640), so
+  // right after signup the location is the missing half. The row must say so,
+  // not «פרטי העסק», which she has just filled in.
+  it("only the location missing (a fresh signup) → the row reads «מיקום או אזורי משלוח», not «פרטי העסק»", () => {
+    render(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
+    const row = screen.getByTestId("completeness-open-details");
+    expect(row).toHaveTextContent("מיקום או אזורי משלוח");
+    expect(row).not.toHaveTextContent("פרטי העסק");
+  });
+
+  it("category missing (with or without location) → the row keeps «פרטי העסק»", () => {
+    const { rerender } = render(<ProfileCompletenessCard producer={{ ...draft, categories: [] }} />);
+    expect(screen.getByTestId("completeness-open-details")).toHaveTextContent("פרטי העסק");
+    rerender(<ProfileCompletenessCard producer={{ ...draft, categories: [], locations: [], lat: null, lng: null }} />);
+    expect(screen.getByTestId("completeness-open-details")).toHaveTextContent("פרטי העסק");
   });
 
   it("email not confirmed (MEH-3660) → a 5th row, last; open once the rest is done, with a resend button", async () => {
