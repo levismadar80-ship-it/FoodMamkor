@@ -17,15 +17,8 @@ MEH-267. Guide: [docs/MIGRATIONS.md](../../docs/MIGRATIONS.md).
 `scripts/checks/prose-rules-guard.sh` (R3) fails a `.create_all(` outside `backend/app/startup.py` or a
 `_migrate_columns` function anywhere in `backend/`.
 
-_Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns`
-drift broke production login; the hotfix PR bundled a 7-call-site
-refactor under pressure._
-
-The codebase had two parallel mechanisms doing the same job
-(`Base.metadata.create_all` on boot + `_migrate_columns()` DDL). Both
-"worked" independently, so neither surface showed an error — the smell
-was invisible until a production incident. Alembic is now the sole
-schema authority.
+Two parallel schema owners (`create_all` on boot + `_migrate_columns()`) broke
+production login in MEH-265; Alembic is now the sole schema authority.
 
 ---
 
@@ -50,11 +43,10 @@ or `backend/app/auth.py`:
 3. Verify locally: drop tables → `alembic upgrade head` → confirm
    `/health` returns 200 and `/producers` works.
 
-> **MEH-836:** the old `EXPECTED_REV` bump step is gone — model↔migration
-> drift is now caught by `alembic check` alone (no hardcoded head to keep
-> in sync). `EXPECTED_TABLES` still bumps for migrations that add/drop a
-> table. CC may now author hand-written revision files under
-> `backend/alembic/versions/**`; apply stays automatic on Dockerfile boot.
+Model↔migration drift is caught by `alembic check` (MEH-836).
+`EXPECTED_TABLES` still bumps when a migration adds/drops a table. CC may write
+revision files under `backend/alembic/versions/**`; apply is automatic on boot,
+and a revision waits for Sapir's OK (workflow rule 38).
 
 חריג merge-revision ריק — ראו ADR-025 Amendment 18/07/2026.
 
@@ -62,13 +54,4 @@ or `backend/app/auth.py`:
 
 ## Architectural smell — two parallel mechanisms
 
-Before touching `models/`, `schemas/`, or any file owning shared state,
-grep for a second owner:
-
-```bash
-grep -r "create_all\|metadata.create\|_migrate" backend/ --include="*.py"
-```
-
-If you find a second path owning the same state, fix it (one authority).
-The other path is deleted, not disabled. Full pattern catalogue in
-[workflow.md](./workflow.md) → "Architectural smell detection (MEH-271)".
+See [workflow.md](./workflow.md) → «Architectural smell detection» Smell #1.
