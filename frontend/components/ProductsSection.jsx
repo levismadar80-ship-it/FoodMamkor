@@ -37,6 +37,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import ProductPriceUnitField from "@/components/ProductPriceUnitField";
+import ProductVariantsField from "@/components/dashboard/ProductVariantsField";  // MEH-3617
 import ProductPrice from "@/components/ProductPrice";
 import EmptyState from "@/components/ui/EmptyState";
 import MenuImport from "@/components/MenuImport";
@@ -756,6 +757,9 @@ export default function ProductsSection({
                 value={editForm.price_unit}
                 onChange={(u) => setEditForm((f) => ({ ...f, price_unit: u }))}
               />
+              {/* MEH-3617: sizes or flavours, saved on their own button. */}
+              <ProductVariantsField productId={product.id} variants={product.variants}
+                onSaved={(v) => setProducts((p) => p.map((x) => (x.id === product.id ? { ...x, variants: v } : x)))} />
 
               {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}
               <div className="space-y-3">

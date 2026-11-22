@@ -149,7 +149,7 @@ ancestor stacking context (`position`+z, `transform`, `opacity < 1`, `filter`,
 `contain`, `isolation`, `position: sticky`) its token competes only with that
 context's children, so raising the number cannot fix it. Whether a modal is
 trapped depends on runtime ancestors: measure with
-`frontend/qa-meh-2215-stacking-probe.mjs` before claiming either way, and over
+`qa-meh-2215-stacking-probe.mjs` (deleted, see `docs/media-archive.md`) before claiming either way, and over
 the Header pair the hit test with the luma read (`Header.jsx` is
 `pointer-events-none`, so a hit test alone has two causes).
 

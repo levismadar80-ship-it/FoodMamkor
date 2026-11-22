@@ -10,7 +10,7 @@
  *
  * The numbers below are MEASURED, not invented: Chromium at 375x812 driving
  * the real /he/admin/producers page (harness:
- * e2e/_qa-archive/qa-meh2230-admin-kebab-viewport.mjs).
+ * qa-meh2230-admin-kebab-viewport.mjs [deleted probe, docs/media-archive.md]).
  *
  *   viewport 812 · panel height 154 · gap 4
  *   first row : trigger top=705 bottom=731 -> old top 735, bottom 889 (+77 over)

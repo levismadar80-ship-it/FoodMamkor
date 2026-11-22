@@ -26,8 +26,9 @@ nearest row per business (`producer_queries.py::haversine_min_km`, MEH-1402),
 with **no fallback** to the legacy `producers.lat/lng` mirror since MEH-1938
 chunk 5a (the mirror carries `LEGACY(2026-10-15)` ahead of its drop). PostGIS is not
 installed on Railway's stock PostgreSQL — adding it would break the
-deploy. **Never add PostGIS.** _(Platform claim, as of 2026-08-03 and
-unverifiable from the sandbox, which cannot reach Railway.)_
+deploy. **Never add PostGIS.** `scripts/checks/prose-rules-guard.sh` (R4) fails a geoalchemy2 import,
+a postgis `CREATE EXTENSION` or a postgis/geoalchemy dependency. _(Platform claim,
+as of 2026-08-03 and unverifiable from the sandbox, which cannot reach Railway.)_
 
 ---
 
@@ -72,7 +73,8 @@ either surface.
 Railway blocks outbound SMTP (`25`/`465`/`587`; as of 2026-08-03, unverifiable
 from the sandbox). All email goes through
 `backend/app/services/email.py` → `send_email()` → Resend HTTP API.
-Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.**
+Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.** An `import smtplib` in `backend/app` fails
+`scripts/checks/prose-rules-guard.sh` (R4).
 
 ---
 
