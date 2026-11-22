@@ -2516,6 +2516,8 @@ GET    /holiday-mode             public, 60/min. 200 {enabled, key}, read from t
 | Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
 | Contact form | Email | Admin | `marketing.py` |
 
+**«הסר» stops every WhatsApp template (MEH-3640).** `whatsapp.send_template` / `send_template_result` skip a recipient whose latest `inbound_messages` row is an opt-out word (`user_phone_verify.is_opted_out`), outcome `opted_out`, never retried. Exempt: `OtpCodeV1` (a code the person asked for) and `send_text` (only ever an in-window reply). Any later inbound message clears it.
+
 All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
 break the underlying flow.

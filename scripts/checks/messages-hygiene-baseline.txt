@@ -176,6 +176,7 @@ duplicate	2	לבטל את ההזמנה
 duplicate	2	לבתי העסק
 duplicate	2	לבתי עסק
 duplicate	2	לדוגמה: תוכן לא רלוונטי לפלטפורמה
+duplicate	2	להזמנה באתר של העסק
 duplicate	2	להרשמה ←
 duplicate	2	לוח שנה
 duplicate	2	לחם מחמצת
@@ -391,6 +392,7 @@ duplicate	3	ממתין
 duplicate	3	מספר טלפון לא תקין
 duplicate	3	מספר רישיון ייצור (משרד הבריאות)
 duplicate	3	מעלה תמונה…
+duplicate	3	משהו השתבש. נסו שוב בעוד רגע.
 duplicate	3	משלוחים לכל הארץ
 duplicate	3	משתמשים
 duplicate	3	נדחו
