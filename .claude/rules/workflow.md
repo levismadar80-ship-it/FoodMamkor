@@ -137,10 +137,6 @@ comment blocks nothing and is never waited for. The reviewer is rule 5a.
 5. **Tests before implementation.** See [testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one commit;
    the message states *why*.
-7. **`/compact` discipline — proactive, not reactive.** Thresholds are rule 14;
-   dump plan + todos before compacting.
-8. **Use "ultrathink" for complex problems** — schema, security, multi-file
-   refactors, anything costing >10 min to undo.
 9. **After every PR — send the Vercel preview URL when one exists.** Previews
    need `[preview]` in a commit message, and every feature push spends one of
    the 100 daily deployments: keep pushes few (rule 25's staging merge is a
@@ -171,13 +167,10 @@ comment blocks nothing and is never waited for. The reviewer is rule 5a.
     HANDOFF.md (last PR, branch state, next task + first step, decisions,
     unfiled issues) **in its own docs-only PR** (rule 31), then run `/retro`
     (proposes; Smadar approves `go <N>`; an empty retro is valid).
-14. **Context reset protocol.** <40% context keep working; 40–60% `/compact`;
-    ≥60% or a natural boundary → `/session-save`, `/clear`, `/session-resume`.
+14. **Context reset protocol.** <40% context keep working; 40–60% `/compact`
+    (dump plan + todos first); ≥60% or a natural boundary → `/session-save`,
+    `/clear`, `/session-resume`.
 15. **Prompt compression (Caveman style).** See [prompting.md](./prompting.md).
-16. **Git worktrees for parallel features.** 2+ unrelated simultaneous features
-    → `claude --worktree <name>` (`.claude/worktrees/`, gitignored); copy
-    `.env.local` + `npm install`; remove worktree + branch after merge. Skip for
-    same-file or single small fixes.
 17. **New Claude Code features in workflow.** Post-merge: `Monitor` Vercel logs
     3 min (error → open a bug), `/loop` staging health to first success/error.
     3+ phases → Ultraplan, execute after `go`. `/goal` only for LOW-RISK,
@@ -259,20 +252,6 @@ for "remember to update" / "keep.*in sync" / "also update"; report in the PR.
 `.claude/pre-edit-guard.js` warns on central-component edits. Follow
 [docs/CENTRAL_COMPONENTS.md](../../docs/CENTRAL_COMPONENTS.md); log emergency
 skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
-
----
-
-## Custom commands
-
-`/session-start` (rule 1 audit) · `/session-save` · `/session-resume` ·
-`/retro` (after HANDOFF, rule 13; proposes, never applies) ·
-`/adversarial-review` (FINDER → ADVERSARY → REFEREE, rule 5a).
-
----
-
-## Code execution principles (exec §7–13)
-
-[code-execution.md](./code-execution.md) (lazy-loaded for code files).
 
 ---
 
@@ -365,7 +344,7 @@ stops of §3; an Alembic revision still waits for Sapir's OK (rule 38).
 ### LOW-RISK — end-to-end with single review
 
 Single-file dep bumps · copy · i18n sweeps · doc/rule edits · test additions.
-Plan → `go` → execute fully → summary in `docs/session-state.md`.
+Plan → `go` (none for a queue card, rule 4) → execute fully → one PR.
 
 ### DEFAULT — ask if unsure
 
@@ -383,9 +362,6 @@ PR שעומד ב-2+ מ: 500+ שורות · auth / payments / DB migration · ref
 ---
 
 ## PR Review Workflow
-
-Bundle for Claude.ai: `git diff staging <files>` + CHANGELOG + HANDOFF diffs,
-each under `=== DIFF: <file> ===`.
 
 ### Specialized adversarial-review variants (MEH-428)
 

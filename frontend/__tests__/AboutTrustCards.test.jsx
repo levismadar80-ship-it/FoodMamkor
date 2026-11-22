@@ -46,6 +46,7 @@ beforeAll(() => {
 
 import AboutClient from "@/app/[locale]/about/AboutClient";
 import TrustBadge from "@/components/TrustBadge";
+import BadgesExplainer from "@/app/[locale]/about/badges/BadgesExplainer";
 
 const C = he.about.consumer;
 const classes = (el) => (el?.getAttribute("class") || "").split(/\s+/);
@@ -99,84 +100,81 @@ describe("split copy keeps every word (he + en)", () => {
   }
 });
 
-describe("/about trust group — one section, three cards", () => {
-  it("one chapter mark («מה אומרים התגים») over three cards, in order, with their anchors", () => {
+// MEH-3667 (Sapir 21/11): the full cards moved to /about/badges. /about keeps
+// the chapter mark, that page's intro, the three badge faces and the link.
+describe("/about trust group — a summary that links to /about/badges", () => {
+  it("chapter mark, the badges intro, the three faces and the link; no cards", () => {
     renderAbout();
     const group = screen.getByTestId("about-trust");
-    const mark = within(group).getByRole("heading", { level: 2 });
-    expect(mark.textContent).toBe(he.about_badges.h1);
-    const cards = group.querySelectorAll("article");
-    expect([...cards].map((c) => c.id)).toEqual(["verification", "editors-pick", "community-leader"]);
-    for (const card of cards) {
-      expect(classes(card)).toEqual(
-        expect.arrayContaining(["rounded-lg", "border", "border-border", "bg-surface-card", "p-5", "scroll-mt-24"]),
-      );
+    expect(within(group).getByRole("heading", { level: 2 }).textContent).toBe(he.about_badges.h1);
+    expect(group.textContent).toContain(he.about_badges.intro);
+    expect(group.querySelectorAll("article")).toHaveLength(0);
+    expect(group.querySelectorAll("h3")).toHaveLength(0);
+    for (const body of [C.verification.body_1, C.editors_pick.body_1, C.community_leader.body_1]) {
+      expect(group.textContent).not.toContain(body);
+    }
+    const faces = within(group).getByTestId("about-badge-faces");
+    expect(faces.querySelector('[data-testid="verified-chip"]').textContent).toBe(he.producer.badge.verified_label);
+    expect(classes(faces.querySelector('[data-testid="editors-pick-chip"]'))).toEqual(
+      expect.arrayContaining(["bg-accent", "text-white", "rounded-full"]),
+    );
+    expect(faces.querySelector('[data-testid="community-chip"]').textContent).toBe(he.trust.tier_4.label);
+    const link = within(group).getByRole("link", { name: C.badges_link.label });
+    expect(link.getAttribute("href")).toBe("/about/badges");
+  });
+
+  it("old anchors still land on this section", () => {
+    renderAbout();
+    const group = screen.getByTestId("about-trust");
+    for (const id of ["verification", "editors-pick", "community-leader"]) {
+      expect(group.contains(document.getElementById(id))).toBe(true);
     }
   });
 
-  it("each card: h3 + the REAL badge look beside it", () => {
-    renderAbout();
-    const v = document.getElementById("verification");
-    expect(within(v).getByRole("heading", { level: 3 }).textContent).toBe(C.verification.heading);
-    const seal = v.querySelector('[data-testid="verified-chip"]');
-    expect(seal.textContent).toBe(he.producer.badge.verified_label);
-    expect(classes(seal)).toEqual(expect.arrayContaining(["border-accent/40", "bg-surface-card", "text-accent"]));
-    expect(seal.querySelector("svg")).not.toBeNull();
-
-    const e = document.getElementById("editors-pick");
-    expect(within(e).getByRole("heading", { level: 3 }).textContent).toBe(C.editors_pick.heading);
-    const pick = e.querySelector('[data-testid="editors-pick-chip"]');
-    expect(classes(pick)).toEqual(expect.arrayContaining(["bg-accent", "text-white", "rounded-full"]));
-
-    const c = document.getElementById("community-leader");
-    expect(within(c).getByRole("heading", { level: 3 }).textContent).toBe(C.community_leader.heading);
-    const community = c.querySelector(".bg-warning-50");
-    expect(community).not.toBeNull();
-    expect(community.textContent).toContain(he.trust.tier_4.label);
-  });
-
-  it("no popover trigger inside the cards (the verified seal is not BadgeRow's button)", () => {
+  it("no popover trigger in the faces (the verified seal is not BadgeRow's button)", () => {
     renderAbout();
     const group = screen.getByTestId("about-trust");
     expect(group.querySelector('[data-badge="verified"]')).toBeNull();
     expect(group.querySelector("[aria-haspopup]")).toBeNull();
   });
+});
 
-  it("verification: 2 paragraphs + the /about/process link inside the card", () => {
-    renderAbout();
+describe("/about/badges carries the full text /about used to show (MEH-3667)", () => {
+  function renderBadges() {
+    return render(
+      <NextIntlClientProvider locale="he" messages={rootClientMessages(he)}>
+        <BadgesExplainer />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("verified: both paragraphs, under #verification", () => {
+    renderBadges();
     const v = document.getElementById("verification");
+    expect(v.getAttribute("data-testid")).toBe("badges-item-verified");
     const ps = [...v.querySelectorAll("p")].map((p) => p.textContent);
     expect(ps).toEqual([C.verification.body_1, C.verification.body_2]);
-    expect(v.querySelector('[data-testid="verification-process-link"]').getAttribute("href")).toBe("/about/process");
   });
 
-  it("editor's pick: paragraph, lead line, then a 2-item list with gold dots", () => {
-    renderAbout();
+  it("editor's pick: paragraph, lead line, then the 2-item list with gold dots, under #editors-pick", () => {
+    renderBadges();
     const e = document.getElementById("editors-pick");
+    expect(e.getAttribute("data-testid")).toBe("badges-item-recommended");
     const ps = [...e.querySelectorAll(":scope > p")].map((p) => p.textContent);
     expect(ps).toEqual([C.editors_pick.body_1, C.editors_pick.list_lead]);
     const items = e.querySelectorAll("ul > li");
     expect([...items].map((li) => li.textContent)).toEqual([C.editors_pick.item_1, C.editors_pick.item_2]);
     for (const li of items) {
-      const dot = li.querySelector('[aria-hidden="true"]');
-      expect(classes(dot)).toEqual(expect.arrayContaining(["bg-accent", "rounded-full"]));
+      expect(classes(li.querySelector('[aria-hidden="true"]'))).toEqual(expect.arrayContaining(["bg-accent", "rounded-full"]));
     }
   });
 
-  it("community leader: 2 paragraphs", () => {
-    renderAbout();
+  it("community leader: both paragraphs, under #community-leader", () => {
+    renderBadges();
     const c = document.getElementById("community-leader");
+    expect(c.getAttribute("data-testid")).toBe("badges-item-community_leader");
     const ps = [...c.querySelectorAll(":scope > p")].map((p) => p.textContent);
     expect(ps).toEqual([C.community_leader.body_1, C.community_leader.body_2]);
-  });
-
-  it("after the cards: «לכל התגים באתר» → /about/badges", () => {
-    renderAbout();
-    const link = screen.getByRole("link", { name: C.badges_link.label });
-    expect(link.getAttribute("href")).toBe("/about/badges");
-    const group = screen.getByTestId("about-trust");
-    const lastCard = group.querySelector("#community-leader");
-    expect(lastCard.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

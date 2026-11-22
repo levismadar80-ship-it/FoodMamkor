@@ -44,6 +44,7 @@ from app.models.product_orders import (
     ProducerOrderSettings,
     ProductOrder,
     ProductOrderItem,
+    ProductOrderPhoneCode,
 )
 from app.schemas.product_order_buy import (
     DUPLICATE_PRODUCT_DETAIL,
@@ -66,6 +67,7 @@ from app.services.product_order_state import (
     record_created,
 )
 from app.utils.clock import utc_now
+from app.utils.phone import canonical_il_msisdn
 
 # Sapir's decisions of 14/11: three open orders to one phone across the site;
 # two no-shows in ninety days close ordering to that phone; a request the
@@ -330,6 +332,44 @@ def _locked_business(
     return producer, row
 
 
+def account_phone_verified(user: User | None, phone: str) -> bool:
+    """True when `user` is logged in, her account phone is verified
+    (MEH-3301 `phone_verified_at`), and it is the same number as `phone`
+    once both are in canonical form. A phone change clears the timestamp, so
+    an old verification never covers a new number."""
+    if user is None or not user.phone_verified:
+        return False
+    return canonical_il_msisdn(str(user.phone)) == phone
+
+
+def _codeless_orders_left(db: Session, phone: str) -> bool:
+    """MEH-3680 review: without a code, orders to one phone were bounded by
+    the 3 codes an hour. The codeless path keeps that bound: from the 4th
+    order to `phone` within an hour a code is asked again (no new refusal)."""
+    since = utc_now() - timedelta(hours=1)
+    count = (
+        db.query(func.count(ProductOrder.id))
+        .filter(ProductOrder.customer_phone == phone, ProductOrder.created_at >= since)
+        .scalar()
+    )
+    return int(count or 0) < phone_codes.CODES_PER_PHONE_PER_HOUR
+
+
+def _phone_proof(
+    db: Session, body: OrderCreateIn, user: User | None, phone: str
+) -> ProductOrderPhoneCode | None:
+    """The code row that proves `phone`, or None when her account already
+    does (MEH-3680). A missing code is refused without counting a wrong try."""
+    if account_phone_verified(user, phone) and _codeless_orders_left(db, phone):
+        return None
+    if body.code is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=phone_codes.CODE_WRONG_DETAIL,
+        )
+    return phone_codes.check_code(db, phone, body.code)
+
+
 def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created:
     """Write the order and return it with the buyer's status token."""
     phone = phone_codes.canonical_phone(body.phone)
@@ -341,7 +381,9 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     if replay is not None:
         return Created(replay, token)
     # Nothing is written before this line: a wrong code commits its own try.
-    code_row = phone_codes.check_code(db, phone, body.code)
+    # MEH-3680: a logged-in buyer ordering to her own verified phone already
+    # proved it; everyone else proves it with a code, as before.
+    code_row = _phone_proof(db, body, user, phone)
 
     producer, row = _locked_business(db, body.producer_id)
     now = utc_now()
@@ -404,7 +446,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         apply_transition(db, order, "confirmed", SYSTEM)
         order.final_total_agorot = subtotal  # type: ignore[assignment]
         assign_pickup_code(db, order)
-    if not phone_codes.consume(db, code_row):
+    if code_row is not None and not phone_codes.consume(db, code_row):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=CODE_USED_DETAIL

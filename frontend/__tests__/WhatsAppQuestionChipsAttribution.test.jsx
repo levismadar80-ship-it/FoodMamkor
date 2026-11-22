@@ -50,7 +50,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, Wallet: Stub };
 });
 
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
@@ -101,7 +101,13 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
   // handlers sit on the <a> elements and not on a shared ancestor: an ancestor
   // listener would fire here too.
   it("does NOT fire when an answer disclosure is toggled open", () => {
-    render(<WhatsAppQuestionChips producer={{ ...base, delivery_nationwide: true }} />);
+    // MEH-3666: two answer-first questions, so both start closed (a lone one
+    // starts open, and a click would close it).
+    render(
+      <WhatsAppQuestionChips
+        producer={{ ...base, delivery_nationwide: true, payment_info: { methods: ["bit"], timing: null, note: null } }}
+      />,
+    );
     const toggles = screen.getAllByTestId("quick-answer-toggle");
     expect(toggles.length).toBeGreaterThan(0);
 

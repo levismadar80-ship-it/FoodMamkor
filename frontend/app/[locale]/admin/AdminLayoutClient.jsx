@@ -18,6 +18,7 @@ import {
   Storefront,
   Users,
   Note,
+  TextAa,
   ChartLineUp,
   Receipt,
   GearSix,
@@ -75,6 +76,8 @@ const NAV_SECTIONS = [
     items: [
       { href: "/admin/users", key: "users", Icon: Users },
       { href: "/admin/content", key: "content", Icon: Note },
+      // MEH-3672: read-only index of every string on the site (item 6 of MEH-3652).
+      { href: "/admin/copy", key: "copy", Icon: TextAa },
       { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/reviews", key: "reviews", Icon: Star },
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
