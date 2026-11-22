@@ -411,7 +411,6 @@ duplicate	3	שגיאה בשליחה
 duplicate	3	שמרו במועדפים
 duplicate	3	שתפו בוואטסאפ
 duplicate	3	תג מאומת
-duplicate	3	תוכן
 duplicate	3	תיאור קצר
 duplicate	4	7 הימים האחרונים
 duplicate	4	איך זה עובד
@@ -451,6 +450,7 @@ duplicate	4	רכיבים
 duplicate	4	שומרת…
 duplicate	4	שליחה
 duplicate	4	תהליך הקבלה
+duplicate	4	תוכן
 duplicate	4	תנאי שימוש
 duplicate	5	אודות
 duplicate	5	אישור

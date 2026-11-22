@@ -54,6 +54,8 @@ export default function ProducerDashboardToolsPage() {
   const t = useTranslations("dashboard.producer");
   const tShare = useTranslations("share");
   const tNav = useTranslations("nav");
+  // MEH-3669: «קבוצת רכישה» already lives here; reuse it (messages-hygiene-guard).
+  const tType = useTranslations("home.whats_on.type");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-1777: a rejected fetch used to leave `data` null forever, and
@@ -187,7 +189,7 @@ export default function ProducerDashboardToolsPage() {
               testId="tool-group-opportunities"
               Icon={UsersThree}
               title={tNav("opportunities")}
-              sub={t(rescueOn ? "quick_links.groups.opportunities_sub" : "quick_links.groups.opportunities_sub_no_rescue")}
+              sub={rescueOn ? t("quick_links.groups.opportunities_sub") : tType("group_buy")}
               items={[
                 { href: "/producer/dashboard/group-buys", title: t("quick_links.group_buys.title"), sub: t("quick_links.group_buys.sub") },
                 ...(rescueOn

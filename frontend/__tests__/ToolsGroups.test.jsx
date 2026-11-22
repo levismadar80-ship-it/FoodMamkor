@@ -110,7 +110,7 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const card = await screen.findByTestId("tool-group-opportunities");
     expect(within(card).queryByRole("button")).toBeNull();
     expect(hrefs(card)).toEqual(["/producer/dashboard/group-buys"]);
-    expect(within(card).getByText(`${G}.opportunities_sub_no_rescue`)).toBeInTheDocument();
+    expect(within(card).getByText("home.whats_on.type.group_buy")).toBeInTheDocument();
     expect(within(card).queryByText(`${G}.opportunities_sub`)).toBeNull();
   });
 
