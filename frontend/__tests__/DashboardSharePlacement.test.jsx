@@ -57,7 +57,7 @@ vi.mock("@/lib/api", () => ({
           },
         });
       }
-      if (url === "/producers/me/analytics") return Promise.resolve({ data: null });
+      if (url === "/producers/me/analytics") return Promise.resolve({ data: stateRef.current.analytics ?? null });
       if (url === "/producers/me") {
         if (stateRef.current.profileFails) return Promise.reject(new Error("network"));
         return Promise.resolve({
@@ -88,6 +88,18 @@ describe("home — the link renders from the profile's slug (MEH-2880)", () => {
     await screen.findByTestId("vanity-share");
     expect(screen.queryByTestId("business-qr-card")).toBeNull();
     expect(screen.queryByTestId("share-kit-section")).toBeNull();
+  });
+});
+
+describe("home — the numbers come before the status switch and the link (MEH-3076)", () => {
+  it("the numbers' slot renders above «מצב נוכחי» and «הלינק שלי»", async () => {
+    stateRef.current = { ...stateRef.current, analytics: {} };
+    render(<ProducerDashboardPage />);
+    const numbers = await screen.findByTestId("overview-zero-state");
+    const link = await screen.findByTestId("vanity-share");
+    const status = await screen.findByTestId("availability-pause-switch");
+    expect(numbers.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(numbers.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
