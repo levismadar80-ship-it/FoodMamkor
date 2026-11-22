@@ -1285,6 +1285,8 @@
       "submitting": "בצירוף…",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
+      "login_prompt_title": "הצטרפות לקבוצת רכישה",
+      "login_prompt_message": "כדי להצטרף לקבוצת רכישה צריך להיכנס לחשבון.",
       "committed_confirm": "הצטרפת לקבוצת רכישה זו",
       "committed_units": " ({count} יחידות)",
       "cancelling": "בביטול…",

@@ -1285,6 +1285,8 @@
       "submitting": "Joining…",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
+      "login_prompt_title": "Join a group buy",
+      "login_prompt_message": "To join a group buy, sign in to your account.",
       "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
       "cancelling": "Cancelling…",
