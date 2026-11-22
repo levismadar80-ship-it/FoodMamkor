@@ -173,6 +173,7 @@ duplicate	2	לבטל את ההזמנה
 duplicate	2	לבתי העסק
 duplicate	2	לבתי עסק
 duplicate	2	לדוגמה: תוכן לא רלוונטי לפלטפורמה
+duplicate	2	להזמנה באתר של העסק
 duplicate	2	להרשמה ←
 duplicate	2	לוח שנה
 duplicate	2	לחם מחמצת
@@ -216,6 +217,7 @@ duplicate	2	מחקי
 duplicate	2	מידע על מצב חופשה
 duplicate	2	מיון בתי עסק
 duplicate	2	מיון:
+duplicate	2	מייל
 duplicate	2	מיקום על המפה
 duplicate	2	ממתינות
 duplicate	2	ממתינים
@@ -388,6 +390,7 @@ duplicate	3	ממתין
 duplicate	3	מספר טלפון לא תקין
 duplicate	3	מספר רישיון ייצור (משרד הבריאות)
 duplicate	3	מעלה תמונה…
+duplicate	3	משהו השתבש. נסו שוב בעוד רגע.
 duplicate	3	משלוחים לכל הארץ
 duplicate	3	משתמשים
 duplicate	3	נדחו
@@ -506,6 +509,9 @@ unused	admin.reports.hidden.restore
 unused	admin.reports.remove_reason_prompt
 unused	admin.reports.tabs.flagged
 unused	auth.register.consumer.validation.valid_hint
+unused	auth.register.producer.preflight.after_link
+unused	auth.register.producer.preflight.duration
+unused	auth.register.producer.preflight.join_link
 unused	auth.register.producer.success.dashboard_cta
 unused	auth.register.producer.success.next_heading
 unused	business_features.note_line
@@ -561,6 +567,7 @@ unused	nav.menu_open
 unused	opening_hours.closed_now
 unused	opening_hours.closes_at
 unused	opening_hours.opens_at
+unused	pricing.link_short
 unused	producer.detail.contact_card.reveal_phone
 unused	producer.detail.contact_sidebar.join_whatsapp_group
 unused	producer.detail.header.behind
