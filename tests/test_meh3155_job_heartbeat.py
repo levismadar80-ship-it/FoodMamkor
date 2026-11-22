@@ -47,6 +47,7 @@ def _stub_services(monkeypatch):
         auto_reply_watchdog,
         billing_start_signal,
         group_buy_expiry,
+        group_buy_pickup_reminder,
         onboarding_followup,
         pending_nudge,
         registration_reminders,
@@ -67,6 +68,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
     monkeypatch.setattr(retention_purge, "run_purge", lambda db: {})
     monkeypatch.setattr(group_buy_expiry, "expire_unfunded_group_buys", lambda db: 0)
+    monkeypatch.setattr(
+        group_buy_pickup_reminder, "send_pickup_reminders", lambda db: 0
+    )
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
     monkeypatch.setattr(
         registration_reminders, "send_registration_reminders", lambda db: 0
@@ -140,6 +144,12 @@ JOBS = [
         "registration-reminder-daily",
         "crontab",
         job_heartbeat.REGISTRATION_REMINDER_CRON,
+    ),
+    (
+        "_run_group_buy_pickup_reminder_job",
+        "group-buy-pickup-reminder-daily",
+        "crontab",
+        job_heartbeat.GROUP_BUY_PICKUP_REMINDER_CRON,
     ),
     (
         "_run_product_order_jobs",

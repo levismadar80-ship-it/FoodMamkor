@@ -63,7 +63,7 @@ function letterClass(size) {
 const PLACED = /(^|\s)(absolute|fixed|sticky)(\s|$)/;
 
 /**
- * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "soft" | "none", className?: string, letterClassName?: string, fallback?: string, decorative?: boolean, style?: import("react").CSSProperties, [key: string]: any }} props
+ * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "soft" | "none", className?: string, letterClassName?: string, fallback?: string, fit?: "cover" | "contain", decorative?: boolean, style?: import("react").CSSProperties, [key: string]: any }} props
  */
 export default function Avatar({
   src,
@@ -73,6 +73,7 @@ export default function Avatar({
   className = "",
   letterClassName,
   fallback = "?",
+  fit = "cover", // MEH-3611: "contain" for a logo, which must not be cropped
   decorative = false,
   style,
   ...rest
@@ -91,7 +92,7 @@ export default function Avatar({
         // raw img: OAuth provider avatar — host not in next.config.js
         // images.remotePatterns (frozen, MEH-3069 keeps it as it was).
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" className="h-full w-full object-cover" />
+        <img src={src} alt="" className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`} />
       ) : decorative ? (
         <span
           data-initial={avatarInitial(name, fallback)}

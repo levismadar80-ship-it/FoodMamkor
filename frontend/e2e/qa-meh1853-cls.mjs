@@ -72,6 +72,7 @@
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
+import { scopeBypassToOrigin } from "./_bypass-scope.mjs";
 
 const argv = process.argv.slice(2);
 const arg = (name, dflt) => {
@@ -180,8 +181,8 @@ async function newPage(browser, vp) {
     viewport: { width: vp.width, height: vp.height },
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
-    ...(BYPASS ? { extraHTTPHeaders: { "x-vercel-protection-bypass": BYPASS } } : {}),
   });
+  await scopeBypassToOrigin(ctx, BASE, BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {});
   const page = await ctx.newPage();
   await page.addInitScript(SAMPLER);
   return { ctx, page };

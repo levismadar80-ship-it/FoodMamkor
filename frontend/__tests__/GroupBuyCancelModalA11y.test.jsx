@@ -39,7 +39,7 @@ vi.mock("next-intl", () => ({ useLocale: () => "he", useTranslations: () => (key
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 
 const COMMITTED_GB = {
   id: "gb-1",

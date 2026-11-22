@@ -1,6 +1,6 @@
 """MEH-556 — Extend MEH-555 letter validation to 3 sibling fields.
 
-Schema-layer tests for ProducerCreate.name, HomeProductCreate.title,
+Schema-layer tests for ProducerCreate.name,
 ExperienceCreate.title — all must reject strings with fewer than
 3 Hebrew/Latin letter characters.
 
@@ -11,7 +11,7 @@ from datetime import date
 
 from pydantic import ValidationError
 
-from app.schemas.schemas import ExperienceCreate, HomeProductCreate, ProducerCreate
+from app.schemas.schemas import ExperienceCreate, ProducerCreate
 
 
 # ---------- ProducerCreate.name ----------
@@ -30,21 +30,6 @@ def test_producer_name_valid_accepted():
     # MEH-1153: category_ids is now required (≥1) on ProducerCreate.
     obj = ProducerCreate(name="מאפיית רחל", category_ids=[1])
     assert obj.name == "מאפיית רחל"
-
-
-# ---------- HomeProductCreate.title ----------
-
-
-def test_home_product_title_junk_rejected():
-    """'???' has 0 letter chars → ValidationError."""
-    with pytest.raises(ValidationError):
-        HomeProductCreate(title="???")
-
-
-def test_home_product_title_valid_accepted():
-    """'לחם שיפון' has letter chars → valid."""
-    obj = HomeProductCreate(title="לחם שיפון")
-    assert obj.title == "לחם שיפון"
 
 
 # ---------- ExperienceCreate.title ----------

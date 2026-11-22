@@ -21,7 +21,6 @@ from app.models import (
     Event,
     Experience,
     Favorite,
-    HomeProduct,
     Producer,
     ProducerLocation,
     ProducerPageView,
@@ -216,12 +215,6 @@ def build_dashboard(db: Session) -> dict[str, Any]:
     open_reports = (
         db.query(func.count(Report.id)).filter(Report.status == "open").scalar() or 0
     )
-    flagged_home_products = (
-        db.query(func.count(HomeProduct.id))
-        .filter(HomeProduct.moderation_status == "FLAGGED")
-        .scalar()
-        or 0
-    )
     pending_experiences = (
         db.query(func.count(Experience.id))
         .filter(Experience.status.in_(["pending", "changes_requested"]))
@@ -287,7 +280,6 @@ def build_dashboard(db: Session) -> dict[str, Any]:
     pending_moderation_count = int(
         pending_producers
         + open_reports
-        + flagged_home_products
         + pending_experiences
         + pending_kashrut_requests
         + pending_recipes
@@ -313,21 +305,12 @@ def build_dashboard(db: Session) -> dict[str, Any]:
         .filter(User.created_at >= week_ago)
         .scalar()
         or 0,
-        "total_home_products": db.query(func.count(HomeProduct.id))
-        .filter(HomeProduct.is_active.is_(True))
-        .scalar()
-        or 0,
-        "hidden_home_products": db.query(func.count(HomeProduct.id))
-        .filter(HomeProduct.is_hidden.is_(True))
-        .scalar()
-        or 0,
         "open_reports": int(open_reports),
         # MEH-1267: real group-buys count replaces the hardcoded "›" placeholder
         # on the admin dashboard card.
         "total_group_buys": db.query(func.count(GroupBuy.id)).scalar() or 0,
         "total_events": db.query(func.count(Event.id)).scalar() or 0,
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
-        "flagged_home_products": int(flagged_home_products),
         "pending_experiences": int(pending_experiences),
         "pending_kashrut_requests": int(pending_kashrut_requests),
         "pending_recipes": int(pending_recipes),
