@@ -53,7 +53,7 @@
 - [ ] **ספאם ב-production** (אחרי ה-deploy ל-main): איפוס סיסמה + ניוזלטר לכתובת `+` חדשה באותה תיבה. ב-Gmail connector ה-`labelIds` כולל `INBOX` ולא `SPAM`; Resend `get-domain` מראה SPF/DKIM מאומתים
 - [ ] **תצוגת קישור ב-WhatsApp:** ה-thread מריץ `python scripts/checks/smoke_production.py` אחרי ה-deploy ל-main ומצטט את שורות `WhatsApp link preview`. (ב-«Post-deploy checks» היא רצה רק כשה-push נגע ב-frontend/backend, ועם `continue-on-error` — לכן ירוק של ה-workflow לא מספיק; קוראים את השורה.) דף בית עסק: SKIP עד שיש עסק ב-production
 - [ ] **קוד OTP ב-WhatsApp:** הממשק מכוסה ב-E2E עם מספר בדיקה. המסירה: ה-thread שולח קוד ב-staging למספר אמיתי שלא ב-`OTP_TEST_NUMBERS`, וקורא את סטטוס המסירה מ-Meta (`OutboundMessage.status` = `delivered`/`read`, ‏`admin_whatsapp.py`)
-- [ ] **התחברות Google:** Claude ב-Chrome במחשב של ספיר (קובץ prompt ב-`/mnt/project-files/sapir-tasks/`). זו לא בדיקה שלה: היא רק מאשרת את כרטיס החיבור, כמו בכל משימת Chrome. אם המחשב לא זמין, השורה נרשמת «לא נבדק» ולא נשלחת אליה
+- [ ] **התחברות Google:** Claude ב-Chrome במחשב של ספיר (קובץ prompt ב-`/mnt/project-files/sapir-tasks/`). כולל הכפתור בתוך החלונית «רוצה לשמור?» בדף בית עסק: אחרי ההתחברות נשארים בדף והעסק שמור (MEH-3661). זו לא בדיקה שלה: היא רק מאשרת את כרטיס החיבור, כמו בכל משימת Chrome. אם המחשב לא זמין, השורה נרשמת «לא נבדק» ולא נשלחת אליה
 - [ ] **Sentry:** ה-thread דרך Sentry connector — אין issue חדש ב-environment של הגרסה מאז ה-deploy
 
 **סיכון שנותר — לא נבדק בשום כלי** (נכתב ב-PR הגרסה כ«לא נבדק», ולא חוסם):

@@ -11,6 +11,11 @@ import OwnerInviteClient from "@/app/[locale]/owner-invite/OwnerInviteClient";
 
 const replace = vi.fn();
 const push = vi.fn();
+// MEH-3662: the signed-out form renders «המשך עם Google»; a stand-in here.
+vi.mock("@/components/GoogleAuthButton", () => ({
+  default: () => <button type="button" data-testid="google-button" />,
+}));
+
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => (
     <a href={href} {...rest}>
@@ -79,8 +84,7 @@ async function acceptAsSignedIn() {
   fireEvent.click(await screen.findByTestId("owner-invite-existing-send-code"));
   await screen.findByTestId("owner-invite-existing-code-sent");
   fireEvent.change(screen.getByTestId("owner-invite-existing-code"), { target: { value: "123456" } });
-  fireEvent.click(screen.getByTestId("owner-invite-terms"));
-  fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+  fireEvent.click(screen.getByTestId("owner-invite-consent"));
   fireEvent.submit(screen.getByTestId("owner-invite-existing-form"));
 }
 
