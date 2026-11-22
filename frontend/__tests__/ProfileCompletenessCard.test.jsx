@@ -28,9 +28,12 @@ vi.mock("next-intl", () => ({
       "draft_steps.details": "פרטי העסק",
       "draft_steps.image": "תמונה של העסק או המוצרים",
       "draft_steps.product": "מוצר ראשון",
-      "draft_steps.phone_verified": "אימות מספר הוואטסאפ",
-      "draft_steps.email_verified": "אישור כתובת האימייל",
       email_resend: "שלחו לי שוב",
+      // dashboard.producer.draft.missing (shared with the banner, MEH-3657)
+      phone_verified: "אימות מספר הוואטסאפ",
+      email_verified: "אישור כתובת האימייל",
+      // auth.verify (the site's own resend wording, MEH-3657)
+      sent: "✓ נשלח!",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
@@ -239,7 +242,7 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(keys.at(-1)).toBe("completeness-open-email_verified");
     fireEvent.click(screen.getByTestId("completeness-email-resend"));
     expect(post).toHaveBeenCalledWith("/auth/resend-verify");
-    expect(await screen.findByTestId("completeness-email-sent")).toBeInTheDocument();
+    expect(await screen.findByTestId("completeness-email-sent")).toHaveTextContent("✓ נשלח!");
   });
 
   it("a failed resend shows why and keeps the button, so a second try sends again", async () => {

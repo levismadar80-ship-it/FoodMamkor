@@ -251,11 +251,13 @@ function buildDraftRows(producer) {
 
 /** The open email row: one resend button, then «✓ נשלח!» (MEH-3660). */
 function EmailResend({ t }) {
+  // «✓ נשלח!» is the site's resend wording; one key for it (MEH-3657).
+  const tVerify = useTranslations("auth.verify");
   const { resendSent, resendSending, resendError, handleResend } = useResendVerification();
   if (resendSent) {
     return (
       <p className="text-sm text-primary font-medium" data-testid="completeness-email-sent" role="status">
-        {t("email_sent")}
+        {tVerify("sent")}
       </p>
     );
   }
@@ -292,18 +294,21 @@ function RowMark({ done }) {
   );
 }
 
+/** Draft rows whose label lives under dashboard.producer.draft.missing. */
+const SHARED_GATE_LABELS = new Set(["phone_verified", "email_verified"]);
+
 /**
  * One list for both modes. Done rows: ✓ + label (still a link, so she can
  * edit). The FIRST row not done is the open one — tinted, with one button
  * (or, for the WhatsApp row, the OTP card itself). Every other row not done is
  * a plain label link. One open row at a time is the Shopify setup-guide shape.
  */
-function Checklist({ rows, label, labelKey, t, openContent = undefined }) {
+function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
   const openKey = rows.find((r) => !r.done)?.key;
   return (
     <ul className="mt-4 space-y-1" aria-label={label} data-testid="completeness-list">
       {rows.map((r) => {
-        const text = t(`${labelKey}.${r.key}`);
+        const text = labelOf(r);
         const status = <span className="sr-only">{r.done ? t("checklist_done") : t("checklist_todo")}</span>;
         if (r.key === openKey) {
           return (
@@ -372,6 +377,9 @@ function CardHead({ title, done, total, t }) {
 // only once every row is done, under «הכול מוכן».
 export default function ProfileCompletenessCard({ producer, footer = null, onPhoneVerified }) {
   const t = useTranslations("dashboard.producer.completeness");
+  // Rows that are also gate codes read the banner's label, so one string has
+  // one key (messages-hygiene guard, MEH-3657).
+  const tMissing = useTranslations("dashboard.producer.draft.missing");
   if (!producer) return null;
 
   if (producer.status === "draft") {
@@ -394,7 +402,7 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
         <Checklist
           rows={rows}
           label={t("checklist_aria")}
-          labelKey="draft_steps"
+          labelOf={(row) => (SHARED_GATE_LABELS.has(row.key) ? tMissing(row.key) : t(`draft_steps.${row.key}`))}
           t={t}
           openContent={(r) =>
             r.key === "phone_verified" ? (
@@ -456,7 +464,7 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
       className="bg-background border border-border rounded-lg p-6 md:p-8 mb-8"
     >
       <CardHead title={t("improve_headline")} done={doneCount} total={steps.length} t={t} />
-      <Checklist rows={steps} label={t("checklist_aria")} labelKey="steps" t={t} />
+      <Checklist rows={steps} label={t("checklist_aria")} labelOf={(row) => t(`steps.${row.key}`)} t={t} />
       {footer && <div className="mt-6 border-t border-border pt-5">{footer}</div>}
     </div>
   );
