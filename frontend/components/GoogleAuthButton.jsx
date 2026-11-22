@@ -7,10 +7,11 @@ import { useTranslations } from "next-intl";
 import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
-/** @param {{ onSuccess?: () => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
+/** @param {{ onSuccess?: (credential: string) => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
 export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();
@@ -26,7 +27,9 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   const handleCredentialResponse = async (response) => {
     try {
       await loginWithGoogle(response.credential, { termsAccepted: termsRef.current });
-      onSuccess?.();
+      // MEH-3675: the credential goes to the caller too — the owner-invite
+      // page sends it once more so a fresh sign-in replaces the email code.
+      onSuccess?.(response.credential);
     } catch (err) {
       // MEH-3305: the recovery-code form lives on /login (the ticket stays in
       // the auth context across the client-side move); on /login it shows in place.
@@ -38,7 +41,7 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
     }
   };
 
-  useGoogleSignIn(clientId, handleCredentialResponse, () => {
+  const drawButton = () => {
     if (buttonRef.current) {
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: "outline",
@@ -48,7 +51,10 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
         locale: gsiLang(),
       });
     }
-  });
+  };
+  useGoogleSignIn(clientId, handleCredentialResponse, drawButton);
+  // MEH-3687: the width above is fixed at draw time; redraw when the screen narrows.
+  useGsiRedrawOnResize(buttonRef, drawButton);
 
   if (!clientId) return null;
 
@@ -56,5 +62,5 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   // paints it — the late iframe pushed the form below it down 40px (CLS 0.03
   // per element on /login, /register, /favorites). ProducerOAuthButtons
   // already reserves its own container the same way.
-  return <div ref={buttonRef} className="w-full min-h-10" data-testid="google-auth-slot" />;
+  return <div ref={buttonRef} className="w-full min-h-10" data-testid="google-auth-slot" data-gsi-slot="" />;
 }

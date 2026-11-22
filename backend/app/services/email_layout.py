@@ -15,7 +15,11 @@ Related:  services/email.py::_deliver (the single place text_to_html runs),
           services/email_branding.py (the logo), services/registration_emails.py
           (_shell is this frame), tests/test_meh3587_email_layout.py
 History:  MEH-3587 (creation; moved the frame here from
-          registration_emails._shell, so there is one frame, not two)
+          registration_emails._shell, so there is one frame, not two);
+          MEH-3621 (every hand-built template — auth, newsletter, rescue,
+          weekly summary, admin approve/reject, reports, owner detach — now
+          calls frame(); added footer_html, note_row and an optional body cell;
+          tests/test_meh3621_email_frame_parts.py)
 """
 
 from __future__ import annotations
@@ -62,13 +66,26 @@ INLINE_URL_LABEL = "לקישור"
 _SIGNOFF = "צוות מהמקור"
 
 
-def frame(heading: str, rows_html: str, button_html: str = "") -> str:
-    """The branded document. `heading` and `rows_html` are already HTML."""
+def frame(
+    heading: str, rows_html: str, button_html: str = "", footer_html: str = ""
+) -> str:
+    """The branded document. Every argument is already HTML.
+
+    `rows_html` is the body text cell; pass "" when the email brings its own
+    `<tr>` rows in `button_html` (a code box, a table). `footer_html` sits above
+    the «צוות מהמקור» line (an unsubscribe link). MEH-3621.
+    """
+    body_row = (
+        f'<tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:{TEXT};line-height:1.8;">{rows_html}</td></tr>'
+        if rows_html
+        else ""
+    )
+    footer = f"{footer_html}<br>\n        " if footer_html else ""
     return f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:{PAGE_BG};">
+<body style="margin:0;padding:0;background:{PAGE_BG};direction:rtl;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:{PAGE_BG};padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
   <tr><td align="center">
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
@@ -76,11 +93,11 @@ def frame(heading: str, rows_html: str, button_html: str = "") -> str:
       <tr><td style="background:#ffffff;border-radius:14px;border:1px solid {CARD_BORDER};overflow:hidden;">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
           <tr><td style="background:{BRAND};color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{heading}</td></tr>
-          <tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:{TEXT};line-height:1.8;">{rows_html}</td></tr>
+          {body_row}
           {button_html}
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:{MUTED};">צוות מהמקור</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:{MUTED};line-height:1.6;">{footer}צוות מהמקור</td></tr>
     </table>
   </td></tr>
 </table>
@@ -101,6 +118,17 @@ def button(url: str, label: str, primary: bool = True) -> str:
         f'<a href="{e(url)}" style="display:inline-block;{look}text-decoration:none;'
         "font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;"
         f'">{e(label)}</a></td></tr>'
+    )
+
+
+def note_row(html: str) -> str:
+    """A small muted row under the button: validity, «ignore if…», the raw link.
+    MEH-3620: what the hand-built templates printed below their button."""
+    if not html.strip():
+        return ""
+    return (
+        f'<tr><td style="padding:6px 22px 18px;text-align:right;font-size:13px;'
+        f'color:{MUTED};line-height:1.7;">{html}</td></tr>'
     )
 
 

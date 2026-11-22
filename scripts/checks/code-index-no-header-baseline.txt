@@ -12,7 +12,6 @@ backend/app/routers/admin.py
 backend/app/routers/auth.py
 backend/app/routers/favorites.py
 backend/app/routers/holiday_mode.py
-backend/app/routers/home_products.py
 backend/app/routers/producer_me.py
 backend/app/routers/producers.py
 backend/app/routers/reports.py
@@ -69,6 +68,7 @@ frontend/app/[locale]/owner-invite/OwnerInviteClient.jsx
 frontend/app/[locale]/owner-invite/OwnerInviteConsents.jsx
 frontend/app/[locale]/owner-invite/OwnerInviteExistingAccount.jsx
 frontend/app/[locale]/owner-invite/owner-invite-metadata.js
+frontend/app/[locale]/owner-invite/useFreshGoogleCredential.js
 frontend/app/[locale]/producer/[id]/ProducerDetail.jsx
 frontend/app/[locale]/producer/[id]/components/BusinessChatPrompt.jsx
 frontend/app/[locale]/producer/[id]/components/ContactCard.jsx
@@ -89,8 +89,10 @@ frontend/app/[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx
 frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx
 frontend/app/[locale]/producer/dashboard/preview/PreviewClient.jsx
 frontend/app/[locale]/register/RegisterClient.jsx
-frontend/app/[locale]/register/producer/RegisterPreflight.jsx
 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx
+frontend/app/[locale]/rescue/[offerId]/RescueOfferAction.jsx
+frontend/app/[locale]/rescue/[offerId]/RescueOfferDetails.jsx
+frontend/app/[locale]/rescue/[offerId]/RescueOfferPage.jsx
 frontend/app/[locale]/reset-password/ResetPasswordClient.jsx
 frontend/app/[locale]/share/ShareClient.jsx
 frontend/app/[locale]/unsubscribe/weekly/UnsubscribeClient.jsx
@@ -142,10 +144,12 @@ frontend/components/LanguageToggle.jsx
 frontend/components/Lightbox.jsx
 frontend/components/LocationBanner.jsx
 frontend/components/LocationModal.jsx
+frontend/components/LoginPromptGoogle.jsx
 frontend/components/LoginPromptModal.jsx
 frontend/components/MapBottomSheet.jsx
 frontend/components/MapProducerCard.jsx
 frontend/components/NavAppGlyphs.jsx
+frontend/components/OAuthTermsLine.jsx
 frontend/components/Pagination.jsx
 frontend/components/PasswordStrength.jsx
 frontend/components/PhoneVerifyCard.jsx
@@ -204,6 +208,7 @@ frontend/components/producer/ShareKitSection.jsx
 frontend/components/public/ProductSheet.jsx
 frontend/components/rescue/BagRow.jsx
 frontend/components/rescue/RescueConfirmation.jsx
+frontend/components/rescue/RescueErrorLine.jsx
 frontend/components/rescue/RescueHomeModule.jsx
 frontend/components/rescue/RescueList.jsx
 frontend/components/rescue/RescueReview.jsx
@@ -215,9 +220,11 @@ frontend/components/ui/Dialog.jsx
 frontend/components/ui/EmptyState.jsx
 frontend/components/ui/Input.jsx
 frontend/components/ui/Link.jsx
+frontend/components/ui/OfferCard.jsx
 frontend/components/ui/PasswordField.jsx
 frontend/components/ui/Popover.jsx
 frontend/components/ui/RatingCompact.jsx
+frontend/components/ui/SeedProgressMark.jsx
 frontend/components/ui/Select.jsx
 frontend/components/ui/ShowMore.jsx
 frontend/components/ui/Textarea.jsx
@@ -240,7 +247,9 @@ frontend/lib/server-first-json.js
 frontend/lib/use-catalog-snapshot.js
 frontend/lib/use-favorite-producers.js
 frontend/lib/use-focus-return.js
+frontend/lib/use-gsi-redraw-on-resize.js
+frontend/lib/use-home-page.js
 frontend/lib/use-test-business-ids.js
 frontend/lib/use-user-city.js
 frontend/lib/use-visual-viewport-box.js
-frontend/lib/use-home-page.js
+frontend/lib/useRescueReservation.js

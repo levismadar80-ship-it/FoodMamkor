@@ -24,6 +24,8 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // MEH-1901: CaretLeft joins the set — the product grid row and signature card
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: () => <span />,
   // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
@@ -185,5 +187,44 @@ describe("OrderBar (MEH-3216 stage 5b)", () => {
     expect(open.textContent).toBe("producer.detail.order_cart.bar");
     fireEvent.click(open);
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+// MEH-3618: the days line on a limited product, on the grid row and on the
+// signature card; nothing on a product made every day.
+describe("the days line on the business page (MEH-3618)", () => {
+  const limited = {
+    ...producer,
+    top_product_id: A,
+    top_product_name: "חלה",
+    products: [
+      { ...producer.products[0], available_weekdays: 1 << 5 },
+      { ...producer.products[1], available_weekdays: 1 << 4 },
+      { ...producer.products[2], available_weekdays: null },
+    ],
+  };
+  const renderLimited = () =>
+    render(
+      <ProducerSections
+        producer={limited}
+        events={[]}
+        sectionRefs={{ current: {} }}
+        reviewsContainerRef={{ current: null }}
+        reviewsVisible={false}
+        orderCart={null}
+      />,
+    );
+
+  it("the signature card carries its product's line", () => {
+    renderLimited();
+    const card = screen.getByTestId("signature-product-trigger");
+    expect(card.querySelectorAll('[data-testid="product-weekdays-line"]')).toHaveLength(1);
+  });
+
+  it("a limited grid row carries the line, an every-day row does not", () => {
+    renderLimited();
+    const rows = screen.getAllByTestId("product-row");
+    const lines = rows.map((r) => r.querySelectorAll('[data-testid="product-weekdays-line"]').length);
+    expect(lines).toEqual([1, 0]); // עוגה (Thursday), יין (every day)
   });
 });

@@ -316,6 +316,10 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
 # (blocked account / wrong role); re-authenticating cannot help, and a
 # WWW-Authenticate there would tell the client to retry a hopeless refresh.
 _INVALID_TOKEN_HEADERS = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
+# MEH-3683: one Hebrew line for both the access check here and the refresh
+# check in routers/auth.py. Nothing in the frontend matches on this text: a
+# 401 refreshes or logs out by status alone (frontend/lib/api.js).
+SESSION_INVALIDATED_BY_PASSWORD_CHANGE = "הסיסמה שונתה, צריך להתחבר מחדש."
 
 # MEH-1627: the *missing* credential carries a bare challenge, no error code.
 # RFC 6750 §3 is explicit: "If the request lacks any authentication
@@ -361,7 +365,7 @@ def _check_password_change_invalidation(user: User, claims: dict[str, Any]) -> N
     if iat_claim < int(user.password_changed_at.timestamp()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="session_invalidated_by_password_change",
+            detail=SESSION_INVALIDATED_BY_PASSWORD_CHANGE,
             headers=_INVALID_TOKEN_HEADERS,
         )
 
@@ -554,7 +558,7 @@ def require_producer(user: User = Depends(get_current_user)) -> User:
 
 
 # Shared so require_verified_email + require_verified_producer can't drift.
-_EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת האימייל תחילה"
+_EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת המייל תחילה"
 # MEH-1164 sub-chunk B: the 403 detail is a structured object so the frontend
 # matches on a stable `code` (locale-independent) rather than the Hebrew
 # string. `message` stays the existing constant for transition safety — clients

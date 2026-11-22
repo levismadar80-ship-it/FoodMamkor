@@ -1,0 +1,803 @@
+# Privacy column ledger (MEH-3643, MEH-3644). One row per database column:
+# <table.column>\t<category>\t<reason>
+# category = an id from DATA_ITEMS in frontend/app/[locale]/privacy/page.js
+#            (identity, business, outreach, technical, location, cookies, ugc,
+#            registrations, orders, messages), or not-personal.
+#            The reason is required either way: for a category, what the field
+#            holds; for not-personal, why it is not.
+# A column in the models with no row here fails tests/test_privacy_column_ledger.py.
+admin_audit_log.action	identity	admin action log: which admin did what, and when
+admin_audit_log.actor_id	identity	admin action log: which admin did what, and when
+admin_audit_log.created_at	identity	admin action log: which admin did what, and when
+admin_audit_log.details	identity	admin action log: which admin did what, and when
+admin_audit_log.id	identity	admin action log: which admin did what, and when
+admin_audit_log.ip	technical	IP address of the admin action
+admin_audit_log.target_id	identity	admin action log: which admin did what, and when
+admin_audit_log.target_type	identity	admin action log: which admin did what, and when
+admin_checklist_items.active	not-personal	text of the admin review checklist; no person
+admin_checklist_items.hint	not-personal	text of the admin review checklist; no person
+admin_checklist_items.id	not-personal	text of the admin review checklist; no person
+admin_checklist_items.label	not-personal	text of the admin review checklist; no person
+admin_checklist_items.position	not-personal	text of the admin review checklist; no person
+admin_checklist_items.updated_at	not-personal	text of the admin review checklist; no person
+admin_passkeys.aaguid	technical	an admin's sign-in passkey
+admin_passkeys.backup_eligible	technical	an admin's sign-in passkey
+admin_passkeys.backup_state	technical	an admin's sign-in passkey
+admin_passkeys.created_at	technical	an admin's sign-in passkey
+admin_passkeys.credential_id	technical	an admin's sign-in passkey
+admin_passkeys.id	technical	an admin's sign-in passkey
+admin_passkeys.last_used_at	technical	an admin's sign-in passkey
+admin_passkeys.name	technical	an admin's sign-in passkey
+admin_passkeys.public_key	technical	an admin's sign-in passkey
+admin_passkeys.sign_count	technical	an admin's sign-in passkey
+admin_passkeys.transports	technical	an admin's sign-in passkey
+admin_passkeys.user_id	technical	an admin's sign-in passkey
+admin_recovery_codes.code_hash	technical	an admin's hashed recovery codes
+admin_recovery_codes.created_at	technical	an admin's hashed recovery codes
+admin_recovery_codes.id	technical	an admin's hashed recovery codes
+admin_recovery_codes.used_at	technical	an admin's hashed recovery codes
+admin_recovery_codes.user_id	technical	an admin's hashed recovery codes
+admin_settings.key	not-personal	site-wide settings
+admin_settings.updated_at	not-personal	site-wide settings
+admin_settings.value	not-personal	site-wide settings
+alembic_lineage.recorded_at	not-personal	migration bookkeeping
+alembic_lineage.revision	not-personal	migration bookkeeping
+alert_log.alert_type	technical	log of the alerts a user was sent
+alert_log.channel	technical	log of the alerts a user was sent
+alert_log.id	technical	log of the alerts a user was sent
+alert_log.producer_id	technical	log of the alerts a user was sent
+alert_log.sent_at	technical	log of the alerts a user was sent
+alert_log.user_id	technical	log of the alerts a user was sent
+billable_events.base_amount_agorot	business	a business's billable activity
+billable_events.created_at	business	a business's billable activity
+billable_events.fee_agorot	business	a business's billable activity
+billable_events.id	business	a business's billable activity
+billable_events.kind	business	a business's billable activity
+billable_events.occurred_at	business	a business's billable activity
+billable_events.price_list_version	business	a business's billable activity
+billable_events.producer_id	business	a business's billable activity
+billable_events.producer_ref	business	a business's billable activity
+billable_events.quantity	business	a business's billable activity
+billable_events.source_id	business	a business's billable activity
+billable_events.status	business	a business's billable activity
+billable_events.voided_at	business	a business's billable activity
+business_billing.created_at	business	a business's billing state
+business_billing.price_list_version	business	a business's billing state
+business_billing.producer_id	business	a business's billing state
+business_billing.state	business	a business's billing state
+business_billing.state_since	business	a business's billing state
+business_billing.subscribed	business	a business's billing state
+business_billing.updated_at	business	a business's billing state
+categories.emoji	not-personal	category list
+categories.id	not-personal	category list
+categories.is_system	not-personal	category list
+categories.name	not-personal	category list
+categories.requires_license	not-personal	category list
+categories.slug	not-personal	category list
+category_requests.admin_notes	business	a business's request for a new category
+category_requests.created_at	business	a business's request for a new category
+category_requests.examples	business	a business's request for a new category
+category_requests.id	business	a business's request for a new category
+category_requests.producer_id	business	a business's request for a new category
+category_requests.requested_name	business	a business's request for a new category
+category_requests.reviewed_at	business	a business's request for a new category
+category_requests.status	business	a business's request for a new category
+cities.created_at	not-personal	list of towns
+cities.id	not-personal	list of towns
+cities.lat	not-personal	list of towns
+cities.lng	not-personal	list of towns
+cities.name_he	not-personal	list of towns
+contact_messages.created_at	ugc	a message sent through the contact form
+contact_messages.email	ugc	a message sent through the contact form
+contact_messages.id	ugc	a message sent through the contact form
+contact_messages.message	ugc	a message sent through the contact form
+contact_messages.name	ugc	a message sent through the contact form
+delivery_areas.city	business	where a business delivers
+delivery_areas.delivery_day	business	where a business delivers
+delivery_areas.delivery_days	business	where a business delivers
+delivery_areas.delivery_days_max	business	where a business delivers
+delivery_areas.delivery_days_min	business	where a business delivers
+delivery_areas.delivery_fee	business	where a business delivers
+delivery_areas.free_delivery_above	business	where a business delivers
+delivery_areas.id	business	where a business delivers
+delivery_areas.min_order	business	where a business delivers
+delivery_areas.order_cutoff_day	business	where a business delivers
+delivery_areas.order_cutoff_time	business	where a business delivers
+delivery_areas.producer_id	business	where a business delivers
+delivery_areas.zone_name	business	where a business delivers
+delivery_waitlist.city	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.city_key	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.created_at	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.email	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.host_confirm_sent_at	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.host_confirmed_at	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.id	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.notified_at	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.producer_id	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.user_id	identity	email and town of someone waiting for delivery to their town
+delivery_waitlist.wants_to_host	identity	email and town of someone waiting for delivery to their town
+email_outbox.attempts	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.body	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.created_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.html	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.id	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.kind	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.last_error	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.outcome	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.reply_to	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.send_after	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.sent_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.subject	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.to_email	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+events.category	business	an event a business publishes
+events.city	business	an event a business publishes
+events.created_at	business	an event a business publishes
+events.description	business	an event a business publishes
+events.end_time	business	an event a business publishes
+events.event_date	business	an event a business publishes
+events.event_time	business	an event a business publishes
+events.id	business	an event a business publishes
+events.image_url	business	an event a business publishes
+events.is_active	business	an event a business publishes
+events.lat	business	an event a business publishes
+events.lng	business	an event a business publishes
+events.location	business	an event a business publishes
+events.max_participants	business	an event a business publishes
+events.price	business	an event a business publishes
+events.producer_id	business	an event a business publishes
+events.registration_method	business	an event a business publishes
+events.registration_url	business	an event a business publishes
+events.title	business	an event a business publishes
+experiences.address	business	an experience or workshop a host publishes
+experiences.admin_feedback	business	an experience or workshop a host publishes
+experiences.category	business	an experience or workshop a host publishes
+experiences.city	business	an experience or workshop a host publishes
+experiences.created_at	business	an experience or workshop a host publishes
+experiences.description	business	an experience or workshop a host publishes
+experiences.duration_minutes	business	an experience or workshop a host publishes
+experiences.event_date	business	an experience or workshop a host publishes
+experiences.event_time	business	an experience or workshop a host publishes
+experiences.host_user_id	business	an experience or workshop a host publishes
+experiences.id	business	an experience or workshop a host publishes
+experiences.image_url	business	an experience or workshop a host publishes
+experiences.is_active	business	an experience or workshop a host publishes
+experiences.is_recurring	business	an experience or workshop a host publishes
+experiences.lat	business	an experience or workshop a host publishes
+experiences.lng	business	an experience or workshop a host publishes
+experiences.location_type	business	an experience or workshop a host publishes
+experiences.max_participants	business	an experience or workshop a host publishes
+experiences.min_participants	business	an experience or workshop a host publishes
+experiences.moderation_reason	business	an experience or workshop a host publishes
+experiences.moderation_status	business	an experience or workshop a host publishes
+experiences.moderation_suggestion	business	an experience or workshop a host publishes
+experiences.participants_count	business	an experience or workshop a host publishes
+experiences.price_per_person	business	an experience or workshop a host publishes
+experiences.recurring_schedule	business	an experience or workshop a host publishes
+experiences.registration_method	business	an experience or workshop a host publishes
+experiences.registration_url	business	an experience or workshop a host publishes
+experiences.rejection_reason	business	an experience or workshop a host publishes
+experiences.requirements	business	an experience or workshop a host publishes
+experiences.sessions	business	an experience or workshop a host publishes
+experiences.status	business	an experience or workshop a host publishes
+experiences.title	business	an experience or workshop a host publishes
+experiences.updated_at	business	an experience or workshop a host publishes
+favorite_alerts.created_at	cookies	a user's alert settings for a business they saved
+favorite_alerts.id	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_delivery_area	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_new_event	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_new_group_buy	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_new_product	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_new_recipe	cookies	a user's alert settings for a business they saved
+favorite_alerts.notify_new_rescue	cookies	a user's alert settings for a business they saved
+favorite_alerts.producer_id	cookies	a user's alert settings for a business they saved
+favorite_alerts.push_subscription	technical	browser push endpoint
+favorite_alerts.updated_at	cookies	a user's alert settings for a business they saved
+favorite_alerts.user_id	cookies	a user's alert settings for a business they saved
+favorite_alerts.whatsapp_opt_in	cookies	a user's alert settings for a business they saved
+favorites.created_at	cookies	a business a user saved
+favorites.producer_id	cookies	a business a user saved
+favorites.user_id	cookies	a business a user saved
+group_buy_commits.created_at	orders	a user joining a group buy
+group_buy_commits.group_buy_id	orders	a user joining a group buy
+group_buy_commits.id	orders	a user joining a group buy
+group_buy_commits.phone	orders	a user joining a group buy
+group_buy_commits.quantity	orders	a user joining a group buy
+group_buy_commits.user_id	orders	a user joining a group buy
+group_buy_waitlist.created_at	orders	a user on a full group buy's waitlist
+group_buy_waitlist.group_buy_id	orders	a user on a full group buy's waitlist
+group_buy_waitlist.id	orders	a user on a full group buy's waitlist
+group_buy_waitlist.offered_at	orders	a user on a full group buy's waitlist
+group_buy_waitlist.quantity	orders	a user on a full group buy's waitlist
+group_buy_waitlist.user_id	orders	a user on a full group buy's waitlist
+group_buys.allergens	business	a group buy a business publishes
+group_buys.below_goal_notified_at	business	a group buy a business publishes
+group_buys.city	business	a group buy a business publishes
+group_buys.created_at	business	a group buy a business publishes
+group_buys.deadline	business	a group buy a business publishes
+group_buys.delivery_note	business	a group buy a business publishes
+group_buys.description	business	a group buy a business publishes
+group_buys.fulfillment_note	business	a group buy a business publishes
+group_buys.funded_notified_at	business	a group buy a business publishes
+group_buys.id	business	a group buy a business publishes
+group_buys.joins_closed_at	business	a group buy a business publishes
+group_buys.max_participants	business	a group buy a business publishes
+group_buys.max_units	business	a group buy a business publishes
+group_buys.min_participants	business	a group buy a business publishes
+group_buys.pickup_ends_at	business	a group buy a business publishes
+group_buys.pickup_location_id	business	a group buy a business publishes
+group_buys.pickup_note	business	a group buy a business publishes
+group_buys.pickup_reminder_sent_at	business	a group buy a business publishes
+group_buys.pickup_starts_at	business	a group buy a business publishes
+group_buys.price_per_unit_group	business	a group buy a business publishes
+group_buys.price_per_unit_regular	business	a group buy a business publishes
+group_buys.producer_id	business	a group buy a business publishes
+group_buys.product_name	business	a group buy a business publishes
+group_buys.refunded_notified_at	business	a group buy a business publishes
+group_buys.status	business	a group buy a business publishes
+group_buys.title	business	a group buy a business publishes
+group_buys.unit	business	a group buy a business publishes
+home_product_ratings.click_id	ugc	a rating of a neighbour's home product
+home_product_ratings.comment	ugc	a rating of a neighbour's home product
+home_product_ratings.created_at	ugc	a rating of a neighbour's home product
+home_product_ratings.home_product_id	ugc	a rating of a neighbour's home product
+home_product_ratings.id	ugc	a rating of a neighbour's home product
+home_product_ratings.stars	ugc	a rating of a neighbour's home product
+home_product_ratings.user_id	ugc	a rating of a neighbour's home product
+home_product_whatsapp_clicks.clicked_at	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.home_product_id	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.id	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.rated	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.rating_sent	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.rating_token	cookies	a click to contact a neighbour seller
+home_product_whatsapp_clicks.user_id	cookies	a click to contact a neighbour seller
+home_products.allergens	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.available_until	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.category	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.city	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.created_at	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.delivery_method	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.description	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.expiry_date	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.id	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.images	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.is_active	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.is_hidden	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.is_organic	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.kosher	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.location_notes	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.moderation_reason	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.moderation_status	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.moderation_suggestion	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.neighborhood	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.phone	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.photo	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.prep_date	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.price	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.quantity	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.storage_type	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.street	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.title	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.unit	ugc	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.user_id	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+home_products.zip_code	identity	the disabled neighbour-listing feature (router unmounted since MEH-1406); legacy rows only
+inbound_messages.body	messages	a WhatsApp message sent to us: number and text
+inbound_messages.bot_replied	messages	a WhatsApp message sent to us: number and text
+inbound_messages.bot_replied_at	messages	a WhatsApp message sent to us: number and text
+inbound_messages.bot_template_sent	messages	a WhatsApp message sent to us: number and text
+inbound_messages.from_phone	messages	a WhatsApp message sent to us: number and text
+inbound_messages.human_replied	messages	a WhatsApp message sent to us: number and text
+inbound_messages.id	messages	a WhatsApp message sent to us: number and text
+inbound_messages.meta_message_id	messages	a WhatsApp message sent to us: number and text
+inbound_messages.received_at	messages	a WhatsApp message sent to us: number and text
+kashrut_badge_requests.badge_code	business	a business's kashrut badge request
+kashrut_badge_requests.cert_url	business	a business's kashrut badge request
+kashrut_badge_requests.created_at	business	a business's kashrut badge request
+kashrut_badge_requests.id	business	a business's kashrut badge request
+kashrut_badge_requests.notes	business	a business's kashrut badge request
+kashrut_badge_requests.producer_id	business	a business's kashrut badge request
+kashrut_badge_requests.reviewed_by	business	a business's kashrut badge request
+kashrut_badge_requests.status	business	a business's kashrut badge request
+newsletter_subscribers.created_at	identity	a newsletter subscriber's email
+newsletter_subscribers.email	identity	a newsletter subscriber's email
+newsletter_subscribers.id	identity	a newsletter subscriber's email
+outbound_messages.created_at	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.error_code	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.error_message	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.id	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.kind	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.meta_message_id	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.status	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.to_phone	messages	a WhatsApp message we send: number and delivery state
+outbound_messages.updated_at	messages	a WhatsApp message we send: number and delivery state
+outreach_leads.category	outreach	a business that has not joined, from public sources
+outreach_leads.city	outreach	a business that has not joined, from public sources
+outreach_leads.created_at	outreach	a business that has not joined, from public sources
+outreach_leads.id	outreach	a business that has not joined, from public sources
+outreach_leads.instagram	outreach	a business that has not joined, from public sources
+outreach_leads.name	outreach	a business that has not joined, from public sources
+outreach_leads.notes	outreach	a business that has not joined, from public sources
+outreach_leads.phone	outreach	a business that has not joined, from public sources
+outreach_leads.prefill_token	outreach	a business that has not joined, from public sources
+outreach_leads.prefill_token_expires_at	outreach	a business that has not joined, from public sources
+outreach_leads.source	outreach	a business that has not joined, from public sources
+outreach_leads.status	outreach	a business that has not joined, from public sources
+outreach_leads.suggested_by_email	identity	email of the user who suggested the business
+outreach_leads.suggested_by_name	identity	name of the user who suggested the business
+outreach_leads.suggester_thanked_at	outreach	a business that has not joined, from public sources
+outreach_leads.suggester_wants_update	outreach	a business that has not joined, from public sources
+outreach_leads.suggestion_reason	outreach	a business that has not joined, from public sources
+outreach_leads.updated_at	outreach	a business that has not joined, from public sources
+outreach_leads.website	outreach	a business that has not joined, from public sources
+phone_otp_tokens.code	technical	a one-time code that verifies a business phone
+phone_otp_tokens.created_at	technical	a one-time code that verifies a business phone
+phone_otp_tokens.expires_at	technical	a one-time code that verifies a business phone
+phone_otp_tokens.id	technical	a one-time code that verifies a business phone
+phone_otp_tokens.phone	technical	a one-time code that verifies a business phone
+phone_otp_tokens.producer_id	technical	a one-time code that verifies a business phone
+phone_otp_tokens.used	technical	a one-time code that verifies a business phone
+producer_analytics_daily.day	not-personal	anonymous daily counts per business page
+producer_analytics_daily.id	not-personal	anonymous daily counts per business page
+producer_analytics_daily.producer_id	not-personal	anonymous daily counts per business page
+producer_analytics_daily.views_search_unique	not-personal	anonymous daily counts per business page
+producer_analytics_daily.views_unique	not-personal	anonymous daily counts per business page
+producer_analytics_daily.whatsapp_clicks	not-personal	anonymous daily counts per business page
+producer_categories.category_id	business	a business's categories
+producer_categories.position	business	a business's categories
+producer_categories.producer_id	business	a business's categories
+producer_contact_clicks.clicked_at	cookies	a click to contact a business
+producer_contact_clicks.id	cookies	a click to contact a business
+producer_contact_clicks.ip_hash	technical	hashed IP address
+producer_contact_clicks.method	cookies	a click to contact a business
+producer_contact_clicks.producer_id	cookies	a click to contact a business
+producer_contact_clicks.user_id	cookies	a click to contact a business
+producer_locations.address	business	a business's branch or pickup point
+producer_locations.city	business	a business's branch or pickup point
+producer_locations.created_at	business	a business's branch or pickup point
+producer_locations.id	business	a business's branch or pickup point
+producer_locations.is_primary	business	a business's branch or pickup point
+producer_locations.kind	business	a business's branch or pickup point
+producer_locations.label	business	a business's branch or pickup point
+producer_locations.lat	business	a business's branch or pickup point
+producer_locations.lng	business	a business's branch or pickup point
+producer_locations.location_precision	business	a business's branch or pickup point
+producer_locations.opening_hours	business	a business's branch or pickup point
+producer_locations.order_cutoff_day	business	a business's branch or pickup point
+producer_locations.order_cutoff_time	business	a business's branch or pickup point
+producer_locations.phone	business	a business's branch or pickup point
+producer_locations.pickup_days	business	a business's branch or pickup point
+producer_locations.pickup_note	business	a business's branch or pickup point
+producer_locations.producer_id	business	a business's branch or pickup point
+producer_locations.updated_at	business	a business's branch or pickup point
+producer_name_change_requests.admin_notes	business	a business's request to change its name
+producer_name_change_requests.created_at	business	a business's request to change its name
+producer_name_change_requests.current_name	business	a business's request to change its name
+producer_name_change_requests.id	business	a business's request to change its name
+producer_name_change_requests.producer_id	business	a business's request to change its name
+producer_name_change_requests.reason	business	a business's request to change its name
+producer_name_change_requests.requested_name	business	a business's request to change its name
+producer_name_change_requests.reviewed_at	business	a business's request to change its name
+producer_name_change_requests.status	business	a business's request to change its name
+producer_offers.created_at	business	an offer a business publishes
+producer_offers.expires_at	business	an offer a business publishes
+producer_offers.headline	business	an offer a business publishes
+producer_offers.id	business	an offer a business publishes
+producer_offers.is_active	business	an offer a business publishes
+producer_offers.offer_type	business	an offer a business publishes
+producer_offers.producer_id	business	an offer a business publishes
+producer_offers.starts_at	business	an offer a business publishes
+producer_offers.threshold_unit	business	an offer a business publishes
+producer_offers.threshold_value	business	an offer a business publishes
+producer_offers.updated_at	business	an offer a business publishes
+producer_order_settings.alcohol_licensed	business	a business's order settings
+producer_order_settings.auto_confirm	business	a business's order settings
+producer_order_settings.auto_confirm_slot_cap	business	a business's order settings
+producer_order_settings.business_id_number	business	a business's order settings
+producer_order_settings.cancel_cutoff_hours	business	a business's order settings
+producer_order_settings.created_at	business	a business's order settings
+producer_order_settings.enabled	business	a business's order settings
+producer_order_settings.lead_time_hours	business	a business's order settings
+producer_order_settings.min_order_agorot	business	a business's order settings
+producer_order_settings.producer_id	business	a business's order settings
+producer_order_settings.shabbat_observant	business	a business's order settings
+producer_order_settings.slot_minutes	business	a business's order settings
+producer_order_settings.updated_at	business	a business's order settings
+producer_order_windows.created_at	business	a business's order hours
+producer_order_windows.end_time	business	a business's order hours
+producer_order_windows.fulfilment	business	a business's order hours
+producer_order_windows.id	business	a business's order hours
+producer_order_windows.producer_id	business	a business's order hours
+producer_order_windows.start_time	business	a business's order hours
+producer_order_windows.weekday	business	a business's order hours
+producer_page_views.city	cookies	a view of a business page
+producer_page_views.created_at	cookies	a view of a business page
+producer_page_views.id	cookies	a view of a business page
+producer_page_views.producer_id	cookies	a view of a business page
+producer_page_views.referrer	cookies	a view of a business page
+producer_page_views.viewer_ip_hash	technical	hashed IP address
+producer_recipe_products.product_id	business	a recipe-to-product link
+producer_recipe_products.recipe_id	business	a recipe-to-product link
+producer_recipes.cook_time_min	business	a recipe a business publishes
+producer_recipes.created_at	business	a recipe a business publishes
+producer_recipes.description	business	a recipe a business publishes
+producer_recipes.id	business	a recipe a business publishes
+producer_recipes.image_url	business	a recipe a business publishes
+producer_recipes.ingredients	business	a recipe a business publishes
+producer_recipes.instructions	business	a recipe a business publishes
+producer_recipes.moderation_notes	business	a recipe a business publishes
+producer_recipes.moderation_status	business	a recipe a business publishes
+producer_recipes.prep_time_min	business	a recipe a business publishes
+producer_recipes.producer_id	business	a recipe a business publishes
+producer_recipes.published	business	a recipe a business publishes
+producer_recipes.servings	business	a recipe a business publishes
+producer_recipes.title	business	a recipe a business publishes
+producer_recipes.updated_at	business	a recipe a business publishes
+producer_review_checks.checked_at	business	an admin's review of a business page
+producer_review_checks.checked_by	business	an admin's review of a business page
+producer_review_checks.id	business	an admin's review of a business page
+producer_review_checks.item_id	business	an admin's review of a business page
+producer_review_checks.label_snapshot	business	an admin's review of a business page
+producer_review_checks.producer_id	business	an admin's review of a business page
+producer_reviews.ai_moderation_status	ugc	a user's review of a business
+producer_reviews.body	ugc	a user's review of a business
+producer_reviews.created_at	ugc	a user's review of a business
+producer_reviews.edited_after_hidden_at	ugc	a user's review of a business
+producer_reviews.id	ugc	a user's review of a business
+producer_reviews.is_hidden	ugc	a user's review of a business
+producer_reviews.producer_id	ugc	a user's review of a business
+producer_reviews.reply	ugc	a user's review of a business
+producer_reviews.reply_ai_moderation_status	ugc	a user's review of a business
+producer_reviews.reply_at	ugc	a user's review of a business
+producer_reviews.source	ugc	a user's review of a business
+producer_reviews.stars	ugc	a user's review of a business
+producer_reviews.user_id	ugc	a user's review of a business
+producer_whatsapp_clicks.city	cookies	a click on a business's WhatsApp button
+producer_whatsapp_clicks.clicked_at	cookies	a click on a business's WhatsApp button
+producer_whatsapp_clicks.id	cookies	a click on a business's WhatsApp button
+producer_whatsapp_clicks.producer_id	cookies	a click on a business's WhatsApp button
+producer_whatsapp_clicks.user_id	cookies	a click on a business's WhatsApp button
+producers.address	business	a business page
+producers.admin_notes	business	a business page
+producers.ambassador	business	a business page
+producers.availability_confirmed_at	business	a business page
+producers.availability_state	business	a business page
+producers.availability_status	business	a business page
+producers.avg_rating	business	a business page
+producers.changes_requested_at	business	a business page
+producers.city	business	a business page
+producers.claim_link_sent_at	business	a business page
+producers.consent_screenshot_url	business	a business page
+producers.contact_email	identity	email of the business's contact person
+producers.contact_name	identity	name of the business's contact person
+producers.coverage_cta_enabled	business	a business page
+producers.created_at	business	a business page
+producers.custom_questions	business	a business page
+producers.declaration_version	business	a business page
+producers.declared_at	business	a business page
+producers.delivery_cities	business	a business page
+producers.delivery_days_max	business	a business page
+producers.delivery_days_min	business	a business page
+producers.delivery_excluded_cities	business	a business page
+producers.delivery_fee	business	a business page
+producers.delivery_min_order	business	a business page
+producers.delivery_nationwide	business	a business page
+producers.delivery_zones	business	a business page
+producers.description	business	a business page
+producers.email_followup_2_sent_at	business	a business page
+producers.email_followup_3_sent_at	business	a business page
+producers.email_followup_4_sent_at	business	a business page
+producers.email_followup_5_sent_at	business	a business page
+producers.email_pending_nudge_sent_at	business	a business page
+producers.established_year	business	a business page
+producers.external_order_form	business	a business page
+producers.facebook	business	a business page
+producers.farmer_declaration_version	business	a business page
+producers.farmer_declared_at	business	a business page
+producers.free_delivery_above	business	a business page
+producers.freshness_email_sent_at	business	a business page
+producers.gluten_free_facility	business	a business page
+producers.google_place_id	business	a business page
+producers.grass_fed	business	a business page
+producers.has_delivery	business	a business page
+producers.has_physical_location	business	a business page
+producers.id	business	a business page
+producers.images	business	a business page
+producers.in_season_until	business	a business page
+producers.instagram	business	a business page
+producers.is_available_today	business	a business page
+producers.is_recommended	business	a business page
+producers.is_test	business	a business page
+producers.kashrut_badges	business	a business page
+producers.kashrut_expires_at	business	a business page
+producers.kashrut_verified_at	business	a business page
+producers.kind	business	a business page
+producers.kosher	business	a business page
+producers.lactose_free_facility	business	a business page
+producers.last_active_at	business	a business page
+producers.last_confirmed_at	business	a business page
+producers.lat	business	a business page
+producers.license_expires_at	business	a business page
+producers.lng	business	a business page
+producers.logo_url	business	a business page
+producers.name	business	a business page
+producers.offers_delivery	business	a business page
+producers.opening_hours	business	a business page
+producers.order_window	business	a business page
+producers.organic_certified	business	a business page
+producers.owner_bio	business	a business page
+producers.owner_invite_accepted_at	business	a business page
+producers.owner_invite_code_attempts	business	a business page
+producers.owner_invite_code_expires_at	business	a business page
+producers.owner_invite_code_hash	business	a business page
+producers.owner_invite_consent_note	business	a business page
+producers.owner_invite_created_by	business	a business page
+producers.owner_invite_email	identity	email of the invited owner
+producers.owner_invite_expires_at	business	a business page
+producers.owner_invite_name	identity	name of the invited owner
+producers.owner_invite_sent_at	business	a business page
+producers.owner_invite_token_hash	business	a business page
+producers.owner_photo_url	business	a business page
+producers.payment_info	business	a business page
+producers.phone	business	a business page
+producers.phone_verified	business	a business page
+producers.pickup_points	business	a business page
+producers.plan	business	a business page
+producers.price_range	business	a business page
+producers.primary_contact_method	business	a business page
+producers.producer_license_number	business	a business page
+producers.product_groups	business	a business page
+producers.recommended_at	business	a business page
+producers.recommended_note	business	a business page
+producers.referral_source	business	a business page
+producers.referral_source_other	business	a business page
+producers.rejection_reason	business	a business page
+producers.rejection_reason_code	business	a business page
+producers.requested_changes	business	a business page
+producers.reservist_owned	business	a business page
+producers.resubmission_count	business	a business page
+producers.resubmitted_at	business	a business page
+producers.reviews_count	business	a business page
+producers.risk_reasoning	business	a business page
+producers.risk_score	business	a business page
+producers.secondary_phone	business	a business page
+producers.secondary_phone_label	business	a business page
+producers.short_description	business	a business page
+producers.slug	business	a business page
+producers.special_hours	business	a business page
+producers.status	business	a business page
+producers.story_card_url	business	a business page
+producers.submitted_for_review_at	business	a business page
+producers.top_product_id	business	a business page
+producers.top_product_name	business	a business page
+producers.updated_at	business	a business page
+producers.vacation_until	business	a business page
+producers.vegan_scope	business	a business page
+producers.vegetarian_scope	business	a business page
+producers.verification_doc_type	business	a business page
+producers.verified_at	business	a business page
+producers.website	business	a business page
+producers.weekly_summary_opt_out	business	a business page
+producers.weekly_summary_sent_at	business	a business page
+producers.whatsapp_group	business	a business page
+product_order_events.actor	orders	a status change on an order
+product_order_events.actor_user_id	orders	a status change on an order
+product_order_events.created_at	orders	a status change on an order
+product_order_events.from_status	orders	a status change on an order
+product_order_events.id	orders	a status change on an order
+product_order_events.note	orders	a status change on an order
+product_order_events.order_id	orders	a status change on an order
+product_order_events.to_status	orders	a status change on an order
+product_order_items.contains_alcohol	orders	a line in an order
+product_order_items.id	orders	a line in an order
+product_order_items.name	orders	a line in an order
+product_order_items.order_id	orders	a line in an order
+product_order_items.price_is_estimate	orders	a line in an order
+product_order_items.price_unit	orders	a line in an order
+product_order_items.product_id	orders	a line in an order
+product_order_items.qty	orders	a line in an order
+product_order_items.unit_price_agorot	orders	a line in an order
+product_order_items.variant_id	orders	a line in an order
+product_order_items.variant_name	orders	a line in an order
+product_order_notifications.attempts	orders	a notification about an order
+product_order_notifications.channel	orders	a notification about an order
+product_order_notifications.created_at	orders	a notification about an order
+product_order_notifications.id	orders	a notification about an order
+product_order_notifications.kind	orders	a notification about an order
+product_order_notifications.last_error	orders	a notification about an order
+product_order_notifications.order_id	orders	a notification about an order
+product_order_notifications.outcome	orders	a notification about an order
+product_order_notifications.send_after	orders	a notification about an order
+product_order_notifications.sent_at	orders	a notification about an order
+product_order_phone_codes.attempts	orders	a code that verifies the phone given for an order
+product_order_phone_codes.code_hash	orders	a code that verifies the phone given for an order
+product_order_phone_codes.created_at	orders	a code that verifies the phone given for an order
+product_order_phone_codes.expires_at	orders	a code that verifies the phone given for an order
+product_order_phone_codes.id	orders	a code that verifies the phone given for an order
+product_order_phone_codes.phone	orders	a code that verifies the phone given for an order
+product_order_phone_codes.used_at	orders	a code that verifies the phone given for an order
+product_orders.age_declared	orders	an order from a business
+product_orders.closed_at	orders	an order from a business
+product_orders.confirmed_at	orders	an order from a business
+product_orders.created_at	orders	an order from a business
+product_orders.customer_name	orders	an order from a business
+product_orders.customer_phone	orders	an order from a business
+product_orders.delivery_address	orders	an order from a business
+product_orders.delivery_city	orders	an order from a business
+product_orders.delivery_fee_agorot	orders	an order from a business
+product_orders.estimated_total_agorot	orders	an order from a business
+product_orders.expires_at	orders	an order from a business
+product_orders.final_total_agorot	orders	an order from a business
+product_orders.fulfilment	orders	an order from a business
+product_orders.handed_at	orders	an order from a business
+product_orders.id	orders	an order from a business
+product_orders.idempotency_key	orders	an order from a business
+product_orders.note	orders	an order from a business
+product_orders.payment_status	orders	an order from a business
+product_orders.pickup_code	orders	an order from a business
+product_orders.producer_id	orders	an order from a business
+product_orders.proposal_note	orders	an order from a business
+product_orders.proposed_slot_end	orders	an order from a business
+product_orders.proposed_slot_start	orders	an order from a business
+product_orders.proposed_total_agorot	orders	an order from a business
+product_orders.slot_end	orders	an order from a business
+product_orders.slot_start	orders	an order from a business
+product_orders.status	orders	an order from a business
+product_orders.status_token_hash	orders	an order from a business
+product_orders.updated_at	orders	an order from a business
+product_orders.user_id	orders	an order from a business
+product_variants.id	business	a product a business lists
+product_variants.in_stock	business	a product a business lists
+product_variants.name	business	a product a business lists
+product_variants.position	business	a product a business lists
+product_variants.price_agorot	business	a product a business lists
+product_variants.product_id	business	a product a business lists
+products.allergens	business	a product a business lists
+products.available_weekdays	business	a product a business lists
+products.contains_alcohol	business	a product a business lists
+products.description	business	a product a business lists
+products.gluten_detail	business	a product a business lists
+products.group_id	business	a product a business lists
+products.id	business	a product a business lists
+products.image_url	business	a product a business lists
+products.in_stock	business	a product a business lists
+products.ingredients	business	a product a business lists
+products.is_draft	business	a product a business lists
+products.is_gluten_free	business	a product a business lists
+products.is_lactose_free	business	a product a business lists
+products.is_low_carb	business	a product a business lists
+products.is_no_added_sugar	business	a product a business lists
+products.is_orderable	business	a product a business lists
+products.is_vegan	business	a product a business lists
+products.is_vegetarian	business	a product a business lists
+products.may_contain	business	a product a business lists
+products.name	business	a product a business lists
+products.no_allergens	business	a product a business lists
+products.nuts_detail	business	a product a business lists
+products.position	business	a product a business lists
+products.price_max	business	a product a business lists
+products.price_min	business	a product a business lists
+products.price_range	business	a product a business lists
+products.price_unit	business	a product a business lists
+products.producer_id	business	a product a business lists
+products.source_image_url	business	a product a business lists
+products.storage_info	business	a product a business lists
+registrations.attendance	registrations	a sign-up for an event or workshop
+registrations.cancel_token	registrations	a sign-up for an event or workshop
+registrations.cancelled_at	registrations	a sign-up for an event or workshop
+registrations.created_at	registrations	a sign-up for an event or workshop
+registrations.email	registrations	a sign-up for an event or workshop
+registrations.event_id	registrations	a sign-up for an event or workshop
+registrations.experience_id	registrations	a sign-up for an event or workshop
+registrations.id	registrations	a sign-up for an event or workshop
+registrations.name	registrations	a sign-up for an event or workshop
+registrations.party_size	registrations	a sign-up for an event or workshop
+registrations.phone	registrations	a sign-up for an event or workshop
+registrations.reminder_sent_at	registrations	a sign-up for an event or workshop
+registrations.session_date	registrations	a sign-up for an event or workshop
+registrations.session_time	registrations	a sign-up for an event or workshop
+registrations.status	registrations	a sign-up for an event or workshop
+registrations.waitlist_offered_at	registrations	a sign-up for an event or workshop
+reports.created_at	ugc	a user's report about a business
+reports.id	ugc	a user's report about a business
+reports.producer_id	ugc	a user's report about a business
+reports.reason	ugc	a user's report about a business
+reports.reporter_id	ugc	a user's report about a business
+reports.resolved_at	ugc	a user's report about a business
+reports.resolved_by	ugc	a user's report about a business
+reports.status	ugc	a user's report about a business
+rescue_no_show_tombstones.created_at	orders	hashed email and no-show dates, kept 30 days (retention section)
+rescue_no_show_tombstones.email_hash	orders	hashed email and no-show dates, kept 30 days (retention section)
+rescue_no_show_tombstones.id	orders	hashed email and no-show dates, kept 30 days (retention section)
+rescue_no_show_tombstones.pickup_end	orders	hashed email and no-show dates, kept 30 days (retention section)
+rescue_offers.cancel_until	business	a surprise bag a business publishes
+rescue_offers.codes_sent_at	business	a surprise bag a business publishes
+rescue_offers.created_at	business	a surprise bag a business publishes
+rescue_offers.date	business	a surprise bag a business publishes
+rescue_offers.id	business	a surprise bag a business publishes
+rescue_offers.pickup_end	business	a surprise bag a business publishes
+rescue_offers.pickup_start	business	a surprise bag a business publishes
+rescue_offers.price_agorot	business	a surprise bag a business publishes
+rescue_offers.producer_location_id	business	a surprise bag a business publishes
+rescue_offers.qty_donated	business	a surprise bag a business publishes
+rescue_offers.qty_left	business	a surprise bag a business publishes
+rescue_offers.qty_total	business	a surprise bag a business publishes
+rescue_offers.status	business	a surprise bag a business publishes
+rescue_offers.value_max_agorot	business	a surprise bag a business publishes
+rescue_offers.value_min_agorot	business	a surprise bag a business publishes
+rescue_orders.cancelled_at	orders	a surprise-bag reservation
+rescue_orders.created_at	orders	a surprise-bag reservation
+rescue_orders.handed_at	orders	a surprise-bag reservation
+rescue_orders.handed_by	orders	a surprise-bag reservation
+rescue_orders.id	orders	a surprise-bag reservation
+rescue_orders.offer_id	orders	a surprise-bag reservation
+rescue_orders.pickup_code	orders	a surprise-bag reservation
+rescue_orders.qty	orders	a surprise-bag reservation
+rescue_orders.status	orders	a surprise-bag reservation
+rescue_orders.user_id	orders	a surprise-bag reservation
+rescue_reviews.comment	ugc	a review of a surprise bag
+rescue_reviews.contents_tags	ugc	a review of a surprise bag
+rescue_reviews.created_at	ugc	a review of a surprise bag
+rescue_reviews.highlight_tags	ugc	a review of a surprise bag
+rescue_reviews.id	ugc	a review of a surprise bag
+rescue_reviews.order_id	ugc	a review of a surprise bag
+rescue_reviews.photo_url	ugc	a review of a surprise bag
+rescue_reviews.rating	ugc	a review of a surprise bag
+rescue_typical_items.allergens	business	what a business's surprise bag usually holds
+rescue_typical_items.created_at	business	what a business's surprise bag usually holds
+rescue_typical_items.id	business	what a business's surprise bag usually holds
+rescue_typical_items.items	business	what a business's surprise bag usually holds
+rescue_typical_items.producer_id	business	what a business's surprise bag usually holds
+rescue_typical_items.updated_at	business	what a business's surprise bag usually holds
+retired_slugs.producer_id	business	an old address of a business page
+retired_slugs.reason	business	an old address of a business page
+retired_slugs.retired_at	business	an old address of a business page
+retired_slugs.slug	business	an old address of a business page
+saved_items.created_at	cookies	an item a user saved
+saved_items.id	cookies	an item a user saved
+saved_items.item_id	cookies	an item a user saved
+saved_items.item_type	cookies	an item a user saved
+saved_items.user_id	cookies	an item a user saved
+search_queries.id	cookies	a search typed on the site
+search_queries.query	cookies	a search typed on the site
+search_queries.results_count	cookies	a search typed on the site
+search_queries.searched_at	cookies	a search typed on the site
+static_pages.body	not-personal	text of the site's static pages
+static_pages.slug	not-personal	text of the site's static pages
+static_pages.title	not-personal	text of the site's static pages
+static_pages.updated_at	not-personal	text of the site's static pages
+user_phone_otp_tokens.attempts	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.code	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.created_at	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.expires_at	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.id	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.phone	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.used	technical	a one-time code that verifies a user's phone
+user_phone_otp_tokens.user_id	technical	a one-time code that verifies a user's phone
+users.apple_id	technical	sign-in and security data of the account
+users.avatar_url	identity	a user account
+users.city	identity	a user account
+users.created_at	identity	a user account
+users.email	identity	a user account
+users.email_verified	identity	a user account
+users.email_verify_expires	technical	sign-in and security data of the account
+users.email_verify_token	technical	sign-in and security data of the account
+users.google_id	technical	sign-in and security data of the account
+users.id	identity	a user account
+users.is_blocked	identity	a user account
+users.is_producer	identity	a user account
+users.is_test	identity	a user account
+users.last_active_at	technical	sign-in and security data of the account
+users.name	identity	a user account
+users.password_changed_at	technical	sign-in and security data of the account
+users.password_hash	technical	sign-in and security data of the account
+users.phone	identity	a user account
+users.phone_verified_at	identity	a user account
+users.producer_id	identity	a user account
+users.rescue_block_cleared_at	orders	when a surprise-bag block was lifted
+users.rescue_no_show_count	orders	surprise-bag no-shows on the account
+users.reset_token	technical	sign-in and security data of the account
+users.reset_token_expires_at	technical	sign-in and security data of the account
+users.role	identity	a user account
+users.terms_accepted_at	identity	a user account
+users.terms_version	identity	a user account
+users.token_version	technical	sign-in and security data of the account
+users.whatsapp_consent_at	identity	a user account

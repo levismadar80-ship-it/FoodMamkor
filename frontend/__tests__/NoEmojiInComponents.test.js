@@ -18,7 +18,8 @@ import path from "node:path";
 //     stripped, outbound-message payloads exempt via justified allowlist).
 //     The one message-file regression THIS ticket locked — the diet chip
 //     labels — is still asserted directly below.
-//   • NOT lib/** — data modules (holidays.js holiday glyphs, etc.), not UI chrome.
+//   • lib/** and hooks/** since MEH-3668 (22/11): no emoji anywhere on the
+//     site (Sapir). lib/generated/** is skipped: it is the generated API client.
 //   • NOT __tests__/** or e2e/** — tests/fixtures.
 //
 // Comments are stripped before scanning: the codebase documents past emoji
@@ -30,7 +31,9 @@ import path from "node:path";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..");
-const SCAN_ROOTS = ["components", "app"];
+// MEH-3668: lib/** and hooks/** joined 22/11. Their strings reach the screen
+// too (registry copy, labels built in hooks); generated/ is the API client.
+const SCAN_ROOTS = ["components", "app", "lib", "hooks"];
 
 // Any Unicode codepoint with emoji presentation (pictographs, transport, symbols,
 // regional indicators). Excludes plain typographic marks like ★ (U+2605) and → /
@@ -48,7 +51,6 @@ const ALLOWLIST = {
   // documented intent — ★ is typography — holds on every ICU version.
   "\u2605": "★ — black star, the plain typographic rating mark (admin reviews star filter); was outside Extended_Pictographic before Unicode 16.",
   "\u2606": "☆ — white star, the empty half of the same typographic rating mark; listed with ★ so the pair behaves the same on every ICU version.",
-  "\u{1F449}": "👉 — pointer in outbound WhatsApp/story share-message copy (ShareButton, StoryCardCanvas caption); message text sent to WhatsApp, not rendered UI chrome — changing it is a copy decision.",
 };
 const ALLOWED = new Set(Object.keys(ALLOWLIST));
 
@@ -73,7 +75,7 @@ function walk(dir, acc) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (/(^|\/)(node_modules|\.next|__tests__|e2e|coverage)$/.test(p)) continue;
+      if (/(^|\/)(node_modules|\.next|__tests__|e2e|coverage|generated)$/.test(p)) continue;
       walk(p, acc);
     } else if (/\.(jsx?|tsx?)$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name)) {
       acc.push(p);

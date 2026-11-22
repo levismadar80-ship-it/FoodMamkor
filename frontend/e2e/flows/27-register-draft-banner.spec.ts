@@ -34,12 +34,9 @@ import { test, expect, type Page } from "./_cloudinary-stub";
 
 const DRAFT_KEY = "producer_registration_draft";
 
-/** Click through the pre-flight intro to frame 01. */
+/** MEH-3656: the pre-flight intro is gone — the wizard opens on frame 01. */
 async function enterWizard(page: Page) {
-  const start = page.getByTestId("register-preflight-start");
-  await expect(start, "pre-flight entry must render").toBeVisible();
-  await start.click();
-  await expect(page.getByTestId("register-frame-account")).toBeVisible();
+  await expect(page.getByTestId("register-frame-account"), "wizard entry must render").toBeVisible();
 }
 
 /**

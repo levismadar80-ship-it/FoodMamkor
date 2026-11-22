@@ -49,8 +49,11 @@ mehamakor/
 | Read DB schema diagram | `.ai/diagrams/db-schema.md` |
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
+| See every scheduled job and when it runs (generated from code) | `docs/JOBS.md` |
 | See every status and who can move it | `docs/STATE_MACHINES.md` |
+| See every message the site sends, by channel | `docs/NOTIFICATIONS.md` |
 | See what talks to what, where data lives, what breaks first under load | `docs/SYSTEM_MAP.md` |
+| See every environment variable and where it is read (generated from code) | `docs/ENVIRONMENT.md` |
 | Look up a workflow rule | `.claude/rules/workflow.md` |
 | Add an Alembic migration | `backend/alembic/versions/` (`docs/MIGRATIONS.md`) |
 
@@ -79,6 +82,13 @@ Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
 - **Permanent decisions → [`docs/decisions/README.md`](./decisions/README.md)** (NOT `LOCKED_DECISIONS.md` — deprecated, migrating into ADRs)
 - Roadmap + features → [`docs/ROADMAP.md`](./ROADMAP.md)
 - Diagrams → [`.ai/diagrams/`](../.ai/diagrams/)
+- Apex project context (DNA, stack, working model) → [`docs/CONTEXT.md`](./CONTEXT.md) · brand → [`docs/BRAND.md`](./BRAND.md)
+- Tests + release checklist + E2E locators → [`docs/TESTING.md`](./TESTING.md) · [`docs/RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md) · [`docs/E2E-LOCATORS.md`](./E2E-LOCATORS.md)
+- Moderation + admin pages → [`docs/MODERATION.md`](./MODERATION.md) · [`docs/ADMIN.md`](./ADMIN.md)
+- Feature status + session log → [`docs/FEATURES.md`](./FEATURES.md) · [`docs/CHANGELOG.md`](./CHANGELOG.md)
+- Prompt templates (Linear issues, CC tasks, design) → [`docs/templates/`](./templates/README.md)
+- Central-component guardrails + emergency skips → [`docs/CENTRAL_COMPONENTS.md`](./CENTRAL_COMPONENTS.md) · [`docs/EMERGENCY_OVERRIDE.md`](./EMERGENCY_OVERRIDE.md)
+- Security checklist (past-incident traps) → [`docs/SECURITY-CHECKLIST.md`](./SECURITY-CHECKLIST.md)
 
 ---
 

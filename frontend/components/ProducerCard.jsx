@@ -4,6 +4,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Clock, HeartStraight, Truck } from "@phosphor-icons/react";
@@ -34,11 +36,9 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { enqueueFavoriteOnLogin } from "@/lib/post-login-action";
 import {
-  ensureFavoritesLoaded,
-  isFavorited as isFavoritedCache,
   setFavoritedLocal,
-  subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import api from "@/lib/api";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
@@ -102,17 +102,7 @@ function CardHeart({ producer, onCountChange }) {
     // user logs in — otherwise a heart saved as guest stays visually stuck
     // "on" even when the account's real favorites say otherwise.
     setGuestSaved(false);
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producer.id, setFavorited);
   }, [user, producer.id]);
 
   if (user && user.producer_id === producer.id) return null;
@@ -349,10 +339,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const category = producer.categories?.[0]?.name;
+  const firstCategory = producer.categories?.[0];
+  const category = firstCategory?.name ? categoryLabel(t, firstCategory) : undefined;
 
   const userLoc = useUserLocation();
-  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק״מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
   // MEH-1938 chunk 3: distance to the CLOSEST point, read through

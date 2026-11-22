@@ -204,6 +204,7 @@ export default function ReviewInviteCard(p) {
       {mode === "login" && (
         <LoginPromptModal
           open={loginOpen}
+          reason="review"
           onClose={() => setLoginOpen(false)}
           title={t("login_prompt_title")}
           message={t("login_prompt_message")}
