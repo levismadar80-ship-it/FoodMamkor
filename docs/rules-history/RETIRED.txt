@@ -1,0 +1,9 @@
+# Rules retired on purpose. One inventory key per line, exact (trailing spaces matter).
+# 21/11/2026, MEH-3674 (rules prune, Sapir's «הכל חוץ מקובץ הסקילים»):
+#   - frontend.md «Maintenance — 90-day prune»: a reminder with no mechanism (a rules-budget guard is the follow-up PR).
+#   - labels.md «The license ruling»: the badge left BADGE_CONFIG on 29/08 (#3156); the ruling is history.
+H Maintenance — 90-day prune (MEH-1637)
+H The `license` ruling (MEH-2191, 26/08) — ⚠️ RETIRED 29/08, the badge it ruled on no longer renders
+N Maintenance — 90-day prune (MEH-1637) | 1 | Claims about a dependency's
+N Maintenance — 90-day prune (MEH-1637) | 2 | Claims already enforced mechanically
+N Maintenance — 90-day prune (MEH-1637) | 3 | Incident history no longer
