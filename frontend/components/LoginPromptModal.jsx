@@ -1,11 +1,13 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import { trackEvent } from "@/lib/analytics";
+import LoginPromptGoogle from "@/components/LoginPromptGoogle";
 
 /**
  * LoginPromptModal — lightweight modal that nudges guests toward /login
@@ -19,6 +21,11 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  *            their own action; the save hearts keep the default.
  *   - message: string (default: modals.login_prompt.default_message)
  *   - nextPath: string (the URL to redirect back to after login)
+ *   - reason: string (MEH-3661 — which action asked; analytics only)
+ *   - onSignedIn: () => void (MEH-3661 — Google sign-in inside the modal
+ *            succeeded. Defaults to onClose. A caller whose onClose drops a
+ *            pending action passes its own, or the action it kept for after
+ *            sign-in is lost a render before it can run.)
  *
  * Accessibility:
  *   - role="dialog" + aria-modal="true" + aria-labelledby
@@ -56,18 +63,44 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * @param {string} [p.title]
  * @param {string} [p.message]
  * @param {string} [p.nextPath]
+ * @param {string} [p.reason]
+ * @param {() => void} [p.onSignedIn]
  */
 export default function LoginPromptModal({
   open,
-  onClose,
+  onClose: onCloseProp,
   title,
   message,
   nextPath = "/",
+  reason = "save",
+  onSignedIn,
 }) {
   const t = useTranslations("modals.login_prompt");
   const promptMessage = message ?? t("default_message");
   const primaryRef = useRef(null);
   const modalRef = useRef(null);
+
+  // MEH-3661: every way out without signing in (X, «אולי אחר כך», Esc, the
+  // scrim) is one "dismiss" — measured here, once, not at each control.
+  // Read through a ref: callers pass a new arrow every render, and the
+  // open-effect below must not re-run (and re-focus «היכנסו») on each one —
+  // a re-render from the auth store would pull focus off the Google button.
+  // Refreshed in an effect, not during render (react-hooks/refs).
+  const dismissRef = useRef(() => {});
+  useEffect(() => {
+    dismissRef.current = () => {
+      trackEvent("login_prompt_action", { reason, action: "dismiss" });
+      onCloseProp();
+    };
+  });
+  const onClose = useCallback(() => dismissRef.current(), []);
+  const handleSignedIn = () => {
+    trackEvent("login_prompt_action", { reason, action: "google" });
+    (onSignedIn ?? onCloseProp)();
+  };
+  useEffect(() => {
+    if (open) trackEvent("login_prompt_shown", { reason });
+  }, [open, reason]);
 
   // Capture trigger before CTA-focus effect runs (effect order matters).
   useFocusReturn(open);
@@ -111,7 +144,7 @@ export default function LoginPromptModal({
       window.removeEventListener("keydown", handleKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, onClose]);
+  }, [open, onClose]); // onClose is stable (dismissRef) — runs once per open
 
   if (!open) return null;
 
@@ -156,9 +189,14 @@ export default function LoginPromptModal({
         </h2>
         <p className="text-text mb-6 leading-relaxed">{promptMessage}</p>
 
+        {/* MEH-3661: Google first, as on /login and /register — one tap and
+            she never leaves the page. Hidden when Google is not configured. */}
+        <LoginPromptGoogle onSuccess={handleSignedIn} />
+
         <a
           ref={primaryRef}
           href={loginHref}
+          onClick={() => trackEvent("login_prompt_action", { reason, action: "login" })}
           className="block w-full bg-primary text-white py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {t("login_cta")}
