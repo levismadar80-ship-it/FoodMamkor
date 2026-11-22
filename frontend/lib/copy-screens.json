@@ -499,6 +499,7 @@
       "/join"
     ],
     "category": [],
+    "category_names": [],
     "chat": [
       "/",
       "/[slug]",
@@ -1227,7 +1228,9 @@
       "/register/producer",
       "/rescue/[offerId]"
     ],
-    "map_category_chips": [],
+    "map_category_chips": [
+      "/map"
+    ],
     "modals": [
       "/",
       "/[slug]",
