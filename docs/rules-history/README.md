@@ -10,6 +10,19 @@ rules were condensed (the rules diet, MEH-2333, 26/10/2026).
 | [2026-11-13/workflow.md](./2026-11-13/workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `cd6032d` (second trim, 13/11) |
 | [2026-11-13/testing.md](./2026-11-13/testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `cd6032d` (second trim, 13/11) |
 | [2026-11-13/security.md](./2026-11-13/security.md) | [`.claude/rules/security.md`](../../.claude/rules/security.md) | `cd6032d` (second trim, 13/11) |
+| [2026-11-21/backend.md](./2026-11-21/backend.md) | [`.claude/rules/backend.md`](../../.claude/rules/backend.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/code-execution.md](./2026-11-21/code-execution.md) | [`.claude/rules/code-execution.md`](../../.claude/rules/code-execution.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/db.md](./2026-11-21/db.md) | [`.claude/rules/db.md`](../../.claude/rules/db.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/deployment.md](./2026-11-21/deployment.md) | [`.claude/rules/deployment.md`](../../.claude/rules/deployment.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/feature-docs.md](./2026-11-21/feature-docs.md) | [`.claude/rules/feature-docs.md`](../../.claude/rules/feature-docs.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/frontend.md](./2026-11-21/frontend.md) | [`.claude/rules/frontend.md`](../../.claude/rules/frontend.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/labels.md](./2026-11-21/labels.md) | [`.claude/rules/labels.md`](../../.claude/rules/labels.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/meta-patterns.md](./2026-11-21/meta-patterns.md) | [`.claude/rules/meta-patterns.md`](../../.claude/rules/meta-patterns.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/observability.md](./2026-11-21/observability.md) | [`.claude/rules/observability.md`](../../.claude/rules/observability.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/rtl.md](./2026-11-21/rtl.md) | [`.claude/rules/rtl.md`](../../.claude/rules/rtl.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/testing.md](./2026-11-21/testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/workflow.md](./2026-11-21/workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `1443c268b` (third trim, 21/11, MEH-3674) |
+| [2026-11-21/root/CLAUDE.md](./2026-11-21/root/CLAUDE.md) | [`CLAUDE.md`](../../CLAUDE.md) | `1443c268b` (third trim; not inventory-checked — the guard reads one folder level) |
 
 **Why this split exists.** Everything in `.claude/rules/` without a `paths:`
 frontmatter is loaded into every session before the first word of work. The
