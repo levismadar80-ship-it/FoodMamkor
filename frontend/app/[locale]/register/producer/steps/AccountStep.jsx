@@ -94,9 +94,10 @@ export default function AccountStep({ form, numberedTitle, refreshUser, requestF
           onChange={set("password")}
           required
           dir="ltr"
-          // MEH-3663: the Hebrew placeholder sits on the right while the field
-          // is empty; the typed password stays ltr.
-          className="placeholder-shown:[direction:rtl]"
+          // MEH-3663: on a Hebrew page the placeholder text sits on the right
+          // like the other fields; the caret and the typed password stay ltr.
+          // (text-end of an ltr input is its right edge.)
+          className="rtl:placeholder:text-end"
           minLength={12}
           autoComplete="new-password"
         />
