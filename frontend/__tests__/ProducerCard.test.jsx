@@ -47,11 +47,11 @@ vi.mock("next-intl", () => ({
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
     if (key === "producer.offer.card_delivery_sr") return "משלוח";
-    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק״ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // ('ק״מ' on the Hebrew card). The experience-card test set the precedent
   // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
@@ -494,7 +494,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     // MEH-2440: distance belongs to the place, so it rides in the city line.
     expect(screen.getByTestId("card-place")).toContainElement(distance);
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
     expect(distance.textContent).not.toContain("ממך");
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
@@ -521,7 +521,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
   });
 
   it("prefers short_description over top_product_name", () => {
@@ -1041,7 +1041,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק״ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {

@@ -41,6 +41,8 @@ import {
   sendOrder,
   slotsFor,
 } from "@/lib/order-sheet";
+import { pickedLine } from "@/lib/order-cart";
+import { splitKey } from "@/lib/product-variants";
 
 const QUOTE_DELAY_MS = 400;
 
@@ -77,7 +79,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   const locale = useLocale();
   const router = useRouter();
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
-  const hasAlcohol = Object.keys(picks).some((id) => byId.get(id)?.contains_alcohol);
+  const hasAlcohol = Object.keys(picks).some((key) => byId.get(splitKey(key).productId)?.contains_alcohol);
   const ways = fulfilmentsOffered(menu, hasAlcohol);
   const [form, setForm] = useState(() => {
     const blank = {
@@ -216,12 +218,20 @@ function useQuote(body, setAnswer, setError, onStale) {
   }, [body, setAnswer, setError, onStale]);
 }
 
+/** @param {Map<string, any>} byId @param {string} key */
+function lineName(byId, key) {
+  const line = pickedLine(byId, key);
+  const product = line?.product ?? byId.get(splitKey(key).productId);
+  return line?.variant ? `${product?.name} · ${line.variant.name}` : product?.name;
+}
+
 function Lines({ picks, byId }) {
   return (
     <ul className="divide-y divide-border-subtle text-sm" data-testid="order-sheet-lines">
-      {Object.entries(picks).map(([id, qty]) => (
-        <li key={id} className="flex justify-between gap-3 py-1.5">
-          <span className="text-text">{byId.get(id)?.name}</span>
+      {Object.entries(picks).map(([key, qty]) => (
+        <li key={key} className="flex justify-between gap-3 py-1.5">
+          {/* MEH-3617: «{product} · {variant}» */}
+          <span className="text-text">{lineName(byId, key)}</span>
           <span className="text-fg-muted shrink-0">× {qty}</span>
         </li>
       ))}

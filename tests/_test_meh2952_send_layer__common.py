@@ -966,6 +966,31 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
     (
+        "services/group_buy_notifications.py",
+        "notify_producer_late_joiner",
+        "_send_email",
+    ): (1, OWN, "wrapper param ← gb.producer.is_test (MEH-3592)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_waitlist_place",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3592)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_pickup_changed",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3597)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_pickup_reminder",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3610)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_allergens_changed",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3610)"),
+    (
         "services/rescue_business_emails.py",
         "send_business_reservation_email",
         "send_email",
