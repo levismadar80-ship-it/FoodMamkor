@@ -159,7 +159,7 @@ beforeEach(() => {
 
 async function renderWizard() {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
 }
 
 async function fillAccountToDetails() {
@@ -178,15 +178,11 @@ function fillDetailsFields() {
   fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
 }
 
-// DETAILS → CATEGORY → STORY → submit. Assumes the axis is already valid.
+// DETAILS → CATEGORY → submit (MEH-3656: CATEGORY is the last business frame).
+// Assumes the axis is already valid.
 async function advanceAndSubmit() {
   fireEvent.click(nextBtn()); // → CATEGORY
   fireEvent.click(await screen.findByTestId("pick-category"));
-  fireEvent.click(nextBtn()); // → STORY
-  await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
-  fireEvent.change(screen.getByTestId("register-referral-source"), {
-    target: { value: "instagram" },
-  });
   screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
   fireEvent.click(screen.getByText(`${K}.actions.submit`));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -300,67 +296,47 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     ]) {
       expect(screen.queryByTestId(gone), gone).toBeNull();
     }
-    // …and the pointer to where delivery areas now live IS there.
-    expect(screen.getByTestId("register-delivery-note")).toHaveTextContent(
-      `${K}.fields.fulfilment.areas_note`,
-    );
-    // MEH-2447: where WhatsApp orders arrive — under every choice.
-    expect(screen.getByTestId("register-fulfilment-whatsapp-note")).toHaveTextContent(
-      `${K}.fields.fulfilment.whatsapp_note`,
-    );
+    // MEH-3656: the helper notes under the question left with the rest of the
+    // step-2 helper text — delivery areas, hours and WhatsApp orders are
+    // explained where they are edited, in the dashboard.
+    for (const gone of [
+      "register-delivery-note",
+      "register-fulfilment-whatsapp-note",
+      "register-fulfilment-hint",
+    ]) {
+      expect(screen.queryByTestId(gone), gone).toBeNull();
+    }
+    // Those testids exist nowhere now; the keys are what t() renders here, so
+    // this is the line that reddens if the copy returns under another testid.
+    expect(document.body.textContent).not.toMatch(/fields\.(areas_note|whatsapp_note|multi_hint|free_hint)/);
   });
 
-  // MEH-2447: the hours hint promises «קנייה במקום», which a delivery-only
-  // card never shows — so it appears only for a choice with a place to come to.
+  // MEH-3656: the MEH-2447 hours hint is gone with the other step-2 notes —
+  // no choice shows it any more.
   it.each([
-    // MEH-2939: «both» is both boxes ticked, not a third control.
-    ["none picked", [], false],
-    ["onsite", ["onsite"], true],
-    ["delivery", ["delivery"], false],
-    ["both boxes", ["onsite", "delivery"], true],
-  ])("hours hint with %s", async (_label, boxes, shown) => {
+    ["none picked", []],
+    ["onsite", ["onsite"]],
+    ["delivery", ["delivery"]],
+    ["both boxes", ["onsite", "delivery"]],
+  ])("no hours hint with %s", async (_label, boxes) => {
     await renderWizard();
     await fillAccountToDetails();
     for (const box of boxes) fireEvent.click(screen.getByTestId(`register-fulfilment-${box}`));
-    const hint = screen.queryByTestId("register-fulfilment-hours-hint");
-    if (shown) {
-      expect(hint).toHaveTextContent(`${K}.fields.fulfilment.hours_hint`);
-    } else {
-      expect(hint).toBeNull();
-    }
+    expect(screen.queryByTestId("register-fulfilment-hours-hint")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/fields\.hours_hint/);
   });
 });
 
-describe("MEH-2938 — the online-store link is collected at registration", () => {
-  it("a filled link reaches the POST body", async () => {
+// MEH-3656: the MEH-2938 store link is no longer asked at signup; the
+// dashboard's contact card edits the same column (ContactChannelsCard).
+describe("MEH-3656 — the online-store link is not asked at signup", () => {
+  it("step 2 has no store-link field, and the body posts null", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
     fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
-    fireEvent.change(screen.getByTestId("register-external-order"), {
-      target: { value: " https://shop.example.com " },
-    });
-    const body = await advanceAndSubmit();
-    expect(body.external_order_form).toBe("https://shop.example.com");
-  });
-
-  it("a bare domain gets https:// so the server's guard does not fail the signup", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
-    fireEvent.change(screen.getByTestId("register-external-order"), {
-      target: { value: "myshop.co.il/store" },
-    });
-    const body = await advanceAndSubmit();
-    expect(body.external_order_form).toBe("https://myshop.co.il/store");
-  });
-
-  it("left empty, it posts null", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    expect(screen.queryByTestId("register-external-order")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/external_order_form/);
     const body = await advanceAndSubmit();
     expect(body.external_order_form).toBeNull();
   });
