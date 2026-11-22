@@ -63,7 +63,7 @@ vi.mock("next-intl", () => {
       "בשליחת הטופס את מאשרת שקראת את <link>מדיניות הפרטיות</link>.",
     // MEH-2633 Sapir 04/11 — notice at collection, under the email field.
     "privacy.collection_notice.business_suggestion":
-      "נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
+      "נשתמש במייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
     "recommend.privacy_link": "מדיניות הפרטיות",
   };
   return {
@@ -132,7 +132,7 @@ describe("RecommendClient", () => {
     authState.user = MEMBER;
     render(<RecommendClient />);
     const notice = screen.getByTestId("recommend-collection-notice");
-    expect(notice).toHaveTextContent("נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו");
+    expect(notice).toHaveTextContent("נשתמש במייל רק כדי לעדכן אתכם על ההמלצה הזו");
     expect(notice).toHaveTextContent("לא עובר לבית העסק ולא משמש לשיווק");
     const link = screen.getByTestId("recommend-collection-notice-link");
     expect(link).toHaveTextContent("מדיניות הפרטיות");

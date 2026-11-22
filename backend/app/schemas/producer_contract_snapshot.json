@@ -144,6 +144,7 @@
     "lat",
     "lng",
     "locations",
+    "logo_url",
     "name",
     "noindex",
     "offers_delivery",
@@ -237,6 +238,7 @@
       "order_cutoff_time",
       "phone",
       "pickup_days",
+      "pickup_note",
       "precision"
     ],
     "ProducerDetailOut.product_groups": [
@@ -245,6 +247,7 @@
     ],
     "ProducerDetailOut.products": [
       "allergens",
+      "available_weekdays",
       "description",
       "gluten_detail",
       "group_id",
@@ -266,7 +269,8 @@
       "price_min",
       "price_range",
       "price_unit",
-      "storage_info"
+      "storage_info",
+      "variants"
     ],
     "ProducerListOut.active_offer": [
       "expires_at",
@@ -315,6 +319,7 @@
       "order_cutoff_time",
       "phone",
       "pickup_days",
+      "pickup_note",
       "precision"
     ]
   }

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
+import { Clock, MapPin } from "@phosphor-icons/react";
 
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
@@ -14,7 +14,10 @@ import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID, rescueOfferPath } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
+import OfferCard from "@/components/ui/OfferCard";
+import { GroupBuyProgressMark } from "@/components/ui/SeedProgressMark";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 /**
  * Module:   RescueSection
@@ -25,13 +28,15 @@ import LoginPromptModal from "@/components/LoginPromptModal";
  *           checkout page and no provider (03/11 pilot ruling). Reserve →
  *           confirmation, in place.
  * Related:  app/[locale]/producer/[id]/components/ProducerSections.jsx (slot,
- *           before section-products), lib/rescue.js
+ *           after the activities, beside the group buys — MEH-3585), lib/rescue.js
  * History:  MEH-2648 (creation) · MEH-2713 (icon-row card: price up top,
  *           one short cancel line, allergens folded) · MEH-2737 (a cancel
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
  *           cancelled the bag) · MEH-3586 (reserve/cancel state moved to
- *           lib/useRescueReservation, shared with the bag page)
+ *           lib/useRescueReservation, shared with the bag page) · MEH-3585
+ *           (drawn by the shared ui/OfferCard, the group-buy card: same size,
+ *           seeds for the bags left)
  */
 
 export default function RescueSection({ producer }) {
@@ -95,6 +100,10 @@ export default function RescueSection({ producer }) {
 
   const price = shekels(offer?.price_agorot);
   const worth = shekels(worthAgorot(offer));
+  // MEH-3585: the gold saving line, as on the group-buy card. Only off the
+  // business's own LOW estimate (worthAgorot), so never a made-up discount.
+  const worthA = worthAgorot(offer);
+  const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
@@ -110,6 +119,7 @@ export default function RescueSection({ producer }) {
       <SectionHeading size="content">{t("section.title")}</SectionHeading>
       <LoginPromptModal
         open={loginOpen}
+        reason="rescue"
         onClose={() => setLoginOpen(false)}
         title={t("login_prompt_title")}
         message={t("login_prompt_message")}
@@ -157,125 +167,120 @@ export default function RescueSection({ producer }) {
           )}
         </div>
       ) : offer ? (
-        <div
-          className="mt-3 border border-border bg-surface-card rounded-md p-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-5 md:items-center"
-          data-testid="rescue-section-card"
-        >
-          {/* Start column: what, when, where. On md+ the price/CTA column sits
-              at the end side; below md everything stacks in source order, with
-              the price on the top row next to the stock tag. */}
-          <div className="grid gap-3 min-w-0">
-            <div className="flex items-center gap-2.5">
-              <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
-                <Basket size={24} weight="regular" />
-              </span>
-              {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
-              <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">
-                {t("row.left_short", { count: offer.qty_left })}
-              </span>
-              <PriceBlock className="ms-auto text-end md:hidden" price={price} worth={worth} t={t} testIds />
-            </div>
-            <ul className="grid gap-2 font-body-sm text-base text-text">
-              {from && until && (
-                <li className="flex items-start gap-2">
-                  <Clock aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span data-testid="rescue-section-pickup">{t("row.pickup", { from, until })}</span>
-                </li>
-              )}
-              {/* Full address: a live bag is the MEH-829 carve-out, and the point
-                  is exact-precision or the backend refuses the offer. */}
-              {offer.producer?.location_address && (
-                <li className="flex items-start gap-2">
-                  <MapPin aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span data-testid="rescue-section-address">
+        // MEH-3585: the shared OfferCard — the same card as the group buys under
+        // «קבוצות רכישה פתוחות», in the same half-width grid (Sapir 21/11: one
+        // design, one size). The reserve button stays on the card — it is the
+        // only place a bag is reserved.
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <OfferCard
+            testId="rescue-section-card"
+            // No icon tile (Sapir 21/11: the basket looked unprofessional).
+            // Like the group-buy card: the business's photo is already the
+            // page's own hero, and a generic icon adds nothing (DESIGN.md «Offer cards»).
+            // No typical items → no card title: «סל הפתעה» is already the
+            // section heading right above (MEH-3585 review).
+            title={offer.typical_items?.length > 0 ? t("section.typical", { items: offer.typical_items.join(", ") }) : null}
+            titleTestId="rescue-section-typical"
+            lines={
+              // Full address: a live bag is the MEH-829 carve-out, and the point
+              // is exact-precision or the backend refuses the offer.
+              offer.producer?.location_address && (
+                <p className="mt-0.5 flex items-start gap-1.5 text-sm text-fg-muted" data-testid="rescue-section-address">
+                  <MapPin aria-hidden="true" size={16} className="shrink-0 mt-0.5" />
+                  <span>
                     {offer.producer.location_address}
                     {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
                   </span>
-                </li>
+                </p>
+              )
+            }
+            price={price !== null ? t("row.price", { price }) : null}
+            priceTestId="rescue-section-price"
+            worth={worth !== null ? t("row.price", { price: worth }) : null}
+            worthTestId="rescue-section-worth"
+            saving={savingPct > 0 ? t("section.saving", { pct: savingPct }) : null}
+            savingTestId="rescue-section-saving"
+            bandStart={
+              <>
+                {/* The logo seeds, as on the group-buy card: one per bag, filled
+                    = still available. */}
+                <GroupBuyProgressMark
+                  commits={offer.qty_left}
+                  min={offer.qty_total || offer.qty_left}
+                  // Decorative: «נשארו 4 סלים» sits right beside it (MEH-3585 review).
+                  label={null}
+                />
+                <span className="text-xs font-bold text-text" data-testid="rescue-section-stock">
+                  {t("row.left", { count: offer.qty_left })}
+                </span>
+              </>
+            }
+            bandEnd={
+              from && until && (
+                <span className="flex items-center gap-1" data-testid="rescue-section-pickup">
+                  <Clock aria-hidden="true" size={14} className="shrink-0" />
+                  {/* MEH-3585: say the day — the public list is today's bags
+                      only, and a bare window reads as «every day». */}
+                  {t("section.pickup_today", { from, until })}
+                </span>
+              )
+            }
+          >
+            <div className="grid gap-2">
+              {errorLine}
+              <Button
+                type="button"
+                onClick={() => reserve(offer.id)}
+                disabled={busy || offer.qty_left < 1}
+                data-testid="rescue-reserve"
+                variant="primary" size="lg" className="w-full"
+              >
+                {t("section.cta")}
+              </Button>
+              <NotAPartyLine name={producer?.name} testId="rescue-not-a-party" />
+              {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
+                  confirmation, where confirm.terms still carries it. */}
+              {cancelUntil && (
+                <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
+                  {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
+                </p>
               )}
-              {offer.typical_items?.length > 0 && (
-                <li className="flex items-start gap-2">
-                  <Bread aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span className="text-fg-muted" data-testid="rescue-section-typical">
-                    {t("section.typical", { items: offer.typical_items.join(", ") })}
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
+            </div>
 
-          <div className="grid gap-2 md:text-center">
-            <PriceBlock className="hidden md:block" price={price} worth={worth} t={t} />
-            {errorLine}
-            <Button
-              type="button"
-              onClick={() => reserve(offer.id)}
-              disabled={busy || offer.qty_left < 1}
-              data-testid="rescue-reserve"
-              variant="primary" size="lg" className="w-full"
+            <details
+              className="border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
+              data-testid="rescue-section-allergens"
             >
-              {t("section.cta")}
-            </Button>
-            {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
-                confirmation, where confirm.terms still carries it. */}
-            {cancelUntil && (
-              <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
-                {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
-              </p>
-            )}
-          </div>
-
-          <details
-            className="md:col-span-2 border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
-            data-testid="rescue-section-allergens"
-          >
-            <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
-            {/* MEH-2752: what THIS business declared, not one sentence for
-                everyone. `null` and a list are genuinely different answers —
-                an empty list would read as "contains none of the 14", which
-                is a claim nobody made, so the API never sends one. */}
-            {offer.allergens?.length ? (
-              <p className="mt-1.5" data-testid="rescue-section-allergens-declared">
-                {t("section.allergens_declared", {
-                  list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", "),
-                })}
-              </p>
-            ) : (
-              <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                {t("section.allergens_undeclared")}
-              </p>
-            )}
-          </details>
-          {/* MEH-3586: the bag's own page — map, how pickup works, the
-              cancel rule. MEH-3585 may turn the whole card into this link. */}
-          <Link
-            href={rescueOfferPath(offer) || "/rescue"}
-            className="md:col-span-2 justify-self-start text-sm font-semibold text-primary underline min-h-touch inline-flex items-center"
-            data-testid="rescue-section-details"
-          >
-            {t("offer_page.details_link")}
-          </Link>
+              <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
+              {/* MEH-2752: what THIS business declared, not one sentence for
+                  everyone. `null` and a list are genuinely different answers —
+                  an empty list would read as "contains none of the 14", which
+                  is a claim nobody made, so the API never sends one. */}
+              {offer.allergens?.length ? (
+                <p className="mt-1.5" data-testid="rescue-section-allergens-declared">
+                  {t("section.allergens_declared", {
+                    list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", "),
+                  })}
+                </p>
+              ) : (
+                <p className="mt-1.5" data-testid="rescue-section-allergens-none">
+                  {t("section.allergens_undeclared")}
+                </p>
+              )}
+            </details>
+            {/* MEH-3586: the bag's own page — map, how pickup works, the
+                cancel rule. Next: the whole card becomes this link and the
+                reserve moves there (bag-page thread, follow-up PR). */}
+            <Link
+              href={rescueOfferPath(offer) || "/rescue"}
+              className="justify-self-start text-sm font-semibold text-primary underline min-h-touch inline-flex items-center"
+              data-testid="rescue-section-details"
+            >
+              {t("offer_page.details_link")}
+            </Link>
+          </OfferCard>
         </div>
       ) : null}
     </section>
-  );
-}
-
-/** Price, with the struck worth under it when there is one. Rendered twice —
- *  top row below md, end column on md+ — so only one copy carries test ids. */
-function PriceBlock({ price, worth, t, className = "", testIds = false }) {
-  if (price === null) return null;
-  return (
-    <span className={`leading-tight ${className}`}>
-      <b dir="ltr" className="block font-headline-display font-black text-3xl text-primary numeric" data-testid={testIds ? "rescue-section-price" : undefined}>
-        {t("row.price", { price })}
-      </b>
-      {worth !== null && (
-        // aria-hidden: read aloud as a second bare price it says nothing useful.
-        <s dir="ltr" aria-hidden="true" className="block text-sm text-fg-muted numeric" data-testid={testIds ? "rescue-section-worth" : undefined}>
-          {t("row.price", { price: worth })}
-        </s>
-      )}
-    </span>
   );
 }

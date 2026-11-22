@@ -46,21 +46,15 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 // locale file (MEH-978 key parity). Every entry is an OUTBOUND payload:
 // the string leaves the site (wa.me / navigator.share / clipboard caption),
 // it is never rendered as UI chrome.
+// MEH-3668 (Sapir 22/11): the last six outbound payloads (share, outreach,
+// claim-link, story caption) lost their emoji, except the green heart in the
+// short outreach message, which Sapir kept («הלב הירוק אפשר להשאיר»). A new
+// entry here needs Sapir's word, not a justification line.
 const EXEMPT_KEYS = {
-  "group_buys.detail.share_text":
-    "Group-buy WhatsApp share payload (GroupBuyDetailClient.jsx → wa.me URL).",
-  "admin.outreach.wa_templates.warm_body":
-    "Outreach WhatsApp template body (admin/outreach → wa.me prefill), sent to the prospect.",
   "admin.outreach.wa_templates.short_body":
-    "Outreach WhatsApp short template body (admin/outreach → wa.me prefill), sent to the prospect.",
-  "share.wa_message_with_meta":
-    "Producer share payload (ShareButton.jsx → navigator.share / wa.me), sent to WhatsApp.",
-  "story.canvas.caption_prefix":
-    "Instagram story caption copied to clipboard (StoryCardCanvas.jsx), social payload not UI.",
-  "admin.producers.table.draft_claim.message":
-    "MEH-2495 claim-link WhatsApp message copied to clipboard (AdminDraftClaimActions.jsx) and pasted to the owner; shown on screen only as the payload itself, in the read-only manual-copy box when the clipboard refuses — never as UI chrome.",
+    "Outreach WhatsApp short template (admin/outreach → wa.me prefill), sent to the prospect. Sapir kept its 💚 (22/11, MEH-3668).",
 };
-const EXPECTED_EMOJI_KEYS = Object.keys(EXEMPT_KEYS).length; // 6
+const EXPECTED_EMOJI_KEYS = Object.keys(EXEMPT_KEYS).length; // 1
 
 function collectEmojiKeys(node, prefix = "", acc = []) {
   if (typeof node === "string") {

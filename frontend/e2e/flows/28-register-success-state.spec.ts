@@ -80,15 +80,14 @@ async function stubSession(page, roleRef: { current: string }) {
 }
 
 /**
- * Walks the wizard from the pre-flight screen to a STORY step that is ready to
- * submit — every field filled, submit NOT clicked. Extracted verbatim under
+ * Walks the wizard to the CATEGORY step (the submitting frame since MEH-3656)
+ * ready to submit — every field filled, submit NOT clicked. Extracted verbatim under
  * MEH-2138 chunk F so the scroll test below drives the identical path; the
  * click stays at each call site because the MEH-1814 test arms a response
  * waiter immediately before it.
  */
 async function driveWizardToStorySubmitReady(page) {
   await page.goto("/register/producer");
-  await page.getByTestId("register-preflight-start").click();
 
   // Upgrade path skips ACCOUNT — the token puts step at DETAILS.
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
@@ -101,12 +100,8 @@ async function driveWizardToStorySubmitReady(page) {
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-1").click();
   await page.getByTestId("register-category-license").fill("1234567");
-  await page.getByTestId("register-category-next").click();
 
-  await expect(page.getByTestId("register-frame-story")).toBeVisible();
-  await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-  await page.getByTestId("register-referral-source").selectOption("instagram");
-  for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
+  for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
     await cb.check();
   }
 }
@@ -154,7 +149,7 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
       (r) => r.url().includes("/auth/me") && r.request().method() === "GET",
       { timeout: 15_000 },
     );
-    await page.getByTestId("register-story-submit").click();
+    await page.getByTestId("register-category-submit").click();
 
     // ── The assertion this spec exists for ──
     const success = page.getByTestId("register-success-pending");
@@ -178,8 +173,8 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
     await page.goto("/register/producer");
 
     await expect(page.getByTestId("register-producer-gate")).toBeVisible();
-    // Form unreachable: no pre-flight CTA, no wizard frame, no hero pitch.
-    await expect(page.getByTestId("register-preflight-start")).toHaveCount(0);
+    // Form unreachable: no wizard frame, no hero pitch.
+    await expect(page.getByTestId("register-frame-account")).toHaveCount(0);
     await expect(page.getByTestId("register-frame-details")).toHaveCount(0);
     await expect(page.getByTestId("register-hero-heading")).toHaveCount(0);
 
@@ -257,7 +252,7 @@ for (const c of F_CASES) {
           "Every assertion below is vacuous in that state — fix the control before reading the result.",
       ).toBeGreaterThan(100);
 
-      await page.getByTestId("register-story-submit").click();
+      await page.getByTestId("register-category-submit").click();
 
       const success = page.getByTestId("register-success-pending");
       await expect(success).toBeVisible({ timeout: 10_000 });

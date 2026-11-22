@@ -11,7 +11,7 @@ Its job: give the next design ticket ([MEH-991](https://linear.app/mehamakor/iss
 onward) a **stated external precedent** to start from, instead of "make it nice".
 The comparisons used to live in chat and evaporate; this pins them.
 
-Note: `design-reference/` (MEH-991) holds Claude Design **artifacts** — this file is
+Note: `design-reference/` (MEH-991, deleted by MEH-3614 — see [media-archive.md](../media-archive.md)) held Claude Design **artifacts** — this file is
 the **external** benchmark layer with rationale, a different thing.
 
 ## The five benchmarks

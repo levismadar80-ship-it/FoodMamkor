@@ -3,9 +3,10 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Bread, MapPin, Warning } from "@phosphor-icons/react";
+import { Bread, Info, MapPin } from "@phosphor-icons/react";
 
 import SectionHeading from "@/components/ui/SectionHeading";
+import AllergenSection from "@/components/offer-detail/AllergenSection"; // MEH-3610
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { addressNavLinks } from "@/lib/nav-links";
 import { israelTime } from "@/lib/rescue";
@@ -25,13 +26,13 @@ const HOW_STEPS = ["how_1", "how_2", "how_3"];
  *           works, and the cancellation rule.
  * Does NOT: show the price or the button (RescueOfferAction), or the bag
  *           reviews — those feed the pilot metrics only (RescueReview model).
- * History:  MEH-3586 (creation)
+ * History:  MEH-3586 (creation) · MEH-3610 (allergens drawn by the shared
+ *           components/offer-detail/AllergenSection, the group buy's block)
  *
  * @param {{ offer: any }} props
  */
 export default function RescueOfferDetails({ offer }) {
   const t = useTranslations("rescue");
-  const tProducts = useTranslations("settings.products.form");
   const p = offer.producer;
   const cancelUntil = israelTime(offer.cancel_until);
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
@@ -54,6 +55,13 @@ export default function RescueOfferDetails({ offer }) {
             <li className="flex items-start gap-2">
               <MapPin aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
               <span data-testid="rescue-offer-address">{address}</span>
+            </li>
+          )}
+          {/* MEH-3593: the business's «הוראות איסוף»; no line when it wrote none. */}
+          {offer.pickup_note && (
+            <li className="flex items-start gap-2">
+              <Info aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
+              <span data-testid="rescue-offer-pickup-note">{t("offer_page.pickup_note", { note: offer.pickup_note })}</span>
             </li>
           )}
         </ul>
@@ -79,20 +87,9 @@ export default function RescueOfferDetails({ offer }) {
         )}
       </section>
 
-      <section aria-labelledby="rescue-allergens" data-testid="rescue-offer-allergens">
-        <SectionHeading size="content" id="rescue-allergens" className="mb-3">{t("section.allergens_title")}</SectionHeading>
-        {/* MEH-2752: null = not declared; a list = what THIS business declared. */}
-        <p className="flex items-start gap-2 text-base text-text">
-          <Warning aria-hidden="true" size={20} className="text-gold-deep shrink-0 mt-0.5" />
-          {offer.allergens?.length ? (
-            <span data-testid="rescue-offer-allergens-declared">
-              {t("section.allergens_declared", { list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", ") })}
-            </span>
-          ) : (
-            <span data-testid="rescue-offer-allergens-none">{t("section.allergens_undeclared")}</span>
-          )}
-        </p>
-      </section>
+      {/* MEH-2752: null = not declared; a list = what THIS business declared.
+          The block is shared with the group buy (MEH-3610). */}
+      <AllergenSection allergens={offer.allergens} headingId="rescue-allergens" testId="rescue-offer-allergens" />
 
       <section aria-labelledby="rescue-how">
         <SectionHeading size="content" id="rescue-how" className="mb-3">{t("offer_page.how_title")}</SectionHeading>

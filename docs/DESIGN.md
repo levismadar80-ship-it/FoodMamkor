@@ -183,6 +183,13 @@ shape** — see *Seed layer* below (MEH-2833); they are never UI colours. There 
 (no red/amber/slate) — see *Elevation & Depth* for how state is expressed
 instead, and *Do's and Don'ts* for why.
 
+**Category colours (map pins, category chips, the /map legend) are six, one per
+group** (MEH-3076, Sapir 21/11 «צבע לקבוצה»): meat & fish `#c04040` · fruit &
+vegetables primary `#2e6853` · dairy & eggs `#4a90d9` (glyph tint `#3b72ad`) ·
+bread `#896714` (accent) · pantry `#c8821e` (honey, glyph tint `#A8681A`) ·
+care & home `#9b59b6`. The glyph, not the colour, tells two categories of one
+group apart. Owner: `lib/category-registry.js` `CATEGORY_GROUP_STYLES`.
+
 - **Primary (`#2e6853`):** Deep forest green. The single brand accent —
   primary CTAs, the logo, links, "available today" affordances. Also serves
   the `success` role; we do not maintain a separate success green.
@@ -295,7 +302,7 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
-One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו»). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`.
+One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו», «ק״ג», «מע״מ»; a real quotation such as ה"בעלים" keeps its quotes), and the distance pill reads «כ-N ק״מ». `en.json` uses the same «…» (URL placeholders like `https://...` excepted, MEH-3627). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`, on an acronym written with an ASCII quote in `he.json`, and on three dots in `en.json`.
 Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
 (`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
 Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488
@@ -408,6 +415,13 @@ fixed per name) · success moments (bloom + seeds opening out) · footer seed ro
 (on-dark) · no-photo card plate (name + one seed, colour fixed per business) ·
 missing recipe/product/event image (same rule) · 404 and every «not found»
 page (the full logo, small).
+**Beside text (MEH-3676, approved by Sapir 22/11):** the bloom closes the
+/login and /register hero line «טרי · מקומי · מהמקור» (on-dark set, 40px,
+desktop only) and leads the dashboard row «מה חדש במהמקור» (16px, before the
+unread dot). Only beside a string that names מהמקור, never in place of an icon
+that carries meaning: below ~24px the sand seed all but disappears on cream, so
+the mark is decoration, never a signal. Replacing the «מאומת» seal with it is
+held for after launch (MEH-3677).
 
 ## Layout
 
@@ -891,7 +905,7 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   > - **CATEGORY chips** (all `ChipScrollRow variant="category"` surfaces —
   >   `/map`, `/producers`, `/events`, and future — MEH-1465), selected:
   >   A chip with no registry colour (`chip.iconColor` absent, e.g. `/events` or
-  >   an admin category with no `CATEGORY_STYLES` row) falls back to
+  >   an admin category outside `lib/category-taxonomy.js`, so with no `CATEGORY_STYLES` row) falls back to
   >   `--cat-ring` = the DEFAULT category green (`primary` `#2e6853`).
   >   - `background: color-mix(in srgb, var(--cat-ring) 12%, #fff);`
   >   - `border: 1.5px solid var(--cat-ring);`
@@ -900,7 +914,8 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   >     stays neutral).
   >   - `font-weight: 600;`
   >   - `--cat-ring:` the category's registry tint = `textColor ?? color`
-  >     (`lib/category-registry.js` `CATEGORY_STYLES`). Every value clears WCAG
+  >     (`lib/category-registry.js` `CATEGORY_STYLES`; since MEH-3076 the
+  >     colour is the category's GROUP colour, `CATEGORY_GROUP_STYLES`). Every value clears WCAG
   >     1.4.11 ≥3:1 on **both** white and cream `#F5F0E8` (MEH-1181 audit).
   >   - **a ✓ replaces the chip's glyph, in `--cat-ring`** (MEH-2500). The tint
   >     alone was the only selection cue, and each category has its own, so a
@@ -1064,6 +1079,15 @@ aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a
 whose text is a `back*` key, and a back label with a typed arrow. A link dressed
 as a button that goes home is an action (ActionShapeGuard), not a back link.
 
+## Struck prices (MEH-3465, 21/11/2026)
+
+An old or regular price shown crossed out beside the paid one is
+`components/ui/StruckPrice` — an `<s>`, `dir="ltr"`, `text-fg-muted`; the caller
+passes only size and font. It is hidden from screen readers by default (two bare
+prices read aloud say nothing). `decorative={false}` where the struck price is
+the information: it has its own visible label, or nothing else on the card says
+what it was. `StruckPriceOneOwnerGuard.test.jsx` reds a price struck by hand.
+
 ## Dates (MEH-3070, 13/11/2026)
 
 A date on screen is printed by `formatDate(value, locale, style)` or
@@ -1120,6 +1144,16 @@ location_type group instead carry the marker as `sr-only` text inside the
 element supplying the group's accessible name (the `aria-label`/
 `aria-labelledby` target) — same "(חובה)" wording as `license_required_label`,
 audible once, never announced as "star".
+
+## Offer cards (MEH-3585, 21/11/2026)
+
+A time-limited offer on a business page (a group buy, a surprise bag) is drawn
+by one component, `frontend/components/ui/OfferCard.jsx`: optional icon tile,
+title + «where» lines, the price with the regular price struck, a gold saving
+line, a beige status band (progress in the logo seeds + a time), then any
+actions. Both offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so
+they are the same size. A new kind of offer uses this card, never its own copy
+(`OfferCardOneOwnerGuard.test.jsx`).
 
 ## In-place messages (MEH-3072)
 

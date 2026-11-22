@@ -38,7 +38,7 @@ vi.mock("next-intl", () => ({
       // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
       "report.trigger": "דיווח על עסק",
       "report.form_heading": "דווח על עסק",
-      "report.reason_placeholder": "ספר/י מה הבעיה…",
+      "report.reason_placeholder": "מה הבעיה? כמה מילים מספיקות…",
       "report.submit": "שלח דיווח",
       "report.cancel": "ביטול",
       "report.error_generic": "שגיאה בשליחה",

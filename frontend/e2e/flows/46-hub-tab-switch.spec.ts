@@ -173,11 +173,13 @@ const EVENTS_GROUP = /\/(events|experiences)$/;
 for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
   test(`${locale}: /group-buys → «אירועים» nav link lands in the events group`, async ({ page }) => {
-    const hubFrom = await openHub(page, `${prefix}/group-buys`);
-    // The row is drawn and holds its own tab, so the count below is not 0
-    // merely because nothing rendered yet.
-    await expect(hubFrom.locator('[data-tab-value="groupBuys"]')).toHaveAttribute("aria-selected", "true");
-    await expect(hubFrom.locator('[data-tab-value="events"], [data-tab-value="experiences"]')).toHaveCount(0);
+    await page.goto(`${prefix}/group-buys`);
+    // MEH-3076: with the rescue tab's supply read on the server, a lone
+    // «קבוצות רכישה» tab row is not drawn at all, so the row cannot be the
+    // readiness signal here. The hub's H1 is server-rendered with the page;
+    // once it shows, a 0 below is not 0 merely because nothing rendered yet.
+    await expect(page.locator("h1")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-tab-value="events"], [data-tab-value="experiences"]')).toHaveCount(0);
     const link = page
       // Header on desktop, the pill on mobile (the header copy is hidden
       // there); the first visible link into the events group either way.

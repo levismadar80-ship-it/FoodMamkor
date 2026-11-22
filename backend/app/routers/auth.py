@@ -16,6 +16,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.auth import (
+    SESSION_INVALIDATED_BY_PASSWORD_CHANGE,
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
@@ -202,7 +203,7 @@ def refresh_token(
         if iat_claim < int(user.password_changed_at.timestamp()):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="session_invalidated_by_password_change",
+                detail=SESSION_INVALIDATED_BY_PASSWORD_CHANGE,
             )
 
     fp = generate_fingerprint()
@@ -249,7 +250,7 @@ def logout(request: Request, response: Response) -> None:
 # legitimate owner finds out via send_duplicate_attempt_email. No
 # access_token — caller must verify via email then POST /auth/login.
 _REGISTER_ACK_DETAIL = (
-    "אם האימייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
+    "אם המייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
 )
 
 
@@ -416,7 +417,7 @@ def google_auth(
     if not settings.google_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+            detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
         )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -441,7 +442,7 @@ def google_auth(
             if user.google_id != google_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
+                    detail="מייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True  # type: ignore[assignment]
             db.commit()
@@ -559,7 +560,7 @@ def login(
         verify_password(data.password, SENTINEL_HASH)
         record_login_failure(data.email)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="מייל או סיסמה שגויים"
         )
     if user.password_hash is None:
         # Timing parity: OAuth-only user — same sentinel bcrypt to
@@ -567,12 +568,12 @@ def login(
         verify_password(data.password, SENTINEL_HASH)
         record_login_failure(data.email)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="מייל או סיסמה שגויים"
         )
     if not verify_password(data.password, user.password_hash):  # type: ignore[arg-type]
         record_login_failure(data.email)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="מייל או סיסמה שגויים"
         )
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
@@ -666,7 +667,7 @@ def apple_auth(
     if not settings.apple_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+            detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
         )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
@@ -688,7 +689,7 @@ def apple_auth(
             if user.apple_id != apple_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
+                    detail="מייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True  # type: ignore[assignment]
             db.commit()
@@ -790,7 +791,7 @@ def forgot_password(
             reset_link,
             test_cause=bool(user.is_test),  # MEH-2952
         )
-    return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
+    return {"detail": "אם המייל קיים במערכת, ישלח קישור לאיפוס"}
 
 
 @router.post("/reset-password", response_model=None)
@@ -895,7 +896,7 @@ def resend_verify(
     """Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
     per account (MEH-2906, services/resend_verify_cap.py)."""
     if user.email_verified:
-        return {"detail": "האימייל כבר מאומת"}
+        return {"detail": "המייל כבר מאומת"}
     resend_verify_cap.enforce_per_account_cap(str(user.id))  # MEH-2906
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
@@ -908,7 +909,7 @@ def resend_verify(
         token,
         test_cause=bool(user.is_test),
     )  # MEH-2952
-    return {"detail": "אימייל אימות נשלח"}
+    return {"detail": "מייל אימות נשלח"}
 
 
 # MEH-3248: POST with a body replaces the bodyless DELETE /auth/me, which let

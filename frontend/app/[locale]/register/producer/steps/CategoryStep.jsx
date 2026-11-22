@@ -9,12 +9,15 @@ import { X } from "@phosphor-icons/react";
 import CategorySelector from "@/components/CategorySelector";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ConsentSubmit from "./ConsentSubmit";
+import ReferralSourceField from "./ReferralSourceField";
+import RegisterCardPreview from "@/components/RegisterCardPreview";
 import InlineMessage from "@/components/ui/InlineMessage";
-import { CROSS_STEP_REQUIRED, STEP } from "../registerProducerShared";
+import { CROSS_STEP_REQUIRED, STEP, fulfilmentBooleans } from "../registerProducerShared";
 import { formatQuotedList } from "@/lib/license-required-categories";
 
 /** @param {Record<string, any>} props */
-export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseCategoryNames = [], licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
+export default function CategoryStep({ agreedToTerms, declarationConfirmed, error, farmerConfirmed, farmerDeclarationRequired, handleSubmit, loading, setAgreedToTerms, setDeclarationConfirmed, setFarmerConfirmed, categories, categoriesFailed, fieldErrors, form, licenseCategoryNames = [], licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
   return (
     <div className="space-y-4" data-testid="register-frame-category">
       <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.category.title"), STEP.CATEGORY)}</h2>
@@ -203,39 +206,64 @@ export default function CategoryStep({ categories, categoriesFailed, fieldErrors
         </button>
       )}
 
-      <div className="flex gap-3">
-        <button data-testid="register-category-back" onClick={() => { setStepError(""); setError(""); setLicenseRequiredError(false); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
-        <Button
-          data-testid="register-category-next"
-          onClick={() => {
-            // MEH-1807: "at least one category" is validated on the step
-            // that owns the selector. Runs BEFORE the license gate because
-            // licenseRequired is derived from the selection — with nothing
-            // selected there is no license question to ask yet.
-            const offenders = runRequiredGate(
-              CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.CATEGORY),
-            );
-            if (offenders.length > 0) return;
-            // MEH-952: block advance when a license-required category is
-            // selected but the number is blank; show the error at the field.
-            // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
-            if (
-              licenseRequired &&
-              !licensePending &&
-              !form.producer_license_number.trim()
-            ) {
-              setLicenseRequiredError(true);
-              requestFocus("producer-license-required");
-              return;
-            }
-            setLicenseRequiredError(false);
-            setStep(STEP.STORY);
-          }}
-          variant="primary" size="lg" className="flex-1"
-        >
-          {t("auth.register.producer.actions.next")}
-        </Button>
-      </div>
+      {/* MEH-3074: the real card, opened on demand so the submit button stays
+          where it was on a phone. MEH-3656: moved here from the story step,
+          which a business no longer visits — the last look before «הצטרפו». */}
+      <RegisterCardPreview
+        form={{ ...form, ...fulfilmentBooleans(form.fulfilment) }}
+        categories={categories}
+      />
+
+      {/* MEH-3697: «מאיפה שמעתם עלינו?» came back to the business path
+          here. It lived on the story step, which MEH-3656 took off this path,
+          and no dashboard screen ever asked it (Sapir 22/11). Optional, as
+          before (MEH-2183). */}
+      <ReferralSourceField form={form} set={set} setAndSave={setAndSave} t={t} />
+
+      {/* MEH-3656: the business path ends HERE. The story step left the
+          business wizard (MEH-3653: the story and tagline are filled in the
+          dashboard), so this step carries the consent block and the
+          «הצטרפו» button. Its own gate (category, then license) runs
+          first, unchanged from the old «הבא» handler. */}
+      <ConsentSubmit
+        agreedToTerms={agreedToTerms}
+        backTestId="register-category-back"
+        beforeSubmit={() => {
+          const offenders = runRequiredGate(
+            CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.CATEGORY),
+          );
+          if (offenders.length > 0) return false;
+          // MEH-952: block advance when a license-required category is
+          // selected but the number is blank; show the error at the field.
+          // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
+          if (
+            licenseRequired &&
+            !licensePending &&
+            !form.producer_license_number.trim()
+          ) {
+            setLicenseRequiredError(true);
+            requestFocus("producer-license-required");
+            return false;
+          }
+          setLicenseRequiredError(false);
+          return true;
+        }}
+        declarationConfirmed={declarationConfirmed}
+        error={error}
+        farmerConfirmed={farmerConfirmed}
+        farmerDeclarationRequired={farmerDeclarationRequired}
+        handleSubmit={handleSubmit}
+        loading={loading}
+        onBack={() => { setStepError(""); setError(""); setLicenseRequiredError(false); setStep(STEP.DETAILS); }}
+        runRequiredGate={runRequiredGate}
+        setAgreedToTerms={setAgreedToTerms}
+        setDeclarationConfirmed={setDeclarationConfirmed}
+        setError={setError}
+        setFarmerConfirmed={setFarmerConfirmed}
+        setStep={setStep}
+        submitTestId="register-category-submit"
+        t={t}
+      />
     </div>
   );
 }

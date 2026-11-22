@@ -62,10 +62,15 @@ def _owner_lookups(statements):
     # beside the ORDER BY and pointless. `users.producer_id IN` is what makes
     # this statement the owner lookup and not, say, the per-request auth read
     # of one users row — and it does not move when the projection does.
+    # MEH-3660: the batched owner-email read (admin_draft_missing) also has
+    # `users.producer_id IN`; it is a separate statement with its own
+    # one-query test in test_meh3409, so it is not counted here.
     return [
         s
         for s in statements
-        if "FROM users" in s and "users.producer_id IN" in s
+        if "FROM users" in s
+        and "users.producer_id IN" in s
+        and "users.email_verified IS" not in s
     ]
 
 

@@ -114,6 +114,7 @@ vi.mock("@phosphor-icons/react", () => {
     ArrowUpLeft: stub("ArrowUpLeft"), Gauge: stub("Gauge"),
     Lock: stub("Lock"), // MEH-2070 — the AccountSheet admin row.
     X: stub("X"), // MEH-3271 — the AccountSheet visible close.
+    UsersThree: stub("UsersThree"), // MEH-3609 «הקבוצות שלי»
   };
 });
 vi.mock("@/components/LanguageToggle", () => ({

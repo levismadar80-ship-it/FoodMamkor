@@ -36,6 +36,17 @@ export function getWhatsAppHref(phone, text = "") {
 }
 
 /**
+ * MEH-3603: a wa.me link with NO prefilled text — a chat with `phone`, or,
+ * with no phone, WhatsApp itself. The one other wa.me form the site uses;
+ * scripts/checks/whatsapp-link-owner-guard.sh fails a wa.me built anywhere else.
+ *
+ * @param {string} [phone] - normalised digits, or "" to just open WhatsApp
+ */
+export function getWhatsAppChatHref(phone = "") {
+  return `https://wa.me/${phone}`;
+}
+
+/**
  * MEH-1525: tag a business's own outbound website URL with the referral
  * params GA4 maps to its "Referral" channel, so the business owner sees
  * traffic from mehamakor in her own analytics — the cross-domain side of
@@ -164,7 +175,8 @@ export function toE164Phone(phone) {
  * dir="ltr" wrapping stays at the call site where the surface already does it
  * (the ₪ is a bidi European Terminator, so "35₪" holds together either way).
  * Free-text DB labels (producers.price_range / products.price_range) are DATA, not
- * formatting — never routed through here.
+ * formatting — never routed through here, except a label that is only a number
+ * or a number range, which priceLabelText() hands over (MEH-3076).
  *
  * @param {number|string|null|undefined} amount
  * @param {{ from?: boolean, unit?: string|null }} [opts]
@@ -187,6 +199,32 @@ export function formatPrice(amount, { from = false, unit = null } = {}) {
 export function isPriceLabel(label) {
   return typeof label === "string" && /\d/.test(label);
 }
+
+/**
+ * MEH-3076: a free-text price label that is ONLY a number or a number range
+ * («380», «30-45») gets the shekel sign the canon gives a numeric price
+ * («380₪», «30₪–45₪»). Anything with words or a sign of its own («מ-30₪»,
+ * «45₪/ק״ג») is data and passes through untouched (MEH-1140).
+ * @param {string | null | undefined} label
+ * @returns {string | null | undefined}
+ */
+export function priceLabelText(label) {
+  if (typeof label !== "string") return label;
+  // Split first, then test each side with a flat pattern: one regex for the
+  // whole range nests quantifiers (security/detect-unsafe-regex).
+  const parts = label.split(/[-–]/).map((part) => part.trim());
+  if (parts.length > 2 || !parts.every((part) => PLAIN_NUMBER.test(part))) return label;
+  return formatPriceRange(parts[0], parts[1] ?? null);
+}
+
+const DIGITS = /^\d+$/;
+/** «380» or «12.5» — digits, at most one decimal point. */
+const PLAIN_NUMBER = {
+  test: (part) => {
+    const [whole, fraction, ...rest] = part.split(".");
+    return rest.length === 0 && DIGITS.test(whole) && (fraction === undefined || DIGITS.test(fraction));
+  },
+};
 
 /**
  * MEH-1140: min–max range in the same canon: "35₪–60₪".
