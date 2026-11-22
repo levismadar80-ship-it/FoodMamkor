@@ -235,10 +235,10 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#locations`);
   });
 
-  // MEH-3697: signup sends no map pin and no delivery cities (MEH-2640), so
-  // right after signup the location is the missing half. The row must say so,
-  // not «פרטי העסק», which she has just filled in.
-  it("only the location missing (a fresh signup) → the row reads «מיקום או אזורי משלוח», not «פרטי העסק»", () => {
+  // MEH-3697: signup sends no delivery cities (MEH-2640), so a delivery-only
+  // business reaches the dashboard with the location missing. The row must say
+  // so, not «פרטי העסק», which she has just filled in.
+  it("only the location missing (a delivery-only signup) → the row reads «מיקום או אזורי משלוח», not «פרטי העסק»", () => {
     render(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
     const row = screen.getByTestId("completeness-open-details");
     expect(row).toHaveTextContent("מיקום או אזורי משלוח");

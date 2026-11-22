@@ -225,11 +225,13 @@ function buildSteps(producer, missingLabels) {
 // the recommended items wait for «לשפר את העמוד» after she submits
 // (Shopify setup guide / Airbnb: only what blocks publishing, before publishing).
 // Category + location share one «פרטי העסק» row; it opens only if one is missing.
-// MEH-3697: only the CATEGORY arrives from signup. The map pin (MEH-2640) and
-// the delivery cities left the form, so right after signup the location is
-// missing for almost every business — and «פרטי העסק», which she has just
-// filled, would tell her nothing. When only the location is missing the row
-// reads the banner's «מיקום או אזורי משלוח» instead (same key, no new copy).
+// MEH-3697: a business with a place to visit gets its town's centre as an
+// approximate point at signup (producer_queries.create_primary_branch_location,
+// MEH-2480), so its location is there. A delivery-only business is not: the
+// delivery cities left the form (MEH-2640), so right after signup its location
+// is missing — and «פרטי העסק», which she has just filled, would tell her
+// nothing. When only the location is missing the row reads the banner's
+// «מיקום או אזורי משלוח» instead (same key, no new copy).
 function buildDraftRows(producer) {
   const missing = new Set(submissionMissingItems(producer));
   const categoryMissing = missing.has(MISSING_CATEGORY);
