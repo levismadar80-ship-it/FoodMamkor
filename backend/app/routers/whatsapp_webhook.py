@@ -390,8 +390,12 @@ def _process_messages(
 # whole-body match only — "אל תסיר אותי בבקשה" must NOT opt out). Hebrew has
 # no case, so `.lower()` only normalizes the Latin STOP/UNSUBSCRIBE.
 _OPTOUT_KEYWORDS = frozenset({"הסר", "הסרה", "עצור", "stop", "unsubscribe"})
+# MEH-3640: «הסר» now stops every template except a requested code (the send
+# layer checks it), so the reply says exactly that. Sapir approved, 21/11.
 _OPTOUT_CONFIRMATION = (
-    "העדכונים בוואטסאפ הופסקו. אפשר להפעיל אותם מחדש בעמוד המועדפים באתר."
+    "הפסקנו לשלוח לכם הודעות בוואטסאפ, חוץ מקודי אימות שתבקשו. "
+    "כדי לקבל שוב הודעות, שלחו לנו כאן כל הודעה. "
+    "את העדכונים מבתי עסק ששמרתם מפעילים מחדש בעמוד המועדפים."
 )
 
 
