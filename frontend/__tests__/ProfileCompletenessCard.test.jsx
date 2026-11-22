@@ -14,7 +14,7 @@ vi.mock("next-intl", () => ({
       draft_headline: "עוד {count} צעדים לשליחה לבדיקה",
       counter: "{done} מתוך {total}",
       open_cta: "להשלמה",
-      license_note: "בלי מספר רישיון לא נוכל לאשר את העמוד",
+      license_note: "בלי מספר רישיון העמוד יעלה בלי התג ״מאומת״",
       checklist_aria: "התקדמות השלמת העמוד",
       checklist_done: "הושלם",
       checklist_todo: "עדיין חסר",

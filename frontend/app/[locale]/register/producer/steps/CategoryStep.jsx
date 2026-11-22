@@ -10,6 +10,7 @@ import CategorySelector from "@/components/CategorySelector";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ConsentSubmit from "./ConsentSubmit";
+import ReferralSourceField from "./ReferralSourceField";
 import RegisterCardPreview from "@/components/RegisterCardPreview";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED, STEP, fulfilmentBooleans } from "../registerProducerShared";
@@ -213,10 +214,16 @@ export default function CategoryStep({ agreedToTerms, declarationConfirmed, erro
         categories={categories}
       />
 
+      {/* MEH-3697: «מאיפה שמעתם עלינו?» came back to the business path
+          here. It lived on the story step, which MEH-3656 took off this path,
+          and no dashboard screen ever asked it (Sapir 22/11). Optional, as
+          before (MEH-2183). */}
+      <ReferralSourceField form={form} set={set} setAndSave={setAndSave} t={t} />
+
       {/* MEH-3656: the business path ends HERE. The story step left the
-          business wizard (MEH-3653: the story, tagline and attribution are
-          filled in the dashboard), so this step carries the consent block
-          and the «הצטרפו» button. Its own gate (category, then license) runs
+          business wizard (MEH-3653: the story and tagline are filled in the
+          dashboard), so this step carries the consent block and the
+          «הצטרפו» button. Its own gate (category, then license) runs
           first, unchanged from the old «הבא» handler. */}
       <ConsentSubmit
         agreedToTerms={agreedToTerms}

@@ -5467,7 +5467,7 @@
         "counter": "{done} of {total}",
         "improve_headline": "Improve your page",
         "open_cta": "Complete",
-        "license_note": "We can't approve the page without a licence number",
+        "license_note": "Without a licence number the page goes live without the “Verified” badge",
         "draft_steps": {
           "details": "Business details",
           "image": "A photo of the business or products",

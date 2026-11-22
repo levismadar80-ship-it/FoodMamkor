@@ -673,10 +673,11 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
         // backend stores NULL. The free-text answer is sent only when "other"
         // is chosen (empty otherwise → NULL as well).
-        // MEH-3656: asked on STORY, which only organizers still see.
-        referral_source: isOrganizer ? form.referral_source : "",
+        // MEH-3697: asked on the last step of both paths (STORY for an
+        // organizer, CATEGORY for a business since MEH-3656).
+        referral_source: form.referral_source,
         referral_source_other:
-          isOrganizer && form.referral_source === "other" ? form.referral_source_other : "",
+          form.referral_source === "other" ? form.referral_source_other : "",
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
