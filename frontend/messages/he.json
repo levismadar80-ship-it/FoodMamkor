@@ -8117,7 +8117,7 @@
       "no_show": "לא נאסף",
       "cancelled_by_business": "בית העסק ביטל"
     },
-    "partial_error": "חלק מהרשימה לא נטען.",
+    "partial_error": "חלק מהרשימה לא נטען. אפשר לרענן את הדף ולנסות שוב.",
     "group_buy_status": {
       "open": "פתוחה להצטרפות",
       "funded": "הגיעה ליעד",
