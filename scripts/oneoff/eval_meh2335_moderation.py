@@ -32,7 +32,6 @@ from collections import Counter
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 
 import anthropic  # noqa: E402
-import httpx  # noqa: E402
 
 from app.routers import reviews  # noqa: E402
 from app.services import experience_moderation, producer_recipe_moderation  # noqa: E402
@@ -443,7 +442,7 @@ def main() -> int:
             "ANTHROPIC_API_KEY not set — refusing to run (every verdict would fail open)."
         )
         return 2
-    base = anthropic.Anthropic(api_key=key, http_client=httpx.Client(timeout=60))
+    base = anthropic.Anthropic(api_key=key, http_client=anthropic.DefaultHttpxClient(timeout=60))
 
     keys = ["haiku-4-5", "haiku-5-5"] + (["opus-5-5"] if args.with_opus else [])
     results = {k: [_run(k, base) for _ in range(args.runs)] for k in keys}

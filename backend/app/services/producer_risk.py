@@ -3,7 +3,7 @@ Module:   producer_risk
 Purpose:  Anthropic-Haiku-backed signup risk score (0-100) + one-sentence
           Hebrew reasoning, written to producers.risk_score /
           producers.risk_reasoning asynchronously after producer signup.
-Touches:  Anthropic API (app.config.AI_FAST_MODEL) via httpx-wrapped
+Touches:  Anthropic API (app.config.AI_FAST_MODEL) via the SDK's
           SDK; PostgreSQL producers (UPDATE only). Opens a fresh
           SessionLocal because BackgroundTasks runs after the request
           session has closed (mirrors app/startup.py:_run_followup_job).
@@ -12,7 +12,7 @@ Does NOT: block signup (this is BackgroundTasks; fail-open at every
           and move on), re-score on producer edits (signup-only for v1),
           score from the admin UI (future ticket).
 Related:  app/routers/chat.py:158-179 (canonical anthropic.Anthropic +
-          httpx.Client() init per .claude/rules/backend.md), app/routers/
+          DefaultHttpxClient init per .claude/rules/backend.md), app/routers/
           auth.py:474,575 (PR1 BackgroundTasks signup hooks — PR3 adds
           score_producer adjacent). The admin reads the score on the
           producer list (ProducerAdminOut.risk_score); the separate
@@ -207,15 +207,13 @@ def _call_anthropic(profile: dict[str, Any]) -> tuple[int | None, str | None]:
         # is broken or unreachable in dev. Same defensive pattern as
         # app/routers/chat.py:_get_client (MEH-509 PR3).
         import anthropic
-        import httpx
 
-        # REUSES: app/routers/chat.py:175 — Anthropic SDK init pattern.
-        # The explicit httpx.Client() bypasses the SDK's broken
-        # `httpx.Client(proxies=...)` call (httpx 0.28+ renamed to
-        # proxy=). Documented in .claude/rules/backend.md.
+        # REUSES: app/routers/chat.py — Anthropic SDK init pattern: the
+        # SDK's DefaultHttpxClient (httpx2). Documented in
+        # .claude/rules/backend.md.
         client: Any = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(timeout=_TIMEOUT_SECONDS),
+            http_client=anthropic.DefaultHttpxClient(timeout=_TIMEOUT_SECONDS),
         )
         # MEH-509 PR3 follow-ups #1+#2 + batch-2 #1: ensure_ascii=False
         # for Hebrew tokenizer fidelity, payload wrapped in tags with a

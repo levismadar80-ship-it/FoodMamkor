@@ -97,11 +97,10 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
             max_retries=1,  # the call runs inside the owner's save
         )
         return _client
