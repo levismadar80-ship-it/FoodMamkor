@@ -5317,6 +5317,13 @@
       },
       "quick_links": {
         "locked_until_approved": "ייפתח אחרי אישור העסק",
+        "groups": {
+          "offer_heading": "להציע ללקוחות",
+          "reviews_heading": "ביקורות מלקוחות",
+          "content_heading": "תוכן",
+          "events_sub": "אירוע חד-פעמי, או חוויה שנרשמים אליה",
+          "opportunities_sub": "קבוצת רכישה, או סלי הפתעה ממה שנשאר היום"
+        },
         "group_buys": {
           "title": "ניהול קבוצות רכישה",
           "sub": "נהלו קבוצות רכישה ופתחו חדשות"

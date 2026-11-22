@@ -5321,6 +5321,13 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "groups": {
+          "offer_heading": "Offer to customers",
+          "reviews_heading": "Customer reviews",
+          "content_heading": "Content",
+          "events_sub": "A one-time event, or an experience people sign up for",
+          "opportunities_sub": "A group buy, or surprise bags from what is left today"
+        },
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
