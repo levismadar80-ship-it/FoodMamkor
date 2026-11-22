@@ -28,3 +28,23 @@ describe("products tab visibility", () => {
     expect(productsTab({ price_range: "מ-₪20", products: [] })).toBe(true);
   });
 });
+
+// MEH-3076: a bare number typed as the free-text price gets the shekel sign.
+import { priceLabelText } from "@/lib/utils";
+describe("priceLabelText", () => {
+  it.each([
+    ["380", "380₪"],
+    [" 380 ", "380₪"],
+    ["30-45", "30₪–45₪"],
+    ["30 – 45", "30₪–45₪"],
+  ])("bare number %s → %s", (input, out) => {
+    expect(priceLabelText(input)).toBe(out);
+  });
+  it.each(["מ-30₪", "45₪/ק״ג", "₪₪", "380 לארגז"])("labels with words or a sign stay as typed: %s", (s) => {
+    expect(priceLabelText(s)).toBe(s);
+  });
+  it("null and undefined pass through", () => {
+    expect(priceLabelText(null)).toBeNull();
+    expect(priceLabelText(undefined)).toBeUndefined();
+  });
+});

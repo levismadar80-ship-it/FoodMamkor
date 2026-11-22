@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPriceRange, isPriceLabel } from "@/lib/utils";
+import { formatPriceRange, isPriceLabel, priceLabelText } from "@/lib/utils";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
@@ -39,6 +39,7 @@ import RecipeCard from "@/components/public/RecipeCard";
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
 import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import { shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
@@ -227,7 +228,7 @@ export default function ProducerSections({
   // column (revision 9849fab1637a), so there is nothing to fall back to.
   // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
   // nor, on its own, makes the signature block appear.
-  const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
+  const producerPriceLabel = isPriceLabel(producer.price_range) ? priceLabelText(producer.price_range) : null;
   const hasSignature = !!(producer.top_product_name || producerPriceLabel);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
@@ -371,7 +372,7 @@ export default function ProducerSections({
       : null;
   const signatureFreeTextPrice = signatureNumericPrice
     ? null
-    : (isPriceLabel(signatureProduct?.price_range) ? signatureProduct.price_range : null) ||
+    : (isPriceLabel(signatureProduct?.price_range) ? priceLabelText(signatureProduct.price_range) : null) ||
       producerPriceLabel;
 
   return (
@@ -477,6 +478,7 @@ export default function ProducerSections({
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
+                <ProductWeekdaysLine product={signatureProduct} />{/* MEH-3618 */}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
@@ -532,7 +534,8 @@ export default function ProducerSections({
                   : null;
                 // MEH-1305 F: numeric prices go through the canonical
                 // formatPriceRange (MEH-1140) and are bidi-isolated; a free-text
-                // price_range is DATA (MEH-1140 — never reformatted) and renders
+                // price_range is DATA (MEH-1140 — never reformatted, except a
+                // bare number or range, MEH-3076 priceLabelText) and renders
                 // in the natural direction, since forcing dir="ltr" corrupts a
                 // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
                 const numericPrice =
@@ -542,7 +545,7 @@ export default function ProducerSections({
                 // MEH-2924: no price at all = a seasonal price, said in words.
                 const freeTextPrice = numericPrice
                   ? null
-                  : product.price_range || t("product_price.varies");
+                  : priceLabelText(product.price_range) || t("product_price.varies");
                 // MEH-3216 stage 5b: the product as the order menu has it, or
                 // undefined when this business takes no orders or did not open
                 // this product for ordering. Only then does the row get «הוספה».
@@ -591,6 +594,7 @@ export default function ProducerSections({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
+                      <ProductWeekdaysLine product={product} />{/* MEH-3618 */}
                       {/* MEH-1901: the row clamp goes from one line to two. One
                           line was too little to judge whether the sheet is worth
                           opening; the full text now lives in the sheet either
