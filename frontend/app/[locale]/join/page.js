@@ -29,7 +29,7 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
  *           its own card when it exists (COPY_BANK §8).
  * Related:  components/join/JoinFeatures.jsx · components/join/JoinStickyBar.jsx ·
  *           docs/COPY_BANK.md § /join v2 (the strings) · docs/BRAND.md §6 (the
- *           pattern row) · RegisterPreflight.jsx (sister surface, MEH-994).
+ *           pattern row) · RegisterPreflight.jsx (sister surface, MEH-994; removed in MEH-3656).
  * History:  MEH-995 (creation) · MEH-2564 (step badges) · MEH-2597 (photo) ·
  *           MEH-2799 (v2 rebuild).
  *

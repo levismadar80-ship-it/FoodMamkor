@@ -10,7 +10,7 @@ import { renumberTitle, stepNumberOf } from "@/lib/wizard-step-numbers";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
-import RegisterPreflight from "./RegisterPreflight";
+import { Link } from "@/i18n/navigation";
 import AccountStep from "./steps/AccountStep";
 import DetailsStep from "./steps/DetailsStep";
 import CategoryStep from "./steps/CategoryStep";
@@ -23,7 +23,6 @@ import {
   STEP_NAME,
   safeResumeStep,
   EMPTY_FORM,
-  storeLinkForPayload,
 } from "./registerProducerShared";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -111,13 +110,10 @@ function RegisterProducerPageBody({ routeKind }) {
     return STEP.ACCOUNT;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
-  // MEH-994: pre-flight intro screen ("לפני שמתחילים") gates the wizard until
-  // the CTA is clicked. Entry chrome only — no STEP change, no localStorage
-  // "seen" flag (shows on every visit by design). Both auth states see it;
-  // the upgrade path hides the account-creation checklist line.
-  // MEH-2773: the organizer route skips it — its checklist (license, product
-  // photos) and its «what happens after» are about a business.
-  const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
+  // MEH-3656: the MEH-994 pre-flight screen («לפני שמתחילים») is gone. It
+  // was a whole screen of things to prepare before the first field — the
+  // first of the six screens Sapir named as too much (MEH-3653). Its organizer
+  // door is kept on the account step below; the rest lives on /join.
   const [categories, setCategories] = useState([]);
   // MEH-3193: a failed /categories left step 3 with no tiles and a required
   // choice nobody could make. Now it says so and offers a retry.
@@ -234,9 +230,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // business path byte-identical (1, 2, 3, 4).
   const visibleSteps = useMemo(
     () =>
+      // MEH-3656: a business never visits STORY any more — it submits from
+      // CATEGORY (MEH-3653: story, tagline and attribution move to the
+      // dashboard). An organizer keeps STORY and never visits CATEGORY.
       [STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].filter(
         (s) =>
           !(isOrganizer && s === STEP.CATEGORY) &&
+          !(!isOrganizer && s === STEP.STORY) &&
           !(isUpgrade && s === STEP.ACCOUNT),
       ),
     [isOrganizer, isUpgrade],
@@ -296,9 +296,8 @@ function RegisterProducerPageBody({ routeKind }) {
   // intro screen. trackEvent is itself consent-gated + no-op unless a PostHog
   // key is set, so this is safe to fire unconditionally here.
   useEffect(() => {
-    if (showPreflight) return;
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
-  }, [step, showPreflight]);
+  }, [step]);
 
   // MEH-2138 chunk F: the wizard is ONE long page, so submitting from STORY
   // leaves the scroll position exactly where the seller left it. Measured at
@@ -479,7 +478,11 @@ function RegisterProducerPageBody({ routeKind }) {
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
           const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
-          if (cappedResume) setStep(skipCategory(cappedResume));
+          // MEH-3656: the reverse for a business — a draft saved on STORY
+          // before the story step left the business path resumes on CATEGORY,
+          // which is now where a business submits.
+          const skipStory = (s) => (!routeIsOrganizer && s === STEP.STORY ? STEP.CATEGORY : s);
+          if (cappedResume) setStep(skipStory(skipCategory(cappedResume)));
           else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
@@ -632,8 +635,12 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-532: description is optional on the backend (sanitize_text
         // strips/empty-string normalises); we still send what we have so the
         // story shows up on the producer page immediately after approval.
-        description: form.description,
-        short_description: form.short_description,
+        // MEH-3656: a business is not asked for these at signup any more (the
+        // story step left its path), so a value restored from an older draft
+        // must not ride along unseen — a 2-letter tagline would 422 on a
+        // field she cannot see. Organizers still fill them on STORY.
+        description: isOrganizer ? form.description : "",
+        short_description: isOrganizer ? form.short_description : "",
         phone: form.phone,
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
@@ -657,7 +664,8 @@ function RegisterProducerPageBody({ routeKind }) {
         producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-2938: optional store / order-form link; empty → null (the
         // server's scheme guard treats "" the same, this keeps the body clean).
-        external_order_form: isOrganizer ? null : storeLinkForPayload(form.external_order_form),
+        // MEH-3656: the field left DETAILS; the link is added in the dashboard.
+        external_order_form: null,
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
@@ -665,9 +673,10 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
         // backend stores NULL. The free-text answer is sent only when "other"
         // is chosen (empty otherwise → NULL as well).
-        referral_source: form.referral_source,
+        // MEH-3656: asked on STORY, which only organizers still see.
+        referral_source: isOrganizer ? form.referral_source : "",
         referral_source_other:
-          form.referral_source === "other" ? form.referral_source_other : "",
+          isOrganizer && form.referral_source === "other" ? form.referral_source_other : "",
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -771,7 +780,7 @@ function RegisterProducerPageBody({ routeKind }) {
     }
   };
 
-  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // Don't render the wizard until auth resolves. MEH-1489 broadened
   // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
   // step initializes to DETAILS (line 88), so that guard didn't cover them and a
   // logged-in producer/admin briefly saw the join pitch before the gate. Showing
@@ -832,31 +841,8 @@ function RegisterProducerPageBody({ routeKind }) {
     );
   }
 
-  // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard
-  // tree below byte-identical (functional-freeze, MEH-132). Hero h1+subtitle
-  // are repeated here so the page identity doesn't jump when the CTA is
-  // clicked. showAccountLine: upgrade users (and token-holders whose step
-  // already initialized past ACCOUNT) never see the account-creation frame,
-  // so the checklist must not promise it.
   // MEH-2565: below md the form sits on the page, not in a white card — the
   // card's padding plus the inner boxes cost ~60px of a 375px screen.
-  if (showPreflight) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="md:bg-surface md:rounded-md md:p-8">
-          <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-          <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
-          <RegisterPreflight
-            showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
-            // MEH-2773: business-only screen — the organizer route never
-            // renders it, so the CTA starts exactly one flow.
-            onStart={() => setShowPreflight(false)}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="md:bg-surface md:rounded-md md:p-8">
@@ -913,7 +899,8 @@ function RegisterProducerPageBody({ routeKind }) {
               { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
             ]
               // MEH-2460: an organizer never visits CATEGORY, so it is not a step.
-              .filter(({ s }) => !(isOrganizer && s === STEP.CATEGORY))
+              // MEH-3656: a business never visits STORY. visibleSteps owns both.
+              .filter(({ s }) => visibleSteps.includes(s))
               .map(({ s, caption }) => (
               <div
                 key={s}
@@ -988,6 +975,20 @@ function RegisterProducerPageBody({ routeKind }) {
           />
         )}
 
+        {/* MEH-3656: the organizer door that sat on the removed pre-flight
+            screen (MEH-2917). A link — the ROUTE decides the kind (MEH-2773). */}
+        {step === STEP.ACCOUNT && !routeIsOrganizer && !submitted && (
+          <p className="mt-6 text-center text-sm" data-testid="register-organizer-door">
+            <Link
+              href="/register/organizer"
+              data-testid="register-preflight-organizer-link"
+              className="text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {t("auth.register.producer.preflight.organizer_link")}
+            </Link>
+          </p>
+        )}
+
         {/* Step 2: Business basics */}
         {step === STEP.DETAILS && (
           <DetailsStep
@@ -1039,13 +1040,22 @@ function RegisterProducerPageBody({ routeKind }) {
             setStepError={setStepError}
             t={t}
             toggleCategory={toggleCategory}
+            agreedToTerms={agreedToTerms}
+            declarationConfirmed={declarationConfirmed}
+            error={error}
+            farmerConfirmed={farmerConfirmed}
+            farmerDeclarationRequired={farmerDeclarationRequired}
+            handleSubmit={handleSubmit}
+            loading={loading}
+            setAgreedToTerms={setAgreedToTerms}
+            setDeclarationConfirmed={setDeclarationConfirmed}
+            setFarmerConfirmed={setFarmerConfirmed}
           />
         )}
 
         {step === STEP.STORY && (
           <StoryStep
             agreedToTerms={agreedToTerms}
-            categories={categories}
             declarationConfirmed={declarationConfirmed}
             descriptionBeforeDisableRef={descriptionBeforeDisableRef}
             descriptionDisabled={descriptionDisabled}
