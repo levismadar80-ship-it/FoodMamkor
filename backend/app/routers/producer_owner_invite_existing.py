@@ -16,13 +16,16 @@ Related:  backend/app/routers/producer_owner_invite.py (`_live_invite`,
           `_mint_code`, `_verify_email_code`, `_has_owner`, `_claim_invite` —
           reused, never copied) · backend/app/auth.py `require_verified_email`.
 History:  MEH-3256 (creation; design by the stronger-model review 14/11:
-          authenticated accept instead of a password on the invite page).
+          authenticated accept instead of a password on the invite page);
+          MEH-3675 (a fresh Google sign-in replaces the code, step 3).
 
 ORDER (each refusal is placed where it costs nothing):
   1. a dead link → 404 (a fact about the link the caller holds);
   2. an admin account → 403, an account with a business → 409;
   3. the email code → 422 (one attempt spent). Its conditional UPDATE takes
-     the PRODUCER row lock first;
+     the PRODUCER row lock first. Or, MEH-3675, a fresh Google sign-in of
+     this account (`services/owner_invite_google.py`), which takes the same
+     lock explicitly;
   4. then the user row is locked FOR UPDATE and re-read: step 2 again, plus
      blocked / unverified / a session revoked since auth (token_version), so
      two tabs accepting two invites on one account cannot both win and a
@@ -69,6 +72,7 @@ from app.routers.producer_owner_invite import (
     _ALREADY_OWNED,
     _LINK_INVALID,
     _LIVE_STATUS,
+    _NO_CODE,
     _accept_plan,
     _claim_invite,
     _has_owner,
@@ -85,6 +89,10 @@ from app.services import indexnow
 from app.services.auth_emails import send_owner_invite_code_email
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.email import send_email
+from app.services.owner_invite_google import (  # MEH-3675
+    fresh_google_signin_matches,
+    lock_invite_row,
+)
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 
@@ -199,7 +207,18 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     # Captured now: `populate_existing` below refreshes this same object.
     seen_version = int(user.token_version or 0)
     now = datetime.now(timezone.utc)
-    _verify_email_code(db, producer, _account_email(user), body.code, now)
+    # MEH-3675: a fresh Google sign-in of THIS account replaces the email
+    # code; anything else (no token, an old one, another identity) gets the
+    # same 422 as a missing code. Both branches leave the PRODUCER row
+    # locked, so the lock order below is unchanged.
+    if body.google_id_token:
+        if not fresh_google_signin_matches(body.google_id_token, user, now):
+            raise HTTPException(status_code=422, detail=_NO_CODE)
+        lock_invite_row(db, producer)
+    elif body.code:
+        _verify_email_code(db, producer, _account_email(user), body.code, now)
+    else:
+        raise HTTPException(status_code=422, detail=_NO_CODE)
 
     # The code check above already holds the PRODUCER row (its attempts
     # UPDATE); the account is locked second. Two tabs accepting two
