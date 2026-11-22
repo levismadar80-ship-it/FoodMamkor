@@ -170,7 +170,7 @@ def test_put_me_invalid_email_returns_422_hebrew(client, db):
         "/producers/me", json={"contact_email": "not-an-email"}, headers=auth_header(user)
     )
     assert resp.status_code == 422, resp.text
-    assert "כתובת אימייל לא תקינה" in _detail_text(resp)
+    assert "כתובת מייל לא תקינה" in _detail_text(resp)
 
 
 def test_put_me_invalid_phone_returns_422_hebrew(client, db):

@@ -18,7 +18,7 @@
 * `frontend/lib/use-gsi-redraw-on-resize.js` — מצייר מחדש את כפתור Google ברוחב החדש כשרוחב המסך משתנה, ב-`frontend/components/GoogleAuthButton.jsx` וב-`frontend/components/ProducerOAuthButtons.jsx` (MEH-3687).
 * `frontend/lib/post-auth-return.js` — הדף שממנו לקוחה נרשמה באימייל, כדי שקישור האימות יחזיר אותה אליו (24 שעות, localStorage, MEH-3661).
 * `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
-* `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי אימייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).
+* `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי מייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).
 * **מפתח גישה לחשבון אדמין (MEH-3305).** `backend/app/services/admin_passkey.py` (בדיקות WebAuthn, כרטיס חד-פעמי, קודי שחזור), `backend/app/routers/admin_passkey.py` (‏`/auth/passkey/*`), `frontend/lib/webauthn.js`, `frontend/components/PasskeyRecoveryPanel.jsx` (שלב קוד השחזור ב-`/login`), `frontend/app/[locale]/admin/settings/PasskeySettings.jsx` (הוספה, הסרה, קודים). אדמין עם מפתח לא מקבל סשן מ-`/auth/login` / Google / Apple עד שהמפתח (או קוד) מאשר.
 
 **Flags.** ‏`WEBAUTHN_RP_ID` + `WEBAUTHN_ORIGIN` — ריקים = מפתח הגישה כבוי (מקומי, תצוגות vercel.app). ‏OAuth מושבת בחן כשה-client id לא מוגדר (`tests/test_oauth_unconfigured.py`).

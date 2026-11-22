@@ -126,6 +126,23 @@ RULES=(
   # Admin copy may keep it (ADR-037: Sapir is the reader); a JSON line carries
   # no namespace, so such a line is baselined with its reason, not exempted here.
   $'feminine-address\tאלייך\t-\t'
+  # «אימייל» — the site says «מייל» (Sapir delegated the call 21/11, decided on
+  # what Israeli services write: btl.gov.il «כתובת המייל», iec.co.il «חשבונית
+  # במייל»; MEH-3665). Every prefix form («האימייל», «לאימייל») contains it.
+  $'email-term\tאימייל\t-\t'
+  # A forward / leads-to arrow is «←» in Hebrew (Sapir 21/11, MEH-3665): the
+  # reading direction is right-to-left, so «A → B» points back at A. «→» stays
+  # only where it LEADS a string («→ חזרה», «→ הקודם»). The hit is a Hebrew
+  # letter, then at most two non-Hebrew, non-space characters (room for `\"`
+  # and `)`), then «→»: a mid-sentence Hebrew arrow. English strings (en.json,
+  # LTR, where «→» is right) and code like `${a} → ${b}` have no Hebrew letter
+  # there. Letters are spelled out, not a range: see `(ה)?` above for why a
+  # range class fails. The gap EXCLUDES Hebrew letters on purpose: with `.?.?`
+  # gawk in a UTF-8 locale (the CI runner) starts the match one letter earlier
+  # than mawk does (leftmost-longest), so the reported text, and with it the
+  # baseline key, depended on which awk ran. Measured 21/11: self-test 23/23
+  # under mawk, 22/23 under gawk C.UTF-8.
+  $'forward-arrow\t(א|ב|ג|ד|ה|ו|ז|ח|ט|י|כ|ך|ל|מ|ם|נ|ן|ס|ע|פ|ף|צ|ץ|ק|ר|ש|ת)[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[[:space:]]*→\t-\t'
 )
 
 # Every candidate file, one path per line, relative to the repo root.
@@ -309,8 +326,10 @@ run() {
       local p id m have
       IFS=$'\t' read -r p id m <<<"$key"
       have="$(printf '%s\n' "$frozen" | grep -cxF "$key" || true)"
-      printf '%s\n' "$records" | awk -F'\t' -v p="$p" -v id="$id" -v m="$m" \
-        '$1==p && $3==id && $4==m { print "  - " $1 ":" $2 "  [" $3 "]  " $4 }' \
+      # m via ENVIRON, not -v: -v unescapes, so a match holding `\"` (a JSON
+      # string's inner quote) never equalled itself and its line went unlisted.
+      printf '%s\n' "$records" | M="$m" awk -F'\t' -v p="$p" -v id="$id" \
+        '$1==p && $3==id && $4==ENVIRON["M"] { print "  - " $1 ":" $2 "  [" $3 "]  " $4 }' \
         | LC_ALL=C sort -u >&2
       printf '    (%s in baseline, %s now)\n' "$have" "$((have + cnt))" >&2
     done
@@ -383,7 +402,7 @@ HEAD
 }
 
 self_test() {
-  local tmp pass=0 total=19 got
+  local tmp pass=0 total=23 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
@@ -422,6 +441,19 @@ PYF
   # Cases 15-19 (MEH-3655). Each one is green on the guard after the change
   # and red on the guard before it: run `--self-test` on the parent of this
   # commit to see 14/19.
+  # Cases 20-23 (MEH-3665). Case 20 is the text of he.json
+  # `guides.business_story.body.b34` as it read before MEH-3665 turned its arrow
+  # to «←» («פרטים טכניים (36 שעות תסיסה) → אמינות»); case 21 is the shape of
+  # `producer.detail.back_label`. The English arrow sits in its own file, so
+  # case 22 can fail on its own and is not implied by case 21's count.
+  cat > "$tmp/frontend/components/Arrow.jsx" <<'AR'
+export const A = () => <li>פרטים טכניים (36 שעות תסיסה) → אמינות</li>;
+export const B = () => <a>→ חזרה</a>;
+export const D = () => <p>שלחו לנו אימייל</p>;
+AR
+  cat > "$tmp/frontend/components/EnArrow.jsx" <<'EN'
+export const C = () => <a>Next →</a>;
+EN
   cat > "$tmp/frontend/components/Slash.jsx" <<'SL'
 export const A = () => <input placeholder="ספר/י מה הבעיה" />;
 export const B = () => <label>שם איש/אשת הקשר</label>;
@@ -506,6 +538,18 @@ PY2
   [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /mail2\.py$/ && $2 != 10' | grep -c .)" -eq 0 ] \
     && { pass=$((pass+1)); echo "  ok 19  module and function docstrings are still prose"; } \
     || echo "  FAIL 19  a real docstring was scanned as copy"
+  _has $'frontend/components/Arrow.jsx\tforward-arrow\tה) →' \
+    && { pass=$((pass+1)); echo "  ok 20  a mid-sentence Hebrew «→» is caught"; } \
+    || echo "  FAIL 20  a mid-sentence Hebrew «→» was NOT caught"
+  [ "$(printf '%s\n' "$got" | grep -cF $'Arrow.jsx\tforward-arrow')" -eq 1 ] \
+    && { pass=$((pass+1)); echo "  ok 21  a leading «→ חזרה» is a back arrow, not a hit"; } \
+    || echo "  FAIL 21  «→ חזרה» was flagged, or the count is off"
+  _hasnt $'frontend/components/EnArrow.jsx\tforward-arrow' \
+    && { pass=$((pass+1)); echo "  ok 22  an English «Next →» (LTR) is not a hit"; } \
+    || echo "  FAIL 22  an English «Next →» was flagged"
+  _has $'frontend/components/Arrow.jsx\temail-term\tאימייל' \
+    && { pass=$((pass+1)); echo "  ok 23  «אימייל» is caught (the site writes «מייל»)"; } \
+    || echo "  FAIL 23  «אימייל» was NOT caught"
   # The parsed-0 control must itself FAIL, not pass quietly.
   if run "$tmp/frontend" /dev/null "control" >/dev/null 2>&1; then
     echo "  FAIL 7  parsed-0 control PASSED — a wrong cwd would read as green"

@@ -104,7 +104,7 @@ class RegistrationCreate(BaseModel):
     def _clean_email(cls, v: Any) -> Any:
         cleaned = _normalize_contact_email(v)
         if cleaned is None:
-            raise ValueError("כתובת אימייל לא תקינה")
+            raise ValueError("כתובת מייל לא תקינה")
         return cleaned.lower()
 
 

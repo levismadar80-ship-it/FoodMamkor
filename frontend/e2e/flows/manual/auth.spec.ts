@@ -24,7 +24,7 @@ import { settledField } from "../_settled-field";
  *             · the eye toggle on `/login`, which the page renders without a
  *               testid, reached by ARIA role + accessible NAME — and that name
  *               is itself one of the assertions;
- *             · the validation MESSAGES on both pages («האימייל לא תקין»,
+ *             · the validation MESSAGES on both pages («המייל לא תקין»,
  *               «✓ תקין», «הזינו סיסמה», «שם מלא הוא שדה חובה») and the hero
  *               overlay copy, none of which carry a testid. Several of those
  *               are absence assertions, where the string IS the subject: the
@@ -239,7 +239,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await page.goto(LOGIN);
     const email = page.getByTestId("login-email");
     const submit = page.getByTestId("login-submit");
-    const invalid = page.getByText("האימייל לא תקין", { exact: true });
+    const invalid = page.getByText("המייל לא תקין", { exact: true });
     const valid = page.getByText("✓ תקין", { exact: true });
 
     // MEH-2623: the submit button is never disabled for invalid input.
@@ -285,7 +285,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
       if (r.method() === "POST" && /\/auth\/login(?:\?|$)/.test(r.url())) loginPosts += 1;
     });
     await page.getByTestId("login-submit").click();
-    await expect(page.getByText("האימייל לא תקין", { exact: true })).toBeVisible();
+    await expect(page.getByText("המייל לא תקין", { exact: true })).toBeVisible();
     await expect(page.getByTestId("login-email")).toBeFocused();
     await expect(page.getByTestId("login-email")).toHaveAttribute("aria-invalid", "true");
     expect(loginPosts).toBe(0);
@@ -392,7 +392,7 @@ test.describe("manual › /register says nothing when a field is merely correct 
 
     await email.fill("foo");
     await name.click();
-    const emailError = page.getByText("האימייל לא תקין", { exact: true });
+    const emailError = page.getByText("המייל לא תקין", { exact: true });
     await expect(emailError).toBeVisible();
 
     await email.fill("fooo"); // still malformed — the error must not flicker off

@@ -104,7 +104,7 @@ def _change_email(
     )
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
-        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+        raise HTTPException(status_code=409, detail="המייל כבר בשימוש")
     user.email = new_email  # type: ignore[assignment]
     user.email_verified = False  # type: ignore[assignment]
     user.email_verify_token = secrets.token_urlsafe(32)  # type: ignore[assignment]
@@ -223,7 +223,7 @@ def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added respon
         db.rollback()
         if not email_changed:
             raise
-        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+        raise HTTPException(status_code=409, detail="המייל כבר בשימוש")
     db.refresh(user)
 
     if email_changed:

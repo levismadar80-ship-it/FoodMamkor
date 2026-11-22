@@ -249,9 +249,9 @@ test.describe("Email confirmation from the draft", () => {
     await expect(checklistRows(page)).toHaveCount(5);
     await expect(page.getByTestId("completeness-counter")).toHaveText("4 מתוך 5");
     const row = checklist(page).getByTestId("completeness-open-email_verified");
-    await expect(row).toContainText("אישור כתובת האימייל");
+    await expect(row).toContainText("אישור כתובת המייל");
     await expect(cta(page)).toHaveCount(0);
-    await expect(page.getByText("אמתו את כתובת האימייל שלכם — כך נשמור על החשבון שלכם")).toHaveCount(0);
+    await expect(page.getByText("אמתו את כתובת המייל שלכם — כך נשמור על החשבון שלכם")).toHaveCount(0);
 
     await row.getByRole("button", { name: "שלחו לי שוב" }).click();
     await expect(row.getByTestId("completeness-email-sent")).toHaveText("✓ נשלח!");
