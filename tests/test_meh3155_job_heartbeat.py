@@ -241,6 +241,8 @@ def _registered(monkeypatch, *, flags_on: bool):
     from app.services import rescue_digest
 
     monkeypatch.setattr(startup.settings, "watchdog_enabled", flags_on)
+    # MEH-3630: the staging-only reset job stays out of these exact sets.
+    monkeypatch.setattr(startup.settings, "railway_environment", "")
     monkeypatch.setattr(startup.settings, "rescue_bags_enabled", flags_on)
     monkeypatch.setattr(rescue_digest, "digest_enabled", lambda: flags_on)
     from app.services import weekly_owner_summary

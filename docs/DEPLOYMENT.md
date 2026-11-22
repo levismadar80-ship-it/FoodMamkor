@@ -1040,6 +1040,15 @@ when both are set (seed_data.py); the three QA accounts come back with the
 `DEMO_*_PASSWORD` values. Cloudinary images are not deleted
 (`backend/scripts/cleanup_cloudinary_orphans.py`).
 
+**Weekly, by itself (MEH-3630).** On staging only (`RAILWAY_ENVIRONMENT=staging`,
+`ENV` not `production`) the backend's scheduler runs the same `--confirm`
+every Saturday 23:00 UTC (Sunday 01:00/02:00 Israel, 2.5 h before the nightly
+E2E run) — `backend/app/services/staging_reset_job.py`. A Postgres advisory
+lock lets one process run it when several replicas or workers registered the
+job. A failure is reported to Sentry (`task=staging_weekly_reset`) and leaves
+the database as the script left it (see above). Nothing registers it locally,
+in CI or in production.
+
 ### Staging QA auth fixtures (MEH-1241 · MEH-1528)
 
 Playwright can drive a logged-in **producer**, **consumer**, and **admin**
