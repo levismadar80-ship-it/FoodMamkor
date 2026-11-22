@@ -56,12 +56,18 @@ describe("OwnerWelcomeCard question line (MEH-3720)", () => {
 });
 
 describe("/contact WhatsApp row (MEH-3720)", () => {
-  it("shows WhatsApp before the email address, with the sheet's copy", () => {
+  it("shows WhatsApp before the email address, with the same copy as the sheet", () => {
     wrap(<ContactClient />);
     const wa = screen.getByTestId("contact-whatsapp");
-    expect(wa).toHaveTextContent(he.dashboard.producer.status.support.whatsapp_label);
+    expect(wa).toHaveTextContent(he.contact.whatsapp_label);
     expect(wa.getAttribute("href")).toMatch(/^https:\/\/wa\.me\//);
     const mail = screen.getAllByRole("link").find((a) => a.getAttribute("href") === "mailto:contact@mehamakor.co.il");
     expect(wa.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("/contact and the sheet name WhatsApp the same way (MEH-3720)", () => {
+  it.each(["whatsapp_label", "whatsapp_hours"])("contact.%s equals the sheet's", (key) => {
+    expect(he.contact[key]).toBe(he.dashboard.producer.status.support[key]);
   });
 });

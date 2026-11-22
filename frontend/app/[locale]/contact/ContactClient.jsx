@@ -33,9 +33,6 @@ const EMPTY_FORM = { name: "", email: "", message: "", topic: DEFAULT_CONTACT_TO
 
 export default function ContactClient() {
   const t = useTranslations("contact");
-  // MEH-3720: the WhatsApp row reuses the dashboard support sheet's copy, so
-  // every «צרו קשר» surface names the same channels the same way.
-  const tSupport = useTranslations("dashboard.producer.status.support");
   // MEH-1981: same namespace pair CategoryRequestModal.jsx:17-18 uses — one
   // privacy-link label site-wide, not a new string.
   const tNotice = useTranslations("privacy.collection_notice");
@@ -123,7 +120,10 @@ export default function ContactClient() {
           </p>
 
           <div className="bg-green-50/60 border border-border rounded-md p-4 mb-6 text-sm">
-            {/* MEH-3720: WhatsApp first, as in the dashboard sheet — one contact pattern. */}
+            {/* MEH-3720: WhatsApp first, as in the dashboard sheet — one contact pattern.
+                Same copy as dashboard.producer.status.support; the dashboard
+                namespace is route-scoped (lib/client-messages.js), so /contact
+                carries its own keys. */}
             <p className="flex items-center gap-2 flex-wrap mb-2">
               <WhatsappLogo size={16} weight="fill" className="text-[#25D366]" aria-hidden="true" />
               <a
@@ -133,9 +133,9 @@ export default function ContactClient() {
                 data-testid="contact-whatsapp"
                 className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current font-medium"
               >
-                {tSupport("whatsapp_label")}
+                {t("whatsapp_label")}
               </a>
-              <span className="text-fg-muted">{tSupport("whatsapp_hours")}</span>
+              <span className="text-fg-muted">{t("whatsapp_hours")}</span>
             </p>
             <p className="flex items-center gap-2 flex-wrap">
               <Envelope size={16} className="text-primary" aria-hidden="true" />
