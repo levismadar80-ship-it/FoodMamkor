@@ -1110,7 +1110,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > link cannot join it. One helper, `group_buys._public_group_buys`. The owner's
 > list above and the admin list are unchanged. No schema change.
 >
-> MEH-3691: `POST /group-buys/{id}/commit` answers `403 אי אפשר להצטרף לקבוצת
+> MEH-3691: `POST /group-buys/{id}/commit` (and `…/waitlist`) answers `403 אי אפשר להצטרף לקבוצת
 > הרכישה של בית העסק שלך` when the caller's `producer_id` is the group's, and
 > `POST /product-orders` answers `403 אי אפשר להזמין מבית העסק שלך` when the
 > logged-in buyer's `producer_id` is the order's business (checked before the

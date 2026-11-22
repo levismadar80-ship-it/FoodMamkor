@@ -2,7 +2,8 @@
  * MEH-3691 — the business's own account sees no join form on its group buy
  * (the commit route refuses it with 403); any other signed-in user does.
  *
- * Cells: owner / another business's owner / consumer × open group with room.
+ * Cells: owner / another business's owner / consumer × open group with room,
+ * and owner / consumer × full group (the waitlist panel).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -48,8 +49,11 @@ const GB = {
   user_committed: false,
   user_commit: null,
 };
+const fixture = { gb: GB };
 const get = vi.fn((url) =>
-  url === "/group-buys/gb-1" ? Promise.resolve({ data: GB }) : Promise.reject(new Error(`unexpected GET ${url}`)),
+  url === "/group-buys/gb-1"
+    ? Promise.resolve({ data: fixture.gb })
+    : Promise.reject(new Error(`unexpected GET ${url}`)),
 );
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn(), delete: vi.fn() } }));
 
@@ -63,6 +67,7 @@ async function joinButtons() {
 describe("MEH-3691 — no join form for the business's own account", () => {
   beforeEach(() => {
     get.mockClear();
+    fixture.gb = GB;
   });
 
   it("the owner sees no join button", async () => {
@@ -78,5 +83,19 @@ describe("MEH-3691 — no join form for the business's own account", () => {
   it("a consumer sees the join button", async () => {
     auth.user = { id: "u-3", producer_id: null };
     expect(await joinButtons()).toBe(1);
+  });
+
+  it("the owner sees no waitlist on her full group", async () => {
+    fixture.gb = { ...GB, max_participants: 1, commits_count: 1 };
+    auth.user = { id: "u-1", producer_id: "p-1" };
+    await joinButtons();
+    expect(screen.queryAllByTestId("group-buy-waitlist")).toHaveLength(0);
+  });
+
+  it("a consumer sees the waitlist on a full group", async () => {
+    fixture.gb = { ...GB, max_participants: 1, commits_count: 1 };
+    auth.user = { id: "u-3", producer_id: null };
+    await joinButtons();
+    expect(screen.queryAllByTestId("group-buy-waitlist")).toHaveLength(1);
   });
 });

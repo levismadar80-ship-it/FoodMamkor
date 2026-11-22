@@ -6,12 +6,13 @@ group was closer to happening than it was (Sapir 22/11)."""
 
 from datetime import datetime, timezone
 
-from app.models.models import GroupBuyCommit
-from app.models.product_orders import ProductOrder
+from app.models.models import GroupBuyCommit, GroupBuyWaitlist
+from app.models.product_orders import ProductOrder, ProductOrderPhoneCode
 from _test_meh3263_order_route__common import (  # noqa: F401
     PHONE,
     Shop,
     flag_on,
+    sent,
     slot_of,
     valid_order_payload,
 )
@@ -73,3 +74,47 @@ def test_an_owner_of_another_business_joins_like_a_customer(client, db):
     )
     assert res.status_code == 201, res.text
     assert db.query(GroupBuyCommit).one().user_id == buyer.id
+
+
+def test_a_refused_owner_spends_no_phone_code(client, db, flag_on, sent):
+    """Review of MEH-3691: the refusal comes before the code is checked, so an
+    owner without a verified phone keeps her code and no wrong try counts."""
+    shop = Shop(db)
+    client.post(
+        "/product-orders/phone-code", json={"producer_id": shop.id, "phone": PHONE}
+    )
+    code = sent[-1][1]
+    body = valid_order_payload(shop, slot_of(client, shop), code, phone=PHONE)
+    res = client.post("/product-orders", json=body, headers=auth_header(shop.owner))
+    assert res.status_code == 403, res.text
+    row = db.query(ProductOrderPhoneCode).one()
+    assert (row.used_at, row.attempts) == (None, 0)
+
+
+def _full_group(db, owner_email):
+    producer, owner = _producer_user(db, email=owner_email)
+    _, member = _producer_user(db, email=f"m{owner_email}")
+    gb = _make_group_buy(db, producer, max_participants=1)
+    db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=member.id, quantity=1))
+    db.commit()
+    return gb, owner
+
+
+def test_an_owner_cannot_wait_for_a_place_in_her_own_group(client, db):
+    gb, owner = _full_group(db, "wlown@example.com")
+    res = client.post(
+        f"/group-buys/{gb.id}/waitlist", json={"quantity": 1}, headers=auth_header(owner)
+    )
+    assert res.status_code == 403, res.text
+    assert res.json()["detail"] == OWN_GROUP_DETAIL
+    assert db.query(GroupBuyWaitlist).count() == 0
+
+
+def test_another_business_waits_for_a_place_like_a_customer(client, db):
+    gb, _ = _full_group(db, "wlhost@example.com")
+    _, other = _producer_user(db, email="wlother@example.com")
+    res = client.post(
+        f"/group-buys/{gb.id}/waitlist", json={"quantity": 1}, headers=auth_header(other)
+    )
+    assert res.status_code == 201, res.text
+    assert db.query(GroupBuyWaitlist).one().user_id == other.id
