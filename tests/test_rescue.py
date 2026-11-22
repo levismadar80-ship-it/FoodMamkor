@@ -949,7 +949,8 @@ class TestReserveEmail:
             assert "ומשלמים 30" in part
             assert "הנביאים 10, חיפה" in part
             assert "וככה הסל יגיע למישהו אחר" in part
-            assert "צוות מהמקור 🌱" in part
+            assert "צוות מהמקור" in part  # MEH-3621: the frame's footer
+        assert "צוות מהמקור 🌱" in mail["body"]
         assert "לבטל את השריון" in mail["html"]
         assert f"/producer/{shop['producer'].id}" in mail["html"]
 
@@ -1148,7 +1149,8 @@ class TestBuyerCancelHardening:
                 "הקוד כבר לא בתוקף ואין צורך להגיע." in part
             )
             assert "תודה שביטלתם בזמן, ככה הסל יגיע למישהו אחר." in part
-            assert "צוות מהמקור 🌱" in part
+            assert "צוות מהמקור" in part  # MEH-3621: the frame's footer
+        assert "צוות מהמקור 🌱" in mail["body"]
         assert order["pickup_code"] not in mail["body"]
 
     def test_a_refused_cancel_sends_nothing(

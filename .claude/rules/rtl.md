@@ -215,7 +215,7 @@ overlay's `z-[9500]` competes only with that context's own children, so a *lower
 root-level token wins on screen. **Raising the number is not the fix and cannot
 be**: a bigger value inside a capped context is still capped.
 
-Measured, not reasoned: `frontend/qa-meh-2215-stacking-probe.mjs` walks an
+Measured, not reasoned: `qa-meh-2215-stacking-probe.mjs [deleted probe, docs/media-archive.md]` walks an
 overlay's ancestors for every context-creating property, hit-tests the Header and
 the /producer tab bar, and samples pixel luma off the captured frames. It ships
 with a chain-walker self-test (four cases with known answers, one lifted from a

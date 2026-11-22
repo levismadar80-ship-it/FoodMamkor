@@ -37,7 +37,7 @@ new router:
   to quiet a 401 anywhere else re-creates the MEH-1627 bug: an expired token
   silently downgrades a logged-in user to anonymous, and the handler then
   takes its anonymous branch — which is how a producer upgrade turned into an
-  unrecoverable 422.
+  unrecoverable 422. `scripts/checks/prose-rules-guard.sh` (R2) fails any other use.
 - **Rate limiting**: always via `from app.rate_limit import limiter`;
   per-route limits, never inline (`.claude/rules/security.md`).
 - **Schemas**: pure-Pydantic models in `backend/app/schemas/` (one module per area; shared validators in `schemas.py`, which re-exports every name)
@@ -46,6 +46,8 @@ new router:
 - **Hebrew errors**: `raise HTTPException(status_code=…, detail="<עברית>")`.
   Use feminine grammar unless the surface is a functional UI string
   (gerund) — see brand voice in `.claude/rules/workflow.md` § brand voice.
+  A non-Hebrew literal `detail=` here fails `scripts/checks/prose-rules-guard.sh` (R1); a machine-facing
+  answer goes in `scripts/checks/hebrew-detail-allowlist.tsv` with its reason.
 
 ## Gotchas
 - `httpx.Client()` must be passed to the Anthropic SDK explicitly —

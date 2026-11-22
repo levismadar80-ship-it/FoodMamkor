@@ -39,8 +39,9 @@ def test_no_kicker_line_under_the_logo():
 def test_logo_then_heading_and_subject_unchanged():
     sent = _send()
     html = sent["html"]
-    # Control that the template still renders its head: the logo, then the h1.
+    # Control that the template still renders its head: the logo, then the
+    # heading (the green bar of email_layout.frame since MEH-3621).
     logo_at = html.find('alt="מהמקור"')
-    h1_at = html.find("<h1")
+    h1_at = html.find("ברוכים הבאים למהמקור")
     assert 0 <= logo_at < h1_at, "the logo no longer precedes the heading"
     assert sent["subject"] == "ברוכים הבאים למהמקור 🌿"
