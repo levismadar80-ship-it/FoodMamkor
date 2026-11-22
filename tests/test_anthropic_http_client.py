@@ -1,8 +1,8 @@
 """Every Anthropic client in backend/app passes http_client= (Refs MEH-3176).
 
 CLAUDE.md and .claude/rules/backend.md say "always pass
-http_client=anthropic.DefaultHttpxClient()" (httpx2 since anthropic 1.0). Without it, a future httpx bump can make the SDK
-raise inside its own client constructor. The AI fail-open path catches that
+http_client=anthropic.DefaultHttpxClient()" (httpx2 since anthropic 1.0).
+Without it, a future httpx bump can make the SDK raise inside its own client constructor. The AI fail-open path catches that
 error, so the AI features stop working with no 5xx and no failing test. Until
 now nothing checked the rule; this test reads every module's AST and fails
 on any Anthropic(...) / AsyncAnthropic(...) call without the keyword.
