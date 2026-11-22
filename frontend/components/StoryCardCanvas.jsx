@@ -51,6 +51,7 @@ import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
 import Button from "@/components/ui/Button";
 import { copyOrThrow } from "@/lib/clipboard";
 import { COLOR } from "@/lib/color-tokens";
+import { isCloudinaryUrl } from "@/lib/cloudinary";
 
 const W = 1080;
 const H = 1920;
@@ -137,7 +138,7 @@ export function loadImage(src) {
 
 function photoSrc(url) {
   // g_auto: Cloudinary picks the crop around the subject, not the centre.
-  return url.includes("cloudinary.com")
+  return isCloudinaryUrl(url)
     ? url.replace("/upload/", `/upload/f_auto,q_auto,w_${W},h_${PHOTO_H},c_fill,g_auto/`)
     : url;
 }

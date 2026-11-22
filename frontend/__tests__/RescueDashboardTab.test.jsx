@@ -908,3 +908,15 @@ describe("cancelling today's bag", () => {
     await waitFor(() => expect(box.textContent).toContain("זמן האיסוף חלף"));
   });
 });
+
+// MEH-3593: the note moved to the pickup point; the rescue tab points there.
+describe("pickup instructions pointer (MEH-3593)", () => {
+  it("links to the locations editor and sends no note with the items", async () => {
+    render(<RescueTab />);
+    const pointer = await screen.findByTestId("rescue-pickup-note-pointer");
+    expect(pointer.querySelector("a").getAttribute("href")).toContain("/producer/dashboard/edit#locations");
+    fireEvent.click(await screen.findByTestId("rescue-items-save"));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls.at(-1)[1]).not.toHaveProperty("pickup_note");
+  });
+});

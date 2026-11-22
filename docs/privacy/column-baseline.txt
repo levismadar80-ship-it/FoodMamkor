@@ -1,0 +1,4 @@
+# Columns that existed when the privacy column ledger started (MEH-3643, 21/11/2026).
+# All of them were classified into docs/privacy/columns.tsv under MEH-3644, so this
+# file is empty and stays empty: a NEW column never lands here, it gets a row in
+# columns.tsv — tests/test_privacy_column_ledger.py (BASELINE_CEILING = 0).

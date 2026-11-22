@@ -549,7 +549,10 @@ def admin_update_producer(
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
     # matters — destroying before commit would orphan-leak in reverse
     # (assets gone, DB still references them) on a commit raise.
-    old_images = list(producer.images or [])
+    old_images, old_logo_url = (
+        list(producer.images or []),
+        producer.logo_url,
+    )  # MEH-3611
 
     # MEH-1494 chunk B: the editorial clock, stamped BEFORE the setattr loop
     # below — that loop is what turns `producer.is_recommended` into the new
@@ -606,6 +609,14 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
             db=db,  # MEH-3247
         )
+    from app.cloudinary_utils import destroy_replaced  # MEH-3611
+
+    destroy_replaced(
+        old_logo_url,
+        producer.logo_url,
+        context="admin.admin_update_producer logo",
+        db=db,
+    )
 
     if indexnow.is_public_owner(producer):  # MEH-2852
         indexnow.schedule(
@@ -734,6 +745,7 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+    old_logo_url = producer.logo_url  # MEH-3611
     # MEH-2852: the page goes with the row — its URL is read before the delete.
     removed_urls = (
         indexnow.producer_urls(producer) if indexnow.is_public_owner(producer) else []
@@ -800,6 +812,11 @@ def admin_delete_producer(
         old_owner_photo_url,  # type: ignore[arg-type]
         context="admin.admin_delete_producer owner_photo",
         db=db,  # MEH-3247
+    )
+    destroy_image(
+        old_logo_url,  # type: ignore[arg-type]
+        context="admin.admin_delete_producer logo",
+        db=db,  # MEH-3611
     )
 
     return {"detail": "Producer deleted"}

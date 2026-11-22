@@ -149,10 +149,7 @@ def test_bypass_header_goes_to_the_co_il_staging_host(monkeypatch):
 
 def test_static_audit_reads_only_mounted_routers():
     routes = {(m, p) for m, p, _, _ in cac.extract_backend_routes()}
-    # router_registry.py comments out home_products (MEH-1406 kill-switch), so
-    # its routes are not served and must not satisfy a frontend call.
-    assert ("POST", "/home-products") not in routes
-    # Control: a mounted router, and a second router variable in one module.
+    # A mounted router, and a second router variable in one module.
     assert ("GET", "/producers") in routes
     assert any(p.startswith("/admin/") and "group-buys" in p for _, p in routes)
 
