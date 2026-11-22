@@ -27,7 +27,7 @@
  * context from the fixture keeps the pair intact. A bare `request` fixture with
  * an Authorization header is the bug, not the token.
  *
- * Measured both ways, both environments (qa-meh1858-fingerprint-proof.mjs):
+ * Measured both ways, both environments (qa-meh1858-fingerprint-proof.mjs [deleted probe, docs/media-archive.md]):
  *
  *              __Secure-Fgp   newContext({storageState})   bare + bearer
  *   staging        YES              200                        401

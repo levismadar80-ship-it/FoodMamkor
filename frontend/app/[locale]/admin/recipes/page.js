@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { SkeletonTable } from "@/components/Skeleton";
-import Dialog from "@/components/ui/Dialog";
+import AdminFeedbackModal from "@/components/admin/AdminFeedbackModal";
 
 /**
  * Admin recipes moderation queue (MEH-997 seed fix).
@@ -194,56 +194,20 @@ export default function AdminRecipesPage() {
         </div>
       )}
 
-      {/* Feedback modal */}
+      {/* Feedback modal — MEH-3623: shared with the other admin queue */}
       {modalRecipe && (
-        <Dialog closeOnBackdrop={false}
-          labelledBy="recipe-feedback-title"
-          size="lg"
-          dismissible={!busy}
+        <AdminFeedbackModal
+          ns="recipes"
+          t={t}
+          action={modalAction}
+          itemLine={`"${modalRecipe.title}"`}
+          feedback={feedback}
+          onFeedback={setFeedback}
+          busy={busy}
           onClose={closeModal}
+          onSubmit={submitModal}
           testId="admin-recipes-feedback-modal"
-        >
-            <h2 id="recipe-feedback-title" className="font-headline-md text-xl font-bold text-text mb-2">
-              {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
-            </h2>
-            <p className="text-fg-muted text-sm mb-4">
-              &quot;{modalRecipe.title}&quot;
-            </p>
-            <label className="block text-sm font-medium text-text mb-1">
-              {modalAction === "changes" ? t("recipes.modal.changes_label") : t("recipes.modal.reject_label")}
-            </label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={5}
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
-              placeholder={
-                modalAction === "changes"
-                  ? t("recipes.modal.changes_placeholder")
-                  : t("recipes.modal.reject_placeholder")
-              }
-            />
-            <div className="flex gap-2 justify-end mt-4">
-              <button
-                onClick={closeModal}
-                disabled={busy}
-                className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50"
-              >
-                {t("common.cancel")}
-              </button>
-              <button
-                onClick={submitModal}
-                disabled={busy}
-                className={`px-4 py-2 rounded-sm text-white ${
-                  modalAction === "changes"
-                    ? "bg-accent hover:opacity-90"
-                    : "bg-danger-600 hover:bg-danger-700"
-                } disabled:opacity-50`}
-              >
-                {busy ? t("common.sending") : t("recipes.modal.submit")}
-              </button>
-            </div>
-        </Dialog>
+        />
       )}
     </div>
   );

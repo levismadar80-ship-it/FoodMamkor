@@ -43,7 +43,7 @@ import LoginPromptGoogle from "@/components/LoginPromptGoogle";
  * (ProducerDetail.jsx:161) — painted straight over the modal. Raising 9500 is
  * the tempting non-fix: a bigger number inside a capped context is still capped.
  * Repo precedent for the portal: FilterSheet.jsx (MEH-1075), ui/Popover.jsx
- * (MEH-1592). Measured in qa-meh-2215-stacking-probe.mjs (MEH-2215).
+ * (MEH-1592). Measured in qa-meh-2215-stacking-probe.mjs [deleted probe, docs/media-archive.md] (MEH-2215).
  *
  * The one non-obvious consequence, recorded because it is invisible in a diff:
  * a portal moves the DOM node, NOT the React tree, so clicks inside this modal

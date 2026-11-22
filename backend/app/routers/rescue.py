@@ -440,6 +440,17 @@ def list_my_reservations(
     return my_reservations(db, user_id=current_user.id, today=israel_today())
 
 
+def _pickup_note(offer: RescueOffer) -> str | None:
+    """MEH-3593: «הוראות איסוף» of the bag's pickup point, read while the
+    request's Session is still open (before the task is queued)."""
+    try:
+        note: str | None = offer.location.pickup_note
+    except Exception:  # noqa: BLE001 — a note must never cost the buyer the code email
+        logger.warning("rescue: pickup note read failed for offer %s", offer.id)
+        return None
+    return note
+
+
 def _queue_reservation_email(
     background_tasks: BackgroundTasks,
     user: User,
@@ -476,6 +487,7 @@ def _queue_reservation_email(
                 if offer.cancel_until > utc_now()
                 else None
             ),
+            pickup_note=_pickup_note(offer),
         ),
         # MEH-2952: a test business or a test buyer → dropped and logged.
         test_cause=bool(producer.is_test or user.is_test),
