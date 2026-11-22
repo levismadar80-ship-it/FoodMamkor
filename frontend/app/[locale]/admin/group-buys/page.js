@@ -14,6 +14,7 @@ import { SkeletonList } from "@/components/Skeleton";
 import { ADMIN_NEXT_STATUSES } from "@/lib/group-buy-transitions";
 import BackLink from "@/components/ui/BackLink";
 import { parseNaiveUtc } from "@/lib/dates";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -139,7 +140,7 @@ export default function AdminGroupBuysPage() {
 
                 <div className="flex items-center gap-4 text-sm mb-3">
                   <span className="font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
-                  <span className="text-fg-muted line-through">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
+                  <StruckPrice decorative={false}>{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</StruckPrice>
                   <span className="text-fg-muted">|</span>
                   <span className="text-fg-muted">
                     {gb.commits_count} / {gb.min_participants} · {pct}%

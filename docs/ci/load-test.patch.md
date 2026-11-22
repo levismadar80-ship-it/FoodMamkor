@@ -1,7 +1,8 @@
 > **✅ Status: APPLIED — as-of 21/11/2026.** `.github/workflows/load-test.yml`
 > was committed through Claude in Chrome on this branch (commits `420fc19e0`, then
-> `2248681fe` for the reviewer's fixes); its sha256 `9d02dcba…0558de` matches the
-> YAML below byte for byte. Register row:
+> `2248681fe` for the reviewer's fixes); its sha256 `9d02dcba…0558de` matched the
+> YAML at that time. The stack-ID change was committed the same way (`31a8e7f9b`);
+> the YAML below is now sha256 `8c548c75…ecec70c`, byte for byte. Register row:
 > `load-test` in `docs/ci/patch-register.tsv`.
 
 # 🔧 Staged patch: a manual k6 load test, run from GitHub (MEH-3564)
@@ -20,6 +21,17 @@ and stops depending on anyone's computer. This is the industry default:
 Grafana's own `setup-k6-action` and `run-k6-action`
 ([Grafana blog](https://grafana.com/blog/2024/07/15/performance-testing-with-grafana-k6-and-github-actions/)).
 
+## The stack ID (added 21/11, after the first run)
+
+The first dispatch (run 44902643680) stopped inside `run-k6-action` with
+`stack ID not configured`. k6 v2 authenticates a cloud run with the token
+**and** the Grafana Cloud stack, so the workflow now also passes
+`K6_CLOUD_STACK_ID`, and the cloud-mode guard names all three secrets. Grafana's
+own CI guide does the same
+([learning path](https://grafana.com/docs/learning-paths/automate-k6-cicd/stream-results-cloud/),
+[CLI auth](https://grafana.com/docs/grafana-cloud/testing/k6/author-run/tokens-and-cli-authentication/)).
+The stack ID is under Testing & synthetics → Performance → Settings → Access.
+
 ## Why `workflow_dispatch` only, never a required check
 
 It loads a live target. A red run can mean that staging was slow, or that the
@@ -31,7 +43,7 @@ free, about 25 per run of the current script).
 
 | `where` | Load comes from | Needs |
 |---|---|---|
-| `cloud` (default) | Grafana Cloud k6 load generators; results kept in Grafana | secrets `K6_CLOUD_TOKEN`, `K6_CLOUD_PROJECT_ID` |
+| `cloud` (default) | Grafana Cloud k6 load generators; results kept in Grafana | secrets `K6_CLOUD_TOKEN`, `K6_CLOUD_PROJECT_ID`, `K6_CLOUD_STACK_ID` |
 | `local` | the GitHub runner itself; summary in the job log | nothing new. If the two secrets exist, results are also uploaded to Grafana |
 
 **What the cloud mode does not fix.** slowapi limits `GET /producers` to 120 a
@@ -99,6 +111,9 @@ jobs:
       BASE_URL: ${{ inputs.base_url }}
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
       K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+      # k6 v2 needs the stack as well as the token, or `k6 cloud run` stops with
+      # "stack ID not configured" (run 44902643680, 21/11).
+      K6_CLOUD_STACK_ID: ${{ secrets.K6_CLOUD_STACK_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -112,8 +127,8 @@ jobs:
       - name: Cloud mode needs both Grafana secrets
         if: inputs.where == 'cloud'
         run: |
-          if [ -z "$K6_CLOUD_TOKEN" ] || [ -z "$K6_CLOUD_PROJECT_ID" ]; then
-            echo "::error::where=cloud needs secrets K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID. Add them, or run with where=local."
+          if [ -z "$K6_CLOUD_TOKEN" ] || [ -z "$K6_CLOUD_PROJECT_ID" ] || [ -z "$K6_CLOUD_STACK_ID" ]; then
+            echo "::error::where=cloud needs secrets K6_CLOUD_TOKEN, K6_CLOUD_PROJECT_ID and K6_CLOUD_STACK_ID. Add them, or run with where=local."
             exit 1
           fi
 

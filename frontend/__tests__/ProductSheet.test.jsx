@@ -49,6 +49,8 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
   // MEH-1916: the CTA now renders one icon per primary_contact_method.

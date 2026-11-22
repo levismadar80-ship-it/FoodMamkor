@@ -9,7 +9,7 @@
  * Does NOT: seed the demo business — that is
  *           backend/scripts/seed_demo_business.py, run separately (see RUNNING
  *           below). Does NOT touch /join itself (that is the redesign PR).
- * Related:  e2e/_qa-archive/qa-meh2100-draft-live.mjs (the target/bypass/guard pattern this
+ * Related:  qa-meh2100-draft-live.mjs [deleted probe, docs/media-archive.md] (the target/bypass/guard pattern this
  *           copies), frontend/lib/business-features.js (MEH-2791 — the registry
  *           the manifest maps images back to).
  * History:  MEH-2794 (creation, 2026-11-07).
@@ -30,13 +30,22 @@
  *
  * Add --stills-only to skip the clips (much faster while iterating).
  *
+ * Or, preferred since 21/11 (MEH-3495): a clean LOCAL stack, so leftover
+ * test businesses on staging never land in a frame. Postgres →
+ * `alembic upgrade head` → seed_data.py, `scripts.seed_demo_producers
+ * --confirm`, `scripts/seed_demo_business.py` → mark the `demo-%` producers
+ * is_test → uvicorn on :8080 (RESCUE_BAGS_ENABLED=true) → `next build` +
+ * `next start` with NEXT_PUBLIC_API_URL=http://localhost:8080. Then
+ * QA_BASE_URL=http://localhost:3000 and, in the CC sandbox only,
+ * the --direct-images flag (see below) and a PLAYWRIGHT_BROWSERS_PATH whose
+ * ffmpeg-1013 points at /usr/bin/ffmpeg: the bundled 1011 build exits with
+ * "Option not found" and Playwright then writes no video, silently.
+ *
  * ───────────────────────────────────────────────────────────────────────────
- * THE SELECTORS IN THIS FILE HAVE NEVER RUN. Read this before trusting it.
+ * THE SELECTORS WERE WRITTEN BLIND. Read this before trusting them.
  * ───────────────────────────────────────────────────────────────────────────
- * The CC sandbox cannot reach staging (MEH-2090: egress to vercel.com is
- * refused) and cannot stand up a local stack (`alembic upgrade` is a denied
- * action), so every selector below was written from the source and verified
- * against NOTHING. Expect a first run to report misses.
+ * Written from the source, verified against nothing (MEH-2794); 24/24 ran
+ * end to end on 21/11 (MEH-3495). Expect misses after a redesign.
  *
  * That is survivable only because of how this script fails, which is the one
  * design decision worth defending here:
@@ -85,6 +94,7 @@ import { mkdir, writeFile, readFile, rm, readdir, rename } from "node:fs/promise
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { scopeBypassToOrigin } from "../_bypass-scope.mjs";
 
 const run = promisify(execFile);
 
@@ -96,6 +106,13 @@ const run = promisify(execFile);
 // follows the code rather than the card.
 const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
+// CC sandbox only: next's image optimizer cannot resolve Cloudinary there, so
+// --direct-images redirects each <Image> to its original Cloudinary URL.
+const DIRECT_IMAGES = process.argv.includes("--direct-images");
+// Never in `extraHTTPHeaders`: it reached every host (OSM, Cloudinary; 21/11).
+const BYPASS_HEADERS = BYPASS
+  ? { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" }
+  : {};
 const OWNER_EMAIL = "demo-owner@example.com";
 const OWNER_PASSWORD = process.env.DEMO_OWNER_PASSWORD || "";
 const STILLS_ONLY = process.argv.includes("--stills-only");
@@ -131,6 +148,19 @@ const SLUG = "ruach-hasadeh";
 //      looked.
 const TEST_ROW = "(בדיקה)";
 
+// TEST_ROW IS ONE SPELLING, NOT THE WHOLE SET (run 3, 21/11). A frame passed
+// with «דמו גולדן — סדנת בוקר … לבדיקות האוטומטיות» in it, and search-diet
+// would have passed with «דמו QA — מטבח…»: neither carries "(בדיקה)". So a
+// frame is also refused on the other names test fixtures are given. «דמו» is
+// matched as a whole word only, so «דמות» or «לדוגמה» (MARKER_CSS) never hit.
+const TEST_MARKS = [/\(בדיקה\)/, /לבדיקות/, /(^|[^א-ת])דמו($|[^א-ת])/, /\bQA\b/];
+function testMarkLine(text) {
+  return (text || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => TEST_MARKS.some((re) => re.test(l)));
+}
+
 // A WRITTEN FILE IS NOT A CAPTURED SHOT — ASSERT THE PIXELS.
 //
 // On 2026-11-08 this script reported «✓ page-hero.webp» five times and wrote
@@ -161,7 +191,7 @@ const FLAT_FRAME_STDEV = 2;
 // while its data is still in flight, so `waitFor({state:"visible"})` is
 // satisfied by an empty page. This asks the frame directly whether it is
 // still loading.
-const LOADING_TEXT = /בטעינה|טעינת|טוען/;
+const LOADING_TEXT = /בטעינה|טעינת|טוען|מכינים את התמונה/;
 const SKELETON_SELECTOR = '[class*="skeleton"], [class*="animate-pulse"]';
 
 // Throws when the framed element is still a loading state. Runs BEFORE the
@@ -406,7 +436,19 @@ const SHOTS = [
   },
   {
     file: "recipe.webp",
-    route: `/${SLUG}/recipes`,
+    // MEH-3495: `/${SLUG}/recipes` is not a route — only
+    // app/[locale]/[slug]/recipes/[recipe_id] exists — so this shot was a 404
+    // page that `main` matched (21/11). The recipe id is read from the API at
+    // run time, because a re-seed mints new ids.
+    route: async (page) => {
+      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`);
+      if (!res.ok()) throw new Error(`recipe list for ${SLUG}: HTTP ${res.status()}`);
+      const list = await res.json();
+      if (!Array.isArray(list) || !list.length) {
+        throw new Error(`${SLUG} has no recipe on this backend — re-run the seed`);
+      }
+      return `/${SLUG}/recipes/${list[0].id}`;
+    },
     selector: "main",
     feature_ids: ["recipes"],
   },
@@ -414,18 +456,18 @@ const SHOTS = [
     file: "map.webp",
     route: "/map",
     // The container mounts long before anything renders into it, and 20s was
-    // not enough on staging; the longer wait is deliberate.
-    selector: '[data-testid="map-card"]',
+    // not enough on staging; the longer wait is deliberate. Not `map-card`:
+    // at 390px the cards sit in the collapsed sheet and are never visible.
+    selector: '[data-testid="map-mobile-shell"]',
     timeout: 45_000,
     feature_ids: ["map_precision", "multi_locations"],
     // Leaflet paints tiles asynchronously; without this the shot is grey.
     prepare: async (page) => {
       // A tile-less map is worse than no screenshot, so this stays a hard
-      // wait. Measured from the CC sandbox: tile.openstreetmap.org answers
-      // 000 (egress-blocked), so this shot CANNOT be taken here however long
-      // it waits — it needs a machine that can reach the tile server. The
-      // failure is environmental, not a selector to chase.
-      await page.waitForSelector(".leaflet-tile-loaded", { timeout: 45_000 });
+      // wait. The CC sandbox reaches tile.openstreetmap.org only once the
+      // host is on the environment's allowlist (done 21/11).
+      // Two Leaflet containers mount; the first is 0×0, so wait on a VISIBLE tile.
+      await page.locator(".leaflet-tile-loaded:visible").first().waitFor({ timeout: 45_000 });
       await page.waitForTimeout(1200);
     },
   },
@@ -578,8 +620,19 @@ const CLIPS = [
     name: "clip-return",
     route: "/group-buys",
     steps: async (page) => {
+      // Same as the group-buy still: the demo group buy is funded on purpose,
+      // and the «פתוחות להצטרפות» tab lists status=open only, so the clip
+      // opened on «עדיין אין קבוצות רכישה פעילות» (run 3, 21/11).
+      const demo = page.locator('[data-testid="group-buy-card"]:has-text("מאפיית רוח השדה")');
+      const onOpenTab = await demo.first().waitFor({ state: "visible", timeout: 3_000 }).then(() => true, () => false);
+      if (!onOpenTab) {
+        await page.getByRole("button", { name: "הגיעו ליעד", exact: true }).click();
+        await demo.first().waitFor({ state: "visible", timeout: 10_000 });
+      }
       await page.waitForTimeout(1500);
-      await slowScroll(page, 700);
+      // To the card, not a fixed 700px, which ran into the footer (21/11).
+      const box = await demo.first().boundingBox();
+      await slowScroll(page, Math.max(0, Math.min(700, Math.round((box?.y ?? 0) - 140))));
       await page.goto(`${BASE}/he/experiences`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2000);
     },
@@ -638,14 +691,6 @@ function contextOptions(extra = {}) {
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     reducedMotion: "reduce",
-    ...(BYPASS
-      ? {
-          extraHTTPHeaders: {
-            "x-vercel-protection-bypass": BYPASS,
-            "x-vercel-set-bypass-cookie": "true",
-          },
-        }
-      : {}),
     ...extra,
   };
 }
@@ -680,7 +725,16 @@ const MARKER_CSS = `
 //
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
+// Also: the bypass cookie (MEH-3607) and the --direct-images route.
 async function installOverlayStyles(page) {
+  // Vercel's bypass cookie, host-only; the browser never holds the secret.
+  if (BYPASS) await scopeBypassToOrigin(page.context(), BASE, BYPASS_HEADERS);
+  if (DIRECT_IMAGES) {
+    await page.route("**/_next/image?**", (route) => {
+      const src = new URL(route.request().url()).searchParams.get("url");
+      return src && /^https:\/\//.test(src) ? route.fulfill({ status: 302, headers: { location: src } }) : route.fallback();
+    });
+  }
   await page.addInitScript((css) => {
     const add = () => {
       const el = document.createElement("style");
@@ -715,8 +769,13 @@ async function pinChromeForElementShot(el) {
   await el.evaluate((node, label) => {
     const touched = [];
     for (const n of document.querySelectorAll("body *")) {
-      if (n === node || node.contains(n) || n.contains(node)) continue;
+      if (n === node || n.contains(node)) continue;
       const pos = getComputedStyle(n).position;
+      // MEH-3495: a sticky bar INSIDE the subject also paints over it — the
+      // dashboard tab bar sits inside `main` and covered «המתכונים שלי» on
+      // dash-recipes (21/11). Sticky → static keeps its flow space, so it is
+      // safe inside the subject too; fixed ones inside stay as they are.
+      if (node.contains(n) && pos !== "sticky") continue;
       if (pos === "sticky") {
         touched.push([n, "position", n.style.getPropertyValue("position"), n.style.getPropertyPriority("position")]);
         n.style.setProperty("position", "static", "important");
@@ -1019,7 +1078,7 @@ async function captureStills(browser) {
   for (const shot of SHOTS) {
     const entry = {
       file: shot.file,
-      route: shot.route,
+      route: typeof shot.route === "function" ? "(resolved at run time)" : shot.route,
       selector: shot.selector,
       feature_ids: shot.feature_ids ?? [],
       ...(shot.note ? { note: shot.note } : {}),
@@ -1055,10 +1114,18 @@ async function captureStills(browser) {
 
 
     try {
-      await page.goto(`${BASE}/he${shot.route}`, { waitUntil: "domcontentloaded" });
+      const route = typeof shot.route === "function" ? await shot.route(page) : shot.route;
+      entry.route = route;
+      await page.goto(`${BASE}/he${route}`, { waitUntil: "domcontentloaded" });
       if (shot.prepare) await shot.prepare(page);
       const el = page.locator(shot.selector).first();
       await el.waitFor({ state: "visible", timeout: shot.timeout ?? 20_000 });
+      // MEH-3495: a 404 or error page renders inside `main` too, so a shot
+      // gated on `main` "passed" as a not-found page (recipe.webp, 21/11).
+      // StatusPage is the one shell every 404 / error page uses.
+      if (await page.locator('[data-testid="status-page"]').count()) {
+        throw new Error(`${route} rendered a status page (404 or error), not the feature`);
+      }
       await page.waitForTimeout(400); // let fonts/images settle
       // IN-FRAME CLEANLINESS — the subject is the element being clipped, so
       // this asks exactly what the file will show. Checked BEFORE the write,
@@ -1082,17 +1149,44 @@ async function captureStills(browser) {
         }
       }
       const framed = await el.innerText().catch(() => "");
-      if (framed.includes(TEST_ROW)) {
-        const line =
-          framed
-            .split("\n")
-            .map((l) => l.trim())
-            .find((l) => l.includes(TEST_ROW)) ?? TEST_ROW;
-        throw new Error(`"${TEST_ROW}" is inside the frame: «${line.slice(0, 60)}»`);
+      const line = testMarkLine(framed);
+      if (line) {
+        throw new Error(`a test business is inside the frame: «${line.slice(0, 60)}»`);
       }
       const outFile = path.join(OUT, shot.file);
       const unpin = await pinChromeForElementShot(el);
       try {
+        // MEH-3495: an element shot scrolls its subject into view, and a
+        // section below the fold can start loading only then — dash-rescue
+        // came out with «טוען...» and dash-share-kit with empty image boxes
+        // (21/11). So: every image in the frame decoded, and the frame not a
+        // loading state, checked again right before the write.
+        await el.scrollIntoViewIfNeeded();
+        await el.evaluate(async (node) => {
+          for (const img of node.querySelectorAll("img")) img.loading = "eager";
+          await Promise.race([
+            Promise.all(
+              [...node.querySelectorAll("img")].map((img) =>
+                img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }),
+              ),
+            ),
+            new Promise((r) => setTimeout(r, 15_000)),
+          ]);
+        });
+        const settledBy = Date.now() + 15_000;
+        for (;;) {
+          try {
+            await assertNotLoading(el, `${shot.file}, checked again right before the write`);
+            const unloaded = await el.evaluate((node) =>
+              [...node.querySelectorAll("img")].filter((i) => !i.complete || i.naturalWidth === 0).length,
+            );
+            if (unloaded) throw new Error(`${unloaded} image(s) in the frame never loaded — ${shot.file}`);
+            break;
+          } catch (err) {
+            if (Date.now() > settledBy) throw err;
+            await page.waitForTimeout(500);
+          }
+        }
         await el.screenshot({ path: outFile, type: "webp", quality: 80 });
       } finally {
         await unpin();
@@ -1111,7 +1205,7 @@ async function captureStills(browser) {
           // neither width nor height, it is intermittent, and it is silent —
           // which is the whole reason this assertion runs on every write
           // rather than once at the start.
-          `the DOM can be complete and the raster still empty — ${shot.route} ` +
+          `the DOM can be complete and the raster still empty — ${entry.route} ` +
             `at ${VIEWPORT.width}px. Cause unestablished; see the note here.`,
         );
       } catch (err) {
@@ -1144,18 +1238,52 @@ async function captureClips(browser) {
   for (const clip of CLIPS) {
     const dir = path.join(TMP, clip.name);
     await mkdir(dir, { recursive: true });
+    const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
+    // MEH-3495: LOG IN OUTSIDE THE RECORDING. A context records from the
+    // moment it exists, so logging in inside it filmed the login form with
+    // the demo address in the field (clip-insights, 21/11). The session is
+    // made in a context with no video and handed over as storageState.
+    let storageState;
+    if (clip.auth) {
+      try {
+        const pre = await newPage(browser, { auth: true });
+        storageState = await pre.context.storageState();
+        await pre.context.close();
+      } catch (err) {
+        entry.status = "missing";
+        entry.error = `login failed: ${err.message.split("\n")[0]}`;
+        console.log(`  ✗ ${clip.name}  — ${entry.error}`);
+        results.push(entry);
+        continue;
+      }
+    }
+    const recordingFrom = Date.now();
     const context = await browser.newContext(
-      contextOptions({ recordVideo: { dir, size: VIEWPORT } }),
+      contextOptions({ recordVideo: { dir, size: VIEWPORT }, ...(storageState ? { storageState } : {}) }),
     );
     const page = await context.newPage();
-    const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
-    const started = Date.now();
     try {
       await installOverlayStyles(page);
-      if (clip.auth) await login(page);
       await page.goto(`${BASE}/he${clip.route}`, { waitUntil: "domcontentloaded" });
       // Never start a clip on a loading state (ticket): wait for real content.
-      await page.locator("main").first().waitFor({ state: "visible", timeout: 20_000 });
+      const main = page.locator("main").first();
+      await main.waitFor({ state: "visible", timeout: 20_000 });
+      // MEH-3495: `main` is visible while the data is still in flight
+      // («טעינת סטטיסטיקות...» opened clip-insights, 21/11). Wait until the
+      // frame stops being a loading state, then cut everything before that
+      // moment out of the mp4 (`trim_start_s`, used by toMp4).
+      const loadedBy = Date.now() + 20_000;
+      for (;;) {
+        try {
+          await assertNotLoading(main, `${clip.name} opened on a loading state`);
+          break;
+        } catch (err) {
+          if (Date.now() > loadedBy) throw err;
+          await page.waitForTimeout(300);
+        }
+      }
+      await page.waitForTimeout(300);
+      entry.trim_start_s = Math.max(0, Math.round((Date.now() - recordingFrom) / 100) / 10);
       // A clip's deliverable is the scrolling viewport, not the document, so
       // the cleanliness question is asked over what is on screen — sampled at
       // the opening frame and again at the closing one. A body-wide read here
@@ -1182,14 +1310,11 @@ async function captureClips(browser) {
         await poll;
       }
       seen.push(await viewportText(page));
-      const dirty = seen.find((t) => t.includes(TEST_ROW));
+      const dirty = seen.map(testMarkLine).find(Boolean);
       if (dirty) {
-        throw new Error(
-          `"${TEST_ROW}" is on screen in this clip — ` +
-            `«${dirty.slice(Math.max(0, dirty.indexOf(TEST_ROW) - 40), dirty.indexOf(TEST_ROW) + 20)}»`,
-        );
+        throw new Error(`a test business is on screen in this clip — «${dirty.slice(0, 60)}»`);
       }
-      entry.duration_s = Math.round((Date.now() - started) / 100) / 10;
+      entry.duration_s = Math.round(((Date.now() - recordingFrom) / 1000 - (entry.trim_start_s ?? 0)) * 10) / 10;
       await context.close(); // flushes the .webm
       const webm = (await readdir(dir)).find((f) => f.endsWith(".webm"));
       if (!webm) throw new Error("playwright wrote no video file");
@@ -1221,7 +1346,10 @@ async function toMp4(webmPath, name, entry) {
   const mp4 = path.join(TMP, `${name}.mp4`);
   const poster = path.join(TMP, `${name}-poster.webp`);
   await run("ffmpeg", [
-    "-y", "-i", webmPath,
+    "-y",
+    // MEH-3495: drop the frames recorded before the page finished loading.
+    ...(entry.trim_start_s ? ["-ss", String(entry.trim_start_s)] : []),
+    "-i", webmPath,
     "-c:v", "libx264", "-crf", "23", "-preset", "slow",
     "-pix_fmt", "yuv420p", "-r", "30", "-an",
     // H.264 needs even dimensions; 390x844 at 2x is 780x1688, already even,

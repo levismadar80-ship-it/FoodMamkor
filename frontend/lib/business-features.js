@@ -65,7 +65,7 @@ export const BUSINESS_FEATURE_GROUPS = [
  */
 export const BUSINESS_FEATURES = [
   // ── page ────────────────────────────────────────────────────────────────
-  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx"] },
+  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/LogoCard.jsx"] },
   // MEH-3483: «ספרו לנו על העסק» — the page drafted from the owner's own text, on the edit hub.
   { id: "page_fill", group: "page", status: "live", codeRef: ["frontend/components/PageFillPanel.jsx", "frontend/lib/page-fill.js"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx", "frontend/components/MenuImport.jsx"] },

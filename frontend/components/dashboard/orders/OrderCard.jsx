@@ -20,6 +20,7 @@ import Badge from "@/components/ui/Badge";
 import { getWhatsAppHref } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
 import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderActions from "./OrderActions";
 
 /** @param {{ order: any }} props */
@@ -28,7 +29,7 @@ function OrderLines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5" data-testid="order-lines">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: line.name })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
       ))}
     </ul>
   );
