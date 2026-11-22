@@ -20,7 +20,9 @@ from sqlalchemy.orm import Session
 from app.models.catalog import ProducerLocation
 from app.models.models import Producer
 from app.models.product_orders import PRODUCT_ORDER_CODE_STATUSES, ProductOrder
+from app.services.producer_listing import is_business_row
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
+from app.services.review_invite import review_invite_url
 from app.utils.clock import utc_now
 
 # A token never expires on its own, so the page behind it stops answering a
@@ -117,12 +119,24 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
     return ", ".join(part for part in (address, city) if part)
 
 
+def review_url(producer: Producer | None, order: ProductOrder) -> str | None:
+    """MEH-3620: the verified-review link, once the order was handed over and
+    only for a live business (the page the link opens exists only then).
+    is_business_row(), not a bare status check: a seeded test business has no
+    public page either (MEH-2952)."""
+    if order.status != "handed" or producer is None or not is_business_row(producer):
+        return None
+    return review_invite_url(producer)
+
+
 def buyer_view(db: Session, order: ProductOrder) -> dict[str, Any]:
-    name = db.query(Producer.name).filter(Producer.id == order.producer_id).scalar()
+    producer = db.query(Producer).filter(Producer.id == order.producer_id).first()
+    name = producer.name if producer is not None else None
     usable = order.status in PRODUCT_ORDER_CODE_STATUSES
     return {
         **_common(order),
         "producer_name": name or "",
+        "review_url": review_url(producer, order),
         "pickup_address": pickup_address(db, order),
         "phone_masked": mask_phone(str(order.customer_phone)),
         "pickup_code": order.pickup_code if usable else None,

@@ -25,6 +25,7 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
   Info: () => <span />, // MEH-2999: fine-print icon
+  ShareNetwork: () => <span />, // MEH-3622: ProductSheet's share button
   Leaf: () => <span />,
   // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
   SealCheck: () => <span />,

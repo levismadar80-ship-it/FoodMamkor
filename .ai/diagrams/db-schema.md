@@ -117,6 +117,7 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string logo_url "nullable — MEH-3611, VARCHAR(500); the business logo, saved by PUT /producers/me"
         string secondary_phone "nullable — MEH-3339, VARCHAR(20); optional second number, same format as phone; one text line, no CTA reads it"
         string secondary_phone_label "nullable — MEH-3339, VARCHAR(30); its label (e.g. להזמנות); requires secondary_phone"
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
@@ -249,7 +250,7 @@ erDiagram
     product_order_notifications {
         uuid id PK
         uuid order_id FK "CASCADE (MEH-3296)"
-        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before review_request"
         string channel "whatsapp email"
         string outcome "pending sent failed skipped"
         timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"

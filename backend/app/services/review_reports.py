@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from html import escape as html_escape
 from threading import Lock
 
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import frame
 
 # The reason labels the reporter saw (messages he.json reviews.report.*).
 REASON_LABELS: dict[str, str] = {
@@ -119,36 +119,20 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
     )
     body_html = html_escape(m.review_body or "—").replace("\n", "<br>")
     details_html = html_escape(m.details or "—").replace("\n", "<br>")
-    html = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">דיווח על ביקורת</h1>
-              {p(f"בית עסק: <strong>{html_escape(m.business)}</strong>")}
-              {p(f"מזהה: {html_escape(m.slug)}", 13, "#666")}
-              {p(f"סיבה: <strong>{html_escape(reason_label)}</strong>")}
-              {p(f"מי דיווחה: {html_escape(reporter_label)}", 13, "#666")}
-              {p(reply_html, 13, "#666")}
-              {p(f"פרטים: {details_html}")}
-              <hr style="border:none;border-top:1px solid #e5dfd3;margin:16px 0;">
-              {p(f"הביקורת ({m.review_stars}★, {html_escape(m.review_author)}):", 13, "#666")}
-              {p(body_html)}
-              {p(f"מזהה ביקורת: {html_escape(m.review_id or '—')}", 12, "#888")}
-              {p(f'<a href="{html_escape(m.admin_url)}" style="color:#2e6853;">לטיפול במסך הביקורות</a>')}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html = frame(
+        "דיווח על ביקורת",
+        f"""\
+            {p(f"בית עסק: <strong>{html_escape(m.business)}</strong>")}
+            {p(f"מזהה: {html_escape(m.slug)}", 13, "#666")}
+            {p(f"סיבה: <strong>{html_escape(reason_label)}</strong>")}
+            {p(f"מי דיווחה: {html_escape(reporter_label)}", 13, "#666")}
+            {p(reply_html, 13, "#666")}
+            {p(f"פרטים: {details_html}")}
+            <hr style="border:none;border-top:1px solid #e5dfd3;margin:16px 0;">
+            {p(f"הביקורת ({m.review_stars}★, {html_escape(m.review_author)}):", 13, "#666")}
+            {p(body_html)}
+            {p(f"מזהה ביקורת: {html_escape(m.review_id or '—')}", 12, "#888")}
+            {p(f'<a href="{html_escape(m.admin_url)}" style="color:#2e6853;">לטיפול במסך הביקורות</a>')}
+        """,
+    )
     return subject, text, html

@@ -144,6 +144,7 @@
     "lat",
     "lng",
     "locations",
+    "logo_url",
     "name",
     "noindex",
     "offers_delivery",
@@ -237,6 +238,7 @@
       "order_cutoff_time",
       "phone",
       "pickup_days",
+      "pickup_note",
       "precision"
     ],
     "ProducerDetailOut.product_groups": [
@@ -317,6 +319,7 @@
       "order_cutoff_time",
       "phone",
       "pickup_days",
+      "pickup_note",
       "precision"
     ]
   }

@@ -100,6 +100,7 @@ PRODUCT_ORDER_NOTICE_KINDS = (
     "closed",  # to the buyer: declined, cancelled by the business, or expired
     "buyer_cancelled",  # to the business
     "day_before",  # to the buyer: tomorrow's hand-over
+    "review_request",  # to the buyer, by email: a day after the hand-over (MEH-3624)
 )
 PRODUCT_ORDER_NOTICE_CHANNELS = ("whatsapp", "email")
 PRODUCT_ORDER_NOTICE_STATUSES = ("pending", "sent", "failed", "skipped")

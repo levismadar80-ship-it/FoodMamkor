@@ -24,7 +24,7 @@ MAX_LEN = 400
 MIN_ITEMS = 15
 SKIP = re.compile(
     r"\.(json|lock|svg|map|tsv|txt|md|webp|png|jpe?g|gif|csv|patch|html|ico|woff2?|pdf|bundle|snap)$"
-    r"|(^|/)generated/|^design-reference/|^qa-artifacts/"
+    r"|(^|/)generated/|^qa-artifacts/"
 )
 ITEM = re.compile(r"""["'][^"'\n]{1,120}["']\s*,\s*""")
 

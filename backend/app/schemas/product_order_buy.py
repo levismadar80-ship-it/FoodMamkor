@@ -227,6 +227,8 @@ class BuyerOrderOut(_OrderOut):
     # Present only while the order is confirmed or ready.
     pickup_code: str | None
     can_cancel: bool
+    # MEH-3620: the verified-review link, only once the order was handed.
+    review_url: str | None = None
 
 
 class OrderCreatedOut(BuyerOrderOut):

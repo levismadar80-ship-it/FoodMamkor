@@ -1,7 +1,7 @@
 """meh3618_product_weekdays
 
 Revision ID: d6a8b0c2e4f5
-Revises: c5f7a9b1d3e4
+Revises: e0436e1e20e3
 Create Date: 2026-11-21 18:00:00.000000+00:00
 
 MEH-3618. Expand-only (ADR-007). Approved by Sapir 21/11 (card MEH-3618).
@@ -22,7 +22,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "d6a8b0c2e4f5"
-down_revision: Union[str, None] = "c5f7a9b1d3e4"
+down_revision: Union[str, None] = "e0436e1e20e3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

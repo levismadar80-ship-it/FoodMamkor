@@ -27,6 +27,8 @@ from app.routers import (
     favorites,
     google_rating,
     group_buys,
+    group_buy_capacity,
+    group_buy_mine,
     health,
     holiday_mode,
     marketing,
@@ -157,6 +159,11 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
+    app.include_router(group_buy_capacity.router)
+    # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
+    # line above, it has no flag: it sits here beside its group-buy siblings.
+    app.include_router(group_buy_mine.router)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -184,41 +191,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(saved_items.router)  # MEH-2557
     _include_admin(app)
     app.include_router(admin_extra.router)
-    # MEH-1406: home_products.router disabled per brand LOCK (licensed
-    # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"
-    # surface was removed). Router/module/models/schemas/tables all retained
-    # (no Alembic); this is a reversible unmount. To restore the live API,
-    # BOTH steps are needed: re-add `home_products` to the import tuple above
-    # AND uncomment the include line below.
-    #
-    # ⚠️ DO NOT remount without first fixing TWO known security defects in
-    # this router. They are dormant only because nothing routes here; the
-    # moment the include below is uncommented they become live, and both are
-    # exploitable by any authenticated user. Found by audit P1 (MEH-1724),
-    # `docs/audits/2026-07-full/p1-security-backend.md`.
-    #
-    #   1. Rating authorization boundary (F-1, OWASP A04 / CWE-840).
-    #      `home_products.py` mints a fresh rating token on EVERY click, and
-    #      uniqueness is `UniqueConstraint("click_id")` — per click, not per
-    #      rater — so the `>= 3 negative ratings -> is_hidden` rule counts
-    #      clicks, not people. One account can hide another user's listing.
-    #      Fix: unique `(user_id, home_product_id)` + upsert on repeat rating,
-    #      and auto-hide on `COUNT(DISTINCT user_id)`. Needs an Alembic
-    #      revision, and existing duplicate rows must be resolved first.
-    #      Ticket: MEH-1739 (Canceled — not-applicable while unmounted).
-    #
-    #   2. BOLA gate missing on the click route (F-2, OWASP A01 / CWE-639).
-    #      `GET /home-products/{id}` gates hidden/deactivated listings behind
-    #      an owner/admin check (MEH-386). `POST /home-products/{id}/
-    #      whatsapp-click` does NOT, and returns the seller's phone number.
-    #      Fix: apply the same gate before returning `whatsapp_url`.
-    #      Ticket: MEH-1740 (Canceled — not-applicable while unmounted).
-    #
-    # Both tickets were Canceled BECAUSE the surface is unreachable, not
-    # because the defects were fixed — nothing has been fixed. This comment
-    # is the durable record; the tickets are not. Rationale + evidence:
-    # MEH-1743.
-    # app.include_router(home_products.router)
+    # MEH-3646 (MEH-796): the home_products router was deleted. It was unmounted
+    # since MEH-1406 (brand LOCK: licensed businesses only) with two open
+    # security defects (MEH-1739, MEH-1740; MEH-1743). Do not bring it back.
+    # TestHomeProductsKillSwitch keeps every /home-products route a 404.
     app.include_router(reports.router)
     # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
     # abuse reports above — see routers/report_info.py "Does NOT").

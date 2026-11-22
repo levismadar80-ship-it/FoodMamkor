@@ -1435,6 +1435,17 @@
               }
             ]
           },
+          "review_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Url"
+          },
           "slot_end": {
             "format": "date-time",
             "title": "Slot End",
@@ -4703,6 +4714,21 @@
       },
       "GroupBuyCreate": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "city": {
             "anyOf": [
               {
@@ -4767,10 +4793,47 @@
             ],
             "title": "Max Participants"
           },
+          "max_units": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units"
+          },
           "min_participants": {
             "minimum": 2.0,
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_location_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Location Id"
           },
           "pickup_note": {
             "anyOf": [
@@ -4783,6 +4846,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "anyOf": [
@@ -4847,6 +4922,20 @@
       "GroupBuyDetail": {
         "description": "Full detail — includes whether the current user has committed.",
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "city": {
             "anyOf": [
               {
@@ -4911,6 +5000,11 @@
             "title": "Id",
             "type": "string"
           },
+          "joins_closed": {
+            "default": false,
+            "title": "Joins Closed",
+            "type": "boolean"
+          },
           "max_participants": {
             "anyOf": [
               {
@@ -4922,9 +5016,42 @@
             ],
             "title": "Max Participants"
           },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units"
+          },
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupBuyPickupLocationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "pickup_note": {
             "anyOf": [
@@ -4936,6 +5063,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -4994,6 +5133,17 @@
               }
             ],
             "title": "Unit"
+          },
+          "units_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Left"
           },
           "units_total": {
             "anyOf": [
@@ -5020,6 +5170,11 @@
             "default": false,
             "title": "User Committed",
             "type": "boolean"
+          },
+          "user_waitlisted": {
+            "default": false,
+            "title": "User Waitlisted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5039,6 +5194,20 @@
       },
       "GroupBuyOut": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "city": {
             "anyOf": [
               {
@@ -5103,6 +5272,11 @@
             "title": "Id",
             "type": "string"
           },
+          "joins_closed": {
+            "default": false,
+            "title": "Joins Closed",
+            "type": "boolean"
+          },
           "max_participants": {
             "anyOf": [
               {
@@ -5114,9 +5288,42 @@
             ],
             "title": "Max Participants"
           },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units"
+          },
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupBuyPickupLocationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "pickup_note": {
             "anyOf": [
@@ -5128,6 +5335,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -5187,6 +5406,17 @@
             ],
             "title": "Unit"
           },
+          "units_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Left"
+          },
           "units_total": {
             "anyOf": [
               {
@@ -5212,6 +5442,186 @@
           "created_at"
         ],
         "title": "GroupBuyOut",
+        "type": "object"
+      },
+      "GroupBuyPickupLocationOut": {
+        "description": "MEH-3610: the branch a group buy is picked up from, as public as the\nbusiness made it. An `approximate` branch gives the city only — no street\nand no pin (MEH-829, the product_order_views.pickup_address rule).",
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "GroupBuyPickupLocationOut",
+        "type": "object"
+      },
+      "GroupBuyQuantityUpdate": {
+        "description": "MEH-3592: a participant changes her quantity until the deadline\n(Kickstarter lets a backer change a pledge until the campaign ends).",
+        "properties": {
+          "quantity": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "title": "GroupBuyQuantityUpdate",
+        "type": "object"
+      },
+      "GroupBuySettingsUpdate": {
+        "description": "MEH-3592: the business changes its caps or stops / reopens joins. A\nfield left out is unchanged; an explicit null clears a cap.",
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "joins_open": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joins Open"
+          },
+          "max_participants": {
+            "anyOf": [
+              {
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Participants"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_location_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Location Id"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
+          }
+        },
+        "title": "GroupBuySettingsUpdate",
         "type": "object"
       },
       "GroupBuyStatusCountsOut": {
@@ -5296,6 +5706,20 @@
           "status"
         ],
         "title": "GroupBuyStatusUpdate",
+        "type": "object"
+      },
+      "GroupBuyWaitlistRequest": {
+        "description": "MEH-3592: join the waitlist of a full group buy, with the quantity she\nwould take.",
+        "properties": {
+          "quantity": {
+            "default": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "title": "GroupBuyWaitlistRequest",
         "type": "object"
       },
       "GroupMoveIn": {
@@ -6180,6 +6604,110 @@
         "title": "MenuRow",
         "type": "object"
       },
+      "MyGroupBuyOut": {
+        "description": "A group buy the caller joined, and her own quantity in it.",
+        "properties": {
+          "deadline": {
+            "format": "date-time",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
+          },
+          "producer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Name"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "quantity",
+          "deadline",
+          "joined_at"
+        ],
+        "title": "MyGroupBuyOut",
+        "type": "object"
+      },
+      "MyGroupBuysOut": {
+        "properties": {
+          "group_buys": {
+            "items": {
+              "$ref": "#/components/schemas/MyGroupBuyOut"
+            },
+            "title": "Group Buys",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_buys"
+        ],
+        "title": "MyGroupBuysOut",
+        "type": "object"
+      },
       "MyProductOrderingOut": {
         "description": "One of the owner's own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.",
         "properties": {
@@ -6606,6 +7134,17 @@
                 "type": "null"
               }
             ]
+          },
+          "review_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Url"
           },
           "slot_end": {
             "format": "date-time",
@@ -9438,6 +9977,17 @@
             "title": "Locations",
             "type": "array"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -10500,6 +11050,18 @@
               }
             ],
             "title": "Lng"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "anyOf": [
@@ -11568,6 +12130,17 @@
             },
             "title": "Locations",
             "type": "array"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "title": "Name",
@@ -12802,6 +13375,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -12923,6 +13508,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "precision": {
             "default": "exact",
@@ -13070,6 +13666,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -13251,6 +13858,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "title": "ProducerLocationUpdate",
@@ -14260,6 +14879,17 @@
             },
             "title": "Locations",
             "type": "array"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "title": "Name",
@@ -15981,6 +16611,18 @@
               }
             ],
             "title": "Lng"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "anyOf": [
@@ -18723,6 +19365,17 @@
             "title": "Pickup End",
             "type": "string"
           },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
+          },
           "pickup_start": {
             "format": "date-time",
             "title": "Pickup Start",
@@ -19431,6 +20084,17 @@
             ],
             "title": "Location City"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -19521,6 +20185,17 @@
               }
             ],
             "title": "Location City"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "title": "Name",
@@ -29724,6 +30399,60 @@
           "group-buys"
         ]
       },
+      "patch": {
+        "operationId": "update_commit_group_buys__group_buy_id__commit_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupBuyQuantityUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Commit",
+        "tags": [
+          "group-buys"
+        ]
+      },
       "post": {
         "operationId": "commit_to_group_buy_group_buys__group_buy_id__commit_post",
         "parameters": [
@@ -29774,6 +30503,62 @@
           }
         ],
         "summary": "Commit To Group Buy",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/settings": {
+      "patch": {
+        "operationId": "update_group_buy_settings_group_buys__group_buy_id__settings_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupBuySettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Group Buy Settings",
         "tags": [
           "group-buys"
         ]
@@ -29832,6 +30617,106 @@
           }
         ],
         "summary": "Update Group Buy Status",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/waitlist": {
+      "delete": {
+        "operationId": "leave_waitlist_group_buys__group_buy_id__waitlist_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Leave Waitlist",
+        "tags": [
+          "group-buys"
+        ]
+      },
+      "post": {
+        "operationId": "join_waitlist_group_buys__group_buy_id__waitlist_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupBuyWaitlistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Join Waitlist",
         "tags": [
           "group-buys"
         ]
@@ -31184,7 +32069,7 @@
     },
     "/producers/me/analytics": {
       "get": {
-        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - share_visits (MEH-3331): visits through a link the owner shared, same shape\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
+        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - share_visits (MEH-3331): visits through a link the owner shared, same shape\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
         "operationId": "producer_analytics_producers_me_analytics_get",
         "responses": {
           "200": {
@@ -36464,6 +37349,33 @@
         "summary": "Upsert Alert Prefs",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/users/me/group-buys": {
+      "get": {
+        "description": "The caller's group buys: running ones by nearest deadline, then the\nrest, newest deadline first.",
+        "operationId": "list_own_group_buys_users_me_group_buys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGroupBuysOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Own Group Buys",
+        "tags": [
+          "group-buys"
         ]
       }
     },

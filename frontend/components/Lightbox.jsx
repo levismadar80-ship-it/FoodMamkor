@@ -29,7 +29,7 @@ const LIGHTBOX_MAX_WIDTH = 1920;
  * next). One owner so the contrast fix cannot drift between them.
  *
  * All four ratios below are MEASURED from composited pixels by
- * e2e/_qa-archive/qa-meh1931-lightbox-visibility.mjs, not computed by hand. An earlier
+ * qa-meh1931-lightbox-visibility.mjs [deleted probe, docs/media-archive.md], not computed by hand. An earlier
  * draft of this comment carried hand-arithmetic (1.17 / 7.3) that the
  * measurement contradicted; the probe is the source of truth.
  *
