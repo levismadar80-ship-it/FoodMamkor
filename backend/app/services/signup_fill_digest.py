@@ -4,7 +4,7 @@ Purpose:  Once a week (Sunday, Israel clock) check what share of the
           businesses that signed up in the last 7 days have a referral source
           («מאיפה שמעתם») and a location, and raise a Sentry warning ONLY when
           a share is zero over enough signups (Sapir 22/11: «רק כשיש אזהרה»).
-          Claude's weekly scheduled check reads Sentry and acts, so nobody has
+          Claude's daily morning round reads Sentry and acts, so nobody has
           to relay an email, and a field that stops arriving is noticed in
           days, not months.
 Touches:  reads producers and users (+ locations / delivery areas through
@@ -20,7 +20,7 @@ Related:  backend/app/services/page_freshness_digest.py (the weekly admin
           guard on the form side of the same question).
 History:  MEH-3699 (creation): MEH-3656 removed the referral question from the
           business signup and nothing noticed until Sapir asked (MEH-3697).
-          Same PR: email replaced by Sentry + a weekly Claude check (Sapir 22/11).
+          Same PR: email replaced by Sentry + Claude's daily morning round (Sapir 22/11).
 """
 
 from __future__ import annotations
@@ -94,7 +94,7 @@ def measure(db: Session, now: datetime) -> FillRates:
 
 
 # ---------------------------------------------------------------------------
-# Reporting: a Sentry warning, read by Claude's weekly check — not an email
+# Reporting: a Sentry warning, read by Claude's daily morning round — not an email
 # (Sapir 22/11: an email to her made her the relay, «האחריות נופלת עליי»).
 # ---------------------------------------------------------------------------
 
