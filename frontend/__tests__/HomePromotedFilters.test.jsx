@@ -24,7 +24,7 @@ import { Check } from "@phosphor-icons/react";
  *
  * Everything here runs in jsdom, so it is evidence about structure and wiring,
  * never about layout. The meta-row COUNT the card asks for is a rendered-height
- * question and is measured in qa-meh2173-promoted-filters.mjs against a real
+ * question and is measured in qa-meh2173-promoted-filters.mjs [deleted probe, docs/media-archive.md] against a real
  * browser; no assertion below should be read as covering it.
  */
 

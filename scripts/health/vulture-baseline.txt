@@ -1,0 +1,4 @@
+# vulture findings known on 21/11/2026 (MEH-3615), line numbers stripped. Only shrinks.
+# producers.py re-exports _MAX_CERT_BYTES for tests (noqa F401); oauth_verifiers.py imports RSAPublicKey for a type.
+backend/app/routers/producers.py: unused import '_MAX_CERT_BYTES' (90% confidence)
+backend/app/services/oauth_verifiers.py: unused import 'RSAPublicKey' (90% confidence)

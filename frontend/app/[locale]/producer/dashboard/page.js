@@ -38,6 +38,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
+import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 
 function VanityLinkCard({ slug }) {
@@ -155,7 +156,7 @@ function StatusSupportModal({ onClose }) {
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
-          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
+          href={getWhatsAppChatHref(env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000")}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
@@ -1020,7 +1021,7 @@ function WeekWhatsappNudge({ count }) {
     <div data-testid="week-whatsapp-nudge" className="bg-surface border border-border rounded-lg p-4 space-y-3">
       <p className="font-semibold text-text">{t("hero", { count })}</p>
       <a
-        href="https://wa.me/"
+        href={getWhatsAppChatHref()}
         target="_blank"
         rel="noopener noreferrer"
         data-testid="week-whatsapp-cta"

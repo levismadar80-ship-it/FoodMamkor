@@ -20,7 +20,6 @@
 # ALLOWED — files the product or a test actually reads:
 #   frontend/public/            served by the site
 #   frontend/e2e/visual/        VRT baselines, read by parity.spec.ts
-#   design-reference/           the design-system reference bundle
 #   logo/                       brand source files
 #   docs/research/screenshots/2026-05/   the competitor captures the research
 #                               doc of that month cites (4 MB, frozen)
@@ -30,7 +29,7 @@
 set -uo pipefail
 
 MEDIA_RE='\.(png|jpe?g|webp|gif|avif|bmp|tiff?|mp4|mov|webm|m4v|avi|mkv)$'
-ALLOW_RE='^(frontend/public/|frontend/e2e/visual/|design-reference/|logo/|docs/research/screenshots/2026-05/)'
+ALLOW_RE='^(frontend/public/|frontend/e2e/visual/|logo/|docs/research/screenshots/2026-05/)'
 
 offenders() {  # stdin: one path per line → stdout: the paths that break the rule
   grep -iE "$MEDIA_RE" | grep -vE "$ALLOW_RE" || true
@@ -68,7 +67,8 @@ self_test() {
   run_case "text evidence in qa-artifacts"        PASS $'qa-artifacts/MEH-1/report.md\nqa-artifacts/MEH-1/run.json'
   run_case "public image"                         PASS $'frontend/public/og-image.png'
   run_case "VRT baseline"                         PASS $'frontend/e2e/visual/parity.spec.ts-snapshots/a-linux.png'
-  run_case "logo + design reference"              PASS $'logo/logo.png\ndesign-reference/s2-logo/x.webp'
+  run_case "logo"                                 PASS $'logo/logo.png'
+  run_case "design-reference (deleted, MEH-3614)"  FAIL $'design-reference/s2-logo/x.webp'
   run_case "research folder of 2026-05 only"      FAIL $'docs/research/screenshots/2026-12/x.png'
   run_case "one bad among many good"              FAIL $'frontend/public/a.png\ntests/screenshots/b.png'
   # Anchored to the real tree: a real allowed file passes, and the same file
