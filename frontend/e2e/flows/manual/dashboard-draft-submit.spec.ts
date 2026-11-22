@@ -103,6 +103,8 @@ const ALL_DONE = {
   offers_delivery: false,
   delivery_areas: [],
   phone_verified: true,
+  // MEH-3660: the owner confirmed her email (a Google signup always has).
+  owner_email_verified: true,
   // MEH-3032: the owner's photo, the 7th («מומלץ») step.
   owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
@@ -222,6 +224,38 @@ test.describe("draft card — matrix cells", () => {
     for (const [i, label] of DRAFT_LABELS.entries()) {
       await expect(checklistRows(page).nth(i)).toContainText(label);
     }
+  });
+});
+
+// ── MEH-3660: the email confirmation is the last row, not a site-wide band ──
+
+test.describe("Email confirmation from the draft", () => {
+  test("unconfirmed email — a 5th row, open last, resend from the row, and no top banner", async ({ page }) => {
+    await stubOverview(page, { ...ALL_DONE, owner_email_verified: false });
+    // The user really is unverified, so the site-wide banner WOULD show
+    // anywhere else; on this dashboard the row replaces it.
+    await page.route("**/auth/me", (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7, email_verified: false, producer_status: "draft", producer_kind: "producer" }),
+      }));
+    const resends: string[] = [];
+    await page.route("**/auth/resend-verify", (r) => {
+      resends.push(r.request().method());
+      return r.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    await openOverview(page);
+    await expect(checklistRows(page)).toHaveCount(5);
+    await expect(page.getByTestId("completeness-counter")).toHaveText("4 מתוך 5");
+    const row = checklist(page).getByTestId("completeness-open-email_verified");
+    await expect(row).toContainText("אישור כתובת האימייל");
+    await expect(cta(page)).toHaveCount(0);
+    await expect(page.getByText("אמתו את כתובת האימייל שלכם — כך נשמור על החשבון שלכם")).toHaveCount(0);
+
+    await row.getByRole("button", { name: "שלחו לי שוב" }).click();
+    await expect(row.getByTestId("completeness-email-sent")).toHaveText("✓ נשלח!");
+    expect(resends).toEqual(["POST"]);
   });
 });
 

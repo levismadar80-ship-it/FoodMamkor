@@ -49,7 +49,7 @@ def notify_admin_new_submission(
         return
     subject = f"מהמקור — חוויה חדשה ממתינה לאישור: {title}"
     flag_line = (
-        "⚠️ Claude סימן כ-FLAGGED — כדאי להסתכל מהר."
+        "Claude סימן כ-FLAGGED — כדאי להסתכל מהר."
         if moderation_status == "FLAGGED"
         else ""
     )
@@ -69,7 +69,7 @@ def notify_admin_new_submission(
 def notify_host_approved(
     host_email: str, title: str, experience_id: str, test_cause: bool = False
 ) -> None:
-    subject = f'מהמקור — החוויה "{title}" אושרה! 🌿'
+    subject = f'מהמקור — החוויה "{title}" אושרה!'
     body = (
         f"שלום,\n\n"
         f'שמחים לבשר שהחוויה שהגשת, "{title}", אושרה ופורסמה במהמקור.\n'

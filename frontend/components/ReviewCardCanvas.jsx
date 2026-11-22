@@ -387,7 +387,7 @@ export default function ReviewCardCanvas({ producer }) {
       t("owner.review_headline"),
       quoted,
       producer?.name || "",
-      `👉 ${SITE_HOST}/p/${producer?.slug || ""}`,
+      t("caption_link", { url: `${SITE_HOST}/p/${producer?.slug || ""}` }),
     ]
       .filter(Boolean)
       .join("\n");

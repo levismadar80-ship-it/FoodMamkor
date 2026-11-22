@@ -14,7 +14,7 @@
 * `backend/app/routers/auth_register_producer.py` — ‏`/auth/register/producer` ו-`/auth/register/producer/oauth` (הופרדו מ-`auth.py` ב-MEH-3293).
 * `backend/app/config.py` — ‏`JWT_SECRET_KEY` נדרש ב-production; חסר = `RuntimeError` באתחול.
 * `frontend/lib/safe-redirect.js` — יעד חזרה בטוח אחרי התחברות.
-* `frontend/components/LoginPromptModal.jsx` + `frontend/components/LoginPromptGoogle.jsx` — החלונית «רוצה לשמור?» שאורחת רואה בשמירה / עדכונים / ביקורת / שריון סל: Google בתוך החלונית (נשארים בדף, והפעולה נגמרת לבד דרך `frontend/lib/pending-action.js`), ו«היכנסו» ל-/login (MEH-3661).
+* `frontend/components/LoginPromptModal.jsx` + `frontend/components/LoginPromptGoogle.jsx` — החלונית «רוצה לשמור?» שאורחת רואה בשמירה / עדכונים / ביקורת / שריון סל / הצטרפות לקבוצת רכישה (MEH-3679): Google בתוך החלונית (נשארים בדף, והפעולה נגמרת לבד דרך `frontend/lib/pending-action.js`), ו«היכנסו» ל-/login (MEH-3661).
 * `frontend/lib/use-gsi-redraw-on-resize.js` — מצייר מחדש את כפתור Google ברוחב החדש כשרוחב המסך משתנה, ב-`frontend/components/GoogleAuthButton.jsx` וב-`frontend/components/ProducerOAuthButtons.jsx` (MEH-3687).
 * `frontend/lib/post-auth-return.js` — הדף שממנו לקוחה נרשמה באימייל, כדי שקישור האימות יחזיר אותה אליו (24 שעות, localStorage, MEH-3661).
 * `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
@@ -31,7 +31,7 @@
 * `tests/test_producer_oauth.py` · `tests/test_oauth_verify_4xx.py` · `tests/test_meh2080_oauth_terms_consent.py`
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
-* `frontend/__tests__/LoginPromptModalGoogle.test.jsx` · `frontend/__tests__/VerifyEmailReturnsToOrigin.test.jsx` · `frontend/__tests__/PostAuthReturn.test.js` — Google בחלונית, החזרה לדף אחרי אימות, ואירועי המדידה (MEH-3661).
+* `frontend/__tests__/LoginPromptModalGoogle.test.jsx` · `frontend/__tests__/VerifyEmailReturnsToOrigin.test.jsx` · `frontend/__tests__/PostAuthReturn.test.js` — Google בחלונית, החזרה לדף אחרי אימות, ואירועי המדידה (MEH-3661). `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` — הצטרפות לקבוצת רכישה אחרי Google בחלונית (MEH-3679).
 * `frontend/__tests__/GsiButtonRedrawOnResize.test.jsx` — כפתור Google עוקב אחרי רוחב המסך (MEH-3687).
 * `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
 
