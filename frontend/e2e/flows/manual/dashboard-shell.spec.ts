@@ -717,16 +717,17 @@ test.describe("dashboard shell — tools tab", () => {
   // MT:MEH-1102:1, MT:MEH-1102:3 — the tools reachable from the tab, at the
   // MEASURED count. MEH-3669: «אירועים» (events + experiences) is a card that
   // opens in place; «הזדמנויות» with surprise bags off (the CI default) holds
-  // one tool, so it is a plain link to group buys.
-  test("closed, the grid links three tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
+  // one tool, so it is a plain link to group buys. MEH-3641 added «הפרופיל
+  // שלכם בגוגל» to the content group.
+  test("closed, the grid links four tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
     page,
   }) => {
     await stubSession(page);
     const grid = await openTools(page);
 
-    await expect(grid.getByRole("link")).toHaveCount(3);
+    await expect(grid.getByRole("link")).toHaveCount(4);
     await grid.getByTestId("tool-group-events").getByRole("button").click();
-    await expect(grid.getByRole("link")).toHaveCount(5);
+    await expect(grid.getByRole("link")).toHaveCount(6);
 
     for (const href of [
       "/producer/dashboard/events",
@@ -735,6 +736,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/recipes",
       // MEH-3107: the reviews tile opens the dashboard's own reviews page.
       "/producer/dashboard/reviews",
+      // MEH-3641: the owner's Google profile tool.
+      "/producer/dashboard/google-profile",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
@@ -759,6 +762,7 @@ test.describe("dashboard shell — tools tab", () => {
       grid.getByTestId("tool-group-opportunities"),
       grid.locator('a[href$="/producer/dashboard/reviews"]'),
       grid.locator('a[href$="/producer/dashboard/recipes"]'),
+      grid.getByTestId("tools-google-profile-tile"),
     ];
     for (const [i, card] of cards.entries()) {
       await expect(card.locator("svg.mb-2"), `card ${i} has no title icon`).toHaveCount(1);

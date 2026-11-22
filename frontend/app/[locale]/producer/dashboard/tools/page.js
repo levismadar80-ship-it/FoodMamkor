@@ -22,7 +22,8 @@
  *           Phosphor icons + action-noun titles); MEH-1357 (removed the
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
  *           in the dashboard shell nav; reviews card marked candidate-to-move);
- *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only).
+ *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
+ *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -32,7 +33,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, GoogleLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -217,7 +218,10 @@ export default function ProducerDashboardToolsPage() {
             <RequestReviewCard />
           </section>
         )}
-        {/* MEH-590: producer recipes. */}
+        {/* MEH-590: producer recipes. MEH-3641: «הפרופיל שלכם בגוגל» sits here
+            too — every status (a pending business can prepare its Google
+            profile), never an organizer (the server 404s an organizer); the
+            reviews group waits for approval, so it cannot hold this tile. */}
         <section data-testid="tools-group-content" className="mt-8">
           <h2 className={H2}>{t("quick_links.groups.content_heading")}</h2>
           <div className={GRID}>
@@ -226,6 +230,13 @@ export default function ProducerDashboardToolsPage() {
               <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
               <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
             </Link>
+            {profile?.kind !== "organizer" && (
+              <Link href="/producer/dashboard/google-profile" data-testid="tools-google-profile-tile" className={CARD}>
+                <GoogleLogo size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.google_profile.title")}<NewToolPill href="/producer/dashboard/google-profile" /></p>
+                <p className="text-sm text-fg-muted">{t("quick_links.google_profile.sub")}</p>
+              </Link>
+            )}
           </div>
         </section>
       </div>
