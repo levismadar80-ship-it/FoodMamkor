@@ -402,6 +402,7 @@
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
+          "combined": "I am over 18 and accept the <tos>Terms of Use</tos>, the <privacy>Privacy Policy</privacy> and the <declaration>licensing declaration</declaration>",
           "declaration": "Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.",
           "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
@@ -6943,7 +6944,7 @@
   "claim": {
     "loading": "Loading the page…",
     "kicker": "We prepared a page for you on Mehamakor",
-    "explainer": "The page is not published yet. Once it is yours you can edit everything, add photos and send it for review. We approve every business by hand before it goes live.",
+    "explainer": "The page is not on the site yet. Once it is yours, complete it and send it for review.",
     "invalid": {
       "title": "This link is not active",
       "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
@@ -7762,13 +7763,13 @@
   "owner_invite": {
     "loading": "Loading the invite…",
     "title": "The page for {business} is ready",
-    "subtitle": "This is how the page will look on the site. All that is left is to review it, set a password and approve.",
-    "preview_note": "Something not quite right? You can fix it from the dashboard right after you approve, or write to us.",
-    "email_label": "Email address (your username)",
+    "subtitle": "This is how the page will look on the site.",
+    "preview_note": "Something not right? Fix it in the dashboard after you approve.",
+    "email_label": "Email",
     "email_required": "An email address is required.",
     "send_code": "Send a verification code",
     "sending_code": "Sending…",
-    "code_sent": "We sent a code to this address. Did not arrive? Check the address and your spam folder, or write to us.",
+    "code_sent": "We sent a code. Not there? Check your spam folder.",
     "code_label": "Verification code",
     "code_required": "Request a verification code and enter it.",
     "password_label": "New password",
