@@ -408,6 +408,13 @@ fixed per name) · success moments (bloom + seeds opening out) · footer seed ro
 (on-dark) · no-photo card plate (name + one seed, colour fixed per business) ·
 missing recipe/product/event image (same rule) · 404 and every «not found»
 page (the full logo, small).
+**Beside text (MEH-3676, approved by Sapir 22/11):** the bloom closes the
+/login and /register hero line «טרי · מקומי · מהמקור» (on-dark set, 40px,
+desktop only) and leads the dashboard row «מה חדש במהמקור» (16px, before the
+unread dot). Only beside a string that names מהמקור, never in place of an icon
+that carries meaning: below ~24px the sand seed all but disappears on cream, so
+the mark is decoration, never a signal. Replacing the «מאומת» seal with it is
+held for after launch (MEH-3677).
 
 ## Layout
 
