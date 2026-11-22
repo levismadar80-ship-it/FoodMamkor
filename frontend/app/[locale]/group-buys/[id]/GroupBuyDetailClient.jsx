@@ -291,6 +291,9 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-3592: full = no room for one more person with one unit (either cap).
   const full = (typeof gb.max_participants === "number" && gb.commits_count >= gb.max_participants) || gb.units_left === 0;
   const joinsClosed = Boolean(gb.joins_closed);
+  // MEH-3691: the business's own account cannot join its group (the commit
+  // route answers 403), so the owner sees no join form or waitlist.
+  const isOwner = Boolean(user?.producer_id) && user.producer_id === gb.producer_id;
   const qtyMax = typeof gb.units_left === "number" ? Math.min(QTY_MAX, gb.units_left) : QTY_MAX;
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
@@ -396,7 +399,7 @@ export default function GroupBuyDetailClient({ id }) {
 
       <div className="mt-5">
         {/* Commit form */}
-        {joinable && !full && !joinsClosed && !gb.user_committed && (
+        {joinable && !full && !joinsClosed && !gb.user_committed && !isOwner && (
           <form onSubmit={handleCommit} className="space-y-4">
             {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
                 the ltr end-anchored digits (a text-align via className, not a
@@ -454,7 +457,7 @@ export default function GroupBuyDetailClient({ id }) {
             {t("joins_closed")}
           </div>
         )}
-        {joinable && full && !joinsClosed && !gb.user_committed && (
+        {joinable && full && !joinsClosed && !gb.user_committed && !isOwner && (
           <GroupBuyWaitlistPanel gb={gb} user={user} onChanged={load} />
         )}
       </div>

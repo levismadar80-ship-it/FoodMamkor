@@ -104,6 +104,8 @@ KEY_REUSED_DETAIL = "ההזמנה הזאת כבר נשלחה"
 # Approved copy (14/11): the business page line for a Shabbat-observant business.
 RESTING_DETAIL = "ההזמנות נפתחות שוב במוצאי שבת"
 TOO_LARGE_DETAIL = "ההזמנה גדולה מדי להזמנה באתר. צריך לפנות ישירות לבית העסק"
+# MEH-3691: approved word for word by Sapir, 22/11.
+OWN_BUSINESS_DETAIL = "אי אפשר להזמין מבית העסק שלך"
 CODE_USED_DETAIL = phone_codes.CODE_WRONG_DETAIL
 
 
@@ -370,8 +372,19 @@ def _phone_proof(
     return phone_codes.check_code(db, phone, body.code)
 
 
+def _refuse_own_business(body: OrderCreateIn, user: User | None) -> None:
+    """MEH-3691: a business buys from others like any customer, never from
+    itself. A guest is not checked: nothing ties a phone to a business."""
+    if user is not None and str(user.producer_id or "") == str(body.producer_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=OWN_BUSINESS_DETAIL
+        )
+
+
 def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created:
     """Write the order and return it with the buyer's status token."""
+    # Checked first, so a refused owner spends no phone code.
+    _refuse_own_business(body, user)
     phone = phone_codes.canonical_phone(body.phone)
     key = str(body.idempotency_key)
     token = status_token_for(key)
