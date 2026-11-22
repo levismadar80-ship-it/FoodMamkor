@@ -8809,8 +8809,8 @@ export const GetPublicRecipeProducersSlugRecipesRecipeIdGetResponse = /*#__PURE_
 
 
 /**
- * Send an order request. A guest and a logged-in buyer take the same
- * path: both prove the phone with a code.
+ * Send an order request. The phone is proved with a code, except for a
+ * logged-in buyer ordering to her own verified account phone (MEH-3680).
  * @summary Send Order
  */
 export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
