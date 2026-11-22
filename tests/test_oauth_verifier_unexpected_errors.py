@@ -39,6 +39,11 @@ class _DeadTransport:
         raise gexc.TransportError("certs unreachable")
 
 
+@pytest.fixture(autouse=True)
+def _reset_throttle(monkeypatch):
+    monkeypatch.setattr(ov, "_last_verifier_report_at", {}, raising=False)
+
+
 @pytest.fixture
 def reported(monkeypatch):
     sent: list[tuple[str, BaseException]] = []
@@ -102,3 +107,59 @@ def test_apple_library_api_change_is_reported(monkeypatch, reported, apple_confi
     monkeypatch.setattr(pyjwt, "get_unverified_header", lambda _t: (_ for _ in ()).throw(TypeError("api changed")))
     assert ov.verify_apple_token("anything") is None
     assert [p for p, _ in reported] == ["apple"]
+
+
+class _GarbledCerts:
+    def __call__(self, *a, **kw):
+        class _R:
+            status = 200
+            headers: dict[str, str] = {}
+            data = b"<html>maintenance</html>"
+
+        return _R()
+
+
+def test_google_garbled_certs_body_is_reported(monkeypatch, reported, google_configured):
+    _use_transport(monkeypatch, _GarbledCerts)
+    assert ov.verify_google_token("a.b.c") is None
+    assert [p for p, _ in reported] == ["google"]
+
+
+def test_apple_keys_unreachable_with_no_cache_is_reported(monkeypatch, reported):
+    import requests
+
+    monkeypatch.setattr(ov.settings, "apple_client_id", "com.example.app")
+    monkeypatch.setattr(ov, "_APPLE_JWKS_CACHE", {"keys": None, "fetched_at": None})
+    monkeypatch.setattr(requests, "get", lambda *a, **kw: (_ for _ in ()).throw(requests.ConnectionError("down")))
+    assert ov.verify_apple_token("eyJhbGciOiJSUzI1NiJ9.e30.sig") is None
+    assert [p for p, _ in reported] == ["apple"]
+
+
+def test_sentry_event_carries_the_class_never_the_token(monkeypatch):
+    """The review found the raw id_token in frame locals of a captured
+    exception. The report must be a message with the class name only."""
+    import sentry_sdk
+
+    sent: list[str] = []
+    captured_exceptions: list[object] = []
+
+    class _Scope:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def set_tag(self, *a):
+            pass
+
+    monkeypatch.setattr(sentry_sdk, "new_scope", lambda: _Scope(), raising=False)
+    monkeypatch.setattr(sentry_sdk, "capture_message", lambda m, level=None: sent.append(m))
+    monkeypatch.setattr(sentry_sdk, "capture_exception", lambda *a, **k: captured_exceptions.append(a))
+    token = "eyJSECRET.TOKEN.VALUE"
+    ov._report_unexpected_verifier_error("google", TypeError(f"bad {token}"))
+    assert captured_exceptions == []
+    assert sent and token not in sent[0] and "TypeError" in sent[0]
+    # Throttled: the same failure again inside the window is not re-sent.
+    ov._report_unexpected_verifier_error("google", TypeError("again"))
+    assert len(sent) == 1
