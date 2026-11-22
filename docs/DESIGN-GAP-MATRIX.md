@@ -1,5 +1,7 @@
 # DESIGN-GAP-MATRIX — Claude Design → code parity audit (MEH-991 Chunk 1)
 
+> `design-reference/` was deleted from the tree on 21/11/2026 (MEH-3614). Every path below that starts with it is in git at commit `3a5c2a3e3` — see [media-archive.md](./media-archive.md).
+
 **Date:** 2026-07-03 · **Design source:** `design-reference/` (2026-07-03 agent-ZIP export: `s2-logo/` + `ds-components/` + `dashboard/` + `join/`) · **Code baseline:** `origin/staging` @ `e549b153`.
 **Method:** 9 parallel read-only surface audits, file:line evidence per claim, frames read as source (not rendered). Old "Mehamakor Design System" project excluded (`design-reference/_archive-2026-06/` — stale, never audited). Live-staging screenshot evidence: [`docs/design-audit/screenshots/`](https://github.com/levismadar80-ship-it/FoodMamkor/tree/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/design-audit/screenshots/).
 

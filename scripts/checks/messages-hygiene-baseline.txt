@@ -8,13 +8,13 @@
 #                             cross-cutting refactor, not done before launch.
 # Never edit by hand. Shrinking is the point; growing needs a reason in the PR body.
 duplicate	10	בשליחה…
-duplicate	10	השמירה נכשלה. נסו שוב.
+duplicate	11	השמירה נכשלה. נסו שוב.
 duplicate	11	משלוח
 duplicate	12	אינסטגרם
-duplicate	13	שמירה
 duplicate	14	בטעינה…
 duplicate	14	טלפון
 duplicate	14	נשמר
+duplicate	14	שמירה
 duplicate	15	אימייל
 duplicate	2	(חובה)
 duplicate	2	+ פרסום מתכון חדש
@@ -50,6 +50,7 @@ duplicate	2	בבדיקה…
 duplicate	2	בדוק
 duplicate	2	בדקו את תיבת האימייל שלכם
 duplicate	2	בחיפוש…
+duplicate	2	בחירה
 duplicate	2	בחירת מוצר
 duplicate	2	ביטול שינויים
 duplicate	2	בישול ואפייה
@@ -72,14 +73,13 @@ duplicate	2	האימייל לא תקין
 duplicate	2	האירועים שלי
 duplicate	2	האירועים שלכם
 duplicate	2	הבא ←
-duplicate	2	הגיעה ליעד
 duplicate	2	הגעתם למספר ההצעות האפשרי כרגע. אפשר לנסות שוב מאוחר יותר.
 duplicate	2	ההבדל
 duplicate	2	ההודעה הועתקה
 duplicate	2	ההזמנה שלכם
 duplicate	2	הוסיפו למועדפים
+duplicate	2	הוספה ליומן
 duplicate	2	הוראות הכנה
-duplicate	2	הושלמה
 duplicate	2	החוויות שלי
 duplicate	2	החזון שלנו — על מהמקור
 duplicate	2	החיוב פעיל
@@ -91,7 +91,7 @@ duplicate	2	הכתובת אינה תקינה — התחילו ב-https://
 duplicate	2	הלקוח לא הגיע
 duplicate	2	המחיר לא יכול להיות שלילי
 duplicate	2	המחיר נפתח!
-duplicate	2	המחירים כוללים מע"מ, אם יחול.
+duplicate	2	המחירים כוללים מע״מ, אם יחול.
 duplicate	2	המיקום זוהה: {location}
 duplicate	2	הנחה באיסוף עצמי
 duplicate	2	הסר ממועדפים
@@ -111,6 +111,7 @@ duplicate	2	הפרטים הועתקו מ«{title}». נשאר לבחור תאר�
 duplicate	2	הצגה במפה
 duplicate	2	הצטרפו לאחרונה
 duplicate	2	הצטרפו ←
+duplicate	2	הצטרפות לרשימת ההמתנה
 duplicate	2	הקובץ גדול מדי — מקסימום 4MB
 duplicate	2	הקישור לא תקין או שפג תוקפו.
 duplicate	2	הקריטריונים שלנו
@@ -147,13 +148,13 @@ duplicate	2	ט״ו בשבט
 duplicate	2	יוצרת קישור…
 duplicate	2	יישוב
 duplicate	2	ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסו שוב מהמייל, או פנו אלינו.
+duplicate	2	יציאה מרשימת ההמתנה
 duplicate	2	ירקות
 duplicate	2	יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ
 duplicate	2	יש להזין מספר שלם
 duplicate	2	יש למלא הערה
 duplicate	2	כדי לשמור עסקים אוהבים — היכנסו
 duplicate	2	כשרות
-duplicate	2	כתבו ביקורת
 duplicate	2	כתובת
 duplicate	2	לא הגיע
 duplicate	2	לא הגיעו
@@ -226,6 +227,7 @@ duplicate	2	מעלים…
 duplicate	2	מפעילת האתר:
 duplicate	2	מפת בתי עסק מקומיים
 duplicate	2	מפתח גישה
+duplicate	2	מקסימום משתתפים
 duplicate	2	מרחק
 duplicate	2	משלוח חינם מעל (₪)
 duplicate	2	משלוחים ואיסוף
@@ -321,7 +323,7 @@ duplicate	2	תסריט שיחה
 duplicate	2	תעודת כשרות
 duplicate	2	✓ נשמר
 duplicate	2	✓ תקין
-duplicate	21	ביטול
+duplicate	22	ביטול
 duplicate	22	בשמירה…
 duplicate	3	FAQ לבתי עסק
 duplicate	3	{count} ביקורות
@@ -329,17 +331,18 @@ duplicate	3	אדמין
 duplicate	3	אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.
 duplicate	3	אזורי משלוח
 duplicate	3	אירוע חדש
-duplicate	3	אלרגנים
 duplicate	3	בטלו
 duplicate	3	בתיאום מראש
 duplicate	3	גלו בתי עסק במפה
 duplicate	3	דחייה
 duplicate	3	דירוג
 duplicate	3	הגדרות
+duplicate	3	הגיעה ליעד
 duplicate	3	ההעתקה לא הצליחה. אפשר לסמן את הקישור ולהעתיק ידנית.
 duplicate	3	הוסיפו מוצר
 duplicate	3	הוספה
 duplicate	3	הועתק ✓
+duplicate	3	הושלמה
 duplicate	3	הזמנות
 duplicate	3	החלפת חשבון
 duplicate	3	היי! הגעתי דרך מהמקור — {name}
@@ -365,6 +368,7 @@ duplicate	3	כן, לבטל
 duplicate	3	כניסה לחשבון
 duplicate	3	כניסה למהמקור
 duplicate	3	כשרות מאומתת
+duplicate	3	כתבו ביקורת
 duplicate	3	לא הוגדר
 duplicate	3	להשלמת העמוד
 duplicate	3	לחמים ואפייה
@@ -410,6 +414,7 @@ duplicate	3	תוכן
 duplicate	3	תיאור קצר
 duplicate	4	7 הימים האחרונים
 duplicate	4	איך זה עובד
+duplicate	4	אלרגנים
 duplicate	4	בהעלאה…
 duplicate	4	בהפסקה
 duplicate	4	בחירת העורכות
@@ -448,7 +453,6 @@ duplicate	4	תהליך הקבלה
 duplicate	4	תנאי שימוש
 duplicate	5	אודות
 duplicate	5	אישור
-duplicate	5	בוטלה
 duplicate	5	גראס פד
 duplicate	5	חזרה לדף הבית
 duplicate	5	חזרה לכלים
@@ -465,6 +469,7 @@ duplicate	5	תזונה
 duplicate	5	תמונות
 duplicate	6	אין נתונים עדיין
 duplicate	6	אשרי
+duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
 duplicate	6	וואטסאפ

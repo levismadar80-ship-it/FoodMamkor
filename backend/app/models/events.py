@@ -26,7 +26,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 from app.utils.clock import utc_now
@@ -326,6 +326,29 @@ class GroupBuy(Base):
     price_per_unit_group = Column(Numeric(10, 2), nullable=False)
     min_participants = Column(Integer, nullable=False)
     max_participants = Column(Integer, nullable=True)
+    # MEH-3592: a cap in units (kg, jars) beside the cap in people — one
+    # participant may ask for many units. NULL = no cap. Alembic-only.
+    max_units = Column(Integer, nullable=True)
+    # MEH-3592: set when the business stops new joins before the deadline
+    # (Eventbrite «stop sales»); NULL = joins open. Existing participants stay.
+    joins_closed_at = Column(DateTime, nullable=True)
+    # MEH-3597: the pickup window, naive UTC like `deadline`. Both or neither
+    # (GroupBuyCreate). The free-text pickup_note stays beside it.
+    pickup_starts_at = Column(DateTime, nullable=True)
+    pickup_ends_at = Column(DateTime, nullable=True)
+    # MEH-3610: the allergens the business declares, as a rescue bag does
+    # (MEH-2752). NULL = not declared; [] never persists. Alembic-only.
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3610: the branch people pick up from. SET NULL: a deleted branch
+    # leaves the free-text pickup note, never a dead reference.
+    pickup_location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producer_locations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # MEH-3610: one-way stamp of the «האיסוף מחר» email (one per group).
+    pickup_reminder_sent_at = Column(DateTime, nullable=True)
     deadline = Column(DateTime, nullable=False)
     city = Column(String(100), nullable=True)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
@@ -362,6 +385,11 @@ class GroupBuy(Base):
     commits = relationship(
         "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
     )
+    pickup_location = relationship("ProducerLocation")  # MEH-3610
+    # MEH-3592: the DB cascades (passive_deletes), like producer above.
+    waitlist = relationship(
+        "GroupBuyWaitlist", back_populates="group_buy", passive_deletes=True
+    )
 
 
 class GroupBuyCommit(Base):
@@ -395,4 +423,44 @@ class GroupBuyCommit(Base):
     # could not delete her account (NotNullViolation on user_id).
     user = relationship(
         "User", backref=backref("group_buy_commits", passive_deletes=True)
+    )
+
+
+class GroupBuyWaitlist(Base):
+    """MEH-3592: a signed-in visitor waiting for a place in a full group buy.
+
+    When a place frees (a leave, a smaller quantity, a raised cap), the first
+    row not yet offered gets one email; the place is not held — whoever joins
+    first gets it (the events waitlist, MEH-3314, works the same way). Joining
+    deletes her row. Capped at WAITLIST_MAX rows per group buy (MEH-3022).
+    """
+
+    __tablename__ = "group_buy_waitlist"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_buy_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("group_buys.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    quantity = Column(Integer, default=1, nullable=False)
+    offered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_waitlist_user"),
+    )
+
+    # Same as GroupBuyCommit: the DB cascades, so deleting a user or a group
+    # buy never tries to NULL these NOT NULL keys (MEH-2503 class).
+    group_buy = relationship("GroupBuy", back_populates="waitlist")
+    user = relationship(
+        "User", backref=backref("group_buy_waitlist", passive_deletes=True)
     )

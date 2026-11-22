@@ -226,6 +226,8 @@ def _capture_image_urls(
     if producer is not None:
         old_story_card_url = producer.story_card_url  # type: ignore[assignment]
         captured_urls += [url for url in producer.images or [] if url]  # type: ignore[union-attr]
+        if producer.logo_url:  # MEH-3611
+            captured_urls.append(producer.logo_url)  # type: ignore[arg-type]
         products = db.query(Product).filter(Product.producer_id == producer.id)
         captured_urls += [p.image_url for p in products.all() if p.image_url]  # type: ignore[misc]
     for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():

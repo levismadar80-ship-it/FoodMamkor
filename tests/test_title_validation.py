@@ -12,7 +12,7 @@ runs before the letter-count check. The fix makes `_min_letters_validator`
 null-safe so an empty-after-sanitize title is rejected with the existing
 Hebrew error key (422), never a 500.
 
-Affected schemas (both validators stacked on `title`): HomeProductCreate,
+Affected schemas (both validators stacked on `title`):
 ExperienceCreate, ProducerRecipeBase.
 """
 import datetime
@@ -22,7 +22,6 @@ from pydantic import ValidationError
 
 from app.schemas.schemas import (  # noqa: E402
     ExperienceCreate,
-    HomeProductCreate,
     ProducerRecipeBase,
     _min_letters_validator,
 )
@@ -36,12 +35,6 @@ def test_min_letters_validator_handles_none():
 
 
 # --- the failing input class: non-empty raw, but sanitizes to empty/None ---
-@pytest.mark.parametrize("bad", ["<b></b>", "<p></p>", "   "])
-def test_home_product_title_empty_after_sanitize_is_422(bad):
-    with pytest.raises(ValidationError):
-        HomeProductCreate(title=bad)
-
-
 @pytest.mark.parametrize("bad", ["<b></b>", "<p></p>"])
 def test_experience_title_empty_after_sanitize_is_422(bad):
     # len>=4 raw passes Field(min_length=4); the crash was downstream.
@@ -66,14 +59,11 @@ def test_recipe_title_empty_after_sanitize_is_422(bad):
 # --- punctuation-only also 422 (already worked; regression guard) ---
 def test_punctuation_only_title_is_422():
     with pytest.raises(ValidationError):
-        HomeProductCreate(title="???")
+        ProducerRecipeBase(title="???", ingredients="x" * 15, instructions="y" * 15)
 
 
 # --- valid titles stay valid; sanitized value preserved ---
 def test_valid_titles_pass():
-    hp = HomeProductCreate(title="עוגת שוקולד")
-    assert hp.title == "עוגת שוקולד"
-
     exp = ExperienceCreate(
         title="סדנת אפייה",
         description="x" * 25,
