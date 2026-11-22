@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { NameCheckResponseSchema } from "@/lib/api-responses";
+import { producerPath } from "@/lib/producer-path";
 
 const DEBOUNCE_MS = 600;
 const MIN_NAME_LEN = 3;
@@ -78,7 +79,7 @@ export default function RegisterNameCheck({ name }) {
         {matches.map((m) => (
           <li key={m.id} data-testid="register-name-check-match">
             <Link
-              href={m.slug ? `/${m.slug}` : `/producer/${m.id}`}
+              href={producerPath(m)}
               target="_blank"
               rel="noopener"
               className="inline-block py-1 underline focus-ring"
