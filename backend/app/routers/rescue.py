@@ -79,6 +79,7 @@ from app.schemas.rescue import (
     RescueOfferPublicOut,
     RescueOrderCreate,
     RescueMetricsOut,
+    RescueHistoryOut,
     RescueMyOrderOut,
     RescueOrderCreatedOut,
     RescueOrderOut,
@@ -125,6 +126,7 @@ from app.services.rescue_reads import (  # MEH-3541
     RESERVE_CLOSES_BEFORE_END,  # noqa: F401 — re-exported for tests
     business_offers_today,
     business_orders_today,
+    my_reservation_history,
     my_reservations,
     offer_detail,
     pilot_numbers,
@@ -438,6 +440,23 @@ def list_my_reservations(
     apart from a buyer's own cancel without a column for it.
     """
     return my_reservations(db, user_id=current_user.id, today=israel_today())
+
+
+@router.get(
+    "/orders/history",
+    response_model=list[RescueHistoryOut],
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def list_my_reservation_history(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[RescueHistoryOut] | list[dict[str, Any]]:
+    """MEH-3698: the caller's own reservations from every day, newest first,
+    with the business name — the bags in the one «ההזמנות שלי» list. Only the
+    caller's rows; capped at `HISTORY_MAX_ROWS`."""
+    return my_reservation_history(db, user_id=current_user.id)
 
 
 def _pickup_note(offer: RescueOffer) -> str | None:

@@ -19156,6 +19156,83 @@
         "title": "RescueDonatedIn",
         "type": "object"
       },
+      "RescueHistoryOut": {
+        "description": "One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag's page, which shows the\ncode on the day. `producer_name` is what the row prints.",
+        "properties": {
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "status",
+          "created_at",
+          "date",
+          "pickup_start",
+          "pickup_end",
+          "producer_id",
+          "producer_name",
+          "cancelled_by_business"
+        ],
+        "title": "RescueHistoryOut",
+        "type": "object"
+      },
       "RescueMetricsOut": {
         "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
         "properties": {
@@ -36595,6 +36672,37 @@
           }
         ],
         "summary": "Create Order",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/history": {
+      "get": {
+        "description": "MEH-3698: the caller's own reservations from every day, newest first,\nwith the business name — the bags in the one «ההזמנות שלי» list. Only the\ncaller's rows; capped at `HISTORY_MAX_ROWS`.",
+        "operationId": "list_my_reservation_history_rescue_orders_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueHistoryOut"
+                  },
+                  "title": "Response List My Reservation History Rescue Orders History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Reservation History",
         "tags": [
           "rescue"
         ]

@@ -9282,6 +9282,28 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * MEH-3698: the caller's own reservations from every day, newest first,
+ * with the business name — the bags in the one «ההזמנות שלי» list. Only the
+ * caller's rows; capped at `HISTORY_MAX_ROWS`.
+ * @summary List My Reservation History
+ */
+export const ListMyReservationHistoryRescueOrdersHistoryGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_by_business": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
+}).check(/*#__PURE__*/ zod.describe('One of the caller\'s reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag\'s page, which shows the\ncode on the day. `producer_name` is what the row prints.'))
+export const ListMyReservationHistoryRescueOrdersHistoryGetResponse = /*#__PURE__*/ zod.array(ListMyReservationHistoryRescueOrdersHistoryGetResponseItem)
+
+
+/**
  * The caller's own live reservations on today's bags (MEH-2680).
  *
  * Only the caller's rows, only today's offers (Israel date), only

@@ -266,6 +266,7 @@ graph LR
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
+    Buyer --> History[GET /rescue/orders/history<br/>🔑 own reservations, any day, newest first, max 50<br/>+ producer_name, no pickup_code — «ההזמנות שלי» MEH-3698]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]

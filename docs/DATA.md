@@ -980,6 +980,8 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
 
 > **MEH-2738 — rescue bags: the business cancels the bag (06/11/2026):** `POST /rescue/offers/{id}/cancel` is now refused once `pickup_end` passed (409 «זמן האיסוף חלף»); a bag already handed stays handed (unchanged: only `reserved` orders are cancelled); after the commit each buyer whose reservation went with it gets **one** email (`send_business_cancel_email`, fail-open, links to `/rescue`). `GET /rescue/orders/mine` also returns the caller's reservations **the business cancelled**, with a new required bool **`cancelled_by_business`** (False on every other row). There is no column saying who cancelled: a buyer's cancel returns its bags to `qty_left` and the business cancel does not, so the business-cancelled bags are `(qty_total − qty_left) − bags on orders never cancelled`, stamped with the offer's latest `cancelled_at`. That also handles the case where the buyer cancelled first and nobody else held a bag. No schema change.
 
+> **MEH-3698 — rescue bags: the buyer's history for «ההזמנות שלי» (22/11/2026):** `GET /rescue/orders/history` 🔑 — every reservation of the caller's, **any day**, newest first (offer date, then reservation time), at most `HISTORY_MAX_ROWS` = 50 (`services/rescue_reads.py`). Fields: `id`, `offer_id`, `qty`, `status` (all four, a buyer's own cancel included), `created_at`, `date`, `pickup_start`, `pickup_end`, `producer_id`, **`producer_name`**, `cancelled_by_business` (same arithmetic as MEH-2738). **No `pickup_code`** — the list row links to the bag's page, which shows it on the day. `/rescue/orders/mine` is unchanged. Behind the same flag (404 while it is off). No schema change.
+
 ---
 
 ## API Endpoints
