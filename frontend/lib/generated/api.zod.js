@@ -1172,6 +1172,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), listProducersAdminProducersGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1484,6 +1485,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), adminCreateProducerAdminProducersPostResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1793,6 +1795,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), pendingProducersAdminProducersPendingGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2165,6 +2168,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), adminGetProducerAdminProducersProducerIdGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2474,6 +2478,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), adminUpdateProducerAdminProducersProducerIdPutResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2892,6 +2897,7 @@ export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroups
 
 export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2970,6 +2976,7 @@ export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponse
 
 export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3017,6 +3024,7 @@ export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponse
 
 export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3069,6 +3077,7 @@ export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupP
 
 export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5471,6 +5480,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), readDraftPreviewProducerPreviewTokenGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5914,6 +5924,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), createProducerProducersPostResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6164,6 +6175,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), getProducerBySlugProducersBySlugSlugGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6448,6 +6460,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), getMyProducerProducersMeGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6725,6 +6738,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), updateMyProducerProducersMePutResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7281,6 +7295,7 @@ export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseV
 
 export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7342,6 +7357,7 @@ export const setMyProductOrderProducersMeProductOrderPutResponseVariantsDefault 
 
 export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7727,6 +7743,7 @@ export const listMyProductsProducersMeProductsGetResponseVariantsDefault = [];
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7774,6 +7791,7 @@ export const createMyProductProducersMeProductsPostResponseVariantsDefault = [];
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7844,6 +7862,7 @@ export const updateMyProductProducersMeProductsProductIdPutResponseVariantsDefau
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7890,6 +7909,7 @@ export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseVarian
 
 export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -8475,6 +8495,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))), getProducerProducersProducerIdGetResponseProductGroupsDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -8623,6 +8644,7 @@ export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "contains_alcohol": /*#__PURE__*/ zod.boolean(),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
