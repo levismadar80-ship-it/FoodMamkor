@@ -78,4 +78,4 @@ meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66
 meh-3617-expected-tables-66	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
 meh-3592-expected-tables	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
 release-train-3-expected-tables-67	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2cf40e0ef, sha256 matched the prepared file
-pr-checks-edited-trigger	pending	.github/workflows/pr-checks.yml	unlabeled, edited]	2026-11-22	Sapir approved 22/11; to be committed via the web editor (Claude in Chrome)
+pr-checks-edited-trigger	applied	.github/workflows/pr-checks.yml	unlabeled, edited]	2026-11-22	committed 22/11 via the web editor (Claude in Chrome), 7e80274567, sha256 matched the prepared file

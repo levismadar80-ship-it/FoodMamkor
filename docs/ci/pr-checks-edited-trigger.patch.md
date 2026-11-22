@@ -1,7 +1,7 @@
 # Patch: PR checks re-run when the PR body is edited
 
 Sapir approved 22/11 («מאשרת את שניהם»). Target: `.github/workflows/pr-checks.yml`.
-Applied the same day through the GitHub web editor (Claude in Chrome), because
+Applied 22/11 in 7e80274567 (sha256 matched) through the GitHub web editor (Claude in Chrome), because
 the sandbox may not write `.github/**` (security.md).
 
 ## Why
