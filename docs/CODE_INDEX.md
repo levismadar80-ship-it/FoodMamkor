@@ -705,6 +705,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `SpeedInsightsRedacted.jsx` | — אין כותרת — |
 | `StatusPage.jsx` | — אין כותרת — |
 | `StoryCardCanvas.jsx` | <reference path="../types/browser-globals.d.ts" /> |
+| `SupportContactSheet.jsx` | The one «צרו קשר» sheet for business owners: WhatsApp · email · form, in that order, wherever the dashboard offers to reach the team (help row, rejected / … |
 | `Toaster.jsx` | — אין כותרת — |
 | `TrustBadge.jsx` | — אין כותרת — |
 | `UnverifiedEmailNotice.jsx` | Inline notice shown in a producer create form when the API rejects the publish with the verified-email 403 — the gate message plus a "שלחו שוב" resend CTA, so … |

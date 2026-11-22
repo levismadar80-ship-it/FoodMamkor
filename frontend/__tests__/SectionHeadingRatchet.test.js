@@ -55,6 +55,7 @@ const ALLOWED = {
   "components/ClosingCtaBand.jsx": 1, // closing band
   "components/EditAccordionCard.jsx": 1, // accordion card title
   "components/FilterSheet.jsx": 1, // sheet title
+  "components/SupportContactSheet.jsx": 1, // sheet title (MEH-3720, moved out of dashboard/page.js)
   "components/FridayDeliveryStrip.jsx": 1, // banner strip
   "components/LocationModal.jsx": 1, // dialog title
   "components/PageFillPanel.jsx": 1, // card title; renders only on the edit hub and the admin edit page (MEH-3483)

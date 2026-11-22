@@ -8,19 +8,16 @@
  *           good on «סגירה». No tour: NN/g found tours don't help (MEH-3200
  *           research, copy approved word for word by Sapir 14/11).
  * Does NOT: decide when it shows (hooks/useWhatsNew.js useOwnerWelcome).
- * History:  MEH-3200 (creation).
+ * History:  MEH-3200 (creation) · MEH-3720 (question line opens the support sheet).
  */
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { env } from "@/lib/env";
-import { getWhatsAppHref } from "@/lib/utils";
 
-/** @param {{ onClose: () => void, showCta?: boolean }} props */
+/** @param {{ onClose: () => void, onSupport?: () => void, showCta?: boolean }} props */
 // MEH-3079: showCta=false while the completeness card (same action) is on screen.
-export default function OwnerWelcomeCard({ onClose, showCta = true }) {
+export default function OwnerWelcomeCard({ onClose, onSupport, showCta = true }) {
   const t = useTranslations("dashboard.producer.welcome_card");
-  const phone = env.NEXT_PUBLIC_SUPPORT_PHONE;
   return (
     <section
       data-testid="owner-welcome"
@@ -31,16 +28,17 @@ export default function OwnerWelcomeCard({ onClose, showCta = true }) {
         {t("title")}
       </h2>
       <p className="text-sm text-text mt-2">{t("body")}</p>
-      {phone ? (
-        <a
-          href={getWhatsAppHref(phone)}
-          target="_blank"
-          rel="noopener noreferrer"
+      {/* MEH-3720: opens the one «צרו קשר» sheet (WhatsApp first) instead of
+          a direct wa.me link — the same contact pattern as the rest of the dashboard. */}
+      {onSupport ? (
+        <button
+          type="button"
+          onClick={onSupport}
           data-testid="owner-welcome-whatsapp"
-          className="inline-block text-sm text-fg-muted mt-2 underline decoration-[1.5px] underline-offset-[5px] decoration-current/35 hover:text-text"
+          className="inline-block text-sm text-fg-muted mt-2 underline decoration-[1.5px] underline-offset-[5px] decoration-current/35 hover:text-text text-start"
         >
           {t("whatsapp")}
-        </a>
+        </button>
       ) : (
         <p className="text-sm text-fg-muted mt-2">{t("whatsapp")}</p>
       )}
