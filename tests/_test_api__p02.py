@@ -532,7 +532,7 @@ class TestRegisterProducerContactMethodPresence:
             json=self._payload(primary_contact_method="email"),
         )
         assert resp.status_code == 422
-        assert "אימייל ליצירת קשר" in str(resp.json()["detail"])
+        assert "מייל ליצירת קשר" in str(resp.json()["detail"])
 
     def test_website_method_with_website_succeeds(self, client):
         """Control: the guard rejects absence, not the method itself."""

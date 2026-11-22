@@ -458,5 +458,5 @@ def _send_contact_email(msg: ContactMessage, label: str) -> None:
             msg.id,
         )
         return
-    body = f"שם: {msg.name}\nאימייל: {msg.email}\n\n{msg.message}"
+    body = f"שם: {msg.name}\nמייל: {msg.email}\n\n{msg.message}"
     send_email(recipient, f"מהמקור — פנייה חדשה ({label}) מ-{msg.name}", body)

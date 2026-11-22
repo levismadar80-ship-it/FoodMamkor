@@ -76,7 +76,7 @@ def send_verify_email(
     name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
-        f"לאימות כתובת האימייל שלך יש ללחוץ על הקישור הבא:\n\n"
+        f"לאימות כתובת המייל שלך יש ללחוץ על הקישור הבא:\n\n"
         f"{verify_url}\n\n"
         f"הקישור תקף ל-24 שעות.\n\n"
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
@@ -85,9 +85,9 @@ def send_verify_email(
     html_body = frame(
         f"שלום {name_html},",
         """\
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך יש ללחוץ על הכפתור:</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת המייל שלך יש ללחוץ על הכפתור:</p>
         """,
-        button(verify_url, "אימות האימייל")
+        button(verify_url, "אימות המייל")
         + note_row(
             f"""\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
@@ -102,7 +102,7 @@ def send_verify_email(
     )
     send_email(
         email,
-        "מהמקור - אימות האימייל שלך",
+        "מהמקור - אימות המייל שלך",
         body,
         html=html_body,
         test_cause=test_cause,
@@ -336,7 +336,7 @@ def send_email_changed_notice(
     contact_url = f"{settings.frontend_url}/contact"
     body = (
         f"שלום,\n\n"
-        f"כתובת האימייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
+        f"כתובת המייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
         f"מעכשיו ההודעות מהאתר יישלחו לכתובת החדשה.\n\n"
         f"אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
         f"אם לא, צרו איתנו קשר מיד ונחזיר את החשבון: {contact_url}\n\n"
@@ -344,7 +344,7 @@ def send_email_changed_notice(
     )
     send_email(
         old_email,
-        "מהמקור - כתובת האימייל בחשבון שונתה",
+        "מהמקור - כתובת המייל בחשבון שונתה",
         body,
         test_cause=test_cause,
     )

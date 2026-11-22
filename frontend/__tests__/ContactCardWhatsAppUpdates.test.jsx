@@ -14,7 +14,7 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.phone": "התקשרו",
       "producer.detail.contact_card.aria.instagram": "אינסטגרם",
       "producer.detail.contact_card.aria.website": "אתר",
-      "producer.detail.contact_card.aria.email": "אימייל",
+      "producer.detail.contact_card.aria.email": "מייל",
       "producer.detail.contact_card.aria.whatsapp_channel": "ערוץ וואטסאפ",
       "producer.detail.contact_card.aria.whatsapp_group_chat": "קבוצת וואטסאפ",
       "producer.detail.contact_card.single.whatsapp_channel": "ערוץ הוואטסאפ של בית העסק",
