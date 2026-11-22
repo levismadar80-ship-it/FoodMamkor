@@ -6,8 +6,8 @@
 #           at least once and was then corrected BY HAND; §7 has said since
 #           MEH-1652 that "האכיפה מתוכננת כ-lexicon check ב-CI", and no such
 #           check existed.
-# Touches:  nothing on a normal run — reads frontend/messages/*.json and
-#           frontend/{app,components} and the baseline. Writes
+# Touches:  nothing on a normal run — reads frontend/messages/*.json,
+#           frontend/{app,components,lib,hooks}, backend/app and the baseline. Writes
 #           scripts/checks/brand-lexicon-baseline.txt only under
 #           --update-baseline.
 # Does NOT: judge NEW copy, rank synonyms, or check tone. It decides one thing:
@@ -24,6 +24,8 @@
 #           stale-line red).
 # History:  MEH-3351 (creation — the correction classes Sapir kept fixing by
 #           hand; BRAND.md §7 had asked for this since MEH-1652).
+#           MEH-3655 (email bodies in triple-quoted strings are scanned;
+#           «/י», «איש/אשת» and «אלייך» added).
 #
 # WHY A RATCHET AND NOT A HARD FAIL
 #   Some live violations sit inside APPROVED user-facing copy whose rewording is
@@ -115,7 +117,32 @@ RULES=(
   # were reworded in the same PR (Sapir approved the table 18/11). The
   # suffix must END the word (space, punctuation or end of line follows), so
   # «תאריך/תמונה» is not a hit. No Hebrew range class: see `(ה)?` above.
-  $'slash-gender\t/(ה|ת|תה|ית|ות)([[:space:]]|[[:punct:]]|$)\t-\t'
+  # MEH-3655: `/י` («ספר/י», the feminine imperative suffix) and «איש/אשת»
+  # escaped the first list — he.json `report.reason_placeholder` and
+  # `owner_story.contact_label` shipped with them.
+  $'slash-gender\t/(ה|ת|תה|ית|ות|י)([[:space:]]|[[:punct:]]|$)|איש/אשת\t-\t'
+  # «אלייך» — the double-yod pronoun is marked feminine; ADR-037 replaces it
+  # with «אליכם» on every reader surface. (`שלך` / `לך` are unmarked and stay.)
+  # Admin copy may keep it (ADR-037: Sapir is the reader); a JSON line carries
+  # no namespace, so such a line is baselined with its reason, not exempted here.
+  $'feminine-address\tאלייך\t-\t'
+  # «אימייל» — the site says «מייל» (Sapir delegated the call 21/11, decided on
+  # what Israeli services write: btl.gov.il «כתובת המייל», iec.co.il «חשבונית
+  # במייל»; MEH-3665). Every prefix form («האימייל», «לאימייל») contains it.
+  $'email-term\tאימייל\t-\t'
+  # A forward / leads-to arrow is «←» in Hebrew (Sapir 21/11, MEH-3665): the
+  # reading direction is right-to-left, so «A → B» points back at A. «→» stays
+  # only where it LEADS a string («→ חזרה», «→ הקודם»). The hit is a Hebrew
+  # letter, then at most two non-Hebrew, non-space characters (room for `\"`
+  # and `)`), then «→»: a mid-sentence Hebrew arrow. English strings (en.json,
+  # LTR, where «→» is right) and code like `${a} → ${b}` have no Hebrew letter
+  # there. Letters are spelled out, not a range: see `(ה)?` above for why a
+  # range class fails. The gap EXCLUDES Hebrew letters on purpose: with `.?.?`
+  # gawk in a UTF-8 locale (the CI runner) starts the match one letter earlier
+  # than mawk does (leftmost-longest), so the reported text, and with it the
+  # baseline key, depended on which awk ran. Measured 21/11: self-test 23/23
+  # under mawk, 22/23 under gawk C.UTF-8.
+  $'forward-arrow\t(א|ב|ג|ד|ה|ו|ז|ח|ט|י|כ|ך|ל|מ|ם|נ|ן|ס|ע|פ|ף|צ|ץ|ק|ר|ש|ת)[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[[:space:]]*→\t-\t'
 )
 
 # Every candidate file, one path per line, relative to the repo root.
@@ -173,18 +200,44 @@ strip_comments() {
           # matter more here than anywhere else — the §14 file-header contract
           # puts "מגזין, לא marketplace"-style prose in a module docstring, and
           # scanning those would make every compliant header a violation.
+          #
+          # MEH-3655: a triple-quoted string is a DOCSTRING only when it opens
+          # the statement (nothing but whitespace or a r/u prefix before it on
+          # the line) AND that statement is the first in its block: the
+          # previous code line ends with `:` or there is none yet (module
+          # docstring). Everything else (`_EMAIL_2_BODY = """\`) is a VALUE,
+          # and its text is what a person reads. The first draft blanked every
+          # `"""`, so onboarding_followup.py:97 («לקוח/ה אחד/ת ספציפי/ת») went
+          # green while an email sent it. A value string keeps its text, and a
+          # `#` inside it is content, not a comment.
+          if (FNR == 1) prevcode = ""
+          raw = line
           while (length(line)) {
-            if (indoc != "") { i = index(line, indoc); if (i == 0) { line = ""; break }
-                               line = substr(line, i + 3); indoc = ""; continue }
+            if (indoc != "") {
+              i = index(line, indoc)
+              if (i == 0) { if (!isdoc) out = out line; line = ""; break }
+              if (!isdoc) out = out substr(line, 1, i - 1)
+              line = substr(line, i + 3); indoc = ""; continue
+            }
             d3 = index(line, "\"\"\""); q3 = index(line, "\x27\x27\x27")
             hc = index(line, "#")
             first = 0; kind = ""
             if (d3 && (!q3 || d3 < q3)) { first = d3; kind = "\"\"\"" }
             else if (q3)                { first = q3; kind = "\x27\x27\x27" }
             if (hc && (!first || hc < first)) { out = out substr(line, 1, hc - 1); line = ""; break }
-            if (first) { out = out substr(line, 1, first - 1); line = substr(line, first + 3); indoc = kind; continue }
+            if (first) {
+              out = out substr(line, 1, first - 1)
+              isdoc = (out ~ /^[[:space:]]*[rRuU]?$/ && (prevcode == "" || prevcode ~ /:[[:space:]]*$/))
+              line = substr(line, first + 3); indoc = kind; continue
+            }
             out = out line; line = ""
           }
+          # The trailing `# noqa` is stripped first, or `def f():  # noqa`
+          # would not end in `:` and its docstring would be read as copy
+          # (rule-5a reviewer, MEH-3655). Known blind spot, acceptable: a
+          # value string alone on the line after `"key":` / `else:` is read as
+          # a docstring. That can only HIDE a match, never invent one.
+          if (raw !~ /^[[:space:]]*(#|$)/) { pc = raw; sub(/[[:space:]]+#.*$/, "", pc); prevcode = pc }
           print FILENAME ":" FNR ":" out
           next
         }
@@ -273,8 +326,10 @@ run() {
       local p id m have
       IFS=$'\t' read -r p id m <<<"$key"
       have="$(printf '%s\n' "$frozen" | grep -cxF "$key" || true)"
-      printf '%s\n' "$records" | awk -F'\t' -v p="$p" -v id="$id" -v m="$m" \
-        '$1==p && $3==id && $4==m { print "  - " $1 ":" $2 "  [" $3 "]  " $4 }' \
+      # m via ENVIRON, not -v: -v unescapes, so a match holding `\"` (a JSON
+      # string's inner quote) never equalled itself and its line went unlisted.
+      printf '%s\n' "$records" | M="$m" awk -F'\t' -v p="$p" -v id="$id" \
+        '$1==p && $3==id && $4==ENVIRON["M"] { print "  - " $1 ":" $2 "  [" $3 "]  " $4 }' \
         | LC_ALL=C sort -u >&2
       printf '    (%s in baseline, %s now)\n' "$have" "$((have + cnt))" >&2
     done
@@ -327,13 +382,27 @@ write_baseline() {
 #     instruction is neither, and the word is load-bearing there (it tells the
 #     model what KIND of fraud to look for). Rewording it would change a
 #     moderation prompt to satisfy a copy rule, which is the wrong trade.
+#
+# ADDED BY MEH-3655 (21/11/2026) — lines the guard could not see before.
+# The reader-copy lines it surfaced (onboarding emails, he.json slash forms,
+# account_deleted «אלייך», the chat FAQ «/ת») were reworded in MEH-3664 from
+# Sapir's approved table and left the baseline.
+#
+#   feminine-address · אלייך   (he.json admin.*.call_script)
+#     Admin copy: a phone script for a caller speaking to a named woman
+#     business owner. ADR-037 keeps admin copy and named women feminine.
+#
+#   yatzran · יצרנית           (backend/app/services/producer_recipe_moderation.py)
+#   licensed-term · מורשים     (backend/app/services/experience_moderation.py)
+#     The Hebrew SYSTEM PROMPTS of the moderation models, same reason as the
+#     producer_risk.py line above: a model instruction, not copy anyone reads.
 HEAD
     scan "$1" | keys_of
   } > "$2"
 }
 
 self_test() {
-  local tmp pass=0 total=14 got
+  local tmp pass=0 total=23 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
@@ -369,7 +438,45 @@ Does NOT: own a route ("מגזין, לא marketplace").
 BODY = "הרשמות וקניות קבוצתיות פתוחות בוטלו"  # יצרן in a trailing comment
 PYF
 
+  # Cases 15-19 (MEH-3655). Each one is green on the guard after the change
+  # and red on the guard before it: run `--self-test` on the parent of this
+  # commit to see 14/19.
+  # Cases 20-23 (MEH-3665). Case 20 is the text of he.json
+  # `guides.business_story.body.b34` as it read before MEH-3665 turned its arrow
+  # to «←» («פרטים טכניים (36 שעות תסיסה) → אמינות»); case 21 is the shape of
+  # `producer.detail.back_label`. The English arrow sits in its own file, so
+  # case 22 can fail on its own and is not implied by case 21's count.
+  cat > "$tmp/frontend/components/Arrow.jsx" <<'AR'
+export const A = () => <li>פרטים טכניים (36 שעות תסיסה) → אמינות</li>;
+export const B = () => <a>→ חזרה</a>;
+export const D = () => <p>שלחו לנו אימייל</p>;
+AR
+  cat > "$tmp/frontend/components/EnArrow.jsx" <<'EN'
+export const C = () => <a>Next →</a>;
+EN
+  cat > "$tmp/frontend/components/Slash.jsx" <<'SL'
+export const A = () => <input placeholder="ספר/י מה הבעיה" />;
+export const B = () => <label>שם איש/אשת הקשר</label>;
+export const C = () => <p>אישור בדרך אלייך</p>;
+SL
+  # Anchored to backend/app/services/onboarding_followup.py:80-97 — an email
+  # body assigned from a triple-quoted string, beside real docstrings.
+  cat > "$tmp/backend/app/services/mail2.py" <<'PY2'
+"""
+Module:   mail2 — לקוח/ה in a module docstring is prose.
+"""
+def f():  # noqa: D401
+    """מסכים/ה in a function docstring is prose."""
+    return 1
+
+_EMAIL_2_BODY = """\
+שלום,
+לקוח/ה חדש/ה # this hash is text, not a comment
+"""
+PY2
+
   got="$(scan "$tmp" | keys_of)"
+  rec="$(scan "$tmp")"
 
   _has()   { printf '%s\n' "$got" | grep -qF "$1"; }
   _hasnt() { ! printf '%s\n' "$got" | grep -qF "$1"; }
@@ -383,7 +490,7 @@ PYF
   _has $'frontend/messages/he.json\tslash-gender\t/ה' \
     && { pass=$((pass+1)); echo "  ok 13  a slash gender form «מסכים/ה» is caught"; } \
     || echo "  FAIL 13  «מסכים/ה» was NOT caught"
-  [ "$(printf '%s\n' "$got" | grep -cF $'slash-gender')" -eq 1 ] \
+  [ "$(printf '%s\n' "$got" | grep -cF $'frontend/messages/he.json\tslash-gender')" -eq 1 ] \
     && { pass=$((pass+1)); echo "  ok 14  «תאריך/תמונה» (two words, no suffix) is not a slash form"; } \
     || echo "  FAIL 14  «תאריך/תמונה» was flagged as a slash form"
   _hasnt $'Card.jsx\tmarketplace' \
@@ -416,6 +523,33 @@ PYF
     && [ "$(printf '%s\n' "$got" | grep -cF $'mail.py\tyatzran')" -eq 0 ] \
     && { pass=$((pass+1)); echo "  ok 12  a Python docstring and a trailing # comment are prose"; } \
     || echo "  FAIL 12  prose in a Python docstring or # comment was flagged"
+  _has $'frontend/components/Slash.jsx\tslash-gender\t/י' \
+    && { pass=$((pass+1)); echo "  ok 15  the feminine-imperative slash «ספר/י» is caught"; } \
+    || echo "  FAIL 15  «ספר/י» was NOT caught"
+  _has $'frontend/components/Slash.jsx\tslash-gender\tאיש/אשת' \
+    && { pass=$((pass+1)); echo "  ok 16  «איש/אשת» is caught"; } \
+    || echo "  FAIL 16  «איש/אשת» was NOT caught"
+  _has $'frontend/components/Slash.jsx\tfeminine-address\tאלייך' \
+    && { pass=$((pass+1)); echo "  ok 17  the marked pronoun «אלייך» is caught (ADR-037)"; } \
+    || echo "  FAIL 17  «אלייך» was NOT caught"
+  [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /mail2\.py$/ && $2 == 10 && $3 == "slash-gender"' | grep -c .)" -eq 2 ] \
+    && { pass=$((pass+1)); echo "  ok 18  an email body assigned from a triple-quoted string is scanned, past a #"; } \
+    || echo "  FAIL 18  the triple-quoted email body was treated as a docstring"
+  [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /mail2\.py$/ && $2 != 10' | grep -c .)" -eq 0 ] \
+    && { pass=$((pass+1)); echo "  ok 19  module and function docstrings are still prose"; } \
+    || echo "  FAIL 19  a real docstring was scanned as copy"
+  _has $'frontend/components/Arrow.jsx\tforward-arrow\tה) →' \
+    && { pass=$((pass+1)); echo "  ok 20  a mid-sentence Hebrew «→» is caught"; } \
+    || echo "  FAIL 20  a mid-sentence Hebrew «→» was NOT caught"
+  [ "$(printf '%s\n' "$got" | grep -cF $'Arrow.jsx\tforward-arrow')" -eq 1 ] \
+    && { pass=$((pass+1)); echo "  ok 21  a leading «→ חזרה» is a back arrow, not a hit"; } \
+    || echo "  FAIL 21  «→ חזרה» was flagged, or the count is off"
+  _hasnt $'frontend/components/EnArrow.jsx\tforward-arrow' \
+    && { pass=$((pass+1)); echo "  ok 22  an English «Next →» (LTR) is not a hit"; } \
+    || echo "  FAIL 22  an English «Next →» was flagged"
+  _has $'frontend/components/Arrow.jsx\temail-term\tאימייל' \
+    && { pass=$((pass+1)); echo "  ok 23  «אימייל» is caught (the site writes «מייל»)"; } \
+    || echo "  FAIL 23  «אימייל» was NOT caught"
   # The parsed-0 control must itself FAIL, not pass quietly.
   if run "$tmp/frontend" /dev/null "control" >/dev/null 2>&1; then
     echo "  FAIL 7  parsed-0 control PASSED — a wrong cwd would read as green"

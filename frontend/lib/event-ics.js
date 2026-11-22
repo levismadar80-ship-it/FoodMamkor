@@ -10,7 +10,8 @@
  *           DTSTART only. A date-only event is an all-day entry.
  * Related:  app/[locale]/events/[id]/EventDetailClient.jsx (the button),
  *           lib/seo.js buildEventJsonLd (the same fields for Google).
- * History:  MEH-2468 (creation); MEH-2469 (DTEND from end_time).
+ * History:  MEH-2468 (creation); MEH-2469 (DTEND from end_time);
+ *           MEH-3616 (buildSlotIcs: an order / bag pickup window).
  */
 
 const ISRAEL_TZ = "Asia/Jerusalem";
@@ -134,13 +135,46 @@ export function buildEventIcs(event, { url = "", now = new Date() } = {}) {
   return lines.map(fold).join("\r\n") + "\r\n";
 }
 
-// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from what is
-// already on the page (no endpoint) and downloaded through a Blob URL. What a
-// phone does with a text/calendar download (open the calendar app, or save it
-// to Files) varies by browser — NOT verified on devices from the CC sandbox.
-// MEH-2549: moved here from EventDetailClient so the experience page shares it.
-export function downloadIcs(event, { url = "", filename = `event-${event.id}.ics` } = {}) {
-  const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
+/** A Date / ISO instant → RFC 5545 UTC stamp "YYYYMMDDTHHMMSSZ". */
+function utcStamp(value) {
+  const t = new Date(value);
+  return (
+    `${t.getUTCFullYear()}${pad(t.getUTCMonth() + 1)}${pad(t.getUTCDate())}` +
+    `T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}${pad(t.getUTCSeconds())}Z`
+  );
+}
+
+/**
+ * MEH-3616: one timed slot (an order's pickup or delivery window, a bag's
+ * pickup) as an .ics body. The slot ends are absolute instants (ISO with an
+ * offset, as the API sends them), so no Israel wall-clock conversion is needed.
+ * @param {{ uid: string, start: string, end: string, title: string, location?: string | null, url?: string }} slot
+ * @param {{ now?: Date }} [opts]
+ * @returns {string} the .ics body, CRLF line endings
+ */
+export function buildSlotIcs(slot, { now = new Date() } = {}) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//mehamakor//slots//HE",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${slot.uid}@mehamakor.co.il`,
+    `DTSTAMP:${utcStamp(now)}`,
+    `DTSTART:${utcStamp(slot.start)}`,
+    `DTEND:${utcStamp(slot.end)}`,
+    `SUMMARY:${escapeIcsText(slot.title)}`,
+  ];
+  if (slot.location) lines.push(`LOCATION:${escapeIcsText(slot.location)}`);
+  if (slot.url) lines.push(`DESCRIPTION:${escapeIcsText(slot.url)}`, `URL:${slot.url}`);
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return lines.map(fold).join("\r\n") + "\r\n";
+}
+
+/** Download an .ics body through a Blob URL (shared by both builders). */
+export function downloadIcsText(body, filename) {
+  const blob = new Blob([body], { type: "text/calendar;charset=utf-8" });
   const href = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = href;
@@ -151,4 +185,13 @@ export function downloadIcs(event, { url = "", filename = `event-${event.id}.ics
   // Revoking synchronously can abort the download in WebKit (review #3716 F7;
   // FileSaver.js delays it for the same reason).
   setTimeout(() => URL.revokeObjectURL(href), 30_000);
+}
+
+// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from what is
+// already on the page (no endpoint) and downloaded through a Blob URL. What a
+// phone does with a text/calendar download (open the calendar app, or save it
+// to Files) varies by browser — NOT verified on devices from the CC sandbox.
+// MEH-2549: moved here from EventDetailClient so the experience page shares it.
+export function downloadIcs(event, { url = "", filename = `event-${event.id}.ics` } = {}) {
+  downloadIcsText(buildEventIcs(event, { url }), filename);
 }

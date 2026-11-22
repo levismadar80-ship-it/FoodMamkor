@@ -9,8 +9,9 @@
  * Touches:  nothing (pure presentational data; no hooks, no I/O).
  * Does NOT: define the glyph SVG paths — those stay in components/CategoryIcons.jsx
  *           (this module only references the components). Does NOT own the
- *           taxonomy (backend/seed_data.py). Add a CATEGORY_STYLES entry here
- *           alongside any new category row in the backend.
+ *           taxonomy (backend/seed_data.py) or the category list
+ *           (lib/category-taxonomy.js) — a new category gets a row THERE and a
+ *           glyph in CategoryIcons.jsx; its style here follows.
  * Related:  components/CategoryIcons.jsx (glyph components + CATEGORY_ICONS map),
  *           components/MapComponent.jsx (styleForProducer → pin), app/[locale]/
  *           map/components/MapPane.jsx (CATEGORY_LEGEND → legend widget).
@@ -19,36 +20,40 @@
  *           glyph lookup became TOTAL — resolveCategoryGlyph + one named
  *           fallback, replacing three inline per-call-site fallbacks; the key
  *           indirection moved into categoryGlyphKey so MEH-1456's slug swap is
- *           one line).
+ *           one line); MEH-3076 (keyed by slug, pins coloured by group).
  *
- * MEH-1453 shape note: the pin-style map (CATEGORY_STYLES — 8 keys, incl. 2
- * STALE combined names "ירקות, פירות ומשקים" / "טיפוח וסבונים" that the /map
- * legend still renders) and the glyph map (CATEGORY_ICONS — 18 canonical DB
- * names) use DIFFERENT key sets. They are kept as two structures rather than
- * fused into one per-category {glyph, pinIcon, color, textColor} record —
- * fusing would have to drop or re-key the 2 stale legend rows, a visible
- * change on /map. Reconciling the stale taxonomy keys (and inventing category
- * slugs) is a separate ticket; this module just gives every consumer one place
- * to import from.
+ * MEH-3076 shape: every per-category table here is DERIVED from one list,
+ * lib/category-taxonomy.js (slug, Hebrew name, group), plus the slug-keyed
+ * glyphs and the six group colours. MEH-1453's two hand-kept tables (8 pin
+ * keys with 2 stale names / 18 glyph names) are gone; the stale names went
+ * with them, and every category now has a pin style (colour by group, glyph
+ * by category — Sapir 21/11).
  */
 
-// Pin-glyph components come from the single MEH-683 icon module (the SVG paths
-// live there — this registry references them, never inlines). Legacy stale-key
-// glyphs + the DEFAULT fallback stay on Phosphor (same as the pre-MEH-1453 source).
-import { Meat, FishSimple, Cheese, Bread, OliveOil, Hive } from "@/components/CategoryIcons";
-import { Plant, FlowerTulip, Leaf } from "@phosphor-icons/react";
+// Pin glyphs are the category glyphs of the single MEH-683 icon module (the SVG
+// paths live there — this registry references them, never inlines). The
+// DEFAULT fallback stays on Phosphor (same as the pre-MEH-1453 source).
+import { Leaf } from "@phosphor-icons/react";
 
-// The chip / register-selector / home-card line-art glyph map (18 canonical DB
-// names → component) is defined next to its components in CategoryIcons.jsx;
-// re-exported here so the registry is the one import hub for category data.
-// MEH-2163: imported into local scope as well (a bare `export … from` does NOT
-// bind the name here) so the resolver below can read it. The public export
-// surface is unchanged — `import { CATEGORY_ICONS } from "@/lib/category-registry"`
-// resolves exactly as before.
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+// MEH-3076: glyphs are keyed by slug (CATEGORY_GLYPHS, next to their
+// components). The name-keyed CATEGORY_ICONS below is DERIVED from it through
+// the one taxonomy list, kept for the callers that still hold a bare name
+// string (a map chip's iconName) — it is no longer a second hand-kept table.
+import { CATEGORY_GLYPHS } from "@/components/CategoryIcons";
+import { CATEGORY_GROUPS, CATEGORY_TAXONOMY, taxonomyEntry } from "./category-taxonomy";
 import { COLOR } from "./color-tokens";
 
-export { CATEGORY_ICONS };
+export { CATEGORY_GLYPHS };
+
+/** Hebrew DB name → glyph, derived (MEH-3076). */
+export const CATEGORY_ICONS = Object.freeze(
+  Object.fromEntries(
+    CATEGORY_TAXONOMY.filter((c) => Object.hasOwn(CATEGORY_GLYPHS, c.slug)).map((c) => [
+      c.name,
+      CATEGORY_GLYPHS[c.slug],
+    ]),
+  ),
+);
 
 /**
  * MEH-2163 — the ONE fallback glyph.
@@ -67,71 +72,84 @@ export { CATEGORY_ICONS };
  */
 export const CATEGORY_GLYPH_FALLBACK = Leaf;
 
-export const CATEGORY_STYLES = {
-  // MEH-1268 (post-MEH-927 taxonomy): the combined "בשר, עוף ודגים" row was
-  // split in the DB into standalone "בשר" + "דגים". Renamed the stale combined
-  // key to "בשר" (identical meat style — #c04040 + Cow) so meat businesses stop
-  // falling through to DEFAULT (Leaf/green) on all 4 map surfaces, and added
-  // "דגים" reusing the SAME meat colour with a distinct Fish glyph — redundant
-  // shape encoding (MEH-936) keeps the two apart without adding a palette colour
-  // (stays within the MEH-763 F2 ≤-colours / deuteranopia-safe constraint).
-  // MEH-683: glyphs swapped to the unified set; colours unchanged.
-  "בשר":                 { color: "#c04040", icon: Meat,        iconName: "Meat" },
-  "דגים":                { color: "#c04040", icon: FishSimple,  iconName: "FishSimple" },
-  // MEH-1453: stale combined key — no live DB category matches it, but the /map
-  // legend still renders it (CATEGORY_LEGEND below). Kept verbatim.
-  "ירקות, פירות ומשקים": { color: COLOR.primary, icon: Plant,       iconName: "Plant" },
-  "חלב וגבינות":         { color: "#4a90d9", textColor: "#3b72ad", icon: Cheese,      iconName: "Cheese" },
-  "לחמים ואפייה":        { color: COLOR.accent, icon: Bread,       iconName: "Bread" }, // MEH-1065: accent token (retired stale gold)
-  // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
-  // dedicated identity — brand honey #C8821E + honeycomb glyph — distinct
-  // from oils (#e8a020). MEH-683: Hexagon→Hive (Material), JarLabel→OliveOil.
-  // textColor: the map pin keeps the vivid #e8a020, but that fails WCAG 1.4.11
-  // as a chip glyph tint (2.22:1 on white). MEH-1452 darkened it to #bd8013,
-  // which cleared white (3.35:1) but was only ever measured there — it FAILS on
-  // the cream /map surface (#F5F0E8 → 2.96:1). MEH-1181 re-darkens to a same-hue
-  // (H≈38°) #97690f that clears BOTH: 4.83:1 on #fff, 4.26:1 on cream. Also the
-  // future MEH-1181-A category-chip ring colour (--cat-ring = textColor ?? color).
-  "שמנים":               { color: "#e8a020", textColor: "#97690f", icon: OliveOil,    iconName: "OliveOil" },
-  // textColor (MEH-1181): the pin/brand honey #C8821E clears 3:1 on white
-  // (3.15:1) but FAILS on the cream /map surface (2.78:1) — the same-hue darker
-  // #A8681A clears both (4.51:1 #fff / 3.97:1 cream). Serves the glyph tint AND
-  // the MEH-1181-A ring. (The 3.15 vs 2.78 "discrepancy" was two backgrounds,
-  // not a mistake: white vs cream — both correct.)
-  "דבש":                 { color: COLOR.honey, textColor: "#A8681A", icon: Hive,        iconName: "Hive" },
-  // MEH-1453: stale combined key (see "ירקות, פירות ומשקים" above). Legend-only.
-  "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
-};
+/**
+ * MEH-3076 (Sapir 21/11, «צבע לקבוצה»): a pin's COLOUR is its group's, its
+ * GLYPH is its own category's. Six colours, all already in the palette (no new
+ * colour — the MEH-763 F2 limit), each the colour that group's categories
+ * already wore: meat #c04040 (MEH-1268), produce the primary green, dairy
+ * #4a90d9, bread the accent token (MEH-1065), pantry the brand honey (MEH-763
+ * S5 — oil moves off its own #e8a020 onto it), care #9b59b6. The glyph keeps
+ * two categories of one group apart (MEH-936 redundant shape encoding).
+ *
+ * `textColor` is the WCAG 1.4.11 tint for a glyph on white AND on the cream
+ * /map surface where the pin colour is too light (MEH-1181): dairy #3b72ad,
+ * pantry #A8681A (4.51:1 white / 3.97:1 cream). The others pass as they are.
+ *
+ * @type {Readonly<Record<import("./category-taxonomy").CategoryGroup, {color: string, textColor?: string}>>}
+ */
+export const CATEGORY_GROUP_STYLES = Object.freeze({
+  meat: { color: "#c04040" },
+  produce: { color: COLOR.primary },
+  dairy: { color: "#4a90d9", textColor: "#3b72ad" },
+  bread: { color: COLOR.accent },
+  pantry: { color: COLOR.honey, textColor: "#A8681A" },
+  care: { color: "#9b59b6" },
+});
 
+/**
+ * Hebrew DB name → pin style {color, textColor?, icon, group}, DERIVED from
+ * the taxonomy + the group colours + the slug glyphs (MEH-3076). It replaced
+ * a hand-kept 8-key table, 2 of whose keys matched no live category (MEH-1453),
+ * so vegetables, fruit, soaps and 8 more categories fell to the default pin.
+ * Name-keyed because the chip rows (map-chips, ProducersClient) hold names.
+ * Not frozen: the colour-injection guard test adds a hostile row to it.
+ *
+ * @type {Record<string, {color: string, textColor?: string, icon: import("react").ComponentType<any>, group: string}>}
+ */
+export const CATEGORY_STYLES = Object.fromEntries(
+  CATEGORY_TAXONOMY.filter((c) => Object.hasOwn(CATEGORY_GLYPHS, c.slug)).map((c) => [
+    c.name,
+    { ...CATEGORY_GROUP_STYLES[c.group], icon: CATEGORY_GLYPHS[c.slug], group: c.group },
+  ]),
+);
+
+/** The legend glyph of each group: the category that best stands for it. */
+const GROUP_LEGEND_SLUG = Object.freeze({
+  meat: "meat",
+  produce: "veg",
+  dairy: "dairy",
+  bread: "bread",
+  pantry: "honey",
+  care: "care",
+});
+
+/** @type {{color: string, textColor?: string, icon: import("react").ComponentType<any>}} */
 export const DEFAULT_CATEGORY_STYLE = {
   color: COLOR.primary,
   // MEH-2163: was a second literal `Leaf`. Same component, one owner now —
   // lib/marker-glyph.js keys its memo on this module-level identity, which is
   // unchanged by the indirection.
   icon: CATEGORY_GLYPH_FALLBACK,
-  iconName: "Leaf",
 };
 
 /**
  * MEH-2163 — THE key indirection, and the only one.
  *
- * The glyph map is keyed by the canonical Hebrew DB `name` today. `slug`
- * (MEH-2139, `backend/app/services/category_slug.NAME_TO_SLUG`) is the stable
- * identity and is already serialized in `CategoryOut`, but the frontend has no
- * name→slug table and writing one would be a THIRD copy of that backend map,
- * in a language the test pinning the existing two cannot reach — the reasoning
- * spelled out at CategorySelector.jsx's POPULAR comment. So the key stays
- * `name`, and **MEH-1456 swaps it by changing the one `?? category.name` line
- * below** — no consumer moves, because no consumer indexes the map directly.
+ * MEH-3076: the glyph map is keyed by `slug` (MEH-2139, the stable identity
+ * serialized in `CategoryOut`). The objection MEH-2163 recorded here — that a
+ * frontend name→slug table would be an unpinned third copy of the backend
+ * map — is answered by lib/category-taxonomy.js plus
+ * __tests__/CategoryTaxonomyGuard.test.js, which holds that list equal to
+ * backend NAME_TO_SLUG. No consumer indexes the map directly, so none moved.
  *
  * @param {string|{name?: string, slug?: string}|null|undefined} category
  * @returns {string} the registry key, or "" when there is nothing to key on.
  */
 export function categoryGlyphKey(category) {
-  if (typeof category === "string") return category;
-  // MEH-1456 swaps this line to `category?.slug ?? ""` once the glyph map is
-  // re-keyed by slug. Until then `name` is the key the backend already exposes.
-  return category?.name ?? "";
+  // MEH-3076: the key is the slug (MEH-1456's swap). A bare string or a row
+  // with no slug is matched to its slug through the taxonomy by name; a
+  // category the taxonomy does not know keys on nothing (fallback glyph).
+  return taxonomyEntry(category)?.slug ?? "";
 }
 
 /**
@@ -158,18 +176,23 @@ export function categoryGlyphKey(category) {
  */
 export function resolveCategoryGlyph(category) {
   const key = categoryGlyphKey(category);
-  if (key && Object.hasOwn(CATEGORY_ICONS, key)) {
-    return { glyph: CATEGORY_ICONS[key], isFallback: false };
+  if (key && Object.hasOwn(CATEGORY_GLYPHS, key)) {
+    return { glyph: CATEGORY_GLYPHS[key], isFallback: false };
   }
   return { glyph: CATEGORY_GLYPH_FALLBACK, isFallback: true };
 }
 
 /**
- * Array form — used by the legend widget on the map page. Order is
- * the visual display order in the sidebar.
+ * The /map legend: one row per GROUP, in chip-row order (MEH-3076). `key` is
+ * the group, which is also the `map_category_chips.<key>` label and the value
+ * the legend filter toggles (useMapFilters).
  */
-export const CATEGORY_LEGEND = Object.entries(CATEGORY_STYLES).map(
-  ([name, { color, icon, iconName }]) => ({ name, color, icon, iconName }),
+export const CATEGORY_LEGEND = Object.freeze(
+  CATEGORY_GROUPS.map((key) => ({
+    key,
+    ...CATEGORY_GROUP_STYLES[key],
+    icon: CATEGORY_GLYPHS[GROUP_LEGEND_SLUG[key]],
+  })),
 );
 
 // MEH-2004: the category colour is interpolated into RAW MARKUP by every pin
@@ -220,8 +243,12 @@ function safeCategoryColor(value) {
  * for the memo in lib/marker-glyph.
  */
 export function styleForProducer(producer) {
-  const firstCategory = producer?.categories?.[0]?.name;
-  const style = (firstCategory && CATEGORY_STYLES[firstCategory]) || DEFAULT_CATEGORY_STYLE;
+  const first = producer?.categories?.[0];
+  // MEH-3076: by slug first (a renamed or English-shown row still finds its
+  // style), then by the row's own name (a row outside the taxonomy).
+  // Object.hasOwn: a name like "constructor" must not reach Object's builtins.
+  const name = taxonomyEntry(first)?.name ?? first?.name;
+  const style = (name && Object.hasOwn(CATEGORY_STYLES, name) && CATEGORY_STYLES[name]) || DEFAULT_CATEGORY_STYLE;
   const color = safeCategoryColor(style.color);
   return color === style.color ? style : { ...style, color };
 }

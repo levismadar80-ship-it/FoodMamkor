@@ -49,6 +49,7 @@ from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
+    attach_owner_email_verified,
     attach_upcoming_events_count,
 )
 from app.services.delivery_validation import (
@@ -100,6 +101,7 @@ def get_my_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_upcoming_events_count(producer)  # MEH-2460
+    attach_owner_email_verified(producer)  # MEH-3660
     return producer
 
 
@@ -324,6 +326,20 @@ def _maybe_fire_review_ready(
         )
 
 
+def _free_replaced_logo(
+    db: Session, producer: Producer, payload: dict[str, Any], old: Any
+) -> None:
+    """MEH-3611: a replaced or removed logo is freed, after the commit (MEH-375
+    order). destroy_image skips a URL another column still references."""
+    if "logo_url" not in payload:
+        return
+    from app.cloudinary_utils import destroy_replaced
+
+    destroy_replaced(
+        old, producer.logo_url, context="producer_me.update_my_producer logo", db=db
+    )
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (second phone) each add steps; split tracked with the producer_me size baseline
@@ -402,6 +418,8 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
         "owner_bio",
         "owner_photo_url",
+        # MEH-3611: the logo; image-URL guard in ProducerUpdate, ownership below.
+        "logo_url",
         "grass_fed",
         # «עסק של מילואימניקים»: owner declares; editor = ReservistOwnedCard.jsx.
         "reservist_owned",
@@ -595,6 +613,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     # before commit would orphan-leak in the opposite direction (assets
     # gone, DB still references them) if commit raises.
     old_images = list(producer.images or [])
+    old_logo_url = producer.logo_url  # MEH-3611: destroyed after commit if replaced
     old_phone: str | None = producer.phone  # type: ignore[assignment]  # grill B8
 
     # MEH-2475: an ORGANIZER's city. `city` stays out of the set above for a
@@ -615,8 +634,12 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     # MEH-3247: a business stores only photos she uploaded herself.
     assert_own_new_images(
         user,
-        [*(payload.get("images") or []), payload.get("owner_photo_url")],
-        [*old_images, producer.owner_photo_url],
+        [
+            *(payload.get("images") or []),
+            payload.get("owner_photo_url"),
+            payload.get("logo_url"),
+        ],
+        [*old_images, producer.owner_photo_url, producer.logo_url],
     )
     # MEH-3261: changed public text of an APPROVED business → AI (REJECTED = 422).
     content_ai = approved_edit.check_producer(producer, payload)
@@ -672,6 +695,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
             context="producer_me.update_my_producer images",
             db=db,  # MEH-3247
         )
+    _free_replaced_logo(db, producer, payload, old_logo_url)  # MEH-3611
 
     # MEH-54: fire delivery area alerts for newly added cities.
     # MEH-1360: targeted — only users whose User.city is among new_cities
@@ -686,7 +710,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
             producer.id,  # type: ignore[arg-type]
             "delivery_area",
             AlertContent(
-                title=f"🚚 משלוחים חדשים: {producer.name}",
+                title=f"משלוחים חדשים: {producer.name}",
                 body="עכשיו מגיעים גם ל: {cities}",
                 url=f"/producer/{producer.id}",
             ),
@@ -724,6 +748,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     indexnow.schedule_public_producer(background_tasks, producer)
 
     attach_upcoming_events_count(producer)  # MEH-2460
+    attach_owner_email_verified(producer)  # MEH-3660
     return producer
 
 
@@ -959,7 +984,7 @@ def create_my_product(
         user.producer_id,  # type: ignore[arg-type]
         "new_product",
         AlertContent(
-            title=f"🆕 מוצר חדש מ{producer_name}",
+            title=f"מוצר חדש מ{producer_name}",
             body=product.name,
             url=f"/producer/{user.producer_id}",
         ),

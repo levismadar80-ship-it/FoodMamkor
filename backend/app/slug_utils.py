@@ -78,6 +78,9 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "recommend",
         "registration",
         "rescue",
+        # MEH-3609: the signed-in lists. /my-orders (MEH-3525) was missing too.
+        "my-orders",
+        "my-group-buys",
     }
 )
 

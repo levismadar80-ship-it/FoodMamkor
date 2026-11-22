@@ -68,24 +68,12 @@ than from the substance, the others are underwritten.
 
 ### Where it already applies
 
-`.claude/rules/workflow.md` rule 4 asks for 2–5 targeted questions on an
-ambiguous spec, and rule 22 sends copy to Sapir verbatim. Both decide WHEN she
-is asked. This decides WHAT she is shown when she is.
-
-Rule 34 is the companion on the other side: when a premise a decision rested on
-turns out to be false, the card's DESCRIPTION is corrected, not just commented
-on. An option argued from a refuted premise is worse than one not argued at all.
+Workflow rules 4 and 22 decide WHEN Sapir is asked; this decides WHAT she is
+shown. Rule 34 is the companion: a refuted premise is corrected in the card's
+DESCRIPTION.
 
 ### Why a rule and not a habit
 
-The failure is invisible from the inside. A recommendation written in good
-faith reads as balanced to its author every time, because the author holds the
-counter-arguments in their head and discounts them there — the discounting
-never reaches the page. No reviewer can catch it either: a missing argument
-leaves no trace to review. Only a rule that says "write the other case, in
-full, before you send" produces the page that would otherwise not exist.
-
-There is no guard for this, and there should not be one: no grep can tell a
-strong argument from a weak one. It is in `.claude/rules/` rather than in a
-hook for exactly that reason — see the compliance note in
-[meta-patterns.md](./meta-patterns.md).
+The failure is invisible from the inside: an author always believes they were
+fair, and a missing argument leaves no trace for a reviewer. No grep can tell a
+strong argument from a weak one, so this stays a written rule.

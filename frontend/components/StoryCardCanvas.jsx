@@ -51,6 +51,7 @@ import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
 import Button from "@/components/ui/Button";
 import { copyOrThrow } from "@/lib/clipboard";
 import { COLOR } from "@/lib/color-tokens";
+import { isCloudinaryUrl } from "@/lib/cloudinary";
 
 const W = 1080;
 const H = 1920;
@@ -137,7 +138,7 @@ export function loadImage(src) {
 
 function photoSrc(url) {
   // g_auto: Cloudinary picks the crop around the subject, not the centre.
-  return url.includes("cloudinary.com")
+  return isCloudinaryUrl(url)
     ? url.replace("/upload/", `/upload/f_auto,q_auto,w_${W},h_${PHOTO_H},c_fill,g_auto/`)
     : url;
 }
@@ -417,7 +418,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
 
   const caption = `${t("caption_prefix")}\n${t("caption_from", { name: producer.name, city: producer.city || t("default_country") })} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
-  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
+  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n${t("caption_link", { url: `${SITE_HOST}/p/${producer.slug || ""}` })}`;
 
   const copyCaption = () => {
     // MEH-1428: this had no rejection path at all — `navigator.clipboard` is

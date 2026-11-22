@@ -176,7 +176,7 @@ def approve_recipe(
             recipe.producer_id,  # type: ignore[arg-type]
             "new_recipe",
             AlertContent(
-                title=f"🍲 מתכון חדש: {recipe.title}",
+                title=f"מתכון חדש: {recipe.title}",
                 body=body,
                 url=url,
             ),

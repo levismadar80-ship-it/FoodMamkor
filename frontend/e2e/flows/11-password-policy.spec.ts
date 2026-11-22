@@ -48,7 +48,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await page.goto("/register");
 
     await page.getByLabel(/^שם מלא \*$/).fill(u.name);
-    await page.getByLabel(/^אימייל \*$/).fill(u.email);
+    await page.getByLabel(/^מייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(SHORT_PASSWORD);
 
     // Inline checklist tile reflects the failure pre-submit.
@@ -75,7 +75,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await page.goto("/register");
 
     await page.getByLabel(/^שם מלא \*$/).fill(u.name);
-    await page.getByLabel(/^אימייל \*$/).fill(u.email);
+    await page.getByLabel(/^מייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(DENY_LISTED_12);
 
     // Wait past the 500ms PasswordInput debounce + the /auth/check-password
@@ -110,7 +110,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await page.goto("/register");
 
     await page.getByLabel(/^שם מלא \*$/).fill(u.name);
-    await page.getByLabel(/^אימייל \*$/).fill(u.email);
+    await page.getByLabel(/^מייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(SAFE_PASSWORD_A);
 
     // Wait for breach-check to settle on "✓ לא דלפה ברשת".
@@ -129,7 +129,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // MEH-328 Chunk D: success path lands on the OWASP-aligned inbox-check
     // screen. Identical body across new-email / collision branches; no
     // access_token in response, no auto-login.
-    await expect(page.getByText(/בדקו את תיבת האימייל שלכם/)).toBeVisible({
+    await expect(page.getByText(/בדקו את תיבת המייל שלכם/)).toBeVisible({
       timeout: 20_000,
     });
   });

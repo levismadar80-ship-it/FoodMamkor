@@ -9,14 +9,15 @@ every name is still importable from app.schemas.schemas.
 import datetime as _dt
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     _LETTER_REGEX,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
     _normalize_contact_email,
     _phone_validator,
     _url_scheme_validator,
@@ -64,7 +65,9 @@ class RegistrationCreate(BaseModel):
     """The on-site sign-up form: name, phone and email, all required, no
     account (approved 6/11)."""
 
-    name: str = Field(..., min_length=1, max_length=100)
+    name: Annotated[str, AfterValidator(reject_emoji)] = Field(  # MEH-3671
+        ..., min_length=1, max_length=100
+    )
     phone: str = Field(..., min_length=1, max_length=20)
     email: EmailStr = Field(..., max_length=200)
     # MEH-3314: the visitor chose «רשימת המתנה» on a full item. Ignored when a
@@ -101,7 +104,7 @@ class RegistrationCreate(BaseModel):
     def _clean_email(cls, v: Any) -> Any:
         cleaned = _normalize_contact_email(v)
         if cleaned is None:
-            raise ValueError("כתובת אימייל לא תקינה")
+            raise ValueError("כתובת מייל לא תקינה")
         return cleaned.lower()
 
 
@@ -228,7 +231,7 @@ class ExperienceCreate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str) -> str | str | None:
-        return sanitize_text(v, max_length=300)
+        return reject_emoji(sanitize_text(v, max_length=300))
 
     @field_validator("title")
     @classmethod
@@ -311,7 +314,7 @@ class ExperienceUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=300)
+        return reject_emoji(sanitize_text(v, max_length=300))
 
     @field_validator("description")
     @classmethod
@@ -344,7 +347,10 @@ class ExperienceModerationAction(BaseModel):
 class ExperienceValidateRequest(BaseModel):
     """Real-time form validation. No auth, no persistence."""
 
-    title: str = Field(..., min_length=1, max_length=300)
+    # MEH-3671: same refusal as ExperienceCreate, so the live check agrees.
+    title: Annotated[str, AfterValidator(reject_emoji)] = Field(
+        ..., min_length=1, max_length=300
+    )
     # MEH-3271: this body goes to the moderation model from a public route, so
     # every string is bounded. The caps are the create form's own
     # (ExperienceCreate: description 5000, city 100); category and location_type

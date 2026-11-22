@@ -50,8 +50,17 @@ function rich(raw, values = {}) {
   return parts;
 }
 
+// Strips the rich-text tags from a he.json value so a test can match its
+// visible text. Repeats until nothing changes, so a tag split by another
+// tag cannot survive one pass (CodeQL js/incomplete-multi-character-sanitization).
 function plain(key) {
-  return lookup(key).replace(/<\/?\w+>/g, "");
+  let text = lookup(key);
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<\/?\w+>/g, "");
+  } while (text !== previous);
+  return text;
 }
 
 vi.mock("next-intl", () => ({
@@ -422,12 +431,13 @@ describe("the row", () => {
     expect(photo.style.backgroundImage).toContain("res.cloudinary.com");
   });
 
-  it("links to the business page, where the only reserve button lives", async () => {
+  it("links to the bag's own page, and the row itself reserves nothing", async () => {
     render(<RescueList />);
     const row = await screen.findByTestId("rescue-bag-row");
-    // /{slug}, never /producer/{slug}: that route takes a UUID only and shows
-    // «בית העסק הזה לא נמצא» for a slug. Anchored at the bag section.
-    expect(row.getAttribute("href")).toBe("/hatzala#section-rescue");
+    // MEH-3586: the bag page (by OFFER id), as Too Good To Go opens a bag.
+    // It was `/{slug}#section-rescue` — the business page's bag section.
+    const firstOfferId = fetchOffers.mock.results[0] ? (await fetchOffers.mock.results[0].value)[0].id : null;
+    expect(row.getAttribute("href")).toBe(`/rescue/${firstOfferId}`);
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
   });
 });
@@ -466,7 +476,7 @@ describe("the business-page section — reserve and confirm", () => {
   it("shows the price big, and says on the CTA that payment is AT THE COUNTER", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const cta = await screen.findByTestId("rescue-reserve");
-    expect(cta.textContent).toBe("לשריין · משלמים בקופה");
+    expect(cta.textContent).toBe("לשריין את הסל · משלמים בקופה");
     expect(screen.getByTestId("rescue-section-price").textContent).toBe("15 ₪");
   });
 
@@ -486,14 +496,25 @@ describe("the business-page section — reserve and confirm", () => {
     expect(screen.queryByTestId("rescue-section-worth")).toBeNull();
   });
 
-  it("shows the stock as a short tag: one bag and many", async () => {
-    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
+  // MEH-3585 (Sapir 21/11): «נשארו 4» said nothing about what — the stock
+  // names the bags, beside the logo seeds the group-buy card uses (one seed per
+  // bag of the day, filled = still available).
+  it("shows the stock with the word «סלים» and one seed per bag: one bag and many", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 1, qty_total: 4 })]);
     const { unmount } = render(<RescueSection producer={PRODUCER} />);
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר 1");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר סל אחד");
+    let seeds = screen.getByTestId("gb-progress-seeds");
+    expect(seeds.querySelectorAll("svg")).toHaveLength(4);
+    expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(1);
+    // Decorative: the words sit beside it, so a screen reader hears them once.
+    expect(seeds.getAttribute("aria-hidden")).toBe("true");
+    expect(seeds.getAttribute("role")).toBeNull();
     unmount();
-    fetchOffers.mockResolvedValue([offer({ qty_left: 4 })]);
+    fetchOffers.mockResolvedValue([offer({ qty_left: 4, qty_total: 4 })]);
     render(<RescueSection producer={PRODUCER} />);
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשארו 4");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשארו 4 סלים");
+    seeds = screen.getByTestId("gb-progress-seeds");
+    expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(4);
   });
 
   // Sapir 6/11: the no-show rule is too much on the card; it stays on the
@@ -545,18 +566,50 @@ describe("the business-page section — reserve and confirm", () => {
     expect(screen.queryByTestId("rescue-section-allergens-declared")).toBeNull();
   });
 
-  it("gives the pickup time and the address each its own icon row", async () => {
+  // MEH-3585: the group-buy card's anatomy — the pickup window sits in the
+  // beige status band beside what is left; the address under the title.
+  it("puts the pickup window in the status band with the stock, and the address under the title", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const pickup = await screen.findByTestId("rescue-section-pickup");
-    expect(pickup.textContent).toMatch(/^איסוף \d{2}:\d{2}–\d{2}:\d{2}$/);
-    expect(pickup.closest("li").querySelector("svg")).not.toBeNull();
-    expect(screen.getByTestId("rescue-section-address").closest("li").querySelector("svg")).not.toBeNull();
+    expect(pickup.textContent).toMatch(/^איסוף היום \d{2}:\d{2}–\d{2}:\d{2}$/);
+    expect(pickup.querySelector("svg")).not.toBeNull();
+    // Same band: stock on its start side, pickup on its end side.
+    const band = screen.getByTestId("rescue-section-stock").parentElement.parentElement;
+    expect(band.contains(pickup)).toBe(true);
+    expect(band.contains(screen.getByTestId("rescue-reserve"))).toBe(false);
+    const title = screen.getByTestId("rescue-section-typical");
+    expect(title.tagName).toBe("H3");
+    expect(title.parentElement.parentElement.contains(screen.getByTestId("rescue-section-address"))).toBe(true);
+    expect(screen.getByTestId("rescue-section-address").querySelector("svg")).not.toBeNull();
+  });
+
+  it("a gold saving line off the business's own low estimate; none when the worth is not above the price", async () => {
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 4500 })]);
+    const { unmount } = render(<RescueSection producer={PRODUCER} />);
+    expect((await screen.findByTestId("rescue-section-saving")).textContent).toBe("חיסכון של 67%");
+    unmount();
+
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 1000 })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.queryByTestId("rescue-section-saving")).toBeNull();
   });
 
   it("shows the full address and the typical contents", async () => {
     render(<RescueSection producer={PRODUCER} />);
     expect((await screen.findByTestId("rescue-section-address")).textContent).toContain("הנביאים 10");
     expect(screen.getByTestId("rescue-section-typical").textContent).toBe("בדרך כלל: לחם, חלה");
+  });
+
+  // MEH-3585 review: no typical items → no card title, so «סל הפתעה» (the
+  // section heading) is not repeated as an h3 right under itself.
+  it("no typical items: no card title, the section heading is the only «סל הפתעה»", async () => {
+    fetchOffers.mockResolvedValue([offer({ typical_items: [] })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.queryByTestId("rescue-section-typical")).toBeNull();
+    expect(screen.getAllByText("סל הפתעה")).toHaveLength(1);
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
   });
 
   it("renders nothing when this business has no bag today", async () => {
@@ -636,7 +689,7 @@ describe("every error the API actually returns", () => {
     reserveBag.mockRejectedValue({
       response: {
         status: 403,
-        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } },
+        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } },
       },
     });
     render(<RescueSection producer={PRODUCER} />);
@@ -989,7 +1042,7 @@ describe("cancelling a reservation (MEH-2737)", () => {
     expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
       "השריון בוטל, והסל חזר לרשימה.",
     );
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toContain("1");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר סל אחד");
   });
 
   it("a cancel refused because the cutoff passed says so, and the code stays", async () => {
@@ -1099,6 +1152,17 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
     render(<RescueConfirmation order={order({ cancel_until: past() })} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-terms").textContent).toBe(
       "אי אפשר לבטל · שתי אי-הגעות = חסימה",
+    );
+  });
+});
+
+// MEH-3570: who the customer deals with, at the reserve button — not only in the terms.
+describe("the business-page section — not a party", () => {
+  it("names the business under the reserve button and says Mehamakor is not the seller", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.getByTestId("rescue-not-a-party").textContent).toBe(
+      "את העסקה עושים ישירות מול מאפיית ההצלה. מהמקור לא המוכרת ולא צד לעסקה.",
     );
   });
 });

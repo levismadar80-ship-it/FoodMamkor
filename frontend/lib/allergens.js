@@ -22,6 +22,17 @@ export const ALLERGEN_CODES = [
   "fava_beans", // MEH-3439: Israel-specific, G6PD
 ];
 
+/**
+ * MEH-3585: did the owner say ANYTHING about this product's allergens —
+ * «מכיל», «עלול להכיל» or «אין»? Unknown codes do not count (ProductFacts drops
+ * them too, so a product with only unknown codes shows no allergen line).
+ * @param {{ allergens?: string[] | null, may_contain?: string[] | null, no_allergens?: boolean | null }} product
+ */
+export function allergensDeclared(product) {
+  const known = (list) => (list || []).some((c) => ALLERGEN_CODES.includes(c));
+  return known(product?.allergens) || known(product?.may_contain) || !!product?.no_allergens;
+}
+
 /** Toggle one code in a list, keeping canonical order. */
 export function toggleAllergen(list, code) {
   const set = new Set(list || []);
