@@ -182,7 +182,7 @@ async def register_producer(
     if method == "email" and not (data.contact_email or "").strip():
         raise HTTPException(
             status_code=422,
-            detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
+            detail="חובה להזין מייל ליצירת קשר עבור אמצעי הקשר הנבחר",
         )
 
     # MEH-759 (ADR-022 gate 2): the binding licensing declaration is
@@ -252,7 +252,7 @@ async def register_producer(
         if user.role == "admin":
             raise HTTPException(
                 status_code=403,
-                detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+                detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת מייל אחרת.",
             )
         # Check both: producer_id (current link) and is_producer (durable flag).
         # is_producer stays True even if an admin manually clears producer_id,
@@ -481,7 +481,7 @@ async def register_producer(
     if not data.email or not data.name or not data.password:
         raise HTTPException(
             status_code=422,
-            detail="אימייל, שם וסיסמה הם שדות חובה",
+            detail="מייל, שם וסיסמה הם שדות חובה",
         )
 
     # MEH-328: timing-equalised. Both branches run validate_password
@@ -706,7 +706,7 @@ def register_producer_oauth(
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
             )
         user_info = _verify_google_token(data.id_token)
         sub_field = "google_id"
@@ -714,7 +714,7 @@ def register_producer_oauth(
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
             )
         user_info = _verify_apple_token(data.id_token)
         sub_field = "apple_id"
@@ -748,7 +748,7 @@ def register_producer_oauth(
             if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
+                    detail="מייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
         else:
             # MEH-375 (YF-4): re-host the Google avatar only on the
@@ -786,7 +786,7 @@ def register_producer_oauth(
     if user.role == "admin":
         raise HTTPException(
             status_code=403,
-            detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+            detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת מייל אחרת.",
         )
 
     # 3. If this account is already a producer, bail out — the producer

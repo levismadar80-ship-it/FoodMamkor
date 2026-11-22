@@ -20,7 +20,6 @@ from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.models import (
     DeliveryWaitlistEntry,
     Favorite,
-    HomeProduct,
     Producer,
     ProducerPageView,
     ProducerWhatsAppClick,
@@ -57,7 +56,6 @@ def producer_analytics(
       - share_visits (MEH-3331): visits through a link the owner shared, same shape
       - follower_count + new_followers_this_week
       - average_rating + total_reviews (from the producers.avg_rating aggregate)
-      - home_products_count (active only, scoped to the owning user)
       - views_by_day: 30-entry zero-filled daily series for the line chart
       - top_cities: top 5 cities the views come from (NULL excluded)
       - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
@@ -100,17 +98,6 @@ def producer_analytics(
     # re-scan producer_reviews on every dashboard hit.
     average_rating = float(producer.avg_rating or 0)
     total_reviews = int(producer.reviews_count or 0)
-
-    # Home products owned by the producer's user account (is_active only)
-    home_products_count = (
-        db.query(func.count(HomeProduct.id))
-        .filter(
-            HomeProduct.user_id == user.id,
-            HomeProduct.is_active.is_(True),
-        )
-        .scalar()
-        or 0
-    )
 
     # Views by day for the last 30 days, zero-filled.
     # MEH-1894: the whole window runs on the Israel calendar day. Three parts
@@ -315,7 +302,6 @@ def producer_analytics(
         "new_followers_this_week": int(new_followers_this_week),
         "average_rating": round(average_rating, 2),
         "total_reviews": total_reviews,
-        "home_products_count": int(home_products_count),
         "views_by_day": views_by_day,
         "top_cities": top_cities,
         "coverage_requests": coverage_requests,

@@ -225,17 +225,19 @@ export function icu(msg: string, count: number): string {
 }
 
 // ── fixtures ────────────────────────────────────────────────────────────────
-// Category names are lib/category-registry.js CATEGORY_STYLES keys — the legend
-// (MapPane.jsx CATEGORY_LEGEND) counts `p.categories[0].name` against exactly
-// those keys, and lib/map-chips.js resolves the «בשר ודגים» / «חלב וגבינות» /
-// «ירקות ופירות» / «לחמים ואפייה» chips by matching these DB names. «דבש» is a
-// legend row NO fixture business carries — the MEH-722 empty-category case.
+// lib/map-chips.js resolves the «בשר ודגים» / «חלב וגבינות» / «ירקות ופירות» /
+// «לחמים ואפייה» chips by matching these DB names. The legend (MapPane.jsx
+// CATEGORY_LEGEND) has one row per GROUP since MEH-3076 and counts each
+// business under the group of `categories[0]` (lib/category-taxonomy.js
+// groupOf). «מזווה» (pantry) is the group NO fixture business carries — the
+// MEH-722 empty-category case.
 export const CAT_MEAT = { id: 1, name: "בשר", requires_license: false };
 const CAT_DAIRY = { id: 2, name: "חלב וגבינות", requires_license: false };
 const CAT_PRODUCE = { id: 3, name: "ירקות ופירות", requires_license: false };
 const CAT_BREAD = { id: 4, name: "לחם ומאפה", requires_license: false };
 export const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_PRODUCE, CAT_BREAD];
-export const EMPTY_LEGEND_NAME = "דבש";
+export const EMPTY_LEGEND_GROUP = "pantry";
+export const MEAT_LEGEND_GROUP = "meat";
 
 // Six businesses, every pair > 31 km apart (60 px at zoom 8 ≈ 31 km at this
 // latitude — leaflet.markercluster's wide radius, MapComponent.jsx), so the
@@ -416,7 +418,9 @@ export const markerOf = (shell: Locator, p: Producer) => shell.locator(`.leaflet
 export const primaryMarkers = (shell: Locator) => shell.locator(".leaflet-marker-icon:not(.mehamakor-marker-secondary):not(.mehamakor-cluster)");
 export const secondaryMarkers = (shell: Locator) => shell.locator(".leaflet-marker-icon.mehamakor-marker-secondary");
 export const mapCanvas = (shell: Locator) => shell.locator(".leaflet-container");
-export const legendRow = (shell: Locator, name: string) => shell.getByTestId("map-legend-row").filter({ hasText: new RegExp(`^${name}$`) });
+// MEH-3076: a legend row is a group, found by its key (data-group) so the
+// helper reads the same in /he and /en.
+export const legendRow = (shell: Locator, group: string) => shell.locator(`[data-testid="map-legend-row"][data-group="${group}"]`);
 export const sheetPanel = (page: Page) => page.locator("#filter-sheet-panel"); // portalled — unscoped
 export const filtersButton = (shell: Locator) => shell.getByTestId("map-filters-button");
 export const serviceChip = (shell: Locator, key: "pickup_points" | "has_delivery") => shell.getByRole("button", { name: AXES[key].label, exact: true });

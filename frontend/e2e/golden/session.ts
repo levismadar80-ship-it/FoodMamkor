@@ -36,6 +36,8 @@ import {
   type Browser,
   type BrowserContext,
 } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
 import { withRateLimitRetry } from "../login-retry";
 import { PERSONAS, type Persona, type PersonaKey } from "./personas";
 
@@ -180,10 +182,23 @@ async function login(key: PersonaKey, baseURL: string): Promise<Entry> {
           ],
         },
       ];
+      // MEH-3629: this explicit state replaces the config's default, so it
+      // carries Vercel's bypass cookie from global-setup (empty when local).
+      state.cookies = [...state.cookies, ...(readBypassCookies() as typeof state.cookies)];
       return browser.newContext({ storageState: state });
     },
   };
   return { session, ctx, at: Date.now() };
+}
+
+/** The cookies global-setup wrote to e2e/.auth/bypass.json; [] if absent. */
+function readBypassCookies(): Array<Record<string, unknown>> {
+  try {
+    const file = path.join(__dirname, "..", ".auth", "bypass.json");
+    return JSON.parse(fs.readFileSync(file, "utf8")).cookies ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**

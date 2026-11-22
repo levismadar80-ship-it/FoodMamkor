@@ -17,11 +17,11 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const map = {
       "producer.detail.contact_card.status_open": "פתוח להזמנות",
-      "producer.detail.contact_card.aria.email": "אימייל",
+      "producer.detail.contact_card.aria.email": "מייל",
       // MEH-1551: email is the sole surviving channel here (whatsapp primary,
       // only contact_email set) → it now renders as the labeled single row,
       // not an aria-labeled circle. Behavior (timer/copy/toast/track) unchanged.
-      "producer.detail.contact_card.single.email": "שלחו אימייל",
+      "producer.detail.contact_card.single.email": "שלחו מייל",
       "producer.detail.contact_card.email_fallback_toast": ADDR_COPIED,
       "producer.detail.contact_card.email_copy_failed_toast": MAIL_COPY_FAILED,
     };
@@ -48,7 +48,7 @@ vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
   return {
     EnvelopeSimple: Stub, FacebookLogo: Stub, Globe: Stub,
-    InstagramLogo: Stub, Phone: Stub, Receipt: Stub, WhatsappLogo: Stub, ChatCircle: Stub, Bell: Stub,
+    InstagramLogo: Stub, Phone: Stub, Receipt: Stub, WhatsappLogo: Stub, ChatCircle: Stub, Megaphone: Stub, UsersThree: Stub,
   };
 });
 // Focus the suite on the icon row — stub the heavy children.

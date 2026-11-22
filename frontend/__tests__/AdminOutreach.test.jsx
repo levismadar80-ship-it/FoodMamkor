@@ -56,7 +56,7 @@ vi.mock("next-intl", () => {
     "admin.outreach.wa_templates.warm_title": "חמותה",
     "admin.outreach.wa_templates.professional_title": "מקצועי",
     "admin.outreach.wa_templates.short_title": "קצר",
-    "admin.outreach.wa_templates.warm_body": "היי {name} 🌿\n{prefillUrl}",
+    "admin.outreach.wa_templates.warm_body": "היי {name},\n{prefillUrl}",
     "admin.outreach.wa_templates.professional_body": "שלום {name}\n{prefillUrl}",
     "admin.outreach.wa_templates.short_body": "{name}, {prefillUrl}",
     "admin.outreach.empty": 'אין לידים להצגה. לחצי על "+ ליד חדש" כדי להתחיל.',
@@ -81,7 +81,7 @@ vi.mock("next-intl", () => {
     "admin.outreach.badge_community": "המלצת קהילה",
     "admin.outreach.thank_suggester": "שליחת תודה",
     // MEH-2633 Sapir 04/11 — the four disabled reasons.
-    "admin.outreach.thank_disabled.no_email": "לא השאירו אימייל",
+    "admin.outreach.thank_disabled.no_email": "לא השאירו מייל",
     "admin.outreach.thank_disabled.no_update_request": "לא ביקשו עדכון",
     "admin.outreach.thank_disabled.already_sent": "התודה נשלחה ב-{date}",
     "admin.outreach.thank_disabled.not_registered":
@@ -454,7 +454,7 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
     // fails two rules at once. (An earlier version of this comment claimed
     // these four covered the order. They did not.)
     const REASONS = [
-      ["no suggester email", { suggested_by_email: null }, "לא השאירו אימייל"],
+      ["no suggester email", { suggested_by_email: null }, "לא השאירו מייל"],
       ["no opt-in", { suggester_wants_update: false }, "לא ביקשו עדכון"],
       ["not registered yet", { status: "contacted" }, "אפשר לשלוח תודה אחרי שבית העסק נרשם"],
     ];
@@ -484,7 +484,7 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
 
     it("a lead failing TWO rules names the one the server would name first", async () => {
       // No email AND no opt-in. admin_outreach.thank_suggester checks the
-      // email first, so "לא השאירו אימייל" is the only correct answer; a
+      // email first, so "לא השאירו מייל" is the only correct answer; a
       // reordered thankBlockedReason reds exactly here and nowhere else.
       listRef.current = {
         data: [{ ...communityLead, suggested_by_email: null, suggester_wants_update: false }],
@@ -492,7 +492,7 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
       render(<AdminOutreachPage />);
       await screen.findByText("מעדניית הזיתים");
       const reason = screen.getByTestId("thank-reason-lead-2");
-      expect(reason).toHaveTextContent("לא השאירו אימייל");
+      expect(reason).toHaveTextContent("לא השאירו מייל");
       expect(reason).not.toHaveTextContent("לא ביקשו עדכון");
     });
 

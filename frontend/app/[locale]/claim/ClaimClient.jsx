@@ -18,6 +18,8 @@ import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+// MEH-3662: one consent box on every handover page, one component for it.
+import OwnerInviteConsents from "../owner-invite/OwnerInviteConsents";
 
 /**
  * Module:   ClaimClient
@@ -33,8 +35,9 @@ import InlineMessage from "@/components/ui/InlineMessage";
  * Related:  app/[locale]/register/producer/RegisterProducerClient.jsx (the
  *           declaration boxes and their strings, reused verbatim) ·
  *           components/admin/ClaimLinkPanel.jsx (where the link is minted).
- * History:  MEH-2324. MEH-3122: «שלחו לי קישור חדש» on a link that is no
- *           longer active (POST /producer-claim/new-link-request — the admin
+ * History:  MEH-2324. MEH-3662: the terms and declaration boxes became one
+ *           (OwnerInviteConsents, shared with /owner-invite). MEH-3122:
+ *           «שלחו לי קישור חדש» on a link that is no longer active (POST /producer-claim/new-link-request — the admin
  *           is told and sends the link; nothing is shown or sent from here).
  *
  * Token flow: /claim/<token> stashes the token in this tab and replaces the
@@ -74,8 +77,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const [deadToken, setDeadToken] = useState(null);
   const [newLink, setNewLink] = useState("idle"); // idle | sending | sent | failed
 
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
+  // MEH-3662: one box carries both the terms and the declaration.
+  const [consented, setConsented] = useState(false);
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [validation, setValidation] = useState(null);
   const [submitError, setSubmitError] = useState(null);
@@ -150,8 +153,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const submit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
-    if (!agreedToTerms) return setValidation(tReg("validation.terms_required"));
-    if (!declarationConfirmed) return setValidation(tReg("validation.declaration_required"));
+    if (!consented) return setValidation(tReg("validation.terms_required"));
     if (farmerRequired && !farmerConfirmed) return setValidation(tReg("validation.farmer_required"));
     setValidation(null);
     setSubmitting(true);
@@ -160,8 +162,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
         token,
         // Same fold as registration: the grower line is part of the one
         // licensing declaration the server stamps (MEH-759 Chunk C).
-        declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
-        terms_accepted: agreedToTerms,
+        declaration_accepted: consented && (!farmerRequired || farmerConfirmed),
+        terms_accepted: consented,
         // MEH-3137: and on its own, so the server records it apart.
         ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
@@ -331,44 +333,14 @@ export default function ClaimClient({ tokenFromPath = null }) {
             </button>
           </p>
 
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="claim-terms"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-            />
-            <span className="leading-relaxed text-fg-muted">
-              {tReg("terms.intro")}{" "}
-              <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.tos_link")}</Link>{" "}
-              {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.privacy_link")}</Link>
-            </span>
-          </label>
-
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="claim-declaration"
-              checked={declarationConfirmed}
-              onChange={(e) => setDeclarationConfirmed(e.target.checked)}
-              className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-            />
-            <span className="leading-relaxed text-fg-muted">{tReg("terms.declaration")}</span>
-          </label>
-
-          {farmerRequired && (
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                data-testid="claim-farmer"
-                checked={farmerConfirmed}
-                onChange={(e) => setFarmerConfirmed(e.target.checked)}
-                className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-              />
-              <span className="leading-relaxed text-fg-muted">{tReg("terms.farmer_declaration")}</span>
-            </label>
-          )}
+          <OwnerInviteConsents
+            testIdPrefix="claim"
+            consent={consented}
+            onConsent={setConsented}
+            farmerRequired={farmerRequired}
+            farmer={farmerConfirmed}
+            onFarmer={setFarmerConfirmed}
+          />
 
           {(validation || submitError) && (
             <InlineMessage data-testid="claim-error">

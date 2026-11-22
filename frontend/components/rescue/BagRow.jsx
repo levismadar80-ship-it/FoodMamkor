@@ -2,13 +2,14 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { rescueBagPath } from "@/lib/producer-path";
+import { rescueOfferPath } from "@/lib/producer-path";
 import { useTranslations } from "next-intl";
 import { Basket } from "@phosphor-icons/react";
 
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { israelTime, shekels, walkingMinutes } from "@/lib/rescue";
+import { israelTime, shekels, walkingMinutes, worthAgorot } from "@/lib/rescue";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 // "עוד שעה" lights up when the pickup window opens within this many ms.
 const SOON_MS = 3_600_000;
@@ -22,26 +23,19 @@ function startsSoon(iso, now = Date.now()) {
   return ahead > 0 && ahead <= SOON_MS;
 }
 
-/** The struck-through "worth" figure: the business's own LOW estimate, and
- *  only when it is actually above the price — never a made-up discount. */
-function worthAgorot(offer) {
-  const v = offer?.value_min_agorot;
-  if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
-  return v > offer.price_agorot ? v : null;
-}
-
 /**
  * Module:   BagRow
  * Purpose:  One rescue bag as a row in the events-list language (#3976):
  *           a pickup-time block on the start side with the green rule, then
  *           who, what is usually inside, how much is left, price against the
  *           declared worth, and the business photo on the end side.
- * Does NOT: reserve anything. The row is a link to the business page, whose
- *           RescueSection owns the CTA — one reserve button in the product,
- *           not two.
+ * Does NOT: reserve anything. The row is a link to the bag's own page
+ *           (MEH-3586, the Too Good To Go pattern), which carries the details
+ *           and the reserve button.
  * Related:  components/rescue/RescueList.jsx and RescueHomeModule.jsx (both
  *           render this), lib/rescue.js (every unit it formats)
  * History:  MEH-2648 (creation) · rescue-home redesign (events-row language)
+ *           · MEH-3586 (opens the bag page, was the business page)
  *
  * @param {{ offer: import("@/types/entities").RescueOffer, headingTag?: "h2" | "h3" }} props
  */
@@ -67,7 +61,7 @@ export default function BagRow({ offer, headingTag = "h3" }) {
 
   return (
     <Link
-      href={rescueBagPath(producer)}
+      href={rescueOfferPath(offer) || "/rescue"}
       data-testid="rescue-bag-row"
       className="relative grid grid-cols-[64px_minmax(0,1fr)_auto] md:grid-cols-[88px_minmax(0,1fr)_auto] border-b border-border transition hover:bg-surface-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
@@ -122,9 +116,9 @@ export default function BagRow({ offer, headingTag = "h3" }) {
               {worth !== null && (
                 // aria-hidden: read aloud as two bare prices it says nothing
                 // useful; the price actually paid is the one announced.
-                <s dir="ltr" className="text-xs text-fg-muted numeric" aria-hidden="true" data-testid="rescue-row-worth">
+                <StruckPrice className="text-xs numeric" testId="rescue-row-worth">
                   {t("row.price", { price: worth })}
-                </s>
+                </StruckPrice>
               )}
               <span dir="ltr" className="font-english italic font-semibold text-primary numeric" data-testid="rescue-row-price">
                 {t("row.price", { price })}

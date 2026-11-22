@@ -206,9 +206,11 @@ class TestSendEmailHeaders:
         }
 
     def test_no_headers_leaves_the_payload_unchanged(self, resend_box):
+        # MEH-3587: a text send now carries the layout html, and every html
+        # send carries the MEH-2151 CTE header. No caller header is added.
         email_module.send_email("owner@mehamakor-mail.co.il", "s", "b")
         assert len(resend_box) == 1
-        assert "headers" not in resend_box[0]
+        assert resend_box[0]["headers"] == {"Content-Transfer-Encoding": "base64"}
 
     def test_send_email_result_payload_unchanged(self, resend_box):
         assert email_module.send_email_result(

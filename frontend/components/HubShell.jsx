@@ -57,8 +57,9 @@ const HERO_SCRIM =
  * @param {string} [props.image]       optimized hero URL; default = the market photo
  * @param {function} [props.onSelect]  passed through to ListingHubTabs
  * @param {React.ReactNode} [props.action] passed through to ListingHubTabs
+ * @param {{ groupBuys?: number | null, rescue?: number | null }} [props.serverSupply] passed through to ListingHubTabs (MEH-3076)
  */
-export default function HubShell({ active, eyebrow, title, subtitle, image = HUB_HERO_IMAGE, onSelect = null, action = null }) {
+export default function HubShell({ active, eyebrow, title, subtitle, image = HUB_HERO_IMAGE, onSelect = null, action = null, serverSupply = null }) {
   return (
     <>
       {/* Full-bleed Ken Burns hero; honours prefers-reduced-motion through the
@@ -94,7 +95,7 @@ export default function HubShell({ active, eyebrow, title, subtitle, image = HUB
         </div>
       </section>
 
-      <ListingHubTabs active={active} onSelect={onSelect} action={action} />
+      <ListingHubTabs active={active} onSelect={onSelect} action={action} serverSupply={serverSupply} />
     </>
   );
 }

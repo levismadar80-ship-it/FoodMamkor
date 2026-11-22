@@ -13,6 +13,7 @@
 * `frontend/lib/seo.js` — ה-structured data.
 * `frontend/lib/og-site-image.js` — ‏`siteOgImageUrl(locale)`: תמונת השיתוף של האתר (JPEG קל, אנגלית ב-/en). דף שכותב `openGraph` משלו מאבד את התמונה של ה-layout, ולכן נותן אותה בעצמו, מכאן (MEH-3590).
 * `frontend/lib/guide-metadata.js` — ‏`buildGuideMetadata`: ה-metadata של שלושת המדריכים לבתי עסק, במקום שלושה עותקים (MEH-3590).
+* `frontend/lib/legal-page-metadata.js` — ‏`buildLegalPageMetadata`: ה-metadata של דפי הפרטיות, התנאים והצהרת הנגישות, במקום שלושה עותקים (MEH-3623).
 * `frontend/components/StoryCardCanvas.jsx` · `frontend/components/ReviewCardCanvas.jsx` — כרטיסי שיתוף.
 * `frontend/components/producer/FeedPostCanvas.jsx` · `frontend/components/producer/feed-post-draw.js` · `frontend/lib/share-post.js` — פוסט 4:5 מוכן לשיתוף, לפי רגע (השבוע · מוצר חדש · חג), עם קישור מתויג `?from=share` (MEH-3330).
 * `frontend/components/producer/LinkEverywhere.jsx` — «הקישור שלך בכל מקום»: ארבעה מקומות לקישור, העתקה ו«עשיתי» (localStorage). `frontend/components/producer/ShareVisitsLine.jsx` — שורת «כניסות מהשיתופים שלך» בתובנות, מ-`share_visits` (MEH-3331).
