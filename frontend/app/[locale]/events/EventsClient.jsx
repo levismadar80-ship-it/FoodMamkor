@@ -430,17 +430,21 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
   // row this tab last drew stays as it was (a city search does not flicker);
   // with no earlier row for this tab, only «הכל» and the picked chips — the
   // way back — are drawn, so the row grows once rather than shrinking.
-  const lastChipKeys = useRef(/** @type {{ tab: string | null, keys: Set<string> }} */ ({ tab: null, keys: new Set() }));
+  // Held in state, not a ref, so render never reads a ref (react-hooks/refs):
+  // the documented "adjust state while rendering" pattern, guarded by a value
+  // compare so it settles after one extra render.
+  const [lastChipKeys, setLastChipKeys] = useState(/** @type {{ tab: string | null, keys: string[] }} */ ({ tab: null, keys: [] }));
   const settled = !busy && !loadError;
-  useEffect(() => {
-    if (settled) lastChipKeys.current = { tab, keys: new Set(settledChips.map((c) => c.key)) };
-  });
+  const settledKeys = settledChips.map((c) => c.key);
+  if (settled && (lastChipKeys.tab !== tab || lastChipKeys.keys.join("\u0000") !== settledKeys.join("\u0000"))) {
+    setLastChipKeys({ tab, keys: settledKeys });
+  }
   const gatedChips = settled || loadError
     ? settledChips
     : chips.filter((c) =>
         c.key === "all" ||
         activeChipKeys.has(c.key) ||
-        (lastChipKeys.current.tab === tab && lastChipKeys.current.keys.has(c.key)),
+        (lastChipKeys.tab === tab && lastChipKeys.keys.includes(c.key)),
       );
   // «הכל» alone filters nothing — then the row is not drawn at all.
   const showChipRow = gatedChips.some((c) => c.key !== "all");
