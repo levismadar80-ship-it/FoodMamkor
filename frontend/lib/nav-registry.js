@@ -318,6 +318,20 @@ export const NAV_ITEMS = Object.freeze([
       "the buyer's order history in the account menu the same way.",
   },
   {
+    id: "myGroupBuys",
+    kind: "link",
+    href: "/my-group-buys",
+    surfaces: {
+      headerMenu: { labelKey: "my_group_buys.title", audience: "auth" },
+      accountSheet: { labelKey: "my_group_buys.title", audience: "auth" },
+    },
+    note:
+      "MEH-3609: signed-in only, like `favorites`, with no data gate: a gate " +
+      "would cost a request on every page load (testing.md, MEH-2972). " +
+      "Groupon («My Groupons») and Kickstarter («Backed projects») keep the " +
+      "list in the account menu the same way.",
+  },
+  {
     id: "settings",
     kind: "link",
     href: "/settings",

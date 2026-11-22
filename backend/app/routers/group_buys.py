@@ -6,7 +6,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from sqlalchemy import func
 from sqlalchemy.orm import Query as OrmQuery
 from sqlalchemy.orm import selectinload, Session
 
@@ -39,7 +38,17 @@ from app.services.group_buy_notifications import (
     send_funded_notifications,
 )
 from app.services import indexnow  # MEH-2852
+from app.services import group_buy_capacity as capacity  # MEH-3592
 from app.services.producer_listing import is_business
+from app.services.group_buy_pickup_text import (
+    is_delivery_only,
+    pickup_lines,
+)  # MEH-3597
+from app.services.group_buy_pickup_place import (  # MEH-3610
+    location_out,
+    own_location,
+    place_line,
+)
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -74,17 +83,30 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         "fulfillment_note": gb.fulfillment_note,
         "pickup_note": gb.pickup_note,
         "delivery_note": gb.delivery_note,
+        "pickup_starts_at": gb.pickup_starts_at,  # MEH-3597
+        "pickup_ends_at": gb.pickup_ends_at,
+        "allergens": gb.allergens,  # MEH-3610
+        # A delivery-only group has no pickup place, even if one was saved.
+        "pickup_location": None
+        if _delivery_only(gb)
+        else location_out(gb.pickup_location),
         "status": gb.status,
         "commits_count": commits_count,
+        # MEH-3592: caps beyond people. units_left is a number, never a roster.
+        "max_units": gb.max_units,
+        "joins_closed": gb.joins_closed_at is not None,
+        "units_left": capacity.units_left(gb, sum(c.quantity or 0 for c in gb.commits)),
         "created_at": gb.created_at,
     }
     if current_user:
         commit = next((c for c in gb.commits if c.user_id == current_user.id), None)
         base["user_committed"] = commit is not None
         base["user_commit"] = commit
+        base["user_waitlisted"] = capacity.is_waitlisted(gb, current_user.id)
     else:
         base["user_committed"] = False
         base["user_commit"] = None
+        base["user_waitlisted"] = False
     return base
 
 
@@ -146,7 +168,11 @@ def list_group_buys(
     # shares that query and only counts rows, so loading commits there would be
     # waste in the other direction.
     items = (
-        q.options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        q.options(
+            selectinload(GroupBuy.commits),
+            selectinload(GroupBuy.producer),
+            selectinload(GroupBuy.pickup_location),  # MEH-3610: _enrich reads it
+        )
         .order_by(GroupBuy.deadline.asc())
         .all()
     )
@@ -202,7 +228,11 @@ def list_my_group_buys(
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     items = (
         db.query(GroupBuy)
-        .options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .options(
+            selectinload(GroupBuy.commits),
+            selectinload(GroupBuy.producer),
+            selectinload(GroupBuy.pickup_location),  # MEH-3610
+        )
         .filter(GroupBuy.producer_id == current_user.producer_id)
         .order_by(GroupBuy.created_at.desc())
         .all()
@@ -291,6 +321,23 @@ def _maybe_notify_funded(
         str(gb.producer_id),
         # MEH-2952: a test business's group buy mails nobody.
         test_cause=bool(gb.producer and gb.producer.is_test),
+        pickup=_pickup_text(gb),  # MEH-3597
+    )
+
+
+def _delivery_only(gb: GroupBuy) -> bool:
+    return is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note)  # type: ignore[arg-type]
+
+
+def _pickup_text(gb: GroupBuy) -> str:
+    # MEH-3610: the branch first, then the time and the notes. A
+    # delivery-only group names no branch (same rule as the page).
+    place = "" if _delivery_only(gb) else place_line(gb.pickup_location)
+    return place + pickup_lines(
+        gb.pickup_starts_at,  # type: ignore[arg-type]
+        gb.pickup_ends_at,  # type: ignore[arg-type]
+        gb.pickup_note,  # type: ignore[arg-type]
+        gb.delivery_note,  # type: ignore[arg-type]
     )
 
 
@@ -312,6 +359,7 @@ def _notify_late_joiner(
         str(gb.id),
         str(gb.producer_id),
         test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        pickup=_pickup_text(gb),  # MEH-3597
         late_joiner=True,
     )
 
@@ -377,13 +425,8 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
     # relationship and can be stale within the serialized critical section.
-    current_count = (
-        db.query(func.count(GroupBuyCommit.id))
-        .filter(GroupBuyCommit.group_buy_id == group_buy_id)
-        .scalar()
-    )
-    if gb.max_participants and current_count >= gb.max_participants:
-        raise HTTPException(status_code=400, detail="קבוצת הרכישה מלאה")
+    # MEH-3592: people, units and the business's stop switch, in one place.
+    current_count, current_units = capacity.counts(db, group_buy_id)
 
     existing = (
         db.query(GroupBuyCommit)
@@ -395,6 +438,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     )
     if existing:
         raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
+    capacity.refuse_unless_room(gb, current_count, current_units, 1, data.quantity)
+    # MEH-3592: a waitlisted visitor who joins leaves the waitlist.
+    capacity.drop_from_waitlist(db, group_buy_id, current_user.id)
 
     # MEH-1651: `phone` is no longer collected or written. Nothing ever read
     # the column, and after the funded notification the participant is reached
@@ -415,7 +461,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     new_count = current_count + 1
     if was_funded:
         _notify_late_joiner(gb, current_user, background_tasks)
+        capacity.tell_owner_of_late_join(db, gb, background_tasks)  # MEH-3592
     elif new_count >= gb.min_participants:
+        # MEH-3311 decided a flap back over the goal is never the business's
+        # mail; MEH-3592 keeps that (its late-join mail is for funded only).
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
     else:
@@ -461,6 +510,11 @@ def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 
     if not commit:
         raise HTTPException(status_code=404, detail="לא נמצאה הצטרפות")
 
+    # MEH-3592: in the last 24 h a leave may not take a funded group below
+    # its goal (Kickstarter's rule).
+    people, _units = capacity.counts(db, group_buy_id)
+    capacity.refuse_last_call_drop(gb, people - 1)
+
     db.delete(commit)
     db.refresh(gb)
     # Revert to open if we drop below min_participants
@@ -473,6 +527,8 @@ def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 
         #        participant. The latch is deliberately one-way.
         # MEH-3311: those who stayed are told once (its own one-way stamp).
         notify_below_goal(db, gb, background_tasks, current_user.id)
+    db.flush()
+    capacity.offer_freed_place(db, gb, background_tasks)  # MEH-3592
     db.commit()
     return {"detail": "ההצטרפות בוטלה"}
 
@@ -534,11 +590,16 @@ def create_group_buy(
         price_per_unit_group=data.price_per_unit_group,
         min_participants=data.min_participants,
         max_participants=data.max_participants,
+        max_units=data.max_units,  # MEH-3592
         deadline=data.deadline,
         city=data.city or producer.city,
         fulfillment_note=data.fulfillment_note,
         pickup_note=data.pickup_note,
         delivery_note=data.delivery_note,
+        pickup_starts_at=data.pickup_starts_at,  # MEH-3597
+        pickup_ends_at=data.pickup_ends_at,
+        allergens=data.allergens,  # MEH-3610
+        pickup_location_id=own_location(db, producer.id, data.pickup_location_id),
         status="open",
     )
     db.add(gb)
