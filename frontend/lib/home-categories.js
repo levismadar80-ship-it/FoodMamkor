@@ -34,20 +34,23 @@ const unsplash = (id) =>
 // MEH-2441 (Sapir 27/10): the first two are the large tiles. ירקות = the
 // growers, the core of "from the source"; לחמים ואפייה = the largest share of
 // the Wave 1 leads (about a third). Then the rest in the previous order.
+// MEH-3076: `slug` = the DB category's slug (backend category_slug.py
+// NAME_TO_SLUG), so the tile's shown name comes from messages
+// `category_names.<slug>` (lib/category-label.js) on every locale.
 export const CATEGORY_CARDS = [
-  { key: "veg",    name: "ירקות",            image: unsplash("photo-1575218823251-f9d243b6f720") },
-  { key: "bread",  name: "לחמים ואפייה",     image: unsplash("photo-1509440159596-0249088772ff") },
-  { key: "meat",   name: "בשר",              image: unsplash("photo-1613454320437-0c228c8b1723") },
-  { key: "dairy",  name: "חלב וגבינות",      image: unsplash("photo-1667645895855-2d3f7000a7be") },
-  { key: "oil",    name: "שמנים",            image: unsplash("photo-1474979266404-7eaacbcd87c5") },
-  { key: "care",   name: "סבונים טבעיים",    image: unsplash("photo-1614806687007-2215a9db3b1c") },
-  { key: "fish",   name: "דגים",             image: unsplash("photo-1500732917506-30dc38b6477f") },
-  { key: "fruit",  name: "פירות",            image: unsplash("photo-1610832958506-aa56368176cf") },
-  { key: "drinks", name: "יין, בירה ומשקאות", image: unsplash("photo-1556442281-77c90134c61f") },
+  { key: "veg",   slug: "veg",    name: "ירקות",            image: unsplash("photo-1575218823251-f9d243b6f720") },
+  { key: "bread", slug: "bread",  name: "לחמים ואפייה",     image: unsplash("photo-1509440159596-0249088772ff") },
+  { key: "meat",  slug: "meat",   name: "בשר",              image: unsplash("photo-1613454320437-0c228c8b1723") },
+  { key: "dairy", slug: "dairy",  name: "חלב וגבינות",      image: unsplash("photo-1667645895855-2d3f7000a7be") },
+  { key: "oil",   slug: "oil",    name: "שמנים",            image: unsplash("photo-1474979266404-7eaacbcd87c5") },
+  { key: "care",  slug: "care",   name: "סבונים טבעיים",    image: unsplash("photo-1614806687007-2215a9db3b1c") },
+  { key: "fish",  slug: "fish",   name: "דגים",             image: unsplash("photo-1500732917506-30dc38b6477f") },
+  { key: "fruit", slug: "fruit",  name: "פירות",            image: unsplash("photo-1610832958506-aa56368176cf") },
+  { key: "drinks", slug: "drinks", name: "יין, בירה ומשקאות", image: unsplash("photo-1556442281-77c90134c61f") },
   // MEH-1098 (A1): DB category renamed → "קוסמטיקה טבעית". MEH-1104 (contract
   // phase, ADR-007): production rename confirmed, transitional matchAliases
   // removed — the card now resolves on the new DB value only.
-  { key: "cream",  name: "קוסמטיקה טבעית",   image: unsplash("photo-1612817288484-6f916006741a") },
+  { key: "cream", slug: "cosmetics",  name: "קוסמטיקה טבעית",   image: unsplash("photo-1612817288484-6f916006741a") },
 ];
 
 // Exact-name resolution — category ids differ per environment

@@ -204,6 +204,10 @@ def test_scheduler_job_failures_are_captured(
         "app.services.pending_nudge.send_pending_nudges",
         lambda _db: {"sent": 0, "stamped_nothing_missing": 0},
     )
+    # MEH-3699: the Sunday signup fill-rate check queries the DB on Sundays
+    # only; stubbed for the same reason as the nudge pass above, or this test
+    # picks up a second capture from the _FakeSession one day a week.
+    monkeypatch.setattr("app.services.signup_fill_digest.check_signup_fill", lambda _db: None)
     # Keep the test off the database: the handler opens its own session.
     monkeypatch.setattr("app.database.SessionLocal", lambda: _FakeSession())
 

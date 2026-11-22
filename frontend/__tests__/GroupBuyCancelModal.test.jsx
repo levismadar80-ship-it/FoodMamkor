@@ -40,7 +40,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 
 // A committed, still-open group buy → the cancel CTA renders.
 const COMMITTED_GB = {

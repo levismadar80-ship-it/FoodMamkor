@@ -16,6 +16,7 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 
 import ChatWidget from "@/components/ChatWidget";
+import CookieBanner from "@/components/CookieBanner";
 
 // A controllable IntersectionObserver: the test decides what intersects.
 let observers = [];
@@ -114,6 +115,30 @@ describe("data-chat-hide (mobile)", () => {
     intersect(screen.getByTestId("page-form"), true);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByTestId("chat-launcher").hasAttribute("data-stepped-aside")).toBe(false);
+  });
+});
+
+describe("the cookie banner (MEH-3076)", () => {
+  it("while the banner is up the phone launcher steps aside; after a choice it is back", async () => {
+    mockMatchMedia(false);
+    window.ResizeObserver = class { observe() {} disconnect() {} };
+    localStorage.removeItem("cookieConsent");
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <CookieBanner />
+        <ChatWidget />
+      </NextIntlClientProvider>,
+    );
+    const launcher = screen.getByTestId("chat-launcher");
+    const banner = screen.getByTestId("cookie-banner");
+    intersect(banner, true);
+    expect(launcher.getAttribute("data-stepped-aside")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: he.modals.cookie_banner.essential_only }));
+    expect(screen.queryByTestId("cookie-banner")).toBeNull();
+    await act(async () => {}); // the launcher re-scans on the DOM change
+    expect(launcher.hasAttribute("data-stepped-aside")).toBe(false);
+    localStorage.removeItem("cookieConsent");
   });
 });
 

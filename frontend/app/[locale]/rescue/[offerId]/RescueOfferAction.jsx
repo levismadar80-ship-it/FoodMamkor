@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
+import AddToCalendarButton from "@/components/ui/AddToCalendarButton";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
@@ -12,6 +13,7 @@ import { StickyRegistrationBar, useInView } from "@/components/RegistrationOverl
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { israelTime, shekels, worthAgorot } from "@/lib/rescue";
 import StruckPrice from "@/components/ui/StruckPrice";
 
@@ -30,7 +32,9 @@ const STATE_KEY = {
  * Does NOT: hold reservation state (lib/useRescueReservation.js) or invent a
  *           discount: the worth is the business's own low estimate, shown
  *           only when it is above the price (worthAgorot).
- * History:  MEH-3586 (creation)
+ *           A reserved bag also gets «הוספה ליומן» for the pickup window
+ *           (the shared AddToCalendarButton, MEH-3616).
+ * History:  MEH-3586 (creation) · MEH-3570 (not-a-party line under the button) · MEH-3636 (add to calendar)
  *
  * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/useRescueReservation").default> }} props
  */
@@ -48,6 +52,20 @@ export default function RescueOfferAction({ offer, reservation }) {
     return (
       <div className="space-y-4" data-testid="rescue-offer-reserved">
         <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+        {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
+          <AddToCalendarButton
+            testId="rescue-offer-add-to-calendar"
+            slot={{
+              uid: `bag-${order.id}`,
+              start: offer.pickup_start,
+              end: offer.pickup_end,
+              title: t("offer_page.calendar_title", { business_name: offer.producer?.name ?? "" }),
+              location: [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null,
+              // The bag page is public, but the pickup code is not: no URL,
+              // so the calendar entry never carries anything secret.
+            }}
+          />
+        )}
         <RescueErrorLine errorKey={errorKey} />
         {/* The review only once the business marked it handed (409 before). */}
         {order.status === "handed" && !reviewed && <RescueReview orderId={order.id} onDone={() => setReviewed(true)} />}
@@ -72,6 +90,7 @@ export default function RescueOfferAction({ offer, reservation }) {
     <div className="bg-surface border border-border rounded-lg p-4 grid gap-3 lg:shadow-lg" data-testid="rescue-offer-action">
       <LoginPromptModal
         open={loginOpen}
+        reason="rescue"
         onClose={() => setLoginOpen(false)}
         title={t("login_prompt_title")}
         message={t("login_prompt_message")}
@@ -86,6 +105,7 @@ export default function RescueOfferAction({ offer, reservation }) {
         <>
           <RescueErrorLine errorKey={errorKey} />
           <div ref={buttonRef}>{button(t("section.cta"), "rescue-reserve")}</div>
+          <NotAPartyLine name={offer.producer?.name} testId="rescue-not-a-party" />
           <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
             {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
           </p>

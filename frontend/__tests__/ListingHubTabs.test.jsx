@@ -94,7 +94,30 @@ describe("ListingHubTabs — which tabs exist (MEH-3125: two groups)", () => {
           .map((el) => el.getAttribute("data-tab-value")),
       ).toEqual([active]);
     });
+    // MEH-3076 (Sapir 21/11, «להחליט בשרת»): with the sibling's supply read
+    // on the server, the row is decided before paint.
+    it(`/${active}, server read ${other} = 0: no row at all (a lone tab is not drawn)`, () => {
+      render(<ListingHubTabs active={active} serverSupply={{ [other]: 0 }} />);
+      expect(screen.queryByTestId("listing-hub-tabs")).toBeNull();
+      expect(screen.queryByRole("tablist")).toBeNull();
+    });
+
+    it(`/${active}, server read ${other} = 2: both tabs on the first render, before the client gate`, () => {
+      expect(gates[other], "control: the client gate is still off").toBe(false);
+      render(<ListingHubTabs active={active} serverSupply={{ [other]: 2 }} />);
+      expect(values()).toEqual(["groupBuys", "rescue"]);
+    });
+
+    it(`/${active}, server read unknown (null): the row stays, as before`, () => {
+      render(<ListingHubTabs active={active} serverSupply={{ [other]: null }} />);
+      expect(values()).toEqual([active]);
+    });
   }
+
+  it("a page action keeps the row even when the server says the sibling is empty", () => {
+    render(<ListingHubTabs active="groupBuys" serverSupply={{ rescue: 0 }} action={<a href="/x">פעולה</a>} />);
+    expect(screen.getByRole("tablist")).toBeTruthy();
+  });
 
   it("a gated tab is ABSENT, never rendered-and-disabled", () => {
     gates.rescue = true;

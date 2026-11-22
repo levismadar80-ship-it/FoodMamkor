@@ -162,6 +162,9 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
       </button>
       <LoginPromptModal
         open={showLoginModal}
+        reason="save"
+        // MEH-3661: signed in inside the modal — keep the intent, it saves itself.
+        onSignedIn={() => setShowLoginModal(false)}
         onClose={() => {
           clearPendingAction();
           setShowLoginModal(false);

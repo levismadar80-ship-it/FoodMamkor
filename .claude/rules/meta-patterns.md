@@ -18,25 +18,6 @@ against the real source.
 
 Proven 4x in 2026-05 (PR #808, #812, #815, MEH-689).
 
-## 2. Two-stage CC flow (read-only Phase 0, then execute)
-
-Every non-trivial task splits into:
-- Stage 1 — Phase 0 READ ONLY (grep/jq/cat/ls only, zero edits)
-- Stage 2 — Execute after orchestrator synthesizes findings + Sapir locks
-
-Apply: every CC task >1 file or >20 LOC. Trivial single-file typo can skip.
-
-Proven 2026-05: MEH-686, MEH-689, MEH-678.
-
-## 3. Large payload splitting (>30KB or 4+ create_file → sub-stages)
-
-When CC prompt inline payload crosses ~30KB OR contains 4+ create_file ops,
-split Stage 2 into sub-stages (2A1/2A2/2A3) with wait gates + summary at each.
-
-Default threshold: 4 create_file ops OR >30KB inline content.
-
-Proven MEH-689 (2026-05-24): split prevented context overrun across 9 templates.
-
 ## 4. Explicit task spec overrides generic hooks
 
 When generic repo-cleanliness Stop hook conflicts with explicit task
@@ -63,7 +44,8 @@ backfills, label sync, status edits.
 
 A pattern qualifies for this file when:
 1. Observed ≥2 times across sessions
-2. Workflow/judgment rule (not mechanical — those go to hooks)
+2. Workflow/judgment rule that no test, guard or hook can hold (workflow.md
+   Bug Protocol step 3)
 3. Expressible as IF-THEN
 
 Source from userMemories or HANDOFF. Reference proven instances (MEH-XXX

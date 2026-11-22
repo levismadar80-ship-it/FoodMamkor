@@ -46,7 +46,7 @@ def test_system_prompt_instruction_is_feminine():
 def test_system_prompt_knows_market_stands_and_events():
     # MEH-2457: the fixed knowledge covers market stands (producer_locations
     # kind=market_stand) and the /events page. Headings verbatim from the card.
-    assert "אני מוכר/ת בשווקים או בדוכנים — איך מוסיפים את זה?" in chat.SYSTEM_PROMPT
+    assert "אנחנו מוכרים בשווקים או בדוכנים — איך מוסיפים את זה?" in chat.SYSTEM_PROMPT
     assert "איפה רואים שווקים ואירועים?" in chat.SYSTEM_PROMPT
     assert "«דוכן שוק»" in chat.SYSTEM_PROMPT
 

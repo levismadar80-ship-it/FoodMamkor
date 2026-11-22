@@ -99,6 +99,9 @@ export default function CookieBanner() {
       className="cookie-banner vv-pin print:hidden fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-cookie-banner bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="region"
       data-testid="cookie-banner"
+      // MEH-3076: while the banner is up, the phone chat launcher steps aside
+      // (the MEH-2835 mechanism) instead of stacking over the page above it.
+      data-chat-hide=""
       data-prehydration={mounted ? undefined : ""}
       aria-label={t("aria_label")}
     >

@@ -49,6 +49,8 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
   // MEH-1916: the CTA now renders one icon per primary_contact_method.
@@ -204,6 +206,11 @@ describe("ProductSheet — price follows MEH-1305 F verbatim", () => {
     expect(span).not.toBeNull();
     expect(span.textContent).toContain("35");
     expect(span.textContent).toContain("50");
+  });
+
+  it("MEH-3076: a free-text price that is only a number shows with the shekel sign", () => {
+    renderSheet({ ...baseProduct, price_min: null, price_range: "380" });
+    expect(screen.getByTestId("product-sheet-price")).toHaveTextContent("380₪");
   });
 
   it("free-text price_range renders in the natural direction — never dir=ltr", () => {

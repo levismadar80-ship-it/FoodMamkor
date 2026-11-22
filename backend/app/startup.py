@@ -26,6 +26,8 @@ from app.services.job_heartbeat import (
     WEEKLY_OWNER_SUMMARY_TZ,
     REGISTRATION_REMINDER_CRON,
     REGISTRATION_REMINDER_TZ,
+    GROUP_BUY_PICKUP_REMINDER_CRON,
+    GROUP_BUY_PICKUP_REMINDER_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -297,6 +299,7 @@ def _run_followup_job() -> None:
     from app.services.pending_nudge import send_pending_nudges
     from app.services.page_freshness import send_freshness_emails
     from app.services.page_freshness_digest import send_stale_digest
+    from app.services.signup_fill_digest import check_signup_fill
 
     db = SessionLocal()
     try:
@@ -355,6 +358,14 @@ def _run_followup_job() -> None:
             db.rollback()
             capture_background_exception(exc, task="page_freshness_digest")
             log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
+        # MEH-3699, Sunday only: the share of new businesses with a referral
+        # source and a location; a zero share is a Sentry warning, not an email.
+        try:
+            check_signup_fill(db)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="signup_fill_digest")
+            log.error("[SIGNUP-FILL] digest crashed", exc_info=True)
     finally:
         db.close()
 
@@ -535,6 +546,32 @@ def _run_group_buy_expiry_job() -> None:
         db.rollback()
         capture_background_exception(exc, task="group_buy_expiry")
         log.error("[GROUP-BUY-EXPIRY] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3610: the evening reminder before a group buy's pickup.
+@heartbeat(
+    "group-buy-pickup-reminder-daily",
+    cron_monitor_config(
+        GROUP_BUY_PICKUP_REMINDER_CRON, timezone=GROUP_BUY_PICKUP_REMINDER_TZ
+    ),
+)
+def _run_group_buy_pickup_reminder_job() -> None:
+    """MEH-3610: mail each participant of a funded group before its pickup.
+    Fresh session per run; any exception is swallowed so the scheduler thread
+    never dies. The stamp makes a rerun send nothing twice."""
+    from app.database import SessionLocal
+    from app.services.group_buy_pickup_reminder import send_pickup_reminders
+
+    db = SessionLocal()
+    try:
+        count = send_pickup_reminders(db)
+        log.info("[GROUP-BUY-PICKUP] daily run complete reminded=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="group_buy_pickup_reminder")
+        log.error("[GROUP-BUY-PICKUP] daily run crashed", exc_info=True)
     finally:
         db.close()
 
@@ -895,6 +932,18 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-3610: the group-buy pickup reminder, 17:00 Israel like MEH-3312's.
+    followup_scheduler.add_job(
+        _run_group_buy_pickup_reminder_job,
+        CronTrigger.from_crontab(
+            GROUP_BUY_PICKUP_REMINDER_CRON, timezone=GROUP_BUY_PICKUP_REMINDER_TZ
+        ),
+        id="meh_3610_group_buy_pickup_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
     # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
     # AND the digest gate are both on — the digest cannot work before Meta
     # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
@@ -997,7 +1046,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ]
     if _missing:
         log.warning(
-            "⚠️ Optional env vars not set — some features disabled: %s",
+            "Optional env vars not set — some features disabled: %s",
             ", ".join(_missing),
         )
 

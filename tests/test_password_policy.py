@@ -351,7 +351,7 @@ class TestJWTPasswordChangedAtCheck:
         with pytest.raises(HTTPException) as excinfo:
             get_current_user(request=_make_request(), token=token, db=db)
         assert excinfo.value.status_code == 401
-        assert excinfo.value.detail == "session_invalidated_by_password_change"
+        assert excinfo.value.detail == "הסיסמה שונתה, צריך להתחבר מחדש."
 
     def test_token_iat_after_password_change_accepted(self):
         from datetime import datetime, timezone
@@ -498,4 +498,4 @@ class TestJWTPasswordChangedAtCheck:
         with pytest.raises(HTTPException) as excinfo:
             inner_handler(request=request, response=response, db=db)
         assert excinfo.value.status_code == 401
-        assert excinfo.value.detail == "session_invalidated_by_password_change"
+        assert excinfo.value.detail == "הסיסמה שונתה, צריך להתחבר מחדש."
