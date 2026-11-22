@@ -255,7 +255,7 @@ beforeEach(() => {
 // production entry path before reaching frame 01.
 async function renderWizard() {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -276,8 +276,8 @@ async function fillDetailsToStory() {
   fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(nextBtn()); // → CATEGORY
   fireEvent.click(await screen.findByTestId("pick-category")); // select category id 1
-  fireEvent.click(nextBtn()); // → STORY
-  await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
+  // MEH-3656: a business submits from CATEGORY — the story step left its path.
+  await screen.findByTestId("register-category-submit"); // submitting-frame marker
 }
 
 // MEH-1471: the attribution dropdown on the STORY step. MEH-2183 made it
@@ -317,10 +317,10 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
     expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
   });
 
-  it("logged-in consumer (role consumer) still sees the preflight — no gate", async () => {
+  it("logged-in consumer (role consumer) still gets the wizard — no gate", async () => {
     authState.user = { email: "c@example.com", role: "consumer" };
     render(<RegisterProducerClient />);
-    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
+    expect(await screen.findByTestId("register-hero-heading")).toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate-admin")).not.toBeInTheDocument();
   });
@@ -522,10 +522,6 @@ async function fillWizardAndSubmit() {
   await renderWizard();
   await fillAccountToDetails();
   await fillDetailsToStory();
-  fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-    target: { value: "הכי טרי שיש" },
-  });
-  selectReferral();
   screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
   fireEvent.click(screen.getByText(`${K}.actions.submit`));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -681,10 +677,6 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
 // assertion and lives in e2e/flows/28-register-success-state.spec.ts at 1440.
 describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk F)", () => {
   async function fillStoryAndSubmit() {
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -718,8 +710,8 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await fillAccountToDetails(); // ACCOUNT → DETAILS
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
-    await fillDetailsToStory(); // DETAILS → CATEGORY → STORY
-    expect(scrollToSpy).toHaveBeenCalledTimes(3);
+    await fillDetailsToStory(); // DETAILS → CATEGORY (MEH-3656: the last frame)
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
   });
 
   it("inbox-check branch (no access_token) scrolls to the top", async () => {
@@ -901,10 +893,6 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     await fillDetailsToStory();
     // whatever the submit path sends, `city_known` is wizard state, not payload
     api.post.mockResolvedValue({ data: {} });
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -1022,12 +1010,11 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
 
     // another tab blanks the business name; «continue» merges it back in
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ producer_name: "", city: "חיפה" }));
     fireEvent.click(screen.getByTestId("register-draft-continue"));
-    selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     scrollToSpy.mockClear();
 
@@ -1043,14 +1030,11 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
   });
 });
 
-describe("STORY step — card preview (MEH-3074)", () => {
+describe("last business step — card preview (MEH-3074, moved to CATEGORY by MEH-3656)", () => {
   it("offers a closed, inert preview of the real card, fed from the form", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    fireEvent.change(screen.getByTestId("register-story-tagline"), {
-      target: { value: "לחם מחמצת" },
-    });
 
     const details = screen.getByTestId("register-card-preview");
     expect(details.tagName).toBe("DETAILS");
@@ -1066,7 +1050,6 @@ describe("STORY step — card preview (MEH-3074)", () => {
     const producer = JSON.parse(screen.getByTestId("preview-card").dataset.producer);
     expect(producer.name).toBe("העסק שלי");
     expect(producer.city).toBe("תל אביב");
-    expect(producer.short_description).toBe("לחם מחמצת");
     expect(producer.categories.map((c) => c.id)).toEqual([1]);
     expect(producer.has_physical_location).toBe(true);
     expect(producer.offers_delivery).toBe(false);
