@@ -203,8 +203,18 @@ const nextConfig = {
     // as /producers?q= (no filters, no counts). The header's search button and
     // the sitelinks SearchAction now go straight to /producers; old links 308
     // there. Next forwards the query, so ?q= and ?focus=1 survive the hop.
+    //
+    // MEH-3076: /organizers and /freshness hold only sub-routes ([slug],
+    // confirm), so the bare path fell through to the business [slug] page and
+    // said «בית העסק הזה לא נמצא». Someone trimming a URL lands on the page
+    // that lists the thing instead: organizers → events, freshness → home.
+    // permanent: false — either could get an index page of its own.
     const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
     return [
+      { source: "/:locale(he|en)/organizers", destination: "/:locale/events", permanent: false },
+      { source: "/organizers", destination: "/events", permanent: false },
+      { source: "/:locale(he|en)/freshness", destination: "/:locale", permanent: false },
+      { source: "/freshness", destination: "/", permanent: false },
       { source: "/:locale(he|en)/search", destination: "/:locale/producers", permanent: true },
       { source: "/search", destination: "/producers", permanent: true },
       { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
