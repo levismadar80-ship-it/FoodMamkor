@@ -8121,7 +8121,7 @@
       "no_show": "Not collected",
       "cancelled_by_business": "Cancelled by the business"
     },
-    "partial_error": "Part of the list didn't load. Refresh the page to try again.",
+    "partial_error": "Part of the list didn't load.",
     "group_buy_status": {
       "open": "Open to join",
       "funded": "Reached its goal",
