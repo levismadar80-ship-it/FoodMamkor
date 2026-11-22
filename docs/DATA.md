@@ -1454,6 +1454,22 @@ PUT    /admin/producers/{producer_id}/google-place-id  admin — MEH-2582: body 
                                                effective-state gates (licence, delivery) on purpose — the
                                                approval row maps pending businesses that still fail them.
                                                404 for unknown id or an organizer. 30/min.
+GET    /producers/me/google-profile           👤 MEH-3641: { available (server has a Places key), google_place_id }.
+GET    /producers/me/google-profile/candidates 👤 MEH-3641: ?q= (≤120; empty → the business's name + city). Places
+                                               Text Search, ≤ 3 { place_id, display_name, formatted_address }; [] when
+                                               Google found none; 503 Hebrew with no key or a Google error. 10/hour.
+PUT    /producers/me/google-profile           👤 MEH-3641: body { google_place_id: str|null } (same normalisation as
+                                               the admin PUT). A link is accepted only when the Google name or phone
+                                               (mobile or landline) matches the business, else 409 Hebrew; a place_id
+                                               already linked to another business → 409 Hebrew; 503 when
+                                               Google cannot be asked; null unlinks with no Google call. A change on an
+                                               approved business sends the admin the sensitive-edit email
+                                               («הפרופיל בגוגל»). Organizer → 404. 10/hour.
+GET    /producers/me/google-profile/check     👤 MEH-3641: live Place Details → rows [{ field: name|phone|website,
+                                               ours, google, verdict: same|different|missing }] + hours_ours /
+                                               hours_google (no verdict). Website «same» = any page on her own site,
+                                               or her own page here (not another business's). Nothing from Google is stored (ToS §3.2.3(b)). 404 Hebrew
+                                               when not linked, 503 on no key / Google error. 10/hour.
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless
                                                retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
@@ -2499,6 +2515,8 @@ GET    /holiday-mode             public, 60/min. 200 {enabled, key}, read from t
 | Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
 | Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
 | Contact form | Email | Admin | `marketing.py` |
+
+**«הסר» stops every WhatsApp template (MEH-3640).** `whatsapp.send_template` / `send_template_result` skip a recipient whose latest `inbound_messages` row is an opt-out word (`user_phone_verify.is_opted_out`), outcome `opted_out`, never retried. Exempt: `OtpCodeV1` (a code the person asked for) and `send_text` (only ever an in-window reply). Any later inbound message clears it.
 
 All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
