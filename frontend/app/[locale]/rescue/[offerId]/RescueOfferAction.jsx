@@ -90,6 +90,7 @@ export default function RescueOfferAction({ offer, reservation }) {
     <div className="bg-surface border border-border rounded-lg p-4 grid gap-3 lg:shadow-lg" data-testid="rescue-offer-action">
       <LoginPromptModal
         open={loginOpen}
+        reason="rescue"
         onClose={() => setLoginOpen(false)}
         title={t("login_prompt_title")}
         message={t("login_prompt_message")}
