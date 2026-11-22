@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
-import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
@@ -41,7 +40,7 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
     }
   };
 
-  const drawButton = () => {
+  useGoogleSignIn(clientId, handleCredentialResponse, () => {
     if (buttonRef.current) {
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: "outline",
@@ -51,10 +50,7 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
         locale: gsiLang(),
       });
     }
-  };
-  useGoogleSignIn(clientId, handleCredentialResponse, drawButton);
-  // MEH-3687: the width above is fixed at draw time; redraw when the screen narrows.
-  useGsiRedrawOnResize(buttonRef, drawButton);
+  });
 
   if (!clientId) return null;
 

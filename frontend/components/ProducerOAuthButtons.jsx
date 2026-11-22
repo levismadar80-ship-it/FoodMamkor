@@ -8,7 +8,6 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
-import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
 import { env } from "@/lib/env";
 
 /**
@@ -76,20 +75,21 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
   // times". Corrected under MEH-1778 — this comment previously claimed the
   // one-per-page guarantee that use-google-sign-in.js never made. The defect
   // itself is MEH-1776 / MEH-282; only the comment is fixed here.
-  const drawGoogleButton = () => {
-    if (googleBtnRef.current) {
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: "outline",
-        size: "large",
-        width: googleBtnRef.current.offsetWidth,
-        text: "continue_with",
-        locale: gsiLang(),
-      });
-    }
-  };
-  useGoogleSignIn(googleId, (response) => finish("google", response.credential), drawGoogleButton);
-  // MEH-3687: the width above is fixed at draw time; redraw when the screen narrows.
-  useGsiRedrawOnResize(googleBtnRef, drawGoogleButton);
+  useGoogleSignIn(
+    googleId,
+    (response) => finish("google", response.credential),
+    () => {
+      if (googleBtnRef.current) {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "outline",
+          size: "large",
+          width: googleBtnRef.current.offsetWidth,
+          text: "continue_with",
+          locale: gsiLang(),
+        });
+      }
+    },
+  );
 
   // Apple JS — mount the SDK, listen to success/failure events, forward
   // to our producer endpoint.
