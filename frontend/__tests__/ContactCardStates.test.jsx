@@ -52,7 +52,8 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Stub,
     Receipt: Stub,
     WhatsappLogo: Stub,
-    Bell: Stub, // MEH-2626: the «עדכונים» channel icon (module-scope in CHANNELS)
+    Megaphone: Stub, // MEH-3585: the WhatsApp channel / group icons (module-scope in CHANNELS)
+    UsersThree: Stub,
     ChatCircle: Stub,
     CaretDown: Stub,
   };
@@ -272,7 +273,7 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     ["website (bare host)", { website: "shikma.co.il" }, "shikma.co.il", true],
     ["website (caps scheme, port, query)", { website: "HTTPS://WWW.Shikma.co.il:8080?a=1" }, "Shikma.co.il:8080", true],
     ["instagram (legacy URL row)", { instagram: "https://instagram.com/shikma" }, "אינסטגרם", false],
-    ["whatsapp_group", { whatsapp_group: "https://chat.whatsapp.com/AbC123" }, "producer.detail.contact_card.single.whatsapp_group", false],
+    ["whatsapp_group", { whatsapp_group: "https://chat.whatsapp.com/AbC123" }, "producer.detail.contact_card.single.whatsapp_group_chat", false],
     ["facebook", { facebook: "facebook.com/shikma" }, "producer.detail.contact_card.single.facebook", false],
     // The base's CTA is external_order; to see external_order as a sole ROW,
     // this case declares facebook (with its data) as the CTA instead.

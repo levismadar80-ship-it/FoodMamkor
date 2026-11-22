@@ -38,7 +38,10 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
+| Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
+| Time-limited offer card (group buy, surprise bag): title + where, price + struck price, gold saving, beige status band | `ui/OfferCard.jsx` | `OfferCardOneOwnerGuard` |
+| Progress in the logo's seeds (group-buy joins, bags left today); `label={null}` when the count is written beside it | `ui/SeedProgressMark.jsx` | — |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
@@ -58,6 +61,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
 | Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 | AI suggestion button + editable preview that hands text to a field (product description, review reply) | `AiTextSuggest.jsx` | — |
+| Offer page blocks, one look for a group buy and a rescue bag: pickup time under the title · «איפה ומתי» with the map · allergens · how it works (MEH-3597, MEH-3610) | `offer-detail/PickupLine.jsx` · `offer-detail/WhereSection.jsx` · `offer-detail/AllergenSection.jsx` · `offer-detail/HowSteps.jsx` | `GroupBuyBagParity` |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new

@@ -122,3 +122,37 @@ describe("ImageGallery masthead verified seal → verification popover (MEH-1358
     expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
   });
 });
+
+// MEH-3611: an imageless business's logo sits in the masthead, beside the h1.
+describe("ImageGallery masthead logo (MEH-3611)", () => {
+  it("no logo → no logo circle", () => {
+    render(<ImageGallery images={[]} producerName="סבון עז נעמה" />);
+    expect(screen.queryByTestId("business-logo")).toBeNull();
+  });
+
+  it("a logo → the circle in the name block", () => {
+    render(<ImageGallery images={[]} producerName="סבון עז נעמה" logoUrl="https://cdn/logo.png" />);
+    const block = screen.getByTestId("masthead-name-block");
+    expect(block.querySelector('[data-testid="business-logo"] img').getAttribute("src")).toBe("https://cdn/logo.png");
+  });
+});
+
+// MEH-3611: a business with photos shows its logo on the cover's
+// bottom-start corner (Wolt / Uber Eats pattern), not in the header.
+describe("ImageGallery cover logo (MEH-3611)", () => {
+  const photos = ["https://res.cloudinary.com/demo/image/upload/a.jpg"];
+
+  it("photos, no logo → no logo circle", () => {
+    render(<ImageGallery images={photos} producerName="מאפיית הגבעה" />);
+    expect(screen.queryByTestId("business-logo")).toBeNull();
+  });
+
+  it("photos + logo → one circle pinned to the cover corner", () => {
+    render(<ImageGallery images={photos} producerName="מאפיית הגבעה" logoUrl="https://cdn/logo.png" />);
+    const logos = screen.getAllByTestId("business-logo");
+    expect(logos).toHaveLength(1);
+    expect(logos[0].className).toMatch(/\babsolute\b/);
+    expect(logos[0].className).toMatch(/\bbottom-4\b.*\bstart-4\b/);
+    expect(logos[0].querySelector("img").getAttribute("src")).toBe("https://cdn/logo.png");
+  });
+});
