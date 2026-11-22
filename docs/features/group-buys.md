@@ -7,7 +7,7 @@
 **Routes**
 * `frontend/app/[locale]/group-buys/` — הרשימה הציבורית.
 * `frontend/app/[locale]/group-buys/[id]/` — קבוצה אחת. אורחת שלוחצת «כניסה להצטרפות» מקבלת את חלונית הכניסה המשותפת (`frontend/components/LoginPromptModal.jsx`); כניסה עם Google שם מצרפת אותה לבד, באותה כמות, בלי לעזוב את הדף, ו«היכנסו» עדיין לוקח ל-/login וחזרה (MEH-3679).
-* `frontend/app/[locale]/my-group-buys/` — «הקבוצות שלי»: הקבוצות שהמשתמשת המחוברת הצטרפה אליהן, הפעילות קודם, דרך `GET /users/me/group-buys` (`backend/app/routers/group_buy_mine.py`). קישור בתפריט החשבון (MEH-3609).
+* `frontend/app/[locale]/my-group-buys/` — היה «הקבוצות שלי» (MEH-3609). מאז MEH-3698 הקבוצות מופיעות ברשימה האחת «ההזמנות שלי» (`frontend/app/[locale]/my-orders/`), שקוראת `GET /users/me/group-buys` (`backend/app/routers/group_buy_mine.py`), והכתובת הזאת מפנה לשם. אין לה שורה משלה בתפריט.
 * `frontend/app/[locale]/producer/dashboard/group-buys/` — הניהול של בית העסק.
 * `frontend/app/[locale]/admin/group-buys/` — המסך של הניהול.
 
@@ -26,7 +26,7 @@
 **טסטים**
 * `tests/test_group_buys_api.py` — ה-API.
 * `tests/test_meh0000_group_buys_query_count.py` — ספירת שאילתות: קבוצה אחת וארבע חייבות לעלות אותו מספר SELECT.
-* `tests/test_meh3609_my_group_buys.py` · `frontend/__tests__/MyGroupBuysPage.test.jsx` — «הקבוצות שלי» (MEH-3609).
+* `tests/test_meh3609_my_group_buys.py` — `GET /users/me/group-buys` (MEH-3609). איך הקבוצות מוצגות ב«ההזמנות שלי»: `frontend/__tests__/MyOrdersPage.test.jsx` (MEH-3698).
 * `tests/test_meh3610_group_buy_bag_parity.py` · `frontend/__tests__/GroupBuyBagParity.test.jsx` — אלרגנים, סניף לאיסוף (רק של בית העסק עצמו), תזכורת האיסוף, סדר הכרטיס (MEH-3610).
 * `tests/test_meh3592_group_buy_capacity.py` — תקרות, עצירה, עריכת כמות, 24 השעות, רשימת המתנה, מייל לבית העסק.
 * `tests/test_meh2943_group_buy_commit_scoping.py` · `tests/test_meh3128_group_buy_counts.py` · `tests/test_group_buys_cancel_on_delist.py`

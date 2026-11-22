@@ -8108,6 +8108,23 @@
       "cancelled": "בוטלה",
       "expired": "לא נענתה בזמן",
       "no_show": "לא נאספה"
+    },
+    "section_active": "פעילות",
+    "section_past": "קודמות",
+    "kind": {
+      "order": "הזמנה"
+    },
+    "bag_status": {
+      "handed": "נאסף",
+      "no_show": "לא נאסף",
+      "cancelled_by_business": "בית העסק ביטל"
+    },
+    "partial_error": "חלק מהרשימה לא נטען.",
+    "group_buy_status": {
+      "open": "פתוחה להצטרפות",
+      "funded": "הגיעה ליעד",
+      "fulfilled": "הושלמה",
+      "cancelled": "בוטלה"
     }
   },
   "google_profile": {
@@ -8152,20 +8169,5 @@
     "hours_title": "שעות פתיחה",
     "hours_note": "כל צד כותב שעות בצורה אחרת, אז השוו בעצמכם.",
     "empty_value": "—"
-  },
-  "my_group_buys": {
-    "title": "הקבוצות שלי",
-    "empty": "עוד לא הצטרפתם לקבוצת רכישה.",
-    "empty_cta": "לקבוצות הרכישה",
-    "load_error": "לא הצלחנו לטעון את הקבוצות.",
-    "quantity_unit": "{count} {unit}",
-    "quantity": "כמות: {count}",
-    "deadline": "ההצטרפות נסגרת ב-{date}",
-    "status": {
-      "open": "פתוחה להצטרפות",
-      "funded": "הגיעה ליעד",
-      "fulfilled": "הושלמה",
-      "cancelled": "בוטלה"
-    }
   }
 }

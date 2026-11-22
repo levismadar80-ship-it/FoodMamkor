@@ -645,7 +645,6 @@
       "/group-buys",
       "/group-buys/[id]",
       "/map",
-      "/my-group-buys",
       "/my-orders",
       "/order/[id]",
       "/producer/[id]",
@@ -1144,7 +1143,6 @@
       "/favorites",
       "/group-buys",
       "/group-buys/[id]",
-      "/my-group-buys",
       "/producer/[id]",
       "/producer/dashboard/group-buys",
       "/producer/dashboard/preview",
@@ -1340,9 +1338,6 @@
       "/terms",
       "/unsubscribe/weekly",
       "/verify-email"
-    ],
-    "my_group_buys": [
-      "/my-group-buys"
     ],
     "my_orders": [
       "/my-orders"
