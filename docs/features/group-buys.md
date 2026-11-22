@@ -6,7 +6,7 @@
 
 **Routes**
 * `frontend/app/[locale]/group-buys/` — הרשימה הציבורית.
-* `frontend/app/[locale]/group-buys/[id]/` — קבוצה אחת.
+* `frontend/app/[locale]/group-buys/[id]/` — קבוצה אחת. אורחת שלוחצת «כניסה להצטרפות» מקבלת את חלונית הכניסה המשותפת (`frontend/components/LoginPromptModal.jsx`); כניסה עם Google שם מצרפת אותה לבד, באותה כמות, בלי לעזוב את הדף, ו«היכנסו» עדיין לוקח ל-/login וחזרה (MEH-3679).
 * `frontend/app/[locale]/my-group-buys/` — «הקבוצות שלי»: הקבוצות שהמשתמשת המחוברת הצטרפה אליהן, הפעילות קודם, דרך `GET /users/me/group-buys` (`backend/app/routers/group_buy_mine.py`). קישור בתפריט החשבון (MEH-3609).
 * `frontend/app/[locale]/producer/dashboard/group-buys/` — הניהול של בית העסק.
 * `frontend/app/[locale]/admin/group-buys/` — המסך של הניהול.
@@ -34,6 +34,7 @@
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`
 * `frontend/__tests__/GroupBuysServerFirstList.test.jsx` — ה-HTML מהשרת מכיל את הכרטיסים, הגעה בלי סינון לא שולחת בקשה, ועיר שמוקלדת אחר כך כן (MEH-2233).
 * `frontend/__tests__/GroupBuyAfterGoal.test.jsx` — מה רואים כשהקבוצה מגיעה ליעד: «הקבוצה הגיעה ליעד» ומספר המצטרפות לבד (לא «2 מתוך 2», שנקרא כמו «מלאה»), «נשארו N מקומות» כשיש תקרה, באנר «עוד אפשר להצטרף» למי שלא הצטרפה, ו«איך זה עובד» שנשאר כל עוד אפשר להצטרף (MEH-3588).
+* `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` · `frontend/__tests__/GroupBuyGuestLogin.test.jsx` — הצטרפות אחרי Google בחלונית, פעם אחת ובכמות שנבחרה; סגירת החלונית לא שולחת כלום; «היכנסו» נושא את הדרך חזרה (MEH-3679, MEH-2982).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
 
 **מזהי רישום שזה מכסה.** `group_buys`.

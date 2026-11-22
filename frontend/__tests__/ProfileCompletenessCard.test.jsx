@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
 
 // MEH-3659: the card has two modes. Draft = the submit-gate checklist (only
 // what blocks «שליחה לבדיקה»). Anything else = «לשפר את העמוד» (the full
@@ -28,13 +28,20 @@ vi.mock("next-intl", () => ({
       "draft_steps.details": "פרטי העסק",
       "draft_steps.image": "תמונה של העסק או המוצרים",
       "draft_steps.product": "מוצר ראשון",
+      email_resend: "שלחו לי שוב",
       // dashboard.producer.draft.missing (shared with the banner, MEH-3657)
       phone_verified: "אימות מספר הוואטסאפ",
+      email_verified: "אישור כתובת האימייל",
+      // auth.verify (the site's own resend wording, MEH-3657)
+      sent: "✓ נשלח!",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
   },
 }));
+
+const post = vi.fn();
+vi.mock("@/lib/api", () => ({ default: { post: (...a) => post(...a) } }));
 
 vi.mock("@/components/PhoneVerifyCard", () => ({
   default: ({ onVerified }) => (
@@ -60,6 +67,7 @@ const base = {
   phone_verified: true,
   owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
   products: [{ id: "p1" }],
+  owner_email_verified: true,
   status: "approved",
 };
 const draft = { ...base, status: "draft" };
@@ -224,6 +232,42 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#profile-categories`);
     rerender(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#locations`);
+  });
+
+  it("email not confirmed (MEH-3660) → a 5th row, last; open once the rest is done, with a resend button", async () => {
+    post.mockResolvedValue({});
+    render(<ProfileCompletenessCard producer={{ ...draft, owner_email_verified: false }} />);
+    expect(counter()).toBe("4 מתוך 5");
+    const keys = within(list()).getAllByRole("listitem").map((li) => li.dataset.testid);
+    expect(keys.at(-1)).toBe("completeness-open-email_verified");
+    fireEvent.click(screen.getByTestId("completeness-email-resend"));
+    expect(post).toHaveBeenCalledWith("/auth/resend-verify");
+    expect(await screen.findByTestId("completeness-email-sent")).toHaveTextContent("✓ נשלח!");
+  });
+
+  it("a failed resend shows why and keeps the button, so a second try sends again", async () => {
+    post.mockReset();
+    post.mockRejectedValueOnce({ response: { status: 500 } }).mockResolvedValueOnce({});
+    render(<ProfileCompletenessCard producer={{ ...draft, owner_email_verified: false }} />);
+    fireEvent.click(screen.getByTestId("completeness-email-resend"));
+    expect(await screen.findByTestId("completeness-email-error")).toBeInTheDocument();
+    const again = await screen.findByTestId("completeness-email-resend");
+    await waitFor(() => expect(again).not.toBeDisabled());
+    fireEvent.click(again);
+    expect(await screen.findByTestId("completeness-email-sent")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it("email row with other rows missing → listed but closed; the first missing row is the open one", () => {
+    render(<ProfileCompletenessCard producer={{ ...draft, images: [], owner_email_verified: false }} />);
+    expect(counter()).toBe("3 מתוך 5");
+    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-image"]);
+    expect(screen.getByTestId("completeness-row-email_verified").dataset.done).toBe("false");
+  });
+
+  it("email confirmed (or Google signup) → no email row at all", () => {
+    render(<ProfileCompletenessCard producer={draft} />);
+    expect(screen.queryByTestId(/email_verified/)).toBeNull();
   });
 
   it("licence-required category without a number → a licence note linking to #license; with a number → none", () => {

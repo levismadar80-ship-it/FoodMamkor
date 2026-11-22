@@ -16,6 +16,9 @@ vi.mock("next-intl", () => ({
   useTranslations: (ns) => (key) => (ns ? `${ns}.${key}` : key),
 }));
 
+const pathRef = { current: "/" };
+vi.mock("@/i18n/navigation", () => ({ usePathname: () => pathRef.current }));
+
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn() },
 }));
@@ -32,7 +35,29 @@ const DISMISS_LABEL = "auth.verify.dismiss";
 describe("VerifyBanner (MEH-1071)", () => {
   beforeEach(() => {
     userRef.current = null;
+    pathRef.current = "/";
     sessionStorage.clear();
+  });
+
+  // MEH-3660: on a draft business's dashboard the checklist carries the email
+  // row, so the site-wide banner would say the same thing twice.
+  it("is hidden on the dashboard of a business in draft — the checklist row replaces it", () => {
+    userRef.current = { id: "u1", email_verified: false, producer_status: "draft", producer_kind: "producer" };
+    pathRef.current = "/producer/dashboard";
+    const { container } = render(<VerifyBanner />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("still shows for that business on any other page, and for an organizer draft on the dashboard", () => {
+    userRef.current = { id: "u1", email_verified: false, producer_status: "draft", producer_kind: "producer" };
+    pathRef.current = "/map";
+    const { unmount } = render(<VerifyBanner />);
+    expect(screen.getByText(BANNER_TEXT)).toBeInTheDocument();
+    unmount();
+    userRef.current = { id: "u1", email_verified: false, producer_status: "draft", producer_kind: "organizer" };
+    pathRef.current = "/producer/dashboard";
+    render(<VerifyBanner />);
+    expect(screen.getByText(BANNER_TEXT)).toBeInTheDocument();
   });
 
   it("renders the nudge for a logged-in, unverified user", () => {
