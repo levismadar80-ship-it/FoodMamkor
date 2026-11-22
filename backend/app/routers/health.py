@@ -150,6 +150,81 @@ def places_health(request: Request) -> dict[str, Any] | JSONResponse:
     return JSONResponse(status_code=status, content=body)
 
 
+# MEH-AIHEALTH — the AI features fail open: when the Anthropic client cannot be
+# built or cannot answer, chat, moderation, bio writing, menu reading and risk
+# scoring all fall back to "offline" with no 5xx. The anthropic 2.x bump
+# (#5154) showed how: the SDK rejected our http_client at construction, every
+# factory caught the TypeError, and every mocked test stayed green. This probe
+# builds the client exactly as the product does (make_anthropic_client) and
+# makes one real, token-free call (list models), so a cron sees the breakage.
+_last_ai_report_at: float | None = None
+
+
+def _ai_probe() -> tuple[int, dict[str, Any]]:
+    """(http status, body) for GET /health/ai. Never raises.
+
+      disabled — no ANTHROPIC_API_KEY; AI is off by configuration (200).
+      ok       — the client was built and the API answered (200).
+      error    — the client could not be built (stage "init"), or the API did
+                 not answer (stage "call") (503). The body names the exception
+                 class only, never the key or a message body.
+    """
+    if not settings.anthropic_api_key:
+        return 200, {"status": "disabled"}
+    from app.services.moderation_common import make_anthropic_client  # noqa: PLC0415
+
+    client = make_anthropic_client("[health/ai]")
+    if client is None:
+        return 503, {"status": "error", "stage": "init", "code": "ClientInitFailed"}
+    try:
+        client.with_options(timeout=_PLACES_PROBE_TIMEOUT_SECONDS, max_retries=0).models.list(limit=1)
+    except Exception as exc:  # noqa: BLE001 — a health probe reports, never raises
+        return 503, {"status": "error", "stage": "call", "code": type(exc).__name__}
+    return 200, {"status": "ok"}
+
+
+def _report_ai_error(body: dict[str, Any]) -> None:
+    """One Sentry issue per failure stage + code, throttled like the Places one."""
+    global _last_ai_report_at  # noqa: PLW0603 — a process-local throttle, nothing else
+    now = time.monotonic()
+    if _last_ai_report_at is not None and now - _last_ai_report_at < _REPORT_WINDOW_SECONDS:
+        return
+    _last_ai_report_at = now
+    try:
+        import sentry_sdk  # noqa: PLC0415
+
+        scope_factory = getattr(sentry_sdk, "new_scope", None) or getattr(
+            sentry_sdk, "push_scope", None
+        )
+        if scope_factory is None:  # pragma: no cover
+            return
+        with scope_factory() as scope:
+            scope.set_tag("ai_probe_stage", str(body.get("stage")))
+            scope.set_tag("ai_probe_code", str(body.get("code")))
+            scope.fingerprint = ["ai-health", str(body.get("stage")), str(body.get("code"))]
+            sentry_sdk.capture_message(
+                f"Anthropic client is not working ({body.get('stage')}): {body.get('code')}",
+                level="error",
+            )
+    except Exception:  # pragma: no cover — reporting must never raise
+        log.debug("[health/ai] report to Sentry failed")
+
+
+@router.get("/health/ai", response_model=None)
+@limiter.limit("10/minute")
+def ai_health(request: Request) -> dict[str, Any] | JSONResponse:
+    """Is the Anthropic client buildable and answering right now?
+
+    Unauthenticated so the uptime cron can hit it; rate-limited, and the call
+    it makes spends no tokens. 503 is the alerting signal.
+    """
+    status, body = _ai_probe()
+    if status != 200:
+        log.warning("[health/ai] %s", body)
+        _report_ai_error(body)
+    return JSONResponse(status_code=status, content=body)
+
+
 def _read_alembic_head() -> str | None:
     """Return current alembic revision, or ``None`` if the table is absent.
 

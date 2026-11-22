@@ -30952,6 +30952,23 @@
         "summary": "Health Alias"
       }
     },
+    "/health/ai": {
+      "get": {
+        "description": "Is the Anthropic client buildable and answering right now?\n\nUnauthenticated so the uptime cron can hit it; rate-limited, and the call\nit makes spends no tokens. 503 is the alerting signal.",
+        "operationId": "ai_health_health_ai_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ai Health"
+      }
+    },
     "/health/liveness": {
       "get": {
         "operationId": "liveness_health_liveness_get",
