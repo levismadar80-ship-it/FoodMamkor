@@ -34,17 +34,17 @@ as of 2026-08-03 and unverifiable from the sandbox, which cannot reach Railway.)
 
 ## Anthropic client init
 
-**Always pass `http_client=httpx.Client()`.** Enforced by
-`tests/test_anthropic_http_client.py`, which holds the full set of call sites.
-Old SDKs built their own client with `proxies=`, which httpx 0.28+ rejects.
-Today's pins (`anthropic==0.107.1`, `httpx==0.27.2`) can't hit that, so the
-kwarg is pre-emptive: it is what makes a future httpx bump survivable. Keep
-both the pin and the kwarg.
+**Always pass `http_client=anthropic.DefaultHttpxClient()`.** Enforced by
+`tests/test_anthropic_http_client.py`, which holds the full set of call sites
+and builds each client for real. Since anthropic 1.0 the SDK runs on httpx2
+and raises `TypeError` at construction on a plain `httpx.Client` (the bump to
+2.10, #5154). `DefaultHttpxClient` is the SDK's own re-export, so it follows
+whatever HTTP package the SDK uses. Pass `timeout=` to it, not to httpx.
 
 ```python
 anthropic.Anthropic(
     api_key=settings.anthropic_api_key,
-    http_client=httpx.Client(),
+    http_client=anthropic.DefaultHttpxClient(),
 )
 ```
 
