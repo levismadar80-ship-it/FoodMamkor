@@ -20,6 +20,7 @@ import {
   stashOwnerInviteToken,
 } from "@/lib/claim-token";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
+import useFreshGoogleCredential from "./useFreshGoogleCredential";
 import { env } from "@/lib/env";
 import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
@@ -99,6 +100,10 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
     routerRef.current = router;
   });
   const { user, loading: authLoading, refreshUser } = useAuth();
+  // MEH-3675: the Google credential from a sign-in on THIS page. The
+  // existing-account form sends it instead of an email code; the server
+  // takes it only while it is a few minutes old.
+  const [googleCredential, setGoogleCredential] = useFreshGoogleCredential(user?.id);
 
   const [token, setToken] = useState(null);
   const [view, setView] = useState(VIEW.LOADING);
@@ -358,6 +363,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           invite={invite}
           accountEmail={user.email || ""}
           onInvalid={() => setView(VIEW.INVALID)}
+          googleCredential={googleCredential}
+          onGoogleExpired={() => setGoogleCredential(null)}
         />
       ) : (
       <>
@@ -377,7 +384,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           would sit under an empty space. */}
       {env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <div className="mb-4" data-testid="owner-invite-google">
-          <GoogleAuthButton onError={(msg) => setSubmitError(msg)} />
+          <GoogleAuthButton onSuccess={setGoogleCredential} onError={(msg) => setSubmitError(msg)} />
           <div className="flex items-center gap-3 my-4 text-sm text-fg-muted">
             <span className="flex-1 border-t border-border" />
             <span>{tOauth("or")}</span>
