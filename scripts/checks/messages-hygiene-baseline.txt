@@ -53,6 +53,7 @@ duplicate	2	בחיפוש…
 duplicate	2	בחירה
 duplicate	2	בחירת מוצר
 duplicate	2	ביטול שינויים
+duplicate	2	ביצים
 duplicate	2	בישול ואפייה
 duplicate	2	בית עסק מאומת
 duplicate	2	במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
@@ -66,7 +67,6 @@ duplicate	2	גיל 18 ומעלה, והסכמה
 duplicate	2	גררו לכאן או לחצו להעלאה · JPG / PNG / WebP
 duplicate	2	דברו איתנו
 duplicate	2	דברו איתנו ←
-duplicate	2	דגים
 duplicate	2	דיווח על עסק
 duplicate	2	דרוש תיקון
 duplicate	2	האימייל לא תקין
@@ -132,6 +132,7 @@ duplicate	2	חזרה ללוח הבקרה
 duplicate	2	חיוב
 duplicate	2	חייב לסמן לפחות אחד מהשניים
 duplicate	2	חיפוש בתי עסק
+duplicate	2	חלב וגבינות
 duplicate	2	חנוכה
 duplicate	2	חנות או טופס הזמנות
 duplicate	2	חנות או טופס הזמנות באתר שלכם (קישור)
@@ -146,10 +147,10 @@ duplicate	2	טעינת מפה…
 duplicate	2	טעינת תוצאות…
 duplicate	2	ט״ו בשבט
 duplicate	2	יוצרת קישור…
+duplicate	2	יין, בירה ומשקאות
 duplicate	2	יישוב
 duplicate	2	ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסו שוב מהמייל, או פנו אלינו.
 duplicate	2	יציאה מרשימת ההמתנה
-duplicate	2	ירקות
 duplicate	2	יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ
 duplicate	2	יש להזין מספר שלם
 duplicate	2	יש למלא הערה
@@ -209,6 +210,8 @@ duplicate	2	מועד אחרון: {date}
 duplicate	2	מוצהר: הצהרה שזו תוצרת שגידלה בעצמה.
 duplicate	2	מוצר חדש
 duplicate	2	מוצר ראשון בקטלוג
+duplicate	2	מוצרים מוכנים
+duplicate	2	מותססים וכבושים
 duplicate	2	מזומן
 duplicate	2	מחפשת…
 duplicate	2	מחקו
@@ -239,8 +242,10 @@ duplicate	2	ניקוי הכל
 duplicate	2	נמסר
 duplicate	2	נמסרה
 duplicate	2	נסי שוב
+duplicate	2	נרות וארומה
 duplicate	2	נשלחה בקשה לשינויים
 duplicate	2	נשמר למועדפים
+duplicate	2	סבונים טבעיים
 duplicate	2	סוכות
 duplicate	2	סיבה אחרת
 duplicate	2	סיבת הדחייה
@@ -264,6 +269,7 @@ duplicate	2	פחות
 duplicate	2	פחות מ-20 ביקורות — השורה לא תוצג
 duplicate	2	פייבוקס
 duplicate	2	פייסבוק (קישור)
+duplicate	2	פירות
 duplicate	2	פניתי
 duplicate	2	פעולות נוספות
 duplicate	2	פעילות אחרונה
@@ -308,6 +314,7 @@ duplicate	2	שמרו שינויים
 duplicate	2	שעות
 duplicate	2	שעות פעילות
 duplicate	2	שעות פתיחה
+duplicate	2	תבלינים וצמחי תיבול
 duplicate	2	תגובת בית העסק
 duplicate	2	תדעו מה עובד
 duplicate	2	תיאור
@@ -334,6 +341,7 @@ duplicate	3	אירוע חדש
 duplicate	3	בטלו
 duplicate	3	בתיאום מראש
 duplicate	3	גלו בתי עסק במפה
+duplicate	3	דגים
 duplicate	3	דחייה
 duplicate	3	דירוג
 duplicate	3	הגדרות
@@ -362,6 +370,7 @@ duplicate	3	חוויה חדשה
 duplicate	3	חזרה
 duplicate	3	חקלאות
 duplicate	3	טוענת…
+duplicate	3	ירקות
 duplicate	3	ישראל
 duplicate	3	כל בתי העסק
 duplicate	3	כן, לבטל
@@ -371,7 +380,6 @@ duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
 duplicate	3	לא הוגדר
 duplicate	3	להשלמת העמוד
-duplicate	3	לחמים ואפייה
 duplicate	3	לכל הנתונים
 duplicate	3	מאושר
 duplicate	3	מאושרות
@@ -435,6 +443,7 @@ duplicate	4	כניסה
 duplicate	4	כניסה חופשית
 duplicate	4	כתבו לנו
 duplicate	4	לא הצלחנו לשמור. נסו שוב.
+duplicate	4	לחמים ואפייה
 duplicate	4	ללא גלוטן
 duplicate	4	ללא לקטוז
 duplicate	4	ללא סוכר מוסף
