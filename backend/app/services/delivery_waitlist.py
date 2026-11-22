@@ -199,12 +199,13 @@ def _email_copy(
 ) -> tuple[str, str]:
     # Copy approved by Sapir 30/10 («מאשרת הכל», thread «בירור הודעה כשקבוצת
     # רכש לא מגיעה לעיר»). {city} is the VISITOR's spelling — it is her city.
+    # MEH-3594: no «צוות מהמקור» line here. The unsubscribe line follows it,
+    # so text_to_html could not drop it, and the frame footer signed it again.
     subject = f"{producer_name} מגיעים עכשיו גם ל{city}"
     body = (
         f"היי,\n\n"
         f"ביקשת שנודיע לך כש{producer_name} יגיעו ל{city} — וזה קרה. "
         f"עכשיו אפשר להזמין:\n{_producer_url(producer_id)}\n\n"
-        f"צוות מהמקור\n\n"
         f"לא רוצה עדכונים על המשלוחים האלה? {_unsubscribe_url(entry_id)}\n"
         "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
