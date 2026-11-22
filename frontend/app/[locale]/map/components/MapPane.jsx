@@ -228,11 +228,13 @@ export default function MapPane({
           <div className="mb-2 origin-bottom-left bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" data-testid="map-legend-panel" aria-label={t("map.pane.aria.categories")}>
             <div className="space-y-0.5">
               {CATEGORY_LEGEND.map((cat) => {
-                const catActive = isCategoryActive(cat.name);
+                // MEH-3076: a row is a group (cat.key), labelled in the reader's
+                // language from the same words as the chip row.
+                const catActive = isCategoryActive(cat.key);
                 // MEH-722: 0 businesses in the current viewport → dead-end row.
                 // Empty + inactive → fully disabled (no click). Empty + active →
                 // stays clickable so the user can toggle out of an empty filter.
-                const isEmpty = (viewportCategoryCounts?.[cat.name] ?? 0) === 0;
+                const isEmpty = (viewportCategoryCounts?.[cat.key] ?? 0) === 0;
                 const disabled = isEmpty && !catActive;
                 const opacity = catActive
                   ? (isEmpty ? "opacity-60" : "opacity-100")
@@ -246,15 +248,16 @@ export default function MapPane({
                 // (F1) — no shadow. Click/aria/opacity behavior unchanged.
                 const Icon = cat.icon;
                 return (
-                  <button key={cat.name} type="button" data-testid="map-legend-row" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
+                  <button key={cat.key} type="button" data-testid="map-legend-row" data-group={cat.key} onClick={disabled ? undefined : () => toggleCategory(cat.key)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
                     <span
                       className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: `${cat.color}1A` }}
                       aria-hidden="true"
                     >
-                      <Icon size={12} weight="fill" style={{ color: cat.color }} />
+                      {/* MEH-3076: the WCAG-safe tint (textColor) where the pin colour is too light for a 12px glyph. */}
+                      <Icon size={12} weight="fill" style={{ color: cat.textColor ?? cat.color }} />
                     </span>
-                    <span className="text-xs text-text">{cat.name.split(",")[0]}</span>
+                    <span className="text-xs text-text">{t(`map_category_chips.${cat.key}`)}</span>
                   </button>
                 );
               })}

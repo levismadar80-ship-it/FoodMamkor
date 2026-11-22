@@ -9,7 +9,8 @@ import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 // unresolved-id placeholder (no dead link), and the exact-name matcher that
 // structurally kills the old first-match bug.
 
-vi.mock("next-intl", () => ({ useTranslations: () => (k, v) => (v?.name ? `${k}:${v.name}` : k) }));
+// MEH-3076: `has` → false, so the grid falls back to the DB name these tests assert.
+vi.mock("next-intl", () => ({ useTranslations: () => Object.assign((k, v) => (v?.name ? `${k}:${v.name}` : k), { has: () => false }) }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
 }));

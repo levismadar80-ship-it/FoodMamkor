@@ -211,6 +211,7 @@ def _menu_product(product: Product) -> dict[str, Any]:
         # MEH-3617: all variants out = the product is out.
         "in_stock": product_variants.has_stock(product),
         "contains_alcohol": product.contains_alcohol,
+        "available_weekdays": product.available_weekdays,  # MEH-3618
         "variants": product_variants.menu_variants(product, low, high, weighed),
     }
 

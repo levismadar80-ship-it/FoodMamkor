@@ -505,10 +505,10 @@
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -620,6 +620,27 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish",
+    "kph": "Coffee"
   },
   "seo": {
     "home": {
@@ -1009,7 +1030,8 @@
         "city": "City",
         "address": "Delivery address",
         "name": "Full name",
-        "phone": "Mobile phone · we send a verification code to it",
+        "phone": "Mobile phone · we send a verification code and order updates to it",
+        "needs_city": "Enter a city to see the total and send the request.",
         "send_code": "Send code",
         "send_code_again": "Send a new code",
         "code": "Verification code",
@@ -1026,7 +1048,9 @@
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
-        "failed": "The request was not sent. Please try again."
+        "failed": "The request was not sent. Please try again.",
+        "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
+        "day_conflict_remove": "Remove «{name}» from the order"
       }
     },
     "card": {
@@ -1672,7 +1696,7 @@
       "back_to_dashboard": "Admin dashboard",
       "back_home": "Back to site",
       "error_loading": "Error loading data",
-      "error_generic": "Error",
+      "error_generic": "Something went wrong. Try again in a moment.",
       "no_data": "No data yet",
       "no_results": "No data yet",
       "items_pending_label": "{count} items awaiting approval",
@@ -1688,6 +1712,7 @@
         "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
+        "copy": "Site copy",
         "reviews": "Reviews",
         "kashrut": "Kashrut",
         "reports": "Reports",
@@ -2430,7 +2455,7 @@
         "delete_failed": "Could not delete — try again",
         "lead_added": "Lead added",
         "duplicate": "A similar lead already exists",
-        "generic_error": "Something went wrong",
+        "generic_error": "Something went wrong. Try again in a moment.",
         "copied": "Text copied",
         "copy_failed": "Could not copy — copy manually"
       },
@@ -3079,6 +3104,14 @@
             "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
+        "copy": {
+          "q": "How do I find where a piece of text appears on the site?",
+          "steps": [
+            "On “Site copy”: every text on the site, grouped the way the code groups it.",
+            "Search by the text itself or by its key, and filter by screen.",
+            "Each group says which screens show it. The screen is read only: a text change is made in code."
+          ]
+        },
         "settings": {
           "q": "How do I turn on the holiday window, Friday market or vacation mode?",
           "steps": [
@@ -3158,6 +3191,20 @@
       "removed_toast": "Passkey removed",
       "eye_show": "Show password",
       "eye_hide": "Hide password"
+    },
+    "copy": {
+      "title": "Site copy",
+      "intro": "Every string on the site, by its group in the code. Read only: copy is changed in the code.",
+      "search": "Search text or key",
+      "all_screens": "All screens",
+      "shown_on": "Shown on:",
+      "every_screen": "every screen",
+      "more_screens": "and {count} more",
+      "no_screen": "No screen found that uses this group",
+      "count": "{count} strings",
+      "shown_of": "Showing {shown} of {count}",
+      "more_rows": "{count} more in this group. Narrow the search.",
+      "empty": "No copy matches the search"
     }
   },
   "events": {
@@ -5297,6 +5344,10 @@
         "rescue": {
           "title": "Rescue bags",
           "sub": "Publish today's surplus and hand it over against a code"
+        },
+        "google_profile": {
+          "title": "Google profile",
+          "sub": "Link your profile and check the details match"
         }
       },
       "pulse": {
@@ -5372,19 +5423,13 @@
       "completeness": {
         "red_headline": "A few key details left before you're live",
         "red_sub": "Location and contact details help customers find and reach you",
-        "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
-        "yellow_high_headline": "Almost there — {percent}% ready",
         "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
         "green_headline": "Profile complete",
-        "next_step_prefix": "Next step:",
         "cta": "Complete profile",
-        "cta_aria": "Complete your profile",
-        "ring_aria": "Profile completeness: {percent}%",
         "checklist_aria": "Profile completion progress",
         "checklist_done": "Done",
         "checklist_todo": "Still needed",
-        "checklist_sub": "A few more steps and your profile is ready for inquiries",
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
@@ -5405,7 +5450,18 @@
           "hours": "Opening hours"
         },
         "chip_required": "Required",
-        "chip_recommended": "Recommended"
+        "chip_recommended": "Recommended",
+        "draft_headline": "{count, plural, one {One more step before review} other {# more steps before review}}",
+        "draft_ready": "All set",
+        "counter": "{done} of {total}",
+        "improve_headline": "Improve your page",
+        "open_cta": "Complete",
+        "license_note": "We can't approve the page without a licence number",
+        "draft_steps": {
+          "details": "Business details",
+          "image": "A photo of the business or products",
+          "product": "First product"
+        }
       },
       "strength": {
         "heading": "Profile strength",
@@ -7329,11 +7385,11 @@
   "contact_cta": {
     "whatsapp": "Message on WhatsApp",
     "phone": "Call",
-    "website": "Order on the website",
+    "website": "Order on the business's site",
     "email": "Send an email",
     "instagram": "Message on Instagram",
     "facebook": "Message on Facebook",
-    "external_order": "Order",
+    "external_order": "Order on the business's site",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
   },
   "registration": {
@@ -7755,6 +7811,9 @@
       },
       "experiences": {
         "label": "Experiences and visits at your place, with sign-up on the site"
+      },
+      "google_profile": {
+        "label": "Link your Google profile and check its details match"
       }
     },
     "total_line": "{count} tools, all of them free during the launch period. Tap a card to see all its tools.",
@@ -7955,6 +8014,16 @@
     "save_failed": "The options were not saved. Please try again.",
     "price_invalid": "The price must be a number from 1 to 10,000, for example 45"
   },
+  "product_weekdays": {
+    "editor_title": "Days the product is available",
+    "editor_where": "Shown on the business page under the product's name. Site orders can only pick a time on one of these days.",
+    "every_day": "Every day",
+    "days_short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+    "days_long": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    "none_picked": "Pick at least one day, or «Every day»",
+    "line_one": "Available on {day}s",
+    "line_many": "Available on {days}"
+  },
   "price_unit": {
     "unit": "per unit",
     "kg": "per kg",
@@ -8031,6 +8100,49 @@
       "expired": "No reply in time",
       "no_show": "Not collected"
     }
+  },
+  "google_profile": {
+    "back": "Back to tools",
+    "title": "Your Google profile",
+    "lead": "Many customers search Google first. A Google business profile with a link to your page here helps them find you.",
+    "loading": "Loading…",
+    "load_error": "We couldn't load this tool. Try again.",
+    "retry": "Try again",
+    "unavailable": "The connection to Google isn't available right now, so the profile can't be linked or checked. The guide below works without it.",
+    "guide_title": "How to open or update a Google profile",
+    "step_1": "Go to Google Business Profile, and open a profile for your business or verify one that already exists.",
+    "step_2": "In the «Website» field, paste the link to your page on Mehamakor.",
+    "step_3": "Check that the name, phone and opening hours match your page here.",
+    "open_google": "Open Google Business Profile",
+    "copy_link": "Copy the link to your page",
+    "copied": "Link copied",
+    "link_after_approval": "The link to your page will appear here once your business is approved.",
+    "review_rule": "You may ask customers to write a Google review. You may not offer a discount, a gift or anything else for it, or ask only for good reviews. That breaks Google's rules.",
+    "link_title": "Link the profile to your page",
+    "not_linked": "Not linked yet. Once linked, you can check that Google shows the same details as here, and the Google rating appears on your page once it has at least 20 reviews.",
+    "search_label": "Business name on Google",
+    "search_helper": "Leave it empty and we'll search by your business name and city.",
+    "search": "Search Google",
+    "none": "We didn't find a profile like that. Try the name exactly as it appears on Google.",
+    "pick": "This is my business",
+    "linked": "Your Google profile is linked to your page.",
+    "unlink": "Unlink",
+    "check_title": "Does Google show the same details?",
+    "check_intro": "We'll compare the name, phone and website on Google with your page here.",
+    "run_check": "Check",
+    "run_again": "Check again",
+    "field_name": "Name",
+    "field_phone": "Phone",
+    "field_website": "Website",
+    "ours": "Here",
+    "google": "On Google",
+    "verdict_same": "Same",
+    "verdict_different": "Different",
+    "verdict_missing": "Missing on Google",
+    "fix_hint": "Fix it on Google or on your page here, so customers see the same details in both places.",
+    "hours_title": "Opening hours",
+    "hours_note": "Each side writes hours differently, so compare them yourself.",
+    "empty_value": "—"
   },
   "my_group_buys": {
     "title": "My group buys",

@@ -715,7 +715,7 @@ test.describe("dashboard shell — tools tab", () => {
 
   // MT:MEH-1102:1, MT:MEH-1102:3 — drift D2: the doc says four, and names one
   // that is gone. Row 3 ("targets unchanged") is the href loop below.
-  test("the grid holds exactly five cards, and the two removed ones are absent", async ({
+  test("the grid holds exactly six cards, and the two removed ones are absent", async ({
     page,
   }) => {
     await stubSession(page);
@@ -723,7 +723,8 @@ test.describe("dashboard shell — tools tab", () => {
 
     // A COUNT at the MEASURED value. The doc says 4; adding or losing a card
     // must fail this either way.
-    await expect(grid.getByRole("link")).toHaveCount(5);
+    // MEH-3641: the sixth is «הפרופיל בגוגל».
+    await expect(grid.getByRole("link")).toHaveCount(6);
 
     for (const href of [
       "/producer/dashboard/events",
@@ -732,6 +733,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/recipes",
       // MEH-3107: the reviews tile opens the dashboard's own reviews page.
       "/producer/dashboard/reviews",
+      // MEH-3641: the owner's Google profile tool.
+      "/producer/dashboard/google-profile",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
@@ -751,7 +754,7 @@ test.describe("dashboard shell — tools tab", () => {
     const grid = await openTools(page);
     const cards = grid.getByRole("link");
     const count = await cards.count();
-    expect(count).toBe(5);
+    expect(count).toBe(6);
     for (let i = 0; i < count; i += 1) {
       await expect(cards.nth(i).locator("svg"), `card ${i} has no icon`).toHaveCount(1);
     }

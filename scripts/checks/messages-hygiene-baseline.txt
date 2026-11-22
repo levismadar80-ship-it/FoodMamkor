@@ -12,10 +12,10 @@ duplicate	11	השמירה נכשלה. נסו שוב.
 duplicate	11	משלוח
 duplicate	12	אינסטגרם
 duplicate	14	בטעינה…
-duplicate	14	טלפון
 duplicate	14	נשמר
 duplicate	14	שמירה
 duplicate	15	אימייל
+duplicate	15	טלפון
 duplicate	2	(חובה)
 duplicate	2	+ פרסום מתכון חדש
 duplicate	2	2–3 תמונות של העסק או המוצרים
@@ -53,6 +53,7 @@ duplicate	2	בחיפוש…
 duplicate	2	בחירה
 duplicate	2	בחירת מוצר
 duplicate	2	ביטול שינויים
+duplicate	2	ביצים
 duplicate	2	בישול ואפייה
 duplicate	2	בית עסק מאומת
 duplicate	2	במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
@@ -66,7 +67,6 @@ duplicate	2	גיל 18 ומעלה, והסכמה
 duplicate	2	גררו לכאן או לחצו להעלאה · JPG / PNG / WebP
 duplicate	2	דברו איתנו
 duplicate	2	דברו איתנו ←
-duplicate	2	דגים
 duplicate	2	דיווח על עסק
 duplicate	2	דרוש תיקון
 duplicate	2	האימייל לא תקין
@@ -107,6 +107,7 @@ duplicate	2	העתקת קישור
 duplicate	2	הפעולה לא הצליחה. נסו שוב.
 duplicate	2	הפעולה נכשלה. נסו שוב.
 duplicate	2	הפעלה
+duplicate	2	הפרופיל בגוגל
 duplicate	2	הפרטים הועתקו מ«{title}». נשאר לבחור תאריך.
 duplicate	2	הצגה במפה
 duplicate	2	הצטרפו לאחרונה
@@ -131,25 +132,29 @@ duplicate	2	חזרה להתחברות
 duplicate	2	חזרה ללוח הבקרה
 duplicate	2	חיוב
 duplicate	2	חייב לסמן לפחות אחד מהשניים
+duplicate	2	חיפוש בגוגל
 duplicate	2	חיפוש בתי עסק
+duplicate	2	חלב וגבינות
 duplicate	2	חנוכה
 duplicate	2	חנות או טופס הזמנות
 duplicate	2	חנות או טופס הזמנות באתר שלכם (קישור)
 duplicate	2	חנות פיזית (קבלת לקוחות)
 duplicate	2	חפשי בגוגל
 duplicate	2	חשבון
+duplicate	2	טוענים…
 duplicate	2	טופז שנפ.
 duplicate	2	טלפון נוסף (לא חובה)
 duplicate	2	טעינת ביקורות…
 duplicate	2	טעינת הרשימה נכשלה.
 duplicate	2	טעינת מפה…
 duplicate	2	טעינת תוצאות…
+duplicate	2	טקסטים באתר
 duplicate	2	ט״ו בשבט
 duplicate	2	יוצרת קישור…
+duplicate	2	יין, בירה ומשקאות
 duplicate	2	יישוב
 duplicate	2	ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסו שוב מהמייל, או פנו אלינו.
 duplicate	2	יציאה מרשימת ההמתנה
-duplicate	2	ירקות
 duplicate	2	יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ
 duplicate	2	יש להזין מספר שלם
 duplicate	2	יש למלא הערה
@@ -173,6 +178,7 @@ duplicate	2	לבטל את ההזמנה
 duplicate	2	לבתי העסק
 duplicate	2	לבתי עסק
 duplicate	2	לדוגמה: תוכן לא רלוונטי לפלטפורמה
+duplicate	2	להזמנה באתר של העסק
 duplicate	2	להרשמה ←
 duplicate	2	לוח שנה
 duplicate	2	לחם מחמצת
@@ -183,7 +189,6 @@ duplicate	2	ללוח הבקרה
 duplicate	2	למדיניות הפרטיות
 duplicate	2	למה המספר הזה? (למשל: להזמנות)
 duplicate	2	למה מהמקור
-duplicate	2	לנסות שוב
 duplicate	2	לקראת {holiday}
 duplicate	2	לתנאי השימוש
 duplicate	2	מאומת: אישור פטור מהרשות המקומית.
@@ -209,6 +214,8 @@ duplicate	2	מועד אחרון: {date}
 duplicate	2	מוצהר: הצהרה שזו תוצרת שגידלה בעצמה.
 duplicate	2	מוצר חדש
 duplicate	2	מוצר ראשון בקטלוג
+duplicate	2	מוצרים מוכנים
+duplicate	2	מותססים וכבושים
 duplicate	2	מזומן
 duplicate	2	מחפשת…
 duplicate	2	מחקו
@@ -237,11 +244,14 @@ duplicate	2	מתאים לטבעונים
 duplicate	2	מתאים לצמחונים
 duplicate	2	מתכון
 duplicate	2	ניקוי הכל
+duplicate	2	ניתוק
 duplicate	2	נמסר
 duplicate	2	נמסרה
 duplicate	2	נסי שוב
+duplicate	2	נרות וארומה
 duplicate	2	נשלחה בקשה לשינויים
 duplicate	2	נשמר למועדפים
+duplicate	2	סבונים טבעיים
 duplicate	2	סוכות
 duplicate	2	סיבה אחרת
 duplicate	2	סיבת הדחייה
@@ -265,6 +275,7 @@ duplicate	2	פחות
 duplicate	2	פחות מ-20 ביקורות — השורה לא תוצג
 duplicate	2	פייבוקס
 duplicate	2	פייסבוק (קישור)
+duplicate	2	פירות
 duplicate	2	פניתי
 duplicate	2	פעולות נוספות
 duplicate	2	פעילות אחרונה
@@ -308,7 +319,7 @@ duplicate	2	שמרו הגדרות
 duplicate	2	שמרו שינויים
 duplicate	2	שעות
 duplicate	2	שעות פעילות
-duplicate	2	שעות פתיחה
+duplicate	2	תבלינים וצמחי תיבול
 duplicate	2	תגובת בית העסק
 duplicate	2	תדעו מה עובד
 duplicate	2	תיאור
@@ -335,6 +346,7 @@ duplicate	3	אירוע חדש
 duplicate	3	בטלו
 duplicate	3	בתיאום מראש
 duplicate	3	גלו בתי עסק במפה
+duplicate	3	דגים
 duplicate	3	דחייה
 duplicate	3	דירוג
 duplicate	3	הגדרות
@@ -356,13 +368,13 @@ duplicate	3	הצהרת נגישות
 duplicate	3	הציגו סיסמה
 duplicate	3	הקישור
 duplicate	3	הקישור אינו תקין
-duplicate	3	הקישור הועתק
 duplicate	3	הקלידו שם עיר…
 duplicate	3	חובה
 duplicate	3	חוויה חדשה
 duplicate	3	חזרה
 duplicate	3	חקלאות
 duplicate	3	טוענת…
+duplicate	3	ירקות
 duplicate	3	ישראל
 duplicate	3	כל בתי העסק
 duplicate	3	כן, לבטל
@@ -372,8 +384,8 @@ duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
 duplicate	3	לא הוגדר
 duplicate	3	להשלמת העמוד
-duplicate	3	לחמים ואפייה
 duplicate	3	לכל הנתונים
+duplicate	3	לנסות שוב
 duplicate	3	מאושר
 duplicate	3	מאושרות
 duplicate	3	מאחורי העסק
@@ -389,6 +401,7 @@ duplicate	3	ממתין
 duplicate	3	מספר טלפון לא תקין
 duplicate	3	מספר רישיון ייצור (משרד הבריאות)
 duplicate	3	מעלה תמונה…
+duplicate	3	משהו השתבש. נסו שוב בעוד רגע.
 duplicate	3	משלוחים לכל הארץ
 duplicate	3	משתמשים
 duplicate	3	נדחו
@@ -409,6 +422,7 @@ duplicate	3	שאלו אותנו
 duplicate	3	שאלות נפוצות
 duplicate	3	שגיאה בשליחה
 duplicate	3	שמרו במועדפים
+duplicate	3	שעות פתיחה
 duplicate	3	שתפו בוואטסאפ
 duplicate	3	תג מאומת
 duplicate	3	תוכן
@@ -424,6 +438,7 @@ duplicate	4	בית עסק
 duplicate	4	בתוקף עד {date}
 duplicate	4	המועדפים שלי
 duplicate	4	הסרת תמונה
+duplicate	4	הקישור הועתק
 duplicate	4	חזרו לדף הבית
 duplicate	4	חינם
 duplicate	4	חיפוש
@@ -436,6 +451,7 @@ duplicate	4	כניסה
 duplicate	4	כניסה חופשית
 duplicate	4	כתבו לנו
 duplicate	4	לא הצלחנו לשמור. נסו שוב.
+duplicate	4	לחמים ואפייה
 duplicate	4	ללא גלוטן
 duplicate	4	ללא לקטוז
 duplicate	4	ללא סוכר מוסף
@@ -456,7 +472,6 @@ duplicate	5	אודות
 duplicate	5	אישור
 duplicate	5	גראס פד
 duplicate	5	חזרה לדף הבית
-duplicate	5	חזרה לכלים
 duplicate	5	כותרת
 duplicate	5	למה מקומי?
 duplicate	5	נדחה
@@ -474,6 +489,7 @@ duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
 duplicate	6	וואטסאפ
+duplicate	6	חזרה לכלים
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
 duplicate	6	עריכה
@@ -579,8 +595,6 @@ unused	reviews.write_cta
 unused	search.smart.product_by_prefix
 unused	search.smart.section_products
 unused	share_page.native
-unused	sweep_tail.event_new.field_price_hint
-unused	sweep_tail.event_new.field_time_hint
 unused	sweep_tail.followers.share_cta
 unused	sweep_tail.followers.share_cta_copied
 unused	sweep_tail.followers.share_hint

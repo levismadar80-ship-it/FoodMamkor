@@ -22,7 +22,8 @@
  *           Phosphor icons + action-noun titles); MEH-1357 (removed the
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
  *           in the dashboard shell nav; reviews card marked candidate-to-move);
- *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only).
+ *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
+ *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -32,7 +33,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
+import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle, GoogleLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -227,6 +228,20 @@ export default function ProducerDashboardToolsPage() {
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}<NewToolPill href="/producer/dashboard/reviews" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
+        )}
+        {/* MEH-3641: «הפרופיל שלכם בגוגל» — guide, link, check. Every status
+            (a pending business can prepare its Google profile too), never an
+            organizer (the server 404s an organizer). */}
+        {profile?.kind !== "organizer" && (
+          <Link
+            href="/producer/dashboard/google-profile"
+            data-testid="tools-google-profile-tile"
+            className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
+          >
+            <GoogleLogo size={24} className="text-primary mb-2" aria-hidden="true" />
+            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.google_profile.title")}<NewToolPill href="/producer/dashboard/google-profile" /></p>
+            <p className="text-sm text-fg-muted">{t("quick_links.google_profile.sub")}</p>
+          </Link>
         )}
       </div>
       {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the

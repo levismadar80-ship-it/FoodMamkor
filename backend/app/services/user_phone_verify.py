@@ -59,7 +59,9 @@ def can_get_whatsapp(user: User) -> bool:
     return is_verified(user) and user.whatsapp_consent_at is not None
 
 
-def _opted_out(db: Session, canonical: str) -> bool:
+def is_opted_out(db: Session, canonical: str) -> bool:
+    """True when the latest message from `canonical` is an opt-out word (MEH-3640:
+    also read by the WhatsApp send layer before every template)."""
     latest = (
         db.query(InboundMessage)
         .filter(InboundMessage.from_phone == canonical)
@@ -109,7 +111,7 @@ def prepare_send(
         return SendDecision("capped")
     # After the caps, so a capped opted-out number answers 429 like any other
     # capped number and the order does not reveal the «הסר».
-    if _opted_out(db, canonical):
+    if is_opted_out(db, canonical):
         return SendDecision("opted_out")
 
     code = fixed_code or "".join(secrets.choice(string.digits) for _ in range(6))

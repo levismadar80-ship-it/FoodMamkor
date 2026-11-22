@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MAP_REFERRER } from "@/lib/map-view-state";
@@ -66,6 +68,7 @@ function categoryTint(hex, alpha) {
  */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
+  const tRoot = useTranslations();
   const router = useRouter();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
@@ -187,7 +190,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
           {category?.name && (
             <span className="inline-flex items-center gap-1 min-w-0">
               <CategoryIcon size={14} weight="regular" aria-hidden="true" className="shrink-0 text-fg-muted" />
-              <span className="truncate">{category.name}</span>
+              <span className="truncate">{categoryLabel(tRoot, category)}</span>
             </span>
           )}
           {distanceLabel && (
