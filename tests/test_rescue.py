@@ -439,6 +439,7 @@ class TestHandOver:
         offer.pickup_end = now - timedelta(hours=1)
         db.commit()
         old = f"/rescue/orders/{order['id']}/no_show"
+        assert client.post(old).status_code == 401
         assert client.post(old, headers=auth_header(buyer)).status_code == 403
         r = client.post(old, headers=auth_header(shop["owner"]))
         assert r.status_code == 200
