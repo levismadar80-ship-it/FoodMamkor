@@ -169,11 +169,11 @@ _ai_probe_cache: tuple[float, tuple[int, dict[str, Any]]] | None = None
 def _ai_probe() -> tuple[int, dict[str, Any]]:
     """(http status, body) for GET /health/ai. Never raises.
 
-      disabled — no ANTHROPIC_API_KEY; AI is off by configuration (200).
-      ok       — the client was built and the API answered (200).
-      error    — the client could not be built (stage "init"), or the API did
-                 not answer (stage "call") (503). The body names the exception
-                 class only, never the key or a message body.
+    disabled — no ANTHROPIC_API_KEY; AI is off by configuration (200).
+    ok       — the client was built and the API answered (200).
+    error    — the client could not be built (stage "init"), or the API did
+               not answer (stage "call") (503). The body names the exception
+               class only, never the key or a message body.
     """
     if not settings.anthropic_api_key:
         return 200, {"status": "disabled"}
@@ -183,7 +183,9 @@ def _ai_probe() -> tuple[int, dict[str, Any]]:
     if client is None:
         return 503, {"status": "error", "stage": "init", "code": "ClientInitFailed"}
     try:
-        client.with_options(timeout=_PLACES_PROBE_TIMEOUT_SECONDS, max_retries=0).models.list(limit=1)
+        client.with_options(
+            timeout=_PLACES_PROBE_TIMEOUT_SECONDS, max_retries=0
+        ).models.list(limit=1)
     except Exception as exc:  # noqa: BLE001 — a health probe reports, never raises
         return 503, {"status": "error", "stage": "call", "code": type(exc).__name__}
     finally:
@@ -198,7 +200,10 @@ def _ai_probe_cached() -> tuple[int, dict[str, Any]]:
     """_ai_probe() at most once per _AI_PROBE_CACHE_SECONDS per process."""
     global _ai_probe_cache  # noqa: PLW0603 — a process-local cache, nothing else
     now = time.monotonic()
-    if _ai_probe_cache is not None and now - _ai_probe_cache[0] < _AI_PROBE_CACHE_SECONDS:
+    if (
+        _ai_probe_cache is not None
+        and now - _ai_probe_cache[0] < _AI_PROBE_CACHE_SECONDS
+    ):
         return _ai_probe_cache[1]
     result = _ai_probe()
     _ai_probe_cache = (now, result)
@@ -224,7 +229,11 @@ def _report_ai_error(body: dict[str, Any]) -> None:
         with scope_factory() as scope:
             scope.set_tag("ai_probe_stage", str(body.get("stage")))
             scope.set_tag("ai_probe_code", str(body.get("code")))
-            scope.fingerprint = ["ai-health", str(body.get("stage")), str(body.get("code"))]
+            scope.fingerprint = [
+                "ai-health",
+                str(body.get("stage")),
+                str(body.get("code")),
+            ]
             sentry_sdk.capture_message(
                 f"Anthropic client is not working ({body.get('stage')}): {body.get('code')}",
                 level="error",

@@ -5,6 +5,7 @@ moderation, bio writing, menu reading and risk scoring go "offline" with no
 5xx and no failing test (the anthropic 2.x bump, #5154, was exactly that).
 These tests hold the probe that makes the breakage visible.
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -39,7 +40,9 @@ def test_disabled_without_a_key(monkeypatch):
 
 def test_ok_when_the_client_builds_and_answers(monkeypatch):
     monkeypatch.setattr(health_mod.settings, "anthropic_api_key", "sk-test")
-    monkeypatch.setattr(moderation_common, "make_anthropic_client", lambda _t: _fake_client([]))
+    monkeypatch.setattr(
+        moderation_common, "make_anthropic_client", lambda _t: _fake_client([])
+    )
     assert health_mod._ai_probe() == (200, {"status": "ok"})
 
 
@@ -53,7 +56,8 @@ def test_init_failure_is_a_503_naming_the_stage(monkeypatch):
 def test_call_failure_is_a_503_with_the_exception_class(monkeypatch):
     monkeypatch.setattr(health_mod.settings, "anthropic_api_key", "sk-test")
     monkeypatch.setattr(
-        moderation_common, "make_anthropic_client",
+        moderation_common,
+        "make_anthropic_client",
         lambda _t: _fake_client(list_error=ConnectionError("down")),
     )
     status, body = health_mod._ai_probe()
@@ -86,19 +90,25 @@ def test_error_is_reported_once_per_window(monkeypatch):
     import sentry_sdk
 
     monkeypatch.setattr(sentry_sdk, "new_scope", lambda: _Scope(), raising=False)
-    monkeypatch.setattr(sentry_sdk, "capture_message", lambda m, level=None: sent.append(m))
+    monkeypatch.setattr(
+        sentry_sdk, "capture_message", lambda m, level=None: sent.append(m)
+    )
     body = {"status": "error", "stage": "init", "code": "ClientInitFailed"}
     health_mod._report_ai_error(body)
     health_mod._report_ai_error(body)
     assert len(sent) == 1 and "init" in sent[0]
     # A different failure inside the window still reports.
-    health_mod._report_ai_error({"status": "error", "stage": "call", "code": "APITimeoutError"})
+    health_mod._report_ai_error(
+        {"status": "error", "stage": "call", "code": "APITimeoutError"}
+    )
     assert len(sent) == 2
 
 
 def test_probe_result_is_cached_so_anthropic_sees_one_call_a_minute(monkeypatch):
     calls = []
-    monkeypatch.setattr(health_mod, "_ai_probe", lambda: calls.append(1) or (200, {"status": "ok"}))
+    monkeypatch.setattr(
+        health_mod, "_ai_probe", lambda: calls.append(1) or (200, {"status": "ok"})
+    )
     health_mod._ai_probe_cached()
     health_mod._ai_probe_cached()
     assert len(calls) == 1
