@@ -5149,7 +5149,8 @@
             "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
             "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
             "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
-            "i4": "The dashboard home shows how many orders reached you through the site this month."
+            "i4": "The dashboard home shows how many orders reached you through the site this month.",
+            "i5": "New tool in the «Tools» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
           },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
@@ -7096,8 +7097,9 @@
       "city_placeholder": "e.g. Haifa",
       "loading": "Loading today's bags…",
       "failed": "We couldn't load the bags right now. Try refreshing.",
-      "empty": "No rescue bags today. Worth checking again this afternoon.",
-      "empty_city": "No rescue bags in {city} today. Worth checking again this afternoon.",
+      "empty_title": "No rescue bags yet today",
+      "empty_title_city": "No rescue bags in {city} yet today",
+      "empty_subtitle": "Worth checking again this afternoon",
       "count": "{count, plural, one {one bag} other {# bags}}"
     },
     "row": {

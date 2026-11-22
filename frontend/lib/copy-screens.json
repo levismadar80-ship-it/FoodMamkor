@@ -677,6 +677,7 @@
       "/register/organizer",
       "/register/producer",
       "/registration/[token]",
+      "/rescue",
       "/rescue/[offerId]",
       "/settings"
     ],
