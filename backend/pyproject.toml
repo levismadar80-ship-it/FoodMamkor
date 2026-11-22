@@ -352,6 +352,7 @@ files = [
     "app/services/license_validation.py",
     "app/services/moderation_common.py",
     "app/services/moderation_fail_open.py",
+    "app/services/ops_alert.py",
     "app/services/moderation_prompt.py",
     "app/services/moderation_schemas.py",
     "app/services/newsletter_sync.py",
