@@ -7,8 +7,9 @@ Covers:
     removed one leaves the registry (the form side is RegisterProducerClient-01
     «signup field homes»);
   - services/signup_fill_digest: the Sunday counts over the last 7 days
-    (businesses only, test rows and organizers out), the 0% warning from 3
-    signups, and that nothing is sent on another day or with no signups.
+    (businesses only; test rows, test-owned rows and organizers out), the 0%
+    warning from 3 signups, and that nothing is sent on a healthy week, on
+    another day, or with no signups.
 
 The digest's "now" is a fixed Sunday (10:00 Israel) and every seed is dated
 relative to it, so no assertion reads the runner's clock.
@@ -100,6 +101,28 @@ def test_two_signups_with_zero_do_not_warn(db):
     for _ in range(2):
         _business(db, referral="")
     assert sfd.measure(db, SUNDAY).zero_fields() == []
+
+
+def test_healthy_week_sends_nothing(db, monkeypatch):
+    """Sapir 22/11: email only on a warning, never a weekly «all fine»."""
+    for _ in range(3):
+        _business(db)
+    sent = []
+    monkeypatch.setattr(sfd.settings, "admin_email", "admin@example.com")
+    monkeypatch.setattr(sfd, "send_email", lambda *a: sent.append(a))
+    assert sfd.send_signup_fill_digest(db, SUNDAY) is None
+    assert sent == []
+
+
+def test_business_owned_by_a_test_account_is_not_counted(db):
+    from conftest import make_user
+
+    p = _business(db)
+    u = make_user(db, role="producer")
+    u.producer_id = p.id
+    u.is_test = True
+    db.commit()
+    assert sfd.measure(db, SUNDAY).signups == 0
 
 
 @pytest.mark.parametrize("weekday_offset", [1, 3])
