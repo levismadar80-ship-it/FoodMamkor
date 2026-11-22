@@ -2,9 +2,8 @@
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
-import { useRouter } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import BackLink from "@/components/ui/BackLink";
@@ -15,7 +14,6 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
-import { loginHrefBackHere } from "@/lib/safe-redirect";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -34,6 +32,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+import LoginPromptModal from "@/components/LoginPromptModal";
 import StruckPrice from "@/components/ui/StruckPrice";
 // MEH-3597: the offer-page blocks shared with the rescue bag page.
 import WhereSection from "@/components/offer-detail/WhereSection";
@@ -96,7 +95,6 @@ export default function GroupBuyDetailClient({ id }) {
   const tEvents = useTranslations("events.detail");
   const tList = useTranslations("group_buys.list");
   const locale = useLocale();
-  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -111,6 +109,16 @@ export default function GroupBuyDetailClient({ id }) {
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  // MEH-3679: a guest's «כניסה להצטרפות» opens the shared sign-in window
+  // (Google inside, MEH-3661) instead of leaving for /login. A Google sign-in
+  // there joins by itself; «היכנסו» still goes to /login and back.
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  // State, not a ref: the sign-in can set the user before or after
+  // onSignedIn runs (auth-context replays a pending action in between), and
+  // the effect below must see both, in either order. The ref guards one send.
+  const [joinPending, setJoinPending] = useState(false);
+  const joinSent = useRef(false);
+  const commitRef = useRef(/** @type {null | (() => Promise<void>)} */ (null));
   const [error, setError] = useState("");
   // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
   // fetched and valid; on any failure the checker simply stays away. (The
@@ -173,14 +181,30 @@ export default function GroupBuyDetailClient({ id }) {
     };
   }, [producerId]);
 
+  // MEH-3679: the join the guest asked for, sent once the Google sign-in in
+  // the window has set the user. In a microtask, not in the effect body.
+  useEffect(() => {
+    if (!user || !joinPending) return;
+    Promise.resolve().then(() => {
+      if (joinSent.current) return;
+      joinSent.current = true;
+      setJoinPending(false);
+      commitRef.current?.();
+    });
+  }, [user, joinPending]);
+
   const handleCommit = async (e) => {
     e.preventDefault();
     if (!user) {
-      // MEH-2982: come back to this group buy after signing in, not to "/".
+      // MEH-2982: the quantity survives the trip to /login and back.
       saveDraftQuantity(id, quantity);
-      router.push(loginHrefBackHere());
+      setShowLoginModal(true);
       return;
     }
+    await commit();
+  };
+
+  const commit = async () => {
     setError("");
     setSubmitting(true);
     try {
@@ -194,10 +218,18 @@ export default function GroupBuyDetailClient({ id }) {
       // MEH-975: route through detailToMessage so a 422 `detail` ARRAY never
       // renders as a React child (React #31). Falls back to generic Hebrew copy.
       setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
+      // MEH-3679: a join sent right after sign-in ran on the guest's copy of
+      // the group (e.g. she had already joined); show the real state.
+      load();
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Refreshed in an effect, not during render (react-hooks/refs).
+  useEffect(() => {
+    commitRef.current = commit;
+  });
 
   // MEH-2199 → MEH-3096: the keyboard layer (Tab trap, Escape closes and
   // never confirms, focus back to the trigger) lives in ui/Dialog.
@@ -638,6 +670,20 @@ export default function GroupBuyDetailClient({ id }) {
           above the sticky header z-1050 and BottomNav z-1000). Initial
           focus stays on the first button (MEH-2199 test); no dismiss while
           the DELETE is in flight. */}
+      <LoginPromptModal
+        open={showLoginModal}
+        reason="group_buy"
+        title={t("login_prompt_title")}
+        message={t("login_prompt_message")}
+        nextPath={typeof window !== "undefined" ? window.location.pathname + window.location.search : "/"}
+        onSignedIn={() => {
+          joinSent.current = false;
+          setJoinPending(true);
+          setShowLoginModal(false);
+        }}
+        onClose={() => setShowLoginModal(false)}
+      />
+
       {confirmCancelOpen && (
         <Dialog labelledBy="gb-cancel-title" size="sm" dismissible={!cancelling} onClose={() => setConfirmCancelOpen(false)}>
             <h2

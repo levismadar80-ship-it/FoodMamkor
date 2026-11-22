@@ -56,7 +56,7 @@ vi.mock("next-intl", () => {
     "admin.outreach.wa_templates.warm_title": "חמותה",
     "admin.outreach.wa_templates.professional_title": "מקצועי",
     "admin.outreach.wa_templates.short_title": "קצר",
-    "admin.outreach.wa_templates.warm_body": "היי {name} 🌿\n{prefillUrl}",
+    "admin.outreach.wa_templates.warm_body": "היי {name},\n{prefillUrl}",
     "admin.outreach.wa_templates.professional_body": "שלום {name}\n{prefillUrl}",
     "admin.outreach.wa_templates.short_body": "{name}, {prefillUrl}",
     "admin.outreach.empty": 'אין לידים להצגה. לחצי על "+ ליד חדש" כדי להתחיל.',

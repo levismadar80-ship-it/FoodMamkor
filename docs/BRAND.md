@@ -88,7 +88,8 @@ The **tagline** is specced for: footer brand line, `/about` narrative. **Not the
 ### Emoji LOCK v2 (MEH-657, surface-scoped)
 
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
-- ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
+- ❌ Email subject + body, and every server-sent notification → 0 emojis (Sapir 22/11, MEH-3668). `scripts/checks/no-emoji-backend-guard.sh` blocks a new one in `backend/app`; the ones left in emails are frozen in its baseline until the open email PRs land and they are removed. Model text (the chat reply, the AI description and review-reply drafts) is stripped of emoji by `ai_text.strip_emoji` before it reaches anyone (MEH-3668).
+- ❌ WhatsApp outbound + share strings → no emoji either (Sapir 22/11, MEH-3668): the link card WhatsApp builds from the page's Open Graph tags carries the picture, and the text reads like a person wrote it («גיליתי את {title} במהמקור, שווה להציץ»). **One exception:** the 💚 in the short outreach message (`admin.outreach.wa_templates.short_body`), which Sapir kept («הלב הירוק אפשר להשאיר»). It is the only entry in `EXEMPT_KEYS` in `NoEmojiInMessages.test.js`. The Meta-approved templates (`whatsapp_templates.py`) carry none.
 
 ## 4 · Voice (full rules in ADR-014, refined by ADR-024, reader address set by ADR-037)
 

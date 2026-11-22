@@ -619,7 +619,7 @@ def create_group_buy(
         producer.id,  # type: ignore[arg-type]
         "new_group_buy",
         AlertContent(
-            title=f"🛒 קבוצת רכישה חדשה: {gb.title}",
+            title=f"קבוצת רכישה חדשה: {gb.title}",
             body=(
                 f"{producer.name} — {format_price(gb.price_per_unit_group)} "  # type: ignore[arg-type]
                 f"במקום {format_price(gb.price_per_unit_regular)}"  # type: ignore[arg-type]
