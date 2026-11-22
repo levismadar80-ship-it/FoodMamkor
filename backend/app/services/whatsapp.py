@@ -68,6 +68,9 @@ OUTCOME_WINDOW_EXPIRED = "window_expired"
 # MEH-3402: dropped outside production (recipient not a staff number). Stored
 # only outside production, with the content, for /admin/whatsapp/blocked.
 OUTCOME_BLOCKED_NON_PROD = "blocked_nonprod"
+# MEH-3640: the recipient's last message to us was «הסר» (Meta: honour every
+# request to stop). Not a failure and never retried.
+OUTCOME_OPTED_OUT = "opted_out"
 BLOCKED_DEDUPE_WINDOW = timedelta(hours=24)
 
 # MEH-771 Chunk C — the two terminal-bad outcomes from the recipient's
@@ -444,6 +447,47 @@ def send_text(to: str, body: str, test_cause: bool = False) -> bool:
     return _post(payload, kind="text", to=to)
 
 
+def _recipient_opted_out(template: WhatsAppTemplate, to: str) -> bool:
+    """MEH-3640: True when `to` last wrote «הסר» (or another opt-out word) and
+    `template` is not a code the person asked for.
+
+    The webhook's «הסר» used to switch off only favourite alerts; order and
+    business messages kept going. Meta's policy is to honour every request to
+    stop, so the check lives here, in front of every template send. A code
+    (OtpCodeV1) still goes out: she asked for it seconds ago. `send_text` is
+    not checked: it is only ever a reply inside the 24-hour window, including
+    the confirmation of the «הסר» itself.
+
+    Any later message from her clears it (the latest inbound row decides, the
+    same rule `user_phone_verify.is_opted_out` already uses). Fail-open like the
+    rest of this module: a DB error logs and sends.
+    """
+    from app.services.whatsapp_templates import OtpCodeV1
+
+    if isinstance(template, OtpCodeV1):
+        return False
+    try:
+        from app.database import SessionLocal
+        from app.services.user_phone_verify import is_opted_out
+        from app.utils.phone import canonical_il_msisdn
+
+        canonical = canonical_il_msisdn(to)
+        if canonical is None:
+            return False
+        with SessionLocal() as db:
+            opted_out = is_opted_out(db, canonical)
+    except Exception as exc:  # noqa: BLE001 — fail-open, the module contract
+        logger.warning("[WHATSAPP] opt-out check failed to=%s: %s", mask_phone(to), exc)
+        return False
+    if opted_out:
+        logger.info(
+            "[WHATSAPP] template[%s] to %s skipped — recipient wrote «הסר»",
+            template.name,
+            mask_phone(to),
+        )
+    return opted_out
+
+
 def send_template(
     to: str, template: WhatsAppTemplate, test_cause: bool = False
 ) -> bool:
@@ -470,6 +514,8 @@ def send_template(
     ):
         return False
     if _links_to_production(template, to):
+        return False
+    if _recipient_opted_out(template, to):
         return False
     payload = {
         "messaging_product": "whatsapp",
@@ -506,6 +552,8 @@ def send_template_result(
     # DO NOT drop this — MEH-3402: the bool twins check it; this one must too.
     if _blocked_outside_production(f"template[{template.name}]", to):
         return WhatsAppSendResult(outcome=OUTCOME_BLOCKED_NON_PROD, ok=False)
+    if _recipient_opted_out(template, to):
+        return WhatsAppSendResult(outcome=OUTCOME_OPTED_OUT, ok=False)
     payload = {
         "messaging_product": "whatsapp",
         "to": to.lstrip("+"),

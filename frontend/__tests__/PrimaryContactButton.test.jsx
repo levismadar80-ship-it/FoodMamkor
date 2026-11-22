@@ -74,7 +74,7 @@ describe("PrimaryContactButton", () => {
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("target", "_blank");
     expect(btn.getAttribute("rel")).toContain("noopener");
-    expect(screen.getByText("להזמנה באתר")).toBeInTheDocument();
+    expect(screen.getByText("להזמנה באתר של העסק")).toBeInTheDocument();
   });
 
   it("email variant — mailto: href", () => {
