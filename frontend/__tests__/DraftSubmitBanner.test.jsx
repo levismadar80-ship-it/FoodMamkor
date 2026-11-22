@@ -380,3 +380,40 @@ describe("DraftSubmitBanner — each missing item links to where it is filled in
     ).toHaveLength(SUBMISSION_REQUIREMENTS.length);
   });
 });
+
+// MEH-3659: inside the completeness card (variant="actions") the card owns the
+// list and the OTP card; this is one button that posts on the first tap.
+describe("DraftSubmitBanner variant=actions (MEH-3659)", () => {
+  it("one tap posts — no confirm step", async () => {
+    post.mockResolvedValue({ data: { detail: "ok" } });
+    const onSubmitted = vi.fn();
+    render(<DraftSubmitBanner variant="actions" producer={READY} onSubmitted={onSubmitted} />);
+    expect(screen.queryByTestId("draft-submit-confirm")).toBeNull();
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/producers/me/submit-for-review"));
+    expect(post).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
+
+  it("renders no list, no OTP card and no disabled hint, even when something is missing", () => {
+    render(<DraftSubmitBanner variant="actions" producer={{ ...READY, phone_verified: false }} />);
+    expect(screen.queryByTestId("draft-missing-list")).toBeNull();
+    expect(screen.queryByTestId("phone-verify-card")).toBeNull();
+    expect(screen.queryByTestId("draft-phone-verify")).toBeNull();
+    expect(screen.queryByText("cta_disabled_hint")).toBeNull();
+    expect(screen.getByTestId("draft-submit-cta")).toBeDisabled();
+  });
+
+  it("a server 422 does not leave a dead button — it stays tappable for a retry", async () => {
+    post.mockRejectedValueOnce({
+      response: { data: { detail: { code: "x", message: "m", params: { missing: ["phone_verified"] } } } },
+    });
+    render(<DraftSubmitBanner variant="actions" producer={READY} />);
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("draft-submit-cta")).not.toBeDisabled());
+    post.mockResolvedValueOnce({ data: { detail: "ok" } });
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+  });
+});

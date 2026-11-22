@@ -26,6 +26,13 @@ test.beforeEach(async ({ page }) => {
  *           missing cell, the 83% divisor, and the OTP flow completing IN the
  *           banner — card gone, item gone, CTA enabled, no reload.
  *
+ *           MEH-3659: the draft card lists ONLY the submit gate's four rows
+ *           («פרטי העסק», photo, product, WhatsApp) as «N מתוך 4», opens
+ *           one row at a time (the OTP card inside the WhatsApp row), and
+ *           shows the submit button only when all four are done — one tap,
+ *           no confirm. The recommended steps wait for «לשפר את העמוד».
+ *           The tests below were rewritten for that; history kept here:
+ *
  *           MEH-2883 (#4270): for a BUSINESS the draft banner is now only its
  *           actions — DraftSubmitBanner variant="actions"
  *           (`draft-submit-actions`: phone check + CTA + hint, no title, no
@@ -100,7 +107,7 @@ const ALL_DONE = {
   owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
 
-/** The one cell the doc calls out: a typed phone, never verified. 6/7 → 86%. */
+/** The one cell the doc calls out: a typed phone, never verified. 3 of 4 in draft. */
 const PHONE_UNVERIFIED = { ...ALL_DONE, phone_verified: false };
 
 /** Fails every gate item — flows/34's INCOMPLETE shape. */
@@ -162,143 +169,75 @@ const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: 
 /** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
 const missingRows = (page: Page) => checklistRows(page).filter({ hasText: "עדיין חסר" });
 
-const STEP_LABELS = ["תמונות", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות שפתוח למבקרים", "תמונה שלך"];
+const DRAFT_LABELS = ["פרטי העסק", "תמונה של העסק או המוצרים", "מוצר ראשון", "אימות מספר הוואטסאפ"];
 
-// ── the banner's state matrix — the cells flows/34 leaves open ─────────────
+// ── the draft card's state matrix (MEH-3659) ─────────────
 
-test.describe("draft banner — matrix cells and the cancel path", () => {
-  // MT:MEH-2100 matrix (1 missing × closed) — the CTA is disabled and ONE row names the item.
-  test("one missing item — the CTA is disabled and the checklist names exactly that item", async ({ page }) => {
+test.describe("draft card — matrix cells", () => {
+  // (1 missing × open) — that row is the open one, no button yet.
+  test("one missing item — only that row is open, and there is no submit button yet", async ({ page }) => {
     await stubOverview(page, PHONE_UNVERIFIED);
     await openOverview(page);
-    await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(cta(page)).toBeDisabled();
-    // The one checklist names it: exactly ONE row reads missing, and it is the
-    // WhatsApp row (row 5, chip-anchored so the label is not the only witness).
-    await expect(checklistRows(page)).toHaveCount(7);
+    await expect(checklistRows(page)).toHaveCount(4);
     const rows = missingRows(page);
     await expect(rows).toHaveCount(1);
-    await expect(rows).toContainText("אימות וואטסאפ");
-    await expect(rows.getByTestId("completeness-chip-phone_verified")).toHaveText("חובה");
+    await expect(rows).toContainText("אימות מספר הוואטסאפ");
+    await expect(checklist(page).getByTestId("completeness-open-phone_verified")).toBeVisible();
+    await expect(page.getByTestId("completeness-counter")).toHaveText("3 מתוך 4");
+    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("עוד צעד אחד לשליחה לבדיקה");
+    await expect(cta(page)).toHaveCount(0);
     await expect(missingList(page)).toHaveCount(0);
   });
 
-  // MT:MEH-2100 matrix (many × closed) — flows/34 A pins the rows; the per-row «חובה» chip is asserted here.
-  test("five missing required items — every row carries its own «חובה» chip", async ({ page }) => {
+  // (many × open) — every row missing, ONE open.
+  test("everything missing — four rows, one open, no chips", async ({ page }) => {
     await stubOverview(page, NOTHING_DONE);
     await openOverview(page);
-    await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(cta(page)).toBeDisabled();
-    // Six rows missing (the five required + the «מומלץ» hours step, which has
-    // no location to read here)…
-    await expect(missingRows(page)).toHaveCount(6);
-    // …and exactly five «חובה» chips among them, one per row — a chip rendered
-    // once for the list would read 1 here.
-    await expect(missingRows(page).getByText("חובה", { exact: true })).toHaveCount(5);
-    await expect(missingRows(page).getByText("מומלץ", { exact: true })).toHaveCount(1);
-    await expect(missingList(page)).toHaveCount(0);
+    await expect(missingRows(page)).toHaveCount(4);
+    await expect(checklist(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(1);
+    await expect(checklist(page).getByText("חובה", { exact: true })).toHaveCount(0);
+    await expect(checklist(page).getByText("מומלץ", { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("completeness-counter")).toHaveText("0 מתוך 4");
   });
 
-  // MT:MEH-2100:2 — «לא» returns to a LIVE CTA, not a stuck disabled one. Live copy reads «עוד לא».
-  test("cancelling the confirm returns to an enabled CTA and sends nothing", async ({ page }) => {
+  // (0 missing) — «הכול מוכן», one tap posts, toast names the window.
+  test("all done — «הכול מוכן», one tap sends, and the toast names the 3-business-day window", async ({ page }) => {
     const posts: Rec[] = [];
     await stubOverview(page, ALL_DONE, posts);
     await openOverview(page);
-    await expect(cta(page)).toBeEnabled();
+    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("הכול מוכן");
+    await expect(banner(page)).toHaveAttribute("data-state-ready", "true");
     await cta(page).click();
-    await expect(page.getByTestId("draft-submit-confirm")).toBeVisible();
-    await page.getByTestId("draft-submit-confirm-no").click();
     await expect(page.getByTestId("draft-submit-confirm")).toHaveCount(0);
-    await expect(cta(page)).toBeVisible();
-    await expect(cta(page)).toBeEnabled();
-    expect(posts.filter((p) => p.url === "submit-for-review"), "cancel must not POST").toHaveLength(0);
-  });
-
-  // MT:MEH-2100 matrix (0 × open) — flows/34 B pins the single POST and the banner swap; the success toast is asserted here.
-  test("confirming shows the success toast that names the 3-business-day window", async ({ page }) => {
-    const posts: Rec[] = [];
-    await stubOverview(page, ALL_DONE, posts);
-    await openOverview(page);
-    await cta(page).click();
-    await page.getByTestId("draft-submit-confirm-yes").click();
     await expect(page.getByText("העמוד נשלח לבדיקה — נעדכן עד 3 ימי עסקים.")).toBeVisible();
     await expect(page.getByTestId("status-pending-banner")).toBeVisible();
     expect(posts.filter((p) => p.url === "submit-for-review")).toHaveLength(1);
   });
-});
 
-// ── MT:MEH-2100:3-7 — the completeness checklist, seven rows (MEH-3032) ─────────────────
-
-test.describe("completeness checklist — seven rows", () => {
-  // MT:MEH-2100:3 — seven rows, this order (MEH-3032 appended the owner photo).
-  test("the checklist shows seven rows in the locked order", async ({ page }) => {
-    await stubOverview(page, PHONE_UNVERIFIED);
+  test("the rows are the gate's, in this order — no recommended row in draft", async ({ page }) => {
+    // Hours and owner photo unset: in draft they must not appear at all.
+    await stubOverview(page, { ...PHONE_UNVERIFIED, owner_photo_url: null, locations: [{ ...ALL_DONE.locations[0], opening_hours: null }] });
     await openOverview(page);
-    await expect(checklistRows(page)).toHaveCount(7);
-    for (const [i, label] of STEP_LABELS.entries()) {
+    await expect(checklistRows(page)).toHaveCount(4);
+    for (const [i, label] of DRAFT_LABELS.entries()) {
       await expect(checklistRows(page).nth(i)).toContainText(label);
     }
   });
-
-  // MT:MEH-2100:4 — «אימות וואטסאפ» is חובה; «שעות פתיחה» and «תמונה שלך» (MEH-3032) are the ONLY מומלץ.
-  test("«אימות וואטסאפ» carries חובה and only hours and the owner photo are מומלץ", async ({ page }) => {
-    await stubOverview(page, PHONE_UNVERIFIED);
-    await openOverview(page);
-    await expect(page.getByTestId("completeness-chip-phone_verified")).toHaveText("חובה");
-    await expect(page.getByTestId("completeness-chip-hours")).toHaveText("מומלץ");
-    await expect(page.getByTestId("completeness-chip-owner_photo")).toHaveText("מומלץ");
-    await expect(checklist(page).getByText("מומלץ", { exact: true })).toHaveCount(2);
-    await expect(checklist(page).getByText("חובה", { exact: true })).toHaveCount(5);
-  });
-
-  // MT:MEH-2100:5 — the row jumps to the banner's OTP card, not to the edit hub.
-  test("clicking «אימות וואטסאפ» lands on the banner's #phone-verify anchor, not the edit page", async ({ page }) => {
-    await stubOverview(page, PHONE_UNVERIFIED);
-    await openOverview(page);
-    const link = checklistRows(page).nth(4).getByRole("link");
-    await expect(link).toHaveAttribute("href", /#phone-verify$/);
-    await link.click();
-    await expect.poll(() => page.evaluate(() => `${location.pathname} ${location.hash}`)).toMatch(/^\/(he\/)?producer\/dashboard #phone-verify$/);
-    await expect(page.getByTestId("draft-phone-verify")).toBeInViewport();
-  });
-
-  // MT:MEH-2100:6 — typed phone, no OTP: contact ✓ AND WhatsApp still missing, on one screen.
-  test("a saved-but-unverified phone reads contact ✓ while the WhatsApp row is still missing", async ({ page }) => {
-    await stubOverview(page, PHONE_UNVERIFIED);
-    await openOverview(page);
-    await expect(checklistRows(page).nth(3)).toContainText("הושלם");
-    await expect(checklistRows(page).nth(4)).toContainText("עדיין חסר");
-    // …and the submit still blocks on it, on the same screen: the actions read
-    // not-ready and the OTP card that clears it is mounted.
-    await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(cta(page)).toBeDisabled();
-    await expect(checklist(page).getByTestId("draft-phone-verify")).toBeVisible();
-  });
-
-  // MT:MEH-2100:7 — seven is the divisor (MEH-3032): one missing = 86%, not 83%.
-  test("one missing step is 86%, computed over seven", async ({ page }) => {
-    await stubOverview(page, PHONE_UNVERIFIED);
-    await openOverview(page);
-    await expect(checklist(page).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("כמעט שם — 86% מוכן");
-  });
 });
 
-// ── MT:MEH-2100:9-10 — the OTP completes inside the banner ─────────────────
+// ── the OTP completes inside the WhatsApp row ─────────────────
 
 test.describe("WhatsApp verification from the draft", () => {
-  // MT:MEH-2100:9 · MT:MEH-2100:10 — card gone, item gone, CTA live, no reload.
-  test("a successful OTP removes the card and the item, and enables the CTA on the same screen", async ({ page }) => {
+  test("a successful OTP closes the row and shows the submit button on the same screen", async ({ page }) => {
     const posts: Rec[] = [];
     await stubOverview(page, PHONE_UNVERIFIED, posts);
     await openOverview(page);
-    const card = page.getByTestId("draft-phone-verify");
+    const card = checklist(page).getByTestId("completeness-open-phone_verified").getByTestId("draft-phone-verify");
     await expect(card).toBeVisible();
-    await expect(cta(page)).toBeDisabled();
+    await expect(cta(page)).toHaveCount(0);
 
     await card.getByRole("button", { name: "שלחו קוד אימות" }).click();
-    // MEH-3126: the 6th digit verifies on its own — no tap on «אמתו». The
-    // single confirm POST is asserted below (posts has exactly two entries).
+    // MEH-3126: the 6th digit verifies on its own — no tap on «אמתו».
     await card.getByLabel("קוד אימות").fill("123456");
 
     // MEH-2305: verifying is one step, not the submission — the toast points at the button.
@@ -306,14 +245,11 @@ test.describe("WhatsApp verification from the draft", () => {
     expect(posts.map((p) => p.url)).toEqual(["verify-phone", "verify-phone/confirm"]);
     expect(posts[1].body).toEqual({ code: "123456" });
 
-    await expect(card).toHaveCount(0);
+    await expect(page.getByTestId("draft-phone-verify")).toHaveCount(0);
+    await expect(missingRows(page)).toHaveCount(0);
+    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("הכול מוכן");
     await expect(banner(page)).toHaveAttribute("data-state-ready", "true");
     await expect(cta(page)).toBeEnabled();
-    // The checklist saw the same flip: 7/7 collapses to the single confirmation
-    // line — no row is left reading missing (the item is gone) — and the
-    // actions stay at its foot.
-    await expect(checklist(page)).toContainText("העמוד מלא");
-    await expect(checklistRows(page)).toHaveCount(0);
     await expect(missingList(page)).toHaveCount(0);
   });
 });

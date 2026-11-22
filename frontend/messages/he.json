@@ -5396,19 +5396,13 @@
       "completeness": {
         "red_headline": "עוד כמה פרטים חשובים ואתם באוויר",
         "red_sub": "מיקום ופרטי קשר עוזרים ללקוחות למצוא אתכם ולפנות אליכם",
-        "yellow_low_headline": "העמוד שלך {percent}% מוכן",
         "yellow_low_sub": "עוד כמה פרטים ותוכלו להתחיל לקבל לקוחות",
-        "yellow_high_headline": "כמעט שם — {percent}% מוכן",
         "yellow_high_sub": "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהעמוד מלא",
         "green_headline": "העמוד מלא",
-        "next_step_prefix": "השלב הבא:",
         "cta": "להשלמת העמוד",
-        "cta_aria": "להשלמת העמוד שלך",
-        "ring_aria": "השלמת העמוד: {percent}%",
         "checklist_aria": "התקדמות השלמת העמוד",
         "checklist_done": "הושלם",
         "checklist_todo": "עדיין חסר",
-        "checklist_sub": "עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות",
         "steps": {
           "image": "תמונות",
           "location": "קטגוריות ומיקום",
@@ -5429,7 +5423,18 @@
           "hours": "שעות פתיחה"
         },
         "chip_required": "חובה",
-        "chip_recommended": "מומלץ"
+        "chip_recommended": "מומלץ",
+        "draft_headline": "{count, plural, one {עוד צעד אחד לשליחה לבדיקה} two {עוד 2 צעדים לשליחה לבדיקה} other {עוד # צעדים לשליחה לבדיקה}}",
+        "draft_ready": "הכול מוכן",
+        "counter": "{done} מתוך {total}",
+        "improve_headline": "לשפר את העמוד",
+        "open_cta": "להשלמה",
+        "license_note": "בלי מספר רישיון לא נוכל לאשר את העמוד",
+        "draft_steps": {
+          "details": "פרטי העסק",
+          "image": "תמונה של העסק או המוצרים",
+          "product": "מוצר ראשון"
+        }
       },
       "strength": {
         "heading": "חוזק פרופיל",
