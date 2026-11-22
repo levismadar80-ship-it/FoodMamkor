@@ -183,6 +183,7 @@ def _public_row(
             "slug": producer.slug,
             "city": producer.city,
             "image_url": (producer.images or [None])[0],
+            "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
         },
@@ -249,6 +250,8 @@ def offer_detail(
     out["lng"] = location.lng if exact else None
     out["producer"]["avg_rating"] = producer.avg_rating or None
     out["producer"]["reviews_count"] = producer.reviews_count or 0
+    # MEH-3593: the point's own; withheld with the pin on an approximate point.
+    out["pickup_note"] = location.pickup_note if exact else None
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None

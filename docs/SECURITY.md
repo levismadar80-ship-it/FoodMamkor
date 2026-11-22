@@ -208,7 +208,7 @@ async def get_producer(id: str):
 
 ### ✅ 5. IDOR — SHIPPED across all delete/update endpoints
 
-**Status:** every delete/update endpoint in `home_products.py`,
+**Status:** every delete/update endpoint in
 `producer_me.py`, `favorites.py`, `reports.py`, `reviews.py`,
 `events.py`, and `experiences.py` now checks ownership against
 `current_user.id`, with an admin-override (`current_user.role == "admin"`)
