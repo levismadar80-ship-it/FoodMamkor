@@ -234,6 +234,7 @@ def _is_expected_google_error(exc: BaseException) -> bool:
     is NOT a ValueError and is unexpected; a garbled certs body is too."""
     return isinstance(exc, ValueError) and not _is_provider_response_garbled(exc)
 
+
 def verify_apple_token(id_token: str) -> dict[str, Any] | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
@@ -283,7 +284,9 @@ def verify_apple_token(id_token: str) -> dict[str, Any] | None:
         )
         return payload
     except Exception as e:
-        logger.warning("[APPLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e)
+        logger.warning(
+            "[APPLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e
+        )
         if not _is_expected_apple_error(e):
             _report_unexpected_verifier_error("apple", e)
         return None
@@ -304,7 +307,9 @@ def verify_google_token(id_token: str) -> dict[str, Any] | None:
         )
         return cast(dict[str, Any], info)
     except Exception as e:
-        logger.warning("[GOOGLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e)
+        logger.warning(
+            "[GOOGLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e
+        )
         if not _is_expected_google_error(e):
             _report_unexpected_verifier_error("google", e)
         return None
