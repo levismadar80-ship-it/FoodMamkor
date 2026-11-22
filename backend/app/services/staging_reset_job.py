@@ -69,7 +69,7 @@ def _run_script() -> None:
 
 
 def run() -> None:
-    """One weekly reset. Never raises: a failure is logged and reported."""
+    """One weekly wipe + re-seed of the staging DB, staging only (MEH-3630). Never raises: a failure is logged and reported."""
     from app.database import engine
 
     try:
