@@ -272,6 +272,13 @@ describe("RescueOfferPage — what is inside and allergens", () => {
       lookup("settings.products.form.allergen_gluten"),
     );
   });
+  // MEH-3610: the pickup window under the title is the shared PickupLine.
+  it("the pickup window reads label, then the window", async () => {
+    await renderWith(offer());
+    const line = screen.getByTestId("rescue-offer-pickup").textContent;
+    expect(line.startsWith(`${lookup("rescue.offer_page.pickup_title")} `)).toBe(true);
+    expect(line).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}$/);
+  });
   // MEH-3610: the bag draws the group buy's AllergenSection, which reads only
   // known codes; the bag's own copy printed whatever key the list held.
   it("an unknown allergen code is not printed as a raw key", async () => {
