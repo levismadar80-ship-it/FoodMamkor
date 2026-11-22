@@ -11,7 +11,7 @@ import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
-/** @param {{ onSuccess?: () => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
+/** @param {{ onSuccess?: (credential: string) => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
 export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();
@@ -27,7 +27,9 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   const handleCredentialResponse = async (response) => {
     try {
       await loginWithGoogle(response.credential, { termsAccepted: termsRef.current });
-      onSuccess?.();
+      // MEH-3675: the credential goes to the caller too — the owner-invite
+      // page sends it once more so a fresh sign-in replaces the email code.
+      onSuccess?.(response.credential);
     } catch (err) {
       // MEH-3305: the recovery-code form lives on /login (the ticket stays in
       // the auth context across the client-side move); on /login it shows in place.

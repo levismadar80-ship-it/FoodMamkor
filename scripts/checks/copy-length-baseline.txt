@@ -1,0 +1,25 @@
+# copy-length guard baseline (MEH-3670). Only shrinks. key<TAB>size<TAB>kind
+about.consumer.hero.cta_map	4	button
+about.consumer.testimonials.cta	5	button
+about_business.cta	4	button
+about_why_local.cta	5	button
+account.sheet.biz_cta	4	button
+admin.producers.product_import.approve_all_cta	4	button
+auth.register.consumer.cta_producer	5	button
+dashboard.producer.changes_requested.resubmit_cta	4	button
+dashboard.producer.description_card.assist_cta	4	button
+dashboard.producer.images.add_cta	6	button
+dashboard.producer.name_change.submit_cta	4	button
+holidays.rosh_hashana.cta	4	button
+holidays.shavuot.cta	4	button
+holidays.tu_bishvat.cta	4	button
+map.filter.day_bridge_cta	7	button
+owner_invite.submit	4	button
+phone_verify.resend_cta	5	button
+producer.detail.sections.products.sheet_cta	4	button
+producers.catalog_empty.add_cta	4	button
+producers.catalog_empty.notify_cta	5	button
+qr_card.cta	4	button
+rescue.section.cta	5	button
+sweep_tail.messages.cta_map	4	button
+terms.sections.report.item_button	8	button
