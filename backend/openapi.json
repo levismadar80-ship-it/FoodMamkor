@@ -6868,6 +6868,20 @@
         "title": "MyGroupBuysOut",
         "type": "object"
       },
+      "MyOrdersAnyOut": {
+        "description": "`any`: at least one row in one of the three lists /my-orders shows.",
+        "properties": {
+          "any": {
+            "title": "Any",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "any"
+        ],
+        "title": "MyOrdersAnyOut",
+        "type": "object"
+      },
       "MyProductOrderingOut": {
         "description": "One of the owner's own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.",
         "properties": {
@@ -37827,6 +37841,33 @@
         "summary": "List Own Group Buys",
         "tags": [
           "group-buys"
+        ]
+      }
+    },
+    "/users/me/orders/any": {
+      "get": {
+        "description": "True when the caller has an order, a group buy or a bag to list.",
+        "operationId": "has_any_orders_users_me_orders_any_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOrdersAnyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Has Any Orders",
+        "tags": [
+          "users"
         ]
       }
     },

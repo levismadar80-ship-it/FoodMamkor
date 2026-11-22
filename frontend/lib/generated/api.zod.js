@@ -9927,6 +9927,15 @@ export const ListOwnGroupBuysUsersMeGroupBuysGetResponse = /*#__PURE__*/ zod.obj
 
 
 /**
+ * True when the caller has an order, a group buy or a bag to list.
+ * @summary Has Any Orders
+ */
+export const HasAnyOrdersUsersMeOrdersAnyGetResponse = /*#__PURE__*/ zod.object({
+  "any": /*#__PURE__*/ zod.boolean()
+}).check(/*#__PURE__*/ zod.describe('`any`: at least one row in one of the three lists /my-orders shows.'))
+
+
+/**
  * Change the current user's password.
  *
  * Rejects OAuth-only accounts (no existing password_hash) with a

@@ -154,7 +154,8 @@ graph TD
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
     Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
     Events --> GbCapacity[PATCH /group-buys/{id}/commit · POST + DELETE /group-buys/{id}/waitlist<br/>🔑 signed in — MEH-3592: quantity edit, waitlist of a full group<br/>PATCH /group-buys/{id}/settings<br/>owner or admin — caps + stop/reopen joins,<br/>pickup window (MEH-3597), allergens + own branch (MEH-3610)]
-    Events --> GbMine[GET /users/me/group-buys<br/>🔑 signed in — MEH-3609: «הקבוצות שלי», own commits only, public businesses only, no-store]
+    Events --> GbMine[GET /users/me/group-buys<br/>🔑 signed in — MEH-3609: «הקבוצות שלי» → since MEH-3698 one of the three lists on /my-orders, own commits only, public businesses only, no-store]
+    Events --> OrdersAny[GET /users/me/orders/any<br/>🔑 signed in — MEH-3698: any order, group buy or bag to list? one EXISTS read for the menu gate, no-store]
 ```
 
 ## 5. Admin surface (role=admin)

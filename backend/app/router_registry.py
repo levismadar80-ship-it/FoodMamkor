@@ -29,6 +29,7 @@ from app.routers import (
     group_buys,
     group_buy_capacity,
     group_buy_mine,
+    my_orders_any,
     health,
     holiday_mode,
     marketing,
@@ -167,6 +168,8 @@ def _register_flagged_features(app: FastAPI) -> None:
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
     # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
+    # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
+    app.include_router(my_orders_any.router)
 
 
 def register_routers(app: FastAPI) -> None:

@@ -982,6 +982,8 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
 
 > **MEH-3698 — rescue bags: the buyer's history for «ההזמנות שלי» (22/11/2026):** `GET /rescue/orders/history` 🔑 — every reservation of the caller's, **any day**, newest first (offer date, then reservation time), at most `HISTORY_MAX_ROWS` = 50 (`services/rescue_reads.py`). Fields: `id`, `offer_id`, `qty`, `status` (all four, a buyer's own cancel included), `created_at`, `date`, `pickup_start`, `pickup_end`, `producer_id`, **`producer_name`**, `cancelled_by_business` (same arithmetic as MEH-2738). **No `pickup_code`** — the list row links to the bag's page, which shows it on the day. `/rescue/orders/mine` is unchanged. Behind the same flag (404 while it is off). No schema change.
 
+> **MEH-3698 — «ההזמנות שלי» has anything? (22/11/2026):** `GET /users/me/orders/any` 🔑 → `{any: bool}` (`routers/my_orders_any.py`, 60/min, `Cache-Control: private, no-store`). True when the caller has a product order still listed by `GET /users/me/product-orders` (same 30-day window after close, and only while `product_orders_enabled()`), a group buy listed by `GET /users/me/group-buys` (through `_public_group_buys`), or a surprise bag (only while `rescue_bags_enabled()`). Three EXISTS queries, no rows returned. The account menus read it to show the «ההזמנות שלי» row; one request instead of three per page load, because every CI request comes from one IP (testing.md, MEH-2972).
+
 ---
 
 ## API Endpoints
