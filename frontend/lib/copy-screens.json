@@ -218,7 +218,8 @@
       "/verify-email"
     ],
     "about": [
-      "/about"
+      "/about",
+      "/about/badges"
     ],
     "about_badges": [
       "/about",
@@ -499,6 +500,7 @@
       "/join"
     ],
     "category": [],
+    "category_names": [],
     "chat": [
       "/",
       "/[slug]",
@@ -1168,6 +1170,7 @@
       "/",
       "/about/for-businesses",
       "/group-buys",
+      "/producer/dashboard/tools",
       "/producers",
       "/recommend",
       "/rescue"
@@ -1227,7 +1230,9 @@
       "/register/producer",
       "/rescue/[offerId]"
     ],
-    "map_category_chips": [],
+    "map_category_chips": [
+      "/map"
+    ],
     "modals": [
       "/",
       "/[slug]",
