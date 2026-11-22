@@ -7096,8 +7096,9 @@
       "city_placeholder": "e.g. Haifa",
       "loading": "Loading today's bags…",
       "failed": "We couldn't load the bags right now. Try refreshing.",
-      "empty": "No rescue bags today. Worth checking again this afternoon.",
-      "empty_city": "No rescue bags in {city} today. Worth checking again this afternoon.",
+      "empty_title": "No rescue bags yet today",
+      "empty_title_city": "No rescue bags in {city} yet today",
+      "empty_subtitle": "Worth checking again this afternoon",
       "count": "{count, plural, one {one bag} other {# bags}}"
     },
     "row": {

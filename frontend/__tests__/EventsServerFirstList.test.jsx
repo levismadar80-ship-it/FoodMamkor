@@ -141,11 +141,44 @@ describe("server-first list (MEH-2233)", () => {
     expect(api.get.mock.calls[1][1].params.category).toBeTruthy();
   });
 
-  it("the other tab is fetched on a switch, even though the server read it", async () => {
-    render(<EventsClient initialRows={seeded} />);
+  // MEH-3626: the layout read both lists, so a switch shows the other tab's
+  // rows on the tap's own tick and refreshes them quietly — still one request
+  // per switch (MEH-3463), but no skeleton and no chip row that first drew
+  // every chip and then dropped the empty ones (Sapir, staging 21/11).
+  it("a switch shows the other tab's server rows at once, then refreshes them quietly (one request)", async () => {
+    let resolveExp;
+    const { container } = render(<EventsClient initialRows={seeded} />);
     await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1)); // the quiet refresh
+    api.get.mockReturnValueOnce(new Promise((r) => { resolveExp = r; }));
     fireEvent.click(screen.getByTestId("to-experiences"));
+    // Before the answer: the known rows, no skeleton.
+    expect(screen.getByText("event exp-1")).toBeTruthy();
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
     await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
     expect(api.get.mock.calls[1][0]).toBe("/experiences");
+    expect(api.get.mock.calls[1][1].params).toEqual({});
+    resolveExp({ data: [row("exp-2", "2026-11-19", "סדנה")] });
+    await waitFor(() => expect(screen.getByText("event exp-2")).toBeTruthy());
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
+
+  it("the chips after a switch are the new tab's own from the first frame — none drawn then dropped", async () => {
+    render(<EventsClient initialRows={seeded} />);
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    api.get.mockReturnValueOnce(new Promise(() => {})); // the refresh never lands
+    fireEvent.click(screen.getByTestId("to-experiences"));
+    // exp-1 is on 19/11 (tomorrow) only: no «today» / «weekend» chip, and
+    // with one category no category chip either.
+    const keys = screen.queryAllByTestId("chip-row").flatMap((r) => [...r.querySelectorAll("button")].map((b) => b.dataset.key));
+    expect(keys).not.toContain("when:today");
+    expect(keys).not.toContain("when:weekend");
+  });
+
+  it("with no server rows, a loading list draws no chip it may drop later", () => {
+    api.get.mockReturnValue(new Promise(() => {})); // stays loading
+    const { container } = render(<EventsClient initialRows={{ events: null, experiences: null }} />);
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    const keys = screen.queryAllByTestId("chip-row").flatMap((r) => [...r.querySelectorAll("button")].map((b) => b.dataset.key));
+    expect(keys.filter((k) => k !== "all")).toEqual([]);
   });
 });
