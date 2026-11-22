@@ -61,6 +61,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   Eye: (p) => <span {...p} />,
   LockSimple: (p) => <span {...p} />,
   Sparkle: (p) => <span {...p} />,

@@ -64,6 +64,7 @@ vi.mock("next/link", () => ({
 // Icons + child cards aren't rendered in the error branch (early return),
 // but are imported at module load — stub them so the import stays cheap.
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
