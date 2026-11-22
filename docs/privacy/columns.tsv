@@ -651,6 +651,7 @@ product_variants.position	business	a product a business lists
 product_variants.price_agorot	business	a product a business lists
 product_variants.product_id	business	a product a business lists
 products.allergens	business	a product a business lists
+products.available_weekdays	business	a product a business lists
 products.contains_alcohol	business	a product a business lists
 products.description	business	a product a business lists
 products.gluten_detail	business	a product a business lists

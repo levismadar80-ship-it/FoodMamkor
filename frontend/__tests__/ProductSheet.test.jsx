@@ -208,6 +208,11 @@ describe("ProductSheet — price follows MEH-1305 F verbatim", () => {
     expect(span.textContent).toContain("50");
   });
 
+  it("MEH-3076: a free-text price that is only a number shows with the shekel sign", () => {
+    renderSheet({ ...baseProduct, price_min: null, price_range: "380" });
+    expect(screen.getByTestId("product-sheet-price")).toHaveTextContent("380₪");
+  });
+
   it("free-text price_range renders in the natural direction — never dir=ltr", () => {
     renderSheet({ ...baseProduct, price_min: null, price_range: "מ-30₪ לחבילה" });
     const price = screen.getByTestId("product-sheet-price");

@@ -44,7 +44,7 @@ import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
 import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { MAX_SERVINGS, MIN_SERVINGS, clampServings, scaleRecipeLine } from "@/lib/recipe-scale"; // MEH-3121
-import { formatPriceRange } from "@/lib/utils";
+import { formatPriceRange, priceLabelText } from "@/lib/utils";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import SectionHeading from "@/components/ui/SectionHeading";
 import BackLink from "@/components/ui/BackLink";
@@ -380,7 +380,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                         {numericPrice ? (
                           <p className="text-sm text-accent font-medium"><ProductPrice product={p} /></p>
                         ) : p.price_range ? (
-                          <p className="text-xs text-fg-muted">{p.price_range}</p>
+                          <p className="text-xs text-fg-muted">{priceLabelText(p.price_range)}</p>
                         ) : null}
                       </div>
                       <CaretLeft size={14} className="ms-auto shrink-0 text-fg-muted" aria-hidden="true" />
