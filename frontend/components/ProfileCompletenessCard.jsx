@@ -7,6 +7,7 @@ import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { useResendVerification } from "@/lib/use-resend-verification";
+import InlineMessage from "@/components/ui/InlineMessage";
 import {
   MISSING_CATEGORY,
   MISSING_EMAIL_VERIFIED,
@@ -263,9 +264,7 @@ function EmailResend({ t }) {
   return (
     <div className="flex flex-col items-start gap-2">
       {resendError && (
-        <p className="text-sm text-error" role="alert" data-testid="completeness-email-error">
-          {resendError}
-        </p>
+        <InlineMessage data-testid="completeness-email-error">{resendError}</InlineMessage>
       )}
       <button
         type="button"
