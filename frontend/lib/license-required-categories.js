@@ -74,21 +74,6 @@ export function licenseRequiringCategoryNames(allCategories, selectedIds) {
 }
 
 /**
- * MEH-2928: «א», «ב» ו«ג» — the list form the licence hint interpolates.
- * The last-item join comes from messages (`license_names_last`), so the
- * conjunction is copy in he.json / en.json, not a literal here.
- *
- * @param {string[]} names
- * @param {(rest: string, last: string) => string} joinLast
- * @returns {string}
- */
-export function formatQuotedList(names, joinLast) {
-  const quoted = names.map((n) => `«${n}»`);
-  if (quoted.length <= 1) return quoted.join("");
-  return joinLast(quoted.slice(0, -1).join(", "), quoted[quoted.length - 1]);
-}
-
-/**
  * @param {string} value — current license input value
  * @returns {boolean} — true if non-empty AND doesn't match the regex (caller
  *   uses this to render the inline warning text). Empty/whitespace-only is
