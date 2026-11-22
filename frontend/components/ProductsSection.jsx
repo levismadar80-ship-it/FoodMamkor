@@ -40,6 +40,7 @@ import ProductPriceUnitField from "@/components/ProductPriceUnitField";
 import ProductVariantsField from "@/components/dashboard/ProductVariantsField";  // MEH-3617
 import ProductWeekdaysField, { weekdaysMissing } from "@/components/dashboard/ProductWeekdaysField"; // MEH-3618
 import ProductPrice from "@/components/ProductPrice";
+import { priceLabelText } from "@/lib/utils"; // MEH-3076
 import EmptyState from "@/components/ui/EmptyState";
 import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
@@ -885,7 +886,7 @@ export default function ProductsSection({
                   if (product.price_min != null)
                     return <p className="text-xs text-accent"><ProductPrice product={product} /></p>;
                   if (product.price_range)
-                    return <p className="text-xs text-accent">{product.price_range}</p>;
+                    return <p className="text-xs text-accent">{priceLabelText(product.price_range)}</p>;
                   // MEH-2924: no price at all = a seasonal price, said in words.
                   return <p className="text-xs text-fg-muted">{tPrice("varies")}</p>;
                 })()}

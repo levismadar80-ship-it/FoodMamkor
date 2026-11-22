@@ -491,6 +491,7 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     "vegetarian_scope": "הצהרת צמחונות",
     "gluten_free_facility": "הצהרת ללא גלוטן",
     "whatsapp_group": "קישור לעדכונים בוואטסאפ",  # MEH-2626
+    "google_place_id": "הפרופיל בגוגל",  # MEH-3641: the owner linked or unlinked it
     # MEH-2073 chunk 2: not a column — the event of the LAST location row being
     # deleted, which leaves an approved business with no primary location, no
     # pin on the map and nothing to submit. Phrased as a full clause because it

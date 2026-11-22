@@ -6879,6 +6879,56 @@ export const DashboardProducersMeDashboardGetResponse = /*#__PURE__*/ zod.unknow
 
 
 /**
+ * @summary Get Google Profile
+ */
+export const GetGoogleProfileProducersMeGoogleProfileGetResponse = /*#__PURE__*/ zod.object({
+  "available": /*#__PURE__*/ zod.boolean(),
+  "google_place_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * Link (a place_id) or unlink (null). A link is accepted only when the
+ * Google name or phone matches the business: 409 otherwise, 503 when Google
+ * cannot be asked. Unlinking always works.
+ * @summary Put Google Profile
+ */
+export const PutGoogleProfileProducersMeGoogleProfilePutResponse = /*#__PURE__*/ zod.object({
+  "google_place_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * @summary Search Google Profile
+ */
+export const SearchGoogleProfileProducersMeGoogleProfileCandidatesGetResponse = /*#__PURE__*/ zod.object({
+  "candidates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "display_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "formatted_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "place_id": /*#__PURE__*/ zod.string()
+}))
+})
+
+
+/**
+ * Live comparison. Nothing from Google is stored.
+ * @summary Check Google Profile
+ */
+export const checkGoogleProfileProducersMeGoogleProfileCheckGetResponseHoursGoogleDefault = [];
+
+export const CheckGoogleProfileProducersMeGoogleProfileCheckGetResponse = /*#__PURE__*/ zod.object({
+  "hours_google": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), checkGoogleProfileProducersMeGoogleProfileCheckGetResponseHoursGoogleDefault),
+  "hours_ours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "field": /*#__PURE__*/ zod.enum(['name', 'phone', 'website']),
+  "google": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "verdict": /*#__PURE__*/ zod.enum(['same', 'different', 'missing'])
+}))
+})
+
+
+/**
  * MEH-2437: the business's own group buys, every status, newest first.
  *
  * Replaces the dashboard's four site-wide GET /group-buys calls that were
