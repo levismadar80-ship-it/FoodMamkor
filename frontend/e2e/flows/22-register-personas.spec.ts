@@ -117,7 +117,6 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 
       // ── 1) Drive the REAL 5-frame wizard (existing testids only) ──
       await page.goto("/register/producer");
-      await page.getByTestId("register-preflight-start").click();
 
       // ACCOUNT
       await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -142,22 +141,14 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       if (await licenseInput.isVisible().catch(() => false)) {
         await licenseInput.fill("000000000");
       }
-      await page.getByTestId("register-category-next").click();
-
-      // STORY — tagline + all declarations (ToS + binding), then submit
-      await expect(page.getByTestId("register-frame-story")).toBeVisible();
-      await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-      // MEH-1471: the attribution dropdown. MEH-2183 made it OPTIONAL — leaving
-      // it empty no longer blocks submit — but this persona keeps picking a key
-      // so it still exercises the populated path end to end.
-      await page.getByTestId("register-referral-source").selectOption("instagram");
+      // MEH-3656: CATEGORY is the submitting frame — declarations, then submit.
       for (const cb of await page
-        .getByTestId("register-frame-story")
+        .getByTestId("register-frame-category")
         .getByRole("checkbox")
         .all()) {
         await cb.check();
       }
-      await page.getByTestId("register-story-submit").click();
+      await page.getByTestId("register-category-submit").click();
 
       // CONFIRM — non-upgrade inbox-check state (RegisterAck, no token)
       await expect(page.getByTestId("register-frame-confirm")).toBeVisible({
@@ -323,7 +314,6 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
 
   async function fillAccountAndAdvance(page: import("@playwright/test").Page, email: string) {
     await page.goto("/register/producer");
-    await page.getByTestId("register-preflight-start").click();
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
     await page.getByTestId("register-account-name").fill("בודקת פרסונה");
     await page.getByTestId("register-account-email").fill(email);
@@ -333,18 +323,19 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     await page.getByTestId("register-details-name").fill(BUSINESS_NAME);
   }
 
-  test("refresh mid-wizard: draft persists in localStorage and the pre-flight entry returns", async ({
+  test("refresh mid-wizard: draft persists in localStorage and the draft is offered again", async ({
     page,
   }) => {
     const email = uniqueEmail(5);
     await fillAccountAndAdvance(page, email);
 
     // ACTUAL behaviour (RegisterProducerClient): every field write mirrors the
-    // form to localStorage[DRAFT_KEY]; showPreflight resets to true on mount.
+    // form to localStorage[DRAFT_KEY]; a fresh mount opens on ACCOUNT and
+    // offers the draft via the banner (MEH-3656: no pre-flight screen).
     await page.reload();
 
-    // The wizard resets to its pre-flight entry (no auto-resume mid-step).
-    await expect(page.getByTestId("register-preflight-start")).toBeVisible();
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await expect(page.getByTestId("register-draft-banner")).toBeVisible();
     // …but the draft survived the reload with the entered email.
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
     expect(draft, "draft must persist across a mid-wizard reload").toBeTruthy();
@@ -363,8 +354,9 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     await page.goBack();
     await page.waitForLoadState("domcontentloaded");
 
-    // Pre-flight entry is shown again (fresh mount) and the draft is still there.
-    await expect(page.getByTestId("register-preflight-start")).toBeVisible();
+    // The wizard entry is shown again (fresh mount) and the draft is still there.
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await expect(page.getByTestId("register-draft-banner")).toBeVisible();
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
     expect(draft as string).toContain(BUSINESS_NAME);
     expect(draft as string, "and it does not carry the person").not.toContain(email);
