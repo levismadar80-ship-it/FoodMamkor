@@ -337,14 +337,13 @@ test.describe("owner invite", () => {
     // Minted with no address, so the field is empty and hers to fill.
     await expect(page.getByTestId("owner-invite-email")).toHaveValue("");
 
-    // Refused until a code is live — asserted BEFORE anything is typed, and
-    // again after the password alone, so the button's disabled state is shown
-    // to depend on the code rather than on the form being empty.
-    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
-    await page.getByTestId("owner-invite-password").fill(OWNER_PASSWORD);
-    await page.getByTestId("owner-invite-terms").check();
-    await page.getByTestId("owner-invite-declaration").check();
-    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
+    // MEH-3662: one step at a time. Before a code is live only the address
+    // and the send button are on screen — no code field, no password, no
+    // submit — so nothing can be sent without a code.
+    await expect(page.getByTestId("owner-invite-send-code")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-code")).toHaveCount(0);
+    await expect(page.getByTestId("owner-invite-password")).toHaveCount(0);
+    await expect(page.getByTestId("owner-invite-submit")).toHaveCount(0);
 
     // The real round trip. Its answer is deliberately the same whatever
     // happened on the far side, so the only thing to assert is that the page
@@ -354,10 +353,14 @@ test.describe("owner invite", () => {
     await expect(page.getByTestId("owner-invite-code-sent")).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByTestId("owner-invite-code")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-password")).toHaveCount(0);
 
     // A WRONG code is refused by the SERVER, and its message is rendered
     // verbatim. The right one is unreachable from a browser — see the header.
     await page.getByTestId("owner-invite-code").fill("000000");
+    await page.getByTestId("owner-invite-password").fill(OWNER_PASSWORD);
+    await page.getByTestId("owner-invite-consent").check();
     await expect(page.getByTestId("owner-invite-submit")).toBeEnabled();
     await page.getByTestId("owner-invite-submit").click();
     await expect(page.getByTestId("owner-invite-error")).toBeVisible({ timeout: 15_000 });
