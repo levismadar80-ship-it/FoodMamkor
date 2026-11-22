@@ -566,9 +566,19 @@ def mark_handed(
 
 
 @router.post(
+    "/orders/{order_id}/no-show",
+    response_model=RescueOrderOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+# MEH-3709: the old spelling, kept so a browser still on the previous frontend
+# bundle keeps working through the release. Hidden from the OpenAPI contract;
+# MEH-3711 removes it once the new frontend has been on production a week.
+@router.post(
     "/orders/{order_id}/no_show",
     response_model=RescueOrderOut,
     dependencies=[Depends(require_rescue_enabled)],
+    include_in_schema=False,
+    deprecated=True,
 )
 @limiter.limit("60/minute")
 def mark_no_show(  # noqa: PLR0913 — FastAPI-injected; MEH-3226 added background_tasks

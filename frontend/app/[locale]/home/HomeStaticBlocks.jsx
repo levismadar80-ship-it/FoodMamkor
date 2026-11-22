@@ -14,6 +14,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -157,7 +158,7 @@ function HomeProducerStrip({
                 </div>
               ))}
             {items.map((p) => {
-            const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+            const href = producerPath(p);
             const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
             return (
               <Link

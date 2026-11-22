@@ -14,6 +14,11 @@
  * It also sees `"/producer/" + p.slug`. It does NOT see a template split
  * across lines, or a slug held in another variable first. The helper is the real fix; this only
  * stops the exact regression.
+ *
+ * MEH-3707 adds a third half: the CORRECT rule (`slug ? `/${slug}` :
+ * `/producer/${id}``) was hand-copied into 12 files instead of calling
+ * producerPath(). A one-line copy of that ternary now fails too, so the rule
+ * has one owner. Same shape limit: a ternary split across lines is not seen.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -29,6 +34,12 @@ const UUID = "48a62a03-58c4-463b-82f4-cdba3b4701c9";
 const SLUG_CONCAT = /["'`]\/producer\/["'`]\s*\+\s*[\w.?]*\bslug\b/;
 const isBadLink = (line) => SLUG_UNDER_PRODUCER.test(line) || SLUG_CONCAT.test(line);
 export const SLUG_UNDER_PRODUCER = /\/producer\/\$\{[^}]*\bslug\b[^}]*\}/;
+// MEH-3707: a hand-copied slug-or-id rule — `/${…slug…}` and `/producer/${…}`
+// on one line. Only lib/producer-path.js may hold it.
+const SLUG_PATH = /`\/\$\{[^}]*\bslug\b[^}]*\}`/;
+const ID_PATH = /`\/producer\/\$\{/;
+export const isHandCopiedRule = (line) => SLUG_PATH.test(line) && ID_PATH.test(line);
+const RULE_OWNER = path.join("lib", "producer-path.js");
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -90,6 +101,37 @@ describe("no hand-written /producer/${…slug…} link", () => {
           // Prose that quotes the bad shape (this file's own subject) is not a link.
           .filter(({ line }) => !/^\s*(\*|\/\/|\/\*|\{\/\*)/.test(line))
           .filter(({ line }) => isBadLink(line))
+          .map(({ n }) => `${path.relative(ROOT, file)}:${n}`)
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("the slug-or-id rule has one owner (MEH-3707)", () => {
+  it("the pattern catches the copies that shipped (self-test)", () => {
+    // Copied verbatim from the 12 sites MEH-3707 replaced.
+    expect(isHandCopiedRule("  const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;")).toBe(true);
+    expect(isHandCopiedRule("  const baseHref = `${p.slug ? `/${p.slug}` : `/producer/${p.id}`}?from=${MAP_REFERRER}`;")).toBe(true);
+    expect(isHandCopiedRule("      router.push(slug ? `/${slug}` : `/producer/${id}`);")).toBe(true);
+    // Not the rule: an id-only link, a slug-only link, the helper call.
+    expect(isHandCopiedRule("href={`/producer/${event.producer_id}`}")).toBe(false);
+    expect(isHandCopiedRule("href={`/${producer.slug}`}")).toBe(false);
+    expect(isHandCopiedRule("const href = producerPath(p);")).toBe(false);
+  });
+
+  it("no file outside lib/producer-path.js hand-copies it", () => {
+    const files = SCAN_DIRS.flatMap((d) => walk(path.join(ROOT, d)));
+    // Control: the owner itself is in the corpus and is excluded by name only.
+    expect(files.some((f) => f.endsWith(RULE_OWNER))).toBe(true);
+    const offenders = files
+      .filter((file) => !file.endsWith(RULE_OWNER))
+      .flatMap((file) =>
+        fs
+          .readFileSync(file, "utf8")
+          .split("\n")
+          .map((line, i) => ({ line, n: i + 1 }))
+          .filter(({ line }) => !/^\s*(\*|\/\/|\/\*|\{\/\*)/.test(line))
+          .filter(({ line }) => isHandCopiedRule(line))
           .map(({ n }) => `${path.relative(ROOT, file)}:${n}`)
       );
     expect(offenders).toEqual([]);
