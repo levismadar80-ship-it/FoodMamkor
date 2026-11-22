@@ -3983,6 +3983,8 @@
   "contact": {
     "title": "דברו איתנו",
     "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע",
+    "whatsapp_label": "וואטסאפ",
+    "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
     "email_label": "כתובת מייל:",
     "response_sla": "זמן מענה: עד 3 ימי עסקים",
     "success_title": "תודה! קיבלנו את הפנייה.",
@@ -5296,6 +5298,7 @@
           "whatsapp_label": "וואטסאפ",
           "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
           "email_label": "מייל",
+          "form_label": "טופס פנייה",
           "close_cta": "סגרו"
         }
       },

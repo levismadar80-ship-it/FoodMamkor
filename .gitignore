@@ -87,3 +87,7 @@ docs/design-audit/**/*.png
 docs/design-audit/**/*.jpg
 docs/design-audit/**/*.webp
 tests/screenshots/
+
+# MEH-3693: built from the code by frontend/scripts/build-copy-screens.mjs on
+# npm install / dev / build — never committed, so it cannot go stale on a branch.
+frontend/lib/copy-screens.json
