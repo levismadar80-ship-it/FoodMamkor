@@ -12,7 +12,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import { SkeletonTable } from "@/components/Skeleton";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
-import Dialog from "@/components/ui/Dialog";
+import AdminFeedbackModal from "@/components/admin/AdminFeedbackModal";
 
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
@@ -195,55 +195,19 @@ export default function AdminExperiencesPage() {
         </div>
       )}
 
-      {/* Feedback modal */}
+      {/* Feedback modal — MEH-3623: shared with the other admin queue */}
       {modalEx && (
-        <Dialog closeOnBackdrop={false}
-          labelledBy="experience-feedback-title"
-          size="lg"
-          dismissible={!busy}
+        <AdminFeedbackModal
+          ns="experiences"
+          t={t}
+          action={modalAction}
+          itemLine={`"${modalEx.title}" — ${modalEx.host?.name ?? ""}`}
+          feedback={feedback}
+          onFeedback={setFeedback}
+          busy={busy}
           onClose={closeModal}
-        >
-            <h2 id="experience-feedback-title" className="font-headline-md text-xl font-bold text-text mb-2">
-              {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
-            </h2>
-            <p className="text-fg-muted text-sm mb-4">
-              &quot;{modalEx.title}&quot; — {modalEx.host?.name}
-            </p>
-            <label className="block text-sm font-medium text-text mb-1">
-              {modalAction === "changes" ? t("experiences.modal.changes_label") : t("experiences.modal.reject_label")}
-            </label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={5}
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
-              placeholder={
-                modalAction === "changes"
-                  ? t("experiences.modal.changes_placeholder")
-                  : t("experiences.modal.reject_placeholder")
-              }
-            />
-            <div className="flex gap-2 justify-end mt-4">
-              <button
-                onClick={closeModal}
-                disabled={busy}
-                className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50"
-              >
-                {t("common.cancel")}
-              </button>
-              <button
-                onClick={submitModal}
-                disabled={busy}
-                className={`px-4 py-2 rounded-sm text-white ${
-                  modalAction === "changes"
-                    ? "bg-accent hover:opacity-90"
-                    : "bg-danger-600 hover:bg-danger-700"
-                } disabled:opacity-50`}
-              >
-                {busy ? t("common.sending") : t("experiences.modal.submit")}
-              </button>
-            </div>
-        </Dialog>
+          onSubmit={submitModal}
+        />
       )}
     </div>
   );
