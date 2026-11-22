@@ -41,6 +41,7 @@ from app.services import chat_business_extras as extras
 from app.services.producer_listing import is_business
 from app.services.product_order_menu import takes_orders
 from app.utils.clock import israel_now, israel_today
+from app.utils.weekdays import days_of  # MEH-3618
 
 # MEH-3505: every product the business may hold (limits.MAX_PRODUCTS), not a
 # page's worth — the business page offers a question about any of its products
@@ -328,6 +329,12 @@ def _product(row: Any, groups: dict[str, str] | None = None) -> dict[str, Any]:
         "ingredients": (p.ingredients or "")[:300],
         "storage": (p.storage_info or "")[:200],
         "tags_on_page": [label for flag, label in _TAGS if getattr(p, flag)],
+        # MEH-3618: «זמין בימי שישי» — only when the product is limited.
+        "made_only_on_days": (
+            [extras.DAYS_HE[d] for d in days_of(p.available_weekdays)]
+            if p.available_weekdays is not None
+            else []
+        ),
         "allergens_on_page": list(p.allergens or []),
         "may_contain_on_page": list(p.may_contain or []),
         # MEH-3442: a detail counts only while its code is declared.
