@@ -67,6 +67,7 @@ const TABS = [
       "/producer/dashboard/recipes",
       "/producer/dashboard/rescue",
       "/producer/dashboard/reviews", // MEH-3107
+      "/producer/dashboard/google-profile", // MEH-3641
     ],
   },
 ];
