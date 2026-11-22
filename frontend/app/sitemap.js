@@ -32,6 +32,7 @@ import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply
 // MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
 import { isGroupBuyLive } from "@/lib/seo";
 import { SITEMAP_STATIC_PAGES } from "@/lib/sitemap-static";
+import { producerPath } from "@/lib/producer-path";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -164,7 +165,7 @@ export default async function sitemap() {
     const producers = await fetchAllProducers();
     if (producers !== null) {
       producerPages = producers.flatMap((p) => {
-        const path = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+        const path = producerPath(p);
         return localizeEntry(path, {
           lastModified: now,
           priority: 0.9,

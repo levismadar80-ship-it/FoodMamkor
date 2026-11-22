@@ -16,6 +16,7 @@
 // at build time). Re-exported here so existing consumers of @/lib/seo keep
 // working unchanged.
 import { SITE_URL } from "./env";
+import { producerPath } from "./producer-path";
 import {
   FOUNDERS,
   BRAND_NAME,
@@ -196,9 +197,7 @@ export function producerOgCardUrl(producer) {
  */
 export function buildPageUrl(producer) {
   if (!producer) return SITE_URL;
-  return producer.slug
-    ? `${SITE_URL}/${producer.slug}`
-    : `${SITE_URL}/producer/${producer.id}`;
+  return `${SITE_URL}${producerPath(producer)}`;
 }
 
 // MEH-452: day-axis mapping for openingHoursSpecification. DAY_FULL holds the

@@ -1,4 +1,5 @@
 // @ts-check
+import { producerPath } from "./producer-path";
 // §10 "Meet a Producer" selector — extracted from use-home-page.js for unit
 // testability (MEH-542). Reuses the existing is_recommended flag (no schema).
 
@@ -40,7 +41,7 @@ export function selectFeaturedProducer(producers) {
     quote: source.short_description.trim(),
     // MEH-2441: no `story` — the green band shows one line (the quote); the
     // producer page owns the long description.
-    // slug → pretty URL, else the UUID fallback (mirrors ProducerCard.jsx:185).
-    href: source.slug ? `/${source.slug}` : `/producer/${source.id}`,
+    // slug → pretty URL, else the UUID fallback (producerPath, MEH-3707).
+    href: producerPath(source),
   };
 }
