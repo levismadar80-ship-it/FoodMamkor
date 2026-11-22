@@ -275,7 +275,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   // link out. MEH-1840: the link target moved /about#verification → /about/process
   // — the acceptance-process page is the canonical "how we vet" surface, while the
   // /about section is a summary. The #verification anchor stays live on /about
-  // (AboutClient.jsx) so existing deep-links keep resolving. Same retarget applied
+  // (AboutClient.jsx, MEH-3667: on the trust summary) so existing deep-links keep resolving. Same retarget applied
   // to the duplicate popover in ImageGallery.jsx (masthead seal) — the two must
   // not diverge, they render identically on the same producer page.
   // MEH-1334 chunk-2 (CLARIFY c) deliberately made this popover DATELESS and
@@ -354,12 +354,12 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   const icon = badgeIcon(badge.key, compact ? 12 : 14);
 
   // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
-  // (recommended → /about#editors-pick) turns its popover body into a link — the
+  // (recommended → /about/badges#editors-pick) turns its popover body into a link — the
   // locked tooltip copy becomes the clickable explainer to the criteria + the
   // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
   // link-out popover above (which MEH-1840 retargeted to /about/process); no new
-  // copy. `recommended` still points at the /about#editors-pick anchor — that
-  // section has no standalone page, so the retarget did NOT apply to it.
+  // copy. MEH-3667: `recommended` points at /about/badges#editors-pick, where
+  // the full criteria moved from /about (lib/badges.js aboutHref).
   // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
   // MEH-2701: every other hero badge links to its group on /about/badges, so
   // the short tooltip always leads to the full explanation of who stands behind

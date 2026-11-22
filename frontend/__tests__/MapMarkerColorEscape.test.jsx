@@ -20,7 +20,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render } from "@testing-library/react";
 import MapComponent from "@/components/MapComponent";
-import { CATEGORY_STYLES } from "@/lib/category-registry";
+import { CATEGORY_GROUP_STYLES, CATEGORY_STYLES, DEFAULT_CATEGORY_STYLE } from "@/lib/category-registry";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
@@ -157,17 +157,16 @@ describe("MEH-1998 — marker colour cannot break out of the onerror JS string",
   // validator's whole risk is rejecting a value it should have passed, and a
   // single-colour control cannot see that — it would stay green while eight
   // of the nine pins silently fell back to the primary token.
-  // Mirrors category-registry.js CATEGORY_STYLES + DEFAULT_CATEGORY_STYLE.
+  // 
+  // MEH-3076: DERIVED from the registry's six group colours (+ their glyph
+  // tints and the default), so a palette change cannot leave this list stale.
+  // "#C8821E" is added by hand: the uppercase form the regex must accept.
   const REAL_PALETTE = [
-    "#c04040", // בשר · דגים
-    "#2e6853", // ירקות, פירות ומשקים · DEFAULT_CATEGORY_STYLE
-    "#4a90d9", // חלב וגבינות
-    "#896714", // לחמים ואפייה
-    "#e8a020", // שמנים
-    "#C8821E", // דבש — note the uppercase hex, which the regex must accept
-    "#9b59b6", // טיפוח וסבונים
-    "#3b72ad", // חלב וגבינות textColor
-    "#A8681A", // דבש textColor
+    ...new Set([
+      ...Object.values(CATEGORY_GROUP_STYLES).flatMap((s) => [s.color, s.textColor].filter(Boolean)),
+      DEFAULT_CATEGORY_STYLE.color,
+      "#C8821E",
+    ]),
   ];
 
   it.each(REAL_PALETTE)(

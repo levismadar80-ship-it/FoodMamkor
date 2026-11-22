@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { CATEGORY_CHIPS, resolveCategoryIds, withResolvedIcons } from "@/lib/map-chips";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 const SRC = fs.readFileSync(
   path.resolve(__dirname, "../../backend/app/services/category_slug.py"),

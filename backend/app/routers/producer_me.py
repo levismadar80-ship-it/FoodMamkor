@@ -49,6 +49,7 @@ from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
+    attach_owner_email_verified,
     attach_upcoming_events_count,
 )
 from app.services.delivery_validation import (
@@ -100,6 +101,7 @@ def get_my_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_upcoming_events_count(producer)  # MEH-2460
+    attach_owner_email_verified(producer)  # MEH-3660
     return producer
 
 
@@ -708,7 +710,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
             producer.id,  # type: ignore[arg-type]
             "delivery_area",
             AlertContent(
-                title=f"🚚 משלוחים חדשים: {producer.name}",
+                title=f"משלוחים חדשים: {producer.name}",
                 body="עכשיו מגיעים גם ל: {cities}",
                 url=f"/producer/{producer.id}",
             ),
@@ -746,6 +748,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     indexnow.schedule_public_producer(background_tasks, producer)
 
     attach_upcoming_events_count(producer)  # MEH-2460
+    attach_owner_email_verified(producer)  # MEH-3660
     return producer
 
 
@@ -981,7 +984,7 @@ def create_my_product(
         user.producer_id,  # type: ignore[arg-type]
         "new_product",
         AlertContent(
-            title=f"🆕 מוצר חדש מ{producer_name}",
+            title=f"מוצר חדש מ{producer_name}",
             body=product.name,
             url=f"/producer/{user.producer_id}",
         ),

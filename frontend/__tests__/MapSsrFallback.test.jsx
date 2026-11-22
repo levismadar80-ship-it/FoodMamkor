@@ -12,7 +12,7 @@
  * The helper now lives in lib/map-ssr-producers.js precisely so it can be
  * imported, and this file imports it.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // A plain function, deliberately NOT vi.fn(). vi.fn() keeps every result in
 // mock.results, and a result that is a thrown error or a rejected promise is
@@ -64,34 +64,43 @@ describe("fetchProducersForSSR — the real one", () => {
     expect(options).toEqual({ next: { revalidate: 3600 } });
   });
 
-  it("returns [] when the fetch throws", async () => {
-    impl = async () => {
-      throw new Error("network error");
-    };
-    // No try/catch around the call. The helper's own catch is the subject: if
-    // it ever stops swallowing, this REJECTS and the case fails — which is
-    // precisely what the old `try { expect(true).toBe(false) } catch {}` could
-    // never do, because its catch ate the assertion.
-    await expect(fetchProducersForSSR()).resolves.toEqual([]);
+  // MEH-3628: /map is prerendered and regenerated hourly. A miss returns []
+  // only while the build runs (CI has no API); at run time it throws, so the
+  // regeneration fails and Next keeps the last good page instead of caching
+  // an empty index for an hour.
+  const misses = [
+    ["the fetch throws", async () => { throw new Error("network error"); }],
+    ["the response is not ok", async () => ({ ok: false, json: async () => [] })],
+    ["the payload is not an array", async () => ({ ok: true, json: async () => ({ detail: "nope" }) })],
+    ["the body is not JSON", async () => ({ ok: true, json: async () => { throw new SyntaxError("Unexpected token <"); } })],
+  ];
+
+  describe.each(misses)("when %s", (_label, miss) => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it("returns [] during the build", async () => {
+      vi.stubEnv("NEXT_PHASE", "phase-production-build");
+      impl = miss;
+      // No try/catch around the call: if the helper stops swallowing here,
+      // this rejects and the case fails.
+      await expect(fetchProducersForSSR()).resolves.toEqual([]);
+    });
+
+    it("throws at run time, so ISR keeps the last good page", async () => {
+      vi.stubEnv("NEXT_PHASE", "phase-production-server");
+      impl = miss;
+      await expect(fetchProducersForSSR()).rejects.toThrow();
+    });
   });
 
-  it("returns [] on a non-ok response, without reading the body", async () => {
+  it("does not read the body of a non-ok response", async () => {
+    vi.stubEnv("NEXT_PHASE", "phase-production-build");
     const json = vi.fn();
     impl = async () => ({ ok: false, json });
     await expect(fetchProducersForSSR()).resolves.toEqual([]);
     expect(json).not.toHaveBeenCalled();
-  });
-
-  it("returns [] when the payload is not an array", async () => {
-    impl = async () => ({ ok: true, json: async () => ({ detail: "nope" }) });
-    await expect(fetchProducersForSSR()).resolves.toEqual([]);
-  });
-
-  it("returns [] when the body is not JSON", async () => {
-    impl = async () => ({
-      ok: true,
-      json: async () => { throw new SyntaxError("Unexpected token <"); },
-    });
-    await expect(fetchProducersForSSR()).resolves.toEqual([]);
+    vi.unstubAllEnvs();
   });
 });

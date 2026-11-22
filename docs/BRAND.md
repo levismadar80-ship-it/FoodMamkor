@@ -88,7 +88,8 @@ The **tagline** is specced for: footer brand line, `/about` narrative. **Not the
 ### Emoji LOCK v2 (MEH-657, surface-scoped)
 
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
-- ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
+- ❌ Email subject + body, and every server-sent notification → 0 emojis (Sapir 22/11, MEH-3668). `scripts/checks/no-emoji-backend-guard.sh` blocks a new one in `backend/app`; the ones left in emails are frozen in its baseline until the open email PRs land and they are removed. Model text (the chat reply, the AI description and review-reply drafts) is stripped of emoji by `ai_text.strip_emoji` before it reaches anyone (MEH-3668).
+- ❌ WhatsApp outbound + share strings → no emoji either (Sapir 22/11, MEH-3668): the link card WhatsApp builds from the page's Open Graph tags carries the picture, and the text reads like a person wrote it («גיליתי את {title} במהמקור, שווה להציץ»). **One exception:** the 💚 in the short outreach message (`admin.outreach.wa_templates.short_body`), which Sapir kept («הלב הירוק אפשר להשאיר»). It is the only entry in `EXEMPT_KEYS` in `NoEmojiInMessages.test.js`. The Meta-approved templates (`whatsapp_templates.py`) carry none.
 
 ## 4 · Voice (full rules in ADR-014, refined by ADR-024, reader address set by ADR-037)
 
@@ -144,8 +145,10 @@ Phrasings that survived to production once and must be caught in review:
 - `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024). **חריג (MEH-1264, Option A):** `"יצרן"` אסור בממשק ובשיווק, למעט כחלק משם רישיון רשמי (`"רישיון יצרן"`, `"מספר רישיון יצרן"`) — דיוק משפטי, lawyer brief §5.3. הצ'יפ הצרכני `"רישיון יצרן"` נשאר AS-IS (שם הרישיון הרשמי של משרד הבריאות).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
 - `"שוק"` as a discovery/sort/nav label (e.g. the old `"חדש בשוק"` sort option) — frames Mehamakor as a trade venue, DNA violation (MEH-1218). The sort label is now `"הצטרפו לאחרונה"`. **Not** forbidden: the named `"שוק שישי"` feature (MEH-50) and the event-type category `"שוק"` (a kind of listed event), which describe a real-world market, not the platform.
-- Slash gender forms (`"מסכים/ה"`, `"לקוח/ה"`, `"ראה/תה"`, `"ספר/י"`, `"איש/אשת"`) — use a neutral plural or rewrite the sentence (ADR-037). Checked by `scripts/checks/brand-lexicon-guard.sh` (rule `slash-gender`, 18/11/2026). The 65 written before the rule were reworded in the same PR. The lines MEH-3655 made visible (onboarding emails, two he.json strings, the chat prompt) are frozen in the baseline with their reason until the MEH-3652 copy table is approved.
+- Slash gender forms (`"מסכים/ה"`, `"לקוח/ה"`, `"ראה/תה"`, `"ספר/י"`, `"איש/אשת"`) — use a neutral plural or rewrite the sentence (ADR-037). Checked by `scripts/checks/brand-lexicon-guard.sh` (rule `slash-gender`, 18/11/2026). The 65 written before the rule were reworded in the same PR. The lines MEH-3655 made visible (onboarding emails, two he.json strings, the chat FAQ) were reworded from Sapir's approved table in MEH-3664 (21/11/2026), and the slash baseline is empty again.
 - `"אלייך"` (double yod, marked feminine) — use `"אליכם"` (ADR-037). `"לך"` / `"שלך"` are unmarked and stay. Admin copy and a named woman keep the feminine (ADR-037). Checked by `scripts/checks/brand-lexicon-guard.sh` (rule `feminine-address`, MEH-3655). Since MEH-3655 the guard also reads email and WhatsApp bodies written as triple-quoted Python strings, which it used to skip as docstrings.
+- `"אימייל"` — the site writes `"מייל"` (`"כתובת המייל"`, `"במייל"`). Sapir left the call to Claude on 21/11/2026; it follows what Israeli services write (btl.gov.il «כתובת המייל», iec.co.il «חשבונית במייל»). Checked by `scripts/checks/brand-lexicon-guard.sh` (rule `email-term`, MEH-3665).
+- `"→"` as a forward or leads-to arrow in Hebrew — use `"←"` (`"הבא ←"`, `"א ← ב"`). Hebrew reads right to left, so `"→"` points back. `"→"` stays only where it leads a back link (`"→ חזרה"`, `"→ הקודם"`). Sapir 21/11/2026. Checked by the same guard (rule `forward-arrow`, MEH-3665).
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.

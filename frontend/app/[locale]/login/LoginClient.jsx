@@ -21,6 +21,10 @@ import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
+import SeedMark from "@/components/brand/SeedMark";
+
+// MEH-3676: display-scale size (DESIGN.md Icons), on the photo scrim.
+const HERO_MARK_PX = 40;
 
 /**
  * Module:   LoginClient
@@ -281,8 +285,10 @@ function LoginPageBody() {
           aria-hidden="true"
         />
         <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
-          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50">
+          {/* MEH-3676: the logo closes the line that ends in «מהמקור» (Sapir 22/11, option ב׳). */}
+          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50 flex flex-wrap items-center gap-3">
             {t("hero_overlay")}
+            <SeedMark size={HERO_MARK_PX} variant="dark" className="shrink-0" />
           </p>
         </div>
       </div>

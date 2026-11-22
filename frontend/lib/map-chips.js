@@ -36,6 +36,8 @@ import {
   visibleAxisChips,
 } from "@/lib/producer-filters";
 import { COLOR } from "./color-tokens";
+// MEH-3076: group membership comes from the one taxonomy list, by slug.
+import { slugsInGroup } from "./category-taxonomy";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
@@ -62,11 +64,11 @@ export const CATEGORY_CHIPS = [
   { key: "all", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
-  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: ["fruit"], iconName: "ירקות", iconColor: COLOR.primary },
+  { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], slugs: slugsInGroup("meat"), iconName: "בשר", iconColor: "#c04040" },
+  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: slugsInGroup("produce"), iconName: "ירקות", iconColor: COLOR.primary },
   // MEH-2783: eggs join dairy («חלב וביצים», the Market Wagon "Dairy & Eggs" department).
-  { key: "dairy", matches: ["חלב וגבינות", "חלב"], slugs: ["eggs"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
-  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: COLOR.accent },
+  { key: "dairy", matches: ["חלב וגבינות", "חלב"], slugs: slugsInGroup("dairy"), iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], slugs: slugsInGroup("bread"), iconName: "לחמים ואפייה", iconColor: COLOR.accent },
   // MEH-2783 (Sapir 06/11, «6 קבוצות שמכסות הכל»): two departments so every DB
   // category has a chip — the farm-marketplace pattern (Market Wagon: Pantry +
   // Non-Food). categoryGroupCoverage.test.js pins that each canonical category
@@ -76,8 +78,8 @@ export const CATEGORY_CHIPS = [
   // `iconSlug` is resolved to the glyph's name key from the loaded DB categories
   // (withResolvedIcons) instead of a frontend slug→name table; the tint comes
   // from that category's CATEGORY_STYLES row (no new palette colour).
-  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate", "kph"], iconSlug: "honey" },
-  { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care" },
+  { key: "pantry", matches: [], slugs: slugsInGroup("pantry"), iconSlug: "honey" },
+  { key: "care", matches: [], slugs: slugsInGroup("care"), iconSlug: "care" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are

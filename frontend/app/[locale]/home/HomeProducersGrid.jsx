@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { useRevealSkip } from "@/lib/route-memory";
 import { ArrowLeft, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { useEffect, useMemo, useState } from "react";
@@ -257,7 +259,7 @@ export function HomeProducersGrid({
         <SectionHeading>
           {/* MEH-1174: default vs "בתי עסק · {name}" when a category is active. */}
           {activeCategory
-            ? t("home.producers.heading_category", { name: activeCategory.name })
+            ? t("home.producers.heading_category", { name: categoryLabel(t, activeCategory) })
             : t("home.producers.heading")}
         </SectionHeading>
         {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
@@ -436,10 +438,10 @@ export function HomeProducersGrid({
               // the MEH-1174 summary row): the category name lives in a child
               // span that the bare aria-label suppresses, so with an attribute
               // tag also active the two buttons were indistinguishable by name.
-              aria-label={`${t("home.producers.clear_filter")} ${activeCategory.name}`}
+              aria-label={`${t("home.producers.clear_filter")} ${categoryLabel(t, activeCategory)}`}
               className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <span>{activeCategory.name}</span>
+              <span>{categoryLabel(t, activeCategory)}</span>
               <X size={12} weight="bold" aria-hidden="true" />
             </button>
           )}

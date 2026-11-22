@@ -2,6 +2,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 /**
  * Module:   OfferCard
@@ -96,10 +97,10 @@ function OfferPrice({ price, priceTestId, worth, worthTestId, unit, saving, savi
           {price}
         </span>
         {worth !== null && worth !== undefined && (
-          // aria-hidden: read aloud as a second bare price it says nothing useful.
-          <s dir="ltr" aria-hidden="true" className="text-sm text-fg-muted numeric" data-testid={worthTestId}>
+          // Decorative (aria-hidden): read aloud as a second bare price it says nothing useful.
+          <StruckPrice className="text-sm numeric" testId={worthTestId}>
             {worth}
-          </s>
+          </StruckPrice>
         )}
         {unit && <span className="text-xs text-fg-muted">{unit}</span>}
       </p>

@@ -17,7 +17,7 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.phone": "התקשרו",
       "producer.detail.contact_card.aria.instagram": "אינסטגרם",
       "producer.detail.contact_card.aria.website": "אתר",
-      "producer.detail.contact_card.aria.email": "אימייל",
+      "producer.detail.contact_card.aria.email": "מייל",
       "producer.detail.contact_card.aria.facebook": "פייסבוק",
       "producer.detail.contact_card.aria.external_order": "טופס הזמנות",
       "producer.detail.contact_card.aria.whatsapp_channel": "ערוץ וואטסאפ",
@@ -119,7 +119,7 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     expect(screen.getByLabelText("התקשרו")).toBeInTheDocument();
     expect(screen.getByLabelText("אינסטגרם")).toBeInTheDocument();
     expect(screen.getByLabelText("אתר")).toBeInTheDocument();
-    expect(screen.getByLabelText("אימייל")).toBeInTheDocument();
+    expect(screen.getByLabelText("מייל")).toBeInTheDocument();
   });
 
   it("excludes the primary-method channel from the icon row (website primary)", () => {

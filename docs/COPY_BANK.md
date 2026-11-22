@@ -302,12 +302,12 @@
 ### /register/producer — Licensing declaration (continuous commitment)
 | Field | Value |
 |---|---|
-| **Current (he)** | `הצהרה: אנחנו אחראים לבדוק אילו רישיונות והיתרים נדרשים לפעילות העסק ולעמוד בדרישות החוק. ידוע לנו שמהמקור לא בודקת רישיונות, חוץ מבתי עסק עם תג «מאומת». הפרטים שמסרנו נכונים, ואם משהו ישתנה, נעדכן את מהמקור.` |
-| **en** | `Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.` |
-| **Previous (he)** | v2: `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` · v1: `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` |
+| **Current (he)** | `הצהרה: אנחנו אחראים לבדוק אילו רישיונות והיתרים העסק צריך ולעמוד בדרישות החוק. ידוע לנו שמהמקור בודקת רישיונות רק לבתי עסק עם תג «מאומת». הפרטים שמסרנו נכונים, ונעדכן אם משהו ישתנה.` |
+| **en** | `Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor checks licences only for businesses with the “verified” badge. The details we gave are true, and we will update them if anything changes.` |
+| **Previous (he)** | v3: `הצהרה: אנחנו אחראים לבדוק אילו רישיונות והיתרים נדרשים לפעילות העסק ולעמוד בדרישות החוק. ידוע לנו שמהמקור לא בודקת רישיונות, חוץ מבתי עסק עם תג «מאומת». הפרטים שמסרנו נכונים, ואם משהו ישתנה, נעדכן את מהמקור.` · v2: `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` · v1: `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` |
 | **i18n key** | `auth.register.producer.terms.declaration` (he+en) |
 | **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (own checkbox, `declarationConfirmed`) |
-| **Audit version** | `DECLARATION_VERSION = "2026-11-v3"` (`backend/app/constants.py`) — v1 launch text, v2 continuous commitment, v3 = this responsibility wording (MEH-3026) |
+| **Audit version** | `DECLARATION_VERSION = "2026-11-v4"` (`backend/app/constants.py`) — v1 launch text, v2 continuous commitment, v3 responsibility wording (MEH-3026), v4 = the same three elements, shorter (MEH-3721) |
 | **Status** | 🟡 **v3 — pending lawyer.** Sapir 21/11 (MEH-3026): businesses may join without a licence, so v2's «הם קיימים ובתוקף» could not be signed honestly. Open question for the lawyer: the food law's «מכירה» includes advertising/display. |
 | **Why** | ADR-022 gate 2 / Brief Q1.3 — continuous commitment (not point-in-time) + Q1.4 audit trail. Own first-person checkbox per ADR-014 voice + stronger evidentiary value. |
 | **MEH** | MEH-759 Chunk C (source ADR-022); MEH-3026 (v3) |
@@ -406,7 +406,7 @@
 ### Newsletter input placeholder
 | Field | Value |
 |---|---|
-| **Current** | `האימייל שלך, בבקשה` |
+| **Current** | `המייל שלך, בבקשה` |
 | **i18n key** | `nav.footer.newsletter_placeholder` |
 | **Status** | ✅ |
 
@@ -465,6 +465,7 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-11-21 | MEH-3663 | Business signup copy for the 3-step form (#5121) — every signup duration (`auth.register.producer.subtitle`, `.preflight.duration`, `seo.join.og_description`, `join.meta_line`, `join.how.step1_text`, `about_business.faq.time.a`, sales `call_script`), `duration_hint`, `producer_name` placeholder, `steps.business.subtitle`, `submit_next_hint`, `license_what_is_it`, `license_pending_optin_hint` (he+en) | `כ-5 דקות` / `כ־5 דקות` / `5–10 דקות` · «נחזור אליכם בוואטסאפ» | `כ־3 דקות` everywhere · no channel named in `submit_next_hint` (the review outcome goes by email, `submission_confirmation.py`) · licence hints say «נוכל לבדוק», not a promise (badge is admin-granted, ADR-022) | The form is now 3 steps. Sapir approved Claude's wording after a review, 21/11 (thread). Rows below that quote `כ-5 דקות` are history. |
 | 2026-11-18 | MEH-3424 | Which sentence goes where (ADR-043) — `SITE_DESCRIPTION` (`lib/constants.js`) on `seo.site.description` / `seo.home.description` (he), Organization JSON-LD `description`, `public/llms.txt` line 3, `public/manifest.json`; `CANONICAL_SENTENCE` on `seo.site.og_description` / `seo.site.twitter_description` (he) and JSON-LD `slogan` | meta description + JSON-LD + llms.txt: `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.`; og/twitter: `מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.`; manifest: `בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד.` | descriptor: `במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.`; og/twitter: `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.` | Machines get one answer to "what is this site"; a shared link speaks to the consumer who receives it instead of to business owners. Descriptor approved verbatim by Sapir 18/11; the other two sentences were already approved. Tagline stays on the footer. English: see the next row. |
 | 2026-11-18 | MEH-3424 | English descriptor, privacy §1, email footer (ADR-043 amendment) — `en` `seo.site.description` / `seo.home.description` / `og_description` / `twitter_description`; `privacy.sections.who.body` (he, en); footer in `backend/app/routers/marketing.py`, `backend/app/services/delivery_waitlist.py` | en meta: `Real, fresh, healthy food from local businesses — all in one place.` / `Local food businesses, all in one place. Find real, fresh, and healthy food near you.`; en og/twitter: `Real food from local businesses — all in one place.`; privacy he: `…היא פלטפורמה המחברת בין בתי עסק שמייצרים אוכל בריא ומוצרי טיפוח טבעיים לבין קונות וקונים בישראל.`; footer: `מהמקור — בתי עסק מקומיים, כולם במקום אחד.` | en meta: `Mehamakor is where you find food from local businesses near you, all in one place.`; en og/twitter: `Food from local businesses we've personally chosen — close to you, without searching for hours.`; privacy he: `…הוא אתר שבו מוצאים אוכל ומוצרי טיפוח טבעיים מבתי עסק מקומיים בישראל, ופונים אליהם ישירות.`; privacy en: `…is where you find food and natural-care products from local businesses in Israel, and contact them directly.`; footer: `מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.` | Sapir approved the wording Claude chose (18/11 20:47Z). Privacy keeps natural-care products because the site lists them. |
 | 2026-11-08 | MEH-2853 | Every search-result title (`seo.*.title` / `og_title` / `title_fallback` + the page-title keys `*.meta_title`, `process.meta.*`, `recipes.detail.meta_title_*`), he+en — see Section 18 | `{page} — מהמקור` / `{page} \| מהמקור` / `{page} · מהמקור` / no brand, typed into each string | `{page}` only; the layout template `%s \| מהמקור` adds the brand (en `%s \| Mehamakor`) | One pattern in Google, from one place. Suffix removed only — no words added or changed. Approved by Sapir 08/11. |
@@ -1340,7 +1341,7 @@ The full text of the price-list page is `pricing.page.*` in `messages/he.json` /
 
 ## Section — «not a party» line at the commit button (MEH-3570)
 
-One line under the rescue reserve button and the on-site sign-up button. The group-buy join card already carries `DirectoryDisclaimer` (MEH-3398), and the order sheet its own `platform_line` (MEH-3216), so neither gets this line.
+One line under the rescue reserve button and the on-site sign-up button. The group-buy join card already carries `DirectoryDisclaimer` (MEH-3398), and the order sheet its own not-a-party sentence at the end of `seller_line` (MEH-3216; `platform_line` until MEH-3658), so neither gets this line.
 
 | Key | Hebrew |
 |---|---|
