@@ -13,6 +13,7 @@
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
  * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
+ *           MEH-3618 (slots only on days every picked product is made)
  *           MEH-3640 what she typed survives closing the sheet, and a line
  *           says why «שליחת הבקשה» waits for a city
  */
@@ -27,6 +28,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import OrderSheetDayConflict from "@/components/public/OrderSheetDayConflict";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
 import { useRouter } from "@/i18n/navigation";
 import { detailToMessage } from "@/lib/errors";
@@ -43,6 +45,7 @@ import {
 } from "@/lib/order-sheet";
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
+import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
 
 const QUOTE_DELAY_MS = 400;
 
@@ -71,16 +74,17 @@ const CONFLICT = 409;
  *   menu: import("@/lib/order-cart").OrderMenu,
  *   picks: Record<string, number>,
  *   onStale?: () => void,
+ *   onChange?: (key: string, qty: number) => void,
  *   onClose: () => void,
  * }} props
  */
-export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onClose }) {
+export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onChange = () => {}, onClose }) {
   const t = useTranslations("producer.detail.order_sheet");
   const locale = useLocale();
   const router = useRouter();
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
   const hasAlcohol = Object.keys(picks).some((key) => byId.get(splitKey(key).productId)?.contains_alcohol);
-  const ways = fulfilmentsOffered(menu, hasAlcohol);
+  const ways = cartWays(fulfilmentsOffered(menu, hasAlcohol), { slotsOf: (w) => slotsFor(menu, w, hasAlcohol), picks, byId }); // MEH-3618
   const [form, setForm] = useState(() => {
     const blank = {
       fulfilment: ways[0] ?? "pickup",
@@ -114,9 +118,12 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   /** @param {Partial<typeof form>} change */
   const set = (change) => setForm((old) => ({ ...old, ...change }));
 
-  const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
-  const delivery = form.fulfilment === "delivery";
-  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
+  // MEH-3618: only days on which every picked product is made.
+  const fulfilment = ways.includes(form.fulfilment) ? form.fulfilment : (ways[0] ?? form.fulfilment); // MEH-3618: a way the cart lost
+  const { slots, limiting } = cartSlots(slotsFor(menu, fulfilment, hasAlcohol), picks, byId);
+  const slot = slots.some((s) => s.start === form.slot) ? form.slot : ""; // MEH-3618: a picked slot the cart no longer allows is dropped
+  const delivery = fulfilment === "delivery";
+  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
   useQuote(needsCity ? null : body, setAnswer, setQuoteError, onStale);
   const quote = answer && answer.body === body ? answer.quote : null;
@@ -127,7 +134,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, slotStart: form.slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, fulfilment, slotStart: slot, ageDeclared: form.age, key }),
       );
       drafts.delete(producer.id);
       router.push(href);
@@ -139,21 +146,23 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     }
   };
 
-  const deadline = form.slot ? cancelDeadline(form.slot, menu.cancel_cutoff_hours) : null;
+  const deadline = slot ? cancelDeadline(slot, menu.cancel_cutoff_hours) : null;
   return (
     <Dialog onClose={onClose} labelledBy="order-sheet-title" size="lg" as="form" onSubmit={submit} closeOnBackdrop={false} testId="order-sheet">
       <h2 id="order-sheet-title" className="text-xl font-bold text-text mb-4">{t("title")}</h2>
       <Lines picks={picks} byId={byId} />
       <div className="space-y-4 mt-4">
         {ways.length > 1 && (
-          <Select label={t("how")} value={form.fulfilment} onChange={(e) => set({ fulfilment: e.target.value, slot: "" })} data-testid="order-sheet-fulfilment">
+          <Select label={t("how")} value={fulfilment} onChange={(e) => set({ fulfilment: e.target.value, slot: "" })} data-testid="order-sheet-fulfilment">
             {ways.map((w) => <option key={w} value={w}>{t(w)}</option>)}
           </Select>
         )}
-        {slots.length === 0 ? (
+        {limiting ? (
+          <OrderSheetDayConflict product={limiting} onRemove={() => removeFromCart(limiting.id, { picks, onChange, onClose })} />
+        ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <Select label={t("when")} required value={form.slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
+          <Select label={t("when")} required value={slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
             <option value="" disabled>{t("when_pick")}</option>
             {slots.map((s) => (
               <option key={s.start} value={s.start}>

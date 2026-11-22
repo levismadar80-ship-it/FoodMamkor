@@ -6417,6 +6417,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -7482,6 +7493,17 @@
       },
       "OrderMenuProductOut": {
         "properties": {
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "contains_alcohol": {
             "title": "Contains Alcohol",
             "type": "boolean"
@@ -17137,6 +17159,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -17938,6 +17971,17 @@
             ],
             "title": "Allergens"
           },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
+          },
           "description": {
             "anyOf": [
               {
@@ -18154,6 +18198,17 @@
               }
             ],
             "title": "Allergens"
+          },
+          "available_weekdays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Weekdays"
           },
           "description": {
             "anyOf": [
