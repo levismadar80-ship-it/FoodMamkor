@@ -272,8 +272,7 @@
         "steps": {
           "account": {
             "title": "1. Account details",
-            "email_section": "Sign up with email",
-            "duration_hint": "You can stop and continue later."
+            "email_section": "Sign up with email"
           },
           "business": {
             "title": "2. Business details",
@@ -374,7 +373,6 @@
           "title": "Your story becomes your business page",
           "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
         },
-        "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
         "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you within 3 business days of sending.",
         "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",

@@ -19,17 +19,9 @@ export default function AccountStep({ form, numberedTitle, refreshUser, requestF
   return (
     <div className="space-y-4" data-testid="register-frame-account">
       <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.account.title"), STEP.ACCOUNT)}</h2>
-      {/* MEH-2183: step-top expectation line — names the time cost and
-          that the draft survives leaving (setAndSave already persists it). */}
-      <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">
-        {t("auth.register.producer.steps.account.duration_hint")}
-      </p>
-
-      {/* MEH-880 (S7 Chunk E1): copy-only reassurance card — mirrors the
-          Chunk-D story_card pattern (brand tokens only, no state-color). */}
-      <div className="bg-background border border-primary/20 rounded-md px-4 py-3 text-sm" data-testid="register-account-reassurance">
-        <p className="text-text text-start">{t("auth.register.producer.account_reassurance")}</p>
-      </div>
+      {/* MEH-3663: the step-top «אפשר לעצור…» line and the «כל בית עסק עובר
+          אישור אישי» card are gone (Sapir 22/11) — the frame opens on the
+          sign-in options. Manual approval itself is unchanged (DNA lock). */}
 
       {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
           no Google/Apple client_id is configured. */}
@@ -102,6 +94,9 @@ export default function AccountStep({ form, numberedTitle, refreshUser, requestF
           onChange={set("password")}
           required
           dir="ltr"
+          // MEH-3663: the Hebrew placeholder sits on the right while the field
+          // is empty; the typed password stays ltr.
+          className="placeholder-shown:[direction:rtl]"
           minLength={12}
           autoComplete="new-password"
         />
