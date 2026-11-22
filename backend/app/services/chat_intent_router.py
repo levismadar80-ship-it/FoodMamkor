@@ -12,7 +12,6 @@ Does NOT: run SQL (chat_db_tools.py), compose the final answer or rate-limit
           spec's `hardcoded_faq` route collapses into `freeform` here
           (MEH-586 decision 4).
 Related:  app/config.py:264 ai_fast_request_kwargs(json_schema=...) (MEH-2351);
-          services/home_product_moderation.py:40 (client init pattern);
           services/chat_db_tools.py TOOL_NAMES (the only names accepted).
 History:  MEH-586 (creation).
 """

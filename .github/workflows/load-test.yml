@@ -39,6 +39,9 @@ jobs:
       BASE_URL: ${{ inputs.base_url }}
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
       K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+      # k6 v2 needs the stack as well as the token, or `k6 cloud run` stops with
+      # "stack ID not configured" (run 44902643680, 21/11).
+      K6_CLOUD_STACK_ID: ${{ secrets.K6_CLOUD_STACK_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -52,8 +55,8 @@ jobs:
       - name: Cloud mode needs both Grafana secrets
         if: inputs.where == 'cloud'
         run: |
-          if [ -z "$K6_CLOUD_TOKEN" ] || [ -z "$K6_CLOUD_PROJECT_ID" ]; then
-            echo "::error::where=cloud needs secrets K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID. Add them, or run with where=local."
+          if [ -z "$K6_CLOUD_TOKEN" ] || [ -z "$K6_CLOUD_PROJECT_ID" ] || [ -z "$K6_CLOUD_STACK_ID" ]; then
+            echo "::error::where=cloud needs secrets K6_CLOUD_TOKEN, K6_CLOUD_PROJECT_ID and K6_CLOUD_STACK_ID. Add them, or run with where=local."
             exit 1
           fi
 

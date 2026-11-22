@@ -5,14 +5,13 @@ Purpose:  A name or title a person types is refused (422, Hebrew message) when
           and other free text are not checked. Typographic marks pass.
 Related:  backend/app/schemas/schemas.py (reject_emoji and the three shared
           name/title validators); the per-class _sanitize_title in
-          community.py, experiences.py, recipes_outreach.py.
+          experiences.py, recipes_outreach.py.
 History:  MEH-3671 (sub-issue of MEH-3668).
 """
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.schemas.community import HomeProductCreate, HomeProductUpdate
 from app.schemas.experiences import ExperienceCreate, ExperienceUpdate
 from app.schemas.recipes_outreach import ProducerRecipeCreate, ProducerRecipeUpdate
 from app.schemas.schemas import (
@@ -50,8 +49,6 @@ def test_typography_and_clean_names_pass_unchanged(kind):
 @pytest.mark.parametrize(
     "model",
     [
-        HomeProductCreate,
-        HomeProductUpdate,
         ExperienceCreate,
         ExperienceUpdate,
         ProducerRecipeCreate,
@@ -71,7 +68,7 @@ def test_the_per_class_title_validators_refuse_emoji(model):
 def test_description_is_not_checked():
     # The decision covered names and titles only.
     with pytest.raises(ValidationError) as exc:
-        HomeProductCreate.model_validate({"title": "x", "description": "טעים 😋"})
+        ExperienceCreate.model_validate({"title": "x", "description": "סדנה טעימה מאוד עם הרבה אוכל טוב 😋"})
     assert not [e for e in exc.value.errors() if e["loc"] == ("description",)]
 
 

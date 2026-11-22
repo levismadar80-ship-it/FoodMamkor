@@ -71,9 +71,6 @@ ALLOWLIST = {
     # Real-time form validation: "No auth, no persistence" (schemas.py docstring).
     # A >=3-letter floor would 422 the user mid-keystroke while they type.
     "ExperienceValidateRequest.description",
-    # Same surface, same reason: "no auth, no DB write".
-    "HomeProductModerationRequest.title",
-    "HomeProductModerationRequest.description",
 }
 
 

@@ -1,0 +1,7 @@
+# Non-Hebrew literal `detail=` values allowed in backend/app/routers/** (prose_rules R1).
+# path<TAB>literal<TAB>reason. One row covers every occurrence of that literal in that file.
+# A row that matches nothing fails the guard: this list only shrinks (MEH-3601).
+backend/app/routers/whatsapp_webhook.py	Bad Request	machine-facing: answers Meta's webhook POST, no person reads it
+backend/app/routers/whatsapp_webhook.py	Payload Too Large	machine-facing: answers Meta's webhook POST, no person reads it
+backend/app/routers/whatsapp_webhook.py	Forbidden	machine-facing: answers Meta's webhook signature/verify check, no person reads it
+backend/app/routers/auth.py	session_invalidated_by_password_change	code string, no frontend mapping found; Hebrew copy waits for Sapir's word (rule 22, MEH-3600)
