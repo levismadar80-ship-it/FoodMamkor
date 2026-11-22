@@ -42,6 +42,13 @@ describe("SupportContactSheet (MEH-3720)", () => {
     fireEvent.click(screen.getByRole("button", { name: "סגרו" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("Escape calls onClose", () => {
+    const onClose = vi.fn();
+    wrap(<SupportContactSheet onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });
 
 describe("OwnerWelcomeCard question line (MEH-3720)", () => {
