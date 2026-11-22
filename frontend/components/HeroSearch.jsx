@@ -21,6 +21,7 @@ import { highlightMatch } from "@/lib/highlightMatch";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { avatarInitial } from "@/components/ui/Avatar";
 import SearchCorrectionNote from "@/components/SearchCorrectionNote";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
@@ -309,7 +310,7 @@ export default function HeroSearch({
   const navigate = (row) => {
     setIsOpen(false);
     if (row.kind === "producer") {
-      const path = row.data.slug ? `/${row.data.slug}` : `/producer/${row.data.id}`;
+      const path = producerPath(row.data);
       router.push(path);
     } else if (row.kind === "category") {
       submitRaw(row.data.name);

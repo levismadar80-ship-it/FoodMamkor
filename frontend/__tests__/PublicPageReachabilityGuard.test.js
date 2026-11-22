@@ -88,7 +88,11 @@ const ROUTES = {
   "/experiences": { kind: "hub" },
   "/group-buys": { kind: "hub" },
   "/rescue": { kind: "hub" },
-  "/[slug]": { kind: "family", sitemap: "`/${p.slug}`", linkedFrom: ["components/ProducerCard.jsx", "`/${producer.slug}`"] },
+  // MEH-3707: both business-page routes are built by lib/producer-path.js
+  // (slug → /{slug}, else /producer/{id}); the sitemap and the card call it,
+  // so the needle is the call. The helper's two branches are held by
+  // ProducerPathGuard.test.js.
+  "/[slug]": { kind: "family", sitemap: "producerPath(p)", linkedFrom: ["components/ProducerCard.jsx", "producerPath(producer)"] },
   "/[slug]/recipes/[recipe_id]": { kind: "family", sitemap: "/recipes/${recipe.id}", linkedFrom: ["components/public/RecipeCard.jsx", "/recipes/${recipe.id}"] },
   "/events/[id]": { kind: "family", sitemap: "`/events/${e.id}`", linkedFrom: ["lib/event-entry.js", "`/events/${row.id}`"] },
   "/experiences/[id]": { kind: "family", sitemap: "`/experiences/${x.id}`", linkedFrom: ["lib/event-entry.js", "`/experiences/${row.id}`"] },
@@ -97,7 +101,7 @@ const ROUTES = {
   "/producers/diet/[dietSlug]": { kind: "family", sitemap: "dietPagePath(", linkedFrom: ["app/[locale]/producers/diet/[dietSlug]/page.js", "dietPagePath("] },
   "/producers/[category]/[region]": { kind: "family", sitemap: "regionPagePath(", linkedFrom: ["app/[locale]/producers/[category]/[region]/page.js", "regionPagePath("] },
   // Legacy id route: ProducerCard links here only for a business with no slug.
-  "/producer/[id]": { kind: "family", sitemap: "`/producer/${p.id}`", linkedFrom: ["components/ProducerCard.jsx", "`/producer/${producer.id}`"] },
+  "/producer/[id]": { kind: "family", sitemap: "producerPath(p)", linkedFrom: ["components/ProducerCard.jsx", "producerPath(producer)"] },
   "/account-deleted": { kind: "noindex" },
   "/business-gone": { kind: "noindex" },
   "/claim": { kind: "noindex" },
