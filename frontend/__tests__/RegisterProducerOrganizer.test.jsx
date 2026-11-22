@@ -21,11 +21,6 @@ import api from "@/lib/api";
 // notice landed on the STORY frame. `.rich` renders the key path AND invokes
 // every tag callback, so key-based assertions below are byte-identical while
 // the real <Link>/<a> nodes still mount.
-// MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
-// file's mocks do not feed; its wiring is covered in RegisterProducerClient-01/-02.test.jsx.
-vi.mock("@/components/RegisterCardPreview", () => ({
-  default: () => <div data-testid="card-preview-stub" />,
-}));
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key, values) => {
@@ -384,8 +379,6 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
     expect(screen.queryByTestId("register-frame-category")).toBeNull();
-    // MEH-3074: organizers are not in the business list, so they get no card preview.
-    expect(screen.queryByTestId("card-preview-stub")).toBeNull();
   });
 
   it("business door: DETAILS goes to CATEGORY as before", async () => {
@@ -436,8 +429,6 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     fireEvent.click(await screen.findByTestId("pick-category"));
     // MEH-3656: CATEGORY is the business door's last frame — no story step.
     expect(screen.queryByPlaceholderText(STORY_MARKER)).toBeNull();
-    // MEH-3074 control: the business door does get the preview.
-    expect(screen.getByTestId("card-preview-stub")).toBeInTheDocument();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));

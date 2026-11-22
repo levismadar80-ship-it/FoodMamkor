@@ -694,79 +694,44 @@ describe("RegisterProducerClient — attribution question on the last step (MEH-
   });
 });
 
-describe("RegisterProducerClient — license-required error placement (MEH-952)", () => {
-  // Walk ACCOUNT → DETAILS → CATEGORY and select the (license-required) category.
+describe("RegisterProducerClient — no licence field at signup (Sapir 22/11)", () => {
+  // The licence number moved to the dashboard (anchor #license). A business in
+  // a licence-required category signs up without it and is sent as pending, so
+  // the backend's register-time 422 (ensure_license_for_categories) is skipped.
   async function reachCategoryAndPick() {
     await fillAccountToDetails();
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
     fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-      // MEH-2640: answer step 2's one required question.
-      fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
-      fireEvent.click(nextBtn()); // → CATEGORY
-    fireEvent.click(await screen.findByTestId("pick-category")); // license-required id 1
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn()); // → CATEGORY
+    fireEvent.click(await screen.findByTestId("pick-category")); // id 1
   }
 
-  it("blocks the advance and shows the error at the field when license is blank", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
-    await reachCategoryAndPick();
-    // license left blank → next is blocked
-    fireEvent.click(screen.getByTestId("register-category-submit"));
-    // still on CATEGORY, and nothing was sent (MEH-3656: CATEGORY submits)
-    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
-    expect(api.post).not.toHaveBeenCalled();
-    // blocking error surfaced inline (role=alert, the verbatim backend-mirror key)
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-  });
-
-  it("clears the error and submits once a license number is entered", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
-    await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    // typing a number clears the blocking error (onChange), then advance succeeds
-    fireEvent.change(screen.getByLabelText(`${K}.fields.license_required_label`), {
-      target: { value: "1234567" },
-    });
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  async function submit() {
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByTestId("register-category-submit"));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    expect(api.post.mock.calls[0][1]).toMatchObject({ producer_license_number: "1234567" });
-  });
+    return api.post.mock.calls[0][1];
+  }
 
-  it("does not resurface the error when the category is deselected and re-selected", async () => {
+  it("a licence-required category shows no licence input and submits as pending", async () => {
     api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
     await renderWizard();
     await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked → error shown
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    // deselect (licenseRequired → false, branch unmounts) then re-select (remounts):
-    // toggleCategory clears the flag, so no phantom error before the next click.
-    fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
-    fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /license/i })).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_required_label`)).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_pending_optin_label`)).toBeNull();
+    const body = await submit();
+    expect(body).toMatchObject({ license_pending: true, producer_license_number: "" });
   });
 
-  // MEH-2105: this gate was the only per-step block that never called
-  // requestFocus — on a 375px viewport the red line rendered ~67px below the
-  // fold while every sibling gate (ACCOUNT fields, runRequiredGate) scrolls
-  // its offender to block:"center". Observed the way MEH-1807 observes its
-  // gates: focus landed on the field, and the setup.js scrollIntoView shim
-  // saw the centred scroll. The pre-click control proves the field was NOT
-  // already focused, so the post-click assertion is falsifiable.
-  it("moves focus to the licence field when the gate blocks (MEH-2105)", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
+  it("a category with no licence requirement is not sent as pending (control)", async () => {
+    await renderWizard(); // default fixture: «ביצים», no licence
     await reachCategoryAndPick();
-    const licenseInput = screen.getByTestId("register-category-license");
-    expect(document.activeElement).not.toBe(licenseInput); // control
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    expect(document.activeElement).toBe(licenseInput);
-    expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    const body = await submit();
+    expect(body.license_pending).toBe(false);
   });
 });
 
