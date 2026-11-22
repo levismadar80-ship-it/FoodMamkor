@@ -218,7 +218,8 @@
       "/verify-email"
     ],
     "about": [
-      "/about"
+      "/about",
+      "/about/badges"
     ],
     "about_badges": [
       "/about",
@@ -1169,6 +1170,7 @@
       "/",
       "/about/for-businesses",
       "/group-buys",
+      "/producer/dashboard/tools",
       "/producers",
       "/recommend",
       "/rescue"
