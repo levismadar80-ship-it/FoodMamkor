@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { ProducerDetailSchema } from "@/lib/schemas"; // MEH-1752: the detail contract
 import { fetchSsrEntity } from "@/lib/ssr-entity-fetch";
 
@@ -45,7 +45,8 @@ export async function generateMetadata(props) {
   if (!producer) notFound();
 
   const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
 
   if (!producer) {
     return {
@@ -68,6 +69,7 @@ export async function generateMetadata(props) {
       locale: OG_LOCALE[locale],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 
