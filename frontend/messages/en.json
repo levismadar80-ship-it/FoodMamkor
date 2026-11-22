@@ -233,7 +233,7 @@
       "producer": {
         "heading": "Give your business a home",
         "organizer_heading": "Publish your markets and events",
-        "subtitle": "About 5 minutes. Free to join. The customer comes straight to you",
+        "subtitle": "About 3 minutes. Free to join. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -247,7 +247,7 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 5 minutes",
+          "duration": "The whole process takes about 3 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
@@ -273,11 +273,11 @@
           "account": {
             "title": "1. Account details",
             "email_section": "Sign up with email",
-            "duration_hint": "About 5 minutes. You can stop and continue later."
+            "duration_hint": "You can stop and continue later."
           },
           "business": {
             "title": "2. Business details",
-            "subtitle": "Just a few fields — you'll complete the rest in your dashboard, before sending it for review.",
+            "subtitle": "You'll complete the rest in your dashboard, before sending it for review.",
             "free_hint": "Registration and your page are free. Every tool is free during the launch period."
           },
           "category": {
@@ -345,9 +345,9 @@
           "license_required_label": "Producer license number (Ministry of Health)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
           "license_names_last": "{rest} and {last}",
-          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Once you add the number, we can check it and give your business the “verified” badge.",
+          "license_what_is_it": "The number appears on your production licence. You can also add it later in your dashboard, and then we can check it and give your business the “verified” badge.",
           "license_pending_optin_label": "I don't have a license number yet",
-          "license_pending_optin_hint": "You can complete registration now. Once you add the number, we can check it and give your business the “verified” badge.",
+          "license_pending_optin_hint": "You can sign up now and add the number later. Once you add it, we can check it and give your business the “verified” badge.",
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
@@ -376,7 +376,7 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "After registering, you'll complete a few details in your dashboard and send it for review. Within up to 3 business days of sending, we'll get back to you on WhatsApp.",
+        "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you within 3 business days of sending.",
         "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
@@ -714,7 +714,7 @@
       "title": "Join as a business",
       "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
       "og_title": "Your business. A page of its own.",
-      "og_description": "How local businesses get their own page on Mehamakor — about 5 minutes."
+      "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
     },
     "share": {
       "title": "Spread the word",
@@ -2493,7 +2493,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes about 3 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
       "thank_suggester": "Send thanks",
       "thank_disabled": {
@@ -4362,7 +4362,7 @@
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business and contact details. About 5 minutes. Photos come later, from the dashboard.",
+      "step1_text": "A short form about your business and contact details. About 3 minutes. Photos come later, from the dashboard.",
       "step2_title": "A personal introduction",
       "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
@@ -4428,7 +4428,7 @@
       "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free to join · about 5 minutes · live within 3 business days"
+    "meta_line": "Free to join · about 3 minutes · live within 3 business days"
   },
   "about_business": {
     "meta_title": "FAQ for businesses",
@@ -4479,7 +4479,7 @@
       },
       "time": {
         "q": "How much time and effort does this take from me?",
-        "a": "Signing up takes about 5 minutes, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+        "a": "Signing up takes about 3 minutes, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
