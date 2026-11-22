@@ -246,6 +246,7 @@ export default function GroupBuyDetailClient({ id }) {
     setCancelling(true);
     try {
       await api.delete(`/group-buys/${id}/commit`);
+      clearMyOrdersNavGate(); // MEH-3698: that may have been her only item
       await load();
       showToast.success(t("toast_cancelled")); // MEH-1446
     } catch (err) {

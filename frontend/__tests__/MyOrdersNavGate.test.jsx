@@ -80,6 +80,33 @@ describe("useMyOrdersNavGate", () => {
     expect(sessionStorage.getItem("meh_my_orders_nav")).toBeNull();
   });
 
+  it("a stale «nothing» settling after the fresh «something» does not hide the row", async () => {
+    let resolveOld;
+    let resolveNew;
+    api.get.mockReturnValueOnce(new Promise((r) => { resolveOld = r; }));
+    const { result } = renderHook(() => useMyOrdersNavGate({ id: "u1" }));
+    api.get.mockReturnValueOnce(new Promise((r) => { resolveNew = r; }));
+    act(() => clearMyOrdersNavGate());
+    await act(async () => { resolveNew({ data: { any: true } }); });
+    await waitFor(() => expect(result.current).toBe(true));
+    await act(async () => { resolveOld({ data: { any: false } }); });
+    expect(result.current).toBe(true);
+  });
+
+  it("the old request finishing does not free the newer one's slot", async () => {
+    let resolveOld;
+    let resolveNew;
+    api.get.mockReturnValueOnce(new Promise((r) => { resolveOld = r; }));
+    renderHook(() => useMyOrdersNavGate({ id: "u1" }));
+    api.get.mockReturnValueOnce(new Promise((r) => { resolveNew = r; }));
+    act(() => clearMyOrdersNavGate());
+    await act(async () => { resolveOld({ data: { any: false } }); });
+    // A menu mounting now shares the newer, still pending request.
+    renderHook(() => useMyOrdersNavGate({ id: "u1" }));
+    expect(api.get).toHaveBeenCalledTimes(2);
+    await act(async () => { resolveNew({ data: { any: true } }); });
+  });
+
   it("switching person hides the link until the new person's answer arrives", async () => {
     sessionStorage.setItem("meh_my_orders_nav", JSON.stringify({ uid: "u1", on: true, at: Date.now() }));
     api.get.mockReturnValueOnce(new Promise(() => {}));

@@ -36,6 +36,7 @@ import {
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
 import MyOrdersRow from "./MyOrdersRow";
 
@@ -80,7 +81,7 @@ function Section({ title, rows, testId }) {
   if (rows.length === 0) return null;
   return (
     <section className="mb-6" data-testid={testId}>
-      <h2 className="text-lg font-semibold text-text mb-2">{title}</h2>
+      <SectionHeading size="content" className="mb-2">{title}</SectionHeading>
       <ul className="divide-y divide-border bg-surface border border-border rounded-md" data-testid="my-orders-list">
         {rows.map((row) => <MyOrdersRow key={`${row.kind}-${row.id}`} row={row} />)}
       </ul>

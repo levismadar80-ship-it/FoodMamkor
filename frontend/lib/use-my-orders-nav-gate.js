@@ -109,7 +109,8 @@ function load(uid) {
         return null;
       })
       .finally(() => {
-        inFlight.delete(uid);
+        // Only its own entry: after a clear, the newer request owns the slot.
+        if (inFlight.get(uid) === pending) inFlight.delete(uid);
       });
     inFlight.set(uid, pending);
   }
@@ -131,8 +132,11 @@ export function useMyOrdersNavGate(user) {
     if (!uid) return undefined;
     let alive = true;
     const ask = () => {
+      // An answer to a question asked before the last clear is stale: the
+      // newer ask's answer wins, whichever settles first.
+      const askedAt = generation;
       load(uid).then((on) => {
-        if (alive && on !== null) setAnswer({ uid, on });
+        if (alive && on !== null && askedAt === generation) setAnswer({ uid, on });
       });
     };
     ask();

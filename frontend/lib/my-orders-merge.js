@@ -57,7 +57,9 @@ function orderRow(o) {
 
 /** @param {any} gb @param {Date} now @returns {MyOrderRow} */
 function groupBuyRow(gb, now) {
-  const deadline = parseNaiveUtc(gb.deadline);
+  // The schema requires a deadline; a value that does not parse still must
+  // not throw the whole list away, so it reads as "now".
+  const deadline = parseNaiveUtc(gb.deadline) ?? now;
   // Same reading as group_buy_mine.running(): funded, or open before its
   // deadline. An open group past it waits for the expiry job: not running.
   const active = gb.status === "funded" || (gb.status === "open" && deadline > now);
@@ -74,8 +76,9 @@ function groupBuyRow(gb, now) {
 /** @param {any} b @param {Date} now @param {string} today @returns {MyOrderRow} */
 function bagRow(b, now, today) {
   const active = b.status === "reserved" && new Date(b.pickup_end) > now;
-  // The bag's own page answers 404 after its day (rescue_reads.offer_detail),
-  // so an older row opens the business instead.
+  // The bag's own page answers 404 for any day but today
+  // (rescue_reads.offer_detail), so another day's row opens the business —
+  // on purpose also for a bag still running past midnight.
   const href = b.date === today ? `/rescue/${b.offer_id}` : `/producer/${b.producer_id}`;
   return {
     kind: "bag", id: b.id, href, business: b.producer_name,

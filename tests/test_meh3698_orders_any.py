@@ -73,6 +73,20 @@ def test_a_group_buy_counts(client, db):
     assert _any(client, me) is True
 
 
+def test_a_group_buy_of_a_business_no_longer_public_does_not_count(client, db):
+    """/users/me/group-buys hides it (_public_group_buys), so the menu must
+    not lead to a list that has nothing in it."""
+    producer, _ = _producer_user(db, email="gone3698@example.com")
+    me = make_user(db, email="gbgone3698@example.com")
+    gb = _make_group_buy(db, producer)
+    db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=me.id, quantity=1))
+    producer.status = "suspended"
+    db.commit()
+    assert _any(client, me) is False
+    listed = client.get("/users/me/group-buys", headers=auth_header(me)).json()
+    assert listed["group_buys"] == []  # the list agrees
+
+
 def test_a_product_order_counts_only_while_ordering_is_on(
     client, db, shop, monkeypatch
 ):
