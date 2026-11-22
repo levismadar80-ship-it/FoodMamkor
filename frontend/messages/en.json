@@ -505,10 +505,10 @@
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -620,6 +620,27 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish",
+    "kph": "Coffee"
   },
   "seo": {
     "home": {

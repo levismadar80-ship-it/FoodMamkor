@@ -181,7 +181,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | "קרוב אלי" (geolocation) — single re-used marker, no leak | `MapComponent.jsx` |
 | ✅ | v1 | Map ↔ list hover sync (bidirectional) | `MapClient.jsx` |
 | ✅ | v1 | Mobile bottom-sheet for selected producer | `MapClient.jsx` |
-| ✅ | v1 | Category legend = filter (toggleable) | `MapClient.jsx` |
+| ✅ | v1 | Category legend = filter (toggleable), one row per group since MEH-3076 | `map/components/MapPane.jsx` |
 | ✅ | v1 | Producer detail page with sticky contact sidebar | `frontend/app/[slug]/page.js`, `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — mobile column order fixed (name above fold), inline mobile CTA, IO StickyContactBar | `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — short_description subtitle + contact_name micro-line | `producer/[id]/ProducerDetail.jsx` |
