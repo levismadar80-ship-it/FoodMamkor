@@ -72,9 +72,6 @@ ALLOWLIST = {
     # A >=3-letter floor would 422 the user mid-keystroke while they type.
     "ExperienceValidateRequest.title",
     "ExperienceValidateRequest.description",
-    # Same surface, same reason: "no auth, no DB write".
-    "HomeProductModerationRequest.title",
-    "HomeProductModerationRequest.description",
 }
 
 
