@@ -49,6 +49,7 @@ GET	/webhook/whatsapp	webhook
 POST	/webhook/whatsapp	webhook
 GET	/health	health
 GET	/health/places	health
+GET	/health/ai	health
 GET	/health/liveness	health
 GET	/health/readiness	health
 #

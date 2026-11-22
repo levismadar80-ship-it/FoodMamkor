@@ -2387,6 +2387,14 @@ GET /health/places               public, 10/min — is the Google Places key ans
                                  workflow (every 30 minutes; `disabled` fails there too).
                                  Cause/remedy: DEPLOYMENT.md § D-quater.
 
+GET /health/ai                   public, 10/min — is the Anthropic client buildable and answering? (MEH-3724)
+                                 Builds it like the product (make_anthropic_client), then ONE
+                                 token-free call (models.list).
+                                   200 {"status":"disabled"}   ANTHROPIC_API_KEY unset
+                                   200 {"status":"ok"}         client built, API answered
+                                   503 {"status":"error","stage":"init"|"call","code":<exception name>}
+                                 A 503 also lands in Sentry (fingerprint ai-health/<stage>/<code>).
+
 GET/HEAD /health                 public — backwards-compat alias, the path Railway currently
                                  polls (railway.json). ALWAYS 200; it never reports failure
                                  via status code, only via the db_init field.
