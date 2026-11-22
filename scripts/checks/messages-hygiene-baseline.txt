@@ -15,7 +15,7 @@ duplicate	14	בטעינה…
 duplicate	14	טלפון
 duplicate	14	נשמר
 duplicate	14	שמירה
-duplicate	16	מייל
+duplicate	17	מייל
 duplicate	2	(חובה)
 duplicate	2	+ פרסום מתכון חדש
 duplicate	2	2–3 תמונות של העסק או המוצרים
@@ -217,7 +217,6 @@ duplicate	2	מחקי
 duplicate	2	מידע על מצב חופשה
 duplicate	2	מיון בתי עסק
 duplicate	2	מיון:
-duplicate	2	מייל
 duplicate	2	מיקום על המפה
 duplicate	2	ממתינות
 duplicate	2	ממתינים
