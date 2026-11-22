@@ -32,7 +32,7 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 // MEH-2859: /group-buys now renders the shared hub tab row. It is not this
 // file's subject (and it owns a router + its own supply gates), so it is

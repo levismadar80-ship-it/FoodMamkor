@@ -161,7 +161,9 @@ describe("Tools tab — dashboard fetch failure (MEH-1777)", () => {
     renderPage(ToolsPage);
 
     await waitFor(() =>
-      expect(screen.getByText(he.dashboard.producer.quick_links.manage_events.title)).toBeInTheDocument(),
+      // MEH-3669: the tool titles sit inside a closed card now; the group
+      // heading is the first thing a loaded tab always renders.
+      expect(screen.getByText(he.dashboard.producer.quick_links.groups.offer_heading)).toBeInTheDocument(),
     );
     expect(screen.queryByTestId("tools-load-error")).not.toBeInTheDocument();
   });

@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictInt,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -29,10 +30,12 @@ from app.limits import (  # MEH-3484
     cap_list,
 )
 from app.schemas.product_order_offer import PriceUnit  # MEH-2936
+from app.schemas.product_variants import ProductVariantOut  # MEH-3617
 from app.data.cities import canonical_city  # MEH-3484
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
+from app.utils.weekdays import weekdays_mask  # MEH-3618
 from app.schemas import order_cutoff  # MEH-3512
 from app.schemas import delivery_time  # MEH-3511
 from app.schemas.schemas import (
@@ -45,6 +48,7 @@ from app.schemas.schemas import (
     SanitizedLabelField,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
 )
 
 # MEH-3444: «אחסון ותוקף». The 300 cap is on the INPUT (before bleaching), so
@@ -216,7 +220,7 @@ class DeliveryZoneIn(BaseModel):
     zone on producers.delivery_zones and copies days / minimum / fee /
     threshold onto each of its cities' delivery_areas rows."""
 
-    name: str
+    name: Annotated[str, AfterValidator(reject_emoji)]  # MEH-3671
     cities: list[str] = Field(default_factory=list, max_length=MAX_CITIES_PER_ZONE + 1)
     delivery_days: DeliveryDaysField = None
     min_order: int | None = None
@@ -416,6 +420,10 @@ class ProducerLocationOut(BaseModel):
     pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; None = none written. Withheld
+    # for an approximate point (below): the note may name the street the
+    # point hides (MEH-829).
+    pickup_note: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
     # (FastAPI dumps response models with by_alias=True).
@@ -427,6 +435,14 @@ class ProducerLocationOut(BaseModel):
     @classmethod
     def _none_days(cls, v: Any) -> Any:
         return v or None
+
+    @model_validator(mode="after")
+    def _hide_note_of_approximate_point(self) -> Self:
+        # MEH-3593 review: «הרצל 5, דלת אחורית» would publish the address an
+        # approximate point withholds.
+        if self.location_precision != "exact":
+            self.pickup_note = None
+        return self
 
 
 # MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
@@ -445,6 +461,19 @@ def _optional_label_letters(value: str | None) -> str | None:
     if value is None or value.strip() == "":
         return None
     return _min_letters_validator(value)
+
+
+# MEH-3593: «הוראות איסוף» stays a short note under the address, not a page.
+PICKUP_NOTE_MAX = 200
+
+
+def _pickup_note(value: str | None) -> str | None:
+    # MEH-3593: empty or whitespace = cleared (NULL). One line: a newline in a
+    # plain-text email could fake a second «הקוד שלכם» line, so every run of
+    # whitespace becomes one space. MEH-555: shown to buyers → ≥ 3 letters.
+    if value is None or not value.strip():
+        return None
+    return _min_letters_validator(" ".join(value.split()))
 
 
 class ProducerLocationCreate(BaseModel):
@@ -475,11 +504,18 @@ class ProducerLocationCreate(BaseModel):
     pickup_days: DeliveryDaysField = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; "" clears it.
+    pickup_note: str | None = Field(None, max_length=PICKUP_NOTE_MAX)
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_note")
+    @classmethod
+    def _validate_pickup_note(cls, v: str | None) -> str | None:
+        return _pickup_note(v)
 
     @field_validator("pickup_days")
     @classmethod
@@ -527,11 +563,18 @@ class ProducerLocationUpdate(BaseModel):
     pickup_days: DeliveryDaysField = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; "" clears it.
+    pickup_note: str | None = Field(None, max_length=PICKUP_NOTE_MAX)
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_note")
+    @classmethod
+    def _validate_pickup_note(cls, v: str | None) -> str | None:
+        return _pickup_note(v)
 
     @field_validator("pickup_days")
     @classmethod
@@ -604,6 +647,8 @@ class ProducerLocationOwnerOut(BaseModel):
     pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; None = none written.
+    pickup_note: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -832,11 +877,19 @@ class ProductCreate(BaseModel):
     gluten_detail: AllergenDetailField | None = None  # MEH-3442
     nuts_detail: AllergenDetailField | None = None  # MEH-3442
     no_allergens: bool = False  # MEH-3445: «אין במוצר אלרגנים מהרשימה»
+    # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64.
+    # NULL (and 127, every day) = every day.
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("available_weekdays")
+    @classmethod
+    def _validate_weekdays(cls, v: int | None) -> int | None:
+        return weekdays_mask(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -910,11 +963,18 @@ class ProductUpdate(BaseModel):
     # MEH-3445: exclude_unset → unsent stays put; null means false (the
     # column is NOT NULL). The router clears it while a code is stored.
     no_allergens: bool | None = None
+    # MEH-3618: exclude_unset → unsent stays put; null = every day again.
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("available_weekdays")
+    @classmethod
+    def _validate_weekdays(cls, v: int | None) -> int | None:
+        return weekdays_mask(v)
 
     @field_validator("no_allergens")
     @classmethod
@@ -974,8 +1034,12 @@ class ProductOut(BaseModel):
     gluten_detail: str | None = None  # MEH-3442
     nuts_detail: str | None = None  # MEH-3442
     no_allergens: bool = False  # MEH-3445
+    # MEH-3618: Sunday = 1 … Saturday = 64; NULL = every day.
+    available_weekdays: int | None = None
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
+    # MEH-3617: sizes or flavours, in the owner's order. Empty = none.
+    variants: list[ProductVariantOut] = []
 
     model_config = {"from_attributes": True}
 

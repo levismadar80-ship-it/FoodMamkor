@@ -177,7 +177,10 @@ _CITY_QUOTE_MAP = str.maketrans({"׳": "'", "״": '"'})  # geresh, gershayim
 # MEH-2602: the data.gov.il export stores qualifiers with the parentheses
 # flipped by a bidi round-trip — «יקנעם )מושבה(», «קרית יערים)מוסד(». Swapped
 # back before any comparison or display.
-_CITY_REVERSED_PARENS = re.compile(r"\s*\)([^()]*)\(")
+# MEH-3613: no leading `\s*` — on a long run of spaces with no `)` it made
+# the scan quadratic (CodeQL py/polynomial-redos). The whitespace before the
+# match is stripped in `fix_reversed_parens` instead; output is unchanged.
+_CITY_REVERSED_PARENS = re.compile(r"\)([^()]*)\(")
 # MEH-2602: the official list spells «קרית» (one yod), the site's static list
 # and most owners type «קריית». Same town, so one key.
 _KIRYAT_DOUBLE_YOD = re.compile(r"(?<!\S)קריית(?!\S)")
@@ -185,7 +188,14 @@ _KIRYAT_DOUBLE_YOD = re.compile(r"(?<!\S)קריית(?!\S)")
 
 def fix_reversed_parens(value: str) -> str:
     """«יקנעם )מושבה(» → «יקנעם (מושבה)»; anything else unchanged."""
-    return _CITY_REVERSED_PARENS.sub(lambda m: f" ({m.group(1).strip()})", value)
+    out: list[str] = []
+    pos = 0
+    for match in _CITY_REVERSED_PARENS.finditer(value):
+        out.append(value[pos : match.start()].rstrip())
+        out.append(f" ({match.group(1).strip()})")
+        pos = match.end()
+    out.append(value[pos:])
+    return "".join(out)
 
 
 def city_key(value: str | None) -> str:

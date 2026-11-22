@@ -21,6 +21,11 @@ on:
         default: "3"
         type: string
 
+# CodeQL #45 (MEH-3613): least privilege. checkout and upload-artifact need
+# nothing beyond read.
+permissions:
+  contents: read
+
 jobs:
   measure:
     name: CLS measurement

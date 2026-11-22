@@ -563,19 +563,15 @@ test.describe("manual › /about/process (MEH-534)", () => {
 
   // MT:MEH-534:11 — cross-link from the bottom of /about → /about/process.
   //   (The checklist quotes «כך אנחנו מכירות כל בית עסק»; the copy key reads «כך אנחנו בודקות כל בית עסק» — drift recorded.)
-  test("cross-link from /about: the Close row link (and the MEH-1840 verification teaser) → /about/process", async ({
-    page,
-  }) => {
+  // MEH-3667: the verification card (and its teaser link) moved to /about/badges,
+  // whose «מאומת» group intro links to /about/process. The Close row link stays.
+  test("cross-link from /about: the Close row link → /about/process", async ({ page }) => {
     await gotoAbout(page);
     const closeLink = scope(page).getByTestId("about-close-process-link");
     await closeLink.scrollIntoViewIfNeeded();
     await expect(closeLink).toHaveText(PROCESS_HE.crosslink_from_about);
     await expect(closeLink).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
-    const teaser = scope(page).getByTestId("verification-process-link");
-    await expect(teaser).toHaveText(PROCESS_HE.crosslink_from_about);
-    await expect(teaser).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
-    // The Close row is the page's bottom — it must come after the verification teaser.
-    expect(await precedes(teaser, closeLink)).toBe(true);
+    await expect(scope(page).getByTestId("verification-process-link")).toHaveCount(0);
   });
 
   // MT:MEH-534:12 — RTL + tap targets: everything RTL, no horizontal overflow at 360px, CTA ≥ 44px, focus ring visible.

@@ -37,6 +37,10 @@ const MISSING_TARGETS = {
   [MISSING_LOCATION]: `${EDIT_HUB}#locations`,
   // Same page: the OTP card is mounted inside this banner, below the list.
   [MISSING_PHONE_VERIFIED]: "#phone-verify",
+  // MEH-3660: MISSING_EMAIL_VERIFIED has no target on purpose — it is done
+  // from the mailbox, and on the dashboard the checklist row carries the
+  // resend button. Where this list does name it (a business banner outside
+  // the dashboard checklist) it renders as plain text.
   // MEH-2460 (organizer): the description lives in the profile group of the
   // edit hub; events have their own dashboard page.
   [ORGANIZER_MISSING_DESCRIPTION]: `${EDIT_HUB}#bio`,
@@ -129,9 +133,14 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
   const missing = serverMissing ?? submissionMissingItems(producer);
   const ready = missing.length === 0;
   const phoneUnverified = missing.includes(MISSING_PHONE_VERIFIED);
+  const actionsOnly = variant === "actions";
+  // MEH-3659: the actions variant shows no list, so a server 422 must not
+  // leave a dead button there — it keeps the local gate (the card's rows) and
+  // stays tappable for a retry; the toast says what the server objected to.
+  const canSend = actionsOnly ? submissionMissingItems(producer).length === 0 : ready;
 
   const handleSubmit = async () => {
-    if (submitting || !ready) return;
+    if (submitting || !canSend) return;
     setSubmitting(true);
     try {
       await api.post("/producers/me/submit-for-review");
@@ -152,7 +161,26 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
     }
   };
 
-  const actionsOnly = variant === "actions";
+  // MEH-3659: inside the completeness card the checklist is the list and the
+  // WhatsApp row owns the OTP card; the card mounts this footer only once
+  // every row is done. So here: one button, no confirm step, no disabled hint
+  // (Shopify / Airbnb publish on one tap; the server still re-checks).
+  if (actionsOnly) {
+    return (
+      <div className="text-sm" data-testid="draft-submit-actions" data-state-ready={canSend}>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting || !canSend}
+          data-testid="draft-submit-cta"
+          className="inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <PaperPlaneTilt size={16} weight="bold" aria-hidden="true" />
+          {submitting ? t("confirm_sending") : t("submit_cta")}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

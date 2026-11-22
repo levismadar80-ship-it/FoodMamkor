@@ -5,6 +5,7 @@
 // no trailing «.» / «!» on a string that elsewhere has none, gershayim «״».
 import { describe, it, expect } from "vitest";
 import he from "../messages/he.json";
+import en from "../messages/en.json";
 
 const flat = (o, p = "") =>
   Object.entries(o).flatMap(([k, v]) =>
@@ -28,6 +29,13 @@ const DIFFERENT_ROLES = [
 ];
 
 const entries = flat(he).filter(([, v]) => typeof v === "string");
+const enEntries = flat(en).filter(([, v]) => typeof v === "string");
+
+// MEH-3627: an acronym's gershayim sits before its last letter (ק״ג, מע״מ,
+// ארה״ב). A quote followed by a whole word is a real quotation (ה"בעלים",
+// ו"מאחורי העסק") and stays.
+const ASCII_ACRONYM = /(?<=[א-ת])["“”](?=[א-ת](?![א-ת]))/;
+const isUrl = (v) => /^https?:/.test(v);
 
 function variantGroups(rows) {
   const groups = new Map();
@@ -71,5 +79,23 @@ describe("MEH-3462: one spelling per Hebrew string", () => {
   it("every DIFFERENT_ROLES key still exists", () => {
     const keys = new Set(entries.map(([k]) => k));
     expect(DIFFERENT_ROLES.flat().filter((k) => !keys.has(k))).toEqual([]);
+  });
+
+  it("MEH-3465 control: the acronym check tells an acronym from a quotation", () => {
+    expect(ASCII_ACRONYM.test('ק"ג')).toBe(true);
+    expect(ASCII_ACRONYM.test('כולל מע"מ, אם')).toBe(true);
+    expect(ASCII_ACRONYM.test('ה"בעלים בעבודה"')).toBe(false);
+    expect(ASCII_ACRONYM.test("ק״ג")).toBe(false);
+    expect(enEntries.length).toBeGreaterThan(1000); // en.json really loaded
+  });
+
+  it("MEH-3465: no he.json acronym uses an ASCII quote for gershayim", () => {
+    const bad = entries.filter(([, v]) => ASCII_ACRONYM.test(v)).map(([k]) => k);
+    expect(bad, "write ״ (gershayim), as in ק״ג").toEqual([]);
+  });
+
+  it("MEH-3465: no en.json value uses three dots for an ellipsis", () => {
+    const dots = enEntries.filter(([, v]) => v.includes("...") && !isUrl(v)).map(([k]) => k);
+    expect(dots, "use the single «…» character, as he.json does").toEqual([]);
   });
 });

@@ -1,25 +1,17 @@
 """
 Module:    schemas/community
-Purpose:   Users, favourites, home-kitchen products and their moderation,
-           reports and ratings.
+Purpose:   Users, favourites and reports.
 Does NOT:  Describe licensed-business products (catalog.py).
 Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import datetime
 from uuid import UUID
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from app.services.sanitization import sanitize_text
-from app.schemas.schemas import (
-    PhoneNumberField,
-    _image_url_list_validator,
-    _image_url_validator,
-    _min_letters_validator,
-)
 from app.schemas.producer_out import ProducerListOut
 
 
@@ -82,181 +74,7 @@ class FavoriteOut(BaseModel):
 # backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
-# --- Home Product ("from the neighbor's kitchen" listings) ---
-class HomeProductCreate(BaseModel):
-    title: str
-    description: str | None = None
-    photo: str | None = None
-    quantity: str | None = None
-    price: Decimal | None = None
-    neighborhood: str | None = None
-    city: str | None = None
-    # docs/archive/FIXES_V2.md fix 7c — street + zip are persisted server-side but NOT
-    # included in HomeProductOut. Use them for internal seller-only views.
-    street: str | None = None
-    zip_code: str | None = None
-    phone: PhoneNumberField | None = None
-    # Expanded fields (docs/archive/FIXES_V2.md fix 2)
-    category: str | None = None
-    prep_date: date | None = None
-    expiry_date: date | None = None
-    storage_type: str | None = None
-    allergens: str | None = None
-    kosher: str | None = None
-    is_organic: bool = False
-    unit: str | None = None
-    delivery_method: str | None = None
-    location_notes: str | None = None
-    images: list[str] = []
-
-    @field_validator("title")
-    @classmethod
-    def _sanitize_title(cls, v: str) -> str | str | None:
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("title")
-    @classmethod
-    def _validate_title_letters(cls, v: str) -> str:
-        return _min_letters_validator(v)
-
-    @field_validator("description")
-    @classmethod
-    def _sanitize_description(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=1000)
-
-    @field_validator("location_notes")
-    @classmethod
-    def _sanitize_location_notes(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("allergens")
-    @classmethod
-    def _sanitize_allergens(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
-
-    # MEH-1222: reject malformed image URLs (public neighbor-product form).
-    @field_validator("photo")
-    @classmethod
-    def _validate_photo(cls, v: str | None) -> str | None:
-        return _image_url_validator(v)
-
-    @field_validator("images")
-    @classmethod
-    def _validate_images(cls, v: list[str]) -> list[str] | list[str] | None:
-        return _image_url_list_validator(v)
-
-
-class HomeProductUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    photo: str | None = None
-    quantity: str | None = None
-    price: Decimal | None = None
-    neighborhood: str | None = None
-    city: str | None = None
-    street: str | None = None
-    zip_code: str | None = None
-    phone: PhoneNumberField | None = None
-    category: str | None = None
-    prep_date: date | None = None
-    expiry_date: date | None = None
-    storage_type: str | None = None
-    allergens: str | None = None
-    kosher: str | None = None
-    is_organic: bool | None = None
-    unit: str | None = None
-    delivery_method: str | None = None
-    location_notes: str | None = None
-    images: list[str] | None = None
-
-    @field_validator("title")
-    @classmethod
-    def _sanitize_title(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("description")
-    @classmethod
-    def _sanitize_description(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=1000)
-
-    @field_validator("location_notes")
-    @classmethod
-    def _sanitize_location_notes(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("allergens")
-    @classmethod
-    def _sanitize_allergens(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
-
-    # MEH-1222: reject malformed image URLs (public neighbor-product form).
-    @field_validator("photo")
-    @classmethod
-    def _validate_photo(cls, v: str | None) -> str | None:
-        return _image_url_validator(v)
-
-    @field_validator("images")
-    @classmethod
-    def _validate_images(cls, v: list[str] | None) -> list[str] | None:
-        return _image_url_list_validator(v)
-
-
-class HomeProductRatingOut(BaseModel):
-    stars: int
-    comment: str | None = None
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class HomeProductOut(BaseModel):
-    id: UUID
-    user_id: UUID
-    title: str
-    description: str | None = None
-    photo: str | None = None
-    quantity: str | None = None
-    price: Decimal | None = None
-    neighborhood: str | None = None
-    city: str | None = None
-    phone: str | None = None
-    is_active: bool
-    category: str | None = None
-    prep_date: date | None = None
-    expiry_date: date | None = None
-    storage_type: str | None = None
-    allergens: str | None = None
-    kosher: str | None = None
-    is_organic: bool = False
-    unit: str | None = None
-    delivery_method: str | None = None
-    location_notes: str | None = None
-    images: list[str] = []
-    moderation_status: str = "APPROVED"
-    moderation_reason: str | None = None
-    moderation_suggestion: str | None = None
-    avg_rating: float | None = None
-    rating_count: int = 0
-    recent_comments: list[HomeProductRatingOut] = []
-    seller_name: str | None = None
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class HomeProductModerationRequest(BaseModel):
-    """Payload for the in-form validation call — no auth, no DB write."""
-
-    title: str = Field(..., min_length=1, max_length=200)
-    description: str | None = None
-    category: str | None = None
-    price: Decimal | None = None
-
-
-class HomeProductModerationResult(BaseModel):
-    status: str  # APPROVED | FLAGGED | REJECTED
-    reason: str | None = None
-    suggestion: str | None = None
+# MEH-3646: HomeProduct* schemas removed with the neighbour-listing code (MEH-796).
 
 
 # --- Report ---
@@ -319,14 +137,3 @@ class ReviewReportCreate(BaseModel):
         if self.reason == "other" and not self.details:
             raise ValueError("ספרו לנו בכמה מילים מה הבעיה")
         return self
-
-
-# --- Rating ---
-class RatingSubmit(BaseModel):
-    stars: int = Field(..., ge=1, le=5)
-    comment: str | None = Field(None, max_length=100)
-
-    @field_validator("comment")
-    @classmethod
-    def _sanitize_comment(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=100)

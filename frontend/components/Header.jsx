@@ -55,6 +55,7 @@ const HEADER_MENU_ORDER = [
   "producerPublicPage",
   "favorites",
   "myOrders",
+  "myGroupBuys", // MEH-3609
   "settings",
   "admin",
 ];

@@ -706,7 +706,7 @@ class TestThankSuggester:
             f"/admin/outreach/{lead.id}/thank-suggester", headers=_admin_headers(db)
         )
         assert r.status_code == 409
-        assert "אין כתובת אימייל" in r.json()["detail"]
+        assert "אין כתובת מייל" in r.json()["detail"]
         send.assert_not_called()
 
     def test_409_when_the_suggester_did_not_opt_in(self, client, db, monkeypatch):

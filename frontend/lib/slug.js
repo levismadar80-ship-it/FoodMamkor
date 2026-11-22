@@ -28,6 +28,7 @@ const RESERVED = new Set([
   "about", "admin", "favorites", "login", "map",
   "p", "producer", "rate", "register", "settings", "terms",
   "upgrade", "messages", "discover", "publish", "newsletter", "my-orders",
+  "my-group-buys", // MEH-3609
   "api", "_next", "favicon.ico", "manifest.json",
   "robots.txt", "sitemap.xml", "sw.js",
   "monitoring", // MEH-2976: Sentry tunnel (next.config.js tunnelRoute)

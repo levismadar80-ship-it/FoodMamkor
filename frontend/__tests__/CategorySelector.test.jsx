@@ -14,6 +14,7 @@ import CategorySelector from "@/components/CategorySelector";
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key) => (scope ? `${scope}.${key}` : key);
+    t.has = () => false; // MEH-3076: categoryLabel falls back to the DB name
     return t;
   },
 }));

@@ -4,7 +4,7 @@ Purpose:  MEH-3261 — once a business is approved its public text and photos go
           live with no review. This adds the two missing signals: an AI check on
           changed text (a REJECTED verdict refuses the save with a 422) and one
           admin ping per save that changed the description, short description,
-          owner story or photos («📝 עסק מאושר עדכן תוכן»).
+          owner story or photos («עסק מאושר עדכן תוכן»).
 Touches:  Anthropic (fast-tier Haiku, one call per save that changed text),
           WhatsApp + Resend (admin ping, BackgroundTask). No DB writes, no schema.
 Does NOT: moderate a PENDING business (the admin reads everything at approval),
@@ -257,7 +257,7 @@ def check_product(
 def content_edit_message(name: str, changed: list[str], flagged: bool) -> str:
     fields = " · ".join(CONTENT_FIELD_LABELS.get(f, f) for f in changed)
     suffix = FLAGGED_SUFFIX if flagged else ""
-    return f"📝 עסק מאושר עדכן תוכן: {_sanitize_wa_param(name)} — {fields}{suffix}"
+    return f"עסק מאושר עדכן תוכן: {_sanitize_wa_param(name)} — {fields}{suffix}"
 
 
 def notify_admin_content_edit(

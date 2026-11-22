@@ -208,7 +208,7 @@ async def get_producer(id: str):
 
 ### ✅ 5. IDOR — SHIPPED across all delete/update endpoints
 
-**Status:** every delete/update endpoint in `home_products.py`,
+**Status:** every delete/update endpoint in
 `producer_me.py`, `favorites.py`, `reports.py`, `reviews.py`,
 `events.py`, and `experiences.py` now checks ownership against
 `current_user.id`, with an admin-override (`current_user.role == "admin"`)
@@ -944,6 +944,16 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17b-0. The owner links her own Google profile (MEH-3641)
+
+An owner can set `producers.google_place_id` herself (`PUT /producers/me/google-profile`), and that id is what switches on the public Google-rating line. The risk is borrowing a stranger's rating.
+
+- **The gate.** The server fetches the profile live and accepts it only when the Google name or the Google phone matches the business (`services/google_profile.is_her_profile`). A name matches when it is equal after normalising, or when the shorter name's whole words, at least two, appear in order in the longer one; one word («קפה») never matches a longer name. A phone matches on its national digits, mobile or landline.
+- **One profile, one business.** A place_id already linked to another business → 409.
+- **The admin hears about it.** A link change on an approved business sends the sensitive-edit email («הפרופיל בגוגל»). A pending business is seen at approval.
+- **Accepted residual risk.** An owner who renames her business to match a stranger's two-word Google name can pass the name test; the admin email on an approved business and the approval review on a pending one are the backstop.
+- **Nothing else is stored** (Google ToS §3.2.3(b)); every route is `require_producer`, scoped to `user.producer_id`, 10/hour per IP.
+
 ## 17b-1. A restored backup carries no real people (MEH-3406)
 
 A production dump restored anywhere else (staging, a DR drill, a laptop) is one more copy of the database to protect (Privacy Protection Law, amendment 13). So `scripts/restore_from_backup.py` runs `scripts/anonymize_restored_db.sql` right after `pg_restore`, in one transaction, and then fails closed (exit 4) if any real email, phone, push endpoint or inbound WhatsApp message survived.
@@ -1329,7 +1339,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 ### Pattern applied
 
 - **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
-  - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
+  - `RegisterAck = {"detail": "אם המייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."}`
   - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / **google**-collision / **apple**-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test). **Quad, not triple, since MEH-1624** — the apple branch (`auth.py:338`, and `auth_register_producer.py:643` on the producer endpoint since MEH-3293) was absent from the set, so a divergence unique to Apple would have shipped green. The two test *names* still say `three_branches`: MEH-1624 was a tests-only PR and renaming was left out of it. Read them as the byte-identity tests, not as a branch count.
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
@@ -1401,7 +1411,17 @@ Stage 2b of on-site ordering adds the first routes where a **guest** writes data
 
 - **Unauthenticated code sender:** `POST /product-orders/phone-code` messages a phone through WhatsApp. Bounds: only for a business that takes orders now; 5/hour per IP; 3 codes an hour per phone and 500 a day site-wide, both counted in `product_order_phone_codes` (not in memory). At the site-wide ceiling the route answers 503 and logs an error: it fails closed. **Accepted cost:** an attacker with several IPs can spend the ceiling and close ordering for the day, and can spend a victim phone's 3 codes an hour. Delay, not exposure. The route does not say whether a phone is blocked for no-shows.
 - **The code:** six digits, 10 minutes, newest only, single use. Stored as `HMAC-SHA256(server secret, phone:code)`. A wrong try is committed before the 422, so five wrong tries end the code even when every request fails.
+- **No code for the account's own verified phone (MEH-3680):** a logged-in buyer (Bearer token, the full `get_current_user` checks) whose `phone_verified` is true and whose account phone equals the order phone in canonical form orders without a code. A phone change through `PATCH /users/me` clears `phone_verified_at`, so an old verification never covers a new number. The codeless path keeps the old bound: from the 4th order to one phone within an hour a code is asked again (`_codeless_orders_left`), so an order-then-cancel loop is bounded as it was by the 3 codes an hour. **Accepted risk:** a verification has no maximum age and `users.phone` is not unique, so the former holder of a recycled number keeps a codeless path to it until she changes her phone. The new holder would get the order's WhatsApp messages and could be blocked by two no-shows. Same exposure as any account with a stale verified phone; a maximum age on `phone_verified_at` is the fix if this shows up.
 - **Guest status token:** `base64url(HMAC(server secret, "product-order-status:" + idempotency key))`; only its sha256 is stored. It travels in the POST **body**, never in a URL. The buyer view masks the phone, omits the street address, shows the pickup code only while it can be used, sends `Cache-Control: no-store`, and stops answering 30 days after the order closed.
 - **10-minute replay window:** a repeat of `POST /product-orders` with the same idempotency key, phone and business within 10 minutes returns the same order and token **without a new code** (a lost answer must not cost the buyer her order). For those 10 minutes the key is a credential. It is a client-made UUID that appears in no response, view or log. **The frontend must never put it in a URL or an analytics event.**
 - **What a business may do alone:** confirm at or below the total the buyer saw, and only before the slot starts. Anything else needs the buyer's acceptance. Two no-shows in 90 days block a phone, so a no-show can be reported only after the slot of an order that was confirmed in time.
 - **Ownership:** a business reaches only its own orders (404 otherwise); there is no admin path yet (stage 6).
+
+### Owner invite on an existing account: a fresh Google sign-in replaces the email code (MEH-3675)
+
+- **What the code proves:** on `POST /auth/owner-invite/accept-existing` the emailed code shows that whoever is at the screen can reach the account right now. An old session alone never accepts.
+- **The Google path:** the body may carry `google_id_token` instead of `code`. It counts only when `verify_google_token` passes (signature, `aud`, `iss`, `exp`; None when Google sign-in is unconfigured), `email_verified is True`, `sub` equals the account's linked `google_id` (never the email, same rule as `/auth/google`), and `iat` is at most 5 minutes old (30 s future skew). Any missing or odd claim fails closed with the same 422 as a missing code (`backend/app/services/owner_invite_google.py`).
+- **Precedent:** OIDC `max_age` / `auth_time` re-authentication, GitHub sudo mode.
+- **What it does not change:** admin and has-business refusals come first; a refused token spends none of the code's attempts and does not consume a live code; the lock order (producer, then user) and the `token_version` bump on accept are unchanged.
+- **Client side:** the credential lives only in page state, dropped on sign-out or an account change (`useFreshGoogleCredential.js`); never stored or logged.
+- Tests: `tests/test_meh3675_owner_invite_google_fresh.py`, `frontend/__tests__/OwnerInviteExistingGoogle.test.jsx`.
