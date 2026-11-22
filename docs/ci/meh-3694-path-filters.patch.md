@@ -31,11 +31,12 @@ A workflow-only PR that does not touch `pr-checks.yml` no longer runs build / vi
 - `git apply --check` of the diff below against staging: OK.
 - `yaml.safe_load` of all three patched files: OK.
 - `WF_DIR=<patched copies> bash scripts/checks/e2e-gate-selftest.sh`: GUARD PASS.
-- The `unit_only` script, run on 7 diffs: `__tests__` only → true; `__tests__` + `lib/*.test.ts` + docs → true; `__tests__` + `lib/a.js` → false; `e2e/flows/a.spec.ts` → false; `e2e/x.test.ts` → false; `__tests__` + `package.json` → false; `public/x.png` → false.
+- The `unit_only` script, run on 8 diffs: `__tests__` only → true; `__tests__` + `lib/*.test.ts` + docs → true; `__tests__` + `lib/a.js` → false; `e2e/flows/a.spec.ts` → false; `e2e/x.test.ts` → false; `__tests__` + `package.json` → false; `public/x.png` → false; `lib/a.js` renamed to `__tests__/a.test.js` (with `--no-renames` both paths list) → false.
+- Rule-5a reviewer (Sonnet) findings fixed in the prepared file: `--no-renames` (a rename into `__tests__/` listed only the new path and read as unit-test-only), and one `awk` with no `|| true` (an awk failure was swallowed into `only=true`).
 - sha256 of the patched files:
   - `pr-checks.yml`: `2c697379df3ab8910ddfde99cea35dd2abcbfec9c0959f4044004ca12d837fd6`
   - `deploy.yml`: `c11ade15416dcd742b7f649a6f53034e3f2a0579540a9fd704e2ba1d3b17337f`
-  - `e2e.yml`: `6040de7d90e2f0cf9c7e715311feb84376fc797a8b4f133a58caf4d5f8da3977`
+  - `e2e.yml`: `63cb92883bcecd3ff28ba8f98c7cf9da2e19bdf8f8ee62d80980d4907c6b0084`
 
 ## Diff
 
@@ -69,7 +70,7 @@ diff -ru a/.github/workflows/e2e.yml b/.github/workflows/e2e.yml
          backend: ${{ steps.filter.outputs.backend }}
          nightly_unchanged: ${{ steps.nightly.outputs.unchanged }}
        steps:
-@@ -183,6 +185,25 @@
+@@ -183,6 +185,29 @@
                  - 'backend/pyproject.toml'
                  - 'backend/alembic.ini'
                  - 'scripts/e2e/**'
@@ -84,11 +85,15 @@ diff -ru a/.github/workflows/e2e.yml b/.github/workflows/e2e.yml
 +          if: github.event_name == 'pull_request' && steps.filter.outputs.frontend == 'true'
 +          run: |
 +            set -euo pipefail
-+            files="$(git diff --name-only HEAD^1 HEAD)"
++            # --no-renames: a file moved from frontend/lib/ into __tests__/ lists
++            # both paths, so the shipped side still counts.
++            files="$(git diff --name-only --no-renames HEAD^1 HEAD)"
 +            [ -n "$files" ] || { echo "::error::empty diff against HEAD^1"; exit 1; }
-+            rest="$(printf '%s\n' "$files" \
-+              | grep -E '^(frontend/|public/|package\.json$|package-lock\.json$)' \
-+              | awk '!(/^frontend\/__tests__\// || (/\.test\.(js|jsx|ts|tsx|mjs)$/ && !/^frontend\/e2e\//))' || true)"
++            # The prefixes are the `frontend` filter's globs above; keep the two
++            # lists equal. One awk, no `|| true`: any failure here fails the job.
++            rest="$(printf '%s\n' "$files" | awk '
++              /^(frontend\/|public\/|package\.json$|package-lock\.json$)/ &&
++              !(/^frontend\/__tests__\// || (/\.test\.(js|jsx|ts|tsx|mjs)$/ && !/^frontend\/e2e\//))')"
 +            if [ -z "$rest" ]; then only=true; else only=false; fi
 +            echo "only=$only" >> "$GITHUB_OUTPUT"
 +            echo "frontend files that are not unit tests: ${rest:-none} -> only=$only"
