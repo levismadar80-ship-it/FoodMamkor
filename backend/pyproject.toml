@@ -362,6 +362,7 @@ files = [
     "app/services/owner_detach.py",
     "app/services/page_freshness.py",
     "app/services/page_freshness_digest.py",
+    "app/services/signup_fill_digest.py",
     "app/services/password_policy.py",
     "app/services/pending_nudge.py",
     "app/services/phone_reverify.py",

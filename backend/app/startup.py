@@ -299,6 +299,7 @@ def _run_followup_job() -> None:
     from app.services.pending_nudge import send_pending_nudges
     from app.services.page_freshness import send_freshness_emails
     from app.services.page_freshness_digest import send_stale_digest
+    from app.services.signup_fill_digest import send_signup_fill_digest
 
     db = SessionLocal()
     try:
@@ -357,6 +358,14 @@ def _run_followup_job() -> None:
             db.rollback()
             capture_background_exception(exc, task="page_freshness_digest")
             log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
+        # MEH-3699, Sunday only: the share of new businesses with a referral
+        # source and a location, so a signup field that stops arriving shows.
+        try:
+            send_signup_fill_digest(db)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="signup_fill_digest")
+            log.error("[SIGNUP-FILL] digest crashed", exc_info=True)
     finally:
         db.close()
 
