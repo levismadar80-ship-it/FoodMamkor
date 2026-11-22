@@ -17,7 +17,8 @@ from app.services import moderation_common
 
 @pytest.fixture(autouse=True)
 def _reset_throttle(monkeypatch):
-    monkeypatch.setattr(health_mod, "_last_ai_report_at", None)
+    monkeypatch.setattr(health_mod, "_last_ai_report_at", {})
+    monkeypatch.setattr(health_mod, "_ai_probe_cache", None)
 
 
 def _fake_client(list_result=None, list_error: Exception | None = None):
@@ -28,7 +29,7 @@ def _fake_client(list_result=None, list_error: Exception | None = None):
 
     models = SimpleNamespace(list=_list)
     with_options = lambda **_kw: SimpleNamespace(models=models)  # noqa: E731
-    return SimpleNamespace(with_options=with_options)
+    return SimpleNamespace(with_options=with_options, close=lambda: None)
 
 
 def test_disabled_without_a_key(monkeypatch):
@@ -90,3 +91,42 @@ def test_error_is_reported_once_per_window(monkeypatch):
     health_mod._report_ai_error(body)
     health_mod._report_ai_error(body)
     assert len(sent) == 1 and "init" in sent[0]
+    # A different failure inside the window still reports.
+    health_mod._report_ai_error({"status": "error", "stage": "call", "code": "APITimeoutError"})
+    assert len(sent) == 2
+
+
+def test_probe_result_is_cached_so_anthropic_sees_one_call_a_minute(monkeypatch):
+    calls = []
+    monkeypatch.setattr(health_mod, "_ai_probe", lambda: calls.append(1) or (200, {"status": "ok"}))
+    health_mod._ai_probe_cached()
+    health_mod._ai_probe_cached()
+    assert len(calls) == 1
+
+
+def test_client_is_closed_after_the_probe(monkeypatch):
+    closed = []
+    fake = _fake_client([])
+    fake.close = lambda: closed.append(1)
+    monkeypatch.setattr(health_mod.settings, "anthropic_api_key", "sk-test")
+    monkeypatch.setattr(moderation_common, "make_anthropic_client", lambda _t: fake)
+    health_mod._ai_probe()
+    assert closed == [1]
+
+
+# --- the route itself (uses the DB-backed `client` fixture, like the Places tests) ---
+
+URL = "/health/ai"
+
+
+def test_route_answers_503_with_the_stage_on_init_failure(client, monkeypatch):
+    monkeypatch.setattr(health_mod.settings, "anthropic_api_key", "sk-test")
+    monkeypatch.setattr(moderation_common, "make_anthropic_client", lambda _t: None)
+    r = client.get(URL)
+    assert r.status_code == 503 and r.json()["stage"] == "init"
+
+
+def test_route_answers_200_disabled_without_a_key(client, monkeypatch):
+    monkeypatch.setattr(health_mod.settings, "anthropic_api_key", "")
+    r = client.get(URL)
+    assert r.status_code == 200 and r.json() == {"status": "disabled"}

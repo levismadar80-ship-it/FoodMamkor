@@ -583,6 +583,14 @@ hard Spend Caps were still in preview when last checked). Re-check both when
 anything here changes. Card: MEH-1495.
 
 
+### D-quinquies. The Anthropic client behind every AI feature (MEH-3724)
+
+AI fails open: chat, moderation, bio writing, menu reading and risk scoring go "offline" with no 5xx when the client cannot be built or cannot answer. `GET /api/health/ai` builds it as the product does and lists models (no tokens), cached 60 s.
+
+- `200 {"status":"ok"}` — fine. `200 {"status":"disabled"}` — `ANTHROPIC_API_KEY` is missing in Railway; set it.
+- `503 stage=init` — the SDK rejected our client (a library bump changed its HTTP layer, as anthropic 2.x did, #5154). Check `http_client=` in the factories against `.claude/rules/backend.md`.
+- `503 stage=call` — the API did not answer: `AuthenticationError` = key revoked/rotated; `RateLimitError` = org limit; `APIConnectionError`/`APITimeoutError` = network or Anthropic outage (status.anthropic.com).
+
 ### E. Verify deploys actually ran (MEH-260)
 
 Merging to `staging` or `main` does not guarantee the runtime changed.

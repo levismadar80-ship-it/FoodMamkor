@@ -157,7 +157,13 @@ def places_health(request: Request) -> dict[str, Any] | JSONResponse:
 # factory caught the TypeError, and every mocked test stayed green. This probe
 # builds the client exactly as the product does (make_anthropic_client) and
 # makes one real, token-free call (list models), so a cron sees the breakage.
-_last_ai_report_at: float | None = None
+# Throttle per (stage, code), so a different failure inside the window still
+# reports. The result cache keeps Anthropic at ≤ 1 probe call a minute however
+# many IPs hit the route (models.list spends no tokens but shares the org's
+# request rate limit with the product's real calls).
+_last_ai_report_at: dict[tuple[str, str], float] = {}
+_AI_PROBE_CACHE_SECONDS = 60.0
+_ai_probe_cache: tuple[float, tuple[int, dict[str, Any]]] | None = None
 
 
 def _ai_probe() -> tuple[int, dict[str, Any]]:
@@ -180,16 +186,33 @@ def _ai_probe() -> tuple[int, dict[str, Any]]:
         client.with_options(timeout=_PLACES_PROBE_TIMEOUT_SECONDS, max_retries=0).models.list(limit=1)
     except Exception as exc:  # noqa: BLE001 — a health probe reports, never raises
         return 503, {"status": "error", "stage": "call", "code": type(exc).__name__}
+    finally:
+        try:
+            client.close()
+        except Exception:  # noqa: BLE001 — closing must not change the answer
+            pass
     return 200, {"status": "ok"}
+
+
+def _ai_probe_cached() -> tuple[int, dict[str, Any]]:
+    """_ai_probe() at most once per _AI_PROBE_CACHE_SECONDS per process."""
+    global _ai_probe_cache  # noqa: PLW0603 — a process-local cache, nothing else
+    now = time.monotonic()
+    if _ai_probe_cache is not None and now - _ai_probe_cache[0] < _AI_PROBE_CACHE_SECONDS:
+        return _ai_probe_cache[1]
+    result = _ai_probe()
+    _ai_probe_cache = (now, result)
+    return result
 
 
 def _report_ai_error(body: dict[str, Any]) -> None:
     """One Sentry issue per failure stage + code, throttled like the Places one."""
-    global _last_ai_report_at  # noqa: PLW0603 — a process-local throttle, nothing else
+    key = (str(body.get("stage")), str(body.get("code")))
     now = time.monotonic()
-    if _last_ai_report_at is not None and now - _last_ai_report_at < _REPORT_WINDOW_SECONDS:
+    last = _last_ai_report_at.get(key)
+    if last is not None and now - last < _REPORT_WINDOW_SECONDS:
         return
-    _last_ai_report_at = now
+    _last_ai_report_at[key] = now
     try:
         import sentry_sdk  # noqa: PLC0415
 
@@ -218,7 +241,7 @@ def ai_health(request: Request) -> dict[str, Any] | JSONResponse:
     Unauthenticated so the uptime cron can hit it; rate-limited, and the call
     it makes spends no tokens. 503 is the alerting signal.
     """
-    status, body = _ai_probe()
+    status, body = _ai_probe_cached()
     if status != 200:
         log.warning("[health/ai] %s", body)
         _report_ai_error(body)
