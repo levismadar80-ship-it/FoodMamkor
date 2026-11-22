@@ -922,7 +922,7 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
  * this file asserts the CLASS CONTRACT (always mounted, `invisible` only when
  * unchecked). That discriminates on this change — the old code rendered
  * nothing at all when unchecked — but it is NOT evidence about rendered
- * pixels. The pixel measurement is in e2e/_qa-archive/qa-meh2927-register-chrome.mjs,
+ * pixels. The pixel measurement is in qa-meh2927-register-chrome.mjs [deleted probe, docs/media-archive.md],
  * where a stylesheet exists, and its numbers are in the PR.
  */
 describe("MEH-2927 · the licence hint reserves its space (B3d)", () => {

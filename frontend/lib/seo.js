@@ -36,6 +36,7 @@ import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
 import { siteOgImageUrl } from "@/lib/og-site-image";
+import { variantsOf } from "@/lib/product-variants";  // MEH-3617
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -333,30 +334,11 @@ function buildOfferCatalog(producer, locale = "he") {
 
   const itemListElement = ordered
     .filter((p) => p?.name?.trim())
-    .slice(0, OFFER_CATALOG_MAX)
-    .map((p) => {
-      const item = { "@type": "Product", name: p.name.trim() };
-      if (p.description?.trim()) item.description = p.description.trim();
-      const image = absoluteUrl(p.image_url);
-      if (image) item.image = image;
-
-      const offer = { "@type": "Offer", itemOffered: item };
-      // Only a NUMERIC price becomes a priceSpecification. `price_range` is a
-      // free-text DB label (models.py:1076, LEGACY) — "20-30 ₪", "משתנה" —
-      // and putting it in minPrice would emit a price that is not a number.
-      // maxPrice falls back to minPrice so a single-price product still
-      // yields a well-formed specification rather than a half-open range.
-      const minPrice = toPrice(p.price_min);
-      if (minPrice != null) {
-        offer.priceSpecification = {
-          "@type": "PriceSpecification",
-          minPrice,
-          maxPrice: toPrice(p.price_max) ?? minPrice,
-          priceCurrency: "ILS",
-        };
-      }
-      return offer;
-    });
+    // MEH-3617: a product with sizes or flavours is one Offer per variant,
+    // each named «{product} · {variant}» at its own price. The cap counts
+    // offers, so it is taken after the variants are spread.
+    .flatMap((p) => (variantsOf(p).length ? variantsOf(p).map((v) => variantOffer(p, v)) : [productOffer(p)]))
+    .slice(0, OFFER_CATALOG_MAX);
 
   if (itemListElement.length === 0) return null;
   return {
@@ -369,6 +351,46 @@ function buildOfferCatalog(producer, locale = "he") {
     name: producerSeoT(locale)("offer_catalog_name"),
     itemListElement,
   };
+}
+
+/**
+ * MEH-3617: one variant as an Offer. Its own price, or the product's.
+ * @param {any} p
+ * @param {{ name: string, price_agorot?: number | null, in_stock?: boolean }} v
+ */
+function variantOffer(p, v) {
+  const offer = productOffer({ ...p, name: `${p.name.trim()} · ${v.name}` });
+  if (typeof v.price_agorot === "number") {
+    const price = String(v.price_agorot / 100);
+    offer.priceSpecification = { "@type": "PriceSpecification", minPrice: price, maxPrice: price, priceCurrency: "ILS" };
+  }
+  if (v.in_stock === false) offer.availability = "https://schema.org/OutOfStock";
+  return offer;
+}
+
+/** @param {any} p */
+function productOffer(p) {
+  const item = { "@type": "Product", name: p.name.trim() };
+  if (p.description?.trim()) item.description = p.description.trim();
+  const image = absoluteUrl(p.image_url);
+  if (image) item.image = image;
+
+  const offer = { "@type": "Offer", itemOffered: item };
+  // Only a NUMERIC price becomes a priceSpecification. `price_range` is a
+  // free-text DB label (models.py:1076, LEGACY) — "20-30 ₪", "משתנה" —
+  // and putting it in minPrice would emit a price that is not a number.
+  // maxPrice falls back to minPrice so a single-price product still
+  // yields a well-formed specification rather than a half-open range.
+  const minPrice = toPrice(p.price_min);
+  if (minPrice != null) {
+    offer.priceSpecification = {
+      "@type": "PriceSpecification",
+      minPrice,
+      maxPrice: toPrice(p.price_max) ?? minPrice,
+      priceCurrency: "ILS",
+    };
+  }
+  return offer;
 }
 
 /** MEH-3348: where a delivering business delivers — "Israel" when nationwide,
