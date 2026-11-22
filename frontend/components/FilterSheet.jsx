@@ -512,7 +512,7 @@ export default function FilterSheet({
                   //    panel grows toward the inline-end — from the start edge that
                   //    is INWARD, from the end edge it would overflow the panel and
                   //    trip the horizontal-scroll assertion in
-                  //    e2e/_qa-archive/qa-meh1862-filter-sheet.mjs. Rows with nothing to disclose
+                  //    qa-meh1862-filter-sheet.mjs [deleted probe, docs/media-archive.md]. Rows with nothing to disclose
                   //    (has_delivery) get the same-width spacer so every label in the
                   //    group still starts on one line.
                   <div key={chip.key} className="flex items-center gap-1">
@@ -595,7 +595,7 @@ export default function FilterSheet({
             clearance belongs to it. */}
         <div
           // MEH-1945: the guards for this footer (the vitest tripwires and
-          // e2e/_qa-archive/qa-meh1945-sticky-apply.mjs) used to reach it as the panel's
+          // qa-meh1945-sticky-apply.mjs [deleted probe, docs/media-archive.md]) used to reach it as the panel's
           // lastElementChild. That is a POSITIONAL handle: append anything
           // after this div and both silently start asserting about a different
           // element — still green, no longer measuring the footer. Anchored to

@@ -17,6 +17,7 @@
  */
 
 import api from "@/lib/api";
+import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import {
   GetMyProductsOrderingProducersMeProductsOrderingGetResponse,
   PutProductOrderingProducersMeProductsProductIdOrderingPutResponse,
@@ -62,7 +63,8 @@ export function prepList(todays) {
   for (const order of todays ?? []) {
     if (!PREP_STATUSES.includes(order.status)) continue;
     for (const line of order.items ?? []) {
-      counts.set(line.name, (counts.get(line.name) ?? 0) + line.qty);
+      const name = orderLineName(line); // MEH-3617: each size counted apart
+      counts.set(name, (counts.get(name) ?? 0) + line.qty);
     }
   }
   return [...counts]

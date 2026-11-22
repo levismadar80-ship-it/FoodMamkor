@@ -67,5 +67,5 @@ export function formatDistance(km, { unit = "latin" } = {}) {
   // stored, so metres or a tenth of a km would be false precision. Whole km,
   // never below 1, marked as approximate (approved string 16).
   const n = Math.max(1, Math.round(km));
-  return unit === "he" ? `כ-${n} ק"מ` : `⁦about ${n} km⁩`;
+  return unit === "he" ? `כ-${n} ק״מ` : `⁦about ${n} km⁩`;
 }

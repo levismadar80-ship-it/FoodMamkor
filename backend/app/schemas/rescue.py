@@ -229,6 +229,7 @@ class RescueProducerSummary(BaseModel):
     slug: str | None = None
     city: str | None = None
     image_url: str | None = None
+    logo_url: str | None = None  # MEH-3611: shown beside the name
     # The pickup point itself. `address` is only ever filled for a location
     # whose precision is `exact` (the MEH-829 carve-out that lets a full
     # address show while a bag is live); an approximate point cannot host an
@@ -291,6 +292,9 @@ class RescueOfferDetailOut(RescueOfferPublicOut):
     producer: RescueProducerDetail
     lat: float | None = None
     lng: float | None = None
+    # MEH-3593: «הוראות איסוף» of the bag's pickup point
+    # (producer_locations.pickup_note); None = none written.
+    pickup_note: str | None = None
 
 
 class RescueOrderCreatedOut(RescueOrderOut):
