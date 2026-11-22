@@ -677,3 +677,30 @@ describe("pickup schedule (MEH-3512)", () => {
     );
   });
 });
+
+// MEH-3593: «הוראות איסוף» live on the pickup point, so the bag page, the
+// reservation email and later the order and group-buy pages read one text.
+describe("pickup instructions (MEH-3593)", () => {
+  const detailsOpen = () => screen.getByTestId("location-pickup-note").closest("details").open;
+
+  it("a stored note opens the details and is sent back as edited", async () => {
+    apiMock.put.mockClear();
+    await openEditForm({ id: 7, kind: "pickup", city: "חיפה", pickup_note: "דלת אחורית" });
+    expect(detailsOpen()).toBe(true);
+    const note = screen.getByTestId("location-pickup-note");
+    expect(note.value).toBe("דלת אחורית");
+    fireEvent.change(note, { target: { value: "נכנסים מהחצר" } });
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalled());
+    expect(apiMock.put.mock.calls.at(-1)[1].pickup_note).toBe("נכנסים מהחצר");
+  });
+
+  it("an emptied note is sent as null, which clears it", async () => {
+    apiMock.put.mockClear();
+    await openEditForm({ id: 8, kind: "pickup", city: "חיפה", pickup_note: "דלת אחורית" });
+    fireEvent.change(screen.getByTestId("location-pickup-note"), { target: { value: "  " } });
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalled());
+    expect(apiMock.put.mock.calls.at(-1)[1].pickup_note).toBeNull();
+  });
+});

@@ -19,7 +19,7 @@
  * jsdom loads no Tailwind, so `hidden` and `sr-only` compute identically here.
  * The render legs assert the CLASS CONTRACT — enough to discriminate on this
  * change — not rendered behaviour. The behavioural probe (computed display +
- * .focus() landing) lives in e2e/_qa-archive/qa-meh2033-file-inputs.mjs against a real
+ * .focus() landing) lives in qa-meh2033-file-inputs.mjs [deleted probe, docs/media-archive.md] against a real
  * browser.
  *
  * REUSES: __tests__/EventFormImageAccessibility.test.jsx (harness + cases).

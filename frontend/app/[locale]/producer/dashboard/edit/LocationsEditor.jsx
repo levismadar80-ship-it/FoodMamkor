@@ -80,6 +80,9 @@ const KINDS = ["branch", "pickup", "market_stand"];
 // stack; `lib/errors.js:sameCityLabelParams` is what actually matches the wire
 // value, and this name is only used to label the state locally.
 const SAME_CITY_CODE = "location_same_city_needs_label";
+// MEH-3593: same bound as PICKUP_NOTE_MAX in backend/app/schemas/catalog.py.
+const PICKUP_NOTE_MAX = 200;
+
 const EMPTY_FORM = {
   kind: "branch",
   label: "",
@@ -94,6 +97,8 @@ const EMPTY_FORM = {
   lng: "",
   opening_hours: "",
   phone: "",
+  // MEH-3593: «הוראות איסוף» for this point.
+  pickup_note: "",
   location_precision: "exact",
   is_primary: false,
   // MEH-3512
@@ -117,6 +122,8 @@ function buildPayload(form) {
     lng: num(form.lng),
     opening_hours: str(form.opening_hours),
     phone: str(form.phone),
+    // MEH-3593: null clears it (the server stores "" as NULL too).
+    pickup_note: str(form.pickup_note),
     location_precision: form.location_precision,
     is_primary: !!form.is_primary,
     // MEH-3512: a branch has no pickup schedule — sent empty so switching a
@@ -145,6 +152,7 @@ function toEditForm(loc) {
     lng: loc.lng != null ? String(loc.lng) : "",
     opening_hours: loc.opening_hours || "",
     phone: loc.phone || "",
+    pickup_note: loc.pickup_note || "",
     location_precision: loc.location_precision || "exact",
     is_primary: !!loc.is_primary,
     pickup_days: loc.pickup_days || [],
@@ -625,6 +633,7 @@ function LocationForm({
       Boolean(
         (initial.label || "").trim() ||
           (initial.phone || "").trim() ||
+          (initial.pickup_note || "").trim() ||
           (initial.opening_hours || "").trim(),
       ) || (initial.location_precision || "exact") !== "exact",
   );
@@ -955,6 +964,16 @@ function LocationForm({
               placeholder={tForm("phone_placeholder")}
             />
           </Field>
+          {/* MEH-3593: how to collect here, read by every pickup surface. */}
+          <Field label={tForm("pickup_note_label")} hint={tForm("pickup_note_hint")}>
+            <TextInput
+              value={form.pickup_note}
+              onChange={set("pickup_note")}
+              placeholder={tForm("pickup_note_placeholder")}
+              testid="location-pickup-note"
+              maxLength={PICKUP_NOTE_MAX}
+            />
+          </Field>
           {/* MEH-2805: day-row picker instead of free text — the stored string
               is canonical from the first save, and an unreadable legacy value
               is shown verbatim and left untouched until the owner edits it. */}
@@ -1171,7 +1190,7 @@ function Field({ label, hint, children }) {
 // required rather than stylistic. Every existing call site passes no ref and is
 // unaffected.
 const TextInput = forwardRef(function TextInput(
-  { value, onChange, type = "text", inputMode, testid, placeholder },
+  { value, onChange, type = "text", inputMode, testid, placeholder, maxLength },
   ref,
 ) {
   return (
@@ -1182,6 +1201,7 @@ const TextInput = forwardRef(function TextInput(
       value={value}
       onChange={onChange}
       placeholder={placeholder}
+      maxLength={maxLength}
       data-testid={testid}
       className="w-full"
     />

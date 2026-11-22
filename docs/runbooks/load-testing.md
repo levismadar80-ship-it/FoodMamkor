@@ -2,7 +2,7 @@
 
 > **Moved here from `docs/MANUAL_TESTING.md` on 2026-11-07 (MEH-2796).** Content unchanged.
 
-**Run it from GitHub (MEH-3564, 21/11/2026):** Actions → «Load test (manual)» → Run workflow. `where=cloud` loads from Grafana Cloud k6 (secrets `K6_CLOUD_TOKEN`, `K6_CLOUD_PROJECT_ID`; 500 VUh a month free, about 25 per run); `where=local` loads from the runner. The workflow picks a real producer and refuses any URL but the staging backend. Never a required check. Patch record: [docs/ci/load-test.patch.md](../ci/load-test.patch.md).
+**Run it from GitHub (MEH-3564, 21/11/2026):** Actions → «Load test (manual)» → Run workflow. `where=cloud` loads from Grafana Cloud k6 (secrets `K6_CLOUD_TOKEN`, `K6_CLOUD_PROJECT_ID`, `K6_CLOUD_STACK_ID`; 500 VUh a month free; one run is ~22 minutes at a peak of 87 VUs, under the free tier's 100-VU cap, so about 30 VUh); `where=local` loads from the runner. The workflow picks a real producer and refuses any URL but the staging backend. Never a required check. Patch record: [docs/ci/load-test.patch.md](../ci/load-test.patch.md).
 
 One-time pre-launch baseline via k6. NOT a required CI check. Script: `scripts/load-test.js`. Full runbook + result template: [docs/research/k6-load-testing-baseline.md](../research/k6-load-testing-baseline.md).
 

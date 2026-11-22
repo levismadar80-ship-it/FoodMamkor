@@ -29,6 +29,16 @@ schema authority.
 
 ---
 
+**A new column says what it holds (MEH-3643).** Every column added to a model
+gets a row in `docs/privacy/columns.tsv`: a category from the privacy page's
+`DATA_ITEMS`, or `not-personal`, with a reason. A personal-data category that the
+page does not yet describe means the page changes in the same PR.
+`tests/test_privacy_column_ledger.py` fails on a column with no row. Every
+column that existed on 21/11/2026 was classified under MEH-3644, so
+`docs/privacy/column-baseline.txt` is empty and stays empty (ceiling 0).
+
+---
+
 ## Migration safety
 
 Before any PR that touches `backend/app/models/`, `backend/app/routers/`,

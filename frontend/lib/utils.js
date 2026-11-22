@@ -36,6 +36,17 @@ export function getWhatsAppHref(phone, text = "") {
 }
 
 /**
+ * MEH-3603: a wa.me link with NO prefilled text — a chat with `phone`, or,
+ * with no phone, WhatsApp itself. The one other wa.me form the site uses;
+ * scripts/checks/whatsapp-link-owner-guard.sh fails a wa.me built anywhere else.
+ *
+ * @param {string} [phone] - normalised digits, or "" to just open WhatsApp
+ */
+export function getWhatsAppChatHref(phone = "") {
+  return `https://wa.me/${phone}`;
+}
+
+/**
  * MEH-1525: tag a business's own outbound website URL with the referral
  * params GA4 maps to its "Referral" channel, so the business owner sees
  * traffic from mehamakor in her own analytics — the cross-domain side of
