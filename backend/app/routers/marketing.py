@@ -276,9 +276,6 @@ def _send_newsletter_welcome(email: str) -> None:
             <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
             נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
             </p>
-            <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
-            <span style="font-weight:bold;">ספיר ✨</span>
-            </p>
             <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
             <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
             מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.<br>
@@ -291,7 +288,7 @@ def _send_newsletter_welcome(email: str) -> None:
         "תודה שהצטרפת.\n\n"
         "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. "
         "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
-        "ספיר ✨\n\n"
+        "צוות מהמקור\n\n"
         f"לבטל הרשמה: {unsubscribe_url}\n"
         "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
