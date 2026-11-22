@@ -1,7 +1,7 @@
 # MEH-3694 — tests-only and unrelated workflow-only PRs skip the heavy CI jobs
 
-> **State: pending** (register row `meh-3694-path-filters`). Targets: `.github/workflows/pr-checks.yml`, `deploy.yml`, `e2e.yml`.
-> Prepared 22/11/2026 against `origin/staging` of that day. Applied through Claude in Chrome (web editor) once the release merging on 22/11 has landed and staging is verified. Sapir approved the change 22/11 (thread «Speed up CI merges»).
+> **State: applied** (22/11/2026, through Claude in Chrome on the PR branch, sha256 checked for all three files: 7ea7921a2 deploy.yml · 075085948 pr-checks.yml · e8b8365f1 e2e.yml) (register row `meh-3694-path-filters`). Targets: `.github/workflows/pr-checks.yml`, `deploy.yml`, `e2e.yml`.
+> Prepared 22/11/2026 against `origin/staging` of that day. Sapir approved the change 22/11 (thread «Speed up CI merges»). The PR merges only after the 22/11 release has landed on staging and staging is verified.
 
 ## Why
 
