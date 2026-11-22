@@ -64,6 +64,32 @@ describe("«שאלות נפוצות» is its own page section (Sapir 20/11)", ()
     expect(container.querySelector("#section-faq")).toBeNull();
   });
 
+  // MEH-3666 (Sapir 21/11): one question with its answer on the page shows
+  // that answer open. A single closed pill under a heading is a tap for nothing.
+  it("one answer-first question: open without a tap", () => {
+    render(<WhatsAppQuestionChips producer={{ ...producer, offers_delivery: true }} />);
+    const toggles = screen.getAllByTestId("quick-answer-toggle");
+    expect(toggles).toHaveLength(1);
+    expect(toggles[0]).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("quick-answer-content")).toBeInTheDocument();
+  });
+
+  it("one answer-first question beside WhatsApp questions: the answer is open", () => {
+    render(<WhatsAppQuestionChips producer={{ ...producer, offers_delivery: true, custom_questions: ["ש1"] }} />);
+    const toggles = screen.getAllByTestId("quick-answer-toggle");
+    expect(toggles).toHaveLength(1);
+    expect(screen.getAllByTestId("question-link").length).toBeGreaterThan(0);
+    expect(toggles[0]).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("two answer-first questions: both stay closed until tapped", () => {
+    render(<WhatsAppQuestionChips producer={producer} />);
+    const toggles = screen.getAllByTestId("quick-answer-toggle");
+    expect(toggles).toHaveLength(2);
+    toggles.forEach((b) => expect(b).toHaveAttribute("aria-expanded", "false"));
+    expect(screen.queryByTestId("quick-answer-content")).not.toBeInTheDocument();
+  });
+
   // MEH-1334 chunk 2 (moved from ContactCard.test, 20/11): cap visible
   // questions at 3, reveal the rest behind «עוד שאלות» (single level).
   it("caps the questions at 3 and reveals the rest via עוד שאלות", () => {

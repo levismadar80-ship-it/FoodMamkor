@@ -86,14 +86,15 @@ describe("after submit-for-review (MEH-2926)", () => {
     stateRef.current = { status: "draft", kind: "producer", complete: false, ready: true };
   });
 
-  it("the card drops «השלב הבא» and the pending banner takes over", async () => {
+  // MEH-3659: draft = the submit-gate checklist; after submit the same card
+  // turns into «לשפר את העמוד» (improve mode) with no reload.
+  it("the card switches from the draft checklist to «לשפר את העמוד» and the pending banner takes over", async () => {
     render(<ProducerDashboardPage />);
-        await screen.findByTestId("profile-completeness-card");
-    expect(screen.getByTestId("completeness-next-step")).toBeInTheDocument();
+    const card = await screen.findByTestId("profile-completeness-card");
+    expect(card.dataset.mode).toBe("draft");
     fireEvent.click(screen.getByTestId("stub-submit"));
-        await screen.findByTestId("status-pending-banner");
-    expect(screen.queryByTestId("completeness-next-step")).toBeNull();
+    await screen.findByTestId("status-pending-banner");
     // The checklist stays: she can keep improving the page while we review.
-    expect(screen.getByTestId("profile-completeness-card")).toBeInTheDocument();
+    expect(screen.getByTestId("profile-completeness-card").dataset.mode).toBe("improve");
   });
 });

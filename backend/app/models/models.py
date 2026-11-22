@@ -260,6 +260,10 @@ class Producer(Base):
     # migration: f7d2a9c4b1e8.
     owner_bio = Column(Text, nullable=True)
     owner_photo_url = Column(String(500), nullable=True)
+    # MEH-3611: the business's logo (Cloudinary URL from /upload/image, saved by
+    # PUT /producers/me). NULL = no logo; surfaces show the name's first letter.
+    # Registered in services/image_refs.py so the orphan sweep keeps it.
+    logo_url = Column(String(500), nullable=True)
     # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" heritage
     # line on the public masthead (a trust signal for veteran businesses, not a
     # badge). Nullable, Expand-only (ADR-007, no backfill) — NULL = the owner
@@ -1261,6 +1265,7 @@ from app.models.catalog import (  # noqa: E402
     ProducerLocation as ProducerLocation,
     ProducerOffer as ProducerOffer,
     Product as Product,
+    ProductVariant as ProductVariant,  # MEH-3617
 )
 from app.models.engagement import (  # noqa: E402
     AlertLog as AlertLog,
@@ -1280,6 +1285,7 @@ from app.models.events import (  # noqa: E402
     Experience as Experience,
     GroupBuy as GroupBuy,
     GroupBuyCommit as GroupBuyCommit,
+    GroupBuyWaitlist as GroupBuyWaitlist,
     REGISTRATION_METHODS as REGISTRATION_METHODS,
     Registration as Registration,
 )
@@ -1316,3 +1322,6 @@ import app.models.product_orders  # noqa: E402,F401
 
 # MEH-3305: an admin's passkeys and recovery codes (own module, same reason).
 import app.models.admin_passkeys  # noqa: E402,F401
+
+# MEH-3535: the durable email queue (own module, same reason).
+import app.models.email_outbox  # noqa: E402,F401

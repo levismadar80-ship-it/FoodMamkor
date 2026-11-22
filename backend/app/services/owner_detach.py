@@ -15,7 +15,7 @@ History:  MEH-3256 (grill retro D9, creation).
 from html import escape as html_escape
 
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html, email_signoff_html
+from app.services.email_layout import frame
 
 
 def send_owner_detached_email(
@@ -38,27 +38,10 @@ def send_owner_detached_email(
         f"{html_escape(line)}</p>"
         for line in lines
     )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{html_escape(greeting)}</h1>
-              {paragraphs}
-              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:12px 0 0;">{email_signoff_html()}</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        html_escape(greeting),
+        f"""\
+            {paragraphs}
+        """,
+    )
     send_email(email, subject, body, html=html_body, test_cause=test_cause)

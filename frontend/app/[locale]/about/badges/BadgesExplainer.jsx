@@ -8,7 +8,9 @@
  * group, anchored by the evidence key (#admin-verified, #editorial,
  * #self-declared, #system) — the anchors BadgeRow's hero popovers link to.
  * Each badge shows the same pill the reader tapped plus its locked tooltip
- * copy; this page adds only the group headings and intros.
+ * copy; this page adds only the group headings and intros. MEH-3667: «מאומת»,
+ * «בחירת העורכות» and «מובילת קהילה» carry the full text /about used to show,
+ * under the anchors #verification, #editors-pick and #community-leader.
  */
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -31,13 +33,55 @@ const GROUP_LINKS = {
 const ITEM_CLASS = "grid gap-1.5 rounded-lg border border-border bg-surface-card p-4";
 const ITEM_TEXT_CLASS = "text-base leading-[1.7] text-text/85";
 
+// MEH-3667: the three badges /about used to explain in full cards keep that
+// full text here (about.consumer.*, the same words), and the /about anchors
+// they had. The other badges show their tooltip line.
+const ITEM_ID = { verified: "verification", recommended: "editors-pick" };
+
+function VerifiedBody() {
+  // The /about/process link is the group intro's, a few lines above.
+  const t = useTranslations("about.consumer.verification");
+  return (
+    <>
+      <p className={ITEM_TEXT_CLASS}>{t("body_1")}</p>
+      <p className={ITEM_TEXT_CLASS}>{t("body_2")}</p>
+    </>
+  );
+}
+
+function EditorsPickBody() {
+  const t = useTranslations("about.consumer.editors_pick");
+  return (
+    <>
+      <p className={ITEM_TEXT_CLASS}>{t("body_1")}</p>
+      <p className={ITEM_TEXT_CLASS}>{t("list_lead")}</p>
+      <ul className="grid gap-2">
+        {["item_1", "item_2"].map((item) => (
+          <li key={item} className={`flex gap-2.5 ${ITEM_TEXT_CLASS}`}>
+            <span aria-hidden="true" className="mt-[0.7em] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span>{t(item)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+const LONG_BODY = { verified: VerifiedBody, recommended: EditorsPickBody };
+
+function BadgeBody({ badge }) {
+  const Body = LONG_BODY[badge.key];
+  return Body ? <Body /> : <p className={ITEM_TEXT_CLASS}>{badge.tooltip}</p>;
+}
+
 // MEH-2827: «מובילת קהילה» is a TrustBadge (reviews-driven), not a
 // BADGE_CONFIG entry, so badgesByEvidence() never listed it. It is earned by
 // the system, so it opens the «אוטומטי» group, with the tooltip readers see.
 function CommunityLeaderItem() {
   const tTrust = useTranslations("trust");
+  const t = useTranslations("about.consumer.community_leader");
   return (
-    <li data-testid="badges-item-community_leader" className={ITEM_CLASS}>
+    <li id="community-leader" data-testid="badges-item-community_leader" className={`scroll-mt-24 ${ITEM_CLASS}`}>
       {/* TrustBadge's tier-4 face, without its tooltip wrapper (a role-less
           span with aria-label; the text below is the tooltip anyway). Parity
           with the real TrustBadge: AboutTrustCards.test.jsx. */}
@@ -47,7 +91,9 @@ function CommunityLeaderItem() {
       >
         {tTrust("tier_4.label")}
       </span>
-      <p className={ITEM_TEXT_CLASS}>{tTrust("tier_4.tooltip")}</p>
+      {/* MEH-3667: the full /about text replaces the tooltip line. */}
+      <p className={ITEM_TEXT_CLASS}>{t("body_1")}</p>
+      <p className={ITEM_TEXT_CLASS}>{t("body_2")}</p>
     </li>
   );
 }
@@ -115,9 +161,14 @@ export default function BadgesExplainer() {
               <ul className="grid gap-3">
                 {evidence === "system" && <CommunityLeaderItem />}
                 {badges.map((badge) => (
-                  <li key={badge.key} data-testid={`badges-item-${badge.key}`} className={ITEM_CLASS}>
+                  <li
+                    key={badge.key}
+                    id={ITEM_ID[badge.key]}
+                    data-testid={`badges-item-${badge.key}`}
+                    className={`scroll-mt-24 ${ITEM_CLASS}`}
+                  >
                     <BadgeFace badge={badge} icon={badgeIcon(badge.key)} />
-                    <p className={ITEM_TEXT_CLASS}>{badge.tooltip}</p>
+                    <BadgeBody badge={badge} />
                   </li>
                 ))}
               </ul>

@@ -34,6 +34,8 @@ export function selectFeaturedProducer(producers) {
     name: source.name,
     city: source.city,
     category: source.categories?.[0]?.name,
+    // MEH-3076: the slug picks the shown name (category_names.<slug>).
+    categorySlug: source.categories?.[0]?.slug,
     photo: source.images?.[0],
     quote: source.short_description.trim(),
     // MEH-2441: no `story` — the green band shows one line (the quote); the

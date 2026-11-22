@@ -17,7 +17,7 @@ from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html, email_signoff_html
+from app.services.email_layout import button, frame, note_row
 
 logger = logging.getLogger(__name__)
 
@@ -36,41 +36,23 @@ def send_reset_email(
         f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{reset_link}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  איפוס סיסמה
-                </a>
-              </div>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
-              <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
-                <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        f"שלום {name_html},",
+        """\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
+        """,
+        button(reset_link, "איפוס סיסמה")
+        + note_row(
+            f"""\
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
+            <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
+            אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
+            <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
+            </p>
+            """
+        ),
+    )
     send_email(
         email,
         "מהמקור - איפוס סיסמה",
@@ -94,51 +76,33 @@ def send_verify_email(
     name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
-        f"לאימות כתובת האימייל שלך יש ללחוץ על הקישור הבא:\n\n"
+        f"לאימות כתובת המייל שלך יש ללחוץ על הקישור הבא:\n\n"
         f"{verify_url}\n\n"
         f"הקישור תקף ל-24 שעות.\n\n"
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך יש ללחוץ על הכפתור:</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{verify_url}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  אימות האימייל
-                </a>
-              </div>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
-              <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
-                <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        f"שלום {name_html},",
+        """\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת המייל שלך יש ללחוץ על הכפתור:</p>
+        """,
+        button(verify_url, "אימות המייל")
+        + note_row(
+            f"""\
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
+            <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
+            אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
+            <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
+            </p>
+            """
+        ),
+    )
     send_email(
         email,
-        "מהמקור - אימות האימייל שלך",
+        "מהמקור - אימות המייל שלך",
         body,
         html=html_body,
         test_cause=test_cause,
@@ -186,77 +150,41 @@ def send_welcome_email(
     # MEH-1401: HTML bodies mirror the reset-password RTL template (:41-73)
     # so Gmail renders Hebrew with correct BiDi. Inlined per the two existing
     # templates — no shared helper (over-engineering guard).
-    consumer_html = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
-              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 20px;">מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.</p>
-              <p style="color:#1C1A17;font-size:15px;font-weight:bold;margin:0 0 8px;">מה עכשיו?</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.9;margin:0 0 24px;">
-                • לגלות בתי עסק לפי עיר או קטגוריה<br>
-                • לפתוח את המפה ולראות מה יש בסביבה: <a href="{settings.frontend_url}/map" style="color:#2e6853;">{settings.frontend_url}/map</a><br>
-                • לשמור מועדפים כדי לא לאבד אותם
-              </p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{settings.frontend_url}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  גלו בתי עסק
-                </a>
-              </div>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? אפשר פשוט להשיב למייל הזה.</p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
-              <p style="color:#6B6860;font-size:13px;line-height:1.6;margin:0;">בברכה,<br>צוות מהמקור 🌱</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-    producer_html = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
-              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעסק שלך, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{settings.frontend_url}/producer/dashboard"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  ללוח הבקרה
-                </a>
-              </div>
-              <p style="color:#6B6860;font-size:13px;line-height:1.6;margin:0;">בברכה,<br>צוות מהמקור 🌱</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    consumer_html = frame(
+        f"שלום {first_name_html},",
+        f"""\
+            <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 20px;">מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.</p>
+            <p style="color:#1C1A17;font-size:15px;font-weight:bold;margin:0 0 8px;">מה עכשיו?</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.9;margin:0 0 24px;">
+            • לגלות בתי עסק לפי עיר או קטגוריה<br>
+            • לפתוח את המפה ולראות מה יש בסביבה: <a href="{settings.frontend_url}/map" style="color:#2e6853;">{settings.frontend_url}/map</a><br>
+            • לשמור מועדפים כדי לא לאבד אותם
+            </p>
+        """,
+        button(settings.frontend_url, "גלו בתי עסק")
+        + note_row(
+            """\
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? אפשר פשוט להשיב למייל הזה.</p>
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
+            """
+        ),
+    )
+    producer_html = frame(
+        f"שלום {first_name_html},",
+        f"""\
+            <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעסק שלך, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
+            <div style="text-align:center;margin:0 0 28px;">
+            <a href="{settings.frontend_url}/producer/dashboard"
+            style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+            font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+            ללוח הבקרה
+            </a>
+            </div>
+        """,
+    )
 
     if role == "producer":
         body, html_body = producer_body, producer_html
@@ -408,7 +336,7 @@ def send_email_changed_notice(
     contact_url = f"{settings.frontend_url}/contact"
     body = (
         f"שלום,\n\n"
-        f"כתובת האימייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
+        f"כתובת המייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
         f"מעכשיו ההודעות מהאתר יישלחו לכתובת החדשה.\n\n"
         f"אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
         f"אם לא, צרו איתנו קשר מיד ונחזיר את החשבון: {contact_url}\n\n"
@@ -416,7 +344,7 @@ def send_email_changed_notice(
     )
     send_email(
         old_email,
-        "מהמקור - כתובת האימייל בחשבון שונתה",
+        "מהמקור - כתובת המייל בחשבון שונתה",
         body,
         test_cause=test_cause,
     )
@@ -508,45 +436,26 @@ def send_owner_invite_email(
     # interprets no markup).
     greeting_html = html_escape(greeting)
     business_html = html_escape(business)
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{greeting_html}</h1>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, הכנתי את הדף של {business_html} במהמקור.</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{link}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  בדיקה ואישור הדף
-                </a>
-              </div>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי.</p>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.</p>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">איך אנחנו שומרים על המידע: <a href="{privacy_url}" style="color:#2e6853;">{privacy_url}</a></p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
-              <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0 0 16px;">
-                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
-                <a href="{link}" style="color:#2e6853;">{link}</a>
-              </p>
-              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:0;">{email_signoff_html()}</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        greeting_html,
+        f"""\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, הכנתי את הדף של {business_html} במהמקור.</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.</p>
+        """,
+        button(link, "בדיקה ואישור הדף")
+        + note_row(
+            f"""\
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">איך אנחנו שומרים על המידע: <a href="{privacy_url}" style="color:#2e6853;">{privacy_url}</a></p>
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
+            <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0 0 16px;">
+            אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
+            <a href="{link}" style="color:#2e6853;">{link}</a>
+            </p>
+            """
+        ),
+    )
     send_email(email, subject, body, html=html_body, test_cause=test_cause)
 
 
@@ -581,28 +490,13 @@ def send_owner_invite_code_email(
         f"המייל הגיע בטעות? אפשר להתעלם ממנו.\n\n"
         f"מהמקור"
     )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">קוד האימות:</p>
-              <p style="font-size:30px;font-weight:bold;letter-spacing:6px;color:#1C1A17;margin:0 0 24px;" dir="ltr">{code_html}</p>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 12px;">הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business_html} במהמקור.</p>
-              <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0;">המייל הגיע בטעות? אפשר להתעלם ממנו.</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        html_escape(subject),
+        f"""\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">קוד האימות:</p>
+            <p style="font-size:30px;font-weight:bold;letter-spacing:6px;color:#1C1A17;margin:0 0 24px;" dir="ltr">{code_html}</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 12px;">הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business_html} במהמקור.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0;">המייל הגיע בטעות? אפשר להתעלם ממנו.</p>
+        """,
+    )
     send_email(email, subject, body, html=html_body, test_cause=test_cause)

@@ -5,7 +5,8 @@ Purpose:  Assert the producer-approval email at the ONE boundary no other test
           in the locked copy is proven to survive the wire, and the MEH-331
           `Content-Transfer-Encoding: base64` header is proven to still ride
           along with the HTML part.
-Touches:  Nothing. `resend.Emails.send` is monkeypatched; no network, no DB.
+Touches:  `resend.Emails.send` is monkeypatched; no network. MEH-3535: the
+          send goes through the email_outbox table (test DB).
 Does NOT: re-assert the block ORDER, the link destinations, the RTL markup or
           the escaping — `tests/test_meh2151_approval_email_cta.py` owns all of
           those against the builders. This file asserts only what changes when
@@ -71,18 +72,33 @@ def wire(monkeypatch):
     """
     resend = pytest.importorskip("resend", reason="resend client not installed")
     captured: list[dict] = []
-    monkeypatch.setattr(resend.Emails, "send", staticmethod(lambda params: captured.append(params)))
+    monkeypatch.setattr(
+        resend.Emails, "send", staticmethod(lambda params: captured.append(params))
+    )
     monkeypatch.setattr(email_module.settings, "resend_api_key", "test-key-not-real")
     return captured
 
 
 def _send_approval(slug="teva-pure"):
-    admin_module._send_notification_email(
-        "owner@sample.co.il",
-        "ברוכים הבאים",
-        admin_module._producer_approved_body("טעם הבית", slug),
-        html=admin_module._producer_approved_html("טעם הבית", slug),
-    )
+    """MEH-3535: the approval email is queued, then sent by the outbox
+    dispatcher — so the wire is reached through BOTH, the real path."""
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db,
+            "producer_approved",
+            "owner@sample.co.il",
+            "ברוכים הבאים",
+            admin_module._producer_approved_body("טעם הבית", slug),
+            html=admin_module._producer_approved_html("טעם הבית", slug),
+        )
+        db.commit()  # the wrapper queues in the caller's transaction
+        dispatch_due(db)
+    finally:
+        db.close()
 
 
 def test_control_the_transport_is_actually_reached(wire):
@@ -135,7 +151,9 @@ def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part,
     _send_approval()
     value = wire[0][part]
     assert char in value, f"{label} absent from the {part} part at the transport"
-    assert isinstance(value, str), f"{part} part reached the transport as {type(value).__name__}"
+    assert isinstance(value, str), (
+        f"{part} part reached the transport as {type(value).__name__}"
+    )
     value.encode("utf-8")  # raises UnicodeEncodeError on a lone surrogate
 
 
@@ -176,10 +194,21 @@ def test_a_text_only_send_carries_the_layout_html_and_the_cte_header(wire):
     """MEH-3587 changed the contract this test held (MEH-2151: a text-only
     send went out with no html). Every send now carries the one branded frame,
     built from the text, so it also carries the base64 CTE header that keeps
-    the frame's links unsplit (MEH-331). The text part is unchanged."""
-    admin_module._send_notification_email(
-        "owner@sample.co.il", "נושא", "גוף"
-    )
+    the frame's links unsplit (MEH-331). The text part is unchanged.
+    MEH-3535: the wrapper queues in the caller's transaction, so the test
+    commits and runs the dispatcher before reading the wire."""
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db, "producer_changes_requested", "owner@sample.co.il", "נושא", "גוף"
+        )
+        db.commit()
+        dispatch_due(db)
+    finally:
+        db.close()
     assert len(wire) == 1
     assert wire[0]["text"] == "גוף"
     assert '<html dir="rtl" lang="he">' in wire[0]["html"]

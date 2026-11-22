@@ -226,7 +226,7 @@ def thank_suggester(
     # operational/admin surfaces on fully neutral phrasing. These three details
     # read "הממליצ/ה …" for one iteration; the MEH-2633 copy gate caught them.
     if not lead.suggested_by_email:
-        raise HTTPException(status_code=409, detail="אין כתובת אימייל בהמלצה הזו")
+        raise HTTPException(status_code=409, detail="אין כתובת מייל בהמלצה הזו")
     if not lead.suggester_wants_update:
         raise HTTPException(status_code=409, detail="לא ביקשו עדכון על ההמלצה הזו")
     # MEH-2642 (M2): since MEH-2642 the address is only ever taken from a
@@ -245,7 +245,7 @@ def thank_suggester(
     if owner_verified is None:
         raise HTTPException(
             status_code=409,
-            detail="האימייל בהמלצה הזו לא שייך לחשבון מאומת, אז לא נשלח אליו",
+            detail="המייל בהמלצה הזו לא שייך לחשבון מאומת, אז לא נשלח אליו",
         )
     if lead.suggester_thanked_at is not None:
         raise HTTPException(status_code=409, detail="תודה כבר נשלחה")

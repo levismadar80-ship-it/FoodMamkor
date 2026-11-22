@@ -122,7 +122,7 @@ describe("MEH-1814 — locked post-submit success copy", () => {
 describe("MEH-2920 — the inbox screen says login works now", () => {
   it("Hebrew and English match the approved strings", () => {
     expect(S_HE.inbox_next).toBe(
-      "אפשר להיכנס כבר עכשיו עם האימייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת האימייל.",
+      "אפשר להיכנס כבר עכשיו עם המייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת המייל.",
     );
     expect(S_EN.inbox_next).toBe(
       "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",

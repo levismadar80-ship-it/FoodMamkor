@@ -6,7 +6,7 @@
  * promised a manual alternative that did not exist. PR 2 builds it, and with
  * two possible origins the surface now has to SAY which one is active — a card
  * distance label is a bare magnitude since MEH-1307 dropped the "ממך" suffix,
- * so "3 ק"מ" is unreadable unless something on screen names what it is 3 km
+ * so "3 ק״מ" is unreadable unless something on screen names what it is 3 km
  * from.
  *
  * DISCRIMINATION (.claude/rules/testing.md, MEH-1619). Measured against the

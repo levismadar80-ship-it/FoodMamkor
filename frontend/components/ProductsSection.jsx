@@ -37,7 +37,10 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import ProductPriceUnitField from "@/components/ProductPriceUnitField";
+import ProductVariantsField from "@/components/dashboard/ProductVariantsField";  // MEH-3617
+import ProductWeekdaysField, { weekdaysMissing } from "@/components/dashboard/ProductWeekdaysField"; // MEH-3618
 import ProductPrice from "@/components/ProductPrice";
+import { priceLabelText } from "@/lib/utils"; // MEH-3076
 import EmptyState from "@/components/ui/EmptyState";
 import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
@@ -150,6 +153,7 @@ function clearFieldError(setErrors, field) {
  *   is_lactose_free: boolean, is_no_added_sugar: boolean,
  *   ingredients: string, allergens: string[], may_contain: string[], storage_info: string,
  *   gluten_detail: string, nuts_detail: string, no_allergens: boolean,
+ *   available_weekdays: number | null,
  * }} ProductForm
  */
 /**
@@ -179,7 +183,7 @@ export default function ProductsSection({
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false, available_weekdays: null });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -337,6 +341,7 @@ export default function ProductsSection({
       return;
     }
     setFormErrors({});
+    if (weekdaysMissing(form.available_weekdays)) return; // MEH-3618: the field already says why, beside the chips
 
     // MEH-2137 chunk 3: SOFT duplicate-name confirm. Two products may
     // legitimately share a name (מחמצת and כוסמין can both be «לחם»), which is
@@ -384,10 +389,11 @@ export default function ProductsSection({
         storage_info: form.storage_info.trim() || null, // MEH-3444
         ...detailPayload(form), // MEH-3442
         no_allergens: !!form.no_allergens, // MEH-3445
+        available_weekdays: form.available_weekdays ?? null, // MEH-3618
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false, available_weekdays: null });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch (err) {
@@ -421,6 +427,7 @@ export default function ProductsSection({
       gluten_detail: product.gluten_detail || "", // MEH-3442
       nuts_detail: product.nuts_detail || "",
       no_allergens: !!product.no_allergens, // MEH-3445
+      available_weekdays: product.available_weekdays ?? null, // MEH-3618
     });
     setError("");
     setEditFormErrors({});
@@ -496,6 +503,7 @@ export default function ProductsSection({
     const minNum =
       editForm.price_min === "" || editForm.price_min === null || editForm.price_min === undefined ? null : Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
+    if (weekdaysMissing(editForm.available_weekdays)) return; // MEH-3618: the field already says why, beside the chips
     setSavingEdit(true);
     setError("");
     try {
@@ -519,6 +527,7 @@ export default function ProductsSection({
         storage_info: (editForm.storage_info || "").trim() || null, // MEH-3444
         ...detailPayload(editForm), // MEH-3442
         no_allergens: !!editForm.no_allergens, // MEH-3445
+        available_weekdays: editForm.available_weekdays ?? null, // MEH-3618
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -756,6 +765,9 @@ export default function ProductsSection({
                 value={editForm.price_unit}
                 onChange={(u) => setEditForm((f) => ({ ...f, price_unit: u }))}
               />
+              {/* MEH-3617: sizes or flavours, saved on their own button. */}
+              <ProductVariantsField productId={product.id} variants={product.variants}
+                onSaved={(v) => setProducts((p) => p.map((x) => (x.id === product.id ? { ...x, variants: v } : x)))} />
 
               {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}
               <div className="space-y-3">
@@ -799,6 +811,8 @@ export default function ProductsSection({
                   onChange={(v) => setEditForm((f) => ({ ...f, storage_info: v }))}
                   tForm={tForm}
                 />
+                <ProductWeekdaysField idPrefix={`edit-product-${product.id}`} value={editForm.available_weekdays}
+                  onChange={(m) => setEditForm((f) => ({ ...f, available_weekdays: m }))} />
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
                       own wrapping <label>, so this stays a <span>. */}
@@ -872,7 +886,7 @@ export default function ProductsSection({
                   if (product.price_min != null)
                     return <p className="text-xs text-accent"><ProductPrice product={product} /></p>;
                   if (product.price_range)
-                    return <p className="text-xs text-accent">{product.price_range}</p>;
+                    return <p className="text-xs text-accent">{priceLabelText(product.price_range)}</p>;
                   // MEH-2924: no price at all = a seasonal price, said in words.
                   return <p className="text-xs text-fg-muted">{tPrice("varies")}</p>;
                 })()}
@@ -1055,6 +1069,8 @@ export default function ProductsSection({
               onChange={(v) => setForm((f) => ({ ...f, storage_info: v }))}
               tForm={tForm}
             />
+            <ProductWeekdaysField idPrefix="new-product" value={form.available_weekdays}
+              onChange={(m) => setForm((f) => ({ ...f, available_weekdays: m }))} />
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
                   own wrapping <label>, so this stays a <span>. */}

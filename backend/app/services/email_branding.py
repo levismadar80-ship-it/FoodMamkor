@@ -66,11 +66,13 @@ def email_signoff_html() -> str:
     """«צוות מהמקור» with the flower mark before it (RTL: to its right).
 
     Inline content, so it sits inside whatever <p>/<td> the template already
-    styles. alt="" because the words beside it already say who signs; a
-    blocked image must not print «מהמקור» twice."""
+    styles. alt="·" and not the name: the words beside it already say who
+    signs, so a blocked image must not print «מהמקור» twice; every email
+    <img> carries a non-empty alt (tests/test_email_logo.py), and the server
+    sends no emoji (no-emoji-backend-guard.sh, MEH-3668)."""
     return (
         f'<img src="{html_escape(email_icon_url())}" width="{EMAIL_ICON_SIZE}" '
-        f'height="{EMAIL_ICON_SIZE}" alt="" style="display:inline-block;'
+        f'height="{EMAIL_ICON_SIZE}" alt="·" style="display:inline-block;'
         'vertical-align:middle;border:0;border-radius:5px;margin:0 0 0 6px;">'
         f'<span style="vertical-align:middle;">{EMAIL_SIGNOFF}</span>'
     )

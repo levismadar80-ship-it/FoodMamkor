@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import StatusPage from "@/components/StatusPage";
+import { clearReturnPath, peekReturnPath } from "@/lib/post-auth-return";
 
 // MEH-2492: registration never logs the owner in (MEH-328 anti-enumeration),
 // and the link is often opened in another browser or the mail app.
@@ -18,9 +19,25 @@ import StatusPage from "@/components/StatusPage";
 const REDIRECT_DELAY_MS = 1500;
 const LOGIN_PATH = "/login";
 
-// Where a verified, already-logged-in user goes next.
+// Where a verified, already-logged-in user goes next. MEH-3661: a customer
+// goes back to the page she signed up from (stored by /register), else "/".
 function landingAfterVerify(user) {
-  return user?.producer_id ? "/producer/dashboard" : "/";
+  if (user?.producer_id) return "/producer/dashboard";
+  return peekReturnPath() || "/";
+}
+
+// MEH-3661: leave for `landing`, forgetting the stored page first so a later
+// verification (an email change) does not reuse it.
+function leaveFor(landing) {
+  clearReturnPath();
+  window.location.assign(landing);
+}
+
+// MEH-3661: «כניסה להמשך» from another browser has no stored page; from the
+// same browser without a session it carries the page on to /login.
+function loginAfterVerifyHref() {
+  const back = peekReturnPath();
+  return back ? `${LOGIN_PATH}?redirect=${encodeURIComponent(back)}` : LOGIN_PATH;
 }
 
 // MEH-3087: keep the session the link returned and say where to go. A full
@@ -49,7 +66,7 @@ function useRedirectWhenLoggedIn(verifyState) {
     // Full page load so AuthProvider re-fetches /auth/me and picks up
     // email_verified: true (dismisses the banner).
     const timer = setTimeout(() => {
-      window.location.assign(landingAfterVerify(user));
+      leaveFor(landingAfterVerify(user));
     }, REDIRECT_DELAY_MS);
     return () => clearTimeout(timer);
   }, [verifyState, loading, user]);
@@ -77,7 +94,7 @@ function VerifyEmailContent() {
         const landing = await signInFromLink(res?.data?.access_token);
         setLinkLanding(landing);
         setVerifyState("success");
-        if (landing) window.location.assign(landing);
+        if (landing) leaveFor(landing);
       })
       .catch((err) => {
         setVerifyState("error");
@@ -139,7 +156,7 @@ function VerifySuccess({ t, user, authLoading, linkLanding }) {
         loggedIn
           ? { href: landing, label: t("auth.verifyEmail.success_cta"), testid: "verify-email-continue" }
           : loggedOut
-            ? { href: LOGIN_PATH, label: t("auth.verifyEmail.success_login_cta"), testid: "verify-email-login" }
+            ? { href: loginAfterVerifyHref(), label: t("auth.verifyEmail.success_login_cta"), testid: "verify-email-login" }
             : null
       }
     />

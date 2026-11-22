@@ -48,7 +48,7 @@ vi.mock("next-intl", () => {
     "admin.users.role_filter.producer": "בתי עסק",
     "admin.users.role_filter.admin": "אדמין",
     "admin.users.columns.name": "שם",
-    "admin.users.columns.email": "אימייל",
+    "admin.users.columns.email": "מייל",
     "admin.users.columns.city": "עיר",
     "admin.users.columns.role": "תפקיד",
     "admin.users.columns.favorites": "מועדפים",

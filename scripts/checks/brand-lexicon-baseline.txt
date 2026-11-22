@@ -25,8 +25,26 @@
 #     instruction is neither, and the word is load-bearing there (it tells the
 #     model what KIND of fraud to look for). Rewording it would change a
 #     moderation prompt to satisfy a copy rule, which is the wrong trade.
+#
+# ADDED BY MEH-3655 (21/11/2026) — lines the guard could not see before.
+# The reader-copy lines it surfaced (onboarding emails, he.json slash forms,
+# account_deleted «אלייך», the chat FAQ «/ת») were reworded in MEH-3664 from
+# Sapir's approved table and left the baseline.
+#
+#   feminine-address · אלייך   (he.json admin.*.call_script)
+#     Admin copy: a phone script for a caller speaking to a named woman
+#     business owner. ADR-037 keeps admin copy and named women feminine.
+#
+#   yatzran · יצרנית           (backend/app/services/producer_recipe_moderation.py)
+#   licensed-term · מורשים     (backend/app/services/experience_moderation.py)
+#     The Hebrew SYSTEM PROMPTS of the moderation models, same reason as the
+#     producer_risk.py line above: a model instruction, not copy anyone reads.
+backend/app/services/experience_moderation.py	licensed-term	מורשים
+backend/app/services/producer_recipe_moderation.py	yatzran	יצרנית
+backend/app/services/producer_recipe_moderation.py	yatzran	יצרנית
 backend/app/services/producer_risk.py	marketplace	marketplace
 frontend/messages/en.json	marketplace	marketplace
+frontend/messages/he.json	feminine-address	אלייך
 frontend/messages/he.json	licensed-term	מורשים
 frontend/messages/he.json	marketplace	marketplace
 frontend/messages/he.json	marketplace	פלטפורמת מסחר
