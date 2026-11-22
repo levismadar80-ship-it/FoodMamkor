@@ -10,7 +10,7 @@
  *     round-robin is the feature, not the sort;
  *   - a group buy growing a countdown.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import fs from "node:fs";
 import path from "node:path";
@@ -112,6 +112,17 @@ async function renderNear(Component) {
   await act(async () => observers[0].fire(true));
   return out;
 }
+
+// MEH-3516: every test imports the component inside its own body, so the
+// FIRST test used to pay for the cold load of the whole module graph inside
+// its 5 s budget — on a loaded CI runner that load alone ran past 5 s and the
+// test timed out with nothing wrong in the component. Load it once here, under
+// a hook timeout of its own; each test's `await import` then reads the cache.
+// Safe because nothing here calls `vi.resetModules` and the component reads
+// its env flag at call time (`rescueOn()`), not at import.
+beforeAll(async () => {
+  await import("@/components/HomeWhatsOn");
+}, 60_000);
 
 beforeEach(() => {
   observers = [];
@@ -678,7 +689,7 @@ describe("HomeWhatsOn — what one row says", () => {
     expect(screen.getByTestId("whats-on-when").textContent).toBe("03.08 · 18:00–19:30");
   });
 
-  it("a basket links to its business page, at the surprise-bag section", async () => {
+  it("a basket links to its own bag page", async () => {
     responses.current = {
       [RESCUE]: [
         {
@@ -692,16 +703,12 @@ describe("HomeWhatsOn — what one row says", () => {
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
     const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     // The card goes to the bag; the «all» link still goes to the list.
-    expect(hrefs).toEqual(["/ruach-hasadeh#section-rescue", "/rescue"]);
+    expect(hrefs).toEqual(["/rescue/5", "/rescue"]);
   });
 
-  it("a basket whose business has no slug or id falls back to /rescue", async () => {
-    responses.current = { [RESCUE]: [basket(5, "2026-08-01", "2026-08-01T15:00:00Z")] };
-    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
-    const { container } = await renderNear(HomeWhatsOn);
-    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
-    expect([...container.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["/rescue", "/rescue"]);
-  });
+  // MEH-3586: a bag row always has an id (the response schema drops one
+  // without), so the old «no slug» fallback is gone; rescueOfferPath's null
+  // case is covered in ProducerPathGuard.test.js.
 
   it("no countdown and no urgency copy anywhere in the strip", async () => {
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");

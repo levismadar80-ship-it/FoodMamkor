@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
+import { MONTH_SUMMARY_ZERO } from "./_month-summary-stub";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -6,6 +7,11 @@ import { test, expect, type Page } from "./_cloudinary-stub";
 test.beforeEach(async ({ page }) => {
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // MEH-3194: the approved dashboard home reads the month summary (MonthValueLine).
+  // Unstubbed, the fake token draws a 401 that ends the session (the MEH-3446 class).
+  await page.route("**/producers/me/billing/summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
 });
 
@@ -16,7 +22,7 @@ test.beforeEach(async ({ page }) => {
  *             A — a `draft` business gets the COMPLETION surface and never the
  *                 "העמוד שלך בבדיקה" review banner, with the missing items
  *                 named, the CTA disabled and the OTP card mounted in place.
- *             B — completing the requirements enables the CTA; confirming POSTs
+ *             B — completing the requirements shows the CTA; one tap POSTs
  *                 to /producers/me/submit-for-review exactly once and the
  *                 review banner takes over with no reload.
  *             C — a 422 from the server overrides what the client computed:
@@ -106,6 +112,8 @@ const INCOMPLETE = {
   offers_delivery: false,
   delivery_areas: [],
   phone_verified: false,
+  // MEH-3660: email confirmed, so the draft list stays the four gate rows.
+  owner_email_verified: true,
 };
 
 /**
@@ -215,16 +223,12 @@ const draftActions = (page: Page) => card(page).getByTestId("draft-submit-action
 /** The standalone banner with its own list — an organizer's draft surface only. */
 const draftBanner = (page: Page) => page.getByTestId("draft-submit-banner");
 const reviewBanner = (page: Page) => page.getByTestId("status-pending-banner");
-/** One checklist row, found by the chip it always renders (done or not). */
-const cardRow = (page: Page, key: string) =>
-  card(page).getByRole("listitem").filter({ has: page.getByTestId(`completeness-chip-${key}`) });
+/** MEH-3659: the draft card's rows are the submit gate's, in this order. */
+const DRAFT_ROWS = ["details", "image", "product", "phone_verified"];
+/** The one open row (the first not done) — tinted, with its own action. */
+const openRow = (page: Page, key: string) => card(page).getByTestId(`completeness-open-${key}`);
 /** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
 const missingRows = (page: Page) => card(page).getByRole("listitem").filter({ hasText: "עדיין חסר" });
-
-/** The five rows the submit gate blocks on, in the card's terms: the gate's
- *  `category` + `location` codes are the one «קטגוריות ומיקום» row, and the
- *  card also marks contact as חובה. Hours is the one «מומלץ» row. */
-const REQUIRED_ROWS = ["image", "location", "products", "contact", "phone_verified"];
 
 /**
  * The control. Every "X is absent" assertion below is worthless if the page
@@ -241,7 +245,7 @@ async function openOverview(page: Page) {
 }
 
 test.describe("MEH-2100 — draft → submit for review", () => {
-  test("A — a draft names what is missing, disables the CTA and mounts the OTP card", async ({
+  test("A — a draft lists only what blocks submission, opens one row, and has no submit button yet", async ({
     page,
   }) => {
     const profileRef = { current: INCOMPLETE };
@@ -249,7 +253,7 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await stubDashboard(page, profileRef, statusRef);
     await openOverview(page);
 
-    await expect(draftActions(page)).toBeVisible();
+    await expect(card(page)).toHaveAttribute("data-mode", "draft");
     // The replacement, asserted from the other side: a business that has not
     // asked to be reviewed must not be told it is being reviewed.
     await expect(reviewBanner(page)).toHaveCount(0);
@@ -257,30 +261,34 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await expect(draftBanner(page)).toHaveCount(0);
     await expect(page.getByTestId("draft-missing-list")).toHaveCount(0);
 
-    // Exactly seven rows reading «עדיין חסר» (MEH-3032 added the owner photo), not "at least one". These rows are
-    // the completeness card's (ProfileCompletenessCard buildSteps), which never
-    // reads lib/submission-gate.js — so this count pins what the owner is
-    // SHOWN as missing, and a step dropping out of the card reds it. It cannot
-    // see a gate rule dropping out; "one gate rule missing at a time" below
-    // does, from the actions' readiness.
-    // Every required row is among them, each still carrying its «חובה» chip.
-    await expect(card(page).getByRole("listitem")).toHaveCount(7);
-    await expect(missingRows(page)).toHaveCount(7);
-    for (const key of REQUIRED_ROWS) {
-      await expect(cardRow(page, key)).toContainText("עדיין חסר");
-      await expect(page.getByTestId(`completeness-chip-${key}`)).toHaveText("חובה");
-    }
+    // MEH-3659: exactly the four gate rows (category + location share
+    // «פרטי העסק»), all missing — no recommended row before submission.
+    await expect(card(page).getByRole("listitem")).toHaveCount(DRAFT_ROWS.length);
+    await expect(missingRows(page)).toHaveCount(DRAFT_ROWS.length);
+    await expect(page.getByTestId("completeness-counter")).toHaveText("0 מתוך 4");
+    // One open row only — the first one.
+    await expect(card(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(1);
+    await expect(openRow(page, "details")).toBeVisible();
 
-    await expect(draftActions(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(page.getByTestId("draft-submit-cta")).toBeDisabled();
+    // Nothing to press until the list is done: no button, no disabled hint.
+    await expect(page.getByTestId("draft-submit-actions")).toHaveCount(0);
+    await expect(page.getByTestId("draft-submit-cta")).toHaveCount(0);
+  });
+
+  test("A-phone — when WhatsApp is the open row, the OTP card opens inside it", async ({ page }) => {
+    const profileRef = { current: { ...COMPLETE, phone_verified: false } };
+    const statusRef = { current: "draft" };
+    await stubDashboard(page, profileRef, statusRef);
+    await openOverview(page);
 
     // MEH-2100 Phase 0's finding: without this mount phone_verified can never
     // flip for a draft, and the gate is impassable for every new business.
-    // It now lives inside the one card, beside the action it unblocks.
-    await expect(card(page).getByTestId("draft-phone-verify")).toBeVisible();
+    await expect(openRow(page, "phone_verified").getByTestId("draft-phone-verify")).toBeVisible();
+    await expect(page.getByTestId("draft-submit-cta")).toHaveCount(0);
   });
 
-  // One gate rule missing at a time. Before MEH-2883 the business's
+  // One gate rule missing at a time (MEH-3659: the card's rows now READ the
+  // gate, so each code must open its row and keep the button away). Before MEH-2883 the business's
   // `draft-missing-list` was rendered from submissionMissingItems(), so A's
   // exact count went red when any one of the gate's rules dropped out. The
   // card's rows (A, above) never read the gate, so that coverage now lives
@@ -295,6 +303,8 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     category: "categories",
     location: "locations",
   } as const;
+  // The draft card row each gate code lands on (category + location share one).
+  const GATE_ROW = { image: "image", product: "product", category: "details", location: "details" } as const;
   for (const [code, field] of Object.entries(GATE_FIELD)) {
     test(`A-${code} — only «${code}» missing still blocks the submit`, async ({ page }) => {
       const profileRef = { current: { ...COMPLETE, [field]: INCOMPLETE[field] } };
@@ -302,8 +312,9 @@ test.describe("MEH-2100 — draft → submit for review", () => {
       await stubDashboard(page, profileRef, statusRef);
       await openOverview(page);
 
-      await expect(draftActions(page)).toHaveAttribute("data-state-ready", "false");
-      await expect(page.getByTestId("draft-submit-cta")).toBeDisabled();
+      await expect(openRow(page, GATE_ROW[code as keyof typeof GATE_ROW])).toBeVisible();
+      await expect(missingRows(page)).toHaveCount(1);
+      await expect(page.getByTestId("draft-submit-cta")).toHaveCount(0);
     });
   }
 
@@ -330,28 +341,22 @@ test.describe("MEH-2100 — draft → submit for review", () => {
 
     await openOverview(page);
     await expect(draftActions(page)).toHaveAttribute("data-state-ready", "true");
-    // Nothing REQUIRED is missing: every required row reads done, and the one
-    // row still open is the «מומלץ» hours step, which does not block.
-    for (const key of REQUIRED_ROWS) {
-      await expect(cardRow(page, key)).toContainText("הושלם");
-    }
-    await expect(missingRows(page)).toHaveCount(1);
-    await expect(cardRow(page, "hours")).toContainText("עדיין חסר");
+    // Nothing is missing: every gate row reads done. Hours is unset in
+    // COMPLETE, and it is not a row in draft (MEH-3659), so it cannot block.
+    await expect(missingRows(page)).toHaveCount(0);
+    await expect(page.getByTestId("completeness-counter")).toHaveText("4 מתוך 4");
     await expect(page.getByTestId("draft-missing-list")).toHaveCount(0);
 
     const cta = page.getByTestId("draft-submit-cta");
     await expect(cta).toBeEnabled();
-    await cta.click();
-
-    // One-way action: it asks before it fires. If this step ever disappears the
-    // assertion below turns red rather than silently skipping a confirmation.
-    await expect(page.getByTestId("draft-submit-confirm")).toBeVisible();
+    // MEH-3659: one tap posts — the confirm step is gone.
     const posted = page.waitForResponse(
       (r) => r.url().includes("/producers/me/submit-for-review") && r.request().method() === "POST",
       { timeout: 15_000 },
     );
-    await page.getByTestId("draft-submit-confirm-yes").click();
+    await cta.click();
     await posted;
+    await expect(page.getByTestId("draft-submit-confirm")).toHaveCount(0);
 
     // Not "the actions are gone" alone: the card itself must still be on screen
     // (a pending business keeps its checklist), or the absence below proves
@@ -363,7 +368,10 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     // Submission is not idempotent for the owner (there is no un-submit), so
     // "the banner changed" is not enough — the request must have gone out
     // exactly once.
-    expect(submitCalls, "submit must fire exactly once per confirmation").toBe(1);
+    expect(submitCalls, "submit must fire exactly once per tap").toBe(1);
+    // After submission the same card turns into «לשפר את העמוד» (MEH-3659),
+    // where the recommended hours row now appears.
+    await expect(card(page)).toHaveAttribute("data-mode", "improve");
   });
 
   test("C — a 422 shows what the SERVER objected to, not what the client computed", async ({
@@ -397,14 +405,13 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     // The client's own verdict, before the server answers: ready.
     await expect(draftActions(page)).toHaveAttribute("data-state-ready", "true");
     await page.getByTestId("draft-submit-cta").click();
-    await page.getByTestId("draft-submit-confirm-yes").click();
 
-    // The server's answer wins: its sentence is shown, the client's "ready" is
-    // discarded (the actions read not-ready and the CTA is disabled again),
-    // and the status has NOT moved.
+    // The server's answer wins: its sentence is shown and the status has NOT
+    // moved. MEH-3659 review: the card footer shows no list, so the button is
+    // NOT left dead — it stays tappable for a retry once the owner fixes what
+    // the toast named.
     await expect(page.getByText(SERVER_422_MESSAGE, { exact: true })).toBeVisible();
-    await expect(draftActions(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(page.getByTestId("draft-submit-cta")).toBeDisabled();
+    await expect(page.getByTestId("draft-submit-cta")).toBeEnabled();
     await expect(reviewBanner(page)).toHaveCount(0);
     // MEH-2883 by design: a business has no draft list any more, so the
     // server's codes are not rendered as rows — the card's rows still read

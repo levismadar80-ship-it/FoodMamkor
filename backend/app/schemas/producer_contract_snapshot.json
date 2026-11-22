@@ -24,8 +24,11 @@
     "delivery_areas",
     "delivery_cities",
     "delivery_count",
+    "delivery_days_max",
+    "delivery_days_min",
     "delivery_excluded_cities",
     "delivery_fee",
+    "delivery_min_order",
     "delivery_nationwide",
     "description",
     "distance_km",
@@ -103,8 +106,11 @@
     "delivery_areas",
     "delivery_cities",
     "delivery_count",
+    "delivery_days_max",
+    "delivery_days_min",
     "delivery_excluded_cities",
     "delivery_fee",
+    "delivery_min_order",
     "delivery_nationwide",
     "description",
     "distance_km",
@@ -138,7 +144,9 @@
     "lat",
     "lng",
     "locations",
+    "logo_url",
     "name",
+    "noindex",
     "offers_delivery",
     "offers_pickup",
     "opening_hours",
@@ -205,10 +213,14 @@
       "city",
       "delivery_day",
       "delivery_days",
+      "delivery_days_max",
+      "delivery_days_min",
       "delivery_fee",
       "free_delivery_above",
       "id",
       "min_order",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "zone_name"
     ],
     "ProducerDetailOut.kashrut_certs": [
@@ -222,7 +234,11 @@
       "lat",
       "lng",
       "opening_hours",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "phone",
+      "pickup_days",
+      "pickup_note",
       "precision"
     ],
     "ProducerDetailOut.product_groups": [
@@ -231,6 +247,7 @@
     ],
     "ProducerDetailOut.products": [
       "allergens",
+      "available_weekdays",
       "description",
       "gluten_detail",
       "group_id",
@@ -252,7 +269,8 @@
       "price_min",
       "price_range",
       "price_unit",
-      "storage_info"
+      "storage_info",
+      "variants"
     ],
     "ProducerListOut.active_offer": [
       "expires_at",
@@ -276,10 +294,14 @@
       "city",
       "delivery_day",
       "delivery_days",
+      "delivery_days_max",
+      "delivery_days_min",
       "delivery_fee",
       "free_delivery_above",
       "id",
       "min_order",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "zone_name"
     ],
     "ProducerListOut.kashrut_certs": [
@@ -293,7 +315,11 @@
       "lat",
       "lng",
       "opening_hours",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "phone",
+      "pickup_days",
+      "pickup_note",
       "precision"
     ]
   }

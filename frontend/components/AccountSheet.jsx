@@ -5,7 +5,8 @@
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X, Receipt, UsersThree } from "@phosphor-icons/react";
+import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
@@ -64,7 +65,12 @@ export default function AccountSheet({ open, onClose, user, logout }) {
       role: user?.role ?? null,
     }).map((entry) => [entry.item.id, entry]),
   );
-  const row = (id) => byId.get(id);
+  // MEH-3525: «ההזמנות שלי» only while on-site ordering is on.
+  const ordersOn = useMyOrdersNavGate(user);
+  const row = (id) => {
+    const entry = byId.get(id);
+    return entry?.item.dataGate === "orders-on" && !ordersOn ? undefined : entry;
+  };
 
   // MEH-3026 (F2): «כניסה» brings the guest back to the page she opened the
   // sheet on. Read when the sheet opens, not at render: the address is a
@@ -213,6 +219,22 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               <Link href={row("favorites").item.href} onClick={onClose} className={rowCls}>
                 <Heart size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("favorites").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {row("myOrders") && (
+            <li className={liCls}>
+              <Link href={row("myOrders").item.href} onClick={onClose} className={rowCls}>
+                <Receipt size={20} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("myOrders").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {row("myGroupBuys") && (
+            <li className={liCls}>
+              <Link href={row("myGroupBuys").item.href} onClick={onClose} className={rowCls}>
+                <UsersThree size={20} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("myGroupBuys").surface.labelKey)}
               </Link>
             </li>
           )}

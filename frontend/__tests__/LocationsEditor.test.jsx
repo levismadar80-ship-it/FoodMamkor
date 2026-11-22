@@ -55,7 +55,7 @@ vi.mock("next-intl", () => ({
 // suggestion (onSelect with a full payload). The real component's debounce and
 // provider handling are its own concern; what is under test here is what
 // LocationsEditor does with the contract at AddressSearch.jsx:39.
-// REUSES: __tests__/RegisterProducerClient.test.jsx:99-124 — same stub shape.
+// REUSES: __tests__/RegisterProducerClient-01.test.jsx:103-128 — same stub shape.
 vi.mock("@/components/AddressSearch", () => ({
   default: ({ value, onChange, onSelect, inputTestId, id, placeholder }) => (
     <div>
@@ -633,5 +633,74 @@ describe("place hint, said once (MEH-2931)", () => {
       expect(he[k]).not.toMatch(/ניווט|קואורדינטות/);
     }
     expect(he.more_summary).toContain("דיוק");
+  });
+});
+
+// MEH-3512: a pickup point's days + own order cutoff are fields. A branch has
+// no such block and sends them empty; a pickup point round-trips them.
+describe("pickup schedule (MEH-3512)", () => {
+  it("a branch shows no pickup block and sends the fields empty", async () => {
+    await openAddForm();
+    expect(screen.queryByTestId("pickup-schedule")).toBeNull();
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith(
+        LOCATIONS_URL,
+        expect.objectContaining({ pickup_days: [], order_cutoff_day: null, order_cutoff_time: null }),
+      ),
+    );
+  });
+
+  it("an edited pickup point loads its days and sends the changed ones in week order", async () => {
+    await openEditForm({
+      id: 7,
+      kind: "pickup",
+      city: "הבונים",
+      lat: 32.6,
+      lng: 34.9,
+      pickup_days: ["חמישי"],
+      order_cutoff_day: "רביעי",
+      order_cutoff_time: "15:00",
+    });
+    expect(screen.getByTestId("pickup-day-חמישי").checked).toBe(true);
+    fireEvent.click(screen.getByTestId("pickup-day-שלישי"));
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() =>
+      expect(apiMock.put).toHaveBeenCalledWith(
+        `${LOCATIONS_URL}/7`,
+        expect.objectContaining({
+          pickup_days: ["שלישי", "חמישי"],
+          order_cutoff_day: "רביעי",
+          order_cutoff_time: "15:00",
+        }),
+      ),
+    );
+  });
+});
+
+// MEH-3593: «הוראות איסוף» live on the pickup point, so the bag page, the
+// reservation email and later the order and group-buy pages read one text.
+describe("pickup instructions (MEH-3593)", () => {
+  const detailsOpen = () => screen.getByTestId("location-pickup-note").closest("details").open;
+
+  it("a stored note opens the details and is sent back as edited", async () => {
+    apiMock.put.mockClear();
+    await openEditForm({ id: 7, kind: "pickup", city: "חיפה", pickup_note: "דלת אחורית" });
+    expect(detailsOpen()).toBe(true);
+    const note = screen.getByTestId("location-pickup-note");
+    expect(note.value).toBe("דלת אחורית");
+    fireEvent.change(note, { target: { value: "נכנסים מהחצר" } });
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalled());
+    expect(apiMock.put.mock.calls.at(-1)[1].pickup_note).toBe("נכנסים מהחצר");
+  });
+
+  it("an emptied note is sent as null, which clears it", async () => {
+    apiMock.put.mockClear();
+    await openEditForm({ id: 8, kind: "pickup", city: "חיפה", pickup_note: "דלת אחורית" });
+    fireEvent.change(screen.getByTestId("location-pickup-note"), { target: { value: "  " } });
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalled());
+    expect(apiMock.put.mock.calls.at(-1)[1].pickup_note).toBeNull();
   });
 });

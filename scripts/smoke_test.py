@@ -159,7 +159,7 @@ def check_idor_pending_producer(base_url: str) -> Check:
         passed=False,
         reason=f"pending producer UUID returned {r.status_code}; expected 404",
         cause="MEH-254 regression — anonymous caller can see pending/rejected producers",
-        fix="verify backend/app/routers/producers.py::get_producer has the status filter "
+        fix="verify backend/app/services/producer_detail.py::producer_by_id_for_viewer has the status filter "
             "(admin+owner exception only); deploy may be running pre-MEH-254 code",
     )
 

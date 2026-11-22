@@ -239,6 +239,11 @@ class ProducerListOut(BaseModel):
     # owner dashboard prefill read the same value).
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: business-wide delivery time (business days) and order minimum.
+    # NULL = not stated → nothing renders. A zone's own values win per city.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    delivery_min_order: int | None = None
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded
@@ -374,7 +379,7 @@ class ProducerListOut(BaseModel):
         there is no such row or its pin is cleared. Inherited by
         ProducerDetailOut → ProducerAdminOut / ProducerOwnerOut, so the list,
         the business page, the admin form and the owner dashboard read ONE
-        answer. Same rule as admin_extra._primary_location_points (5a.2).
+        answer. Same rule as admin_dashboard.primary_location_points (5a.2).
 
         DO NOT fall back to the column value here "for producers without a
         row": that population is empty on every environment (7c1e2a9f4b3d,
@@ -412,6 +417,11 @@ class ProducerDetailOut(ProducerListOut):
     # older payload) keeps the CTA rather than silently losing it -- the failure
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
+    # MEH-2952 chunk 3 (Sapir 11/11 ruling 2): in EVERY answer — false for a
+    # live business, true for a seeded test row. Read from the model property
+    # `Producer.noindex` (models.py), so every builder fills it; the column
+    # itself never leaves the API (tests/test_meh2952_is_test_guards.py).
+    noindex: bool = False
     products: list[ProductOut] = []
     # MEH-3055: ordered groups; a NULL column reads as no groups.
     product_groups: list[ProductGroupOut] = []
@@ -442,6 +452,9 @@ class ProducerDetailOut(ProducerListOut):
     # page (MEH-1334, dormant variants). NULL = card stays compact.
     owner_bio: str | None = None
     owner_photo_url: str | None = None
+    # MEH-3611: the business's logo beside its name; null = no logo. Detail
+    # only — the list cards do not show it.
+    logo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-1543: optional weekly order-acceptance window (JSONB). NULL = feature
@@ -541,8 +554,8 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
     business_days_waiting: int = 0
     # MEH-2495: does an account own this row (EXISTS users.producer_id = id)?
-    # Derived, never stored — hydrated per response by routers/admin.py
-    # `_attach_has_owner` in ONE batched query (no N+1). It drives the drafts
+    # Derived, never stored — hydrated per response by services/admin_producer_reads.py
+    # `attach_has_owner` in ONE batched query (no N+1). It drives the drafts
     # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
     # claim-link copy. Admin-only: which pages have an account behind them is
     # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
@@ -641,7 +654,7 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # the note above — admin-only, never on the public or owner shapes.
     consent_screenshot_url: str | None = None
     # Derived, never stored — hydrated per response beside `has_owner` by
-    # routers/admin.py `_attach_has_owner`, in that one batched query. None
+    # services/admin_producer_reads.py `attach_has_owner`, in that one batched query. None
     # means "this route did not hydrate it", exactly as for `has_owner`: a
     # route that forgets fails CLOSED (the panel shows no owner line) rather
     # than reporting a handed-over business as ownerless.
@@ -675,14 +688,14 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     #
     # `recommended_at` NULL on a picked producer is not missing data: it means
     # "picked before the clock existed", which is what the review list reads as
-    # due now (admin.py::_recommended_review_due_clause).
+    # due now (admin_producer_reads.py::recommended_review_due_clause).
     recommended_at: datetime | None = None
     recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
-    # so an override-approved producer (chunk-4 allow_without_license) still
-    # shows it. Mirrors _compute_verification_tier's predicate over the
+    # so a producer approved without a license (MEH-3026) still shows it.
+    # Mirrors _compute_verification_tier's predicate over the
     # already-loaded categories (categories.requires_license, MEH-3255)
     # — no DB round-trip, no N+1. Admin-only: lives on ProducerAdminOut, never
     # the public ProducerListOut/DetailOut.
@@ -741,3 +754,7 @@ class ProducerOwnerOut(_ZonesOut, ProducerDetailOut):
     # client mirror (lib/submission-gate.js) reads this count. Filled by
     # GET/PUT /producers/me; 0 for every other serializer path.
     upcoming_events_count: int = 0
+    # MEH-3660: a user owning this business confirmed her email — the submit
+    # gate's last requirement. Filled by GET/PUT /producers/me; False for every
+    # other serializer path (fail-closed, like the gate).
+    owner_email_verified: bool = False

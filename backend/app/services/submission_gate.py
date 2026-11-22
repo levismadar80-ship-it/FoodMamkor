@@ -10,8 +10,8 @@ Touches:  reads a Producer and its images / products / categories / locations /
           callers own all of that.
 Does NOT: decide APPROVABILITY. That is a different question with a different
           owner: producer_me.py:_is_approvable and admin.py:_assert_approvable
-          (the MEH-799 photo gate + the MEH-971 license gate), which stay
-          exactly as they are, as defense-in-depth at approve time. In
+          (the MEH-799 photo gate; the MEH-971 license gate was removed in
+          MEH-3026), which stay as defense-in-depth at approve time. In
           particular a LICENSE is deliberately NOT checked here — MEH-971's
           license_pending path lets a business reach the queue with a NULL
           license on purpose, and gating submission on it would close a route
@@ -42,7 +42,7 @@ import math
 
 from sqlalchemy.orm import object_session
 
-from app.models.models import Event, Producer
+from app.models.models import Event, Producer, User
 from app.utils.clock import israel_today
 
 # Machine-readable requirement codes. These cross the API boundary — the
@@ -53,6 +53,10 @@ MISSING_PRODUCT = "product"
 MISSING_CATEGORY = "category"
 MISSING_LOCATION = "location"
 MISSING_PHONE_VERIFIED = "phone_verified"
+# MEH-3660: the owner's email address is confirmed. Businesses only — the
+# «אושרת» email and password reset both go to it, and once approved the
+# email-gated tools (events, group buys, recipes) open without a second wall.
+MISSING_EMAIL_VERIFIED = "email_verified"
 
 # Canonical order. Callers render in list order, so this is the order the
 # owner reads her missing items in — image first (the thing customers see
@@ -63,6 +67,7 @@ SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
     MISSING_CATEGORY,
     MISSING_LOCATION,
     MISSING_PHONE_VERIFIED,
+    MISSING_EMAIL_VERIFIED,
 )
 
 # MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing, so the
@@ -156,7 +161,10 @@ def _has_location(producer: Producer) -> bool:
 
 
 def submission_missing_items(
-    producer: Producer, *, upcoming_events: int | None = None
+    producer: Producer,
+    *,
+    upcoming_events: int | None = None,
+    email_verified: bool | None = None,
 ) -> list[str]:
     """The requirement codes this producer has NOT satisfied, in canonical
     order. An empty list means "ready to submit".
@@ -166,6 +174,9 @@ def submission_missing_items(
     satisfied — the fail-closed direction. The cost of a false "missing" is
     one confused owner; the cost of a false "ready" is an unreviewable row in
     the admin queue, which is the bug this whole ticket exists to remove.
+
+    `upcoming_events` / `email_verified` let a list caller pass facts it read
+    for many rows in one query (admin_draft_missing); None → read here.
     """
     if getattr(producer, "kind", "producer") == "organizer":
         return _organizer_missing_items(producer, upcoming_events)
@@ -205,7 +216,29 @@ def submission_missing_items(
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
 
+    if email_verified is None:
+        email_verified = owner_email_verified(producer)
+    if not email_verified:
+        missing.append(MISSING_EMAIL_VERIFIED)
+
     return missing
+
+
+def owner_email_verified(producer: Producer) -> bool:
+    """True when a user owning this business has confirmed her email
+    (`User.email_verified`; Google sign-in sets it at signup). Read through
+    the row's own session, like `upcoming_events_count`. No session, or no
+    owner row → False, i.e. MISSING: fail-closed, the same direction as every
+    other check here."""
+    session = object_session(producer)
+    if session is None or producer.id is None:
+        return False
+    return (
+        session.query(User.id)
+        .filter(User.producer_id == producer.id, User.email_verified.is_(True))
+        .first()
+        is not None
+    )
 
 
 def upcoming_events_count(producer: Producer) -> int:
@@ -233,6 +266,16 @@ def attach_upcoming_events_count(producer: Producer) -> None:
     reads it, so it keeps the schema default 0 without an extra query."""
     if getattr(producer, "kind", "producer") == "organizer":
         producer.upcoming_events_count = upcoming_events_count(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
+
+
+def attach_owner_email_verified(producer: Producer) -> None:
+    """Set the transient `owner_email_verified` that ProducerOwnerOut
+    serializes, so the client gate mirror (lib/submission-gate.js) reads the
+    same fact the server gate reads (MEH-3660). Businesses only, like
+    attach_upcoming_events_count for organizers: the organizer gate has no
+    email row, so an organizer keeps the schema default without a query."""
+    if getattr(producer, "kind", "producer") != "organizer":
+        producer.owner_email_verified = owner_email_verified(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
 def _organizer_missing_items(

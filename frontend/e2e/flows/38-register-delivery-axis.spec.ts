@@ -54,7 +54,6 @@ async function mockBackend(page: Page, capture: { body: unknown }): Promise<void
 /** ACCOUNT → DETAILS with the other DETAILS fields filled, radio untouched. */
 async function reachDetails(page: Page): Promise<void> {
   await page.goto("/register/producer");
-  await page.getByTestId("register-preflight-start").click();
   await expect(page.getByTestId("register-frame-account")).toBeVisible();
   await page.getByTestId("register-account-name").fill("טסט בדיקה");
   await page.getByTestId("register-account-email").fill(`axis+${Date.now()}@mehamakor.online`);
@@ -73,16 +72,12 @@ async function advanceAndSubmit(page: Page): Promise<void> {
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-1").click();
-  // MEH-952: the mocked category is license-required; the number is gated inline.
-  await page.getByTestId("register-category-license").fill("1234567");
-  await page.getByTestId("register-category-next").click();
-  await expect(page.getByTestId("register-frame-story")).toBeVisible();
-  await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-  await page.getByTestId("register-referral-source").selectOption("instagram");
-  for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
+  // MEH-3656: CATEGORY is the last business frame — it carries the consent
+  // boxes and «הצטרפו»; the story step left the business path.
+  for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
     await cb.check();
   }
-  await page.getByTestId("register-story-submit").click();
+  await page.getByTestId("register-category-submit").click();
   await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
 }
 
@@ -95,13 +90,12 @@ const CASES: { name: string; tick: (typeof AXES)[number][]; has_physical_locatio
 ];
 
 test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () => {
-  test("default: no option pre-selected, no error, the areas note is shown", async ({ page }) => {
+  test("default: no option pre-selected, no error", async ({ page }) => {
     await mockBackend(page, { body: null });
     await reachDetails(page);
     for (const v of AXES) await expect(page.getByTestId(`register-fulfilment-${v}`)).not.toBeChecked();
     await expect(page.getByTestId("register-fulfilment-both")).toHaveCount(0);
     await expect(page.getByTestId("register-fulfilment-error")).toHaveCount(0);
-    await expect(page.getByTestId("register-delivery-note")).toBeVisible();
   });
 
   test("unanswered: «הבא» shows the error and DETAILS does not advance; answering clears it", async ({ page }) => {

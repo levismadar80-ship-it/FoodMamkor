@@ -66,11 +66,11 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     disagreement, and it ships looking finished.
 
     Every reader that answers "how many businesses does the catalog show"
-    composes THIS function, so the five can no longer drift apart:
+    composes THIS function, so they can no longer drift apart
+    (``GET /producers/cities`` was a fifth until MEH-3527 deleted it — no caller):
 
       - ``build_producers_query``            (the listing + X-Total-Count)
       - ``GET /producers/count``             (routers/producers.py)
-      - ``GET /producers/cities``            (routers/producers.py)
       - ``GET /producers/random``            (routers/producers.py)
       - ``GET /stats``.producers_count       (routers/marketing.py)
 
@@ -147,7 +147,8 @@ def is_business(*, include_test: bool = False) -> ColumnElement[bool]:
     row is absent from every one of the surfaces above at once.
     ``include_test=True`` keeps test rows, and only the files allowlisted in
     ``tests/test_meh2952_is_test_guards.py`` may pass it (by-slug, the
-    business's own dashboard, admin screens; none yet in chunk 1).
+    business's own dashboard, admin screens). Since chunk 3 the one caller is
+    by-slug in ``routers/producers.py``; its answer then carries ``noindex``.
     """
     live = and_(Producer.status == "approved", Producer.kind == "producer")
     if include_test:
@@ -534,6 +535,9 @@ def _has_delivery_condition() -> ColumnElement[bool]:
     original bare `Producer.delivery_areas.any()` made exactly the businesses
     that deliver *furthest* invisible to the משלוח chip.
 
+    MEH-3511: a nationwide business may now also hold rows — the cities of its
+    zones on other terms. Either conjunct still answers "delivers".
+
     delivery_excluded_cities is deliberately NOT consulted here. This filter
     asks "does this business deliver?", not "does it deliver to city X" — a
     nationwide producer with a non-empty exclusion list still delivers, so it
@@ -667,6 +671,8 @@ def _delivery_day_condition(
     """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
     producers and day-less rows ("בתיאום מראש") are excluded from day
     filtering; the integrity of "משלוח ביום X" beats recall.
+    MEH-3511: a nationwide business whose zone row carries day X does match —
+    the same explicit-row rule; its «כל הארץ» terms still never do.
 
     With a city, the city AND the day must match on the SAME delivery_areas
     row (one EXISTS). Two separate EXISTS would wrongly match a producer

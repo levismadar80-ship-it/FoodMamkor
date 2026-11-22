@@ -10,6 +10,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import TestBusinessTag from "@/components/admin/TestBusinessTag"; // MEH-2952
 import AdminReviewChecklist from "./AdminReviewChecklist";
 import { CopyClaimMessageButton, DraftOwnerBadge } from "./AdminDraftClaimActions";
 import { DraftMissing } from "./AdminDraftMissing";
@@ -327,7 +328,7 @@ function ReferralSource({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer, onToggleStoryCard, onReload, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onReject, onToggleStatus, onDeleteProducer, onToggleStoryCard, onReload, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -385,18 +386,8 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
                 onSelect: () => onToggleStoryCard(p.id),
               }]
             : []),
-          // MEH-2299: approve a license-required business that has no license
-          // number yet (Sapir, 22/10: it enters, it just gets no badge). Only on
-          // the one cell where the plain approve would 422 on the license gate —
-          // pending AND license_pending. Same busy key as approve: it IS approve.
-          ...(isPending && p.license_pending && onApproveWithoutLicense
-            ? [{
-                key: "approve-without-license",
-                label: t("producers.table.actions.approve_without_license"),
-                disabled: busy(`approve:${p.id}`),
-                onSelect: () => onApproveWithoutLicense(p),
-              }]
-            : []),
+          // MEH-3026: the «אשרי בלי רישיון» item is gone — a plain approve no
+          // longer 422s on a missing licence number.
           // MEH-226: reject is terminal and emails the business owner, so it
           // lives in the kebab with tone="danger" (MEH-1023 destructive-action
           // convention) rather than in the always-visible strip beside
@@ -539,6 +530,9 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          {/* MEH-2952 chunk 4: in the name cell, not the md-only tags cell,
+              so a phone sees that this «approved» row is off the site. */}
+          <TestBusinessTag producerId={p.id} />
           <ReferralSource producer={p} />
         </td>
         <td className="hidden md:table-cell px-4 py-3 text-muted">{p.city || "—"}</td>
@@ -657,14 +651,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
-  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
+  onQuickApprove, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
   onUploadStoryCard, onGooglePlaceLinked, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
+    onQuickApprove, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, onGooglePlaceLinked, isBusy,
     // MEH-2495: a claim-link 409 means the row is stale — reload the list.
     onReload: onRetryLoad,

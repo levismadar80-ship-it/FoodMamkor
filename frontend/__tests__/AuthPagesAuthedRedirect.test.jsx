@@ -103,10 +103,18 @@ describe("LoginClient — authenticated redirect (MEH-1489 chunk C)", () => {
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
-  it("while auth resolves the form is gated and no redirect fires", () => {
+  // MEH-2233: the form is now in the first HTML (it was the /login LCP at
+  // 5.5s while it waited for auth). It is still gated for anyone who could be
+  // signed in: it carries data-auth-pending while auth resolves, and
+  // app/globals.css hides that under html[data-has-token], which the inline
+  // script in lib/prehydration-flags-inline.js sets from the stored token
+  // (PrehydrationFlags.test.jsx pins both halves).
+  it("while auth resolves the form is marked pending (hidden for a stored session) and no redirect fires", () => {
     authState.loading = true;
-    render(<LoginClient />);
-    expect(screen.queryByLabelText("password_label")).not.toBeInTheDocument();
+    const { container } = render(<LoginClient />);
+    const pending = container.querySelector("[data-auth-pending]");
+    expect(pending).not.toBeNull();
+    expect(pending.contains(screen.getByLabelText("password_label"))).toBe(true);
     expect(replaceMock).not.toHaveBeenCalled();
   });
 });

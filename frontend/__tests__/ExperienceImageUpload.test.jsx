@@ -275,7 +275,7 @@ describe("MEH-2012 — the image field is an upload, not a URL box", () => {
     // and green against the new, but it is NOT evidence about rendered
     // behaviour. The behavioural assertion (real Chromium, computed display and
     // a Tab landing on the input) lives in
-    // e2e/qa-meh2012-experience-image-upload.mjs, where a stylesheet exists.
+    // qa-meh2012-experience-image-upload.mjs [deleted probe, docs/media-archive.md], where a stylesheet exists.
     renderForm();
 
     expect(fileInput().className).toContain("sr-only");

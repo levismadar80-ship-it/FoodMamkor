@@ -23,7 +23,7 @@ import * as Sentry from "@sentry/nextjs";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -40,6 +40,7 @@ import GalleryViewAllButton from "@/components/GalleryViewAllButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Avatar, { avatarInitial } from "@/components/ui/Avatar";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildOrganizerJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-3348
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -81,7 +82,8 @@ export async function generateMetadata(props) {
   if (!isSlugShaped(slug)) notFound();
   const organizer = await getOrganizer(slug);
   // the URL as requested (still encoded) — same as app/[locale]/[slug]/page.js
-  const alternates = buildAlternates(`/organizers/${rawSlug}`, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(`/organizers/${rawSlug}`, locale);
   if (!organizer) {
     return {
       title: { absolute: buildEntityTitle(null, locale) },
@@ -110,9 +112,10 @@ export async function generateMetadata(props) {
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       // MEH-2590: site image when none (an omitted key is not inherited).
-      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : ["/og-image.png"],
+      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : [siteOgImageUrl(locale)],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 

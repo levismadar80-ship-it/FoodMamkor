@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
   probe:
-    name: Probe /, /api/health/readiness and the OSM map tiles
+    name: Probe /, /api/health/readiness, Google Places, the OSM map tiles and the user journey
     runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
-    timeout-minutes: 5
+    timeout-minutes: 12
     env:
       HOME_URL: https://mehamakor.co.il/
       READY_URL: https://mehamakor.co.il/api/health/readiness
@@ -30,10 +30,23 @@ jobs:
       # so the header is checked, not just the status code.
       TILE_URL: https://tile.openstreetmap.org/8/153/104.png
       TILE_REFERER: https://mehamakor.co.il/
+      # MEH-2482: the server's Google Places key, probed with a real call on
+      # every tick (one billable request each, 48 a day). Not hourly: the
+      # outage issue needs two consecutive failing ticks, so a URL probed on
+      # every other tick could never open one.
+      PLACES_URL: https://mehamakor.co.il/api/health/places
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
-      - name: Probe both endpoints
+      # MEH-3555: the journey check below runs a script from the repo.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/checks
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Probe the site, readiness, Places and the map tiles
         id: probe
         shell: bash
         run: |
@@ -44,6 +57,15 @@ jobs:
             echo "$url -> HTTP $code"
             if [ "$code" != "200" ]; then fail=1; fi
           done
+          # 200 alone is not enough: {"status":"disabled"} is also a 200 and
+          # means the key is missing on the server.
+          pbody=$(curl -sS --max-time 20 --retry 2 --retry-delay 5 -w '\n%{http_code}' "$PLACES_URL" || printf '\n000')
+          pcode=$(printf '%s\n' "$pbody" | tail -n 1)
+          echo "$PLACES_URL -> HTTP $pcode"
+          if [ "$pcode" != "200" ] || ! printf '%s\n' "$pbody" | grep -q '"status":"ok"'; then
+            echo "::warning::Google Places check not ok: $(printf '%s\n' "$pbody" | head -n 1 | cut -c1-200)"
+            fail=1
+          fi
           hdr=$(curl -sS -o /dev/null -D - --max-time 20 --retry 2 --retry-delay 5 \
                   -e "$TILE_REFERER" -A "mehamakor-uptime-probe/1.0 (+https://mehamakor.co.il)" \
                   "$TILE_URL" 2>/dev/null | tr -d '\r' || true)
@@ -52,6 +74,17 @@ jobs:
           if [ "$tcode" != "200" ] || printf '%s\n' "$hdr" | grep -qi '^x-blocked:'; then
             printf '%s\n' "$hdr" | grep -i '^x-blocked:' || true
             echo "::warning::OSM tile blocked or unreachable — map tiles on the site may show «Access blocked»"
+            fail=1
+          fi
+          # MEH-3555: the user journey — catalog, home / producers / map, one
+          # real business page, a Cloudinary image, the WhatsApp preview. Not
+          # only "the site answers". GET only; ~15 requests to Vercel a tick.
+          # Its failure feeds the same fail=1, so two failing ticks in a row
+          # open the same uptime issue as everything else here.
+          # Bounded well under timeout-minutes: a job killed by its timeout
+          # never writes fail=, and the next step would read that as recovery.
+          if ! timeout 240 python scripts/checks/smoke_production.py --quick; then
+            echo "::warning::production journey check failed (smoke_production.py --quick) — see the lines above"
             fail=1
           fi
           echo "fail=$fail" >> "$GITHUB_OUTPUT"

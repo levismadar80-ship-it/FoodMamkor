@@ -133,6 +133,10 @@ export default function EditAccordionCard({
   // default-off contract as `marker`. Must be phrasing content only (it
   // lives inside the header <button>).
   preview,
+  // MEH-3026: an optional card that is still worth filling (a missing licence
+  // in a license-required category) shows «מומלץ» in gold instead of «רשות».
+  // Never overrides «חובה».
+  recommended = false,
   open,
   onToggle,
   children,
@@ -145,8 +149,9 @@ export default function EditAccordionCard({
   // by the page, so a card added to the JSX cannot ship without one — the
   // registry-drift class .claude/rules/testing.md documents.
   const kind = useContext(EditAccordionKindContext);
-  const chipKey = chipKeyFor(anchorId, kind);
-  const required = chipKey === "chip_required";
+  const baseKey = chipKeyFor(anchorId, kind);
+  const required = baseKey === "chip_required";
+  const chipKey = !required && recommended ? "chip_recommended" : baseKey;
   return (
     <section
       id={anchorId}
@@ -178,7 +183,11 @@ export default function EditAccordionCard({
                 // by that test, which is doing exactly its job.
                 data-testid={`section-chip-${anchorId}`}
                 className={`shrink-0 rounded-full px-2 text-xs font-normal ${
-                  required ? "bg-primary/10 text-primary" : "bg-border/60 text-fg-muted"
+                  required
+                    ? "bg-primary/10 text-primary"
+                    : chipKey === "chip_recommended"
+                      ? "bg-accent/10 text-text"
+                      : "bg-border/60 text-fg-muted"
                 }`}
               >
                 {tChip(chipKey)}

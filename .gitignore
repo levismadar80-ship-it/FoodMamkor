@@ -58,3 +58,32 @@ OVERNIGHT-REPORT.md
 
 # Spreadsheets with contact data never go in this public repo (MEH-2356)
 /*.xlsx
+
+# Screenshots and recordings stay out of git (MEH-3534). QA evidence goes to the
+# folder linked from the PR body; the old files are in history, see
+# docs/media-archive.md. Text evidence (md/json/log) in these folders is still
+# tracked. scripts/checks/heavy-media-guard.sh is the gate; this only stops an
+# accidental `git add`.
+qa-artifacts/**/*.png
+qa-artifacts/**/*.jpg
+qa-artifacts/**/*.jpeg
+qa-artifacts/**/*.webp
+qa-artifacts/**/*.gif
+qa-artifacts/**/*.mp4
+qa-artifacts/**/*.mov
+qa-artifacts/**/*.webm
+frontend/qa-artifacts/**/*.png
+frontend/qa-artifacts/**/*.jpg
+frontend/qa-artifacts/**/*.jpeg
+frontend/qa-artifacts/**/*.webp
+frontend/qa-artifacts/**/*.gif
+frontend/qa-artifacts/**/*.mp4
+frontend/qa-artifacts/**/*.mov
+frontend/qa-artifacts/**/*.webm
+docs/audits/**/*.png
+docs/audits/**/*.jpg
+docs/audits/**/*.webp
+docs/design-audit/**/*.png
+docs/design-audit/**/*.jpg
+docs/design-audit/**/*.webp
+tests/screenshots/

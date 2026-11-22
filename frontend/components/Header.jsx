@@ -7,6 +7,7 @@ import Image from "next/image";
 // Hebrew /producers).
 import { loginLinkFor } from "@/lib/safe-redirect";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch"; // MEH-3628
 // MEH-2850: every Link element in the site chrome carries prefetch={false}. The
 // chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
 // /privacy, /login, /register) are static, so Next prefetches them IN FULL —
@@ -22,6 +23,7 @@ import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
 import Avatar from "@/components/ui/Avatar";
@@ -52,6 +54,8 @@ const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
   "favorites",
+  "myOrders",
+  "myGroupBuys", // MEH-3609
   "settings",
   "admin",
 ];
@@ -136,6 +140,7 @@ export default function Header() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const intent = useIntentPrefetch(); // MEH-3628
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
@@ -474,7 +479,7 @@ export default function Header() {
               and the link gap is gap-6 below lg so 768 at 100% stays one row.
               lg+ geometry (gap-9) is unchanged. */}
           <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
-            <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={t("nav.footer.brand_aria")}>
+            <Link prefetch={false} href="/" {...intent("/")} onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={t("nav.footer.brand_aria")}>
               {/* MEH-3412: the link carries the localized name (he «מהמקור — דף הבית»,
                   en «Mehamakor — Home page», same key as the Footer), so the
                   image is decorative — alt="" keeps the name from being read
@@ -604,9 +609,12 @@ export default function Header() {
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active, onClick }) {
+  // MEH-3628: load the page from the first touch / hover (Sapir 21/11).
+  const intent = useIntentPrefetch();
   return (
     <Link prefetch={false}
       href={href}
+      {...(active ? {} : intent(href))}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
@@ -686,6 +694,7 @@ const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
 
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
+  const ordersOn = useMyOrdersNavGate(user);
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -712,6 +721,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
       ({ item }) =>
         item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
     )
+    .filter(({ item }) => item.dataGate !== "orders-on" || ordersOn)
     .map(({ item, surface }) => ({
       // MEH-3024: an unapproved business's /producer/<id> is a real 404, so
       // its owner's «צפייה בדף» goes to the dashboard preview — the same rule

@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { layoutSettled } from "../_layout-settled";
+import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -7,6 +8,11 @@ import { layoutSettled } from "../_layout-settled";
 test.beforeEach(async ({ page }) => {
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // MEH-3194: the approved dashboard home reads the month summary (MonthValueLine).
+  // Unstubbed, the fake token draws a 401 that ends the session (the MEH-3446 class).
+  await page.route("**/producers/me/billing/summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
 });
 
@@ -413,49 +419,45 @@ test.describe("overview — completeness card", () => {
     await expect(checklist(page)).toHaveCount(0);
   });
 
-  // MT:MEH-288:3 · MT:MEH-1106:2 (86% since MEH-3032; was 83%, not the doc's 75%)
-  // The doc's "רק N פרטים עד שהפרופיל מלא" sub-line is `yellow_high_sub`, and the
-  // card never reads it: `checklist_sub` renders unconditionally under either
-  // yellow headline (ProfileCompletenessCard.jsx:311). Four `completeness.*`
-  // keys — red_headline, red_sub, yellow_low_sub, yellow_high_sub — have zero
-  // references in the component (grep, 05/09).
-  test("one step missing → 86%, «כמעט שם», exactly one todo", async ({ page }) => {
+  // MEH-3659: after submission the card is «לשפר את העמוד» with a «N מתוך M»
+  // counter (the ring, the percentage headlines and the chips are gone) and
+  // exactly ONE open row — the first step not done.
+  test("one step missing → «לשפר את העמוד», 6 מתוך 7, that row open", async ({ page }) => {
     await openOverview(page, profile({ images: [] }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
-    await expect(cardRoot(page)).toContainText("כמעט שם — 86% מוכן");
-    await expect(cardRoot(page)).toContainText("עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות");
+    await expect(cardRoot(page)).toHaveAttribute("data-mode", "improve");
+    await expect(cardRoot(page).getByRole("heading", { level: 2 })).toHaveText("לשפר את העמוד");
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveText("6 מתוך 7");
+    await expect(cardRoot(page).getByTestId("completeness-open-image")).toBeVisible();
     await expect(checklist(page).getByRole("listitem")).toHaveCount(7);
+    await expect(ring(page)).toHaveCount(0);
   });
 
-  // MT:MEH-288:2 · MT:MEH-1106:3 (with 7 steps since MEH-3032: 4 done = 57%)
-  test("three steps missing → 57% with the neutral headline", async ({ page }) => {
+  test("three steps missing → 4 מתוך 7 and still only one open row", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "57");
-    await expect(cardRoot(page)).toContainText("העמוד שלך 57% מוכן");
-    await expect(cardRoot(page)).not.toContainText("כמעט שם");
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveText("4 מתוך 7");
+    await expect(cardRoot(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(1);
+    await expect(cardRoot(page)).not.toContainText("%");
   });
 
-  // MT:MEH-288:1 — drift D3: the "red" state does not exist; the critical case is yellow.
-  test("a profile missing city, coords and contact is NOT red — the dead red keys never render", async ({ page }) => {
+  // MT:MEH-288:1 — the dead red keys still never render.
+  test("a profile missing city, coords and contact shows no red headline", async ({ page }) => {
     await openOverview(page, profile({ city: null, locations: [], phone: null, whatsapp: null, primary_contact_method: null }));
     await expect(cardRoot(page)).not.toContainText("עוד כמה פרטים חשובים ואתם באוויר");
-    await expect(cardRoot(page)).not.toContainText("חסר פרטים קריטיים");
-    await expect(cardRoot(page)).toContainText(/העמוד שלך \d+% מוכן/);
+    await expect(cardRoot(page).getByRole("heading", { level: 2 })).toHaveText("לשפר את העמוד");
   });
 
-  // MT:MEH-288:6 — a11y: progressbar value + CTA name.
-  test("the ring is a progressbar with the percentage, and the CTA has its own name", async ({ page }) => {
+  // MT:MEH-288:6 — a11y: the open row's action is a named link to its editor.
+  test("the open row has one action link «להשלמה» to its editor", async ({ page }) => {
     await openOverview(page, profile({ images: [] }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
-    await expect(ring(page)).toHaveAttribute("aria-label", "השלמת העמוד: 86%");
-    await expect(cardRoot(page).getByRole("link", { name: "להשלמת העמוד שלך" })).toBeVisible();
+    const cta = cardRoot(page).getByTestId("completeness-open-cta-image");
+    await expect(cta).toHaveText("להשלמה");
+    await expect(cta).toHaveAttribute("href", /#profile-images$/);
   });
 
   // MT:MEH-1106:4 — drift D2: the threshold is 1, not 3.
   test("products: zero is a todo, one is done", async ({ page }) => {
     await openOverview(page, profile({ products: [] }));
-    await expect(cardRoot(page).getByTestId("completeness-chip-products")).toBeVisible();
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
+    await expect(cardRoot(page).getByTestId("completeness-open-products")).toBeVisible();
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
     // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
@@ -479,9 +481,9 @@ test.describe("overview — completeness card", () => {
   test("a delivery-only business completes the location step through its delivery areas", async ({ page }) => {
     await openOverview(page, profile({ has_physical_location: false, offers_delivery: true, delivery_nationwide: true, locations: [] }));
     // Only `hours` can be missing now (it reads the primary location), so 6/7.
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
-    const locationRow = checklist(page).getByRole("listitem").filter({ has: page.getByTestId("completeness-chip-location") });
-    await expect(locationRow).toHaveCount(1);
+    await expect(cardRoot(page).getByTestId("completeness-counter")).toHaveText("6 מתוך 7");
+    const locationRow = cardRoot(page).getByTestId("completeness-row-location");
+    await expect(locationRow).toHaveAttribute("data-done", "true");
     await expect(locationRow.locator("a")).toHaveAttribute("href", /#locations$/);
   });
 });

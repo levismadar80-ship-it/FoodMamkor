@@ -1,0 +1,1068 @@
+// MEH-3540: part 1 of 2 of the former RegisterProducerClient.test.jsx, split mechanically by
+// top-level describe block (no test body changed). Shared fixtures and helpers:
+// the setup above the first describe is repeated in each part on purpose —
+// vi.mock and the top-level hooks only apply to the file they are written in.
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
+import api from "@/lib/api";
+import homes from "@/lib/signup-field-homes.json";
+import { ANCHOR_TO_KEY } from "@/lib/dashboard-edit-anchors";
+
+// MEH-866: wizard coverage for the B/C/D wirings that shipped with zero tests —
+// 5-frame nav (MEH-847), city/address payload (MEH-853), short_description
+// tagline payload + char-count (MEH-860). Layer 1 of 2 (vitest, runs green
+// locally). The rendered flow is covered by 18-producer-register-wizard.spec.ts
+// (Playwright, verify-on-preview — MEH-360). NO overlap with MEH-830's
+// CategorySelector.test.jsx (the selector is mocked here, not under test).
+
+// next-intl: no scope is used by the component (useTranslations()), so t(key)
+// returns the literal key path — assertions key off the i18n KEY, not copy.
+// MEH-1808: interpolation values are appended to the key so a test can assert
+// WHAT was substituted, not merely that some string rendered. Keys called
+// without values are byte-identical to before, so every pre-existing assertion
+// is untouched — verified: no test in this file asserts on a value-carrying key.
+// MEH-2200: the collection notice calls t.rich(), which this mock did not
+// expose — 30 tests here crashed on `t.rich is not a function` the moment the
+// notice landed on the STORY frame. `.rich` renders the key path AND invokes
+// every tag callback, so key-based assertions below are byte-identical while
+// the real <Link>/<a> nodes still mount.
+vi.mock("next-intl", () => ({
+  useTranslations: (scope) => {
+    const t = (key, values) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return values ? `${path} ${Object.values(values).join(" ")}` : path;
+    };
+    t.rich = (key, tags = {}) => {
+      const path = scope ? `${scope}.${key}` : key;
+      return [
+        path,
+        ...Object.entries(tags).map(([name, render]) => (
+          <span key={name}>{render(name)}</span>
+        )),
+      ];
+    };
+    return t;
+  },
+}));
+
+// The component reads useRouter + useSearchParams (Suspense-wrapped body).
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+// MEH-1285: terms/privacy links now use Link from @/i18n/navigation
+// (locale-aware); stub it so next-intl's createNavigation isn't loaded
+// under jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+}));
+
+// Anonymous (non-upgrade) flow by default: user null, auth resolved.
+// MEH-994: authState is a mutable ref so the pre-flight upgrade-variant test
+// can flip `user` without a second mock module (reset in beforeEach).
+const refreshUser = vi.fn();
+const authState = { user: null, loading: false };
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => ({ user: authState.user, loading: authState.loading, refreshUser }),
+}));
+
+vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+
+// CitySearch stub — emits a string via onChange (MEH-853 contract), so the test
+// can set `city` without the real /cities fetch. Mirrors ModalFocusReturn:62.
+// MEH-2241 chunk B: the real component also emits `{ known }` (chunk A
+// contract) and the wizard now gates on it, so the stub carries the verdict:
+// every town is known EXCEPT the one sentinel below, which stands in for
+// "typed, 0 suggestions, never picked" — the case C the card measured.
+// Tests that fill "תל אביב" are therefore unaffected.
+const FREE_TEXT_TOWN = "עיירה שאינה ברשימה";
+vi.mock("@/components/CitySearch", () => ({
+  default: ({ value, onChange, onKnownChange, id, "aria-invalid": ariaInvalid }) => (
+    <input
+      data-testid="city"
+      id={id}
+      aria-invalid={ariaInvalid}
+      value={value || ""}
+      // Literal, not the constant: vi.mock() is hoisted above `const
+      // FREE_TEXT_TOWN`, so the factory cannot reference it. MUST MATCH
+      // FREE_TEXT_TOWN — the guard test below fails if the two drift.
+      onChange={(e) => onChange(e.target.value, { known: e.target.value !== "עיירה שאינה ברשימה" })}
+      // The async half: a test can flip the verdict for the current value
+      // without re-emitting it (the real component fires this after a late
+      // /cities response). Exposed as a button so no fetch is simulated.
+      data-has-known-change={onKnownChange ? "1" : "0"}
+      onBlur={() => onKnownChange && onKnownChange(true)}
+      // …and the reverse flip (a late response REVOKING a match) rides
+      // double-click, so both directions of the async verdict are drivable.
+      onDoubleClick={() => onKnownChange && onKnownChange(false)}
+    />
+  ),
+}));
+
+// CategorySelector stub — clicking selects id 1 (non-agricultural name below →
+// no farmer declaration). Not under test (MEH-830 owns the real component).
+vi.mock("@/components/CategorySelector", () => ({
+  default: ({ onChange }) => (
+    <button type="button" data-testid="pick-category" onClick={() => onChange(1)}>
+      category
+    </button>
+  ),
+}));
+
+// MEH-3074: the STORY-step preview mounts the real ProducerCard. Its own
+// behaviour is covered in ProducerCard.test.jsx; here only the producer object
+// the wizard hands it crosses the boundary.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ producer }) => (
+    <div data-testid="preview-card" data-producer={JSON.stringify(producer)} />
+  ),
+}));
+
+// OAuth widget has GSI side effects + is frozen — stub it out.
+vi.mock("@/components/ProducerOAuthButtons", () => ({ default: () => <div data-testid="oauth" /> }));
+
+// MEH-1808: MiniMap pulls in Leaflet, which needs a real window/canvas. The
+// component under test here is the register step's STATE MACHINE — which of the
+// three address states renders — so the map is stubbed down to the two props
+// that carry meaning across the boundary. MiniMap's own behaviour (including
+// that these two props exist and default correctly) is pinned separately in
+// MiniMap.test.jsx.
+vi.mock("@/components/MiniMap", () => ({
+  // MEH-2182: the stub surfaces `draggableMarker` and exposes a button that
+  // fires `onMarkerDragEnd`, so a test can drive the drag deterministically.
+  // Leaflet's real drag is not the subject here — what the wizard DOES with the
+  // resulting coordinates is. The prop passthrough itself is asserted against
+  // the real component in MiniMap.test.jsx.
+  default: ({ lat, lng, zoom, showNavigation, draggableMarker, onMarkerDragEnd }) => (
+    <div
+      data-testid="mini-map"
+      data-lat={String(lat)}
+      data-lng={String(lng)}
+      data-zoom={String(zoom)}
+      data-show-navigation={String(showNavigation)}
+      data-draggable-marker={String(draggableMarker)}
+    >
+      {/* MEH-2182: mirrors the real component, which binds `dragend` ONLY when
+          `draggableMarker` is set — so a consumer that stops opting in loses
+          the affordance here too, and every test that drags goes red instead of
+          quietly clicking a no-op button. */}
+      {draggableMarker && onMarkerDragEnd ? (
+        <button
+          type="button"
+          data-testid="mini-map-drag-pin"
+          onClick={() => onMarkerDragEnd({ lat: 32.1111, lng: 34.2222 })}
+        >
+          drag
+        </button>
+      ) : null}
+    </div>
+  ),
+}));
+
+// AddressSearch is stubbed so a test can drive BOTH paths deterministically:
+// free typing (onChange only — no coordinates) and picking a suggestion
+// (onSelect with a full payload). The real component's network debounce is not
+// under test here; its contract is AddressSearch.jsx:39.
+vi.mock("@/components/AddressSearch", () => ({
+  // MEH-2181: `city` is surfaced as a data attribute so a test can assert the
+  // wizard opts into city-scoped lookup. The real scoping is proven at the
+  // provider boundary in places.test.js; this only pins the wiring.
+  default: ({ value, onChange, onSelect, inputTestId, id, placeholder, city }) => (
+    <div data-testid="address-search-mock" data-city={city ?? ""}>
+      <input
+        id={id}
+        data-testid={inputTestId}
+        placeholder={placeholder}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        data-testid="address-pick"
+        onClick={() =>
+          onSelect({
+            street: "דרך שרה",
+            city: "זכרון יעקב",
+            displayName: "דרך שרה, זכרון יעקב",
+            lat: 32.5731,
+            lng: 34.9512,
+          })
+        }
+      >
+        pick
+      </button>
+      {/* A second suggestion in a DIFFERENT town — the case self-QA caught. */}
+      <button
+        type="button"
+        data-testid="address-pick-other-town"
+        onClick={() =>
+          onSelect({
+            street: "דרך שרה אהרונסון",
+            city: "חיפה",
+            displayName: "דרך שרה אהרונסון, חיפה",
+            lat: 32.794,
+            lng: 34.9896,
+          })
+        }
+      >
+        pick other
+      </button>
+    </div>
+  ),
+}));
+
+const K = "auth.register.producer";
+
+// MEH-2138 chunk F: jsdom DEFINES `window.scrollTo`, but its body only logs
+// "Not implemented: Window's scrollTo() method" — so once STEP.CONFIRM scrolls
+// to the top, EVERY test in this file that reaches CONFIRM prints that error
+// (measured: 0 before the effect, 14 after). Replaced once, at module scope, so
+// no test stacks a spy on a spy; `vi.clearAllMocks()` in beforeEach resets its
+// history between tests. Environment shim, not a behavioural mock — the
+// MEH-729 class already established in __tests__/setup.js. Scoped to this file
+// rather than added to that setup because this is the only component that
+// calls it, and a global override could mask a future assertion elsewhere.
+const scrollToSpy = vi.fn();
+window.scrollTo = scrollToSpy;
+const ph = (key) => screen.getByPlaceholderText(`${K}.fields.${key}`);
+const nextBtn = () => screen.getByText(`${K}.actions.next`);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  // GET /categories — one license-neutral, non-agricultural category (no farmer
+  // declaration, and not in LICENSE_REQUIRED_CATEGORIES) so the shared walk
+  // reaches STORY without tripping the MEH-952 license gate. The license-required
+  // path is exercised in its own describe block below with an overriding mock.
+  api.get.mockResolvedValue({ data: [{ id: 1, name: "ביצים" }] });
+  // Non-upgrade ack: no access_token in the response → CONFIRM (non-upgrade).
+  api.post.mockResolvedValue({ data: {} });
+  authState.user = null; // MEH-994: upgrade-variant test mutates this
+  // MEH-1814: clearAllMocks() clears call history but NOT implementations, so
+  // the role-flipping refreshUser below would leak into every later test in
+  // this file. Reset restores the inert default (returns undefined).
+  refreshUser.mockReset();
+  try { localStorage.clear(); } catch { /* jsdom */ }
+});
+
+// MEH-994: the wizard now opens on the pre-flight screen. Real click-through
+// of "מתחילים" (not an auto-skip-under-test flag) so every walk exercises the
+// production entry path before reaching frame 01.
+async function renderWizard() {
+  render(<RegisterProducerClient />);
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
+}
+
+// Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
+async function fillAccountToDetails() {
+  fireEvent.change(ph("name"), { target: { value: "טסט" } });
+  fireEvent.change(ph("email"), { target: { value: "t@example.com" } });
+  fireEvent.change(ph("password"), { target: { value: "Abcdefgh1234" } }); // ≥12 (passwordValid)
+  fireEvent.click(nextBtn());
+  await screen.findByText(`${K}.steps.business.title`); // DETAILS marker
+}
+
+async function fillDetailsToStory() {
+  fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+  fireEvent.change(ph("phone"), { target: { value: "0501234567" } }); // valid IL
+  fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+  // MEH-2640: step 2's one question is required and starts unanswered, so a
+  // traversal that does not answer it no longer leaves DETAILS.
+  fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+  fireEvent.click(nextBtn()); // → CATEGORY
+  fireEvent.click(await screen.findByTestId("pick-category")); // select category id 1
+  // MEH-3656: a business submits from CATEGORY — the story step left its path.
+  await screen.findByTestId("register-category-submit"); // submitting-frame marker
+}
+
+
+// MEH-2640: four describe blocks left this file with the UI they tested —
+// «address location confirmation» (MEH-1808), «draggable confirmation pin»
+// (MEH-2182), «address/city mismatch notice» (MEH-2181) and «multi-location
+// intake toggle» (MEH-1422), 20 cells in all.
+//
+// They are DELETED, not relaxed, and not moved: step 2 no longer collects an
+// address or a second sales point, so there is nothing here left to assert.
+// The behaviour itself did not disappear — it has one owner now, the dashboard
+// editor, which carries its own coverage: LocationsEditor.test.jsx (32 cells)
+// and AddressSearch.test.jsx (14). Checked before deleting; had that coverage
+// been absent, this would have been a capability dropped rather than moved.
+
+describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => {
+  it("ACCOUNT validation gates the first advance (invalid email blocks)", async () => {
+    await renderWizard();
+    expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
+    fireEvent.change(ph("name"), { target: { value: "טסט" } });
+    fireEvent.change(ph("email"), { target: { value: "not-an-email" } });
+    fireEvent.change(ph("password"), { target: { value: "Abcdefgh1234" } });
+    fireEvent.click(nextBtn());
+    // Still on ACCOUNT — invalid email surfaces the validation message.
+    expect(screen.getByText(`${K}.steps.account.title`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.validation.email_invalid`)).toBeInTheDocument();
+  });
+
+  it("advances ACCOUNT → DETAILS → CATEGORY (the submitting frame), and back DETAILS → ACCOUNT", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.getByText(`${K}.steps.business.title`)).toBeInTheDocument(); // DETAILS
+    // back → ACCOUNT
+    fireEvent.click(screen.getByText(`${K}.actions.back`));
+    expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
+    // forward again, all the way to the last frame
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // MEH-3656: CATEGORY is the last business frame — it carries «הצטרפו»,
+    // and no story frame follows it.
+    expect(screen.getByText(`${K}.actions.submit`)).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.actions.next`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.story_card.title`)).not.toBeInTheDocument();
+  });
+
+  it("submit body carries city, fulfilment booleans (+ producer_name, category_ids, declaration_accepted) on the new-registration path", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // declarations gate: ToS + binding declaration (non-agri → no farmer checkbox)
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [url, body] = api.post.mock.calls[0];
+    expect(url).toBe("/auth/register/producer");
+    // Chunk C + D fields ride along, plus the pre-existing frozen fields.
+    expect(body).toMatchObject({
+      producer_name: "העסק שלי",
+      city: "תל אביב",
+      // MEH-2640: `address` is no longer collected at registration, so it is
+      // no longer asserted here. The fulfilment pair that REPLACED the four
+      // delivery controls is asserted instead — the helper picks "onsite".
+      has_physical_location: true,
+      offers_delivery: false,
+      category_ids: [1],
+      // MEH-3656: the story and attribution are no longer asked at signup;
+      // they reach the server empty, which it accepts (schemas registration.py).
+      short_description: "",
+      referral_source: "",
+    });
+    expect(body).toHaveProperty("declaration_accepted", true);
+    // MEH-2923: the grower line travels on its own; no agri category here.
+    expect(body).toHaveProperty("farmer_declaration_accepted", false);
+    // Non-upgrade path also carries the account fields.
+    expect(body).toMatchObject({ email: "t@example.com", name: "טסט" });
+  });
+});
+
+// MEH-886: assert the 4 MEH-883 error-state a11y wirings so a silent ARIA-drop
+// is caught — phone aria-invalid + aria-describedby (inline as-you-type), and
+// role="alert" on the ACCOUNT stepError + STORY submit error (form-level).
+describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
+  it("ACCOUNT validation error is exposed as role=alert", async () => {
+    await renderWizard();
+    await screen.findByText(`${K}.steps.account.title`);
+    fireEvent.change(ph("name"), { target: { value: "טסט" } });
+    fireEvent.change(ph("email"), { target: { value: "not-an-email" } });
+    fireEvent.change(ph("password"), { target: { value: "Abcdefgh1234" } });
+    fireEvent.click(nextBtn());
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.email_invalid`);
+  });
+
+  it("phone field exposes aria-invalid + aria-describedby only when invalid", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    const phone = screen.getByTestId("register-details-phone");
+    // valid number → no error wiring
+    fireEvent.change(phone, { target: { value: "0501234567" } });
+    expect(phone).not.toHaveAttribute("aria-invalid");
+    expect(phone).not.toHaveAttribute("aria-describedby");
+    // invalid number → aria-invalid="true" + describedby → the error id.
+    // (phone validation is synchronous on onChange — no debounce — so the
+    // assertions below need no waitFor; mirrors the production RPC condition.)
+    fireEvent.change(phone, { target: { value: "12" } });
+    expect(phone).toHaveAttribute("aria-invalid", "true");
+    expect(phone).toHaveAttribute("aria-describedby", "register-phone-error");
+    expect(document.getElementById("register-phone-error")).toBeInTheDocument();
+  });
+
+  it("submit validation error on the last frame is exposed as role=alert", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // submit without checking the declaration boxes → blocked at the ToS gate
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.terms_required`);
+    expect(api.post).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-3656: the MEH-994 pre-flight screen is gone — the wizard opens on frame 01.
+// Its organizer door (MEH-2917) moved onto the account frame.
+describe("RegisterProducerClient — no pre-flight screen (MEH-3656)", () => {
+  it("opens straight on the account frame, with no pre-flight screen", async () => {
+    render(<RegisterProducerClient />);
+    expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight-start")).not.toBeInTheDocument();
+    // Key-level: any pre-flight copy except the organizer door, under any testid.
+    expect(document.body.textContent).not.toMatch(/preflight\.(?!organizer_link)/);
+  });
+
+  it("keeps the organizer door on the account frame, as a link to the organizer route", async () => {
+    render(<RegisterProducerClient />);
+    await screen.findByText(`${K}.steps.account.title`);
+    const link = screen.getByTestId("register-preflight-organizer-link");
+    expect(link.getAttribute("href")).toBe("/register/organizer");
+    expect(link.textContent).toBe(`${K}.preflight.organizer_link`);
+  });
+
+  it("drops the organizer door once she leaves the account frame", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-preflight-organizer-link")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1176 F10 — the MEH-328 didUpgrade CONFIRM split had zero coverage,
+// exactly the branch the anti-enumeration smoke checklist calls LOAD-BEARING
+// (Test D failure signal). didUpgrade is derived from the RESPONSE SHAPE
+// ("access_token" in res.data), not the frontend isUpgrade flag — the third
+// test pins that guard (token expired between mount and submit → backend
+// takes the non-upgrade path → inbox screen, never a false "הצטרפת!").
+describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)", () => {
+  async function fillStoryAndSubmit() {
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  }
+
+  it("non-upgrade ack (no access_token) renders the inbox-check screen, not הצטרפת!", async () => {
+    api.post.mockResolvedValue({ data: {} }); // RegisterAck — anti-enumeration
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
+    // The upgrade success UI must NOT leak into the anonymous path.
+    expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
+    // MEH-2920: this screen now carries its own «ללוח הבקרה» LINK (to /login),
+    // so the label is no longer the tell. The upgrade screen's token-backed
+    // BUTTON is — it must still be absent here.
+    expect(screen.queryByTestId("register-success-dashboard-cta")).not.toBeInTheDocument();
+    // No token was returned, so none may be stored and auth isn't refreshed.
+    expect(localStorage.getItem("token")).toBeNull();
+    expect(refreshUser).not.toHaveBeenCalled();
+  });
+
+  it("upgrade response (access_token present) renders הצטרפת! with the dashboard CTA and stores the token", async () => {
+    authState.user = { email: "p@example.com" }; // upgrade path skips ACCOUNT
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`); // auto-advanced to DETAILS
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByText(`${K}.success.title`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.cta`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.body`)).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.inbox_title`)).not.toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBe("tok-123");
+    expect(refreshUser).toHaveBeenCalled();
+  });
+
+  // MEH-1814: the regression test. The two tests above pass on the BROKEN code
+  // too, because `refreshUser` is a bare vi.fn() that never mutates authState —
+  // so user.role never becomes "producer" and the MEH-1489 gate never fires.
+  // That is a green with two causes (.claude/rules/testing.md): it reports
+  // "success screen renders" when what it actually proves is "the role never
+  // flipped". This test removes the second cause by making refreshUser do what
+  // the real one does — re-read the upgraded role into context.
+  it("upgrade success survives the role flip to producer — gate must not replace it (MEH-1814)", async () => {
+    authState.user = { email: "p@example.com" };
+    // The real refreshUser() re-reads /auth/me, which after a successful
+    // upgrade returns role: "producer". Reproduce that here.
+    refreshUser.mockImplementation(async () => {
+      authState.user = { email: "p@example.com", role: "producer" };
+    });
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    // The success screen owns the render...
+    expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.title`)).toBeInTheDocument();
+    expect(screen.getByTestId("register-success-dashboard-cta")).toBeInTheDocument();
+    // ...and the "כבר יש לך עמוד עסק" gate is nowhere on it.
+    expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.gate.producer_heading`)).not.toBeInTheDocument();
+  });
+
+  // MEH-1814: the other half of the invariant — `submitted` must not disarm the
+  // gate for a genuine mount-time visit. Without this, a fix that simply deleted
+  // the gate would also pass the test above.
+  it("existing producer visiting /register/producer still hits the gate at mount (MEH-1814)", async () => {
+    authState.user = { email: "p@example.com", role: "producer" };
+    // NOT renderWizard() — that helper clicks the pre-flight CTA, and the whole
+    // point is that the gate short-circuits before any pre-flight renders.
+    render(<RegisterProducerClient />);
+
+    expect(await screen.findByTestId("register-producer-gate")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.producer_heading`)).toBeInTheDocument();
+    // The wizard/preflight tree must be unreachable — no form to fill.
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-hero-heading")).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  // MEH-2136: the success screen's ACTION HIERARCHY, not merely its contents.
+  // Every assertion above passes on the pre-MEH-2136 markup too — they only ask
+  // whether the CTA exists, and it always did (as an outline button two blocks
+  // below the founder signature, tied in weight with the WhatsApp share). What
+  // Sapir hit was ordering and weight, so that is what this pins:
+  //   green next-box → dashboard CTA (primary solid) → share (secondary) →
+  //   signature → tier_trust
+  // Demonstrated failing against the old markup: `share before signature` and
+  // both class assertions go red (the old CTA was `border-2 … bg-transparent`
+  // and signature/tier_trust sat ABOVE the button row).
+  it("success screen puts the primary dashboard CTA directly under the next-steps box (MEH-2136)", async () => {
+    authState.user = { email: "p@example.com" };
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+    await screen.findByTestId("register-success-pending");
+
+    const nextBox = screen.getByText(`${K}.success.next`);
+    const cta = screen.getByTestId("register-success-dashboard-cta");
+    const share = screen.getByText(`${K}.success.share_cta`).closest("button");
+    const signature = screen.getByText(`${K}.success.signature`);
+    const tierTrust = screen.getByText(`${K}.success.tier_trust`);
+
+    // `a` precedes `b` in document order.
+    const precedes = (a, b) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(precedes(nextBox, cta), "next-steps box before the dashboard CTA").toBe(true);
+    expect(precedes(cta, share), "dashboard CTA before the share").toBe(true);
+    expect(precedes(share, signature), "share before the founder signature").toBe(true);
+    expect(precedes(signature, tierTrust), "signature before the tier-trust line").toBe(true);
+
+    // Weight: the CTA is the only solid button; share stays outline.
+    expect(cta.className).toContain("bg-primary-dark");
+    expect(cta.className).toContain("text-white");
+    expect(cta.className).not.toContain("bg-transparent");
+    // Full-width on mobile (the stack is `flex-col`, capped at sm+).
+    expect(cta.className).toContain("w-full");
+    // MEH-2827 PR 8: share is the generic outlined button, not WhatsApp-green.
+    expect(share.className).toContain("border-border");
+    expect(share.className).not.toContain("bg-primary");
+    expect(share.className).toContain("w-full");
+    // MEH-2827 PR 8: the phone's share sheet, not a wa.me link.
+    expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
+    const nativeShare = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "share", { configurable: true, value: nativeShare });
+    fireEvent.click(share);
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
+    // t() returns the key path here (see the mock above), so the message has
+    // no link: the whole message is the text and no `url` is invented.
+    expect(nativeShare.mock.calls[0][0]).toEqual({ text: "auth.register.producer.success.share_msg" });
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+  });
+
+  it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
+    authState.user = { email: "p@example.com" }; // frontend thinks upgrade…
+    api.post.mockResolvedValue({ data: {} }); // …backend took the non-upgrade path
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    // MEH-1814: was `success.heading`, which no longer renders anywhere — the
+    // assertion would have been vacuously true against any implementation.
+    expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+});
+
+// MEH-1422 (MEH-1388 chunk 4b): the informational multi-location intake toggle
+// on DETAILS. UI-only: its value must never leak into the
+// /auth/register/producer body (no backend field). The next-intl mock returns
+// key paths, so assertions key off the locked-copy i18n KEYS, not the Hebrew
+// strings.
+//
+// MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
+// the tick it answered a question the owner had already decided.
+
+// MEH-2183: four locked copy lines, one per wizard surface. These assert
+// PRESENCE at the right step — the VALUES are locked in he.json/en.json and
+// t() is mocked to the key path here, so this pins placement, not wording.
+describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
+  // MEH-3663 (Sapir 22/11): ACCOUNT opens on the sign-in options — the
+  // «אפשר לעצור…» line and the «כל בית עסק עובר אישור אישי» card are gone.
+  // The frame itself is asserted first, so a missing frame cannot pass this.
+  it("ACCOUNT carries neither the pause line nor the approval card", async () => {
+    await renderWizard();
+    expect(screen.getByTestId("register-frame-account")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-account-duration-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-account-reassurance")).not.toBeInTheDocument();
+  });
+
+  // MEH-3656: the free-forever line left DETAILS with the other helper lines
+  // («חינם להצטרף» stays in the page subtitle). Absence is asserted so it does
+  // not creep back onto the crowded frame.
+  it("DETAILS no longer carries the free-forever hint or its helper notes", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-details-free-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-pricing-link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-fulfilment-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-delivery-note")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-fulfilment-whatsapp-note")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-external-order")).not.toBeInTheDocument();
+    // The testids above no longer exist anywhere, so they alone would stay green
+    // if the copy came back under a new one. The keys are what the mocked t()
+    // renders, so this is the check that can go red.
+    expect(document.body.textContent).not.toMatch(
+      /fields\.(free_hint|multi_hint|areas_note|hours_hint|whatsapp_note|external_order_form)/,
+    );
+  });
+
+  // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy
+  // ruling deleted it (it overlapped photo_disclosure, which stays), so the
+  // assertion is inverted rather than dropped — a deletion with no guard is one
+  // careless re-add away from coming back. Asserting absence discriminates: put
+  // the <p> back and this reddens.
+  it("the last frame has no photo-next hint (deleted, MEH-2185), and the submit hint sits above the button", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.queryByTestId("register-story-photo-hint")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-submit-next-hint")).toHaveTextContent(
+      `${K}.submit_next_hint`,
+    );
+  });
+
+  it("the submit hint is NOT on the earlier steps (no duplication)", async () => {
+    await renderWizard();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+    await fillAccountToDetails();
+    expect(screen.queryByTestId("register-submit-next-hint")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-3697: the MEH-1471 «referral source» question came back to the business
+// path, on its last step (CATEGORY). MEH-3656 had dropped it with the story
+// step and no dashboard screen asked it (Sapir 22/11). Still optional.
+describe("RegisterProducerClient — attribution question on the last step (MEH-3697)", () => {
+  it("a business sees the dropdown on the submitting frame and its pick is posted", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    const select = screen.getByTestId("register-referral-source");
+    fireEvent.change(select, { target: { value: "other" } });
+    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
+      target: { value: "חברה מהשוק" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1].referral_source).toBe("other");
+    expect(api.post.mock.calls[0][1].referral_source_other).toBe("חברה מהשוק");
+  });
+
+  it("left empty, the submit still goes through with an empty source (optional)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-referral-source")).toBeInTheDocument();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1].referral_source).toBe("");
+  });
+});
+
+describe("RegisterProducerClient — no licence field at signup (Sapir 22/11)", () => {
+  // The licence number moved to the dashboard (anchor #license). A business in
+  // a licence-required category signs up without it and is sent as pending, so
+  // the backend's register-time 422 (ensure_license_for_categories) is skipped.
+  async function reachCategoryAndPick() {
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn()); // → CATEGORY
+    fireEvent.click(await screen.findByTestId("pick-category")); // id 1
+  }
+
+  async function submit() {
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByTestId("register-category-submit"));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    return api.post.mock.calls[0][1];
+  }
+
+  it("a licence-required category shows no licence input and submits as pending", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await reachCategoryAndPick();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /license/i })).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_required_label`)).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_pending_optin_label`)).toBeNull();
+    const body = await submit();
+    expect(body).toMatchObject({ license_pending: true, producer_license_number: "" });
+  });
+
+  it("a category with no licence requirement is not sent as pending (control)", async () => {
+    await renderWizard(); // default fixture: «ביצים», no licence
+    await reachCategoryAndPick();
+    const body = await submit();
+    expect(body.license_pending).toBe(false);
+  });
+});
+
+// MEH-1807: cross-step validation. Before this, producer_name / phone /
+// category_ids were checked ONLY in the submit handler, so a blank business
+// name surfaced as "יש למלא שם עסק" next to "הצטרפו" on STORY — two frames from
+// the field, with no navigation, no focus and no marking on the field itself.
+//
+// Failing-by-construction (workflow: every new guard test is shown failing, and
+// the construction has to DISCRIMINATE — the pre-1807 code must fail it):
+//  · revert the DETAILS gate to `onClick={() => setStep(STEP.CATEGORY)}` and
+//    tests 1+2 fail on `register-frame-details` being gone (the wizard advanced
+//    with an empty name). The old code could not pass them: it never blocked.
+//  · revert the submit gate to the three `setError(...)` returns and tests 4+5
+//    fail on `register-frame-details` never appearing — the old code painted a
+//    message and left `step` on STORY, which is the reported defect verbatim.
+//  · drop the `submitBounced` guard and test 6 fails: the summary would appear
+//    on a same-step block, where nobody was moved.
+// None of these assertions can be satisfied by rendering a message alone, which
+// is exactly what the pre-1807 behaviour did.
+describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
+  // Walk to DETAILS and fill everything EXCEPT the business name.
+  async function reachDetailsWithoutName() {
+    await fillAccountToDetails();
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+  }
+
+  it("blocks the DETAILS advance when the business name is empty, inline + focused", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+
+    // did NOT advance
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    // inline at the field, via the ui/Input error slot (MEH-602 a11y wiring)
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    const describedBy = nameInput.getAttribute("aria-describedby");
+    expect(document.getElementById(describedBy)).toHaveTextContent(
+      `${K}.validation.producer_name_required`,
+    );
+    // focus landed on the offending field
+    expect(document.activeElement).toBe(nameInput);
+  });
+
+  it("clears the inline error as soon as the field is corrected (Baymard)", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(nameInput, { target: { value: "העסק שלי" } });
+    expect(nameInput).not.toHaveAttribute("aria-invalid");
+    // and the advance now succeeds
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject is what decides the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("blocks the CATEGORY advance when nothing is selected, at the selector", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    // MEH-2015 chunk B: city joined the DETAILS-step cross-step gate — fill it
+    // so this test's own subject (the CATEGORY selector) is what blocks the
+    // advance, not an unrelated empty city.
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject (the CATEGORY selector) is what blocks the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    await screen.findByTestId("register-frame-category");
+    // advance with zero categories picked
+    fireEvent.click(screen.getByTestId("register-category-submit"));
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-category-error")).toHaveTextContent(
+      `${K}.validation.category_required`,
+    );
+    expect(document.activeElement).toBe(
+      document.getElementById("register-category-selector"),
+    );
+    // picking one clears it and unblocks (Baymard on-change clear)
+    fireEvent.click(screen.getByTestId("pick-category"));
+    expect(screen.queryByTestId("register-category-error")).not.toBeInTheDocument();
+  });
+
+  // The reachable route to a submit bounce. With the per-step gates in place the
+  // seller cannot WALK to STORY with a blank earlier field, so the submit check
+  // is a backstop — but it is not a dead branch: `restoreDraft` merges the
+  // stored draft over the live form (RegisterProducerClient.jsx:~294) without
+  // re-running any gate, and the draft key is shared across tabs of the same
+  // origin. A second tab open on the wizard rewrites that key on its own first
+  // keystroke, so tab 1's banner — raised at mount and still on screen through
+  // STORY (`step < STEP.CONFIRM`) — restores a form the seller never typed.
+  // `seedForeignDraft` below is that other tab's write, placed at the moment it
+  // would land; seeding before render only sets up the banner, because this
+  // tab's own setAndSave overwrites the key on every keystroke.
+  const DRAFT_KEY = "producer_registration_draft";
+  const seedForeignDraft = (draft) =>
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+  it("final submit with a blanked earlier field navigates to that step, focuses it, and explains why", async () => {
+    // non-empty city → hasDraftContent() raises the banner at mount
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+
+    // the other tab writes; keys absent from the draft are left untouched
+    seedForeignDraft({ producer_name: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue")); // producer_name → ""
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    // navigated back to the step that owns the field — no request went out
+    expect(api.post).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    // focused, marked, and explained
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(document.activeElement).toBe(nameInput);
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(
+      document.getElementById(nameInput.getAttribute("aria-describedby")),
+    ).toHaveTextContent(`${K}.validation.producer_name_required`);
+    expect(screen.getByTestId("register-submit-gate-notice")).toHaveTextContent(
+      `${K}.validation.cross_step_notice`,
+    );
+    // fixing the field retires the summary too (it is derived, not stored)
+    fireEvent.change(nameInput, { target: { value: "העסק שלי" } });
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+
+  it("two missing fields render the GOV.UK summary list, and land on the first", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // MEH-2915: the second blanked field is `city`, not `phone`. The draft no
+    // longer carries a phone at all — packDraft omits it and parseDraft strips
+    // it on the way back — so a draft can no longer blank one. `city` is the
+    // other cross-step DETAILS field, so the subject of this test (two
+    // missing fields → the summary list, landing on the first) is unchanged.
+    seedForeignDraft({ producer_name: "", city: "" });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await screen.findByTestId("register-frame-details");
+    const notice = screen.getByTestId("register-submit-gate-notice");
+    expect(notice).toHaveTextContent(`${K}.validation.cross_step_summary`);
+    expect(notice).toHaveTextContent(`${K}.validation.producer_name_required`);
+    expect(notice).toHaveTextContent(`${K}.validation.city_required`);
+    // wizard order decides the landing field: producer_name precedes city
+    expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+  });
+
+  // MEH-3656 (fresh review): a business no longer sees the story fields or the
+  // store link, so values restored from an older draft must not be posted —
+  // a 2-letter tagline would 422 on a field she cannot see or fix.
+  // MEH-3697: the referral source is asked on this frame again, so a value
+  // restored from the draft is visible and editable, and it is posted.
+  it("does not post story fields or a store link restored from an older draft", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({
+      city: "חיפה",
+      description: "תיאור ישן",
+      short_description: "אב",
+      external_order_form: "https://shop.example.com",
+      referral_source: "other",
+      referral_source_other: "חברה",
+    });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const body = api.post.mock.calls[0][1];
+    expect(body.description, "description").toBe("");
+    expect(body.short_description, "short_description").toBe("");
+    expect(body.external_order_form, "external_order_form").toBeNull();
+    expect(body.referral_source, "referral_source").toBe("other");
+    expect(body.referral_source_other, "referral_source_other").toBe("חברה");
+  });
+
+  // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
+  // nothing lowered it, so the NEXT same-step block re-raised "הועברתם לשדה"
+  // while nobody had been moved. The state only looked self-clearing because the
+  // render also requires a non-empty fieldErrors, and fixing the field emptied
+  // it — the flag itself survived and the very next per-step block resurrected
+  // the false sentence.
+  it("clears the bounce flag, so a later same-step block does not re-raise the summary", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({ producer_name: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`)); // bounce
+    await screen.findByTestId("register-frame-details");
+    expect(screen.getByTestId("register-submit-gate-notice")).toBeInTheDocument();
+
+    // fix the bounced field, then trip a PER-STEP block on a different one
+    fireEvent.change(screen.getByTestId("register-details-name"), {
+      target: { value: "העסק שלי" },
+    });
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+
+    // blocked at the field, but nobody was navigated — no bounce sentence
+    expect(screen.getByTestId("register-details-phone")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+
+  // A per-step block moves nobody, so the "הועברתם לשדה" summary must NOT appear
+  // there. Without the submitBounced guard this test goes red — the inline error
+  // alone would raise it.
+  it("does not show the bounce summary for a same-step block", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-details-name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1808 — post-select location confirmation on the register address field.
+//
+// Phase 0 turned up a defect wider than the ticket described: picking a
+// suggestion DID produce coordinates (AddressSearch.jsx:39) but the register
+// handler wrote only the address text and the submit body carried no lat/lng at
+// all, so every business registering through the public form landed with NULL
+// coordinates and never appeared on the map — whether or not the seller picked
+// from the list. The backend has accepted and stored both the whole time
+// (schemas.py:549-550, auth.py:515-516). Without the payload fix the two locked
+// strings here would be false, which is why it is in this change and not a
+// follow-up: "✓ המיקום זוהה" would confirm a location thrown away seconds later,
+// and "so your business shows on the map" would promise something the product
+// does not do.
+//
+// Failing-by-construction: revert the onSelect handler to the pre-1808 form
+// (address text only) and tests 1, 2 and 4 go red — no coordinates means no
+// confirmation row, no map, and no lat/lng in the body. Drop the onChange
+// null-out and test 3 goes red, because stale coordinates would keep the
+// confirmation showing for an address the seller has typed over.
+// MEH-2181 — city-scoped address lookup + the soft mismatch notice.
+//
+// The notice is a SOFT signal by design: it never blocks, and it offers no
+// "use {found} instead" control, because MEH-213 forbids a raw provider string
+// from landing in `city` (CitySearch owns that value). These tests pin both
+// halves — that it appears when the towns disagree, and that it stays absent
+// in the three states where it would be noise.
+// MEH-2182 — draggable confirmation pin. The seller, not the geocoder, has the
+// last word on where her gate is. The drag moves the POINT only: the address
+// text must not be rewritten (no reverse-geocode), and nothing new rides the
+// payload.
+//
+// Failing-by-construction, all four measured against this block (65 green at
+// control), and each reddens a DIFFERENT subset — no single edit satisfies them
+// all, which is what makes them evidence rather than decoration:
+//   • drop `draggableMarker` + `onMarkerDragEnd` from the confirm map → 5 red
+//   • drop `setPinAdjusted(false)` from the address onChange       → 1 red (reset)
+//   • render the confirmed line without the `pinAdjusted` branch   → 1 red (swap)
+//   • delete the drag-hint paragraph                                → 1 red (hint)
+
+
+
+// MEH-1815: draft lifecycle across the two response shapes.
+//
+// The non-upgrade 200 is anti-enumeration output (MEH-328): byte-identical
+// whether the email was free or already registered. On a collision the backend
+// discards the entire Producer payload, so that 200 is NOT proof the business
+// was saved — and the wizard used to clear the draft on it anyway, which is the
+// silent data loss. Only a response carrying access_token proves persistence.
+//
+// These assert the observable end state (what is in localStorage after submit),
+// not that a particular line moved — ADR-032 §3.6.
+const DRAFT_KEY = "producer_registration_draft";
+
+// MEH-3699: every field the signup request carries has a home
+// (lib/signup-field-homes.json). This walks the BUSINESS path and checks that
+// each field the registry says is asked at signup is really on one of its
+// frames. A field removed from signup must get a dashboard home in the
+// registry, or this goes red: MEH-3656 removed «מאיפה שמעתם» with no home
+// and nothing noticed (MEH-3697).
+describe("RegisterProducerClient — signup field homes (MEH-3699)", () => {
+  const { fields } = homes;
+  const present = (locator) => {
+    const [kind, value] = locator.split(/:(.*)/s);
+    if (kind === "testid") return screen.queryAllByTestId(value).length > 0;
+    if (kind === "id") return document.getElementById(value) !== null;
+    if (kind === "text") return screen.queryAllByText(value, { exact: false }).length > 0;
+    throw new Error(`unknown locator kind «${kind}» in signup-field-homes.json`);
+  };
+
+  it("every field has at least one home, and every anchor exists in the dashboard", () => {
+    for (const [name, home] of Object.entries(fields)) {
+      const homesOf = ["signup", "dashboard", "shown_with", "system"].filter((k) => home[k]);
+      expect(homesOf.length, `${name} has no home`).toBeGreaterThan(0);
+      if (home.dashboard) expect(ANCHOR_TO_KEY, `${name}: #${home.dashboard}`).toHaveProperty([home.dashboard]);
+      if (home.shown_with) expect(fields[home.shown_with]?.signup, `${name}: shown_with`).toBeTruthy();
+    }
+  });
+
+  it("every field the registry places in signup is on the business path", async () => {
+    const wanted = Object.entries(fields).filter(([, h]) => h.signup);
+    const seen = new Set();
+    const look = () => wanted.forEach(([name, h]) => present(h.signup) && seen.add(name));
+    await renderWizard();
+    look();
+    await fillAccountToDetails();
+    look();
+    await fillDetailsToStory();
+    look();
+    const missing = wanted.map(([n]) => n).filter((n) => !seen.has(n));
+    expect(missing, "asked at signup per the registry, but not on any business frame").toEqual([]);
+  });
+});

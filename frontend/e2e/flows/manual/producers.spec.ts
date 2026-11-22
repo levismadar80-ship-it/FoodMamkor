@@ -189,9 +189,10 @@ function icu(msg: string, count: number): string {
 }
 
 // ── fixtures ────────────────────────────────────────────────────────────────
-// Registry names (lib/category-registry.js): «בשר» carries CATEGORY_STYLES
-// color #c04040 + a glyph; «חלב וגבינות» textColor #3b72ad; «ביצים» has a glyph
-// in CATEGORY_ICONS but NO CATEGORY_STYLES row — the MEH-1452 row-3 case.
+// Registry names (lib/category-registry.js): «בשר» carries the meat group colour
+// #c04040 + a glyph; «חלב וגבינות» and «ביצים» the dairy group tint #3b72ad
+// (MEH-3076: every listed category has a style row now, so the MEH-1452 row-3
+// "no style row" case is covered only by unit tests with an unlisted name).
 // MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
 // matched by name or by the stable slug — so the fixture carries slugs, as
 // CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
@@ -650,8 +651,9 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
   //   (ChipScrollRow.jsx `isCategorySelected`; __tests__/ChipScrollRow.test.jsx
   //   :225). Asserted as the page renders today, against the registry colour.
   // MT:MEH-1452:3 — a category with no CATEGORY_STYLES row: ring AND the
-  //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531;
-  //   it used to keep currentColor before the ✓ replaced the glyph).
+  //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531).
+  //   MEH-3076: no listed category lacks a row any more, so «ביצים» below
+  //   asserts its group (dairy) colour; the fallback case lives in unit tests.
   // MT:MEH-1452:4 — «הכל» has no glyph.
   test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» presses the «חלב וביצים» group in its colour; «הכל» has no glyph", async ({
     page,
@@ -888,11 +890,11 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
       box(first.getByTestId("card-body")),
     ]);
     expect(p.y + p.height, "panel bottom must sit above the strip").toBeLessThanOrEqual(strip.y + 1);
-    // MEH-3321: the strip moved off the photo into the card body, and the
-    // panel now clears the whole body (name, rating, strip) — so it sits just
-    // above the body, over the photo, not just above the strip.
+    // MEH-3508: the strip is back on the photo and is again the panel's
+    // boundary (MEH-1592) — the panel sits just above the strip, over the
+    // photo, so it also clears the whole card body below it.
     expect(p.y + p.height, "panel bottom must sit above the card body").toBeLessThanOrEqual(body.y + 1);
-    expect(body.y - (p.y + p.height), "panel must stay adjacent to its card body").toBeLessThanOrEqual(40);
+    expect(strip.y - (p.y + p.height), "panel must stay adjacent to its badge strip").toBeLessThanOrEqual(40);
     expect(overlaps(p, strip), "panel must not cover the badge strip").toBe(false);
     expect(overlaps(p, name), "panel must not cover the business name").toBe(false);
     expect(overlaps(p, rating), "panel must not cover the rating").toBe(false);

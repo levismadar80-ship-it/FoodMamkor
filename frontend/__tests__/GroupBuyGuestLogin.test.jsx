@@ -1,6 +1,8 @@
 // MEH-2982 — a guest tapping the join button on a group buy goes to /login
 // WITH a redirect back to the group buy. Before the fix it was a bare "/login",
 // so after signing in she landed on "/" and had to find the group buy again.
+// MEH-3679: the tap now opens the shared sign-in window first; its «היכנסו»
+// link carries the same redirect (the Google path: GroupBuyJoinSignInInPlace).
 // Mocks copied from GroupBuyCommit422.test.jsx; useAuth answers "signed out".
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -28,7 +30,11 @@ vi.mock("@/lib/auth-context", () => ({
 
 vi.mock("next-intl", () => ({
   useLocale: () => "he",
-  useTranslations: () => (key) => key,
+  useTranslations: () => {
+    const t = (key) => key;
+    t.rich = (key) => key;
+    return t;
+  },
 }));
 
 vi.mock("next/link", () => ({
@@ -40,7 +46,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/format-date", () => ({
-  formatEventDate: () => "1 בינואר 2099",
+  formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099",
 }));
 
 // An open, joinable group buy with a far-future deadline.
@@ -72,8 +78,8 @@ describe("GroupBuyDetailClient — guest join (MEH-2982)", () => {
     render(<GroupBuyDetailClient id="gb-1" />);
     const submit = await screen.findByRole("button", { name: "submit_login" });
     fireEvent.click(submit);
-    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
-    expect(mockPush).toHaveBeenCalledWith("/login?redirect=%2Fgroup-buys%2Fgb-1");
+    const login = await screen.findByRole("link", { name: "login_cta" });
+    expect(login).toHaveAttribute("href", "/login?redirect=%2Fgroup-buys%2Fgb-1");
   });
 
   it("an English reader goes to the English login page", async () => {
@@ -82,8 +88,9 @@ describe("GroupBuyDetailClient — guest join (MEH-2982)", () => {
     render(<GroupBuyDetailClient id="gb-1" />);
     const [submit] = await screen.findAllByRole("button", { name: "submit_login" });
     fireEvent.click(submit);
-    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
-    expect(mockPush).toHaveBeenCalledWith("/en/login?redirect=%2Fen%2Fgroup-buys%2Fgb-1");
+    // The locale prefix comes from @/i18n/navigation's Link (mocked here).
+    const login = await screen.findByRole("link", { name: "login_cta" });
+    expect(login).toHaveAttribute("href", "/login?redirect=%2Fen%2Fgroup-buys%2Fgb-1");
     window.history.pushState({}, "", "/");
   });
 });
@@ -98,7 +105,7 @@ describe("GroupBuyDetailClient — guest quantity kept across sign-in (MEH-3130)
     const qty = await screen.findByLabelText("quantity_label");
     fireEvent.change(qty, { target: { value: "3" } });
     fireEvent.click(screen.getByRole("button", { name: "submit_login" }));
-    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
+    await screen.findByRole("link", { name: "login_cta" });
     expect(sessionStorage.getItem("group_buy_draft_qty_gb-1")).toBe("3");
     unmount();
 

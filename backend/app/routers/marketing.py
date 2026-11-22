@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import button, frame, note_row
 from app.services.email import send_email
 from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
 from app.services.weekly_owner_summary import (
@@ -242,36 +242,21 @@ def _send_newsletter_confirm(email: str) -> None:
         "קיבלנו בקשה לשלוח עדכונים ממהמקור לכתובת הזו. כדי לאשר, לחצו על הכפתור. "
         "הקישור תקף ל-48 שעות. לא ביקשתם? אפשר להתעלם מהמייל, והכתובת לא תצורף."
     )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0"
-               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">{subject}</h1>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">{body}</p>
-              <p style="margin:0 0 24px;">
-                <a href="{confirm_url}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:999px;">אישור הרשמה</a>
-              </p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
-              <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
-                מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        subject,
+        f"""\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">{body}</p>
+        """,
+        button(confirm_url, "אישור הרשמה")
+        + note_row(
+            """\
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
+            <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
+            מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
+            </p>
+            """
+        ),
+    )
     plain = f"{subject}\n\n{body}\n\nאישור הרשמה: {confirm_url}\n\nמהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     send_email(email, subject, plain, html=html_body)
 
@@ -284,46 +269,26 @@ def _send_newsletter_welcome(email: str) -> None:
     # token so one click removes the address (RFC-8058-style one-click).
     token = create_unsubscribe_token(email)
     unsubscribe_url = f"{settings.frontend_url}/newsletter/unsubscribe?token={token}"
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0"
-               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
-          <tr>
-            <td style="text-align:right;direction:rtl;padding:32px 24px;">
-              {email_logo_html()}
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכים הבאים למהמקור</h1>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
-                נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
-              </p>
-              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
-                <span style="font-weight:bold;">ספיר ✨</span>
-              </p>
-              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
-              <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
-                מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.<br>
-                <a href="{unsubscribe_url}" style="color:#5C584F;text-decoration:underline;">לבטל הרשמה</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    html_body = frame(
+        "ברוכים הבאים למהמקור",
+        f"""\
+            <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
+            נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
+            </p>
+            <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
+            <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
+            מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.<br>
+            <a href="{unsubscribe_url}" style="color:#5C584F;text-decoration:underline;">לבטל הרשמה</a>
+            </p>
+        """,
+    )
     plain = (
         "ברוכים הבאים למהמקור!\n\n"
         "תודה שהצטרפת.\n\n"
         "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. "
         "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
-        "ספיר ✨\n\n"
+        "צוות מהמקור\n\n"
         f"לבטל הרשמה: {unsubscribe_url}\n"
         "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
@@ -490,5 +455,5 @@ def _send_contact_email(msg: ContactMessage, label: str) -> None:
             msg.id,
         )
         return
-    body = f"שם: {msg.name}\nאימייל: {msg.email}\n\n{msg.message}"
+    body = f"שם: {msg.name}\nמייל: {msg.email}\n\n{msg.message}"
     send_email(recipient, f"מהמקור — פנייה חדשה ({label}) מ-{msg.name}", body)

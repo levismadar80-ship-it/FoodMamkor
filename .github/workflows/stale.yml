@@ -28,7 +28,9 @@ jobs:
           stale-pr-label: "stale" # rtl-ok
           remove-stale-when-updated: true
           exempt-draft-pr: true
-          exempt-pr-labels: "launch-blocking,dependencies" # rtl-ok
+          # MEH-2244: `do-not-merge` parks a PR on purpose (rule 30b); the bot
+          # must not close it. `keep-open` is the opt-out for anything else.
+          exempt-pr-labels: "launch-blocking,dependencies,do-not-merge,keep-open" # rtl-ok
           exempt-all-pr-assignees: true # rtl-ok
           days-before-issue-stale: -1
           days-before-issue-close: -1

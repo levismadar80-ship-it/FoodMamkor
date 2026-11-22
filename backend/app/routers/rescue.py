@@ -39,9 +39,6 @@ History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643);
 
 from typing import Any
 import logging
-import math
-import secrets
-from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import (
@@ -53,9 +50,7 @@ from fastapi import (
     Request,
     status,
 )
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from app.auth import (
     get_current_user,
@@ -68,20 +63,18 @@ from app.config import settings
 from app.data.cities import canonical_city
 from app.database import get_db
 from app.models.models import (
-    RESCUE_MAX_QTY_PER_ORDER,
     Producer,
-    ProducerLocation,
     RescueOffer,
     RescueOrder,
     RescueReview,
-    RescueTypicalItems,
     User,
 )
 from app.rate_limit import limiter
-from app.services import billing_ledger, capabilities  # MEH-3179 · MEH-3180
+from app.services import capabilities  # MEH-3179 · MEH-3180
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
+    RescueOfferDetailOut,
     RescueOfferOut,
     RescueOfferPublicOut,
     RescueOrderCreate,
@@ -106,23 +99,44 @@ from app.services.rescue_emails import (
     send_cancel_email,
     send_reservation_email,
 )
-from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.services.rescue_no_show import (  # MEH-3226
-    NO_SHOW_BLOCK_AT,
+    NO_SHOW_BLOCK_AT,  # noqa: F401 — re-exported for tests/test_rescue.py
     NO_SHOW_WINDOW_DAYS,  # noqa: F401 — re-exported for tests/test_rescue.py
-    active_no_show_counts,
     queue_no_show_email,
 )
 from app.utils.clock import israel_today, utc_now
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
-from app.utils.pii import round_coord
+from app.services.rescue_writes import (  # MEH-3554
+    active_no_shows,
+    add_review,
+    buyer_cancel,
+    cancel_whole_offer,
+    clear_block,
+    created_order_payload,
+    hand_over,
+    publish_offer,
+    record_donated,
+    record_no_show,
+    reserve,
+    reviewable_order,
+    save_typical_items,
+)
+from app.services.rescue_reads import (  # MEH-3541
+    RESERVE_CLOSES_BEFORE_END,  # noqa: F401 — re-exported for tests
+    business_offers_today,
+    business_orders_today,
+    my_reservations,
+    offer_detail,
+    pilot_numbers,
+    public_offers,
+    typical_items,
+)
 
 logger = logging.getLogger(__name__)
 
-# MEH-2726 (Sapir 6/11): reservations close this long before the pickup window
-# ends — someone reserving a minute before the end cannot get there, and the bag
-# sits reserved for nobody. The list and the reserve guard read the same value.
-RESERVE_CLOSES_BEFORE_END = timedelta(minutes=15)
+# RESERVE_CLOSES_BEFORE_END lives in services/rescue_reads.py since MEH-3541
+# (the list reads it there); the reserve guard reads it in
+# services/rescue_writes.py since MEH-3554, and it is re-exported above.
 
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
@@ -133,13 +147,8 @@ me_router = APIRouter(tags=["rescue"])
 # The pilot's no-show rule (NO_SHOW_BLOCK_AT inside NO_SHOW_WINDOW_DAYS) lives
 # in services/rescue_no_show.py since MEH-3226, so /admin/users reads the same
 # numbers; imported above and re-exported here for the tests.
-BLOCKED_DETAIL = "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
-
-# How many times to retry a colliding pickup code before giving up. The code
-# is unique per OFFER and an offer holds at most 20 bags, so a collision is
-# rare and a handful of tries is plenty; the UNIQUE constraint is what makes
-# this correct rather than hopeful (uq_rescue_orders_code).
-_CODE_ATTEMPTS = 8
+# BLOCKED_DETAIL and the pickup-code retry live in services/rescue_writes.py
+# since MEH-3554, with the write routes' state changes.
 
 
 def rescue_bags_enabled() -> bool:
@@ -191,63 +200,6 @@ def require_rescue_enabled() -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="לא נמצא")
 
 
-def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """Great-circle km between two points.
-
-    NOT `services/producer_queries.haversine_min_km`, which the spec suggested
-    reusing: that one answers a different question — the distance to the
-    NEAREST of all a business's locations. A bag is collected at ONE named
-    point, so for a business with several branches the minimum would quote a
-    walk to a branch that has no bag in it. Same formula, different subject.
-    """
-    radius_km = 6371.0
-    d_lat = math.radians(lat2 - lat1)
-    d_lng = math.radians(lng2 - lng1)
-    a = (
-        math.sin(d_lat / 2) ** 2
-        + math.cos(math.radians(lat1))
-        * math.cos(math.radians(lat2))
-        * math.sin(d_lng / 2) ** 2
-    )
-    return 2 * radius_km * math.asin(math.sqrt(a))
-
-
-def _new_pickup_code() -> str:
-    """A 4-digit code, zero-padded. `secrets`, not `random`: the code is the
-    only thing standing between a stranger and someone else's bag at the
-    counter, so it must not be predictable from previous codes."""
-    return f"{secrets.randbelow(10000):04d}"
-
-
-def _active_no_shows(db: Session, user: User) -> int:
-    """No-shows that still count against this buyer.
-
-    The windowed count from `rescue_orders` is the authority, not
-    `users.rescue_no_show_count` — that counter has no window and cannot
-    express "in 30 days" (it would block a buyer whose two no-shows were a
-    year apart). The counter is kept for display and the chunk-5 metrics.
-
-    `rescue_block_cleared_at` is how an admin releases a buyer: only no-shows
-    whose pickup window ended AFTER that moment are counted, so one write
-    releases the block and nothing in the history is deleted.
-    """
-    return active_no_show_counts(db, [user.id]).get(user.id, 0)  # type: ignore[list-item]
-
-
-def _owns(user: User, producer_id: UUID) -> bool:
-    return bool(user.producer_id) and user.producer_id == producer_id  # type: ignore[return-value]
-
-
-def _require_offer_owner(user: User, offer: RescueOffer) -> None:
-    """The business that published the offer, or an admin. Admin override is
-    the house IDOR rule (.claude/rules/security.md)."""
-    if user.role == "admin":
-        return
-    location = offer.location
-    if not location or not _owns(user, location.producer_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="אין הרשאה")
-
-
 def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
     """Load the offer with its row locked.
 
@@ -276,60 +228,6 @@ def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
     return offer
 
 
-def _issue_order(
-    db: Session, offer: RescueOffer, user: User, qty: int
-) -> tuple[RescueOrder, RescueOffer]:
-    """Insert the reservation, retrying on a colliding pickup code.
-
-    Returns the order AND the offer, because a collision rolls the
-    transaction back and the row lock goes with it — the caller must decrement
-    stock on the re-locked row, not the stale one it passed in.
-
-    The UNIQUE (offer_id, pickup_code) is the authority for uniqueness; this
-    loop only avoids handing the buyer a 500 on the rare collision.
-    """
-    for _ in range(_CODE_ATTEMPTS):
-        candidate = RescueOrder(
-            offer_id=offer.id,
-            user_id=user.id,
-            qty=qty,
-            pickup_code=_new_pickup_code(),
-            status="reserved",
-        )
-        db.add(candidate)
-        try:
-            db.flush()
-        except IntegrityError:
-            db.rollback()
-            offer = _offer_for_update(db, offer.id)  # type: ignore[arg-type]
-            if offer.qty_left < qty:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="לא נשארו מספיק סלים",
-                ) from None
-            continue
-        return candidate, offer
-
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="לא הצלחנו להנפיק קוד איסוף, נסו שוב",
-    )
-
-
-def _order_or_404(db: Session, order_id: UUID) -> RescueOrder:
-    order = (
-        db.query(RescueOrder)
-        .options(selectinload(RescueOrder.offer).selectinload(RescueOffer.location))
-        .filter(RescueOrder.id == order_id)
-        .first()
-    )
-    if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="ההזמנה לא נמצאה"
-        )
-    return order
-
-
 @router.post(
     "/offers",
     response_model=RescueOfferOut,
@@ -354,89 +252,13 @@ def create_offer(
     when ORDERS are accepted, not when the door shuts. Validating against it
     would enforce the wrong rule convincingly. MEH-2646 carries the decision.
     """
-    if not current_user.producer_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
-        )
-
-    producer = (
-        db.query(Producer).filter(Producer.id == current_user.producer_id).first()
+    offer, producer = publish_offer(
+        db,
+        user=current_user,
+        body=body,
+        today=israel_today(),
+        in_pilot=city_in_pilot,
     )
-    if not producer or producer.status != "approved":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="רק בית עסק מאושר יכול לפרסם סל הפתעה",
-        )
-
-    location = (
-        db.query(ProducerLocation)
-        .filter(ProducerLocation.id == body.producer_location_id)
-        .first()
-    )
-    if not location or location.producer_id != producer.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="נקודת האיסוף לא נמצאה"
-        )
-    # MEH-829: a bag reveals the full address, so only a point the business
-    # marked as exact can host one. An approximate pin would publish a street
-    # that is not where anyone should stand.
-    if location.location_precision != "exact":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם סל",
-        )
-
-    # The per-city pilot gate. A business outside the pilot towns gets a clear
-    # refusal rather than a bag nobody can see: the public list filters by the
-    # same set, so publishing there would produce an offer with no readers.
-    if not city_in_pilot(location.city):  # type: ignore[arg-type]
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
-        )
-
-    if body.date < israel_today():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="אי אפשר לפרסם סל לתאריך שעבר",
-        )
-
-    # One active bag per point per day: `qty_left` is per OFFER, so a second
-    # row for the same evening would show the same business twice with two
-    # separate stock counts and two codes per buyer.
-    existing = (
-        db.query(RescueOffer.id)
-        .filter(
-            RescueOffer.producer_location_id == location.id,
-            RescueOffer.date == body.date,
-            RescueOffer.status == "active",
-        )
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="יש כבר סל פעיל בנקודה הזאת בתאריך הזה",
-        )
-
-    offer = RescueOffer(
-        producer_location_id=location.id,
-        date=body.date,
-        qty_total=body.qty_total,
-        # Stock starts full. The client cannot set it — an offer that arrives
-        # half sold is not a thing the business can publish.
-        qty_left=body.qty_total,
-        price_agorot=body.price_agorot,
-        value_min_agorot=body.value_min_agorot,
-        value_max_agorot=body.value_max_agorot,
-        pickup_start=body.pickup_start,
-        pickup_end=body.pickup_end,
-        cancel_until=body.cancel_until,
-        status="active",
-    )
-    db.add(offer)
-    db.commit()
-    db.refresh(offer)
     _queue_new_rescue_alert(background_tasks, db, producer, offer)
     return offer
 
@@ -494,99 +316,35 @@ def list_offers(
     Sold-out and cancelled offers are omitted rather than greyed out: the list
     is "what you can still get tonight", and chunk 4 has no empty-stock state.
     """
-    lat, lng = round_coord(lat), round_coord(lng)  # MEH-3219: ~1 km, never exact
-    today = israel_today()
-    q = (
-        db.query(RescueOffer)
-        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
-        .join(Producer, ProducerLocation.producer_id == Producer.id)
-        .options(
-            selectinload(RescueOffer.location).selectinload(ProducerLocation.producer)
-        )
-        .filter(
-            RescueOffer.date == today,
-            RescueOffer.status == "active",
-            RescueOffer.qty_left > 0,
-            # MEH-2713: reserve refuses a bag once its window closed (409
-            # "זמן האיסוף חלף"), so listing it would offer a button that can
-            # only fail. Same naive-UTC comparison as the reserve guard.
-            RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
-            Producer.status == "approved",
-            not_test_producer(),  # MEH-2952
-        )
-    )
-    # Only pilot towns are listed, whatever is asked for. Without this an
-    # offer published before a town was removed from the list would keep
-    # showing; the gate belongs on the read as well as the write.
     pilot = rescue_cities()
-    if not pilot:
-        return []
-    q = q.filter(ProducerLocation.city.in_(pilot))
-
-    if city:
-        # The PICKUP point's town, not the business's registered city — a
-        # branch in another town is where the buyer actually walks.
-        canonical = canonical_city(city)
-        if canonical not in pilot:
-            return []
-        q = q.filter(ProducerLocation.city == canonical)
-
-    offers = q.order_by(RescueOffer.pickup_start.asc()).all()
-
-    producer_ids = {o.location.producer_id for o in offers if o.location is not None}
-    # MEH-2752: the row carries both «בדרך כלל» and the declared allergens, so
-    # one query serves both. `allergens` stays None when the business declared
-    # nothing — it is NOT coerced to [], because the card has to tell the buyer
-    # "not declared" rather than show an empty list that reads as "none".
-    typical: dict[Any, Any] = (
-        {
-            row.producer_id: (row.items or [], row.allergens)
-            for row in db.query(RescueTypicalItems)
-            .filter(RescueTypicalItems.producer_id.in_(producer_ids))
-            .all()
-        }
-        if producer_ids
-        else {}
+    return public_offers(
+        db, today=israel_today(), pilot=pilot, city=city, lat=lat, lng=lng
     )
 
-    out: list[dict[str, Any]] = []
-    for offer in offers:
-        location = offer.location
-        producer = location.producer if location else None
-        if not location or not producer:
-            continue
-        distance = None
-        if lat is not None and lng is not None and location.lat and location.lng:
-            distance = round(
-                _haversine_km(lat, lng, float(location.lat), float(location.lng)), 2
-            )
-        out.append(
-            {
-                "id": offer.id,
-                "date": offer.date,
-                "qty_left": offer.qty_left,
-                "qty_total": offer.qty_total,
-                "price_agorot": offer.price_agorot,
-                "value_min_agorot": offer.value_min_agorot,
-                "value_max_agorot": offer.value_max_agorot,
-                "pickup_start": offer.pickup_start,
-                "pickup_end": offer.pickup_end,
-                "cancel_until": offer.cancel_until,
-                "producer": {
-                    "id": producer.id,
-                    "name": producer.name,
-                    "slug": producer.slug,
-                    "city": producer.city,
-                    "image_url": (producer.images or [None])[0],
-                    "location_city": location.city,
-                    "location_address": location.address,
-                },
-                "typical_items": list((typical.get(producer.id) or ([], None))[0]),
-                "allergens": (typical.get(producer.id) or ([], None))[1],
-                "distance_km": distance,
-            }
-        )
-    return out
+
+@router.get(
+    "/offers/{offer_id}",
+    response_model=RescueOfferDetailOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def get_offer(
+    request: Request,
+    offer_id: UUID,
+    db: Session = Depends(get_db),
+) -> RescueOfferDetailOut | dict[str, Any]:
+    """One of today's bags, for its own page (MEH-3586). Public — no auth.
+
+    A sold-out, cancelled or closed bag still answers, with `state` saying
+    why; another day's bag, a test or unapproved business, or a town outside
+    the pilot answers 404 — the same set the list never shows.
+    """
+    row = offer_detail(
+        db, offer_id=offer_id, today=israel_today(), pilot=rescue_cities()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="הסל הזה לא נמצא")
+    return row
 
 
 @router.post(
@@ -611,32 +369,9 @@ def cancel_offer(
     that already closed is refused: by then every bag is collected or a
     no-show, and cancelling would only rewrite the record.
     """
-    offer = _offer_for_update(db, offer_id)
-    _require_offer_owner(current_user, offer)
-    if offer.status != "active":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="הסל כבר בוטל")
-    now = utc_now()
-    if offer.pickup_end <= now:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="זמן האיסוף חלף"
-        )
-
-    offer.status = "cancelled"  # type: ignore[assignment]
-    # Read who held a bag under the offer lock: a reservation or a buyer's
-    # cancel takes the same lock first, so this set cannot move until commit.
-    buyer_ids = {
-        user_id
-        for (user_id,) in db.query(RescueOrder.user_id).filter(
-            RescueOrder.offer_id == offer.id, RescueOrder.status == "reserved"
-        )
-    }
-    (
-        db.query(RescueOrder)
-        .filter(RescueOrder.offer_id == offer.id, RescueOrder.status == "reserved")
-        .update({"status": "cancelled", "cancelled_at": now}, synchronize_session=False)
+    offer, buyer_ids = cancel_whole_offer(
+        db, user=current_user, offer_id=offer_id, lock=_offer_for_update
     )
-    db.commit()
-    db.refresh(offer)
     try:
         _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)
     except Exception as exc:  # the cancel is committed; a mail never undoes it
@@ -702,81 +437,18 @@ def list_my_reservations(
     dropping the code. See `_business_cancelled_ids` for how they are told
     apart from a buyer's own cancel without a column for it.
     """
-    today = israel_today()
-    rows = (
-        db.query(RescueOrder)
-        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
-        .options(
-            selectinload(RescueOrder.offer).selectinload(RescueOffer.location),
-            selectinload(RescueOrder.review),
-        )
-        .filter(
-            RescueOrder.user_id == current_user.id,
-            RescueOffer.date == today,
-            (RescueOrder.status.in_(("reserved", "handed")))
-            | (
-                (RescueOrder.status == "cancelled")
-                & (RescueOffer.status == "cancelled")
-            ),
-        )
-        .order_by(RescueOrder.created_at.asc())
-        .all()
-    )
-    by_business = _business_cancelled_ids(
-        db, {o.offer_id for o in rows if o.status == "cancelled"}
-    )
-    rows = [o for o in rows if o.status != "cancelled" or o.id in by_business]
-    return [
-        {
-            "id": o.id,
-            "offer_id": o.offer_id,
-            "user_id": o.user_id,
-            "qty": o.qty,
-            "pickup_code": o.pickup_code,
-            "status": o.status,
-            "handed_at": o.handed_at,
-            "cancelled_at": o.cancelled_at,
-            "created_at": o.created_at,
-            "price_agorot": o.offer.price_agorot,
-            "cancel_until": o.offer.cancel_until,
-            "pickup_start": o.offer.pickup_start,
-            "pickup_end": o.offer.pickup_end,
-            "reviewed": o.review is not None,
-            "producer_id": o.offer.location.producer_id,
-            "cancelled_by_business": o.id in by_business,
-        }
-        for o in rows
-    ]
+    return my_reservations(db, user_id=current_user.id, today=israel_today())
 
 
-def _business_cancelled_ids(db: Session, offer_ids: set[Any]) -> set[Any]:
-    """Which cancelled orders on these cancelled offers the business cancelled.
-
-    There is no column saying who cancelled, and adding one is a schema
-    change; the stock arithmetic already says it. A buyer's cancel gives its
-    bags back to `qty_left`; the business cancel does not (the offer is gone).
-    So the bags the business took with it are
-        (qty_total - qty_left) - bags on orders that were never cancelled.
-    The business cancel stamps all its orders with one `cancelled_at`, the
-    latest on the offer. If the arithmetic says it took no bags, the latest
-    cancel was a buyer's — the edge case a timestamp rule alone gets wrong
-    (she cancelled, nobody else held a bag, then the business cancelled).
-    """
-    if not offer_ids:
-        return set()
-    found: set[Any] = set()
-    offers = db.query(RescueOffer).filter(RescueOffer.id.in_(offer_ids)).all()
-    orders = db.query(RescueOrder).filter(RescueOrder.offer_id.in_(offer_ids)).all()
-    for offer in offers:
-        mine = [o for o in orders if o.offer_id == offer.id]
-        kept = sum(o.qty for o in mine if o.status != "cancelled")
-        taken = (offer.qty_total - offer.qty_left) - kept
-        cancelled = [o for o in mine if o.status == "cancelled" and o.cancelled_at]
-        if taken <= 0 or not cancelled:
-            continue
-        last = max(o.cancelled_at for o in cancelled)
-        found.update(o.id for o in cancelled if o.cancelled_at == last)
-    return found
+def _pickup_note(offer: RescueOffer) -> str | None:
+    """MEH-3593: «הוראות איסוף» of the bag's pickup point, read while the
+    request's Session is still open (before the task is queued)."""
+    try:
+        note: str | None = offer.location.pickup_note
+    except Exception:  # noqa: BLE001 — a note must never cost the buyer the code email
+        logger.warning("rescue: pickup note read failed for offer %s", offer.id)
+        return None
+    return note
 
 
 def _queue_reservation_email(
@@ -815,6 +487,7 @@ def _queue_reservation_email(
                 if offer.cancel_until > utc_now()
                 else None
             ),
+            pickup_note=_pickup_note(offer),
         ),
         # MEH-2952: a test business or a test buyer → dropped and logged.
         test_cause=bool(producer.is_test or user.is_test),
@@ -857,60 +530,9 @@ def create_order(
     db: Session = Depends(get_db),
 ) -> RescueOrderCreatedOut | dict[str, object]:
     """Reserve bags and get the 4-digit code read out at the counter."""
-    if _active_no_shows(db, current_user) >= NO_SHOW_BLOCK_AT:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=BLOCKED_DETAIL
-        )
-
-    offer = _offer_for_update(db, body.offer_id)
-    # MEH-2952: a test row's bag is not listed, so not reservable by id either
-    # (same 404). Cancel shares _offer_for_update, so the check lives here.
-    location = offer.location
-    if (
-        location is not None
-        and location.producer is not None
-        and location.producer.is_test
-    ):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא")
-    if offer.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"
-        )
-    if offer.date != israel_today():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו של היום"
-        )
-    if offer.pickup_end <= utc_now() + RESERVE_CLOSES_BEFORE_END:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="זמן האיסוף חלף"
-        )
-
-    # The two-bag cap is per BUYER per offer, not per request (3 × 2 = past it).
-    already = int(
-        db.query(func.coalesce(func.sum(RescueOrder.qty), 0))
-        .filter(
-            RescueOrder.offer_id == offer.id,
-            RescueOrder.user_id == current_user.id,
-            RescueOrder.status.in_(("reserved", "handed")),
-        )
-        .scalar()
-        or 0
+    order, offer = reserve(
+        db, user=current_user, body=body, today=israel_today(), lock=_offer_for_update
     )
-    if already + body.qty > RESCUE_MAX_QTY_PER_ORDER:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לשריין עד שני סלים",
-        )
-
-    if offer.qty_left < body.qty:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="לא נשארו מספיק סלים"
-        )
-
-    order, offer = _issue_order(db, offer, current_user, body.qty)
-    offer.qty_left = offer.qty_left - body.qty  # type: ignore[assignment]
-    db.commit()
-    db.refresh(order)
     # The reservation is committed. Nothing about preparing the email may turn
     # it into a 500: the buyer would read that as "not reserved" and retry.
     try:
@@ -919,36 +541,7 @@ def create_order(
     except Exception as exc:  # noqa: BLE001 — fail-open by design (MEH-2715)
         capture_background_exception(exc, task="rescue_reservation_email")
         logger.error("rescue reservation email not queued: %s", type(exc).__name__)
-    return {
-        "id": order.id,
-        "offer_id": order.offer_id,
-        "user_id": order.user_id,
-        "qty": order.qty,
-        "pickup_code": order.pickup_code,
-        "status": order.status,
-        "handed_at": order.handed_at,
-        "cancelled_at": order.cancelled_at,
-        "created_at": order.created_at,
-        "price_agorot": offer.price_agorot,
-        "cancel_until": offer.cancel_until,
-        "pickup_start": offer.pickup_start,
-        "pickup_end": offer.pickup_end,
-    }
-
-
-def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
-    """409 unless the order is still `reserved`; a repeat tap names the time."""
-    if order.status == "handed":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{israel_hhmm(order.handed_at)}"  # type: ignore[arg-type]
-            if order.handed_at
-            else "הסל כבר נמסר",
-        )
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
+    return created_order_payload(order, offer)
 
 
 @router.post(
@@ -969,25 +562,7 @@ def mark_handed(
     counter a repeated tap usually means the first one was not seen, and the
     honest answer is "already done at 18:42".
     """
-    order = _order_or_404(db, order_id)
-    _require_offer_owner(current_user, order.offer)
-    _refuse_unless_reserved_for_handover(order)
-
-    # Lock the offer, then the order — the order cancel_order takes them in —
-    # and read the status AGAIN under the lock (MEH-2865). The check above ran
-    # on a row read before any lock: a buyer's cancel in the same instant also
-    # saw `reserved`, put the bag back on the list, and this one then handed
-    # it over — one bag both handed and for sale again.
-    _offer_for_update(db, order.offer_id)  # type: ignore[arg-type]
-    db.refresh(order, with_for_update=True)
-    _refuse_unless_reserved_for_handover(order)
-
-    order.status = "handed"  # type: ignore[assignment]
-    order.handed_at = utc_now()  # type: ignore[assignment]
-    order.handed_by = current_user.id
-    billing_ledger.count_bag_and_commit(db, order)  # MEH-3179: ledger row, then commit
-    db.refresh(order)
-    return order
+    return hand_over(db, user=current_user, order_id=order_id, lock=_offer_for_update)
 
 
 @router.post(
@@ -1006,40 +581,11 @@ def mark_no_show(  # noqa: PLR0913 — FastAPI-injected; MEH-3226 added backgrou
     """The business records that nobody came for the bag — only after
     `pickup_end`: before that the buyer may still be on their way, and a
     no-show blocks reserving again. The buyer is mailed each time (MEH-3226)."""
-    order = _order_or_404(db, order_id)
-    _require_offer_owner(current_user, order.offer)
-
-    if order.offer.pickup_end > utc_now():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר",
-        )
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
-
-    # Same locks + re-read as cancel_order (MEH-2865): a cancel landing between
-    # the read above and this write would leave a cancel AND a no-show.
-    _offer_for_update(db, order.offer_id)  # type: ignore[arg-type]
-    db.refresh(order, with_for_update=True)
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
-
-    order.status = "no_show"  # type: ignore[assignment]
-    # Display/metrics counter; the 422 gate reads _active_no_shows. One SQL
-    # increment, not a Python read-modify-write: two no-shows for one buyer at
-    # once each read the same value and one count was lost (MEH-2865).
-    db.query(User).filter(User.id == order.user_id).update(
-        {User.rescue_no_show_count: func.coalesce(User.rescue_no_show_count, 0) + 1},
-        synchronize_session=False,
+    order = record_no_show(
+        db, user=current_user, order_id=order_id, lock=_offer_for_update
     )
-    db.commit()
-    db.refresh(order)
     try:  # MEH-3226: the mark is committed; a mail-side failure must not 500 it
-        active = _active_no_shows(db, order.user)
+        active = active_no_shows(db, order.user)
         queue_no_show_email(background_tasks, order, active=active)
     except Exception as exc:  # noqa: BLE001 — fail-open, like the MEH-2715 email
         capture_background_exception(exc, task="rescue_no_show_email")
@@ -1060,36 +606,9 @@ def cancel_order(
     db: Session = Depends(get_db),
 ) -> RescueOrderOut | RescueOrder:
     """The buyer cancels, free, until the offer's `cancel_until`."""
-    order = _order_or_404(db, order_id)
-    if order.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="אין הרשאה")
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
-    if utc_now() > order.offer.cancel_until:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="מועד הביטול החופשי חלף",
-        )
-
-    # Lock the offer, then the order, and read the order's status AGAIN under
-    # the lock (MEH-2737). The check above ran on a row read before any lock:
-    # two cancels of one order (a double tap, or the page and the email at
-    # once) both saw `reserved` there, and with only the offer locked the
-    # second one still added the bags back — a bag on the list that does not
-    # exist. Offer first, then order: the same order reserving takes them in.
-    offer = _offer_for_update(db, order.offer_id)  # type: ignore[arg-type]
-    db.refresh(order, with_for_update=True)
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
-    order.status = "cancelled"  # type: ignore[assignment]
-    order.cancelled_at = utc_now()  # type: ignore[assignment]
-    offer.qty_left = min(offer.qty_left + order.qty, offer.qty_total)  # type: ignore[arg-type]
-    db.commit()
-    db.refresh(order)
+    order, offer = buyer_cancel(
+        db, user=current_user, order_id=order_id, lock=_offer_for_update
+    )
     # Committed. A failure preparing the email must not turn a done cancel
     # into a 500 the buyer would read as "still reserved".
     try:
@@ -1115,36 +634,9 @@ def create_review(
     db: Session = Depends(get_db),
 ) -> RescueReviewOut | RescueReview:
     """The buyer reviews a bag they actually collected. Once."""
-    order = _order_or_404(db, order_id)
-    if order.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="אין הרשאה")
-    if order.status != "handed":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לדרג רק אחרי שקיבלתם את הסל",
-        )
-
+    order = reviewable_order(db, user=current_user, order_id=order_id)
     assert_own_new_images(current_user, body.photo_url)  # MEH-3247
-    review = RescueReview(
-        order_id=order.id,
-        rating=body.rating,
-        contents_tags=body.contents_tags,
-        highlight_tags=body.highlight_tags,
-        photo_url=body.photo_url,
-        comment=body.comment,
-    )
-    db.add(review)
-    try:
-        db.commit()
-    except IntegrityError:
-        # uq_rescue_reviews_order — one review per reservation, enforced by the
-        # database rather than by a read-then-write race.
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="כבר דירגתם את הסל הזה"
-        ) from None
-    db.refresh(review)
-    return review
+    return add_review(db, order=order, body=body)
 
 
 @admin_router.post(
@@ -1166,23 +658,7 @@ def clear_no_show_block(
     counting against the buyer. Returns both numbers, because a reset whose
     effect you cannot see is a reset you have to trust.
     """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="המשתמשת לא נמצאה"
-        )
-
-    user.rescue_block_cleared_at = utc_now()  # type: ignore[assignment]
-    db.commit()
-    db.refresh(user)
-    active = _active_no_shows(db, user)
-    return {
-        "user_id": user.id,
-        "no_show_count": user.rescue_no_show_count or 0,
-        "active_no_shows": active,
-        "block_cleared_at": user.rescue_block_cleared_at,
-        "blocked": active >= NO_SHOW_BLOCK_AT,
-    }
+    return clear_block(db, user_id=user_id)
 
 
 @me_router.get(
@@ -1210,63 +686,9 @@ def list_my_orders(
             status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
         )
 
-    rows = (
-        db.query(RescueOrder, RescueOffer)
-        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
-        .join(
-            ProducerLocation,
-            RescueOffer.producer_location_id == ProducerLocation.id,
-        )
-        .filter(
-            ProducerLocation.producer_id == current_user.producer_id,
-            RescueOffer.date == israel_today(),
-        )
-        .order_by(RescueOrder.created_at.asc())
-        .all()
+    return business_orders_today(
+        db, producer_id=current_user.producer_id, today=israel_today()
     )
-    return [
-        {
-            "id": order.id,
-            "offer_id": order.offer_id,
-            "qty": order.qty,
-            "pickup_code": order.pickup_code,
-            "status": order.status,
-            "handed_at": order.handed_at,
-            "cancelled_at": order.cancelled_at,
-            "created_at": order.created_at,
-            "pickup_start": offer.pickup_start,
-            "pickup_end": offer.pickup_end,
-        }
-        for order, offer in rows
-    ]
-
-
-def _leftover(offer: RescueOffer, now: datetime) -> int:
-    """Bags not collected once the window closed (MEH-2703).
-
-    Never reserved (`qty_left`) plus reserved-but-nobody-came (`no_show`).
-    0 before `pickup_end` — a bag may still be reserved or collected — and 0
-    for a cancelled offer, which never went on sale. A `reserved` order the
-    business has not marked yet is NOT counted: until it is marked «לא הגיע»
-    the business has not said the bag is free to give away.
-    """
-    if offer.status != "active" or offer.pickup_end > now:
-        return 0
-    no_show = sum(o.qty for o in offer.orders if o.status == "no_show")
-    return offer.qty_left + no_show  # type: ignore[no-any-return]
-
-
-def _owner_offer_row(offer: RescueOffer, now: datetime) -> dict[str, Any]:
-    return {
-        "id": offer.id,
-        "qty_total": offer.qty_total,
-        "qty_left": offer.qty_left,
-        "status": offer.status,
-        "pickup_start": offer.pickup_start,
-        "pickup_end": offer.pickup_end,
-        "leftover": _leftover(offer, now),
-        "qty_donated": offer.qty_donated or 0,
-    }
 
 
 @me_router.get(
@@ -1288,22 +710,9 @@ def list_my_offers(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
         )
-    offers = (
-        db.query(RescueOffer)
-        .options(selectinload(RescueOffer.orders))
-        .join(
-            ProducerLocation,
-            RescueOffer.producer_location_id == ProducerLocation.id,
-        )
-        .filter(
-            ProducerLocation.producer_id == current_user.producer_id,
-            RescueOffer.date == israel_today(),
-        )
-        .order_by(RescueOffer.pickup_start.asc())
-        .all()
+    return business_offers_today(
+        db, producer_id=current_user.producer_id, today=israel_today()
     )
-    now = utc_now()
-    return [_owner_offer_row(o, now) for o in offers]
 
 
 @me_router.put(
@@ -1325,28 +734,9 @@ def set_donated(
     closed, and never more than was left over — a number above the leftover
     would inflate the pilot's «ניצלו» count with bags that were sold.
     """
-    offer = _offer_for_update(db, offer_id)
-    _require_offer_owner(current_user, offer)
-    now = utc_now()
-    if offer.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל בוטל ולא נמכר"
-        )
-    if offer.pickup_end > now:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לסמן רק אחרי שזמן האיסוף נגמר",
-        )
-    leftover = _leftover(offer, now)
-    if body.qty > leftover:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"אפשר לסמן עד {leftover} סלים שלא נאספו",
-        )
-    offer.qty_donated = body.qty  # type: ignore[assignment]
-    db.commit()
-    db.refresh(offer)
-    return _owner_offer_row(offer, now)
+    return record_donated(
+        db, user=current_user, offer_id=offer_id, qty=body.qty, lock=_offer_for_update
+    )
 
 
 @admin_router.get(
@@ -1368,57 +758,7 @@ def pilot_metrics(
     would read as "nothing sold" rather than "nothing offered". That
     distinction is the whole point of a pilot metric.
     """
-    since = israel_today() - timedelta(days=days)
-
-    offers = db.query(RescueOffer).filter(RescueOffer.date >= since).all()
-    offers_total = len(offers)
-    # MEH-2737: a cancelled bag never went on sale to the end. Its qty_left is
-    # not restored when the business cancels, so counting it would report its
-    # open reservations as sold.
-    sold = [o for o in offers if o.status != "cancelled"]
-    bags_offered = sum(o.qty_total for o in sold)
-    bags_left = sum(o.qty_left for o in sold)
-    bags_reserved = bags_offered - bags_left
-
-    offer_ids = [o.id for o in offers]
-    orders = (
-        db.query(RescueOrder).filter(RescueOrder.offer_id.in_(offer_ids)).all()
-        if offer_ids
-        else []
-    )
-    orders_total = len(orders)
-    orders_cancelled = sum(1 for o in orders if o.status == "cancelled")
-    # The no-show rate is the prepay decision's input (>1/7 → deposit), so its
-    # denominator is the reservations that stood — a cancelled one could not
-    # have been a no-show, and counting it made the rate read low (MEH-2737).
-    stood = [o for o in orders if o.status != "cancelled"]
-    no_shows = sum(1 for o in stood if o.status == "no_show")
-
-    # "Repeat" means a buyer with more than one reservation in the window —
-    # the number the pilot is actually asking about (did anyone come back?).
-    # Cancelled reservations bought nothing and do not count.
-    per_buyer: dict[UUID, int] = {}
-    for order in stood:
-        per_buyer[order.user_id] = per_buyer.get(order.user_id, 0) + 1  # type: ignore[call-overload,index]
-
-    return {
-        "days": days,
-        "offers_total": offers_total,
-        "offers_per_day": round(offers_total / days, 2),
-        "bags_offered": bags_offered,
-        "bags_reserved": bags_reserved,
-        "sell_through": (
-            round(bags_reserved / bags_offered, 4) if bags_offered else None
-        ),
-        "orders_total": orders_total,
-        "orders_cancelled": orders_cancelled,
-        "offers_cancelled": offers_total - len(sold),
-        "no_shows": no_shows,
-        "no_show_rate": round(no_shows / len(stood), 4) if stood else None,
-        "buyers_total": len(per_buyer),
-        "repeat_buyers": sum(1 for n in per_buyer.values() if n > 1),
-        "bags_donated": sum(o.qty_donated or 0 for o in offers),
-    }
+    return pilot_numbers(db, today=israel_today(), days=days)
 
 
 @me_router.get(
@@ -1438,17 +778,7 @@ def get_typical_items(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
         )
-    row = (
-        db.query(RescueTypicalItems)
-        .filter(RescueTypicalItems.producer_id == current_user.producer_id)
-        .first()
-    )
-    return {
-        "producer_id": current_user.producer_id,
-        "items": list(row.items or []) if row else [],
-        "allergens": row.allergens if row else None,
-        "updated_at": row.updated_at if row else utc_now(),
-    }
+    return typical_items(db, producer_id=current_user.producer_id)
 
 
 @me_router.put(
@@ -1469,32 +799,8 @@ def set_typical_items(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
         )
-    cleaned = [item.strip() for item in body.items if item and item.strip()]
-    row = (
-        db.query(RescueTypicalItems)
-        .filter(RescueTypicalItems.producer_id == current_user.producer_id)
-        .first()
+    return save_typical_items(
+        db,
+        producer_id=current_user.producer_id,  # type: ignore[arg-type]
+        body=body,
     )
-    # Already normalised by the schema validator: None / [] -> None, unknown
-    # code -> 422 before we get here. Assigning it straight through keeps ONE
-    # owner for what a valid declaration is (app/allergens.py).
-    if row:
-        row.items = cleaned  # type: ignore[assignment]
-        row.allergens = body.allergens  # type: ignore[assignment]
-    else:
-        row = RescueTypicalItems(
-            producer_id=current_user.producer_id,
-            items=cleaned,
-            allergens=body.allergens,
-        )
-        db.add(row)
-    db.commit()
-    db.refresh(row)
-    return {
-        "producer_id": row.producer_id,
-        "items": list(row.items or []),
-        # Straight from the row, never `or []`: NULL has to survive the
-        # response or the caller cannot tell "not declared" from "none".
-        "allergens": row.allergens,
-        "updated_at": row.updated_at,
-    }

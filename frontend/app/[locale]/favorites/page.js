@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import FavoritesClient from "./FavoritesClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { GUEST_TO_LOGIN_SCRIPT } from "@/lib/guest-to-login-inline";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-641 PR-B: server-wrapper pattern (MEH-658 precedent) — client
 // components can't export metadata; the wrapper supplies SEO while
@@ -21,7 +23,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/favorites", locale),
     // MEH-641: authenticated route — not indexable, but hreflang preserved for cross-locale signal
@@ -30,5 +32,11 @@ export async function generateMetadata({ params }) {
 }
 
 export default function FavoritesPage() {
-  return <FavoritesClient />;
+  return (
+    <>
+      {/* MEH-2233: a guest leaves for /login as soon as this HTML is parsed. */}
+      <script dangerouslySetInnerHTML={{ __html: GUEST_TO_LOGIN_SCRIPT }} />
+      <FavoritesClient />
+    </>
+  );
 }

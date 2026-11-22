@@ -157,7 +157,7 @@ describe("dashboard home — «מה חדש» and welcome placement (MEH-3200)", 
     profileState.value = profile({ created_at: new Date().toISOString() });
     render(<ProducerDashboardPage />);
     expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
-    expect(await screen.findByRole("progressbar")).toBeInTheDocument();
+    expect(await screen.findByTestId("completeness-counter")).toBeInTheDocument();
     expect(screen.queryByTestId("owner-welcome-cta")).toBeNull();
     expect(screen.getByTestId("owner-welcome-close")).toBeInTheDocument();
   });

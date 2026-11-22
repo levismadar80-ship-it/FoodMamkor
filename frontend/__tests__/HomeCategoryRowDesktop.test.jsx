@@ -8,7 +8,7 @@ import { CATEGORY_CARDS } from "@/lib/home-categories";
 // phone's card row on every width: all ten cards the same size, one row of ten
 // from lg, 5×2 on tablet. This pins the class contract of the rail and cards.
 
-vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
+vi.mock("next-intl", () => ({ useTranslations: () => Object.assign((k) => k, { has: () => false }) }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
 }));

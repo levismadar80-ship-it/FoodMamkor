@@ -21,11 +21,6 @@ import api from "@/lib/api";
 // notice landed on the STORY frame. `.rich` renders the key path AND invokes
 // every tag callback, so key-based assertions below are byte-identical while
 // the real <Link>/<a> nodes still mount.
-// MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
-// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
-vi.mock("@/components/RegisterCardPreview", () => ({
-  default: () => <div data-testid="card-preview-stub" />,
-}));
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key, values) => {
@@ -257,7 +252,7 @@ async function renderWizard({ as = "producer" } = {}) {
     return;
   }
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  await screen.findByTestId("register-hero-heading"); // MEH-3656: no pre-flight screen any more
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -272,7 +267,7 @@ async function fillAccountToDetails() {
 
 // ---------------------------------------------------------------------------
 // MEH-2460 — the organizer option. Harness above copied verbatim from
-// RegisterProducerClient.test.jsx (same mocks, same entry path) so these cases
+// RegisterProducerClient-01/-02.test.jsx (same mocks, same entry path) so these cases
 // exercise the real wizard state machine, not a re-implementation of it.
 // ---------------------------------------------------------------------------
 
@@ -300,9 +295,10 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
   // preflight, but as a LINK to /register/organizer: the route decides the
   // kind (MEH-2773). What this guards is that the business page never again
   // switches the wizard in place — no old in-page entry control.
-  it("MEH-2773 / MEH-2917: the business preflight's organizer door is a link to the organizer route, not an in-page switch", async () => {
+  // MEH-3656: the preflight is gone; the door now sits on the account frame.
+  it("MEH-2773 / MEH-2917: the business wizard's organizer door is a link to the organizer route, not an in-page switch", async () => {
     render(<RegisterProducerClient />);
-    expect(await screen.findByTestId("register-preflight-start")).toBeInTheDocument();
+    expect(await screen.findByTestId("register-frame-account")).toBeInTheDocument();
     const door = screen.getByTestId("register-preflight-organizer-link");
     expect(door.tagName).toBe("A");
     expect(door.getAttribute("href")).toBe("/register/organizer");
@@ -383,8 +379,6 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
     expect(screen.queryByTestId("register-frame-category")).toBeNull();
-    // MEH-3074: organizers are not in the business list, so they get no card preview.
-    expect(screen.queryByTestId("card-preview-stub")).toBeNull();
   });
 
   it("business door: DETAILS goes to CATEGORY as before", async () => {
@@ -433,13 +427,8 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(nextBtn());
     fireEvent.click(await screen.findByTestId("pick-category"));
-    fireEvent.click(nextBtn());
-    await screen.findByPlaceholderText(STORY_MARKER);
-    // MEH-3074 control: the business door does get the preview.
-    expect(screen.getByTestId("card-preview-stub")).toBeInTheDocument();
-    fireEvent.change(screen.getByTestId("register-referral-source"), {
-      target: { value: "instagram" },
-    });
+    // MEH-3656: CATEGORY is the business door's last frame — no story step.
+    expect(screen.queryByPlaceholderText(STORY_MARKER)).toBeNull();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -466,10 +455,11 @@ describe("MEH-0000: the stepper numerals are the VISIBLE position", () => {
       .filter((el) => el.querySelector(":scope > span[dir='ltr']"))
       .map((el) => el.querySelector(":scope > span[dir='ltr']").textContent.trim());
 
-  it("the business wizard shows 01 02 03 04 (control — this path must not move)", async () => {
+  // MEH-3656: the business path is three frames now — the story step left it.
+  it("the business wizard shows 01 02 03 (account, business, category)", async () => {
     await renderWizard();
     await screen.findByTestId("register-frame-account");
-    expect(numerals()).toEqual(["01", "02", "03", "04"]);
+    expect(numerals()).toEqual(["01", "02", "03"]);
   });
 
   it("an organizer shows 01 02 03 — not 01 02 04", async () => {

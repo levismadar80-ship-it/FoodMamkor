@@ -1,11 +1,12 @@
 """
 Module:   test_meh2151_approval_email_wire_payload
 Purpose:  Assert the producer-approval email at the ONE boundary no other test
-          reaches — the outbound Resend payload — so the em-dash and the pipe
-          in the locked copy are proven to survive the wire, and the MEH-331
+          reaches — the outbound Resend payload — so the em-dash
+          in the locked copy is proven to survive the wire, and the MEH-331
           `Content-Transfer-Encoding: base64` header is proven to still ride
           along with the HTML part.
-Touches:  Nothing. `resend.Emails.send` is monkeypatched; no network, no DB.
+Touches:  `resend.Emails.send` is monkeypatched; no network. MEH-3535: the
+          send goes through the email_outbox table (test DB).
 Does NOT: re-assert the block ORDER, the link destinations, the RTL markup or
           the escaping — `tests/test_meh2151_approval_email_cta.py` owns all of
           those against the builders. This file asserts only what changes when
@@ -32,7 +33,7 @@ dict over HTTPS (`app/services/email.py`, `resend.Emails.send(params)`) and
 Resend's MTA builds the MIME. So a test cannot open a MIME part and read a
 `charset=`, and this file does not claim to.
 
-What it CAN establish — and all it claims — is that the two characters are
+What it CAN establish — and all it claims — is that the locked punctuation is
 PRESENT in both parts at the transport, and that the strings carrying them are
 `str` and are UTF-8-encodable. A mojibake introduced anywhere upstream of
 `resend.Emails.send` fails the first check; a lone surrogate left by a bad
@@ -51,13 +52,14 @@ import pytest
 import app.routers.admin_decisions as admin_module
 import app.services.email as email_module
 
-# The two characters the MEH-2134 locked copy depends on. `—` is the separator
-# in the dashboard line, `|` the one in the founder signature. Both are the
+# The characters the MEH-2134 locked copy depends on. `—` is the separator
+# in the dashboard line. `|` was the one in the founder signature, which
+# MEH-3594 replaced with the team sign-off, so it is no longer a canary. Such
+# characters are the
 # shapes that historically come back as mojibake when a latin-1 assumption
 # creeps into a transport, which is why they are the named canaries rather than
 # a generic "some Hebrew".
 EM_DASH = "—"
-PIPE = "|"
 
 
 @pytest.fixture
@@ -70,18 +72,33 @@ def wire(monkeypatch):
     """
     resend = pytest.importorskip("resend", reason="resend client not installed")
     captured: list[dict] = []
-    monkeypatch.setattr(resend.Emails, "send", staticmethod(lambda params: captured.append(params)))
+    monkeypatch.setattr(
+        resend.Emails, "send", staticmethod(lambda params: captured.append(params))
+    )
     monkeypatch.setattr(email_module.settings, "resend_api_key", "test-key-not-real")
     return captured
 
 
 def _send_approval(slug="teva-pure"):
-    admin_module._send_notification_email(
-        "owner@sample.co.il",
-        "ברוכים הבאים",
-        admin_module._producer_approved_body("טעם הבית", slug),
-        html=admin_module._producer_approved_html("טעם הבית", slug),
-    )
+    """MEH-3535: the approval email is queued, then sent by the outbox
+    dispatcher — so the wire is reached through BOTH, the real path."""
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db,
+            "producer_approved",
+            "owner@sample.co.il",
+            "ברוכים הבאים",
+            admin_module._producer_approved_body("טעם הבית", slug),
+            html=admin_module._producer_approved_html("טעם הבית", slug),
+        )
+        db.commit()  # the wrapper queues in the caller's transaction
+        dispatch_due(db)
+    finally:
+        db.close()
 
 
 def test_control_the_transport_is_actually_reached(wire):
@@ -107,7 +124,7 @@ def test_both_parts_reach_the_transport_not_just_the_builder(wire):
 
 
 @pytest.mark.parametrize("part", ["text", "html"])
-@pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash"), (PIPE, "pipe")])
+@pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash")])
 def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part, char, label):
     """The character is present, and the string it sits in can actually be encoded.
 
@@ -134,7 +151,9 @@ def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part,
     _send_approval()
     value = wire[0][part]
     assert char in value, f"{label} absent from the {part} part at the transport"
-    assert isinstance(value, str), f"{part} part reached the transport as {type(value).__name__}"
+    assert isinstance(value, str), (
+        f"{part} part reached the transport as {type(value).__name__}"
+    )
     value.encode("utf-8")  # raises UnicodeEncodeError on a lone surrogate
 
 
@@ -171,19 +190,30 @@ def test_the_meh331_base64_header_rides_with_the_html_part(wire):
     assert wire[0].get("headers", {}).get("Content-Transfer-Encoding") == "base64"
 
 
-def test_a_text_only_send_carries_no_html_and_no_cte_header(wire):
-    """The other half of the MEH-2151 byte-identical claim, measured.
+def test_a_text_only_send_carries_the_layout_html_and_the_cte_header(wire):
+    """MEH-3587 changed the contract this test held (MEH-2151: a text-only
+    send went out with no html). Every send now carries the one branded frame,
+    built from the text, so it also carries the base64 CTE header that keeps
+    the frame's links unsplit (MEH-331). The text part is unchanged.
+    MEH-3535: the wrapper queues in the caller's transaction, so the test
+    commits and runs the dispatcher before reading the wire."""
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
 
-    `_send_notification_email`'s docstring states that omitting `html` leaves
-    the three pre-existing callers' payloads exactly as they were. That is a
-    claim about the payload, so it is checked against the payload.
-    """
-    admin_module._send_notification_email(
-        "owner@sample.co.il", "נושא", "גוף"
-    )
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db, "producer_changes_requested", "owner@sample.co.il", "נושא", "גוף"
+        )
+        db.commit()
+        dispatch_due(db)
+    finally:
+        db.close()
     assert len(wire) == 1
-    assert "html" not in wire[0]
-    assert "headers" not in wire[0]
+    assert wire[0]["text"] == "גוף"
+    assert '<html dir="rtl" lang="he">' in wire[0]["html"]
+    assert ">גוף</p>" in wire[0]["html"]
+    assert wire[0]["headers"].get("Content-Transfer-Encoding") == "base64"
 
 
 def test_the_view_page_url_reaches_the_transport_unsplit(wire):

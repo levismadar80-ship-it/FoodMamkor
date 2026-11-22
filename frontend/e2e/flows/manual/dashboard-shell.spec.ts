@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
 /**
  * Spec:     manual/dashboard-shell — MEH-1249 chunk 11a of 12
@@ -70,9 +71,10 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  *      same file; MEH-1599 is the newer truth and is what is asserted.
  * D2 · MT:MEH-1102:1 says the tools grid shows exactly 4 cards and names
  *      "הצגת העסק באתר" as one of them. Measured: FIVE cards, and that one is
- *      not among them — MEH-1357 removed it (tools/page.js:120-122) in favour
- *      of the persistent "צפייה בדף" link in the shell nav. Both the count and
- *      the membership are wrong. The count is asserted at its measured value.
+ *      not among them — MEH-1357 removed it in favour of the persistent
+ *      "צפייה בדף" link in the shell nav. MEH-3669 then grouped the tab: closed,
+ *      the grid links three tools; opening «אירועים» adds two. Both counts are
+ *      asserted at their measured values.
  * D3 · MT:MEH-1134:2 asserts that an approved+complete business shows the
  *      completeness card BELOW availability. MEH-1397 deleted that slot
  *      (page.js:800-812): the card now mounts ONLY in the completenessFirst
@@ -237,6 +239,11 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
   // 404 = off, the server's answer while PRODUCT_ORDERS_ENABLED is false: no «הזמנות» tab.
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // MEH-3194: the approved dashboard home reads the month summary (MonthValueLine).
+  // Unstubbed, the fake token draws a 401 that ends the session (the MEH-3446 class).
+  await page.route("**/producers/me/billing/summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
   // MEH-3212: the approved insights tab mounts WeeklySummaryToggle, which reads
   // GET /producers/me/weekly-summary. Unstubbed, the fake token draws a 401 once
@@ -707,17 +714,20 @@ test.describe("dashboard shell — tools tab", () => {
     return grid;
   }
 
-  // MT:MEH-1102:1, MT:MEH-1102:3 — drift D2: the doc says four, and names one
-  // that is gone. Row 3 ("targets unchanged") is the href loop below.
-  test("the grid holds exactly five cards, and the two removed ones are absent", async ({
+  // MT:MEH-1102:1, MT:MEH-1102:3 — the tools reachable from the tab, at the
+  // MEASURED count. MEH-3669: «אירועים» (events + experiences) is a card that
+  // opens in place; «הזדמנויות» with surprise bags off (the CI default) holds
+  // one tool, so it is a plain link to group buys. MEH-3641 added «הפרופיל
+  // שלכם בגוגל» to the content group.
+  test("closed, the grid links four tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
     page,
   }) => {
     await stubSession(page);
     const grid = await openTools(page);
 
-    // A COUNT at the MEASURED value. The doc says 4; adding or losing a card
-    // must fail this either way.
-    await expect(grid.getByRole("link")).toHaveCount(5);
+    await expect(grid.getByRole("link")).toHaveCount(4);
+    await grid.getByTestId("tool-group-events").getByRole("button").click();
+    await expect(grid.getByRole("link")).toHaveCount(6);
 
     for (const href of [
       "/producer/dashboard/events",
@@ -726,6 +736,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/recipes",
       // MEH-3107: the reviews tile opens the dashboard's own reviews page.
       "/producer/dashboard/reviews",
+      // MEH-3641: the owner's Google profile tool.
+      "/producer/dashboard/google-profile",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
@@ -739,15 +751,21 @@ test.describe("dashboard shell — tools tab", () => {
     await expect(grid.locator(`a[href$="/producer/${PRODUCER_ID}"]`)).toHaveCount(0);
   });
 
-  // MT:MEH-1102:2
+  // MT:MEH-1102:2 — each card (a group card or a single tile) carries its
+  // icon above the title. The open/close caret is not that icon, so the
+  // title icon is matched by its own classes.
   test("every card carries an icon above its title", async ({ page }) => {
     await stubSession(page);
     const grid = await openTools(page);
-    const cards = grid.getByRole("link");
-    const count = await cards.count();
-    expect(count).toBe(5);
-    for (let i = 0; i < count; i += 1) {
-      await expect(cards.nth(i).locator("svg"), `card ${i} has no icon`).toHaveCount(1);
+    const cards = [
+      grid.getByTestId("tool-group-events"),
+      grid.getByTestId("tool-group-opportunities"),
+      grid.locator('a[href$="/producer/dashboard/reviews"]'),
+      grid.locator('a[href$="/producer/dashboard/recipes"]'),
+      grid.getByTestId("tools-google-profile-tile"),
+    ];
+    for (const [i, card] of cards.entries()) {
+      await expect(card.locator("svg.mb-2"), `card ${i} has no title icon`).toHaveCount(1);
     }
   });
 });

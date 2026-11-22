@@ -65,7 +65,7 @@ export const BUSINESS_FEATURE_GROUPS = [
  */
 export const BUSINESS_FEATURES = [
   // ── page ────────────────────────────────────────────────────────────────
-  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx"] },
+  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/LogoCard.jsx"] },
   // MEH-3483: «ספרו לנו על העסק» — the page drafted from the owner's own text, on the edit hub.
   { id: "page_fill", group: "page", status: "live", codeRef: ["frontend/components/PageFillPanel.jsx", "frontend/lib/page-fill.js"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx", "frontend/components/MenuImport.jsx"] },
@@ -73,7 +73,7 @@ export const BUSINESS_FEATURES = [
   { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
   { id: "vacation_mode", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx"] },
   { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producerPoints.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
-  { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
+  { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/PickupScheduleField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx"] },
   { id: "draft_claim", group: "page", status: "live", tile: { icon: "PencilSimple" }, codeRef: ["backend/app/routers/producer_claim.py", "frontend/components/admin/ClaimLinkPanel.jsx"] },
   { id: "ai_writer", group: "page", status: "live", codeRef: ["backend/app/services/bio_generator.py", "frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx"] },
   { id: "guides", group: "page", status: "live", codeRef: ["frontend/app/[locale]/about/for-businesses/guides/page.js"] },
@@ -88,21 +88,25 @@ export const BUSINESS_FEATURES = [
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
-  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  // MEH-3641: «הפרופיל שלכם בגוגל» — guide, owner self-link of the place_id,
+  // live check. Copy chosen by Claude on Sapir's delegation (21/11). No tile:
+  // «found» already has its 4.
+  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "tools", href: "/producer/dashboard/google-profile" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
-  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ContactChannelsCard.jsx"] },
+  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ContactChannelsCard.jsx", "frontend/components/BusinessChatAfterAnswer.jsx"] },
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
   { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
-  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx"] },
+  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryTimeFields.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryDefaultTerms.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
   // MEH-3216: on-site ordering («בקשת הזמנה»). he/en copy approved word for word
   // by Sapir 19/11. Live: she approved turning PRODUCT_ORDERS_ENABLED on in
   // production (19/11 11:37Z); the flag is set right after the release that
   // carries this entry. Each business still opts in from its dashboard.
-  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "backend/app/routers/product_order_buyer.py"] },
+  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "frontend/components/dashboard/orders/OrderCustomersCard.jsx", "backend/app/routers/product_order_buyer.py"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "nav_buttons", group: "contact", status: "live", tile: { icon: "NavigationArrow" }, codeRef: ["frontend/components/NavAppGlyphs.jsx"] },
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },

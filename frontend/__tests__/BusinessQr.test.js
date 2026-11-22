@@ -151,8 +151,14 @@ describe("copy", () => {
     for (const key of ["title", "body", "download_svg", "download_png", "print_card", "hint"]) {
       expect(msgs.dashboard.producer.qr[key], `qr.${key}`).toBeTruthy();
     }
-    for (const key of ["cta", "print_hint", "back"]) {
+    for (const key of ["cta", "back", "poster_line", "sticker_label"]) {
       expect(msgs.qr_card[key], `qr_card.${key}`).toBeTruthy();
+    }
+    // MEH-3557: one picker label and one hint per print format.
+    expect(msgs.qr_card.formats.label, "qr_card.formats.label").toBeTruthy();
+    for (const f of ["a6", "poster", "table", "sticker"]) {
+      expect(msgs.qr_card.formats[f], `qr_card.formats.${f}`).toBeTruthy();
+      expect(msgs.qr_card.hints[f], `qr_card.hints.${f}`).toBeTruthy();
     }
   });
 
@@ -165,10 +171,11 @@ describe("copy", () => {
 
   it("en copy holds no Hebrew", () => {
     const hebrew = /[֐-׿]/;
-    const values = [
-      ...Object.values(en.dashboard.producer.qr),
-      ...Object.values(en.qr_card),
-    ];
+    // Flattened: qr_card.formats / qr_card.hints are objects (MEH-3557), and
+    // a regex test on an object reads "[object Object]" and always passes.
+    const flat = (o) => Object.values(o).flatMap((v) => (typeof v === "string" ? [v] : flat(v)));
+    const values = [...flat(en.dashboard.producer.qr), ...flat(en.qr_card)];
+    expect(values.length).toBeGreaterThan(10);
     for (const v of values) expect(hebrew.test(v), v).toBe(false);
   });
 });

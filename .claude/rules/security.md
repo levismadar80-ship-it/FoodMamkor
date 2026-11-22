@@ -63,7 +63,13 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   re-measured. So a workflow change = CC prepares and
   verifies the patch (`git apply --check`, YAML incl. any embedded filter
   block), a human or Claude in Chrome commits
-  it, CC verifies the PR diff byte-for-byte (#3740). Never write `.github/**`
+  it, CC verifies the PR diff byte-for-byte (#3740). Every patch doc gets a
+  row in `docs/ci/patch-register.tsv`, moved to `applied` in the PR that
+  applies it (`patch-register-guard.sh`, MEH-3520). A patch doc is a record,
+  not a hand-off: the session that writes one applies it in the same session
+  (Claude in Chrome, sha256 against the prepared file) unless the target is a
+  hook, `settings.json` or the lint config, which wait for Sapir's word. A row
+  left `pending` fails the guard after 14 days. Never write `.github/**`
   from the shell to get around the deny. Re-measure before relying on this.
 
 ---

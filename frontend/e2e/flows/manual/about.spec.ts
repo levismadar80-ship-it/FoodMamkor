@@ -51,7 +51,7 @@ import en from "../../../messages/en.json";
  *           the `/en/` half of MT:MEH-841:4 — both live on the home surface,
  *           which is chunk 7's route (producer fixture, 184 items). The home
  *           teaser itself was removed in MEH-2441 (its absence is asserted in
- *           home.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
+ *           home-03.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
  *           duplicate MT:MEH-534:10 / MT:MEH-1289:5's footer half (the footer
  *           nav hrefs) — COVERED at component level by
  *           frontend/__tests__/FooterNavGroups.test.jsx:61-62. Does NOT convert
@@ -563,19 +563,15 @@ test.describe("manual › /about/process (MEH-534)", () => {
 
   // MT:MEH-534:11 — cross-link from the bottom of /about → /about/process.
   //   (The checklist quotes «כך אנחנו מכירות כל בית עסק»; the copy key reads «כך אנחנו בודקות כל בית עסק» — drift recorded.)
-  test("cross-link from /about: the Close row link (and the MEH-1840 verification teaser) → /about/process", async ({
-    page,
-  }) => {
+  // MEH-3667: the verification card (and its teaser link) moved to /about/badges,
+  // whose «מאומת» group intro links to /about/process. The Close row link stays.
+  test("cross-link from /about: the Close row link → /about/process", async ({ page }) => {
     await gotoAbout(page);
     const closeLink = scope(page).getByTestId("about-close-process-link");
     await closeLink.scrollIntoViewIfNeeded();
     await expect(closeLink).toHaveText(PROCESS_HE.crosslink_from_about);
     await expect(closeLink).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
-    const teaser = scope(page).getByTestId("verification-process-link");
-    await expect(teaser).toHaveText(PROCESS_HE.crosslink_from_about);
-    await expect(teaser).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
-    // The Close row is the page's bottom — it must come after the verification teaser.
-    expect(await precedes(teaser, closeLink)).toBe(true);
+    await expect(scope(page).getByTestId("verification-process-link")).toHaveCount(0);
   });
 
   // MT:MEH-534:12 — RTL + tap targets: everything RTL, no horizontal overflow at 360px, CTA ≥ 44px, focus ring visible.

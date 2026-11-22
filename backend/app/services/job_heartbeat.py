@@ -29,6 +29,9 @@ History:  MEH-3155 (creation, 14/11/2026: found by the repo health scan,
           The job was healthy; the check-in was not arriving — and _safe_checkin
           caught every exception and returned None with no log line, so there
           was nothing to look at. See docs/audits/2026-11-sentry-crons.md).
+          MEH-3515 (20/11/2026: the cause. app/sentry.py:before_send ran the
+          MEH-2114 burst cap on check-ins too, all slugs sharing one empty
+          fingerprint, so 3 per 6 h got through. Check-ins now bypass it).
 """
 
 from __future__ import annotations
@@ -59,6 +62,7 @@ BILLING_START_SIGNAL_CRON = "0 5 1-3 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 PRODUCT_ORDERS_INTERVAL_MINUTES = 2  # MEH-3296: order expiry + outbox tick
+EMAIL_OUTBOX_INTERVAL_MINUTES = 1  # MEH-3535: the durable email queue
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
@@ -66,6 +70,9 @@ WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
 # MEH-3312: the evening-before reminder, 17:00 on the Israel clock.
 REGISTRATION_REMINDER_CRON = "0 17 * * *"
 REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3610: the group-buy pickup reminder, the same evening hour.
+GROUP_BUY_PICKUP_REMINDER_CRON = "0 17 * * *"
+GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -131,6 +138,11 @@ UNMONITORED_SLUGS = frozenset(
         "billing-start-signal-monthly",
         # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
         "product-orders-tick",
+        # MEH-3535: the email queue tick. No Sentry monitor (plan limit).
+        "email-outbox-tick",
+        # MEH-3610: the pickup reminder before a funded group's pickup. No
+        # Sentry monitor (plan limit, MEH-3332).
+        "group-buy-pickup-reminder-daily",
     }
 )
 

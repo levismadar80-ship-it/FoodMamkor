@@ -31,7 +31,7 @@ import path from "node:path";
 //
 // WHAT THIS DOES NOT DO
 //   It does not assert runtime behaviour in a browser — that lives in
-//   e2e/qa-meh1659-minimap-expand.mjs, which measures the rendered DOM. This
+//   qa-meh1659-minimap-expand.mjs [deleted probe, docs/media-archive.md], which measures the rendered DOM. This
 //   file pins the source-level facts those measurements are explained BY, so a
 //   future upgrade that changes them fails here instead of turning into a
 //   mystery in the QA run.

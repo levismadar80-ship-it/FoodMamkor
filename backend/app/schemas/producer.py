@@ -55,6 +55,7 @@ from app.schemas.schemas import (
     _url_scheme_validator,
     _whatsapp_group_validator,
 )
+from app.schemas import delivery_time  # MEH-3511
 from app.schemas.catalog import (
     DeliveryAreaCreate,
     DeliveryZoneIn,
@@ -410,6 +411,9 @@ class ProducerUpdate(BaseModel):
     # on the public producer page, same surface class as images[].
     owner_bio: str | None = None
     owner_photo_url: str | None = Field(default=None, max_length=500)
+    # MEH-3611: the logo. Same image-URL guard as owner_photo_url; ownership
+    # (MEH-3247) is checked in PUT /producers/me.
+    logo_url: str | None = Field(default=None, max_length=500)
     # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
     # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
     # same schema) silently dropped it. Present on ProducerOwnerOut already.
@@ -548,6 +552,12 @@ class ProducerUpdate(BaseModel):
     # path opened in producer_me.py (_PRODUCER_WRITABLE_FIELDS).
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: business-wide delivery time (business days) and order minimum.
+    # Validated below; owner-writable via producer_me.py
+    # (_PRODUCER_WRITABLE_FIELDS). Explicit null clears.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    delivery_min_order: int | None = None
 
     # MEH-1297: cap categories (admin/owner update); 5 since MEH-2925. None passes through.
     @field_validator("category_ids")
@@ -609,7 +619,7 @@ class ProducerUpdate(BaseModel):
         return sanitize_text(v, max_length=300)
 
     # MEH-1335: owner photo — image-URL guard, not just scheme (MEH-1222 class).
-    @field_validator("owner_photo_url")
+    @field_validator("owner_photo_url", "logo_url")
     @classmethod
     def _validate_owner_photo_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
@@ -707,7 +717,7 @@ class ProducerUpdate(BaseModel):
         return sanitize_text(v, max_length=30) or None
 
     # MEH-3339: the number/label pair is judged on the MERGED state in the
-    # PUT handlers (routers/producer_me.py:reconcile_secondary_phone), not here.
+    # PUT handlers (services/producer_me_writes.py:reconcile_secondary_phone), not here.
 
     @field_validator("whatsapp_group")
     @classmethod
@@ -751,10 +761,30 @@ class ProducerUpdate(BaseModel):
     @model_validator(mode="after")
     def _validate_zones_meh3484(self) -> Self:
         check_zones(self.delivery_zones)
-        if self.delivery_nationwide and any(
-            z.cities for z in self.delivery_zones or []
-        ):
-            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-3511: a nationwide business MAY have zones — areas on other
+        # terms («גוש דן, אקספרס») that win over «כל הארץ» in their cities.
+        # The flat city list stays exclusive with nationwide (DB CHECK).
+        return self
+
+    @field_validator("delivery_days_min", "delivery_days_max")
+    @classmethod
+    def _business_days_meh3511(cls, v: int | None) -> int | None:
+        return delivery_time.business_days(v)
+
+    @field_validator("delivery_min_order")
+    @classmethod
+    def _min_order_meh3511(cls, v: int | None) -> int | None:
+        if v is None:
+            return None
+        if v < 0:
+            raise ValueError("מינימום הזמנה לא יכול להיות שלילי")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("מינימום הזמנה גבוה מדי")
+        return v
+
+    @model_validator(mode="after")
+    def _days_range_meh3511(self) -> Self:
+        delivery_time.check_range(self.delivery_days_min, self.delivery_days_max)
         return self
 
     @model_validator(mode="after")

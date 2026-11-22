@@ -18,7 +18,7 @@
  */
 
 import api from "./api";
-import { SavedIdsResponseSchema } from "@/lib/api-schemas";
+import { SavedIdsResponseSchema } from "@/lib/api-responses";
 
 let keys = new Set();
 let loaded = false;

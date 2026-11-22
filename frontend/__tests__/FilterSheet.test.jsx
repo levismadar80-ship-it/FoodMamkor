@@ -291,7 +291,7 @@ describe("FilterSheet (MEH-1075)", () => {
 // no Tailwind, so nothing here proves the footer actually stays on screen. It
 // is a TRIPWIRE for one specific regression — someone re-gating the stickiness
 // behind `lg:`, which is the state MEH-1481 left and this ticket removed. The
-// behavioural proof is `e2e/qa-meh1945-sticky-apply.mjs`, which measures real
+// behavioural proof is `qa-meh1945-sticky-apply.mjs [deleted probe, docs/media-archive.md]`, which measures real
 // geometry in Chromium and fails when the footer leaves the viewport.
 //
 // Deliberately NOT asserted here: that the fix is non-inert. It can be — a

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
+import { settledField } from "../_settled-field";
 
 /**
  * Spec:     manual/auth
@@ -23,7 +24,7 @@ import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
  *             · the eye toggle on `/login`, which the page renders without a
  *               testid, reached by ARIA role + accessible NAME — and that name
  *               is itself one of the assertions;
- *             · the validation MESSAGES on both pages («האימייל לא תקין»,
+ *             · the validation MESSAGES on both pages («המייל לא תקין»,
  *               «✓ תקין», «הזינו סיסמה», «שם מלא הוא שדה חובה») and the hero
  *               overlay copy, none of which carry a testid. Several of those
  *               are absence assertions, where the string IS the subject: the
@@ -238,7 +239,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await page.goto(LOGIN);
     const email = page.getByTestId("login-email");
     const submit = page.getByTestId("login-submit");
-    const invalid = page.getByText("האימייל לא תקין", { exact: true });
+    const invalid = page.getByText("המייל לא תקין", { exact: true });
     const valid = page.getByText("✓ תקין", { exact: true });
 
     // MEH-2623: the submit button is never disabled for invalid input.
@@ -284,7 +285,7 @@ test.describe("manual › /login inline validation and submit gating", () => {
       if (r.method() === "POST" && /\/auth\/login(?:\?|$)/.test(r.url())) loginPosts += 1;
     });
     await page.getByTestId("login-submit").click();
-    await expect(page.getByText("האימייל לא תקין", { exact: true })).toBeVisible();
+    await expect(page.getByText("המייל לא תקין", { exact: true })).toBeVisible();
     await expect(page.getByTestId("login-email")).toBeFocused();
     await expect(page.getByTestId("login-email")).toHaveAttribute("aria-invalid", "true");
     expect(loginPosts).toBe(0);
@@ -302,8 +303,9 @@ test.describe("manual › /login inline validation and submit gating", () => {
     page,
   }) => {
     await page.goto(LOGIN);
-    const email = page.getByTestId("login-email");
-    const password = page.getByTestId("login-password");
+    // MEH-3563 — fill only once React owns the fields (sibling of flows/30 C1).
+    const email = await settledField(page, "login-email");
+    const password = await settledField(page, "login-password");
     const anyLengthMessage = page.getByText(/לפחות \d+ תווים/);
 
     await email.fill("valid@example.com");
@@ -331,8 +333,9 @@ test.describe("manual › /login inline validation and submit gating", () => {
     page,
   }) => {
     await page.goto(LOGIN);
-    const password = page.getByTestId("login-password");
-    const email = page.getByTestId("login-email");
+    // MEH-3563 — interact only once React owns the fields (sibling of flows/30 C1).
+    const password = await settledField(page, "login-password");
+    const email = await settledField(page, "login-email");
     const required = page.getByText("הזינו סיסמה", { exact: true });
 
     await expect(required).toHaveCount(0); // untouched
@@ -389,7 +392,7 @@ test.describe("manual › /register says nothing when a field is merely correct 
 
     await email.fill("foo");
     await name.click();
-    const emailError = page.getByText("האימייל לא תקין", { exact: true });
+    const emailError = page.getByText("המייל לא תקין", { exact: true });
     await expect(emailError).toBeVisible();
 
     await email.fill("fooo"); // still malformed — the error must not flicker off

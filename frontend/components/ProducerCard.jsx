@@ -4,9 +4,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { HeartStraight, Truck } from "@phosphor-icons/react";
+import { Clock, HeartStraight, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
@@ -34,11 +36,9 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { enqueueFavoriteOnLogin } from "@/lib/post-login-action";
 import {
-  ensureFavoritesLoaded,
-  isFavorited as isFavoritedCache,
   setFavoritedLocal,
-  subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import api from "@/lib/api";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
@@ -102,17 +102,7 @@ function CardHeart({ producer, onCountChange }) {
     // user logs in — otherwise a heart saved as guest stays visually stuck
     // "on" even when the account's real favorites say otherwise.
     setGuestSaved(false);
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producer.id, setFavorited);
   }, [user, producer.id]);
 
   if (user && user.producer_id === producer.id) return null;
@@ -286,8 +276,8 @@ function useBadgesThatFit(lineRef, earned) {
   return Math.min(shown, cap);
 }
 
-/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode }} props */
-export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
+/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode, imagePriority?: "high" | "eager" }} props */
+export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false, imagePriority = undefined }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
@@ -302,22 +292,25 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // MEH-1592: collision boundary handed to the +N Popover and the badge
-  // tooltips. MEH-3321: the strip left the photo for the card body, so the
-  // boundary is now the whole body (name, rating, strip, description): the
-  // overlay prefers ABOVE its boundary, and above the body is the photo.
+  // tooltips. Since MEH-3508 the badge strip's own popovers use
+  // badgeStripRef below; this one serves the body's TrustBadge.
   const cardBodyRef = useRef(null);
-  // MEH-3321: the MEH-2584 plate lift (stripLift) is gone — the badge strip
-  // no longer sits on the photo, so the no-photo plate has nothing to clear.
+  // MEH-3508: no plate lift (MEH-2584 stripLift stays gone) — the photo
+  // strip is one line, and the no-photo plate's pb-12/sm:pb-14 clears it.
   // MEH-2856: the badge pills + «+N» sit in this one-line group.
   const badgeLineRef = useRef(null);
+  // MEH-3508: the photo strip is again the +N popover's and the badge
+  // tooltips' collision boundary (as before MEH-3321): the overlay prefers
+  // ABOVE it, which is open photo space.
+  const badgeStripRef = useRef(null);
   const earnedBadges = badgeCount(producer);
   const shownBadges = useBadgesThatFit(badgeLineRef, earnedBadges);
   const hiddenBadges = earnedBadges - shownBadges;
-  // MEH-3321: the strip is in the body's flex column now, so an empty strip
-  // would still cost a gap. Render it only when it has something to show.
+  // MEH-3321/3508: neither strip renders empty — the body's pill row would
+  // still cost a gap in its flex column.
   const showTrust = (producer.trust_tier ?? 1) >= 4;
   const showDeliveryOnly = producer.has_physical_location === false && !!producer.offers_delivery;
-  const hasStripContent = earnedBadges > 0 || showTrust || showDeliveryOnly;
+  const hasMetaPills = showTrust;
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -346,10 +339,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const category = producer.categories?.[0]?.name;
+  const firstCategory = producer.categories?.[0];
+  const category = firstCategory?.name ? categoryLabel(t, firstCategory) : undefined;
 
   const userLoc = useUserLocation();
-  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק״מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
   // MEH-1938 chunk 3: distance to the CLOSEST point, read through
@@ -459,6 +453,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 fill
                 className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                // MEH-2233: a card in the first screen of a grid can be the
+                // page's LCP element; lazy makes the browser wait for layout
+                // before it asks for the file. The grid decides per position
+                // (lib/card-image-priority.js). `preload` is NOT used — Next's
+                // docs rule it out when several images could be the LCP.
+                {...(imagePriority ? { loading: "eager" } : {})}
+                {...(imagePriority === "high" ? { fetchPriority: "high" } : {})}
                 onError={() => setImgError(true)}
               />
             ) : (
@@ -466,9 +467,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // name plate — the business's own name set large on the warm
               // background-alt, like a label — replacing the MEH-643 leaf glyph +
               // brand wordmark on green-50 (the same tile on 17/29 cards read as
-              // a template). Bottom-aligned. (pb once cleared the badge row on the
-              // photo; MEH-3321 moved it to the body. pb is kept as bottom
-              // breathing room, pinned by ScanSmallFixes.test.jsx.) keep-all: no mid-word
+              // a template). Bottom-aligned. (pb clears the one-line badge
+              // row on the photo — back there since MEH-3508; pinned by
+              // ScanSmallFixes.test.jsx.) keep-all: no mid-word
               // Hebrew break at 22px; overflow-wrap:anywhere is the fallback for
               // a single token wider than the tile, which keep-all can't break.
               <div
@@ -515,77 +516,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         </Link>
 
         <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
-      </div>
 
-      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2" data-testid="card-body">
-        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
-            with the distance beside it — a directory of where food comes from
-            names the place first. The category moved to the line under the
-            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
-        {producer.city && (
-          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
-            <span className="truncate">
-              {producer.city}
-              {distanceLabel && (
-                <>
-                  {" · "}
-                  <span data-testid="distance-pill">{distanceLabel}</span>
-                </>
-              )}
-            </span>
-          </p>
-        )}
-
-        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
-            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
-            sm and up unchanged. */}
-        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
-          <Link href={producerHref} className="block min-w-0 focus-ring">
-            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
-            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
-              {highlightQuery
-                ? highlightMatch(producer.name, highlightQuery)
-                : producer.name}
-            </h3>
-          </Link>
-          {hasRating && (
-            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
-            <RatingCompact
-              avg={producer.avg_rating}
-              count={producer.reviews_count}
-              className="shrink-0 justify-self-start sm:justify-self-auto"
-              data-testid="card-rating"
-            />
-          )}
-        </div>
-
-        {hasLocationText && (
-        <p
-          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
-          data-testid="location-line"
-        >
-          <span className="truncate">
-            {category}
-            {/* No city → no place line above, so the distance stays here. */}
-            {!producer.city && distanceLabel && (
-              <>
-                {category ? " · " : null}
-                <span data-testid="distance-pill">{distanceLabel}</span>
-              </>
-            )}
-          </span>
-        </p>
-        )}
-
-        {/* MEH-3321 (Sapir 15/11 «שלא יתפוס את כל המסך»): the badge row moved
-            OFF the photo to the card body, under the category line, so the
-            photo shows the food. mt-0.5 + the body's gap-2 = 10px = the +N's
-            -m-2.5 pull-back, so its hit area never covers the name link above.
-            Rendered only when it has content (hasStripContent). The class went
-            from `absolute bottom-3 start-3 … max-w-[calc(100%-1.25rem)]` to
-            in-flow `max-w-full`; cap, fit and «+N» logic are unchanged. The
-            notes below about the photo describe the pre-3321 placement.
-            Badge row — was bottom-start over the image (Assembly v2), max 2.
+        {/* MEH-3508 (Sapir 20/11): the badges are back ON the photo, bottom-start,
+            where they sat before MEH-3321 — under the name they pushed the card
+            into extra rows. What MEH-3321 fixed (three pills stacked over a
+            third of the photo) does not come back: the photo strip holds ONLY
+            the one-line badge group (max 2 + «+N»), never wraps, and TrustBadge
+            and «משלוחים בלבד» stay in the card body (card-meta-pills). */}
+        {/* MEH-3321 (15/11) had moved the row to the body; MEH-3508 reverses the
+            placement and keeps its other fixes (no empty strip, one line).
+            Badge row — bottom-start over the image (Assembly v2), max 2.
             MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
             icon-only seal; declared shows nothing (no placeholder). */}
         {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
@@ -598,16 +538,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             photo — verified at 375px + 1440px, badges unchanged. z-index ledger:
             .claude/rules/rtl.md (sheet family 1200/1210 > BottomNav 1000). */}
         {/* MEH-1592: the strip is the +N popover's collision boundary — the
-            panel is placed so it clears this whole box, which is what makes
-            WRAPPED siblings safe too (at 4-col desktop widths the TrustBadge
-            "מובילת קהילה" wraps onto a second line directly under the +N chip,
-            which is the overlap Sapir's QA screenshot caught). */}
-        {/* MEH-1508 chunk 3ב-2: row gap gap-y-2.5 (10px) = the +N's -m-2.5
-            pull-back below. When a long first-row badge («100% צמחוני») wraps
-            the +N onto a second line, its 44px hit area reaches 10px upward;
-            with the old 4px gap it covered «חדש» down to 41.5×19.3 (axe
-            target-size, CI mobile /producers). At 10px it touches the row
-            above and covers nothing. Single-row strips are unchanged. */}
+            panel is placed so it clears this whole box. */}
+        {/* MEH-1508 chunk 3ב-2: the +N's -m-2.5 (10px) pull-back once covered
+            a badge on a wrapped row above. MEH-3508: the photo strip never
+            wraps, and bottom-3 (12px) ≥ the pull-back keeps the hit area on
+            the photo (ProducerCard.test.jsx pins both). Inline, the 8px end
+            inset leaves ~2px of a full strip's +N reach clipped — as before
+            MEH-3321; see the 12px note below for why it is not wider. */}
         {/* MEH-2856 (Sapir 09/11): the badges sit on ONE line. The pills and
             «+N» are a no-wrap group (data-badge-line) capped at the strip's
             width: the photo minus the 12px start inset and an 8px end inset
@@ -615,12 +552,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             fit on staging);
             useBadgesThatFit() shows as many of the first 2 badges as fit and
             moves the rest into «+N». Two long pills used to stack (ערוגות נועם
-            at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
-            the group: as before, they drop to the next line when there is no
-            room, instead of being clipped by the card's overflow-hidden. */}
-        {hasStripContent && (
+            at 390). TrustBadge and the delivery-only pill are not in this
+            strip (MEH-3508): they sit in card-meta-pills in the body. */}
+        {earnedBadges > 0 && (
         <div
-          className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
+          ref={badgeStripRef}
+          className="absolute bottom-3 start-3 flex items-center max-w-[calc(100%-1.25rem)]"
           data-testid="card-badge-strip"
         >
           <div
@@ -628,7 +565,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             data-badge-line
             className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full"
           >
-          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={cardBodyRef} nowrap />
+          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
           {hiddenBadges > 0 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
             // MEH-1547: the +N counter becomes a Popover trigger listing the
@@ -661,7 +598,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // out of the card's overflow-hidden. Below lg, sheetOnMobile
               // still wins — the sheet was never the colliding surface.
               overlay
-              avoidRef={cardBodyRef}
+              avoidRef={badgeStripRef}
               trigger={
                 <button
                   type="button"
@@ -749,6 +686,79 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             </Popover>
           )}
           </div>
+        </div>
+        )}
+      </div>
+
+      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2" data-testid="card-body">
+        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
+            with the distance beside it — a directory of where food comes from
+            names the place first. The category moved to the line under the
+            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
+        {producer.city && (
+          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
+            <span className="truncate">
+              {producer.city}
+              {distanceLabel && (
+                <>
+                  {" · "}
+                  <span data-testid="distance-pill">{distanceLabel}</span>
+                </>
+              )}
+            </span>
+          </p>
+        )}
+
+        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
+            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
+            sm and up unchanged. */}
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
+          <Link href={producerHref} className="block min-w-0 focus-ring">
+            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
+            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+              {highlightQuery
+                ? highlightMatch(producer.name, highlightQuery)
+                : producer.name}
+            </h3>
+          </Link>
+          {hasRating && (
+            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
+            <RatingCompact
+              avg={producer.avg_rating}
+              count={producer.reviews_count}
+              className="shrink-0 justify-self-start sm:justify-self-auto"
+              data-testid="card-rating"
+            />
+          )}
+        </div>
+
+        {hasLocationText && (
+        <p
+          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
+          data-testid="location-line"
+        >
+          <span className="truncate">
+            {category}
+            {/* No city → no place line above, so the distance stays here. */}
+            {!producer.city && distanceLabel && (
+              <>
+                {category ? " · " : null}
+                <span data-testid="distance-pill">{distanceLabel}</span>
+              </>
+            )}
+          </span>
+        </p>
+        )}
+
+        {/* MEH-3508: the recognition tier (a business fact, not a BADGE_CONFIG
+            badge) stays in the body under the category line, so the photo
+            strip is always one line. «משלוחים בלבד» moved into the delivery
+            fact line below. Rendered only with content. */}
+        {hasMetaPills && (
+        <div
+          className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
+          data-testid="card-meta-pills"
+        >
           {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
               (2 phone / 3 business) are owned by the BadgeRow seal above
               (verification_tier / ADR-022) — TrustBadge now only carries the
@@ -757,46 +767,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           {showTrust && (
             <TrustBadge tier={producer.trust_tier} compact avoidRef={cardBodyRef} />
           )}
-          {showDeliveryOnly && (
-            // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
-            // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
-            // pill's text-text) so it matches the delivery toggle chip. size 14
-            // keeps the pill height in line with the sibling text badges.
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-2xs">
-              <Truck size={14} className="shrink-0" aria-hidden="true" />
-              {t("producer.card.badges.delivery_only")}
-            </span>
-          )}
         </div>
-        )}
-
-        {/* MEH-1880: rendered ONLY when the declared window is open right now.
-            Closed, absent, or pre-mount → this whole node is absent, so a card
-            without an open window is byte-identical to before this ticket (no
-            reserved space, no layout shift). Copy is reused verbatim from the
-            producer page's status branch — zero new keys in either locale. */}
-        {showOrderWindowLine && (
-          // `text-primary` is not a free choice: it is the tone the producer
-          // page's own `open` branch resolves to (order-status.js:99), so the
-          // card says the same thing in the same colour. No new colour token.
-          //
-          // NOT `truncate`, and that is a measured decision. At 375px the card
-          // body is 132px wide and this string needs 138 — a 6px overflow, the
-          // only width where it does not fit (414/768/1440 all clear). In RTL
-          // the ellipsis lands at the visual left, which is exactly where the
-          // cutoff time sits, so truncating drops the ONE datum the line
-          // carries and leaves a line that says "open · until…". Wrapping
-          // keeps the time. It costs a second line at 375px on open cards
-          // only; the closed/null/vacation states render no node at all, so
-          // the AC's "no layout shift" case is untouched.
-          <p
-            className="text-sm text-primary"
-            data-testid="card-order-window"
-          >
-            {t("producer.detail.header.status.orders_open", {
-              time: humanTime(israelTime(orderStatus.nextChange)),
-            })}
-          </p>
         )}
 
         {descriptionText && (
@@ -809,26 +780,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             data-testid="card-description"
           >
             {descriptionText}
-          </p>
-        )}
-
-        {/* MEH-2759: the Friday «מגיעה היום» pill (fridayMode + available_today)
-            is gone with the state; the Friday strip now lists businesses that
-            deliver on Friday. */}
-
-        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
-            when active_offer is absent, so a business without an offer renders
-            byte-identically to before — no wrapper, no gap, no flow change. */}
-        {/* MEH-2676: a thresholded free-delivery offer renders in the
-            delivery row below instead — one delivery item, amount visible. */}
-        {!freeAbove && <OfferBadge offer={producer.active_offer} variant="chip" />}
-        {/* /MEH-1823 */}
-
-        {localFavCount >= 5 && (
-          <p className="flex items-center gap-1 text-xs text-fg-muted">
-            {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
-            <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
-            {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
 
@@ -854,10 +805,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             when delivery_fee is null/undefined — no "no delivery" row. */}
         {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
             overrides included — so card and page state one price. */}
-        {(cardFee.fee != null || freeAbove) && (
+        {/* MEH-3508: «משלוחים בלבד» is no longer a pill: it IS this fact
+            line. One delivery fact per card, on one line, the truck standing
+            for the word (MEH-2744's rule, Wolt/Uber Eats) — so for a
+            delivery-only business the fee moves to the business page, the
+            same trade MEH-2744 made for the free-above threshold. */}
+        {(cardFee.fee != null || freeAbove || showDeliveryOnly) && (
           <p className="flex items-start gap-1 text-xs text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
             <span className="min-w-0">
+              {showDeliveryOnly ? (
+                <span data-testid="card-delivery-only">
+                  {t("producer.card.badges.delivery_only")}
+                </span>
+              ) : (
+              <span>
               {alwaysFree ? (
                 t("group_buys.delivery.fee_free")
               ) : freeAbove ? (
@@ -887,7 +849,63 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   );
                 })()
               )}
+              </span>
+              )}
             </span>
+          </p>
+        )}
+
+        {/* MEH-1880: rendered ONLY when the declared window is open right now.
+            Closed, absent, or pre-mount → this whole node is absent, so a card
+            without an open window is byte-identical to before this ticket (no
+            reserved space, no layout shift). Copy is reused verbatim from the
+            producer page's status branch — zero new keys in either locale. */}
+        {showOrderWindowLine && (
+          // `text-primary` is not a free choice: it is the tone the producer
+          // page's own `open` branch resolves to (order-status.js:99), so the
+          // card says the same thing in the same colour. No new colour token.
+          //
+          // NOT `truncate`, and that is a measured decision. At 375px the card
+          // body is 132px wide and this string needs 138 — a 6px overflow, the
+          // only width where it does not fit (414/768/1440 all clear). In RTL
+          // the ellipsis lands at the visual left, which is exactly where the
+          // cutoff time sits, so truncating drops the ONE datum the line
+          // carries and leaves a line that says "open · until…". Wrapping
+          // keeps the time. It costs a second line at 375px on open cards
+          // only; the closed/null/vacation states render no node at all, so
+          // the AC's "no layout shift" case is untouched.
+          // MEH-3508: a fact line like delivery — 12px, 14px icon, same gap.
+          <p
+            className="flex items-start gap-1 text-xs text-primary"
+            data-testid="card-order-window"
+          >
+            <Clock size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
+            <span className="min-w-0">{t("producer.detail.header.status.orders_open", {
+              time: humanTime(israelTime(orderStatus.nextChange)),
+            })}</span>
+          </p>
+        )}
+
+
+        {/* MEH-3508: order — what (category, description), then logistics
+            (delivery, order window), then extras (offer, favourites). */}
+        {/* MEH-2759: the Friday «מגיעה היום» pill (fridayMode + available_today)
+            is gone with the state; the Friday strip now lists businesses that
+            deliver on Friday. */}
+
+        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
+            when active_offer is absent, so a business without an offer renders
+            byte-identically to before — no wrapper, no gap, no flow change. */}
+        {/* MEH-2676: a thresholded free-delivery offer renders in the
+            delivery row below instead — one delivery item, amount visible. */}
+        {!freeAbove && <OfferBadge offer={producer.active_offer} variant="chip" />}
+        {/* /MEH-1823 */}
+
+        {localFavCount >= 5 && (
+          <p className="flex items-center gap-1 text-xs text-fg-muted">
+            {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
+            <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
+            {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
 

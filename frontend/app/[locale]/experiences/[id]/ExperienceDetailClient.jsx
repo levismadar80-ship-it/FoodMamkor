@@ -419,6 +419,8 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
                     title={ex.title}
                     method={ex.registration_method}
                     phone={hostBiz?.producer_phone}
+                    producerId={hostBiz?.producer_id}
+                    producerName={hostName}
                     url={ex.registration_url}
                     isFull={isFull}
                     sessions={ex.sessions ?? []}

@@ -111,7 +111,7 @@ describe("LocationModal commit contract (MEH-1192)", () => {
  *
  * These exist because the CI reviewer on PR #2847 pointed out that the
  * keyboard evidence for this file lived only in
- * frontend/e2e/qa-meh2039-modal-a11y.mjs — a hand-run QA script that no CI job
+ * qa-meh2039-modal-a11y.mjs [deleted probe, docs/media-archive.md] — a hand-run QA script that no CI job
  * executes. A trap with no gated test is a trap a future refactor can delete
  * silently. Same three assertions as CategoryRequestModal.test.jsx.
  *

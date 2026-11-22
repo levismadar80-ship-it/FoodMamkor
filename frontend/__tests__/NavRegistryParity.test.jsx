@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { loginLinkFor } from "@/lib/safe-redirect";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
@@ -56,6 +56,7 @@ const userRef = { current: null };
 const experiencesGateRef = { current: false };
 const eventsGateRef = { current: false };
 const hubGateRefs = { groupBuys: false, rescue: false };
+const ordersGateRef = { current: false }; // MEH-3525
 
 vi.mock("@/i18n/navigation", () => ({
   // MEH-2578: the chrome now takes Link from here, not next/link.
@@ -129,6 +130,8 @@ vi.mock("@phosphor-icons/react", () => {
     SignOut: stub("SignOut"),
     ArrowUpLeft: stub("ArrowUpLeft"),
     Gauge: stub("Gauge"),
+    Receipt: stub("Receipt"),
+    UsersThree: stub("UsersThree"), // MEH-3609 «הקבוצות שלי»
   };
 });
 
@@ -148,6 +151,10 @@ vi.mock("@/lib/use-experiences-nav-gate", () => ({
 
 vi.mock("@/lib/use-events-nav-gate", () => ({
   useEventsNavGate: () => eventsGateRef.current,
+}));
+
+vi.mock("@/lib/use-my-orders-nav-gate", () => ({
+  useMyOrdersNavGate: () => ordersGateRef.current,
 }));
 
 vi.mock("@/lib/use-hub-nav-gate", () => ({
@@ -478,9 +485,11 @@ describe("MEH-1703 — Header link row matches the registry", () => {
 // ──────────────────────── Header dropdown (headerMenu) ────────────────────────
 
 describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
-  for (const name of ["consumer", "producer", "producerNoId", "admin"]) {
-    it(`headerMenu surface, ${name}`, () => {
+  afterEach(() => { ordersGateRef.current = false; });
+  for (const [name, ordersOn] of [["consumer", false], ["consumer", true], ["producer", false], ["producer", true], ["producerNoId", false], ["admin", false]]) {
+    it(`headerMenu surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
+      ordersGateRef.current = ordersOn;
       userRef.current = state.user;
       const { container } = render(<Header />);
       openUserMenu();
@@ -489,6 +498,7 @@ describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
         ...expectedLinks("header", state),
         ...expectedLinks("headerMenu", state, {
           "producer-id-present": Boolean(state.producerId),
+          "orders-on": ordersOn,
         }),
       ];
       expect(sortLinks(renderedLinks(container))).toEqual(sortLinks(expected));
@@ -562,9 +572,11 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
 // ──────────────────────────── AccountSheet (mobile sheet) ────────────────────────────
 
 describe("MEH-1703 — AccountSheet matches the registry", () => {
-  for (const name of ["guest", "consumer", "producer", "admin"]) {
-    it(`accountSheet surface, ${name}`, () => {
+  afterEach(() => { ordersGateRef.current = false; });
+  for (const [name, ordersOn] of [["guest", false], ["guest", true], ["consumer", false], ["consumer", true], ["producer", false], ["admin", false]]) {
+    it(`accountSheet surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
+      ordersGateRef.current = ordersOn;
       // MEH-1703 chunk 3: `showBiz` is gone. The MEH-669 consumer gate is
       // audience "consumer" on the registry's registerProducer record, and
       // AccountSheet reads it from `user` — so this renders the real input
@@ -578,7 +590,7 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
         />,
       );
       expect(sortLinks(renderedLinks(container))).toEqual(
-        sortLinks(expectedLinks("accountSheet", state)),
+        sortLinks(expectedLinks("accountSheet", state, { "orders-on": ordersOn })),
       );
     });
   }

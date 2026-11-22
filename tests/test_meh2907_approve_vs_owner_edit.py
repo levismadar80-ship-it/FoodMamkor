@@ -8,13 +8,15 @@ Touches:  producers + producer_locations + products rows via the standard
           read the COMMITTED row from outside the request. Every outbound
           side effect of both handlers is patched (Resend, WhatsApp,
           IndexNow, Cloudinary) — see `_mute_side_effects`.
-Does NOT: cover the admin PUT or the import path. It DOES now cover all
-          three gates in `_assert_approvable` — photo, category-licence
-          and `phone_verified` — which an earlier revision deferred as
+Does NOT: cover the admin PUT or the import path. It covers both
+          blocking gates in `_assert_approvable` — photo and
+          `phone_verified` — which an earlier revision deferred as
           "plausibly affected, not measured". Measured since: one
-          `db.refresh(producer)` repairs all three, and a narrowed
-          `attribute_names=["images"]` re-opens two of them while the
-          photo test stays green. That is why tests 3 and 4 exist.
+          `db.refresh(producer)` repairs both, and a narrowed
+          `attribute_names=["images"]` re-opens the phone gate while the
+          photo test stays green. That is why the phone test exists. (The
+          category-licence gate was removed in MEH-3026: a missing licence
+          no longer blocks approval.)
 Related:  backend/app/routers/admin.py::_assert_approvable (the gate),
           ::_persist_approval (already runs the gates twice on its retry
           path, which MEH-2908 names as the precedent for a cheap fix);
@@ -96,8 +98,7 @@ import app.cloudinary_utils as cloudinary_utils
 import app.routers.admin_decisions as admin_mod
 import app.routers.producer_me as pm
 from app.database import SessionLocal
-from app.constants import LICENSE_REQUIRED_CATEGORIES
-from app.models.models import Category, Producer, ProducerCategory
+from app.models.models import Producer
 
 from conftest import auth_header, make_submit_ready_producer, make_user
 
@@ -125,7 +126,6 @@ def _mute_side_effects(monkeypatch) -> None:
     """
     monkeypatch.setattr(admin_mod, "_send_notification_email", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod, "notify_producer_approved", lambda *a, **k: None)
-    monkeypatch.setattr(admin_mod, "_send_whatsapp", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod.indexnow, "schedule", lambda *a, **k: None)
     monkeypatch.setattr(
         cloudinary_utils, "destroy_removed_images", lambda *a, **k: None
@@ -338,51 +338,10 @@ def _commit_from_outside(producer_id, **columns):
 
 
 @pytest.mark.serial
-def test_the_licence_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
-    """The second of the three gates, and it was not pinned before.
-
-    MEH-2908's fix is `db.refresh(producer)`, which reloads the whole row
-    — so it repairs all three gates in `_assert_approvable`, not just the
-    photo one. Only the photo gate had a test, and a reviewer measured
-    what that costs: `db.refresh(producer, attribute_names=["images"])`
-    is the obvious save-a-round-trip edit, and under it a business with a
-    licence-required category is approved with its licence number
-    cleared inside the window while the whole suite stays green.
-
-    So this pins the licence gate (MEH-971) by the same mechanism.
-    """
-
-    def prepare(db_, producer):
-        producer.producer_license_number = "12-34567"
-        for link in db_.query(ProducerCategory).filter(
-            ProducerCategory.producer_id == producer.id
-        ):
-            cat = db_.get(Category, link.category_id)
-            cat.name = LICENSE_REQUIRED_CATEGORIES[0]
-            cat.requires_license = True  # MEH-3255: the gate reads the column
-
-    run = _run_the_race(
-        client,
-        db,
-        monkeypatch,
-        prepare=prepare,
-        mutate=lambda pid: _commit_from_outside(pid, producer_license_number=None),
-    )
-
-    assert run["seen"]["waited"] is True, "the gate's wait timed out"
-    assert run["results"].get("approve") == 422, (
-        "the licence gate passed on a licence number that was already "
-        f"cleared: approve answered {run['results'].get('approve')}"
-    )
-    assert run["final_status"] == "pending", (
-        f"the business went live as {run['final_status']!r} with no licence "
-        "number, in a category that requires one"
-    )
-
-
-@pytest.mark.serial
 def test_the_phone_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
-    """The third gate (MEH-2121), pinned for the same reason as the second.
+    """The phone gate (MEH-2121), pinned like the photo gate. (The licence
+    gate this once sat beside was removed in MEH-3026 — approval no longer
+    blocks on a missing licence.)
 
     An unverified WhatsApp number means the only CTA on the published
     page may go nowhere — which is the argument MEH-2121 makes for having

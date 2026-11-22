@@ -23,17 +23,15 @@ Sources: Cursor · Devin · V0 · Manus · Windsurf (2026).
 7. **Lazy Edit (Cursor)** — changed lines + `// ... existing code ...`
    markers only. Never return a full file.
 8. **Atomic Edits (Cursor)** — 3 changes in one file = 1 edit call,
-   not 3. All-or-nothing. **When a refactor relocates an import + its
-   usage, batch them (MultiEdit) or remove the usage before the import** —
-   sequential edits otherwise leave a transient `no-undef` that the
-   per-edit `lint-feedback` hook scores as a (false) 3-strike block
-   (MEH-763 chunk 3, 2026-06-06).
+   not 3. All-or-nothing. When a refactor moves an import + its usage,
+   batch them, or the `lint-feedback` hook sees a transient `no-undef`.
 9. **Skeptic Mode (Devin)** — "Haven't verified X" > "X probably
    works". Declare uncertainty explicitly.
 10. **File:Line Evidence (Devin)** — every code claim needs
     `file:line`. No citation = guess, not fact.
 11. **Numbered Plan First (Manus)** — numbered steps before any code,
-    even "small" tasks. Wait for `go`.
+    even "small" tasks. Whether to wait for `go` is workflow rule 4 (a
+    queue card's description is already the approved plan).
 12. **Narrated Actions (Windsurf)** — one-line per action:
     "Reading X… Found Y… Fixing Z…" No black-box turns.
 13. **Real Imports Only (V0)** — verify file exists before writing
@@ -55,23 +53,20 @@ They surface concretely the same patterns these principles guard against:
 | `PLR0913 max-args=5`, `C901 max-complexity=10`, `PLR0911 max-returns=6` | Ruff (backend) | exec §8 — same intent at the Python layer |
 | `PLR0915 max-statements=50`, `PLR0912 max-branches=12` | Ruff (backend) | exec §7 — keeps Python functions small enough to lazy-edit |
 
-Frontend warnings are not errors today (MEH-443). Backend Ruff has no
-warn level — PL rules ship as errors covered by `per-file-ignores`
-referencing the refactor ticket that will eventually remove the ignore
-(MEH-444). Promote frontend to error and remove backend ignores after
-MEH-437 / MEH-438 / MEH-439 / MEH-440 ship + 30-day soak. Until then,
-treat new lint signals as feedback, not a build gate.
+Frontend ESLint is warn mode, held by `npm run lint:ratchet`; backend Ruff
+PL rules are errors with `per-file-ignores` naming their refactor ticket
+(MEH-444).
 
 ---
 
 ## Execution order per task
 
 - **Before:** read CLAUDE.md + HANDOFF → numbered plan → grep siblings
-  → wait for `go`
+  → `go` per workflow rule 4
 - **During:** lazy edit (1 call / file / turn) → narrate each action →
   real imports only
 - **After:** file:line evidence per claim → build + tests → preview
-  URL → HANDOFF update
+  URL. HANDOFF is updated in a separate docs-only PR (workflow rule 31).
 
 ---
 
@@ -108,6 +103,12 @@ Canonical exemplars, one per language style:
    untouched), about-decision (WCAG contrast vs brand-token).
 
 New files mirror whichever style matches the language.
+
+**The header feeds the code index (MEH-3604).** `docs/CODE_INDEX.md` shows each
+module's `Purpose:` line (or first sentence), and `tests/test_meh3604_code_index.py`
+fails on a new module with no header at the top of the file (a tool pragma such
+as `// eslint-disable` is not a header). Before writing a helper or component,
+search the index.
 
 ---
 
@@ -152,9 +153,7 @@ the provenance for free.
 grep -rE "# (MEH-[0-9]+|DO NOT|REUSES):" backend/ frontend/
 ```
 
-Forward-only — existing files retrofit only when otherwise edited. No
-hook enforcement here; if drift becomes a problem, open a follow-up for
-`.claude/hooks/check-sentinel-format.sh`.
+Forward-only — existing files retrofit only when otherwise edited.
 
 ---
 
@@ -163,15 +162,27 @@ hook enforcement here; if drift becomes a problem, open a follow-up for
 An agent reads a big file in slices and misses what is outside the slice.
 
 - **New source file ≤ 1,500 lines** — `scripts/checks/file-size-ratchet.sh`
-  fails above that (scans `backend/app`, `frontend/{app,components,lib}`; tests and
-  `lib/generated/` excluded).
+  fails above that (scans `backend/app`, `frontend/{app,components,lib}`, and
+  since 20/11 also `tests/`, `frontend/__tests__/`, `frontend/e2e/`, `scripts/`,
+  `backend/scripts/`; only `lib/generated/` excluded).
 - **A file in `scripts/checks/file-size-baseline.txt` does not grow.** When a
   task touches one, put the new or changed part in its own module and import it
   (a router helper → `backend/app/services/`, a dashboard card → its own file).
   Growth prints a warning now; lower the baseline number when the file shrinks,
   never raise it.
 - Don't split a big file you aren't otherwise changing — no refactor-only PRs
-  before launch.
+  before launch. **Exception (Sapir 20/11):** the 11 test/script files that were
+  over the cap when tests joined the scan are split on purpose, mechanically
+  (move whole groups, prove the same test IDs collect before and after).
+- **How a test file was split (MEH-3540).** pytest: `tests/<stem>.py` imports
+  its tests from `tests/_<stem>__pNN.py` (node ids unchanged; a test missing
+  from that import list never runs, and `tests/test_meh3540_split_parts_collected.py`
+  catches it). Playwright: `<name>-NN.spec.ts` + `_<name>-shared.ts`. vitest:
+  `<name>-NN.test.jsx`, with the `vi.mock` header repeated in each file.
+  Scripts (MEH-3542): `seed_demo_business.py` and `action_map.py` keep their
+  entry file and re-export every name from `_<name>_pNN.py` parts; code that
+  reads a name a test patches on the module (`utc_now`, `engine`,
+  `SessionLocal`) stays in the entry file, or the patch would miss it.
 
 ---
 

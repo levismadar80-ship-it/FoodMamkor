@@ -32,6 +32,10 @@ import {
   regionPagePath,
 } from "@/lib/region-pages";
 import BackLink from "@/components/ui/BackLink";
+import { cardImagePriority } from "@/lib/card-image-priority";
+import { siteOgImageUrl } from "@/lib/og-site-image";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 
 const PER_PAGE = 24;
 
@@ -164,14 +168,15 @@ export async function generateMetadata({ params }) {
 
   const { category, total } = resolved;
   const t = await getTranslations({ locale, namespace: "region_pages" });
+  const categoryName = categoryLabel(await getTranslations({ locale }), category);
   const regionIn = t(`regions.${regionKey}`);
   const path = regionPagePath(categorySlug, regionKey);
-  const title = t("meta_title", { category: category.name, region_in: regionIn });
+  const title = t("meta_title", { category: categoryName, region_in: regionIn });
   // og/twitter get no template from Next.js, so they carry the brand themselves.
   const socialTitle = buildEntityTitle(title, locale);
   const description = t("meta_description", {
     count: total,
-    category: category.name,
+    category: categoryName,
     region_in: regionIn,
   });
 
@@ -186,9 +191,9 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath(path, locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
-    twitter: { card: "summary_large_image", title: socialTitle, description, images: ["/og-image.png"] },
+    twitter: { card: "summary_large_image", title: socialTitle, description, images: [siteOgImageUrl(locale)] },
     alternates: buildAlternates(path, locale),
   };
 }
@@ -202,8 +207,10 @@ export default async function RegionLandingPage({ params }) {
   const { category, items, total } = resolved;
 
   const t = await getTranslations({ locale, namespace: "region_pages" });
+  const tRoot = await getTranslations({ locale });
+  const categoryName = categoryLabel(tRoot, category);
   const regionIn = t(`regions.${regionKey}`);
-  const heading = t("h1", { category: category.name, region_in: regionIn });
+  const heading = t("h1", { category: categoryName, region_in: regionIn });
 
   const categories = await fetchCategories();
   const siblings = await fetchServableSiblings(category, regionKey, categories);
@@ -221,19 +228,25 @@ export default async function RegionLandingPage({ params }) {
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-        {items.map((producer) => (
-          <ProducerCard key={producer.id} producer={producer} referrer="region-landing" />
+        {items.map((producer, i) => (
+          <ProducerCard
+            key={producer.id}
+            producer={producer}
+            referrer="region-landing"
+            // MEH-2233: the LCP here is a first-row card photo.
+            imagePriority={cardImagePriority(i)}
+          />
         ))}
       </div>
 
       {siblings.sameCategory.length > 0 && (
         <nav
-          aria-label={t("chips_same_category", { category: category.name })}
+          aria-label={t("chips_same_category", { category: categoryName })}
           className="mt-10"
           data-testid="region-chips-same-category"
         >
           <h2 className="text-sm font-semibold text-fg-muted">
-            {t("chips_same_category", { category: category.name })}
+            {t("chips_same_category", { category: categoryName })}
           </h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {siblings.sameCategory.map((key) => (
@@ -245,7 +258,7 @@ export default async function RegionLandingPage({ params }) {
                   {/* Anchor text is the TARGET's full H1 (MEH-1204 §B): a chip
                       reading only «בשרון» tells a crawler nothing about what it
                       links to. */}
-                  {t("h1", { category: category.name, region_in: t(`regions.${key}`) })}
+                  {t("h1", { category: categoryName, region_in: t(`regions.${key}`) })}
                 </Link>
               </li>
             ))}
@@ -269,7 +282,7 @@ export default async function RegionLandingPage({ params }) {
                   href={regionPagePath(cat.slug, regionKey)}
                   className="inline-flex items-center rounded-full border border-border bg-surface px-4 py-2 text-sm text-fg transition-colors hover:border-primary hover:text-primary"
                 >
-                  {t("h1", { category: cat.name, region_in: regionIn })}
+                  {t("h1", { category: categoryLabel(tRoot, cat), region_in: regionIn })}
                 </Link>
               </li>
             ))}

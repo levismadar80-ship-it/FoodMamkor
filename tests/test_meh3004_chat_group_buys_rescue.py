@@ -22,14 +22,23 @@ def test_rescue_bags_never_in_the_fixed_knowledge():
     assert "סל הפתעה" not in chat.SYSTEM_PROMPT
 
 
+def _assert_no_rescue(prompt):
+    # MEH-3528: the prompt now also carries the page list and the business
+    # tools, so "no rescue" is checked on the rescue text, not on equality.
+    assert prompt.startswith(chat.SYSTEM_PROMPT)
+    assert "סל הפתעה" not in prompt
+    assert "סלי הפתעה" not in prompt
+    assert "/rescue" not in prompt
+
+
 def test_pilot_off_no_rescue(monkeypatch):
     _pilot(monkeypatch, False, "חיפה")
-    assert chat._base_system_prompt() == chat.SYSTEM_PROMPT
+    _assert_no_rescue(chat._base_system_prompt())
 
 
 def test_pilot_on_no_town_no_rescue(monkeypatch):
     _pilot(monkeypatch, True, "")
-    assert chat._base_system_prompt() == chat.SYSTEM_PROMPT
+    _assert_no_rescue(chat._base_system_prompt())
 
 
 def test_pilot_on_one_town(monkeypatch):
@@ -105,4 +114,4 @@ def test_endpoint_keeps_rescue_paragraph_on_the_live_data_path(monkeypatch):
 
 def test_endpoint_has_no_rescue_paragraph_when_pilot_off(monkeypatch):
     _pilot(monkeypatch, False, "חיפה")
-    assert _drive_chat(monkeypatch, None) == chat.SYSTEM_PROMPT
+    _assert_no_rescue(_drive_chat(monkeypatch, None))

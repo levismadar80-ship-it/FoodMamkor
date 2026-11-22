@@ -4,6 +4,7 @@
 
 **Routes**
 * `frontend/app/[locale]/(whats-on)/` — ‏`/events` ו-`/experiences` הם שני דפים של מסך אחד: ה-layout המשותף (`frontend/app/[locale]/(whats-on)/layout.js`) מציג את `EventsClient` פעם אחת, והלשונית נגזרת מהכתובת בלבד. מעבר לשונית הוא `router.push` אמיתי (MEH-3463). השומר: `frontend/__tests__/NoHandWrittenRouteChangeGuard.test.js`.
+* הרשימה הראשונה נקראת בשרת (MEH-2233): ה-layout קורא את `/events` ואת `/experiences` בלי סינון (cache של 60 שניות) ומעביר אותן כ-`initialRows`. ‏`EventsClient` משתמש ברשימה של הלשונית שאליה הגיעו, פעם אחת, ורק כשבכתובת אין סינון. מעבר לשונית ו-Back בלי סינון מציגים מיד את הרשימה האחרונה הידועה של הלשונית (מהשרת או מטעינה קודמת), בלי שלד, ומרעננים אותה בשקט ברקע (MEH-3626). סינון שולח בקשה כמו קודם. בזמן טעינה אמיתית מוצגים רק «הכל», הצ'יפ שנבחר והצ'יפים שהיו גלויים בלשונית הזאת, כדי שצ'יפ לא יופיע ואז ייעלם. השומר: `frontend/__tests__/EventsServerFirstList.test.jsx`.
 * `frontend/app/[locale]/events/[id]/`
 * `frontend/app/[locale]/producer/dashboard/events/` ‏(+ `new`, `[id]/edit`)
 * `frontend/app/[locale]/registration/[token]/` — ביטול הרשמה דרך הקישור במייל.
@@ -13,6 +14,7 @@
 * `backend/app/services/registration_emails.py` — מיילי ההרשמה (אישור, בעלים, ביטול, תזכורת MEH-3312, רשימת המתנה והצעת מקום MEH-3314).
 * `frontend/app/[locale]/events/EventsClient.jsx`
 * `frontend/components/RegistrationOverlays.jsx` — פס ההרשמה.
+* `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`. לחיצה על וואטסאפ (הכפתור, רשימת ההמתנה או «שאלה» עם נייד) נשלחת גם ל-PostHog כאירוע `item_whatsapp_click`, עם סוג הדף, הפריט, בית העסק והקישור, כדי לראות כמה הרשמות נסגרות מחוץ לאתר. שום דבר לא נחסם (MEH-3194). שומר: `frontend/__tests__/RegistrationCtaOffSiteWhatsApp.test.jsx`. בטופס ההרשמה באתר, מתחת לכפתור, שורה שמציינת מול איזה בית עסק עושים את העסקה ושמהמקור לא צד לה (`frontend/components/public/NotAPartyLine.jsx`, MEH-3570).
 * `frontend/app/[locale]/events/[id]/EventDetailClient.jsx` — תמונת השער: תמונת האירוע, ואם אין, התמונה הראשונה של הבעלים, כמו בכרטיס (MEH-3459). תמונת השיתוף ב-`frontend/app/[locale]/events/[id]/page.js` באותו סדר.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת האירועים פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ברשימה של העסק עצמו, `/events/mine` (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 

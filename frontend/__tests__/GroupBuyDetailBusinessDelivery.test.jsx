@@ -11,6 +11,8 @@
  * Cells: producer fetch ok / fails / returns a malformed body × business that
  * delivers to listed cities / nationwide with exclusions / does not deliver.
  */
+import { contractRow, uuidFor } from "./helpers/contract-row";
+import { GetProducerProducersProducerIdGetResponse } from "@/lib/generated/api.zod";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
@@ -39,7 +41,7 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 // The checker seeds from the saved city; none saved here.
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null }) }));
 
@@ -60,15 +62,18 @@ const GB = {
   user_commit: null,
 };
 
-const producer = (over = {}) => ({
-  id: "p-1",
-  name: "מאפיית שקד",
-  offers_delivery: true,
-  delivery_nationwide: false,
-  delivery_excluded_cities: [],
-  delivery_areas: [{ id: "a1", city: "חדרה", min_order: 100, delivery_day: "שישי" }],
-  ...over,
-});
+// MEH-1748: the page parses the whole ProducerDetailOut (generated), so the
+// body is a contract-valid row with only the delivery fields set here.
+const producer = (over = {}) =>
+  contractRow(GetProducerProducersProducerIdGetResponse, {
+    id: uuidFor("p-1"),
+    name: "מאפיית שקד",
+    offers_delivery: true,
+    delivery_nationwide: false,
+    delivery_excluded_cities: [],
+    delivery_areas: [{ id: uuidFor("a1"), city: "חדרה", min_order: 100, delivery_day: "שישי" }],
+    ...over,
+  });
 
 const fixture = { producer: null, producerError: null };
 const defaultGet = (url) => {
@@ -284,10 +289,11 @@ describe("pickup and delivery as two rows", () => {
     expect(section.querySelector("h2").textContent).toBe(TITLE);
     const pickup = screen.getByTestId("group-buy-pickup-note");
     const delivery = screen.getByTestId("group-buy-delivery-note");
-    expect(pickup.querySelector("dt").textContent).toBe("group_buys.detail.pickup_label");
-    expect(pickup.querySelector("dd").textContent).toBe(PICKUP);
-    expect(delivery.querySelector("dt").textContent).toBe("group_buys.detail.delivery_label");
-    expect(delivery.querySelector("dd").textContent).toBe(DELIVERY);
+    // MEH-3597: rows of the shared WhereSection (label in <b>, then the note).
+    expect(pickup.querySelector("b").textContent.trim()).toBe("group_buys.detail.pickup_label");
+    expect(pickup.textContent).toContain(PICKUP);
+    expect(delivery.querySelector("b").textContent.trim()).toBe("group_buys.detail.delivery_label");
+    expect(delivery.textContent).toContain(DELIVERY);
     expect(pickup.compareDocumentPosition(delivery) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(delivery.compareDocumentPosition(checker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByTestId("group-buy-fulfillment-note")).toBeNull();

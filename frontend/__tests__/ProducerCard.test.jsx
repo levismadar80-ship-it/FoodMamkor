@@ -47,11 +47,11 @@ vi.mock("next-intl", () => ({
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
     if (key === "producer.offer.card_delivery_sr") return "משלוח";
-    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק״ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // ('ק״מ' on the Hebrew card). The experience-card test set the precedent
   // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
@@ -66,7 +66,11 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
   // MEH-1211: forward onError so the load-failure fallback can be exercised.
-  default: ({ src, alt, onError }) => <img src={src} alt={alt} onError={onError} />,
+  // MEH-2233: forward loading / fetchPriority as data attributes, so the
+  // above-the-fold eager path is observable without React's attribute rules.
+  default: ({ src, alt, onError, loading, fetchPriority }) => (
+    <img src={src} alt={alt} onError={onError} data-loading={loading} data-fetchpriority={fetchPriority} />
+  ),
 }));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
@@ -490,7 +494,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     // MEH-2440: distance belongs to the place, so it rides in the city line.
     expect(screen.getByTestId("card-place")).toContainElement(distance);
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
     expect(distance.textContent).not.toContain("ממך");
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
@@ -517,7 +521,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
   });
 
   it("prefers short_description over top_product_name", () => {
@@ -636,9 +640,24 @@ describe("ProducerCard — Phase B anatomy", () => {
     );
     const label = screen.getByText("משלוחים בלבד");
     expect(label).toBeInTheDocument();
-    const badge = label.closest("span");
-    expect(badge.querySelector('[data-testid="icon-truck"]')).toBeInTheDocument();
-    expect(badge.textContent).not.toMatch(/🚚/);
+    // MEH-3508: the label opens the delivery fact line, whose one Truck it uses.
+    const line = label.closest('[data-testid="card-delivery-fee"]');
+    expect(line, "delivery-only sits in the delivery fact line").not.toBeNull();
+    expect(line.querySelectorAll('[data-testid="icon-truck"]')).toHaveLength(1);
+    expect(line.textContent).not.toMatch(/🚚/);
+  });
+
+  // MEH-3508: one delivery fact per card, one line — for a delivery-only
+  // business the line says «משלוחים בלבד» and the fee stays on the page.
+  it("delivery-only with a fee: one line, «משלוחים בלבד», no fee on the card", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: false, offers_delivery: true, delivery_fee: 35 }}
+      />,
+    );
+    const line = screen.getByTestId("card-delivery-fee");
+    expect(line).toHaveTextContent("משלוחים בלבד");
+    expect(line.textContent).not.toMatch(/35/);
   });
 
   it("does not render the delivery-only badge for a physical producer", () => {
@@ -854,33 +873,33 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
 
   // MEH-1508 chunk 3ב-2 (axe `target-size`, CI mobile /producers): the +N keeps
   // a 44×44 hit area (min-h/min-w 44) inside a 24px layout box by pulling it
-  // back with a negative margin. When the strip WRAPS the +N onto a second line
-  // (a long first-row badge such as «צמחוני» at 393px), that margin
-  // reaches upward into the row above; with the old 4px row gap the +N — later
-  // in DOM, so painted on top — covered ~5px of «חדש» and left it 41.5×19.3,
-  // below WCAG 2.2 2.5.8's 24×24. The row gap must be at least the +N's
-  // vertical pull-back, so a wrapped +N can touch the row above but never
-  // cover it. Read off the Tailwind spacing scale (1 unit = 4px).
-  it("+N keeps a 44px target whose pull-back cannot cover a badge on the row above", () => {
+  // back with a negative margin. That margin once reached into a wrapped row
+  // above and covered «חדש» (41.5×19.3, below WCAG 2.2 2.5.8's 24×24).
+  // MEH-3508: the strip is back on the photo and holds ONLY the no-wrap badge
+  // line, so there is no row above to cover — the strip must not wrap — and the
+  // pull-back must stay inside the photo: bottom inset ≥ pull-back.
+  // Read off the Tailwind spacing scale (1 unit = 4px).
+  it("+N keeps a 44px target whose pull-back stays on one line, inside the photo", () => {
     render(<ProducerCard producer={overflowProducer} />);
     const chip = screen.getByTestId("badge-overflow");
     const chipClasses = chip.className.split(/\s+/);
     expect(chipClasses).toContain("min-h-touch");
     expect(chipClasses).toContain("min-w-touch");
-    // MEH-3321: the strip left the photo (no longer `absolute`); find it by id.
     const strip = chip.closest('[data-testid="card-badge-strip"]');
     expect(strip, "the +N must sit in the badge strip").not.toBeNull();
     const stripClasses = strip.className.split(/\s+/);
-    expect(stripClasses, "the strip wraps, which is the case this guards").toContain("flex-wrap");
+    expect(stripClasses, "the photo strip is one line").not.toContain("flex-wrap");
+    const line = chip.closest("[data-badge-line]");
+    expect(line.className.split(/\s+/)).toContain("flex-nowrap");
     const units = (re, classes) => {
       const hit = classes.map((c) => re.exec(c)).find(Boolean);
       return hit ? Number(hit[1]) : null;
     };
     const pullBack = units(/^-m[ty]?-(\d+(?:\.\d+)?)$/, chipClasses);
     expect(pullBack, "the +N's vertical negative margin must be readable").not.toBeNull();
-    const rowGap = units(/^gap-y-(\d+(?:\.\d+)?)$/, stripClasses) ?? units(/^gap-(\d+(?:\.\d+)?)$/, stripClasses);
-    expect(rowGap, "the strip's row gap must be readable").not.toBeNull();
-    expect(rowGap).toBeGreaterThanOrEqual(pullBack);
+    const inset = units(/^bottom-(\d+(?:\.\d+)?)$/, stripClasses);
+    expect(inset, "the strip's bottom inset must be readable").not.toBeNull();
+    expect(inset).toBeGreaterThanOrEqual(pullBack);
   });
 
   it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {
@@ -1022,7 +1041,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק״ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {
@@ -1068,31 +1087,28 @@ describe("ProducerCard — no Friday pill (MEH-2759)", () => {
   });
 });
 
-// MEH-3074: the signup wizard previews the card before a business exists — no
-// id, no photo, no rating. The real card must render that shape.
-describe("ProducerCard — signup preview shape (MEH-3074)", () => {
-  it("renders name, city and the one-line dek from previewProducer()", async () => {
-    const { previewProducer } = await import("@/components/RegisterCardPreview");
-    const producer = previewProducer(
-      {
-        producer_name: "הבית של רותי",
-        city: "זכרון יעקב",
-        short_description: "לחם מחמצת מקמח מקומי",
-        // picked in this order — catalogue order is the reverse
-        category_ids: [2, 1],
-        has_physical_location: true,
-        offers_delivery: false,
-      },
-      [{ id: 1, name: "ירקות" }, { id: 2, name: "מאפים" }],
-    );
-    const { container } = render(<ProducerCard producer={producer} />);
-    expect(container.textContent).toContain("הבית של רותי");
-    expect(container.textContent).toContain("זכרון יעקב");
-    expect(container.textContent).toContain("לחם מחמצת מקמח מקומי");
-    expect(container.querySelector("img")).toBeNull();
-    // The card shows categories[0]: it must be the first one PICKED.
-    expect(producer.categories.map((cat) => cat.id)).toEqual([2, 1]);
-    expect(container.textContent).toContain("מאפים");
-    expect(container.textContent).not.toContain("ירקות");
+// MEH-2233: on /producers the LCP element is a first-row card photo (measured
+// 20/11 on staging: IMG, 5.4s median at slow 4G + CPU x4) and next/image made
+// it loading="lazy" — the browser waits for layout before it even asks for it.
+describe("ProducerCard — imagePriority (MEH-2233)", () => {
+  it("default card photo stays lazy, with no fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBeNull();
+    expect(img.getAttribute("data-fetchpriority")).toBeNull();
+  });
+
+  it("imagePriority=high loads the photo eagerly at high fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} imagePriority="high" />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBe("eager");
+    expect(img.getAttribute("data-fetchpriority")).toBe("high");
+  });
+
+  it("imagePriority=eager loads eagerly without raising fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} imagePriority="eager" />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBe("eager");
+    expect(img.getAttribute("data-fetchpriority")).toBeNull();
   });
 });

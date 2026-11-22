@@ -20,6 +20,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }) {
       type: "article",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
     // layout's generic site card).
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/about/for-businesses", locale),
   };

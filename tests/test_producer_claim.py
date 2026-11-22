@@ -629,7 +629,9 @@ class TestAdminDraftCreate:
         assert r.status_code == 201, r.text
         assert r.json()["status"] == "approved"
 
-    def test_draft_skips_the_license_guard_but_approved_does_not(self, client, db):
+    def test_neither_draft_nor_approved_is_blocked_by_a_missing_licence(self, client, db):
+        # MEH-3026: a missing licence number blocks no admin create — draft or
+        # approved. The only effect is no «מאומת» badge (verified_at stays NULL).
         admin = make_user(db, role="admin")
         bread = make_category(db, name="לחמים ואפייה")  # LICENSE_REQUIRED_CATEGORIES
         base = {
@@ -640,7 +642,8 @@ class TestAdminDraftCreate:
         approved = client.post(
             "/admin/producers", json=base, headers=auth_header(admin)
         )
-        assert approved.status_code == 422, approved.text
+        assert approved.status_code == 201, approved.text
+        assert approved.json().get("verified_at") is None
         draft = client.post(
             "/admin/producers",
             json={**base, "as_draft": True},
@@ -762,9 +765,6 @@ class TestDraftClaimedMessage:
         monkeypatch.setattr(
             n, "send_email", lambda to, subject, body, test_cause=False: sent.append(("email", to, subject, body))
         )
-        monkeypatch.setattr(
-            n, "send_text", lambda to, body, test_cause=False: sent.append(("wa", to, body)) or True
-        )
         return n, sent
 
     def test_message_is_the_approved_copy_with_flattened_fields(self, monkeypatch):
@@ -772,7 +772,7 @@ class TestDraftClaimedMessage:
         n.notify_admin_draft_claimed("מאפיית\nהבוקר", "רותם\nhttps://evil", "r@example.com", "חדרה")
         email = [s for s in sent if s[0] == "email"]
         wa = [s for s in sent if s[0] == "wa"]
-        assert len(email) == 1 and len(wa) == 1
+        assert len(email) == 1 and wa == []  # MEH-3589: email only
         _, to, subject, body = email[0]
         assert to == "admin@example.com"
         assert subject == "מהמקור - הטיוטה של מאפיית הבוקר נקלטה"
@@ -782,7 +782,6 @@ class TestDraftClaimedMessage:
         assert lines[2] == "עיר: חדרה"
         assert lines[3].startswith("לאדמין: ") and lines[3].endswith("/admin/producers")
         assert len(lines) == 4
-        assert wa[0][2] == body
 
     def test_test_cause_sends_nothing(self, monkeypatch):
         n, sent = self._capture(monkeypatch)

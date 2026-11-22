@@ -119,7 +119,7 @@ export default function DevComponentsPage() {
       <Section title="Input">
         <div className="grid gap-5 sm:grid-cols-2 max-w-[640px]">
           <Input type="text" label="שם" placeholder="שם מלא" helperText="כפי שיופיע בפרופיל" />
-          <Input type="email" label="אימייל" placeholder="you@example.com" />
+          <Input type="email" label="מייל" placeholder="you@example.com" />
           <Input type="search" label="חיפוש" placeholder="מה בא לך לאכול?" />
           <Input type="text" label="שדה שגוי" defaultValue="??" error="יש להזין לפחות 3 אותיות" />
           <Input type="text" label="מושבת" placeholder="לא ניתן לעריכה" disabled />

@@ -537,7 +537,13 @@ on a seeded env. Local dev: same script against the local DB.
 Both Places keys — the browser's `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (address
 autocomplete in registration and the dashboard) and the server's
 `GOOGLE_PLACES_API_KEY` (the Google-rating line, MEH-1490) — live in ONE Google
-Cloud project, **«My First Project»**, on one billing account. When that
+Cloud project, **`mehamakor`** (project number `591935721343`, the same one
+that holds the «Sign in with Google» OAuth client), on the billing account
+**«Mehamkor»**. Look it up by that id, never by name: the same Google login
+also owns several projects called «My First Project», and one of them holds
+a key named `mehamakor-backend-places` on an ended free trial. That key was
+put in Railway on 20/11/2026 and turned `/api/health/places` red within a
+minute (MEH-3517). When that
 account stops (trial ended, card declined, budget cap), **every** lookup answers
 `403 PERMISSION_DENIED` and nothing in the UI says why.
 
@@ -552,7 +558,9 @@ a Google outage — but address search itself is still Google's.
 1. `curl -s https://mehamakor.co.il/api/health/places` — `{"status":"ok"}` or
    `{"status":"error","http":403,"code":"PERMISSION_DENIED"}`. This is the one
    call that uses the real key against the real endpoint. The uptime workflow
-   probes it hourly once `docs/ci/places-health-probe.patch.md` is applied.
+   probes it on every 30-minute tick (`.github/workflows/uptime.yml`) and
+   opens the `uptime` issue after two failures in a row; `disabled` (no key
+   on the server) counts as a failure there.
 2. [Billing overview](https://console.cloud.google.com/billing) — is the
    account active, and is the project linked to it?
 3. [Places API (New)](https://console.cloud.google.com/apis/library/places-backend.googleapis.com)
@@ -560,6 +568,14 @@ a Google outage — but address search itself is still Google's.
 4. [Credentials](https://console.cloud.google.com/apis/credentials) → the key →
    *API restrictions* must list Places API (New); *Website restrictions* on the
    browser key must cover `mehamakor.co.il/*` and `staging.mehamakor.co.il/*`.
+
+**Before putting any Google key in Railway or Vercel** (MEH-3517):
+(1) open the key's project and check that it is `mehamakor`; (2) open
+*Billing* for that project and check that it is not an ended trial; (3) after
+the redeploy, `curl -s https://mehamakor.co.il/api/health/places` must still
+answer `{"status":"ok"}`, and an admin `google-place-candidates?q=שוק הכרמל תל אביב`
+must answer 200. If either is red, put the previous value back first, then
+investigate.
 
 **Cost control that is in place:** the key is API-restricted to Places API (New)
 only; a ₪30/month budget with alerts at 50/90/100/150% (alerts only — Google's
@@ -637,8 +653,8 @@ Moved to [docs/RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) on 2026-11-07 (MEH-
 > **14/11/2026 (MEH-3151): nobody tests by hand.** Sapir's decision: «לא עושים
 > בדיקות ידניות יותר». Everything below that once said "the user tests on a
 > phone" is done by the thread: screenshots of the preview at 390×844 WebKit +
-> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 in
-> `qa-artifacts/` (rule 23), and the release-time rows in
+> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 linked from
+> the PR, never committed (rule 23, MEH-3534), and the release-time rows in
 > [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) § ד׳.
 
 A feature branch gets a Vercel preview only for a `[preview]` commit (rule 9).
@@ -980,14 +996,49 @@ Secrets and variables → Actions → Variables); **public** otherwise.
 | Runner | `ubuntu-latest` | `self-hosted` (the runner on Sapir's PC) |
 | E2E on a PR | by paths or `run-e2e`, 4 shards | only with `run-e2e`, 2 shards |
 | E2E on push to staging | yes, 2 shards | none |
-| Nightly 01:30 UTC | Chromium + WebKit | Chromium |
+| Nightly 01:30 UTC | Chromium + WebKit, skipped when staging is unchanged since a green run (MEH-3507) | Chromium, same skip |
 | WebKit | nightly | weekly, Sunday 02:30 UTC |
+| WebKit core, blocking (MEH-3153) | every push to staging + every `run-e2e` PR | every `run-e2e` PR only |
 | pytest / vitest | 3 shards each | 1 shard each |
 
 In private mode a red staging is seen only by the nightly run, so
 `Staging health` (rule 41) can lag a staging break by up to a day. The jobs'
 `if:` conditions match the two cron strings verbatim: changing a cron in
 `e2e.yml` means changing the conditions that name it.
+
+### Resetting staging data (MEH-3630 · MEH-3631)
+
+`backend/scripts/reset_staging.py` empties every table except reference data
+(`KEEP_TABLES`: `alembic_version`, `alembic_lineage`, `categories`, `cities`,
+`admin_checklist_items`, `admin_settings`, `static_pages`) in one `TRUNCATE`,
+then runs the same seed chain as a PR's E2E backend
+(`scripts/e2e/start-local-backend.sh:53-58`). It refuses unless the database
+is local, or `RAILWAY_ENVIRONMENT=staging` with neither `ENV` nor
+`RAILWAY_ENVIRONMENT` set to `production`.
+
+Railway → backend service (staging) → Console, `cwd=/app`:
+
+```bash
+/app/.venv/bin/python scripts/reset_staging.py            # dry run: rows per table
+/app/.venv/bin/python scripts/reset_staging.py --confirm  # wipe + seed
+```
+
+It also refuses when the database URL is the one in `DATABASE_URL_PRODUCTION`,
+and refuses to wipe while any `DEMO_*_PASSWORD` is unset. **What the guard
+cannot see:** a tunnel (`railway connect`, ssh) to another database shows up
+as `localhost` and passes the host check — never point a local
+`DATABASE_URL` at a tunnel and run this.
+
+Before the first `--confirm`, take a backup of staging (`docs/BACKUPS.md`).
+If a seed step fails after the wipe, the script says so and exits 1: the
+database is empty or half-seeded until `--confirm` runs again cleanly.
+
+What disappears with the wipe: every account and session (the E2E run logs in
+again by itself), admin passkeys and recovery codes, and every id (`RESTART
+IDENTITY`). The admin from `ADMIN_EMAIL` comes back with `ADMIN_PASSWORD` only
+when both are set (seed_data.py); the three QA accounts come back with the
+`DEMO_*_PASSWORD` values. Cloudinary images are not deleted
+(`backend/scripts/cleanup_cloudinary_orphans.py`).
 
 ### Staging QA auth fixtures (MEH-1241 · MEH-1528)
 
@@ -1143,8 +1194,11 @@ without this header a request 302-redirects to `vercel.com/sso-api` and never
 reaches the backend (so both the globalSetup login and the spec's page
 navigations would fail). Get it from **Vercel → Settings → Deployment Protection
 → Protection Bypass for Automation** (it's the `VERCEL_AUTOMATION_BYPASS_SECRET`
-system env var). `globalSetup` sends it on the login request and
-`playwright.config.ts` sends it on browser navigations (`x-vercel-protection-bypass`);
+system env var). `globalSetup` sends it once, with no redirects, to get Vercel's host-only
+`_vercel_jwt` bypass cookie. It writes the cookie to `e2e/.auth/bypass.json`, the
+default `storageState` in `playwright.config.ts`, and into each role's state, so
+the browser never sends the secret (MEH-3629). It used to sit in
+`extraHTTPHeaders`, which reaches every host a page loads (MEH-3607).
 globalSetup **throws** on a remote target when it's unset. **Rotating** the secret
 (regenerate in that same Vercel setting) requires a **redeploy** before the new
 value takes effect. Never commit or log the value.
@@ -1522,6 +1576,46 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
   migration in `app/main.py` drops it automatically; a single restart
   cleans it up.
 
+### 2a. Outbox worker (MEH-3535) — one-time setup, per environment
+
+A second service from the same image that sends the queued emails
+(`email_outbox`) and runs the on-site order tick, so a web deploy or crash no
+longer drops them and the web service can later run more than one replica.
+Staging first, production after a day of clean staging logs.
+
+1. Railway → the environment → **+ New** → **GitHub Repo** → `FoodMamkor`,
+   same branch as the backend service (`staging` / `main`).
+2. Service name: `outbox-worker`.
+3. **Settings → Config-as-code → Railway config file**: `railway.worker.json`.
+   It builds the same `Dockerfile` and starts `python -u -m app.worker` — no
+   migrations (the backend's boot runs them) and no port.
+4. **Settings → Networking**: no public domain.
+5. **Variables**: all of the backend service's own variables (reference each
+   one, `${{FoodMamkor.NAME}}`, so a rotated key reaches both). The worker
+   loads the same `app.config`, so a production boot without `SECRET_KEY`
+   stops it exactly as it stops the web; email needs `RESEND_API_KEY` +
+   `EMAIL_FROM_ADDRESS`, the order tick the `WHATSAPP_*` ones and
+   `PRODUCT_ORDERS_ENABLED`. Not `PORT`, and not `OUTBOX_EXTERNAL_WORKER`.
+   **A worker without `RESEND_API_KEY` refuses to start** (log
+   `worker_refused_no_resend_key`, exit 1, so Railway shows it crash-looping):
+   a keyless dispatcher would leave every row to someone else, unseen. A web
+   process without the key leaves each row untouched and stops its batch, so
+   a dispatcher that has the key takes it at once. **Outside production also
+   set `ADMIN_EMAIL`** (the same reference): there every non-staff recipient is
+   redirected to it (MEH-3402), and without it the row is closed as `skipped`.
+6. Deploy. **Logs** should show `worker_started`, then `worker_tick` every
+   30 s (`ran: ["email_outbox"]`). A redeploy's SIGTERM ends the email batch
+   after the row in flight (one Resend call, at most 10 s); the order tick, if
+   running, finishes its own batch first.
+7. Only then, on the **backend** service: `OUTBOX_EXTERNAL_WORKER=true` and
+   redeploy. Its log says `[OUTBOX] OUTBOX_EXTERNAL_WORKER=true — the worker
+   service runs them`. Until this step both run the queue, which is safe
+   (`SKIP LOCKED`), just redundant.
+
+**Rollback:** remove `OUTBOX_EXTERNAL_WORKER` from the backend (the web
+scheduler takes the queue back on its next boot), then stop the worker.
+Never the other order: a moment with neither leaves emails waiting, not lost.
+
 ---
 
 ## 3. Vercel — Frontend (Next.js)
@@ -1760,7 +1854,7 @@ is unchanged.
 Create the cron service once after this PR merges to staging.
 
 1. Railway dashboard → existing project → **+ New** → **GitHub Repo** → select `FoodMamkor`.
-2. Service name: `cron-backup`.
+2. Service name: `backup-cron` (the name it carries in Railway today; this step once said `cron-backup`).
 3. **Settings → Build**:
    - Builder: `Dockerfile`
    - Dockerfile Path: `Dockerfile.cron`
@@ -1768,6 +1862,7 @@ Create the cron service once after this PR merges to staging.
    - `DATABASE_URL` → use the **internal** form (`postgresql://…@postgres.railway.internal:5432/…`), NOT the public proxy host. Internal networking is faster and removes the egress cost.
    - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` — copy from production env (already configured during Phase 1 prep).
    - `ENV=production`
+   - `SENTRY_DSN` → the reference `${{FoodMamkor.BACKEND_SENTRY_DSN}}`. The backend service has no variable named `SENTRY_DSN`; its DSN is `BACKEND_SENTRY_DSN` (`backend/app/sentry.py`). A reference keeps the two equal. Without it the run reports nothing to Sentry (MEH-3533, [BACKUPS.md](./BACKUPS.md)). Set in production on 21/11/2026.
 5. **Settings → Cron Schedule**: `0 23 * * *` (UTC).
    - That is **02:00 IST in summer (DST)** and **01:00 IST in winter**. The 1-hour seasonal shift is acceptable for v1 — backup runs at a quiet hour either way (see Known Limitations).
 6. **Settings → Networking**: leave default. Cron services don't expose ports.
@@ -1865,9 +1960,11 @@ Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
 
 ### E. Known limitations (v1, accepted)
 
-- **No alerting on cron failure.** Detection is manual: weekly check that
-  the R2 bucket lists a file dated within the last 24h. Phase 2.5 follow-up:
-  Slack webhook or Resend email on non-zero exit.
+- **Alerting on cron failure (MEH-3533).** Each run sends a Sentry Crons
+  check-in to `production-db-backup`, and a failed run (any non-zero exit,
+  including an unexpected raise → exit 4) sends an error event to the
+  project's issue alerts. A run that never starts is reported only when the
+  Crons monitor has a seat (it was created disabled, 20/11/2026: no free seat).
 - **Railway log retention is 7 days on the free tier.** If a backup error
   occurs and is not noticed within a week, the post-mortem trail is gone.
   Phase 2.5 follow-up: stream cron logs to Sentry or to R2 itself.

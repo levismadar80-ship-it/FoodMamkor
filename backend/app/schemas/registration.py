@@ -33,6 +33,7 @@ from app.schemas.schemas import (
     EMAIL_MAX_LENGTH,
     PhoneNumberField,
     SanitizedBusinessNameField,
+    SanitizedImportedNameField,
     SanitizedPersonNameField,
     _cap_categories_validator,
     _contact_method_validator,
@@ -243,6 +244,10 @@ class ProducerRegister(BaseModel):
     delivery_cities: list[str] = Field(
         default_factory=list, max_length=MAX_DELIVERY_CITIES
     )
+    # MEH-3026 (F11): the outreach prefill token from `?prefill=` — when it
+    # names a live lead, that lead is marked «registered». Optional; an
+    # unknown or expired token changes nothing.
+    prefill_token: str | None = Field(default=None, max_length=128)
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -458,7 +463,8 @@ class GoogleAuthRequest(BaseModel):
 
 class AppleAuthRequest(BaseModel):
     id_token: str
-    name: SanitizedPersonNameField | None = None  # Apple sends it once
+    # MEH-3671: emoji dropped, not refused — the person cannot edit this name.
+    name: SanitizedImportedNameField | None = None  # Apple sends it once
     terms_accepted: bool = False  # MEH-2080 chunk 2, as GoogleAuthRequest
 
 
@@ -469,7 +475,8 @@ class AppleAuthRequest(BaseModel):
 class ProducerOAuthSignupRequest(BaseModel):
     provider: str = Field(pattern="^(google|apple)$")
     id_token: str
-    name: SanitizedPersonNameField | None = None  # Apple sends it once
+    # MEH-3671: emoji dropped, not refused — the person cannot edit this name.
+    name: SanitizedImportedNameField | None = None  # Apple sends it once
 
 
 class LoginRequest(BaseModel):

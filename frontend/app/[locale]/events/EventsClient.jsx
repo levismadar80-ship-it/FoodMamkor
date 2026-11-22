@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 // MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-3463: the URL
 // is the ONLY source of the tab — read through usePathname; a switch is a real
@@ -79,7 +79,11 @@ const categoriesFor = (tab, values) => {
 // MEH-2245: one hub behind two routes. MEH-3463: rendered once by
 // app/[locale]/(whats-on)/layout.js; the tab comes from the URL. `initialTab`
 // is only the fallback for a path that names no tab (unit tests render on "/").
-export default function EventsPage({ initialTab = "events" }) {
+// MEH-3626: useLayoutEffect in the browser, useEffect on the server (no warning).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/** @param {{ initialTab?: string, initialRows?: { events?: any[] | null, experiences?: any[] | null } }} props */
+export default function EventsPage({ initialTab = "events", initialRows = undefined }) {
   const t = useTranslations("events.list");
   const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
@@ -105,8 +109,31 @@ export default function EventsPage({ initialTab = "events" }) {
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
 
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // MEH-2233: the server's unfiltered list for the tab this visit ARRIVED on
+  // ((whats-on)/layout.js). It is the first paint, for that first load only,
+  // when the URL carries no filter, and is then refreshed quietly (no
+  // skeleton): the ISR HTML can be a minute old, and a Back replays the
+  // router's cached copy. Every later load (a tab switch, a filter) fetches as
+  // before. null = no server data → fetch, exactly as before.
+  // The value is fixed at mount (state); the ref only marks it used, in an effect.
+  const [initialSeed] = useState(() =>
+    Array.isArray(initialRows?.[tab]) ? { tab, rows: initialRows[tab] } : null,
+  );
+  const seed = useRef(initialSeed);
+  // MEH-3626: the last unfiltered list known for EACH tab — the layout's
+  // server rows for both tabs at mount, then every unfiltered answer. A tab
+  // switch (tap or Back) with no filter shows the known list on the same tick
+  // and refreshes it quietly, instead of a skeleton whose chip row first drew
+  // every chip and then dropped the empty ones (Sapir, staging 21/11).
+  const known = useRef({
+    events: Array.isArray(initialRows?.events) ? initialRows.events : null,
+    experiences: Array.isArray(initialRows?.experiences) ? initialRows.experiences : null,
+  });
+  const [rows, setRows] = useState(() => (initialSeed ? initialSeed.rows : []));
+  const [loading, setLoading] = useState(() => !initialSeed);
+  // Which tab `rows` belong to — lets the server rows render before the URL's
+  // filters are read (MEH-3463 shows the skeleton only for another tab's rows).
+  const [rowsTab, setRowsTab] = useState(() => (initialSeed ? initialSeed.tab : null));
   // MEH-2396: a failed load is its own state. Before, the catch did
   // setRows([]) and the page rendered the editorial "אין אירועים" empty
   // state — a false statement when the server simply did not answer.
@@ -129,18 +156,40 @@ export default function EventsPage({ initialTab = "events" }) {
   // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
   // a time; filters the rows already loaded (no refetch).
   const [when, setWhen] = useState(null);
+  // MEH-3626: put a tab's known unfiltered list on screen now (no skeleton).
+  // Returns false when nothing is known — the caller's load shows the skeleton.
+  const showKnown = (next) => {
+    const list = known.current[next];
+    if (!list) return false;
+    loadTicket.current += 1; // an older tab's answer in flight must not land here
+    setRows(list);
+    setRowsTab(next);
+    setLoading(false);
+    setLoadError(false);
+    setPresent({ tab: next, city: "", cats: presentCategories(list) });
+    return true;
+  };
+
   // MEH-3463: the tab whose filters have been read from its URL. Until it
   // equals `tab`, nothing is fetched or written, so every arrival (first
   // load, Back, Forward) costs exactly one request, with the URL's filters.
   const [readTab, setReadTab] = useState(/** @type {string | null} */ (null));
   const urlReady = readTab === tab;
-  useEffect(() => {
+  // MEH-3626: a layout effect in the browser, so a Back to the other tab puts
+  // its known list up before the first paint — not one frame of skeleton.
+  useIsomorphicLayoutEffect(() => {
     if (readTab === tab) return;
     const p = new URLSearchParams(window.location.search);
-    setCity(p.get("city") || "");
-    setCategories(categoriesFor(tab, p.getAll("category")));
+    const urlCity = p.get("city") || "";
+    const urlCategories = categoriesFor(tab, p.getAll("category"));
+    setCity(urlCity);
+    setCategories(urlCategories);
     setWhen(null);
-    if (readTab !== null) setView("list"); // a tab change starts on the list
+    if (readTab !== null) {
+      setView("list"); // a tab change starts on the list
+      // MEH-3626: a Back/Forward to the other tab with no filter → its known list.
+      if (!urlCity && !urlCategories.length) showKnown(tab);
+    }
     setReadTab(tab);
   }, [tab, readTab]);
 
@@ -158,6 +207,7 @@ export default function EventsPage({ initialTab = "events" }) {
     setCity("");
     setView("list");
     setReadTab(next);
+    showKnown(next);
     router.push(`/${next}`, { scroll: false });
   };
 
@@ -183,13 +233,29 @@ export default function EventsPage({ initialTab = "events" }) {
 
   useEffect(() => {
     if (!urlReady) return; // MEH-2984: one request, with the URL's filters
+    const first = seed.current;
+    seed.current = null; // one use only, whatever happens below
+    if (first && first.tab === tab && !city && !categories.length) {
+      // MEH-2233: the server answered this exact request; refresh it quietly.
+      setPresent({ tab, city, cats: presentCategories(first.rows) });
+      load({ quiet: true });
+      return;
+    }
+    // MEH-3626: no filter and a known list for this tab → it is already on
+    // screen (showKnown at the switch, or below when a filter was cleared);
+    // refresh it quietly. Still exactly one request per switch (MEH-3463).
+    if (!city && !categories.length && known.current[tab]) {
+      if (rowsTab !== tab || rows !== known.current[tab]) showKnown(tab);
+      load({ quiet: true });
+      return;
+    }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlReady, tab, city, categories]);
 
-  const load = async () => {
+  const load = async ({ quiet = false } = {}) => {
     const ticket = ++loadTicket.current;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     setLoadError(false);
     try {
       const params = {};
@@ -205,13 +271,18 @@ export default function EventsPage({ initialTab = "events" }) {
       const r = await api.get(endpoint, { params, timeout: 15000 });
       if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
+      setRowsTab(tab);
+      // MEH-3626: an unfiltered answer is this tab's known list from now on.
+      if (!city && !categories.length && Array.isArray(r.data)) known.current[tab] = r.data;
       // MEH-3124: with no category picked, the list IS the category-less set
       // for {tab, city}. No second request for the other case (MEH-2984: a
       // deep link costs one request) — an unknown set shows every chip.
       if (!categories.length) setPresent({ tab, city, cats: presentCategories(r.data) });
     } catch {
       if (ticket !== loadTicket.current) return; // superseded
+      if (quiet) return; // MEH-2233: the server's rows stay on screen
       setRows([]);
+      setRowsTab(tab);
       setLoadError(true);
       // MEH-3124: a failed load forgets the set — every chip, not last city's.
       setPresent({ tab, city, cats: null });
@@ -222,7 +293,8 @@ export default function EventsPage({ initialTab = "events" }) {
 
   // MEH-3463: rows still belong to the previous tab (or to no filters yet)
   // until this tab's URL filters are read — show the skeleton, never them.
-  const busy = loading || !urlReady;
+  // MEH-2233: the server rows of this same tab are shown while the URL is read.
+  const busy = loading || (!urlReady && rowsTab !== tab);
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
@@ -351,7 +423,29 @@ export default function EventsPage({ initialTab = "events" }) {
       ]),
     );
   }, [rows, busy, loadError]);
-  const gatedChips = dropZeroChips({ chips: shownChips, counts: whenCounts, active: [...activeChipKeys] });
+  const settledChips = dropZeroChips({ chips: shownChips, counts: whenCounts, active: [...activeChipKeys] });
+  // MEH-3626: while a list loads, nothing is known about the chips, and the
+  // gates above fail open — drawing every chip, then dropping the empty ones
+  // when the answer lands (the flash Sapir saw on staging 21/11). Instead the
+  // row this tab last drew stays as it was (a city search does not flicker);
+  // with no earlier row for this tab, only «הכל» and the picked chips — the
+  // way back — are drawn, so the row grows once rather than shrinking.
+  // Held in state, not a ref, so render never reads a ref (react-hooks/refs):
+  // the documented "adjust state while rendering" pattern, guarded by a value
+  // compare so it settles after one extra render.
+  const [lastChipKeys, setLastChipKeys] = useState(/** @type {{ tab: string | null, keys: string[] }} */ ({ tab: null, keys: [] }));
+  const settled = !busy && !loadError;
+  const settledKeys = settledChips.map((c) => c.key);
+  if (settled && (lastChipKeys.tab !== tab || lastChipKeys.keys.join("\u0000") !== settledKeys.join("\u0000"))) {
+    setLastChipKeys({ tab, keys: settledKeys });
+  }
+  const gatedChips = settled || loadError
+    ? settledChips
+    : chips.filter((c) =>
+        c.key === "all" ||
+        activeChipKeys.has(c.key) ||
+        (lastChipKeys.tab === tab && lastChipKeys.keys.includes(c.key)),
+      );
   // «הכל» alone filters nothing — then the row is not drawn at all.
   const showChipRow = gatedChips.some((c) => c.key !== "all");
 
@@ -463,7 +557,7 @@ export default function EventsPage({ initialTab = "events" }) {
         {busy ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
         ) : loadError ? (
-          <LoadError tErr={tErr} onRetry={load} />
+          <LoadError tErr={tErr} onRetry={() => load()} />
         ) : filteredToZero ? (
           <NoResults t={t} onReset={resetFilters} />
         ) : datasetEmpty ? (

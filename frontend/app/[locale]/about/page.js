@@ -4,6 +4,7 @@ import AboutClient from "./AboutClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildOrganizationNode, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-476 PR 3b1: per-page generateMetadata established the pattern.
 // MEH-476 PR 3b2: inline helpers extracted to @/lib/i18n-seo so all 17
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/about", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
     // layout's generic site card).
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: t("og_title"),
       description: t("og_description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/about", locale),
   };

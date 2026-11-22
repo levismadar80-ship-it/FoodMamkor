@@ -642,7 +642,7 @@ test.describe("Visual parity — MEH-991", () => {
     await page.goto("/");
     // MEH-3209: scoped to #main-content. During the page-transition window a
     // second copy of the page tree exists briefly OUTSIDE the landmark (the
-    // MEH-1792 shape, home.spec.ts:199-207), and a page-wide locator then
+    // MEH-1792 shape, _home-shared.ts:201-209), and a page-wide locator then
     // resolved to two bands, one aria-busy (run 43628535416). Not `.first()`:
     // a real permanent double-mount inside the landmark must still fail.
     const main = page.locator("#main-content");
@@ -1208,7 +1208,12 @@ test.describe("Visual parity — MEH-991", () => {
     // after scrollIntoViewIfNeeded landed at a different offset run to run (CI
     // 20/11: 0.23 then 0.31 of the frame differed on the retry), because the
     // sections above it settle at different heights.
-    await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
+    // MEH-3666: the fixture has one in-page answer (pickup only), and a lone
+    // answer starts open, so no click: a click would close it.
+    await expect(page.locator('[data-testid="quick-answer-toggle"]:visible').first()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     const answer = page.locator('[data-testid="quick-answer-content"]:visible').first();
     await answer.waitFor({ timeout: 5_000 });
     await settle(page);

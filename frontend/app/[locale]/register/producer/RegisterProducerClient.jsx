@@ -10,7 +10,7 @@ import { renumberTitle, stepNumberOf } from "@/lib/wizard-step-numbers";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
-import RegisterPreflight from "./RegisterPreflight";
+import { Link } from "@/i18n/navigation";
 import AccountStep from "./steps/AccountStep";
 import DetailsStep from "./steps/DetailsStep";
 import CategoryStep from "./steps/CategoryStep";
@@ -23,7 +23,6 @@ import {
   STEP_NAME,
   safeResumeStep,
   EMPTY_FORM,
-  storeLinkForPayload,
 } from "./registerProducerShared";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -35,10 +34,7 @@ const ADDRESS_CONFIRM_ZOOM = 16;
 import { validateIsraeliPhone } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
-import {
-  hasLicenseFormatWarning,
-  licenseRequiringCategoryNames,
-} from "@/lib/license-required-categories";
+import { licenseRequiringCategoryNames } from "@/lib/license-required-categories";
 // MEH-1977: the draft's on-disk rules (envelope, 7-day expiry, what counts as
 // content) live in one module so they can be tested without rendering this
 // wizard. What is NOT there: which step a restored draft may land on — that
@@ -111,13 +107,10 @@ function RegisterProducerPageBody({ routeKind }) {
     return STEP.ACCOUNT;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
-  // MEH-994: pre-flight intro screen ("לפני שמתחילים") gates the wizard until
-  // the CTA is clicked. Entry chrome only — no STEP change, no localStorage
-  // "seen" flag (shows on every visit by design). Both auth states see it;
-  // the upgrade path hides the account-creation checklist line.
-  // MEH-2773: the organizer route skips it — its checklist (license, product
-  // photos) and its «what happens after» are about a business.
-  const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
+  // MEH-3656: the MEH-994 pre-flight screen («לפני שמתחילים») is gone. It
+  // was a whole screen of things to prepare before the first field — the
+  // first of the six screens Sapir named as too much (MEH-3653). Its organizer
+  // door is kept on the account step below; the rest lives on /join.
   const [categories, setCategories] = useState([]);
   // MEH-3193: a failed /categories left step 3 with no tiles and a required
   // choice nobody could make. Now it says so and offers a retry.
@@ -145,7 +138,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // CROSS_STEP_REQUIRED fields, and `crossStepErrors` is derived from it — so
   // a fulfilment key in there inflated the submit-gate summary to two
   // offenders while listing one, which is exactly what
-  // RegisterProducerClient.test.jsx caught.
+  // RegisterProducerClient-01/-02.test.jsx caught.
   const [fulfilmentError, setFulfilmentError] = useState("");
   // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
   // Only ever holds those three, which is what lets the STORY summary below
@@ -164,16 +157,6 @@ function RegisterProducerPageBody({ routeKind }) {
   // block sets fieldErrors too, but moves nobody — the summary's copy
   // ("הועברתם לשדה") would be a false statement there.
   const [submitBounced, setSubmitBounced] = useState(false);
-  // MEH-952: blocking error shown next to the license field on CATEGORY when a
-  // license-required category is selected but the number is blank — surfaces the
-  // requirement at the field instead of letting the backend 422 land on STORY.
-  // The backend check in license_validation.py stays the unchanged backstop.
-  const [licenseRequiredError, setLicenseRequiredError] = useState(false);
-  // MEH-971: license-pending opt-in. When checked (license-required category
-  // only), the CATEGORY advance gate stops blocking on an empty license and the
-  // submit sends license_pending:true so the producer can register without a
-  // license number and enter the pending queue.
-  const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
@@ -214,10 +197,6 @@ function RegisterProducerPageBody({ routeKind }) {
   // can restore it. Plain ref (not state) — the value is read only inside
   // the undo handler; no re-render needed when it changes.
   const descriptionBeforeDisableRef = useRef("");
-  // MEH-530: optional path expanded-toggle. Required path renders the field
-  // directly (no toggle). Whether the path is required is derived live from
-  // the selected category IDs against the categories list fetched at mount.
-  const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
 
   // MEH-0000: every number a user SEES comes from a position in this array.
@@ -234,9 +213,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // business path byte-identical (1, 2, 3, 4).
   const visibleSteps = useMemo(
     () =>
+      // MEH-3656: a business never visits STORY any more — it submits from
+      // CATEGORY (MEH-3653: story, tagline and attribution move to the
+      // dashboard). An organizer keeps STORY and never visits CATEGORY.
       [STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].filter(
         (s) =>
           !(isOrganizer && s === STEP.CATEGORY) &&
+          !(!isOrganizer && s === STEP.STORY) &&
           !(isUpgrade && s === STEP.ACCOUNT),
       ),
     [isOrganizer, isUpgrade],
@@ -249,12 +232,11 @@ function RegisterProducerPageBody({ routeKind }) {
   const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
-  // MEH-2928: the names, not just the boolean, so the hint can say which.
-  const licenseCategoryNames = isOrganizer
-    ? []
-    : licenseRequiringCategoryNames(categories, form.category_ids);
-  const licenseRequired = licenseCategoryNames.length > 0;
-  const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
+  // Sapir 22/11: signup no longer asks for the licence number — the dashboard
+  // does (anchor #license). A licence-required category registers as
+  // license_pending, so the backend's register-time 422 is skipped.
+  const licenseRequired =
+    !isOrganizer && licenseRequiringCategoryNames(categories, form.category_ids).length > 0;
   // MEH-1807: the phone field has two distinct error sources — the pre-existing
   // as-you-type format check (fires only once something is typed) and the new
   // required-gate message (fires on empty too). One derived string so the
@@ -296,9 +278,8 @@ function RegisterProducerPageBody({ routeKind }) {
   // intro screen. trackEvent is itself consent-gated + no-op unless a PostHog
   // key is set, so this is safe to fire unconditionally here.
   useEffect(() => {
-    if (showPreflight) return;
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
-  }, [step, showPreflight]);
+  }, [step]);
 
   // MEH-2138 chunk F: the wizard is ONE long page, so submitting from STORY
   // leaves the scroll position exactly where the seller left it. Measured at
@@ -479,7 +460,11 @@ function RegisterProducerPageBody({ routeKind }) {
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
           const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
-          if (cappedResume) setStep(skipCategory(cappedResume));
+          // MEH-3656: the reverse for a business — a draft saved on STORY
+          // before the story step left the business path resumes on CATEGORY,
+          // which is now where a business submits.
+          const skipStory = (s) => (!routeIsOrganizer && s === STEP.STORY ? STEP.CATEGORY : s);
+          if (cappedResume) setStep(skipStory(skipCategory(cappedResume)));
           else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
@@ -605,16 +590,6 @@ function RegisterProducerPageBody({ routeKind }) {
         ? prev.category_ids.filter((c) => c !== id)
         : [...prev.category_ids, id],
     }));
-    // MEH-952: any category change invalidates a prior "license required" block —
-    // clear it so re-selecting a license-required category can't resurface the
-    // error before the user clicks "next" again (the error <p> lives inside the
-    // licenseRequired branch, which remounts on re-select with stale state).
-    setLicenseRequiredError(false);
-    // MEH-971 chunk 1: a category change also drops a prior license-pending
-    // opt-in so the checkbox can't reappear pre-checked after toggling away
-    // from and back to a license-required category (payload is already guarded
-    // by licenseRequired, but the stale checked state would mislead).
-    setLicensePending(false);
   };
 
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
@@ -632,8 +607,12 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-532: description is optional on the backend (sanitize_text
         // strips/empty-string normalises); we still send what we have so the
         // story shows up on the producer page immediately after approval.
-        description: form.description,
-        short_description: form.short_description,
+        // MEH-3656: a business is not asked for these at signup any more (the
+        // story step left its path), so a value restored from an older draft
+        // must not ride along unseen — a 2-letter tagline would 422 on a
+        // field she cannot see. Organizers still fill them on STORY.
+        description: isOrganizer ? form.description : "",
+        short_description: isOrganizer ? form.short_description : "",
         phone: form.phone,
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
@@ -657,14 +636,18 @@ function RegisterProducerPageBody({ routeKind }) {
         producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-2938: optional store / order-form link; empty → null (the
         // server's scheme guard treats "" the same, this keeps the body clean).
-        external_order_form: isOrganizer ? null : storeLinkForPayload(form.external_order_form),
-        // MEH-971 chunk 1: only true when a license-required category is
-        // selected AND the opt-in box is checked (backend default False).
-        license_pending: licenseRequired && licensePending,
+        // MEH-3656: the field left DETAILS; the link is added in the dashboard.
+        external_order_form: null,
+        // Sapir 22/11: no licence field at signup. A licence-required category
+        // with no number (one can still arrive in a shared draft) registers as
+        // pending; the number is added in the dashboard.
+        license_pending: licenseRequired && !String(form.producer_license_number || "").trim(),
         // MEH-1471: self-reported attribution, from the STORY-step dropdown.
         // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
         // backend stores NULL. The free-text answer is sent only when "other"
         // is chosen (empty otherwise → NULL as well).
+        // MEH-3697: asked on the last step of both paths (STORY for an
+        // organizer, CATEGORY for a business since MEH-3656).
         referral_source: form.referral_source,
         referral_source_other:
           form.referral_source === "other" ? form.referral_source_other : "",
@@ -711,6 +694,9 @@ function RegisterProducerPageBody({ routeKind }) {
         body.name = form.name;
         body.password = form.password;
       }
+      // MEH-3026 (F11): the outreach link's token, so the lead it came from is
+      // marked «נרשמה». The server ignores an unknown or expired one.
+      if (prefillToken) body.prefill_token = prefillToken;
       const res = await api.post("/auth/register/producer", body);
       // MEH-328 Chunk D: branch on response shape rather than the frontend
       // `isUpgrade` flag — guards against a token expiring between mount
@@ -768,7 +754,7 @@ function RegisterProducerPageBody({ routeKind }) {
     }
   };
 
-  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // Don't render the wizard until auth resolves. MEH-1489 broadened
   // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
   // step initializes to DETAILS (line 88), so that guard didn't cover them and a
   // logged-in producer/admin briefly saw the join pitch before the gate. Showing
@@ -829,31 +815,8 @@ function RegisterProducerPageBody({ routeKind }) {
     );
   }
 
-  // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard
-  // tree below byte-identical (functional-freeze, MEH-132). Hero h1+subtitle
-  // are repeated here so the page identity doesn't jump when the CTA is
-  // clicked. showAccountLine: upgrade users (and token-holders whose step
-  // already initialized past ACCOUNT) never see the account-creation frame,
-  // so the checklist must not promise it.
   // MEH-2565: below md the form sits on the page, not in a white card — the
   // card's padding plus the inner boxes cost ~60px of a 375px screen.
-  if (showPreflight) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="md:bg-surface md:rounded-md md:p-8">
-          <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-          <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
-          <RegisterPreflight
-            showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
-            // MEH-2773: business-only screen — the organizer route never
-            // renders it, so the CTA starts exactly one flow.
-            onStart={() => setShowPreflight(false)}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="md:bg-surface md:rounded-md md:p-8">
@@ -910,7 +873,8 @@ function RegisterProducerPageBody({ routeKind }) {
               { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
             ]
               // MEH-2460: an organizer never visits CATEGORY, so it is not a step.
-              .filter(({ s }) => !(isOrganizer && s === STEP.CATEGORY))
+              // MEH-3656: a business never visits STORY. visibleSteps owns both.
+              .filter(({ s }) => visibleSteps.includes(s))
               .map(({ s, caption }) => (
               <div
                 key={s}
@@ -985,6 +949,20 @@ function RegisterProducerPageBody({ routeKind }) {
           />
         )}
 
+        {/* MEH-3656: the organizer door that sat on the removed pre-flight
+            screen (MEH-2917). A link — the ROUTE decides the kind (MEH-2773). */}
+        {step === STEP.ACCOUNT && !routeIsOrganizer && !submitted && (
+          <p className="mt-6 text-center text-sm" data-testid="register-organizer-door">
+            <Link
+              href="/register/organizer"
+              data-testid="register-preflight-organizer-link"
+              className="text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {t("auth.register.producer.preflight.organizer_link")}
+            </Link>
+          </p>
+        )}
+
         {/* Step 2: Business basics */}
         {step === STEP.DETAILS && (
           <DetailsStep
@@ -1015,34 +993,33 @@ function RegisterProducerPageBody({ routeKind }) {
             categoriesFailed={categoriesFailed}
             fieldErrors={fieldErrors}
             form={form}
-            licenseCategoryNames={licenseCategoryNames}
-            licenseOptionalExpanded={licenseOptionalExpanded}
-            licensePending={licensePending}
-            licenseRequired={licenseRequired}
-            licenseRequiredError={licenseRequiredError}
-            licenseWarning={licenseWarning}
             loadCategories={loadCategories}
             numberedTitle={numberedTitle}
-            requestFocus={requestFocus}
             runRequiredGate={runRequiredGate}
             set={set}
             setAndSave={setAndSave}
             setError={setError}
-            setLicenseOptionalExpanded={setLicenseOptionalExpanded}
-            setLicensePending={setLicensePending}
-            setLicenseRequiredError={setLicenseRequiredError}
             setShowCategoryModal={setShowCategoryModal}
             setStep={setStep}
             setStepError={setStepError}
             t={t}
             toggleCategory={toggleCategory}
+            agreedToTerms={agreedToTerms}
+            declarationConfirmed={declarationConfirmed}
+            error={error}
+            farmerConfirmed={farmerConfirmed}
+            farmerDeclarationRequired={farmerDeclarationRequired}
+            handleSubmit={handleSubmit}
+            loading={loading}
+            setAgreedToTerms={setAgreedToTerms}
+            setDeclarationConfirmed={setDeclarationConfirmed}
+            setFarmerConfirmed={setFarmerConfirmed}
           />
         )}
 
         {step === STEP.STORY && (
           <StoryStep
             agreedToTerms={agreedToTerms}
-            categories={categories}
             declarationConfirmed={declarationConfirmed}
             descriptionBeforeDisableRef={descriptionBeforeDisableRef}
             descriptionDisabled={descriptionDisabled}

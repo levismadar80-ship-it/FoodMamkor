@@ -10,7 +10,8 @@
  *           rule the data states).
  * Related:  lib/orderWindow.js `getSingleOrderCutoff` (MEH-1646: a cutoff is
  *           stated only when exactly one order day is open), lib/israel-date.js.
- * History:  MEH-3485 (creation).
+ * History:  MEH-3485 (creation); MEH-3512 (a row's own cutoff — a pickup
+ *           point's «מזמינים עד» — wins over the business order window).
  *
  * The rule, as posted to Sapir 20/11:
  *   - one clear order cutoff (e.g. orders until Monday 12:00) → the first
@@ -60,19 +61,48 @@ export function daysOfRow(row) {
 }
 
 /**
+ * MEH-3512: a row's own cutoff (`order_cutoff_day` + `order_cutoff_time`) in
+ * the `{dayIndex, close}` shape getSingleOrderCutoff returns — null when the
+ * row states none (or half of one), so the business order window applies.
+ * @param {{ order_cutoff_day?: string | null, order_cutoff_time?: string | null } | null | undefined} row
+ * @returns {{ dayIndex: number, close: string } | null}
+ */
+export function cutoffOfRow(row) {
+  const dayIndex = DELIVERY_DAYS.indexOf(row?.order_cutoff_day || "");
+  const close = row?.order_cutoff_time || "";
+  if (dayIndex < 0 || toMinutes(close) === null) return null;
+  return { dayIndex, close };
+}
+
+/**
+ * MEH-3511: the cutoff a set of rows shares (a day group, a zone) — null when
+ * any row states none or two rows differ, so the business window applies.
+ * @param {Array<{ order_cutoff_day?: string | null, order_cutoff_time?: string | null }>} rows
+ */
+export function sharedCutoff(rows) {
+  const cuts = (rows || []).map(cutoffOfRow);
+  const first = cuts[0];
+  if (!first) return null;
+  const same = cuts.every((c) => c && c.dayIndex === first.dayIndex && c.close === first.close);
+  return same ? first : null;
+}
+
+/**
  * @param {{ days?: string[] | null, orderWindow?: object | null,
- *   onVacation?: boolean, now?: Date }} args — `days` are bare Hebrew day
+ *   cutoff?: { dayIndex: number, close: string } | null,
+ *   onVacation?: boolean, now?: Date }} args — `cutoff` (MEH-3512), when
+ *   given, replaces the one derived from `orderWindow`. — `days` are bare Hebrew day
  *   names (lib/delivery-days.js); anything else is ignored.
  * @returns {{ date: string, dayIndex: number } | null} `date` is the Israel
  *   calendar day `YYYY-MM-DD`; `dayIndex` Sunday=0 … Saturday=6.
  */
-export function nextDeliveryDate({ days, orderWindow = null, onVacation = false, now = new Date() }) {
+export function nextDeliveryDate({ days, orderWindow = null, cutoff = null, onVacation = false, now = new Date() }) {
   if (onVacation) return null;
   const wanted = new Set((days || []).map((d) => DELIVERY_DAYS.indexOf(d)).filter((i) => i >= 0));
   if (wanted.size === 0) return null;
   const parts = israelNowParts(now);
   const today = israelToday(now);
-  const from = searchStart(getSingleOrderCutoff(orderWindow), parts);
+  const from = searchStart(cutoff || getSingleOrderCutoff(orderWindow), parts);
   for (let k = from; k < from + DAYS_IN_WEEK; k += 1) {
     const dayIndex = (parts.dayIndex + k) % DAYS_IN_WEEK;
     if (wanted.has(dayIndex)) return { date: addDaysIso(today, k), dayIndex };

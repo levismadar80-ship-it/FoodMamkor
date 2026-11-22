@@ -191,6 +191,8 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
         title={event.title}
         method={event.registration_method}
         phone={event.producer_phone}
+        producerId={event.producer_id}
+        producerName={event.producer_name}
         url={event.registration_url}
         isFull={isFull}
         barNote={barNote}

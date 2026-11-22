@@ -69,6 +69,32 @@ describe("ProducerActivities", () => {
     expect(screen.queryByTestId("producer-events")).toBeNull();
   });
 
+  // MEH-3585: how the goods arrive, on the card itself (the bag card beside
+  // it shows its address). 0 / 1 / 2 answers, and a group from before the split.
+  it("group buy card: pickup / delivery lines — none, one, both, and the pre-split note", async () => {
+    const cases = [
+      [{}, []],
+      [{ pickup_note: "איסוף מהחנות, הנביאים 10" }, ["pickup"]],
+      [{ pickup_note: "איסוף מהחנות", delivery_note: "משלוח בכפר סבא" }, ["pickup", "delivery"]],
+      [{ fulfillment_note: "איסוף בשוק האיכרים" }, ["fulfillment"]],
+      [{ pickup_note: "   ", fulfillment_note: "איסוף בשוק" }, ["fulfillment"]],
+    ];
+    for (const [extra, kinds] of cases) {
+      answer({ "/group-buys": [{ ...GB, ...extra }] });
+      const { unmount } = render(<ProducerActivities producerId="p-1" />);
+      const card = await screen.findByTestId("producer-group-buy-row");
+      const shown = [...card.querySelectorAll("[data-testid^='group-buy-row-']")].map((el) => el.dataset.testid.replace("group-buy-row-", ""));
+      expect(shown).toEqual(kinds);
+      for (const k of kinds) {
+        const note = (extra[`${k}_note`] || "").trim();
+        expect(screen.getByTestId(`group-buy-row-${k}`).textContent).toBe(note);
+        expect(screen.getByTestId(`group-buy-row-${k}`).querySelector("svg")).not.toBeNull();
+      }
+      unmount();
+      get.mockReset();
+    }
+  });
+
   it("events and experiences render as ONE list, sorted by date, without the business name", async () => {
     answer({ "/experiences": [EX] });
     render(<ProducerActivities producerId="p-1" events={[EV]} />);

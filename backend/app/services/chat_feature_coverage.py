@@ -11,6 +11,10 @@ Related:  frontend/lib/business-features.js:63 (BUSINESS_FEATURES, the list
           this mirrors); frontend/__tests__/DashboardPlacementGuard.test.js
           (the same "registry must account for everything" pattern).
 History:  MEH-3012 (creation, after MEH-3004).
+          MEH-3528: every live tool now also reaches the prompt by name from
+          the registry (services/chat_site_knowledge.py) — that list is the
+          safety net; COVERED here is the detailed Q&A for the tools visitors
+          ask about.
 
 HOW TO ADD A TOOL. When you add an entry to BUSINESS_FEATURES, add its id to
 exactly one of the three maps below, or the guard test fails:
@@ -73,6 +77,7 @@ NOT_FOR_CHAT: dict[str, str] = {
     "similar_businesses": _ON_THE_PAGE,
     "share_cards": _DASHBOARD,
     "qr_code": _DASHBOARD,
+    "google_profile": _DASHBOARD,  # MEH-3641
     "structured_data": "search-engine markup, invisible to visitors",
     "wa_prefill": _ON_THE_PAGE,
     "product_wa": _ON_THE_PAGE,

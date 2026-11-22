@@ -119,7 +119,6 @@ frontend/app/[locale]/producer/dashboard/page.js:bg-yellow-50
 frontend/app/[locale]/producer/dashboard/page.js:border-yellow-200
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-700
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-800
-frontend/app/[locale]/producer/dashboard/qr-card/page.js:text-black
 frontend/app/[locale]/producer/dashboard/rescue/counter-card/page.js:text-black
 frontend/app/global-error.js:hex:#1f2a24
 frontend/app/global-error.js:hex:#234f3f
@@ -262,12 +261,9 @@ frontend/lib/brand-seeds.js:hex:#eaa378
 frontend/lib/brand-seeds.js:hex:#f5f0e8
 frontend/lib/category-registry.js:hex:#3b72ad
 frontend/lib/category-registry.js:hex:#4a90d9
-frontend/lib/category-registry.js:hex:#97690f
 frontend/lib/category-registry.js:hex:#9b59b6
 frontend/lib/category-registry.js:hex:#a8681a
 frontend/lib/category-registry.js:hex:#c04040
-frontend/lib/category-registry.js:hex:#c04040
-frontend/lib/category-registry.js:hex:#e8a020
 frontend/lib/dashboard-status-classes.js:bg-blue-50
 frontend/lib/dashboard-status-classes.js:bg-gray-100
 frontend/lib/dashboard-status-classes.js:bg-yellow-100

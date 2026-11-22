@@ -4,7 +4,7 @@ import en from "@/messages/en.json";
 
 /**
  * MEH-1814 — the post-submit success copy is LOCKED (Sapir, 31/07). Nothing
- * else pins it: RegisterProducerClient.test.jsx mocks next-intl so `t()` returns
+ * else pins it: RegisterProducerClient-01/-02.test.jsx mocks next-intl so `t()` returns
  * the key path, and the Playwright spec locates by data-testid per
  * docs/E2E-LOCATORS.md. Both are deliberate — and both mean a silent edit to
  * either locale file would ship unnoticed. This file is the only assertion that
@@ -122,7 +122,7 @@ describe("MEH-1814 — locked post-submit success copy", () => {
 describe("MEH-2920 — the inbox screen says login works now", () => {
   it("Hebrew and English match the approved strings", () => {
     expect(S_HE.inbox_next).toBe(
-      "אפשר להיכנס כבר עכשיו עם האימייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת האימייל.",
+      "אפשר להיכנס כבר עכשיו עם המייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת המייל.",
     );
     expect(S_EN.inbox_next).toBe(
       "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",

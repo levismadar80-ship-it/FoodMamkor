@@ -5,7 +5,7 @@
  * bag opened the not-found page.
  *
  * Two halves:
- *  1. producerPath() / rescueBagPath() produce the right path per key.
+ *  1. producerPath() / rescueOfferPath() produce the right path per key.
  *  2. A source scan: no file under app/ components/ lib/ hand-writes a
  *     `/producer/${…}` template whose expression mentions `slug`. Build it with
  *     producerPath() instead.
@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { producerPath, rescueBagPath, RESCUE_SECTION_ID } from "@/lib/producer-path";
+import { producerPath, rescueOfferPath, RESCUE_SECTION_ID } from "@/lib/producer-path";
 
 const ROOT = path.resolve(__dirname, "..");
 const SCAN_DIRS = ["app", "components", "lib"];
@@ -51,8 +51,11 @@ describe("producerPath", () => {
     expect(producerPath({ name: "x" })).toBeNull();
     expect(producerPath(null)).toBeNull();
   });
-  it("rescueBagPath anchors the business page's surprise-bag section", () => {
-    expect(rescueBagPath({ slug: "ruach-hasadeh", id: UUID })).toBe("/ruach-hasadeh#section-rescue");
+  // MEH-3586: a bag opens its own page, keyed on the OFFER id (not the business).
+  it("rescueOfferPath is the bag's own page, and null without an id", () => {
+    expect(rescueOfferPath({ id: UUID })).toBe(`/rescue/${UUID}`);
+    expect(rescueOfferPath({})).toBeNull();
+    expect(rescueOfferPath(null)).toBeNull();
   });
   it("the anchor is the id RescueSection actually renders", () => {
     const src = fs.readFileSync(path.join(ROOT, "components/rescue/RescueSection.jsx"), "utf8");

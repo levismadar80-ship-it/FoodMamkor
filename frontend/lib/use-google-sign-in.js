@@ -56,7 +56,9 @@ let ownerRef = null;
  * KNOWN LIMIT — one live consumer at a time. google.accounts.id registers a
  * single callback per document and renderButton() takes no per-button override,
  * so two SIMULTANEOUSLY-mounted consumers would still resolve last-mount-wins.
- * That is not reachable today: GoogleAuthButton is only on /login + /register,
+ * That is not reachable today: GoogleAuthButton is on /login, /register,
+ * /claim and — since MEH-3661 — inside LoginPromptModal, which opens only for
+ * a guest on pages with none of those (business page, map, favorites hearts);
  * ProducerOAuthButtons only on /register/producer, so the two never share a
  * document — they interleave sequentially via client-side navigation, which is
  * exactly what this hook now handles correctly. Making simultaneous consumers

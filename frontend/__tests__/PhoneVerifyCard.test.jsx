@@ -73,6 +73,7 @@ const deferred = () => {
 };
 
 const sendBtn = () => screen.getByRole("button", { name: new RegExp(`^${T("send_cta")}$`) });
+const resendBtn = () => screen.getByRole("button", { name: new RegExp(`^${T("resend_cta")}$`) });
 const sendBtnAny = () => screen.getAllByRole("button")[0];
 const codeInput = () => screen.getByLabelText(T("code_label"));
 const confirmBtn = () => screen.getByRole("button", { name: T("confirm_cta") });
@@ -156,6 +157,17 @@ describe("PhoneVerifyCard — initial state (code row hidden)", () => {
   });
 });
 
+// MEH-3659: inside the draft checklist row the step is already named.
+describe("PhoneVerifyCard variant=inline", () => {
+  it("renders no title, no explainer and no box — only the send button", () => {
+    const { container } = render(<PhoneVerifyCard variant="inline" />);
+    expect(screen.queryByText(T("title"))).toBeNull();
+    expect(screen.queryByText(T("description"))).toBeNull();
+    expect(container.firstChild.className).toBe("");
+    expect(screen.getByRole("button", { name: T("send_cta") })).toBeEnabled();
+  });
+});
+
 describe("PhoneVerifyCard — send (:42-58)", () => {
   it("success: POSTs the send endpoint with no body, reveals the code row, arms the 60 s cooldown", async () => {
     await sendOk();
@@ -213,7 +225,10 @@ describe("PhoneVerifyCard — send (:42-58)", () => {
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
-    expect(btn).toHaveTextContent(T("send_cta"));
+    // MEH-3567: after a code went out, the idle label says «send again», not
+    // the first-send «שלחו קוד אימות».
+    expect(btn).toHaveTextContent(T("resend_cta"));
+    expect(btn).not.toHaveTextContent(T("send_cta"));
     expect(btn).not.toBeDisabled();
     // The code row survives the cooldown expiring — resend, not reset.
     expect(codeInput()).toBeInTheDocument();
@@ -411,7 +426,7 @@ describe("PhoneVerifyCard — the 6th digit verifies on its own (MEH-3126)", () 
     apiMock.post.mockImplementationOnce(reject(400, "wrong code"));
     await typeCode("000000");
     await typeCode("");
-    await click(sendBtn());
+    await click(resendBtn());
     await typeCode("000000");
     expect(confirmCalls()).toHaveLength(2);
   });

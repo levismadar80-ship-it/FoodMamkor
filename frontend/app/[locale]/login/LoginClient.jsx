@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -21,6 +21,10 @@ import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
+import SeedMark from "@/components/brand/SeedMark";
+
+// MEH-3676: display-scale size (DESIGN.md Icons), on the photo scrim.
+const HERO_MARK_PX = 40;
 
 /**
  * Module:   LoginClient
@@ -30,7 +34,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
  * Does NOT: own SEO/metadata (see page.js) or OAuth widget styling
  *           (GoogleAuthButton.jsx / AppleAuthButton.jsx — vendor primitives).
  * Related:  frontend/messages/he.json → auth.login.* / auth.oauth.* (copy
- *           locked MEH-751/MEH-752); design-reference S9 mock.
+ *           locked MEH-751/MEH-752); S9 design mock (design-reference/, deleted MEH-3614).
  * History:  MEH-211 (S9 design); MEH-131 (S9 port — social-first order, open
  *           fields on cream, no white card; supersedes the old form-first
  *           FEEDBACK_FIXES fix 2, re-synced by S9 2026-06-05); MEH-788
@@ -61,12 +65,31 @@ function LoginPageFallback() {
   );
 }
 
+// MEH-2233: useSearchParams on a static page renders everything inside its
+// Suspense boundary on the client only. When the whole body read it, the
+// server HTML held just «loading» and the form waited for the JS bundle (LCP
+// 5.5s on a phone). Only this reader suspends now; the form is in the HTML.
+/** @param {{ onRead: (p: URLSearchParams) => void }} props */
+function QueryReader({ onRead }) {
+  // Keyed on the string: a mocked or re-created params object must not loop.
+  const qs = useSearchParams().toString();
+  useEffect(() => {
+    onRead(new URLSearchParams(qs));
+  }, [qs, onRead]);
+  return null;
+}
+
+const NO_QUERY = new URLSearchParams();
+const noSubscribe = () => () => {};
+
 function LoginPageBody() {
   const t = useTranslations("auth.login");
   // MEH-848: shared generic error copy (collapsed from auth.login.generic_error).
   const tError = useTranslations("error");
   const router = useRouter();
-  const params = useSearchParams();
+  // null until QueryReader has read the URL (one effect after mount).
+  const [query, setQuery] = useState(/** @type {URLSearchParams | null} */ (null));
+  const params = query ?? NO_QUERY;
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
   // MEH-1428 chunk 2: hand a valid ?redirect= on to /register, which honours
@@ -87,9 +110,19 @@ function LoginPageBody() {
   // a fresh owner was dropped on "/" with no path to the three required
   // items. An explicit, clamped ?redirect= still wins (review links,
   // MEH-1428), and consumers keep the MEH-810 default.
-  const landingFor = (me) =>
-    passedRedirect === null && me?.producer_id ? "/producer/dashboard" : redirectTo;
-  const [email, setEmail] = useState(params.get("email") || "");
+  // MEH-2233: called only from effects and handlers. If the URL has not been
+  // read yet (a submit right after hydration), it reads it here, so an early
+  // submit still honours ?redirect= (clamped by safeInternalRedirect).
+  const landingFor = (me) => {
+    const q = query ?? new URLSearchParams(window.location.search);
+    const passed = safeInternalRedirect(q.get("redirect"), null);
+    return passed === null && me?.producer_id ? "/producer/dashboard" : safeInternalRedirect(q.get("redirect"));
+  };
+  // MEH-2233: false in the server HTML and the first client render. Until it
+  // flips, the page carries data-prehydration, which app/globals.css makes
+  // non-interactive: a tap on a control React does not own yet would be lost.
+  const mounted = useSyncExternalStore(noSubscribe, () => true, () => false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -101,8 +134,14 @@ function LoginPageBody() {
   // Eye-icon toggle for password visibility
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (params.get("reset") === "1") {
+  // Once the URL is read: ?email= prefills an untouched field, ?reset=1 toasts.
+  // Stable on purpose: QueryReader re-runs on a new identity, and a second run
+  // would toast twice.
+  const onQuery = useCallback((/** @type {URLSearchParams} */ q) => {
+    setQuery(q);
+    const prefill = q.get("email");
+    if (prefill) setEmail((current) => current || prefill);
+    if (q.get("reset") === "1") {
       showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -114,8 +153,9 @@ function LoginPageBody() {
   // so user stays null there (no redirect). Post-login/OAuth push() lands on
   // the same target, so this is idempotent, not a second navigation elsewhere.
   useEffect(() => {
-    if (!authLoading && user) router.replace(landingFor(user));
-  }, [authLoading, user, router, redirectTo]); // eslint-disable-line react-hooks/exhaustive-deps
+    // The target needs ?redirect=, so wait until the URL is read.
+    if (query && !authLoading && user) router.replace(landingFor(user));
+  }, [query, authLoading, user, router, redirectTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-2623: the submit button is never disabled for invalid input — a grey
   // button gives no reason, and Chrome hides autofilled values from JS until a
@@ -191,19 +231,42 @@ function LoginPageBody() {
   const passwordInvalid = passwordTouched && password.length === 0;
   const passwordValidLength = passwordTouched && password.length >= 1;
 
-  // MEH-1489 chunk C: gate the form render while auth resolves (or once a user
-  // is present and the redirect above is in flight) so the login form never
-  // flashes for an authenticated visitor.
-  if (authLoading || user) {
+  // MEH-1489 chunk C: once a user is present the redirect above is in flight,
+  // so the form is not shown. MEH-2233: while auth is still resolving the form
+  // IS rendered (it is the page's first paint for every guest), marked
+  // data-auth-pending; a visitor with a stored session never sees it, because
+  // app/globals.css hides it under html[data-has-token]
+  // (lib/prehydration-flags-inline.js) until auth has decided.
+  // The redirect target comes from ?redirect=, so the reader renders in both
+  // branches: the URL must be read even when the form never shows.
+  const queryReader = (
+    <Suspense fallback={null}>
+      <QueryReader onRead={onQuery} />
+    </Suspense>
+  );
+  if (user) {
     return (
       <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+        {queryReader}
         {t("loading")}
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
+    <div
+      className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2"
+      data-auth-pending={authLoading ? "" : undefined}
+      data-prehydration={mounted ? undefined : ""}
+    >
+      {/* Shown only to a stored session while auth decides (the form above is
+          hidden for her then): app/globals.css, html[data-has-token]. */}
+      {authLoading && (
+        <p data-auth-pending-note className="hidden max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+          {t("loading")}
+        </p>
+      )}
+      {queryReader}
 
       {/* Image pane — END (left) on desktop only (MEH-788). MEH-2397: the
           30vh top band on mobile pushed the first field below the fold and the
@@ -222,8 +285,10 @@ function LoginPageBody() {
           aria-hidden="true"
         />
         <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
-          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50">
+          {/* MEH-3676: the logo closes the line that ends in «מהמקור» (Sapir 22/11, option ב׳). */}
+          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50 flex flex-wrap items-center gap-3">
             {t("hero_overlay")}
+            <SeedMark size={HERO_MARK_PX} variant="dark" className="shrink-0" />
           </p>
         </div>
       </div>
@@ -309,9 +374,13 @@ function LoginPageBody() {
 
         {/* Email + password — labels above, 54px field rhythm */}
         {/* MEH-2623: noValidate — our inline Hebrew messages replace the
-            browser's own bubble; `required` stays on the inputs for a11y. */}
+            browser's own bubble; `required` stays on the inputs for a11y.
+            MEH-2233: the form is in the server HTML now. method="post" and
+            data-no-native-submit (stopped by lib/prehydration-flags-inline.js)
+            keep a submit before hydration from sending the fields as a GET
+            query string, i.e. the password in the URL. */}
         {!passkeyTicket && (
-        <form onSubmit={handleSubmit} noValidate className="grid gap-4">
+        <form onSubmit={handleSubmit} noValidate method="post" data-no-native-submit className="grid gap-4">
           <div className="grid gap-2 text-start">
             <label htmlFor="login-email" className="text-sm font-semibold text-text">
               {t("email_label")}

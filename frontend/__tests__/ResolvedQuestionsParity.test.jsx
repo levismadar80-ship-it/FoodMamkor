@@ -43,7 +43,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub, Wallet: Stub };
 });
 
 vi.mock("@/lib/contact-tracking", () => ({

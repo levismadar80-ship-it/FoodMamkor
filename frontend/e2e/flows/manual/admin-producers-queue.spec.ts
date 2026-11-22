@@ -171,6 +171,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
 
   if (user) await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => (user ? json(r, user) : json(r, { detail: "unauthenticated" }, 401)));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/categories**", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
@@ -470,12 +473,14 @@ test.describe("admin lockout", () => {
     expect(new URL(page.url()).pathname.endsWith("/register/producer")).toBe(true);
   });
 
-  // MT:MEH-669:7 — a consumer is NOT gated: the pre-flight renders, no redirect.
-  test("a consumer on /register/producer sees the pre-flight, not a gate", async ({ page }) => {
+  // MT:MEH-669:7 — a consumer is NOT gated: the form renders, no redirect.
+  // MEH-3656: the pre-flight screen is gone; a signed-in consumer opens on
+  // the business-details step (the upgrade path skips the account step).
+  test("a consumer on /register/producer sees the form, not a gate", async ({ page }) => {
     await stubAdmin(page, { user: CONSUMER });
     await page.goto("/register/producer");
     await expect(hero(page)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("heading", { name: "לפני שמתחילים" })).toBeVisible();
+    await expect(page.getByTestId("register-details-name")).toBeVisible();
     await expect(gateAdmin(page)).toHaveCount(0);
     await expect(gateProducer(page)).toHaveCount(0);
     expect(new URL(page.url()).pathname.endsWith("/register/producer")).toBe(true);

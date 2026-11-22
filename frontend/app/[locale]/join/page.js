@@ -11,6 +11,7 @@ import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -28,7 +29,7 @@ import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
  *           its own card when it exists (COPY_BANK §8).
  * Related:  components/join/JoinFeatures.jsx · components/join/JoinStickyBar.jsx ·
  *           docs/COPY_BANK.md § /join v2 (the strings) · docs/BRAND.md §6 (the
- *           pattern row) · RegisterPreflight.jsx (sister surface, MEH-994).
+ *           pattern row) · RegisterPreflight.jsx (sister surface, MEH-994; removed in MEH-3656).
  * History:  MEH-995 (creation) · MEH-2564 (step badges) · MEH-2597 (photo) ·
  *           MEH-2799 (v2 rebuild).
  *
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/join", locale),
   };
@@ -158,6 +159,10 @@ export default async function JoinPage({ params }) {
         <EditorialPhoto
           src="https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
           testId="join-photo"
+          // MEH-2233: on a phone this photo is the page's LCP (3.8s on
+          // staging 20/11 while it waited as a lazy image); it is in the
+          // first screen, so it loads with the page.
+          priority
           className="mb-10 sm:mb-14"
         />
 

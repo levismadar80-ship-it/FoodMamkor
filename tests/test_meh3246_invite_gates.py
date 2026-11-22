@@ -38,12 +38,13 @@ def test_hidden_business_without_a_photo_gets_no_invite(client, db):
     assert p.owner_invite_token_hash is None
 
 
-def test_licence_category_without_a_licence_gets_no_invite(client, db):
+def test_licence_category_without_a_licence_is_invitable(client, db):
+    # MEH-3026: a missing licence number no longer blocks the invite; the
+    # page goes live without «מאומת».
     cat = make_category(db, name="לחמים ואפייה")
     p = make_producer(db, status="inactive", images=PHOTO, category=cat)
     r = _post(client, db, p)
-    assert r.status_code == 422, r.text
-    assert "רישיון" in r.json()["detail"]
+    assert r.status_code == 200, r.text
 
 
 def test_complete_hidden_business_is_invitable(client, db):

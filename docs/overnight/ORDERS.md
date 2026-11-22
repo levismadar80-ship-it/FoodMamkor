@@ -343,8 +343,9 @@ works"* (exec §9).
    **State the boundary:** Chromium emulation is *layout* evidence, not *engine*
    evidence — it says nothing about iOS Safari's `dvh` or safe-area handling. Do
    not write "נבדק בנייד".
-   Compress before committing — `node scripts/compress-qa-screenshots.mjs
-   qa-artifacts/MEH-XXXX/` — the 2 MB `qa-artifacts size cap` job is real.
+   Compress (`node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/`),
+   upload to the card's evidence folder and link it with a `Screenshots:` line —
+   never commit them (MEH-3534, testing.md «QA screenshots live outside the repo»).
 4. **Schema PRs:** alembic `upgrade` **and** `downgrade` tested locally, the
    migration chain checked, `EXPECTED_TABLES` updated. (Writing the revision file
    is permitted; applying it to any shared database is not — §1.4.)

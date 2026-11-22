@@ -14,6 +14,8 @@
  *           days per city: grouped by the city's whole day set).
  */
 
+import { DELIVERY_DAYS } from "./delivery-days";
+
 /**
  * Group delivery_areas into one of three display modes:
  *
@@ -26,7 +28,7 @@
  *
  * Row shape is preserved from the input
  * ({ id, city, min_order, delivery_day, delivery_fee }), original order kept;
- * day groups are ordered by first appearance.
+ * day groups are ordered by weekday (Sunday first; MEH-3511), ties by first appearance.
  *
  * ⚠️ The map below is an EXPLICIT WHITELIST, not a spread — every field a row
  * needs downstream must be named here or it is silently dropped on the way to
@@ -36,7 +38,7 @@
  * When adding a delivery_areas column, add it here in the same PR; the
  * exact-shape assertion in deliveryGroups.test.js is what reds if you don't.
  *
- * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string, delivery_fee?: number, delivery_days?: string[] | null, zone_name?: string | null, free_delivery_above?: number | null}>} areas
+ * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string, delivery_fee?: number, delivery_days?: string[] | null, zone_name?: string | null, free_delivery_above?: number | null, delivery_days_min?: number | null, delivery_days_max?: number | null, order_cutoff_day?: string | null, order_cutoff_time?: string | null}>} areas
  */
 export function groupDeliveryAreas(areas = []) {
   const rows = areas.map((a) => ({
@@ -52,6 +54,11 @@ export function groupDeliveryAreas(areas = []) {
     delivery_days: daysOf(a),
     zone_name: a.zone_name ?? null,
     free_delivery_above: a.free_delivery_above ?? null,
+    // MEH-3511: the zone's delivery time and own order cutoff.
+    delivery_days_min: a.delivery_days_min ?? null,
+    delivery_days_max: a.delivery_days_max ?? null,
+    order_cutoff_day: a.order_cutoff_day ?? null,
+    order_cutoff_time: a.order_cutoff_time ?? null,
   }));
 
   const missing = rows.filter((r) => r.delivery_days.length === 0);
@@ -68,14 +75,27 @@ export function groupDeliveryAreas(areas = []) {
     return { mode: "hoist", day: distinctDays[0], rows };
   }
 
-  const groups = distinctDays.map((day) => ({
-    day,
-    rows: rows.filter((r) => r.delivery_days.length && labelOf(r) === day),
-  }));
+  const groups = distinctDays
+    .map((day) => ({
+      day,
+      rows: rows.filter((r) => r.delivery_days.length && labelOf(r) === day),
+    }))
+    // MEH-3511 (Sapir 20/11): day groups read in week order, Sunday first;
+    // first appearance breaks a tie («שני» before «שני וחמישי»).
+    .sort((a, b) => firstWeekday(a.rows[0]) - firstWeekday(b.rows[0]));
   return { mode: "group", groups, arranged: missing };
 }
 
 const DAY_LIST = new Intl.ListFormat("he", { style: "long", type: "conjunction" });
+
+// REUSES: lib/delivery-days.js DELIVERY_DAYS — the stored day values, Sunday first.
+const WEEK = DELIVERY_DAYS;
+
+/** The earliest weekday of a row, Sunday = 0; an unknown day sorts last. @param {{delivery_days: string[]}} r */
+function firstWeekday(r) {
+  const idx = r.delivery_days.map((d) => WEEK.indexOf(d)).filter((i) => i >= 0);
+  return idx.length ? Math.min(...idx) : WEEK.length;
+}
 
 /** @param {string[]} days — one day reads as itself («שני»), two as «שני וחמישי». */
 function dayLabel(days) {

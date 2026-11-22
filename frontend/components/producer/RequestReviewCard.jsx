@@ -6,7 +6,7 @@ import { ChatCircleText } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { ReviewInviteLinkSchema } from "@/lib/api-schemas";
+import { ReviewInviteLinkSchema } from "@/lib/api-responses";
 import Button from "@/components/ui/Button";
 import { copyOrThrow } from "@/lib/clipboard";
 

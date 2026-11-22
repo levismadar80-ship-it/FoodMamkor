@@ -30,7 +30,10 @@ on:
     # not re-run the gate and the stale green stands — the marker would never
     # block anything. Removing it would likewise not clear the red without a
     # push, which rule 30 does not permit CC to manufacture.
-    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    # `edited` (22/11, Sapir): pr-evidence-guard reads the PR body, so a line
+    # added to the body must re-run it. Without it the red stood until the next
+    # push, and that push spent a Vercel deployment for nothing (#5109).
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -44,10 +47,10 @@ concurrency:
   # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
   # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
   # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
-  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-edited | ...-code
   # Each action class cancels only its own kind, so a label toggle can never
   # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled' || github.event.action == 'edited') && github.event.action || 'code' }}
   cancel-in-progress: true
 
 jobs:
@@ -488,7 +491,10 @@ jobs:
           # admin_passkeys, admin_recovery_codes (MEH-3305, #4782) +
           # producer_order_windows, product_order_notifications,
           # product_order_phone_codes (MEH-3296, #4640) — 58 -> 64.
-          EXPECTED_TABLES=64
+          # MEH-3535: email_outbox (the durable email queue) — 64 -> 65.
+          # MEH-3617: product_variants (a product's sizes or flavours) — 65 -> 66.
+          # MEH-3592: group_buy_waitlist (a full group buy's waitlist) — 66 -> 67.
+          EXPECTED_TABLES=67
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
@@ -1055,6 +1061,9 @@ jobs:
           # script-injection sink. The step above already does this for the
           # title and body; this is the same discipline for the same reason.
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # MEH-2244: the PR author, for the dependabot exemption on the
+          # closing-line check. Via env for the same reason as the branch name.
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" "$PR_HEAD_REF" || true
 
   # ─────────────────────────────────────────────

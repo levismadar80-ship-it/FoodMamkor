@@ -7,7 +7,8 @@
  * Does NOT: decide the date — lib/nextDelivery.js does, from the city's days,
  *           the order window and the vacation state.
  * Related:  components/DeliveryBlock.jsx, components/DeliveryChecker.jsx.
- * History:  MEH-3485 (creation).
+ * History:  MEH-3485 (creation); MEH-3512 (`cutoff` — a pickup point's own
+ *           «מזמינים עד» — and `pickup`, which says «האיסוף הבא»).
  */
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -19,9 +20,20 @@ const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
  * @param {{ days?: string[] | null, producer?: any, city?: string | null,
- *   className?: string }} props
+ *   cutoff?: { dayIndex: number, close: string } | null, pickup?: boolean,
+ *   className?: string, textClass?: string }} props
  */
-export default function NextDeliveryLine({ days, producer = null, city = null, className = "" }) {
+export default function NextDeliveryLine({
+  days,
+  producer = null,
+  city = null,
+  cutoff = null,
+  pickup = false,
+  className = "",
+  // Size and colour, replaced whole (two font sizes in one class list resolve
+  // by stylesheet order, not by the order written).
+  textClass = "text-sm text-fg-muted",
+}) {
   const t = useTranslations("group_buys.delivery");
   const tWeekdays = useTranslations("opening_hours.weekdays");
   // Clock-derived, so nothing renders until mounted: the server and the
@@ -32,6 +44,7 @@ export default function NextDeliveryLine({ days, producer = null, city = null, c
   const next = nextDeliveryDate({
     days,
     orderWindow: producer?.order_window,
+    cutoff,
     onVacation: isOnVacation(producer),
   });
   if (!next) return null;
@@ -43,8 +56,12 @@ export default function NextDeliveryLine({ days, producer = null, city = null, c
   const style = locale === "en" ? "dayMonth" : "dayMonthShort";
   const date = `${tWeekdays(WEEKDAY_KEYS[next.dayIndex])} ${formatDate(next.date, locale, style)}`;
   return (
-    <p className={`text-sm text-fg-muted ${className}`} data-testid="next-delivery">
-      {city ? t("next_delivery_city", { city, date }) : t("next_delivery", { date })}
+    <p className={`${textClass} ${className}`} data-testid="next-delivery">
+      {pickup
+        ? t("next_pickup", { date })
+        : city
+          ? t("next_delivery_city", { city, date })
+          : t("next_delivery", { date })}
     </p>
   );
 }

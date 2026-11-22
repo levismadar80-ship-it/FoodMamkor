@@ -82,7 +82,7 @@ import { watchLoginSubmit } from "./_login-submit-diagnostics";
 const LOGIN_TITLE = "כניסה למהמקור";
 const LOGIN_WELCOME = "טוב לראות אותך שוב";
 const FORGOT_LINK = "שכחת סיסמה?";
-const FORGOT_ACK = "✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס";
+const FORGOT_ACK = "✓ אם המייל קיים במערכת — ישלח קישור לאיפוס";
 /**
  * The three strings above are literals on purpose. Reading them out of
  * `messages/he.json` and comparing against a render OF that same file is green
@@ -326,7 +326,11 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
 
   test("C1 — the password eye toggle reveals and re-hides the value", async ({ page }) => {
     await page.goto("/he/login");
-    const password = page.getByTestId("login-password");
+    // MEH-3563 — fill only once React owns the field. A fill on the server
+    // copy (in the HTML since MEH-2233) is wiped when React hydrates, and the
+    // run then ends with the toggles working on an empty field (value="" in
+    // the failing log, staging run 44883669871). Same guard as C2 and flows/25.
+    const password = await settledField(page, "login-password");
     await password.fill(VALID_PASSWORD);
 
     await expect(password).toHaveAttribute("type", "password");
@@ -369,7 +373,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
       route.fulfill({
         status: 401,
         contentType: "application/json",
-        body: JSON.stringify({ detail: "אימייל או סיסמה שגויים" }),
+        body: JSON.stringify({ detail: "מייל או סיסמה שגויים" }),
       }),
     );
     await page.goto("/he/login");
@@ -391,10 +395,11 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // MEH-3154 — the click is deliberately NOT wrapped in `settledField`, and
     // that asymmetry (fields guarded, button bare) was measured NOT to be the
     // flake's cause. Recorded here because it is the obvious "fix" and it is
-    // wrong: the server HTML for /he/login contains ZERO of the form's
-    // data-testids (login-email / login-password / login-submit — 0 occurrences
-    // in 285 KB), so there is no un-hydrated copy to click early; Playwright's
-    // own actionability wait already covers the node's creation. Measured
+    // wrong. When this was measured the server HTML for /he/login held none of
+    // the form's data-testids. Since MEH-2233 the form IS in the server HTML,
+    // but it carries `data-prehydration` (pointer-events: none) until React
+    // mounts, so a click on the un-hydrated copy still cannot land, and
+    // Playwright's actionability wait holds the click until it can. Measured
     // against a seeded local stack with /api/auth/login stubbed (no credentials,
     // no limiter): the POST was issued 12/12 — 6 runs at CPU x6 + 120 ms per
     // response, 6 at CPU x20 + 400 ms — with the button React-owned at click
@@ -412,7 +417,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     await page.getByTestId("login-submit").click();
 
     await diag.explain(() =>
-      expect(page.getByTestId("login-error")).toContainText("אימייל או סיסמה שגויים"),
+      expect(page.getByTestId("login-error")).toContainText("מייל או סיסמה שגויים"),
     );
 
     // Give a stray navigation an explicit chance to happen, then assert it did

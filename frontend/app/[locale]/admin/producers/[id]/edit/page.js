@@ -17,6 +17,7 @@ import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPa
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import TestBusinessToggle from "@/components/admin/TestBusinessToggle"; // MEH-2952
 import DraftPreviewLinkPanel from "@/components/admin/DraftPreviewLinkPanel";
 import PublishWithConsentPanel from "@/components/admin/PublishWithConsentPanel";
 import OwnerInvitePanel, {
@@ -25,6 +26,8 @@ import OwnerInvitePanel, {
 
 import { SkeletonForm } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
+import AdminVerifiedPanel from "@/components/admin/AdminVerifiedPanel"; // MEH-3524
+import AdminAlcoholPanel from "@/components/admin/AdminAlcoholPanel"; // MEH-3524
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -140,6 +143,7 @@ export default function EditProducerPage() {
             {t("producers.edit.last_confirmed", { date: formatDate(producer.last_confirmed_at, locale) })}
           </p>
         )}
+        <TestBusinessToggle producerId={String(id)} />
       </div>
       {/* MEH-2326: the catalogue the owner receives with the claim link. Only a
           draft; once she has claimed it the server answers 409, shown verbatim. */}
@@ -214,6 +218,17 @@ export default function EditProducerPage() {
           </a>
         </p>
       )}
+      {/* MEH-3524: the only way to give or remove «מאומת» (grant-verified /
+          revoke-verified); the old checkbox in ProducerForm was removed in MEH-766. */}
+      <AdminVerifiedPanel
+        key={`verified-${id}-${producer.verified_at ?? "none"}`}
+        producerId={String(id)}
+        kind={producer.kind}
+        verifiedAt={producer.verified_at}
+        docType={producer.verification_doc_type}
+      />
+      {/* MEH-3524: the alcohol mark; renders nothing while ordering is off. */}
+      <AdminAlcoholPanel key={`alcohol-${id}`} producerId={String(id)} />
       {/* MEH-2312: catalog import from the business's existing store → drafts
           the admin approves. Any status: Sandra's page is approved and live. */}
       <AdminProductImport

@@ -78,7 +78,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
-        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above}] ≤20"
+        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above, + MEH-3511 delivery_days_min/max, order_cutoff_day/time}] ≤20; nationwide may hold zones since MEH-3511"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -117,11 +117,15 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string logo_url "nullable — MEH-3611, VARCHAR(500); the business logo, saved by PUT /producers/me"
         string secondary_phone "nullable — MEH-3339, VARCHAR(20); optional second number, same format as phone; one text line, no CTA reads it"
         string secondary_phone_label "nullable — MEH-3339, VARCHAR(30); its label (e.g. להזמנות); requires secondary_phone"
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
         integer delivery_fee "nullable — MEH-1577, whole shekels; 0 is a VALUE (משלוח חינם), NULL = not stated; INTEGER to match delivery_areas.min_order, app-validated >= 0, no DB CHECK"
         integer free_delivery_above "nullable — MEH-1577, whole shekels; app-validated > 0 (0 rejected — unlike delivery_fee); independent of delivery_fee, renders alone"
+        int delivery_days_min "nullable smallint — MEH-3511, business days 1..30, the business default"
+        int delivery_days_max "nullable smallint — MEH-3511, business days 1..30, >= min"
+        integer delivery_min_order "nullable — MEH-3511, business-wide minimum for delivery; a city's min_order wins"
         string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
         string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
@@ -171,6 +175,7 @@ erDiagram
         boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
+        smallint available_weekdays "MEH-3618: Sun=1..Sat=64, NULL = every day, CHECK 1..127"
     }
 
     producer_order_settings {
@@ -245,7 +250,7 @@ erDiagram
     product_order_notifications {
         uuid id PK
         uuid order_id FK "CASCADE (MEH-3296)"
-        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before review_request"
         string channel "whatsapp email"
         string outcome "pending sent failed skipped"
         timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
@@ -253,6 +258,22 @@ erDiagram
         string last_error "short code, never message text"
         timestamp sent_at
         timestamp created_at
+    }
+
+    email_outbox {
+        uuid id PK
+        string kind "producer_approved, visitor_confirmation, ... (MEH-3535)"
+        string to_email "nullable; cleared when finished"
+        string subject "nullable; cleared when finished"
+        text body "nullable; cleared when finished"
+        text html "nullable; cleared when finished"
+        string reply_to "nullable; cleared when finished"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved by a retry"
+        int attempts "max 5, backoff 2 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at "deleted after 30 days"
     }
 
     product_order_items {
@@ -265,6 +286,17 @@ erDiagram
         string price_unit "unit|kg|100g|bottle|box|pack"
         int qty "1..99"
         boolean contains_alcohol
+        uuid variant_id FK "nullable, SET NULL (MEH-3617)"
+        string variant_name "copied at order time (MEH-3617)"
+    }
+
+    product_variants {
+        uuid id PK "MEH-3617"
+        uuid product_id FK "CASCADE"
+        string name "40, unique per product (case-insensitive, checked in the schema)"
+        int price_agorot "nullable = the product's price"
+        boolean in_stock "default true"
+        int position "order on the page"
     }
 
     product_order_events {
@@ -287,6 +319,10 @@ erDiagram
         string zone_name "nullable — MEH-3484, a name in producers.delivery_zones"
         string delivery_days "nullable varchar[] — MEH-3484; NULL = read delivery_day"
         int free_delivery_above "nullable — MEH-3484, the zone threshold; NULL = the business one"
+        int delivery_days_min "nullable — MEH-3511, copied from the zone"
+        int delivery_days_max "nullable — MEH-3511, copied from the zone"
+        string order_cutoff_day "nullable — MEH-3511, the zone's own cutoff day; NULL = order_window"
+        string order_cutoff_time "nullable — MEH-3511, HH:MM, with order_cutoff_day"
     }
 
     producer_offers {
@@ -706,6 +742,8 @@ erDiagram
     product_orders ||--o{ product_order_events : "status log"
     product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
+    products ||--o{ product_variants : "sizes or flavours, max 10 (MEH-3617)"
+    product_variants |o--o{ product_order_items : "SET NULL on delete; name copied"
 
     rescue_offers {
         uuid id PK "MEH-2644"

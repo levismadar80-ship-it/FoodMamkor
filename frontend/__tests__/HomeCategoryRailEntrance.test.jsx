@@ -11,7 +11,7 @@ import { CATEGORY_CARDS } from "@/lib/home-categories";
 // framer-motion, and a counting IntersectionObserver — on the old markup the
 // ten cards each register an observation target.
 
-vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
+vi.mock("next-intl", () => ({ useTranslations: () => Object.assign((k) => k, { has: () => false }) }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
 }));

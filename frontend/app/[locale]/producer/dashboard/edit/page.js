@@ -75,7 +75,8 @@ import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
 // (MEH-1851) sections; future tags go inside it (own file — cards.jsx is >1600 lines).
@@ -801,6 +802,8 @@ function EditPageInner() {
           open={openKey === "images"}
           onToggle={() => toggleKey("images")}
         >
+          {/* MEH-3611: the logo sits with the photos — same «who we are» picture set. */}
+          <LogoCard profile={profile} onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))} />
           <ImagesCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
@@ -1314,6 +1317,7 @@ function EditPageInner() {
               : tAcc("kashrut_none"),
           ].join(" · ")}
           preview={previews.license}
+          recommended={licenseMissingForProfile(profile)}
           open={openKey === "trust"}
           onToggle={() => toggleKey("trust")}
         >

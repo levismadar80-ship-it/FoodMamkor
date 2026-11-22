@@ -52,11 +52,11 @@ vi.mock("next-intl", () => ({
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
     if (key === "producer.offer.card_delivery_sr") return "משלוח";
-    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק״ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // ('ק״מ' on the Hebrew card). The experience-card test set the precedent
   // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
@@ -311,22 +311,37 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     expect(list.className).toContain("[&>*]:shrink-0");
   });
 
-  // MEH-3321 (Sapir 15/11): the badges sat on the photo and covered it. The
-  // strip now lives in the card body, after the category line, and is in the
-  // normal flow — not positioned over the image.
-  it("the badge strip is off the photo: in flow, after the business name", () => {
+  // MEH-3508 (Sapir 20/11): the badges are back on the photo, bottom-start
+  // (MEH-3321 had put them under the name, which added rows to the card).
+  // What MEH-3321 fixed must not return: the photo strip carries only the
+  // badge line — «משלוחים בלבד» stays in the body, under the name.
+  it("the badge strip is on the photo; «משלוחים בלבד» is in the body's delivery line", () => {
     room = 400;
-    render(<ProducerCard producer={threeBadges} />);
+    render(<ProducerCard producer={{ ...threeBadges, has_physical_location: false, offers_delivery: true }} />);
     const strip = screen.getByTestId("card-badge-strip");
-    expect(strip.className.split(/\s+/)).not.toContain("absolute");
-    const name = screen.getByRole("heading", { level: 3 });
-    expect(name.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(strip.className.split(/\s+/)).toEqual(expect.arrayContaining(["absolute", "bottom-3", "start-3"]));
+    const body = screen.getByTestId("card-body");
+    expect(body.contains(strip), "strip is not in the card body").toBe(false);
+    const only = screen.getByTestId("card-delivery-only");
+    expect(body.contains(only)).toBe(true);
+    expect(strip.contains(only)).toBe(false);
+    expect(only).toHaveTextContent("משלוחים בלבד");
   });
 
   it("0 badges: no strip at all, so the body has no empty gap (MEH-3321)", () => {
     expect(allBadges(base), "control: the fixture earns no badge").toHaveLength(0);
     render(<ProducerCard producer={base} />);
     expect(screen.queryByTestId("card-badge-strip")).toBeNull();
+    expect(screen.queryByTestId("card-meta-pills"), "no empty body row either (MEH-3508)").toBeNull();
+  });
+
+  it("0 badges + delivery-only, no fee: no strip, no pill row — one delivery line (MEH-3508)", () => {
+    const deliveryOnly = { ...base, has_physical_location: false, offers_delivery: true };
+    expect(allBadges(deliveryOnly), "control: still no BADGE_CONFIG badge").toHaveLength(0);
+    render(<ProducerCard producer={deliveryOnly} />);
+    expect(screen.queryByTestId("card-badge-strip")).toBeNull();
+    expect(screen.queryByTestId("card-meta-pills")).toBeNull();
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוחים בלבד");
   });
 
   it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {

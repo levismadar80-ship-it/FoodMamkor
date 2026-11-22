@@ -19,7 +19,7 @@ import api from "./api";
 import {
   FavoritesResponseSchema,
   FavoriteWithProducerSchema,
-} from "@/lib/api-schemas";
+} from "@/lib/api-responses";
 
 let ids = new Set();
 // MEH-2724: the full producer rows from the SAME response, newest first, for
@@ -107,7 +107,8 @@ export function ensureFavoritesLoaded() {
       // yields an empty cache (the safe default this module already used).
       const parsed = FavoritesResponseSchema.safeParse(res.data);
       const list = parsed.success ? parsed.data : [];
-      ids = new Set(list.map((f) => f.producer_id ?? f.id).filter(Boolean));
+      // MEH-1748: FavoriteOut carries producer_id only (generated contract).
+      ids = new Set(list.map((f) => f.producer_id).filter(Boolean));
       for (const [id, value] of pendingLocal) {
         if (value) ids.add(id);
         else ids.delete(id);

@@ -16,7 +16,7 @@ import { pickCity } from "./_pick-city";
  *           DEFAULT CI E2E target (localhost:3000, no storageState fixtures),
  *           unlike flows/25 which needs DEMO_* provisioning.
  * Related:  RegisterProducerClient.jsx (`submitted` gate guard + the
- *           STEP.CONFIRM success screen), __tests__/RegisterProducerClient.test.jsx
+ *           STEP.CONFIRM success screen), __tests__/RegisterProducerClient-01/-02.test.jsx
  *           (same invariant at the vitest layer, with mocks)
  * History:  MEH-1814 (creation)
  *
@@ -67,8 +67,8 @@ async function stubSession(page, roleRef: { current: string }) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      // id 1 mirrors flows/18: a license-required category, so the MEH-952
-      // inline license gate is exercised rather than bypassed.
+      // id 1 mirrors flows/18: a license-required category (no licence field
+      // at signup since 22/11 — it registers as pending).
       body: JSON.stringify([
         // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
         // Hebrew name — a slug-less stub renders no chip at all.
@@ -80,15 +80,14 @@ async function stubSession(page, roleRef: { current: string }) {
 }
 
 /**
- * Walks the wizard from the pre-flight screen to a STORY step that is ready to
- * submit — every field filled, submit NOT clicked. Extracted verbatim under
+ * Walks the wizard to the CATEGORY step (the submitting frame since MEH-3656)
+ * ready to submit — every field filled, submit NOT clicked. Extracted verbatim under
  * MEH-2138 chunk F so the scroll test below drives the identical path; the
  * click stays at each call site because the MEH-1814 test arms a response
  * waiter immediately before it.
  */
 async function driveWizardToStorySubmitReady(page) {
   await page.goto("/register/producer");
-  await page.getByTestId("register-preflight-start").click();
 
   // Upgrade path skips ACCOUNT — the token puts step at DETAILS.
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
@@ -100,13 +99,8 @@ async function driveWizardToStorySubmitReady(page) {
 
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-1").click();
-  await page.getByTestId("register-category-license").fill("1234567");
-  await page.getByTestId("register-category-next").click();
 
-  await expect(page.getByTestId("register-frame-story")).toBeVisible();
-  await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-  await page.getByTestId("register-referral-source").selectOption("instagram");
-  for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
+  for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
     await cb.check();
   }
 }
@@ -154,7 +148,7 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
       (r) => r.url().includes("/auth/me") && r.request().method() === "GET",
       { timeout: 15_000 },
     );
-    await page.getByTestId("register-story-submit").click();
+    await page.getByTestId("register-category-submit").click();
 
     // ── The assertion this spec exists for ──
     const success = page.getByTestId("register-success-pending");
@@ -178,8 +172,8 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
     await page.goto("/register/producer");
 
     await expect(page.getByTestId("register-producer-gate")).toBeVisible();
-    // Form unreachable: no pre-flight CTA, no wizard frame, no hero pitch.
-    await expect(page.getByTestId("register-preflight-start")).toHaveCount(0);
+    // Form unreachable: no wizard frame, no hero pitch.
+    await expect(page.getByTestId("register-frame-account")).toHaveCount(0);
     await expect(page.getByTestId("register-frame-details")).toHaveCount(0);
     await expect(page.getByTestId("register-hero-heading")).toHaveCount(0);
 
@@ -198,7 +192,7 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
  *
  * This assertion CANNOT live in vitest. jsdom does no layout, so every
  * geometric claim there passes against the broken code too — the exact trap the
- * MEH-2148 harness fell into. __tests__/RegisterProducerClient.test.jsx carries
+ * MEH-2148 harness fell into. __tests__/RegisterProducerClient-01/-02.test.jsx carries
  * the complementary half (that the call is made, on BOTH confirm branches);
  * this file carries the only half that can observe a viewport.
  *
@@ -257,7 +251,7 @@ for (const c of F_CASES) {
           "Every assertion below is vacuous in that state — fix the control before reading the result.",
       ).toBeGreaterThan(100);
 
-      await page.getByTestId("register-story-submit").click();
+      await page.getByTestId("register-category-submit").click();
 
       const success = page.getByTestId("register-success-pending");
       await expect(success).toBeVisible({ timeout: 10_000 });

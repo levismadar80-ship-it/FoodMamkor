@@ -7,6 +7,7 @@ import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { SkeletonTiles } from "@/components/Skeleton";
 import { COLOR } from "@/lib/color-tokens";
+import AdminRescueMetrics from "@/components/admin/AdminRescueMetrics";
 
 export default function AdminAnalyticsPage() {
   const t = useTranslations("admin");
@@ -143,6 +144,9 @@ export default function AdminAnalyticsPage() {
           )}
         </div>
       </div>
+
+      {/* MEH-3524: the rescue-bag pilot. Nothing while the pilot is off. */}
+      <AdminRescueMetrics />
 
       {/* Heat map note */}
       <div className="bg-surface border border-border rounded-md p-5">

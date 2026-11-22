@@ -17,6 +17,15 @@ Example:
 - [ ] Docs / config only (skip mobile testing)
 - [ ] Hotfix (direct to `main` — back-merge to `staging` immediately after)
 
+## Reuse
+
+<!-- Adds a file under frontend/components, frontend/lib, frontend/hooks or backend/app/services?
+Search docs/CODE_INDEX.md and the catalog in frontend/components/CLAUDE.md first, then fill in:
+"Reuse: <what you reused or extended>" or "Reuse: none fit — <what you searched>".
+scripts/checks/reuse-line-guard.sh warns when this is empty (MEH-3612). -->
+
+Reuse:
+
 ---
 
 ## Builder model
@@ -45,13 +54,13 @@ remembering.
 - [ ] `npm run build` green
 - [ ] `pytest tests/test_api.py` green
 
-## Manual checks (required before marking Ready for Review)
+## Self-checks by the session (required before marking Ready for Review)
 
 - [ ] `/adversarial-review` ran on all changed files — every REFEREE verdict fixed
 - [ ] `.claude/rules/` updated if this PR changed a dependency's behaviour or a build/test/deploy command (a stale rule line is injected into every session — see `.claude/rules/frontend.md` § Maintenance)
 - [ ] Used an existing shared component for every button, field, dialog, heading and empty state this PR adds — checked against the «Shared components» table in `frontend/components/CLAUDE.md`; where none fits, the PR says why
-- [ ] Tested on mobile: iOS Safari + Android Chrome (skip for docs-only)
-- [ ] Tested on desktop
+- [ ] UI change: 375 + 1440 screenshots in `qa-artifacts/MEH-XXXX/`, read by the session (rule 23); preview 390 WebKit + 1280 Chromium (rule 38). Skip for docs-only
+- [ ] Anything a simulator cannot prove is listed under «סיכון שנותר» — never as a step for a person (MEH-3151)
 - [ ] CHANGELOG.md updated (skip for docs-only PRs)
 - [ ] HANDOFF.md updated with session summary
 - [ ] Docs updated for changed surfaces:
@@ -75,8 +84,8 @@ Alembic guide: [docs/MIGRATIONS.md](../docs/MIGRATIONS.md)
 - [ ] An Alembic revision file exists for every new column / table in this PR
 - [ ] `alembic upgrade head` tested against an **existing** DB locally
       (`create_all` in pytest builds fresh — it silently hides missing migrations)
-- [ ] Any endpoint that queries the new column(s) was hit manually after
-      the migration ran
+- [ ] Any endpoint that queries the new column(s) was called by the session
+      against a DB built with `alembic upgrade head` (not `create_all`)
 
 ## Central Component Checklist (skip if no central components touched)
 

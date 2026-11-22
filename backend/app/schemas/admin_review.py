@@ -246,10 +246,6 @@ class UserPhoneOtpConfirmIn(BaseModel):
     code: str = Field(..., pattern=r"^[0-9]{6}$")
 
 
-class SetAmbassadorIn(BaseModel):
-    ambassador: bool
-
-
 class GrantVerifiedIn(BaseModel):
     # MEH-762 (ADR-022 Chunk 2): which document the admin checked to grant
     # the tier-1 "מאומת" badge. Literal → an invalid value 422s before the

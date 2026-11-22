@@ -22,6 +22,7 @@
  *
  * Failing-by-construction runs are in the PR body (MEH-1619).
  */
+import { render } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/env", () => ({
@@ -42,15 +43,21 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({ Link: ({ children }) => children }));
-vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
+// MEH-2233: forwards imagePriority so the first-screen set is observable.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ imagePriority }) => <div data-testid="card" data-priority={imagePriority ?? "lazy"} />,
+}));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 
+let i18nHas = () => false;
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: async () => {
     const t = (key, params) =>
       params ? `${key}:${Object.values(params).join("|")}` : `t:${key}`;
     t.raw = (key) => `raw:${key}`;
+    // MEH-3076: category_names.<slug> exists only when a test opts in.
+    t.has = (key) => i18nHas(key);
     return t;
   },
 }));
@@ -116,6 +123,22 @@ const rows = (n) => Array.from({ length: n }, (_x, i) => ({ id: `p-${i}`, name: 
 
 beforeEach(() => {
   serverFetch.mockReset();
+});
+
+describe("category name follows the locale (MEH-3076)", () => {
+  it("title uses category_names.<slug> when it exists, the DB name otherwise", async () => {
+    route({ cellTotal: () => 5, items: rows(5) });
+    i18nHas = (key) => key === "category_names.bread";
+    try {
+      const meta = await generateMetadata({ params: Promise.resolve({ ...PARAMS, locale: "en" }) });
+      expect(meta.title).toContain("t:category_names.bread");
+      expect(meta.title).not.toContain("לחמים ואפייה");
+    } finally {
+      i18nHas = () => false;
+    }
+    const he = await generateMetadata({ params: Promise.resolve(PARAMS) });
+    expect(he.title).toContain("לחמים ואפייה");
+  });
 });
 
 describe("the data gate", () => {
@@ -243,5 +266,16 @@ describe("the reserved diet path", () => {
     await expect(
       RegionLandingPage({ params: Promise.resolve({ ...PARAMS, category: "vegan" }) }),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+// MEH-2233: the LCP on a region page is a first-row card photo (staging 20/11).
+describe("first-screen card photos (MEH-2233)", () => {
+  it("first two high, next two eager, the rest lazy", async () => {
+    route({ cellTotal: () => 6, items: rows(6) });
+    const ui = await RegionLandingPage({ params: Promise.resolve(PARAMS) });
+    const { container } = render(ui);
+    const flags = [...container.querySelectorAll('[data-testid="card"]')].map((c) => c.getAttribute("data-priority"));
+    expect(flags).toEqual(["high", "high", "eager", "eager", "lazy", "lazy"]);
   });
 });

@@ -21,6 +21,7 @@ from app.limits import (
     PRODUCT_GROUPS_DETAIL,
     cap_list,
 )
+from app.schemas.schemas import reject_emoji
 from app.services.sanitization import sanitize_text
 
 MAX_GROUP_NAME = 40
@@ -40,6 +41,7 @@ class ProductGroupIn(BaseModel):
         cleaned = (sanitize_text(v, max_length=200) or "").strip()
         if not cleaned:
             raise ValueError("שם הקבוצה לא יכול להיות ריק")
+        reject_emoji(cleaned)  # MEH-3671
         if len(cleaned) > MAX_GROUP_NAME:
             raise ValueError(f"שם הקבוצה יכול להיות עד {MAX_GROUP_NAME} תווים")
         return cleaned

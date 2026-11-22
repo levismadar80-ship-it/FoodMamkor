@@ -15,6 +15,8 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
   usePathname: () => pathnameRef.current,
+  // MEH-3628: BottomNav prefetches a tab on touch through useRouter.
+  useRouter: () => ({ prefetch: () => {}, push: () => {}, replace: () => {} }),
 }));
 
 const userRef = { current: null };
@@ -296,9 +298,22 @@ describe("BottomNav", () => {
   it("shows the user's initial on the account tab when logged in", () => {
     userRef.current = { id: "u1", name: "דנה" };
     render(<BottomNav />);
-    // Avatar initial replaces the User glyph.
-    expect(screen.getByText("ד")).toBeInTheDocument();
+    // Avatar initial replaces the User glyph. MEH-3539: drawn by CSS from
+    // data-initial (not a text node), so axe's label-content-name-mismatch passes.
+    expect(screen.getByRole("button").querySelector("[data-initial]")).toHaveAttribute("data-initial", "ד");
     expect(screen.getByRole("button")).toHaveAttribute("aria-haspopup", "dialog");
+  });
+
+  // MEH-3539: axe label-content-name-mismatch counts every text node in the
+  // control; the aria-label «תפריט — נועה לביא» contains «נועה» but not «נ» + «נועה».
+  it("signed in: the account button's only text is the first name; the avatar letter is not text", () => {
+    userRef.current = { id: "u1", name: "נועה לביא" };
+    render(<BottomNav />);
+    const button = screen.getByRole("button");
+    expect(button.textContent).toBe("נועה");
+    const avatar = button.querySelector("[data-avatar]");
+    expect(avatar.getAttribute("aria-hidden")).toBe("true");
+    expect(avatar.querySelector("[data-initial]").getAttribute("data-initial")).toBe("נ");
   });
 
   // MEH-991 (NAV-14): logged-in label is the user's first name, not "חשבון".

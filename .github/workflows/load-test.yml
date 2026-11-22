@@ -1,0 +1,88 @@
+name: Load test (manual)
+
+# workflow_dispatch בלבד: זו מדידה מול staging חי, לא שער, ואסור שתהפוך ל-required.
+# אדום שלה יכול להיות «staging היה איטי» באותה מידה כמו «הקוד נסוג». MEH-3564.
+# מסמך: docs/ci/load-test.patch.md · runbook: docs/runbooks/load-testing.md
+on:
+  workflow_dispatch:
+    inputs:
+      where:
+        description: "Where the load comes from: cloud (Grafana Cloud k6) or local (this runner)"
+        required: true
+        default: cloud
+        type: choice
+        options:
+          - cloud
+          - local
+      base_url:
+        description: "Staging backend URL (never production)"
+        required: false
+        default: "https://foodmamkor-staging.up.railway.app"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-test
+  cancel-in-progress: false
+
+jobs:
+  load-test:
+    name: k6 load test
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      BASE_URL: ${{ inputs.base_url }}
+      K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+      K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+      # k6 v2 needs the stack as well as the token, or `k6 cloud run` stops with
+      # "stack ID not configured" (run 44902643680, 21/11).
+      K6_CLOUD_STACK_ID: ${{ secrets.K6_CLOUD_STACK_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Refuse anything but the staging backend
+        run: |
+          if [ "$BASE_URL" != "https://foodmamkor-staging.up.railway.app" ]; then
+            echo "::error::base_url must be https://foodmamkor-staging.up.railway.app (got: $BASE_URL). Never production."
+            exit 1
+          fi
+
+      - name: Cloud mode needs both Grafana secrets
+        if: inputs.where == 'cloud'
+        run: |
+          if [ -z "$K6_CLOUD_TOKEN" ] || [ -z "$K6_CLOUD_PROJECT_ID" ] || [ -z "$K6_CLOUD_STACK_ID" ]; then
+            echo "::error::where=cloud needs secrets K6_CLOUD_TOKEN, K6_CLOUD_PROJECT_ID and K6_CLOUD_STACK_ID. Add them, or run with where=local."
+            exit 1
+          fi
+
+      - name: Pick a real producer
+        id: producer
+        run: |
+          body="$(curl -fsS --max-time 30 "$BASE_URL/producers")"
+          slug="$(printf '%s' "$body" | jq -r 'first(.[] | select(.slug != null and .id != null) | .slug) // empty')"
+          pid="$(printf '%s' "$body" | jq -r 'first(.[] | select(.slug != null and .id != null) | .id) // empty')"
+          # No spaces or newlines: both end up in k6 flags and in GITHUB_OUTPUT.
+          if ! [[ "$slug" =~ ^[^[:space:]]+$ ]] || ! [[ "$pid" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+            echo "::error::No producer with a slug and a UUID at $BASE_URL/producers. The run would measure 404s only."
+            exit 1
+          fi
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+          echo "id=$pid" >> "$GITHUB_OUTPUT"
+
+      - uses: grafana/setup-k6-action@c47136d33d365efbeb9ae7266908b5dcf98cdece # v1.3.0
+
+      - uses: grafana/run-k6-action@54385d2a25c222a08b4a3aec6b653b8fb370a1ed # v1.6.0
+        with:
+          path: scripts/load-test.js
+          cloud-run-locally: ${{ inputs.where == 'local' }}
+          cloud-comment-on-pr: false
+          debug: true
+          flags: >-
+            -e BASE_URL=${{ inputs.base_url }}
+            -e PRODUCER_SLUG=${{ steps.producer.outputs.slug }}
+            -e PRODUCER_ID=${{ steps.producer.outputs.id }}

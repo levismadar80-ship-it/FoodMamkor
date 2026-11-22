@@ -212,7 +212,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
         tooltip:
           "בחירה אישית של עורכות מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
         color: "accent",
-        aboutHref: "/about#editors-pick",
+        aboutHref: "/about/badges#editors-pick", // MEH-3667: the full text moved
       },
       new: {
         key: "new",

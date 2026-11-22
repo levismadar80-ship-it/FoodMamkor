@@ -27,7 +27,7 @@ These rules pass through every product decision. If a design choice violates one
 - **Base page free; money never buys ranking.** Prices are published from day one, a business is billed only after a results threshold, and booking commissions are allowed; no checkout — customer money does not pass through the site. (See ADR-042 and docs/PRICING.md.)
 - **Manual approval for every business.** No auto-approve at any scale.
 - **Who joins: making or growing what you sell is a preference, not an entry gate (ADR-040, BRAND.md §10).** Level 1 makes or grows what it sells; level 2 also sells others' products; level 3 sells only others' products (a shop, a deli, a restaurant) and joins case by case at Sapir's manual approval. Every level: no industrial brands, and never present others' products as the business's own. Never say or write "only producers / only businesses that make their own food" — a session did, 18/11 (MEH-3407).
-- **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). The license decides the badge, not entry: a business in a license-required category can be approved without a license number, one at a time, by Sapir (ADR-022 amendment 22/10, MEH-2299 — «אשרי בלי רישיון»); it shows without the מאומת badge. No home cooks — illegal in Israel.
+- **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). The license decides the badge, not entry: a business in a license-required category joins, is approved and stays listed without a license number, with the plain approve (ADR-022 amendments 22/10 and 21/11, MEH-3026); it shows without the מאומת badge. No home cooks — illegal in Israel.
 - **No "שכנות מבשלות מהבית" / "אוכל ביתי" / "מהמטבח של השכן"** in marketing copy. Ever.
 - **No "יצרן" / "יצרנית"** in UI — always "בית עסק" / "בעלת עסק".
 - **Reader address is gender-neutral on every surface (ADR-037).**
@@ -148,7 +148,7 @@ Trigger phrases: *defer · adopt · abandon · "decision is" · "we'll go with" 
 ## 14 · Definition of Done
 
 - ✅ `CI gate (required)` + `Deploy gate (required)` green on the current head (build, vitest, backend tests, lint, API contract).
-- ✅ UI change: Playwright screenshots at 375 and 1440 under `qa-artifacts/MEH-XXXX/`, compressed, **read by CC** and linked from the PR. There is no human mobile pass (MEH-2302, workflow.md rule 23); a feature-branch Vercel preview exists only for a `[preview]` commit (MEH-2845) — say which evidence the PR carries.
+- ✅ UI change: Playwright screenshots at 375 and 1440, compressed, **read by CC**, uploaded to the card's evidence folder and linked from the PR with a `Screenshots:` line — never committed (MEH-3534). There is no human mobile pass (MEH-2302, workflow.md rule 23); a feature-branch Vercel preview exists only for a `[preview]` commit (MEH-2845) — say which evidence the PR carries.
 - ✅ `/adversarial-review` passed, REFEREE verdicts fixed (testing.md rule 5a).
 - ✅ CHANGELOG.md + HANDOFF.md updated **in a separate docs-only PR**, never in the code PR (workflow.md rule 31), and not armed before the code it describes has merged (rule 31b).
 

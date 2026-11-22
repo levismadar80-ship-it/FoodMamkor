@@ -222,7 +222,15 @@ describe("matchDeliveryCity — pure logic (MEH-1536)", () => {
     expect(r.status).toBe("yes");
     expect(r.city).toBe("חיפה");
     const en = matchDeliveryCity({ city: " haifa ", areas: [{ city: "Haifa" }] });
-    expect(en).toEqual({ status: "yes", city: "Haifa", day: null, days: [], minOrder: null });
+    // MEH-3511: the matched row rides along (its zone time and cutoff).
+    expect(en).toEqual({
+      status: "yes",
+      city: "Haifa",
+      day: null,
+      days: [],
+      minOrder: null,
+      area: { city: "Haifa" },
+    });
   });
 
   it("exclusion match is case-insensitive too, and echoes the producer spelling", () => {

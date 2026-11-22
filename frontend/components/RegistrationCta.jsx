@@ -19,7 +19,9 @@
  *           re-checks everything (routers/registrations.py).
  * Related:  app/[locale]/experiences/[id]/ExperienceDetailClient.jsx,
  *           app/[locale]/events/[id]/EventDetailClient.jsx
- * History:  MEH-3315 (18/11): «כמה אנשים» 1–10 (party_size).
+ * History:  MEH-2991 (20/11): a WhatsApp / call / question tap is counted for
+ *           the business (trackChannelClick, `producerId`).
+ *           MEH-3315 (18/11): «כמה אנשים» 1–10 (party_size).
  *           MEH-3314 (18/11): a full site_form item offers the same form as
  *           «להצטרף לרשימת ההמתנה» (POST with waitlist: true).
  *           MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
@@ -34,6 +36,8 @@ import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method"; // MEH-3461: the one tel: builder
+import { trackChannelClick } from "@/lib/contact-tracking";
+import { trackEvent } from "@/lib/analytics";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -43,6 +47,7 @@ import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 import RegistrationSessionSelect, { isFullSession, sessionKey } from "@/components/RegistrationSessionSelect";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
@@ -68,7 +73,7 @@ function fieldsFrom(detail) {
   return [...new Set(fields.filter((f) => ["name", "phone", "email"].includes(f)))];
 }
 
-function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], onDone }) {
+function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], sellerName = null, onDone }) {
   const t = useTranslations("registration.signup");
   const tCta = useTranslations("registration.cta");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
@@ -228,6 +233,7 @@ function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = 
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
         {sending ? t("submitting") : waitlist ? t("waitlist_submit") : t("submit")}
       </button>
+      <NotAPartyLine name={sellerName} testId="registration-not-a-party" />
     </form>
   );
 }
@@ -291,6 +297,8 @@ function ActionLink({ action, label, testId, onClick }) {
  * @param {boolean} props.isFull       no spots left
  * @param {string} [props.waitlistHref] WhatsApp waitlist link when full (workshops)
  * @param {Function} [props.onWaitlistClick] counts the tap for the host (MEH-2991)
+ * @param {string|null} [props.producerId] the business a WhatsApp / call tap is counted for (MEH-2991)
+ * @param {string|null} [props.producerName] the business the customer deals with, named under the sign-up button (MEH-3570)
  * @param {string} [props.waitlistLabel]
  * @param {string} [props.barNote]     the date line beside the button on the phone bar
  * @param {Array<{date: string, time: string, spots_left?: number | null}>} [props.sessions] MEH-3447: a recurring workshop's upcoming dates
@@ -341,12 +349,42 @@ export default function RegistrationCta(props) {
     form: signupLabel,
   }[action.kind];
   const formAction = action.kind === "form";
+  // MEH-2991: a WhatsApp or call tap is a contact with the business, counted
+  // for it exactly as on its own page (trackChannelClick). The waitlist link
+  // keeps the caller's own counter; an external sign-up link is not a contact.
+  // MEH-3194: a WhatsApp tap from an event / workshop page is a booking that
+  // may close OFF the site. Counted in PostHog per business and item, never
+  // blocked; read against the on-site bookings in the billing ledger.
+  // `placement` = which link: the main action, the waitlist, the question.
+  const trackOffSite = (placement) =>
+    trackEvent("item_whatsapp_click", {
+      surface: kind === "events" ? "event" : "experience",
+      item_id: itemId,
+      producer_id: props.producerId ?? null,
+      placement,
+    });
+  const onActionClick =
+    action.kind === "waitlist"
+      ? () => {
+          onWaitlistClick?.();
+          trackOffSite("waitlist");
+        }
+      : action.kind === "whatsapp" || action.kind === "phone"
+        ? () => {
+            trackChannelClick(props.producerId, action.kind);
+            if (action.kind === "whatsapp") trackOffSite("action");
+          }
+        : undefined;
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
-  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} sessions={props.sessions ?? []} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
+  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} sessions={props.sessions ?? []} sellerName={props.producerName ?? null} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}
+      onClick={() => {
+        trackChannelClick(props.producerId, action.questionExternal ? "whatsapp" : "phone");
+        if (action.questionExternal) trackOffSite("question");
+      }}
       {...(action.questionExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className="block text-center text-sm text-primary underline underline-offset-2 min-h-touch leading-[44px]"
       data-testid="registration-question"
@@ -372,7 +410,7 @@ export default function RegistrationCta(props) {
           onOpen={openForm}
           onClose={closeForm}
           openBtnRef={openBtnRef}
-          onWaitlistClick={onWaitlistClick}
+          onActionClick={onActionClick}
           fullText={t("full")}
           successText={successText}
         />
@@ -384,7 +422,7 @@ export default function RegistrationCta(props) {
               {label}
             </button>
           ) : (
-            <ActionLink action={action} label={label} testId="registration-bar-action" onClick={action.kind === "waitlist" ? onWaitlistClick : undefined} />
+            <ActionLink action={action} label={label} testId="registration-bar-action" onClick={onActionClick} />
           )}
         </StickyRegistrationBar>
       )}
@@ -404,7 +442,7 @@ export default function RegistrationCta(props) {
   );
 }
 
-function InlineBlock({ action, label, done, open, kind, title, form, question, signupLabel, closeLabel, onOpen, onClose, openBtnRef, onWaitlistClick, fullText, successText }) {
+function InlineBlock({ action, label, done, open, kind, title, form, question, signupLabel, closeLabel, onOpen, onClose, openBtnRef, onActionClick, fullText, successText }) {
   if (action.kind === "full") {
     return (
       <p className="text-center font-semibold text-text" data-testid="registration-full">
@@ -414,7 +452,7 @@ function InlineBlock({ action, label, done, open, kind, title, form, question, s
   }
   if (action.kind !== "form") {
     const testId = { waitlist: "registration-waitlist", external: "registration-external", whatsapp: "registration-whatsapp", phone: "registration-phone" }[action.kind];
-    return <ActionLink action={action} label={label} testId={testId} onClick={action.kind === "waitlist" ? onWaitlistClick : undefined} />;
+    return <ActionLink action={action} label={label} testId={testId} onClick={onActionClick} />;
   }
 
   // While the phone sheet is open it carries the confirmation itself; the

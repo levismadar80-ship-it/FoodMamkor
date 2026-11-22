@@ -9,6 +9,7 @@ every name is still importable from app.models.models.
 """
 
 import uuid
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -26,6 +27,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship, validates
+from sqlalchemy.types import SmallInteger  # MEH-3511: delivery_areas day counts
+
 from app.data.cities import canonical_city
 from app.database import Base
 from app.utils.clock import utc_now
@@ -137,6 +140,10 @@ class Product(Base):
     contains_alcohol = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-3618: the days the product is made — a bitmask, Sunday = 1 …
+    # Saturday = 64. NULL = every day, as before. Conversions and the order
+    # check: services/product_weekdays.py.
+    available_weekdays = Column(SmallInteger, nullable=True)
     # MEH-2312: an imported product lands as a draft. A draft is invisible to
     # every public read (producer page, search, sitemap, counts) until an
     # admin approves it. Owner-created products never set it.
@@ -152,6 +159,17 @@ class Product(Base):
     # Producer.products. Without it this side raises the same error.
     producer = relationship(
         "Producer", back_populates="products", foreign_keys="Product.producer_id"
+    )
+    # MEH-3617: sizes or flavours, each with its own optional price. Empty =
+    # the product as before. selectin: the business page reads every
+    # product's variants, so one IN query, not one query per product.
+    variants = relationship(
+        "ProductVariant",
+        back_populates="product",
+        order_by="ProductVariant.position",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
     )
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
     # that promote it. `secondary` points to the link Table defined in models/recipes.py.
@@ -176,6 +194,10 @@ class Product(Base):
             "price_unit IN ('unit', 'kg', '100g', 'bottle', 'box', 'pack')",
             name="products_price_unit_check",
         ),
+        CheckConstraint(
+            "available_weekdays >= 1 AND available_weekdays <= 127",
+            name="products_available_weekdays_check",
+        ),
         Index(
             "idx_products_dietary",
             "producer_id",
@@ -185,6 +207,44 @@ class Product(Base):
             ),
         ),
     )
+
+
+# MEH-3617: the cap on variants per product is MAX_VARIANTS_PER_PRODUCT in
+# app/limits.py, enforced by routers/product_variants.py.
+VARIANT_NAME_MAX = 40
+
+
+class ProductVariant(Base):
+    """One size or flavour of a product («קטנה», «שוקולד»).
+
+    `price_agorot` NULL = the product's own price. `in_stock` false = shown
+    disabled; when every variant is out, the product is out
+    (services/product_variants.py::has_stock).
+    """
+
+    __tablename__ = "product_variants"
+    __table_args__ = (
+        CheckConstraint(
+            "price_agorot IS NULL OR price_agorot >= 0",
+            name="product_variants_price_check",
+        ),
+        Index("ix_product_variants_product_id", "product_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(String(VARIANT_NAME_MAX), nullable=False)
+    price_agorot = Column(Integer, nullable=True)
+    in_stock = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    position = Column(Integer, nullable=False, default=0, server_default=text("0"))
+
+    product = relationship("Product", back_populates="variants")
 
 
 class DeliveryArea(Base):
@@ -219,6 +279,13 @@ class DeliveryArea(Base):
     zone_name = Column(String(40))
     delivery_days: Column[list[str]] = Column(ARRAY(String(10)), nullable=True)
     free_delivery_above = Column(Integer)
+    # MEH-3511 (b4e6a8c0d2f3): the zone's delivery time in business days and
+    # its own order cutoff, copied by services/delivery_zones.py like the
+    # rest. NULL = the business-level days / order_window apply.
+    delivery_days_min = Column(SmallInteger)
+    delivery_days_max = Column(SmallInteger)
+    order_cutoff_day = Column(String(10))
+    order_cutoff_time = Column(String(5))
 
     producer = relationship("Producer", back_populates="delivery_areas")
 
@@ -275,7 +342,17 @@ class ProducerLocation(Base):
     lng = Column(Float, nullable=True)
     # Same unbounded free-text type as Producer.opening_hours (MEH-102).
     opening_hours = Column(String, nullable=True)
+    # MEH-3512 (a3d5f7b9c1e2): the pickup weekdays as a field, not inside the
+    # label. NULL/[] = «בתיאום» (renders as before). Cutoff NULL = the
+    # business-wide order_window applies.
+    pickup_days: Column[list[str]] = Column(ARRAY(String(10)), nullable=True)
+    order_cutoff_day = Column(String(10), nullable=True)
+    order_cutoff_time = Column(String(5), nullable=True)
     phone = Column(String(20), nullable=True)
+    # MEH-3593: «הוראות איסוף» for this point («נכנסים מהכניסה האחורית»). On
+    # the address, not on a bag or an order, so every pickup here reads one
+    # text. NULL = none; the schema stores "" as NULL.
+    pickup_note = Column(Text, nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )

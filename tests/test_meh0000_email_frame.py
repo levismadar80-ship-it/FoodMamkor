@@ -98,10 +98,12 @@ def test_the_scan_found_the_templates_at_all() -> None:
     failure mode `.claude/rules/testing.md` names: a probe whose null output is
     also its reassuring output.
     """
-    assert len(FILES) >= 6, f"only {len(FILES)} file(s) with an HTML document: {FILES}"
     names = {path.name for path in FILES}
-    for expected in ("auth_emails.py", "registration_emails.py", "rescue_emails.py"):
-        assert expected in names, f"{expected} not found by the scan; names={sorted(names)}"
+    # MEH-3587 moved the shared frame from registration_emails._shell into
+    # email_layout.frame; MEH-3621 moved every hand-built template onto it.
+    # So the scan finds exactly one file, and a second one is a template that
+    # builds its own <html> again.
+    assert names == {"email_layout.py"}, f"HTML documents outside email_layout: {sorted(names)}"
     assert len(_palette()) > 20, "the palette parsed to almost nothing"
 
 

@@ -1,6 +1,6 @@
 # Claude project instructions — the source Sapir pastes from
 
-**Last reviewed:** 2026-11-19 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
+**Last reviewed:** 2026-11-20 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
 
 The block below is the text of the Claude project's instructions. **Edit it here,
 in a PR, then paste it into the project.** Never edit the pasted copy first:
@@ -39,6 +39,8 @@ written for the old claude.ai project).
   עובדה על המוצר הולכים לריפו, לא לזיכרון ולא לכאן.
 - ההוראות האלה נשמרות ב-docs/PROJECT_INSTRUCTIONS.md. שינוי — שם, ואז אני מדביקה.
 - תבניות: docs/templates/. לפני issue חדש — חיפוש כפילויות ב-Linear.
+- סושיאל: לוח אחד, https://claude.ai/artifact/JvjzeVxSGqE6zC2FRtuGb7. כל עדכון סושיאל
+  נכנס אליו, לא למסמך חדש. רעיונות לאחר כך: Linear, תווית «סושיאל».
 
 LOCK (שינוי רק ב-ADR חדש)
 - עיקרון פנימי: עריכה, לא marketplace. «מגזין» היא מילה פנימית בלבד: לא באתר
@@ -59,7 +61,7 @@ LOCK (שינוי רק ב-ADR חדש)
 - Risk tiers (ADR-016): GREEN/YELLOW מקצה לקצה עד PR ירוק. RED (auth, schema,
   security, רכיבים מרכזיים, prod) — תוכנית ממוספרת ו-go לכל chunk.
 - Schema רק דרך Alembic. משתנה סביבה חדש — לשאול קודם.
-- DoD: CI gate + Deploy gate ירוקים; ל-UI צילומי 375/1440 ב-qa-artifacts שקראת
+- DoD: CI gate + Deploy gate ירוקים; ל-UI צילומי 375/1440 שקראת, בתיקיית הראיות ב-Drive עם קישור ב-PR (לא בריפו, MEH-3534)
   בעצמך (אין בדיקה ידנית שלי בנייד); CHANGELOG/HANDOFF ב-PR docs נפרד.
 - קופי חדש למשתמשות — מאושר מילה במילה על ידי לפני שנכנס לקוד.
 - פיצ'ר UI חדש — מחקר מיקום לפני קוד (workflow.md כלל 37); אני בוחרת מיקום.

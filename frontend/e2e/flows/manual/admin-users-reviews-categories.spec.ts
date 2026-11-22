@@ -205,6 +205,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3525: the account menu asks whether on-site ordering is on.
+  await page.route("**/users/me/product-orders", (r) => json(r, []));
   // Public, and incidental: the admin nav badge counter. Answered so the 404 catch-all stays a clean instrument.
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
@@ -406,7 +408,7 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 1 מתוך 3")).toBeVisible();
     await page.getByRole("button", { name: "הבא" }).click();
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
-    await page.getByPlaceholder("חיפוש לפי אימייל או שם…").fill("משתמשת 4");
+    await page.getByPlaceholder("חיפוש לפי מייל או שם…").fill("משתמשת 4");
     await page.keyboard.press("Enter");
     await expect.poll(() => listCalls.at(-1)?.search).toBe("משתמשת 4");
     await expect(page.getByText("עמוד 1 מתוך 1")).toBeVisible();
@@ -443,6 +445,11 @@ test.describe("/admin/users — pagination", () => {
 
 // ── MT:MEH-530:44-50 — /admin/users role kebab (1023 chunk A) ──────────────
 
+// MEH-3467: keep the trace of a failed FIRST attempt (the config records only
+// the retry), so a repeat of the kebab flake can be read. File level:
+// Playwright refuses `trace` inside a describe.
+test.use({ trace: "retain-on-failure" });
+
 test.describe("/admin/users — the role kebab", () => {
   // MT:MEH-530:44 — «חסום» stays inline; promote / demote live only in the ⋮ menu.
   test("the actions cell holds an inline «חסום» and a ⋮, and no inline promote/demote", async ({ page }) => {
@@ -459,7 +466,7 @@ test.describe("/admin/users — the role kebab", () => {
   });
 
   // MT:MEH-530:45 — opens toward the start; second click / outside click / Escape close it; Escape restores focus.
-  test("the menu opens toward the start and closes on a second click, an outside click, and Escape", async ({ page }) => {
+  test("the menu opens toward the start and closes on a second click, an outside click, and Escape", async ({ page }, testInfo) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -470,16 +477,54 @@ test.describe("/admin/users — the role kebab", () => {
     // UNLESS that runs the panel off the viewport's right edge. MEH-2587 (lib/panel-position.js
     // computeMenuInlineEnd): in the phone card layout the trigger sits mid-card, so the panel is clamped
     // to 8px (MENU_PAD_PX) inside the right edge. Expected left edge = min(trigger left, vw − 8 − width).
-    const [mb, tb] = await Promise.all([m.boundingBox(), btn.boundingBox()]);
-    const vw = await page.evaluate(() => document.documentElement.clientWidth);
+    // MEH-3467 (mobile, 20/11, passed on retry): received 41 = exactly the gap
+    // between the trigger's left edge (266 at 393px) and the clamped position
+    // (393 − 8 − 160 = 225). The panel, the trigger and the viewport were read
+    // as three separate round-trips, so one read could see a different layout
+    // from the others. Read all three in ONE page-side snapshot, and poll that
+    // snapshot for a short bound: a panel that stays off its spot (the MEH-2587
+    // bug) still reds, a read taken mid-reflow no longer does. The message
+    // carries the numbers, so a repeat says which of the three moved.
     const MENU_PAD_PX = 8;
-    const expectedLeft = Math.max(MENU_PAD_PX, Math.min(tb!.x, vw - MENU_PAD_PX - mb!.width));
-    expect(
-      Math.abs(mb!.x - expectedLeft),
-      "the panel's left edge sits at the trigger's left edge, clamped 8px inside the viewport (MEH-2587)",
-    ).toBeLessThan(3);
-    expect(mb!.x + mb!.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);
-    expect(mb!.x + mb!.width, "the panel extends toward the start (right)").toBeGreaterThan(tb!.x + tb!.width + 40);
+    // The snapshot is taken from the row's own trigger (`btn`), and it requires
+    // exactly one open menu: a second menu or a missing one reads as "off by
+    // Infinity", never as a zero that passes. Polls that were off before the
+    // first good one are counted and written to an annotation, so a product
+    // race (the panel painted unclamped for a few frames) stays visible.
+    let geo: { mx: number; mw: number; tx: number; tw: number; vw: number; menus: number } = {
+      mx: 0, mw: 0, tx: 0, tw: 0, vw: 0, menus: -1,
+    };
+    let badReads = 0;
+    const offBy = async () => {
+      geo = await btn.evaluate((b) => {
+        const menus = document.querySelectorAll('[role="menu"]');
+        const t = b.getBoundingClientRect();
+        const a = menus.length === 1 ? menus[0].getBoundingClientRect() : { x: NaN, width: NaN };
+        return { mx: a.x, mw: a.width, tx: t.x, tw: t.width, vw: document.documentElement.clientWidth, menus: menus.length };
+      });
+      const expectedLeft = Math.max(MENU_PAD_PX, Math.min(geo.tx, geo.vw - MENU_PAD_PX - geo.mw));
+      const off = geo.menus === 1 ? Math.abs(geo.mx - expectedLeft) : Number.POSITIVE_INFINITY;
+      if (!(off < 3)) badReads += 1;
+      return off;
+    };
+    try {
+      await expect
+        .poll(offBy, {
+          message: "the panel's left edge sits at the trigger's left edge, clamped 8px inside the viewport (MEH-2587)",
+          timeout: 2_000,
+        })
+        .toBeLessThan(3);
+    } catch (error) {
+      throw new Error(`${(error as Error).message}\nkebab panel off its spot after ${badReads} reads; last read ${JSON.stringify(geo)}`, {
+        cause: error,
+      });
+    }
+    if (badReads > 0) {
+      testInfo.annotations.push({ type: "MEH-3467", description: `panel was off its spot for ${badReads} read(s) before settling` });
+    }
+    const [mb, tb, vw] = [{ x: geo.mx, width: geo.mw }, { x: geo.tx, width: geo.tw }, geo.vw];
+    expect(mb.x + mb.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);
+    expect(mb.x + mb.width, "the panel extends toward the start (right)").toBeGreaterThan(tb.x + tb.width + 40);
     await btn.click();
     await expect(m).toHaveCount(0);
     await expect(btn).toHaveAttribute("aria-expanded", "false");

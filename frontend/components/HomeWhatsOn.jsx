@@ -40,7 +40,7 @@ import Seed from "@/components/brand/Seed";
 import { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
-import { rescueBagPath } from "@/lib/producer-path";
+import { rescueOfferPath } from "@/lib/producer-path";
 import { seedColorFor } from "@/lib/brand-seeds";
 import { IMAGE_RATIOS, optimizeCloudinary } from "@/lib/cloudinary";
 import { cssUrl } from "@/lib/css-url";
@@ -61,6 +61,7 @@ import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -308,10 +309,9 @@ const SOURCES = Object.freeze([
     endpoint: "/rescue/offers",
     enabled: rescueOn,
     schema: BasketSchema,
-    // A bag has no page of its own: it is reserved on its business's page, in
-    // the surprise-bag section — so the card goes there, not to the /rescue
-    // list (which only lists it again). Its name is the business's — a bag
-    // has no title of its own.
+    // MEH-3586: a bag has its own page now — the card opens it, as a Too Good
+    // To Go card opens the bag. Its name is the business's — a bag has no
+    // title of its own.
     toEntry: (row) => {
       // pickup_start DOES carry a zone (schemas/rescue.py:256 UtcDatetimeOut),
       // but it goes through the same parser as the deadline so no row in this
@@ -321,7 +321,7 @@ const SOURCES = Object.freeze([
         key: `rescue-${row.id}`,
         type: "rescue",
         title: row.producer.name,
-        href: rescueBagPath(row.producer) || "/rescue",
+        href: rescueOfferPath(row) || "/rescue",
         at,
         time: israelTime(row.pickup_start ? at : null),
         timeEnd: israelTime(parseNaiveUtc(row.pickup_end)),
@@ -530,9 +530,7 @@ function WhatsOnCard({ entry, labels }) {
             {price && (
               <span data-testid="whats-on-price" className="flex items-baseline gap-1.5">
                 {entry.priceWas && entry.priceWas > entry.price ? (
-                  <span dir="ltr" className="text-xs text-fg-muted line-through numeric">
-                    {formatPrice(entry.priceWas)}
-                  </span>
+                  <StruckPrice decorative={false} className="text-xs numeric">{formatPrice(entry.priceWas)}</StruckPrice>
                 ) : null}
                 <span dir={entry.price ? "ltr" : undefined} className={`${PRICE_BASE} text-text`}>
                   {price}
