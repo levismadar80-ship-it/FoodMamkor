@@ -72,8 +72,6 @@ async function advanceAndSubmit(page: Page): Promise<void> {
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-1").click();
-  // MEH-952: the mocked category is license-required; the number is gated inline.
-  await page.getByTestId("register-category-license").fill("1234567");
   // MEH-3656: CATEGORY is the last business frame — it carries the consent
   // boxes and «הצטרפו»; the story step left the business path.
   for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {

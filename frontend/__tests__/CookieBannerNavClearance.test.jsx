@@ -17,6 +17,8 @@ import BottomNav from "@/components/BottomNav";
 
 const pathnameRef = { current: "/" };
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3628: BottomNav prefetches a tab on touch through useRouter.
+  useRouter: () => ({ prefetch: () => {}, push: () => {}, replace: () => {} }),
   // MEH-2578: the chrome now takes Link from here, not next/link.
   Link: ({ children, href, ...props }) => (
     <a href={typeof href === "string" ? href : "#"} {...props}>

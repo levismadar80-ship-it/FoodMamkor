@@ -133,14 +133,9 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
       await page.getByTestId("register-details-next").click();
 
-      // CATEGORY — pick the live category; fill the license iff the field is
-      // shown (a license-required category gates advance inline, MEH-952).
+      // CATEGORY — pick the live category (no licence field at signup, Sapir 22/11).
       await expect(page.getByTestId("register-frame-category")).toBeVisible();
       await page.getByTestId(`category-chip-${categoryId}`).click();
-      const licenseInput = page.getByTestId("register-category-license");
-      if (await licenseInput.isVisible().catch(() => false)) {
-        await licenseInput.fill("000000000");
-      }
       // MEH-3656: CATEGORY is the submitting frame — declarations, then submit.
       for (const cb of await page
         .getByTestId("register-frame-category")

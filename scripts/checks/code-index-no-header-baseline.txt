@@ -160,7 +160,6 @@ frontend/components/ProducerUpdatesButton.jsx
 frontend/components/ProducersClient.jsx
 frontend/components/ProfileCompletenessCard.jsx
 frontend/components/PromotedServiceChips.jsx
-frontend/components/RegisterCardPreview.jsx
 frontend/components/ReportButton.jsx
 frontend/components/ReviewInviteCard.jsx
 frontend/components/ReviewsSection.jsx
