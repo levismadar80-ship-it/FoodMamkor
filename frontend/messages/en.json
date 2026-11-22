@@ -5297,6 +5297,10 @@
         "rescue": {
           "title": "Rescue bags",
           "sub": "Publish today's surplus and hand it over against a code"
+        },
+        "google_profile": {
+          "title": "Google profile",
+          "sub": "Link your profile and check the details match"
         }
       },
       "pulse": {
@@ -7755,6 +7759,9 @@
       },
       "experiences": {
         "label": "Experiences and visits at your place, with sign-up on the site"
+      },
+      "google_profile": {
+        "label": "Link your Google profile and check its details match"
       }
     },
     "total_line": "{count} tools, all of them free during the launch period. Tap a card to see all its tools.",
@@ -8031,6 +8038,49 @@
       "expired": "No reply in time",
       "no_show": "Not collected"
     }
+  },
+  "google_profile": {
+    "back": "Back to tools",
+    "title": "Your Google profile",
+    "lead": "Many customers search Google first. A Google business profile with a link to your page here helps them find you.",
+    "loading": "Loading…",
+    "load_error": "We couldn't load this tool. Try again.",
+    "retry": "Try again",
+    "unavailable": "The connection to Google isn't available right now, so the profile can't be linked or checked. The guide below works without it.",
+    "guide_title": "How to open or update a Google profile",
+    "step_1": "Go to Google Business Profile, and open a profile for your business or verify one that already exists.",
+    "step_2": "In the «Website» field, paste the link to your page on Mehamakor.",
+    "step_3": "Check that the name, phone and opening hours match your page here.",
+    "open_google": "Open Google Business Profile",
+    "copy_link": "Copy the link to your page",
+    "copied": "Link copied",
+    "link_after_approval": "The link to your page will appear here once your business is approved.",
+    "review_rule": "You may ask customers to write a Google review. You may not offer a discount, a gift or anything else for it, or ask only for good reviews. That breaks Google's rules.",
+    "link_title": "Link the profile to your page",
+    "not_linked": "Not linked yet. Once linked, you can check that Google shows the same details as here, and the Google rating appears on your page once it has at least 20 reviews.",
+    "search_label": "Business name on Google",
+    "search_helper": "Leave it empty and we'll search by your business name and city.",
+    "search": "Search Google",
+    "none": "We didn't find a profile like that. Try the name exactly as it appears on Google.",
+    "pick": "This is my business",
+    "linked": "Your Google profile is linked to your page.",
+    "unlink": "Unlink",
+    "check_title": "Does Google show the same details?",
+    "check_intro": "We'll compare the name, phone and website on Google with your page here.",
+    "run_check": "Check",
+    "run_again": "Check again",
+    "field_name": "Name",
+    "field_phone": "Phone",
+    "field_website": "Website",
+    "ours": "Here",
+    "google": "On Google",
+    "verdict_same": "Same",
+    "verdict_different": "Different",
+    "verdict_missing": "Missing on Google",
+    "fix_hint": "Fix it on Google or on your page here, so customers see the same details in both places.",
+    "hours_title": "Opening hours",
+    "hours_note": "Each side writes hours differently, so compare them yourself.",
+    "empty_value": "—"
   },
   "my_group_buys": {
     "title": "My group buys",
