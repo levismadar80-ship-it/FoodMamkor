@@ -9,6 +9,7 @@ import { Basket } from "@phosphor-icons/react";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { israelTime, shekels, walkingMinutes, worthAgorot } from "@/lib/rescue";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 // "עוד שעה" lights up when the pickup window opens within this many ms.
 const SOON_MS = 3_600_000;
@@ -115,9 +116,9 @@ export default function BagRow({ offer, headingTag = "h3" }) {
               {worth !== null && (
                 // aria-hidden: read aloud as two bare prices it says nothing
                 // useful; the price actually paid is the one announced.
-                <s dir="ltr" className="text-xs text-fg-muted numeric" aria-hidden="true" data-testid="rescue-row-worth">
+                <StruckPrice className="text-xs numeric" testId="rescue-row-worth">
                   {t("row.price", { price: worth })}
-                </s>
+                </StruckPrice>
               )}
               <span dir="ltr" className="font-english italic font-semibold text-primary numeric" data-testid="rescue-row-price">
                 {t("row.price", { price })}

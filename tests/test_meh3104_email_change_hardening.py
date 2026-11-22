@@ -87,6 +87,8 @@ class TestTheOwnerAccountKeepsItsAddress:
             client, owner, {"email": "elsewhere@example.com", "current_password": PASSWORD}
         )
         assert res.status_code == 400, res.text
+        # MEH-3600: the refusal reaches the user as Hebrew, not as a code string.
+        assert res.json()["detail"] == "אי אפשר לשנות את כתובת המייל בחשבון הזה."
         db.refresh(owner)
         assert owner.email == "owner@example.com"
         assert send.call_count == 0

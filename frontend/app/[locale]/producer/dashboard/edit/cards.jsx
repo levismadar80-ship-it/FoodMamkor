@@ -27,6 +27,7 @@
 export { ViewOnPageLink } from "./cards/ViewOnPageLink";
 export { CategoriesCard } from "./cards/CategoriesCard";
 export { ImagesCard } from "./cards/ImagesCard";
+export { LogoCard } from "./cards/LogoCard";
 export { DescriptionCard } from "./cards/DescriptionCard";
 export { OwnerStoryCard } from "./cards/OwnerStoryCard";
 export { PricingCard } from "./cards/PricingCard";

@@ -312,24 +312,10 @@ def test_no_html_email_in_the_backend_without_the_logo():
         assert calls >= docs, (
             f"{path.relative_to(BACKEND_APP)}: {docs} HTML document(s), {calls} logo call(s)"
         )
-    # Control: the scan must have found the files it exists for, or it proves nothing.
-    # MEH-2974 moved both numbers by exactly one: `send_owner_invite_email` is a
-    # fifth HTML document in auth_emails.py, and it carries `email_logo_html()`
-    # like the other four. The pin is the control — it is what makes "every HTML
-    # email has the logo" a measurement rather than a scan that found nothing.
-    # v3 of the same card added a sixth: `send_owner_invite_code_email`, the
-    # 6-digit code mail, which carries the logo too.
-    assert checked.get("services/auth_emails.py") == (6, 6), checked
-    # MEH-3079 moved the total by one: the weekly owner summary
-    # (services/weekly_owner_summary.py) is a new HTML document with its logo.
-    assert checked.get("services/weekly_owner_summary.py") == (1, 1), checked
-    # MEH-3260 moved it by one more: the admin mail about a reported review
-    # (services/review_reports.py) is a new HTML document with its logo.
-    assert checked.get("services/review_reports.py") == (1, 1), checked
-    # MEH-3300 moved it by one more: the newsletter confirm-link email in
-    # routers/marketing.py is a second HTML document there, with its logo.
-    assert checked.get("routers/marketing.py") == (2, 2), checked
-    # MEH-3256 (D9) moved it by one more: the «ניתוק בעלים» notice
-    # (services/owner_detach.py), with its logo.
-    assert checked.get("services/owner_detach.py") == (1, 1), checked
-    assert sum(d for d, _ in checked.values()) == 18, checked
+    # Control: the scan must have found the file it exists for, or it proves
+    # nothing. MEH-3621: every email is built from email_layout.frame(), so the
+    # whole backend has exactly ONE HTML document, and it carries the logo. A
+    # template that builds its own <html> again shows up here as a second
+    # file. (Until 21/11 this pinned 18 documents in 9 files, one per
+    # hand-built template; MEH-2974, 3079, 3260, 3300 and 3256 each moved it.)
+    assert checked == {"services/email_layout.py": (1, 1)}, checked

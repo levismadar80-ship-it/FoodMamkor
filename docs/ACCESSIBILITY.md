@@ -117,7 +117,8 @@ to scope to one viewport.
 
 The spec runs in `.github/workflows/e2e.yml` on the `deployment_status`
 trigger, same as the other flows, with `TEST_URL` set to the Vercel preview and
-the `x-vercel-protection-bypass` header injected by the config. No extra wiring
+Vercel's bypass cookie, which `global-setup.ts` writes to `e2e/.auth/bypass.json`
+for the config (MEH-3629). No extra wiring
 needed — a new `NN-*.spec.ts` under `e2e/flows/` is auto-discovered by
 `testMatch` in `playwright.config.ts`.
 

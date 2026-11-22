@@ -237,6 +237,7 @@ IMAGE_FIELDS = {
     "avatar_url",
     "owner_photo_url",
     "story_card_url",
+    "logo_url",  # MEH-3611
 }
 # Routes whose body carries an image field but that need no ownership check.
 _EXEMPT = {

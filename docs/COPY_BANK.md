@@ -1339,3 +1339,11 @@ Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yea
 
 The full text of the price-list page is `pricing.page.*` in `messages/he.json` / `en.json`. The chat's answer to «האם האתר בחינם» is in `backend/app/routers/chat.py` and names no price.
 
+## Section — «not a party» line at the commit button (MEH-3570)
+
+One line under the rescue reserve button and the on-site sign-up button. The group-buy join card already carries `DirectoryDisclaimer` (MEH-3398), and the order sheet its own `platform_line` (MEH-3216), so neither gets this line.
+
+| Key | Hebrew |
+|---|---|
+| `directory.not_a_party.named` | `את העסקה עושים ישירות מול {name}. מהמקור לא המוכרת ולא צד לעסקה.` |
+| `directory.not_a_party.unnamed` | `את העסקה עושים ישירות מול בית העסק. מהמקור לא המוכרת ולא צד לעסקה.` |

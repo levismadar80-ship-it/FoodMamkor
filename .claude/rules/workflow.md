@@ -97,17 +97,15 @@ DESCRIPTION and any registry that carried the stale gate (rule 34).
 
 ### The two cases, because one of them is a near-miss and the other is not
 
-Naming the ambiguity is not resolving it — only the three commands do. Both
-directions of the null are live (`MEH-360` never existed; `MEH-1948` was
+Only the three commands resolve it (`MEH-360` never existed; `MEH-1948` was
 archived).
 
 ---
 
 ## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
 
-The `claude[bot]` CI review (`claude-review.yml`) is disabled until the
-MEH-569 audit. Its job goes to a **fresh reviewer subagent** (rule 5a); a
-missing `claude[bot]` comment blocks nothing and is never waited for.
+The `claude[bot]` CI review is disabled until MEH-569; a missing `claude[bot]`
+comment blocks nothing and is never waited for. The reviewer is rule 5a.
 
 ---
 
@@ -133,29 +131,20 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    targeted questions first. Before a plan that references a Linear issue,
    fetch the live description and name every spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
-5a. **Adversarial review before every merge to staging.** See
-   [testing.md](./testing.md). In addition to `/adversarial-review`, the
-   independent pass is a **fresh reviewer subagent** CC starts with the diff
-   and the card's acceptance_criteria (not the `claude[bot]` CI comment — off
-   since 08/11, until MEH-569); every finding is fixed or answered in the PR
-   before the merge.
+5a. **Adversarial review before every merge to staging.** The rule (fresh
+   reviewer subagent, Fable on RED, round cap) lives in
+   [testing.md](./testing.md) «Rule 5a».
 5. **Tests before implementation.** See [testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one commit;
    the message states *why*.
-7. **`/compact` discipline — proactive, not reactive.** `/compact` at ~40%
-   context; dump plan + todos first. Once `session-state.md` exists prefer
-   `/clear` + `/session-resume`.
+7. **`/compact` discipline — proactive, not reactive.** Thresholds are rule 14;
+   dump plan + todos before compacting.
 8. **Use "ultrathink" for complex problems** — schema, security, multi-file
    refactors, anything costing >10 min to undo.
-9. **After every PR — send the Vercel preview URL when one exists.**
-   (`"בדיקי על: https://food-mamkor-[hash].vercel.app"`). A feature branch
-   gets a preview only for a commit whose message contains `[preview]`
-   (MEH-2845; `frontend/vercel.json` `ignoreCommand`) — every other push is
-   cancelled. **Every** feature push, built or cancelled, spends one of Vercel
-   Hobby's 100 deployments a day (MEH-2062, deployment.md), and a spent quota
-   blocks staging and main too: keep pushes few (batch commits; rule 25's
-   staging merge is a push). Never report an absent preview as rendered.
-   Merging to staging follows rule 38.
+9. **After every PR — send the Vercel preview URL when one exists.** Previews
+   need `[preview]` in a commit message, and every feature push spends one of
+   the 100 daily deployments: keep pushes few (rule 25's staging merge is a
+   push). Mechanics: [deployment.md](./deployment.md) «PR approval flow».
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
     CI cannot see (WebKit-only, a third-party console, a flag flipped by hand)
@@ -166,20 +155,24 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
     prove goes to that section's «סיכון שנותר» list. `docs/MANUAL_TESTING.md`
     is archived — never add to it.
 11. **After every PR — auto-update every doc your code touched**, same PR
-    (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
-    `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
-    A new page also gets a row in `docs/FEATURES.md` «route inventory» —
-    `features-route-guard.sh` fails without it (MEH-3175: a new feature
-    touches no doc, so this rule alone never fired).
+    (CHANGELOG / HANDOFF via rule 31). The one table of which doc:
+
+    | The PR… | Update | Checked by |
+    |---|---|---|
+    | adds/changes an endpoint, model or `auth.py` | `docs/DATA.md` + `.ai/diagrams/` (rule 12) | `api-docs-route-guard.sh` (DATA.md paths only) |
+    | adds a page | `docs/FEATURES.md` «route inventory» | `features-route-guard.sh` |
+    | changes a feature's routes, key files, flags or guard test | `docs/features/<slug>.md` ([feature-docs.md](./feature-docs.md)) | `feature-docs-guard.sh` (paths only) |
+    | adds a status, transition, service, store or load limit | STATE_MACHINES / SYSTEM_MAP ([system-map.md](./system-map.md)) | `test_state_machines_doc_sync.py` (status columns only) |
+    | changes admin, design, security or deploy behaviour | ADMIN / DESIGN / SECURITY / DEPLOYMENT | the rule-5a reviewer |
 12. **After every PR that touches `backend/app/routers/**`,
     `backend/app/models/**` or `backend/app/auth.py` — update `.ai/diagrams/`.**
+    The diagrams are maps, not inventories; no guard reads them.
 13. **End of session protocol (MANDATORY — same priority as Rule 1).** Update
     HANDOFF.md (last PR, branch state, next task + first step, decisions,
-    unfiled issues), then run `/retro` (proposes; Smadar approves `go <N>`; an
-    empty retro is valid).
-14. **Context reset protocol.** ≥60% context or a natural boundary →
-    `/session-save`, `/clear`, `/session-resume`. <40% keep working; 40–60%
-    `/compact`.
+    unfiled issues) **in its own docs-only PR** (rule 31), then run `/retro`
+    (proposes; Smadar approves `go <N>`; an empty retro is valid).
+14. **Context reset protocol.** <40% context keep working; 40–60% `/compact`;
+    ≥60% or a natural boundary → `/session-save`, `/clear`, `/session-resume`.
 15. **Prompt compression (Caveman style).** See [prompting.md](./prompting.md).
 16. **Git worktrees for parallel features.** 2+ unrelated simultaneous features
     → `claude --worktree <name>` (`.claude/worktrees/`, gitignored); copy
@@ -222,8 +215,9 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 2. **Verify key components after refactor.** ProducerCard, Header, BottomNav
    still import and render.
 3. **One PR = one change.** Never bundle refactor + feature or docs + code.
-4. **Mobile evidence before merging UI changes.** CC captures and reads the
-   375/1440 screenshots of the most-affected pages (rule 23).
+4. **Mobile evidence before merging UI changes.** CC captures and reads a
+   phone (375 or 390) and a desktop (1280 or 1440) screenshot of the
+   most-affected pages (rules 23, 38).
 5. **RTL logical properties.** See [rtl.md](./rtl.md).
 6. **Guard tests (401/403/409) must send schema-valid payloads.** A 422 proves
    nothing; use the `valid_*_payload()` fixtures in `tests/conftest.py`.
@@ -291,7 +285,9 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
    - **2b — VRT baselines (MEH-1328):** a changed `he.json` value on a VRT route
      (`/`, `/map`, `/about`, `/login`, `/register`, producer detail) →
      regenerate `parity.spec.ts-snapshots/` in the SAME PR.
-3. **Add a regression rule** here if the pattern is likely to recur.
+3. **Add a regression rule** only when a test or a check cannot hold it. First
+   choice is a test (step 4) or a guard in `scripts/checks/`; a written rule is
+   the fallback, and it says why no machine can check it.
 4. **Add a test** that would have caught it; else (real device only) a
    «סיכון שנותר» line in `docs/RELEASE_CHECKLIST.md` § ד׳ — run by the
    thread, never by Sapir (MEH-3151).
@@ -334,13 +330,13 @@ Do not re-derive this per session.
 
 ## PR approval guide
 
-DoD (every PR): `npm run build` · `pytest tests/test_api.py` · `/adversarial-review`
-with all REFEREE verdicts fixed.
+DoD (every PR): [testing.md](./testing.md) «Definition of Done». The check per
+PR type (this table is its one home):
 
 | PR type | Check |
 |---|---|
 | docs-only / infra-only | Read the diff |
-| UI change | 375/1440 evidence (rule 23) |
+| UI change | phone + desktop evidence (rule 23) |
 | Backend change | Affected endpoint |
 | Hotfix | Only the broken thing |
 
@@ -350,7 +346,9 @@ Docs-only commits still branch + PR (regression rule 7).
 
 ## Risk-tiered review frequency
 
-Unsure of the tier → ask Smadar before starting. Never silently downgrade.
+Unsure of the tier → work it as the higher tier and say so in the PR; never
+silently downgrade. Outside the queue the higher tier means HIGH-RISK's
+chunk-by-chunk `go`.
 Tiers: [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md).
 
 ### HIGH-RISK — chunk-by-chunk review required
@@ -417,7 +415,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     ### Amendment 2026-10-22 (MEH-2302) — there is no human mobile-QA pass. CC owns UI QA end to end
 
     Never wait for or report "waiting on Sapir's mobile check". Before merging
-    UI: both gates green on the head · 375 + 1440 screenshots, compressed,
+    UI: both gates green on the head · phone + desktop screenshots (rule 38
+    sizes), compressed,
     **read** by CC, uploaded to the card's evidence folder and linked with a
     `Screenshots:` line — never committed (MEH-3534, testing.md «QA
     screenshots live outside the repo») · VRT clean (add
@@ -530,7 +529,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     every UI change that changes a pattern. **Exempt:** a bug fix that restores
     intended behaviour, copy-only, internal work — say so in one line.
     - **New page** (a new `page.*` under `frontend/app/[locale]/`, admin and
-      `dev/` excluded) → full review: (1) 375 + 1440 screenshots; (2) the
+      `dev/` excluded) → full review: (1) phone + desktop screenshots; (2) the
       closest big sites (Airbnb · Wolt · Etsy · Yelp · Google Maps ·
       Eventbrite, or whichever fits), with sources; (3) each gap with a real
       rendered mock, the px it moves, what it costs; (4) a recommendation per
@@ -545,13 +544,15 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
       Sapir picks (rule 37 for placement, rule 22 for copy).
     - **PR body:** `## Big sites` with the findings, or
       `Big sites: n/a — <reason>`. `scripts/checks/big-sites-guard.sh`
-      (Repo guards; warns, blocks from 22/11) flags a PR touching
+      (Repo guards, blocking) fails a PR touching
       `frontend/app` or `frontend/components` (tests excluded) without either.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
     «go merge» on staging merges).** The self-check, all five before the merge:
     (1) `CI gate` + `Deploy gate` green on the head; (2) one `[preview]` commit,
-    then screenshots of the Vercel preview (390×844 WebKit + 1280 Chromium, with
+    then screenshots of the Vercel preview (phone 390×844 WebKit + desktop 1280
+    Chromium; 375 / 1440 are equally accepted — this is the one home of the
+    screenshot sizes; with
     the protection-bypass headers of testing.md) — if no preview arrives
     (quota, cancelled, unreachable), from CC's own local production build, and
     the PR says so; (3) every reviewer / CI-bot comment newer than the last push
@@ -564,9 +565,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     [RELEASE_CHECKLIST](../../docs/RELEASE_CHECKLIST.md); an Alembic revision
     waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
-    ADR-016 amendment). This adds to rule 23 (375/1440 linked from the PR, not committed) and
+    ADR-016 amendment). This adds to rule 23 (phone + desktop screenshots linked from the PR, not committed) and
     replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
-    evidence of rules 5a, 22, 23, 38, 40 + the security-review and Fable-reviewer lines is in the PR (warns until 22/11).
+    evidence of rules 5a, 22, 23, 38, 40 + the security-review and Fable-reviewer lines is in the PR (blocking).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
     PR body says so, one line each (Sapir 11/11, every PR from then on).**
     (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
@@ -617,10 +618,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     description, so a routine-looking task skips them. Before starting, read
     the table, invoke every row that fits (Skill tool), and write one line in
     the first reply and in the PR body: `Skills: <names>` or
-    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns, and from 22/11 fails, on
-    a PR body without it. Re-check the table when a task turns into a new kind
+    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` fails a
+    PR body without it. Re-check the table when a task turns into a new kind
     of work mid-way — a draft of Hebrew copy in a doc or a card counts as copy
-    (18/11). From 22/11 (a warning until then), a PR that adds Hebrew to
+    (18/11). A PR that adds Hebrew to
     `frontend/messages/he.json` fails `scripts/checks/hebrew-copy-skills-guard.sh` unless its `Skills:` line names
     `hebrew-content-writer` and `clarify`.
 
@@ -653,7 +654,7 @@ use states its tier in the PR body:
 - **א׳ new tool** → add an entry to `frontend/lib/business-features.js`, with
   the he/en copy from the issue's approved table. No tile unless the issue says
   so (max 4 tiles per group — Sapir decides).
-- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`.
+- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`. A new `codeRef` file with the same copy fails `tool-copy-sync-guard.sh` (MEH-3643); a tool going live owes a line in `docs/release/whats-new-pending.md` (`whats-new-pending-guard.sh`).
 - **ג׳ internal** (bug, design, perf) → no registry change; CHANGELOG only.
 
 If the issue states no tier and the PR touches a business-facing tool →
@@ -667,19 +668,10 @@ Every tool lives where its frequency says: daily → the dashboard home, weekly 
 a tab, one-time → «כלים» or «עריכה» (audit:
 `docs/audits/2026-11-dashboard-placement.md`). Two parts:
 
-- **Enforced:** `frontend/__tests__/DashboardPlacementGuard.test.js` fails when
-  a page under `app/[locale]/producer/dashboard/**` has no place in
-  `frontend/lib/business-features.js` (a tool's `dashboard: { home, href }`, or
-  the explicit frame / sub-page / without-entry lists), when a tool's page has
-  no link pointing at it, when it is more than 2 taps from the home, or when
-  the tab its `dashboard.home` names does not itself link to it. Taps come
-  from a static graph: a tab = 1; a link written in a page file or in a file
-  that page imports directly = +1 — whatever state renders it. Comments, the
-  tools tab's `also:` highlight list and the organizer's own tabs are not
-  links. A new page → its place goes in the registry in the same PR: a tool's
-  landing page gets `dashboard: { home, href }`; a form / print view inside a
-  tool goes in `DASHBOARD_SUBPAGES`; a tool page with no registry entry yet
-  (one needs approved copy, «Launch tier» א׳) goes in
+- **Enforced:** `frontend/__tests__/DashboardPlacementGuard.test.js` (its
+  header says what it counts). A new dashboard page gets its place in
+  `frontend/lib/business-features.js` in the same PR: `dashboard: { home, href }`
+  for a tool's landing page, `DASHBOARD_SUBPAGES` for a form or print view, or
   `DASHBOARD_PAGES_WITHOUT_ENTRY` with the reason.
 - **Reviewed:** a card for any PR that touches `/producer/dashboard` carries the
   «מיקום בלוח הבקרה» block (template 06): tool · frequency · where · entry
