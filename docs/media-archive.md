@@ -51,7 +51,7 @@ Needs full history (`git rev-parse --is-shallow-repository` → `false`; if not,
   build and fresh clone of the tip downloads that much less. New screenshots
   can no longer be committed: `scripts/checks/heavy-media-guard.sh` (Repo
   guards) fails on an image or video outside `frontend/public/`,
-  `frontend/e2e/visual/` (VRT baselines), `design-reference/`, `logo/` and
+  `frontend/e2e/visual/` (VRT baselines), `logo/` and
   `docs/research/screenshots/2026-05/`, and `.gitignore` stops an accidental
   `git add` first.
 - **Did not:** shrink `.git`. The old blobs stay in history, because removing
@@ -71,3 +71,21 @@ line. Details: [.claude/rules/testing.md](../.claude/rules/testing.md)
 `docs/audits/**` and `docs/design-audit/**` reports work the same way: the
 report stays in git, its images go to the evidence folder and the report links
 them.
+
+## Old files deleted on 21/11/2026 (MEH-3614)
+
+Sapir's call: files nothing reads any more were taken out of the tree. They
+are still in git at commit **`3a5c2a3e3`** (the `origin/staging` tip the
+branch was cut from), so `git show 3a5c2a3e3:<path>` or
+`git checkout 3a5c2a3e3 -- <path>` brings any of them back.
+
+| Path | Files | What it was |
+|---|---:|---|
+| `design-reference/` | 551 | Claude Design export of 03/07/2026 (MEH-991): page frames, DS bundle, dashboard and join mocks. No code, build or test read it. |
+| `frontend/e2e/_qa-archive/` | 188 | One-off `qa-meh<N>-*.mjs` probes, archived by MEH-3531. No runner ran them. |
+| `frontend/qa-*.mjs`, `frontend/_qa-shot.mjs` | 31 | Probes of the same kind left at the `frontend/` root. |
+
+Code comments that cited one of these probes now say
+`[deleted probe, docs/media-archive.md]`. Dated reports under `docs/audits/`,
+`docs/overnight/` and `qa-artifacts/` still name them as they were; they are
+records of their day and were not rewritten.

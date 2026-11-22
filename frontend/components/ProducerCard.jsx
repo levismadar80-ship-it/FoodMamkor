@@ -36,11 +36,9 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { enqueueFavoriteOnLogin } from "@/lib/post-login-action";
 import {
-  ensureFavoritesLoaded,
-  isFavorited as isFavoritedCache,
   setFavoritedLocal,
-  subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import api from "@/lib/api";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
@@ -104,17 +102,7 @@ function CardHeart({ producer, onCountChange }) {
     // user logs in — otherwise a heart saved as guest stays visually stuck
     // "on" even when the account's real favorites say otherwise.
     setGuestSaved(false);
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producer.id, setFavorited);
   }, [user, producer.id]);
 
   if (user && user.producer_id === producer.id) return null;
@@ -355,7 +343,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const category = firstCategory?.name ? categoryLabel(t, firstCategory) : undefined;
 
   const userLoc = useUserLocation();
-  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק״מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
   // MEH-1938 chunk 3: distance to the CLOSEST point, read through

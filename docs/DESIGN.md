@@ -302,7 +302,7 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
-One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו»). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`.
+One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו», «ק״ג», «מע״מ»; a real quotation such as ה"בעלים" keeps its quotes), and the distance pill reads «כ-N ק״מ». `en.json` uses the same «…» (URL placeholders like `https://...` excepted, MEH-3627). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`, on an acronym written with an ASCII quote in `he.json`, and on three dots in `en.json`.
 Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
 (`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
 Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488
@@ -1071,6 +1071,15 @@ on the admin sidebar. Never type «→» into a back label: screen readers read 
 aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a>`
 whose text is a `back*` key, and a back label with a typed arrow. A link dressed
 as a button that goes home is an action (ActionShapeGuard), not a back link.
+
+## Struck prices (MEH-3465, 21/11/2026)
+
+An old or regular price shown crossed out beside the paid one is
+`components/ui/StruckPrice` — an `<s>`, `dir="ltr"`, `text-fg-muted`; the caller
+passes only size and font. It is hidden from screen readers by default (two bare
+prices read aloud say nothing). `decorative={false}` where the struck price is
+the information: it has its own visible label, or nothing else on the card says
+what it was. `StruckPriceOneOwnerGuard.test.jsx` reds a price struck by hand.
 
 ## Dates (MEH-3070, 13/11/2026)
 

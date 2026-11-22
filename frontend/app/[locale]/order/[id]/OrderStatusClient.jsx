@@ -12,7 +12,7 @@
  *           the buyer's own phone or address. A missing, wrong or expired
  *           link, or ordering switched off, is the site's 404.
  * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
- * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»)
+ * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»); MEH-3620 («כתבו ביקורת» once handed)
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -28,6 +28,7 @@ import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -47,7 +48,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: line.name })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
       ))}
     </ul>
   );
@@ -146,6 +147,12 @@ export function OrderStatusView({ order, onChange, refOf }) {
         <Button variant="outlined" onClick={() => setState({ asking: true })} data-testid="order-cancel">{t("cancel")}</Button>
       )}
       {view.cancel === "too_late" && <p className="text-sm text-fg-muted">{t("too_late")}</p>}
+      {/* MEH-3620: the business's verified-review link, sent only once handed. */}
+      {order.status === "handed" && order.review_url && (
+        <Button onClick={() => window.location.assign(order.review_url)} data-testid="order-write-review">
+          {t("write_review")}
+        </Button>
+      )}
       {state.asking && (
         <CancelDialog
           busy={Boolean(state.busy)}
