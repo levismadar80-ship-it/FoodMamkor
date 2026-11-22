@@ -109,8 +109,10 @@ jobs:
               # --self-test) and by the static audit, both gated on this filter.
               # Without this line a PR touching only the tool skips both.
               - 'scripts/check_api_contract.py'
+            # MEH-3694 (Sapir 22/11): only THIS file — lint and the static API
+            # contract audit are defined here; no other workflow can break them.
             workflows:
-              - '.github/workflows/**'
+              - '.github/workflows/deploy.yml'
 
   # ──────────────────────────────────────────────────────────────────
   # LINT — runs on every PR and every push to main/staging.
