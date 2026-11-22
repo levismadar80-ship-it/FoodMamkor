@@ -318,7 +318,7 @@ class TestNoShowOnSomeoneElsesOrder:
         before_count = db.get(User, buyer.id).rescue_no_show_count
 
         resp = client.post(
-            f"/rescue/orders/{order.id}/no_show",
+            f"/rescue/orders/{order.id}/no-show",
             headers=auth_header(_another_business(db)),
         )
 
@@ -340,7 +340,7 @@ class TestNoShowOnSomeoneElsesOrder:
         before_count = db.get(User, buyer.id).rescue_no_show_count or 0
 
         resp = client.post(
-            f"/rescue/orders/{order.id}/no_show",
+            f"/rescue/orders/{order.id}/no-show",
             headers=auth_header(shop["owner"]),
         )
 
@@ -366,7 +366,7 @@ class TestNoShowOnSomeoneElsesOrder:
         order = _reserve_directly(db, offer, buyer)
 
         resp = client.post(
-            f"/rescue/orders/{order.id}/no_show", headers=auth_header(buyer)
+            f"/rescue/orders/{order.id}/no-show", headers=auth_header(buyer)
         )
 
         assert resp.status_code == 403, resp.text
@@ -379,7 +379,7 @@ class TestNoShowOnSomeoneElsesOrder:
         db.commit()
         order = _reserve_directly(db, offer, buyer)
 
-        resp = client.post(f"/rescue/orders/{order.id}/no_show")
+        resp = client.post(f"/rescue/orders/{order.id}/no-show")
 
         assert resp.status_code == 401, resp.text
         db.expire_all()

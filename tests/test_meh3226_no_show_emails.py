@@ -60,7 +60,7 @@ def _ended_order(db, shop, buyer, code):
 
 def _mark(client, shop, order):
     return client.post(
-        f"/rescue/orders/{order.id}/no_show", headers=auth_header(shop["owner"])
+        f"/rescue/orders/{order.id}/no-show", headers=auth_header(shop["owner"])
     )
 
 

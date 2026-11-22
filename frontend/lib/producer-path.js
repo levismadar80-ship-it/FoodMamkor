@@ -14,7 +14,7 @@
  * nowhere else; `__tests__/ProducerPathGuard.test.js` fails on a hand-written
  * `/producer/${…slug…}`.
  *
- * @param {{ slug?: string|null, id?: string|null }} producer
+ * @param {{ slug?: string|null, id?: string|number|null }} producer
  * @param {string} [hash] optional section anchor, without the `#`
  * @returns {string|null} null when neither key is present
  */
