@@ -600,6 +600,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     (18/11). A PR that adds Hebrew to
     `frontend/messages/he.json` fails `scripts/checks/hebrew-copy-skills-guard.sh` unless its `Skills:` line names
     `hebrew-content-writer` and `clarify`.
+    A PR that adds a component, hook or helper module also carries `Reuse:`
+    (what existing code it checked first, MEH-3612); `reuse-line-guard.sh` warns.
 
     | Task | Skills |
     |---|---|
