@@ -16,10 +16,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
  * → tonal plate · no city/category → no place line.
  */
 vi.mock("next-intl", () => ({
-  useTranslations: (ns) => (k, v) => {
+  useTranslations: (ns) => Object.assign((k, v) => {
     const key = ns ? `${ns}.${k}` : k;
     return v?.name ? `${key}:${v.name}` : key;
-  },
+  }, { has: () => false }),
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }) => (

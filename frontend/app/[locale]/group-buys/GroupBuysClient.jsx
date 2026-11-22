@@ -165,11 +165,12 @@ function GroupBuyCard({ gb }) {
 }
 
 /**
- * @param {{ initialItems?: any[] | null, initialCounts?: object | null }} props
+ * @param {{ initialItems?: any[] | null, initialCounts?: object | null, serverSupply?: { rescue?: number | null } | null }} props
  *   MEH-2233: the server's first list (status «open», no city) and its counts;
- *   null or absent = the client fetches, as before.
+ *   null or absent = the client fetches, as before. MEH-3076: `serverSupply`
+ *   is the rescue tab's count read on the server, for the hub tab row.
  */
-export default function GroupBuysClient({ initialItems = null, initialCounts = null }) {
+export default function GroupBuysClient({ initialItems = null, initialCounts = null, serverSupply = null }) {
   const t = useTranslations("group_buys.list");
   const tHub = useTranslations("events.list");
   // home.whats_on.eyebrow: «קרוב לבית» / "Close to home" — the tab-neutral
@@ -256,6 +257,7 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
         eyebrow={tWhatsOn("eyebrow")}
         title={t("hero_title")}
         subtitle={t("hero_subtitle")}
+        serverSupply={serverSupply}
       />
 
       <div className="max-w-5xl mx-auto px-4 pt-4 pb-16">

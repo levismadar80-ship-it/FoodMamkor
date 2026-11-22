@@ -166,10 +166,12 @@ describe("MEH-2163 category-glyph registry: total lookup + backend coverage", ()
   });
 
   it("null / undefined / an object with no name are total too", () => {
-    for (const nothing of [null, undefined, {}, { slug: "meat" }]) {
+    for (const nothing of [null, undefined, {}, { slug: "no-such-slug" }]) {
       expect(resolveCategoryGlyph(nothing).glyph).toBe(CATEGORY_GLYPH_FALLBACK);
       expect(resolveCategoryGlyph(nothing).isFallback).toBe(true);
     }
+    // MEH-3076: a row with only its slug now resolves (the slug is the key).
+    expect(resolveCategoryGlyph({ slug: "meat" }).isFallback).toBe(false);
   });
 
   // The discriminating case. Any OTHER unknown key is answered identically by
@@ -190,9 +192,11 @@ describe("MEH-2163 category-glyph registry: total lookup + backend coverage", ()
 
   // The key indirection MEH-1456 will swap. Pinned so that swap is a visible,
   // reviewed change rather than a silent one.
-  it("categoryGlyphKey reads `name` today (MEH-1456 swaps it to `slug`)", () => {
-    expect(categoryGlyphKey("בשר")).toBe("בשר");
-    expect(categoryGlyphKey({ name: "בשר", slug: "meat" })).toBe("בשר");
+  it("categoryGlyphKey is the slug (MEH-1456 swap, done in MEH-3076)", () => {
+    expect(categoryGlyphKey("בשר")).toBe("meat");
+    expect(categoryGlyphKey({ name: "בשר", slug: "meat" })).toBe("meat");
+    // a renamed row keeps its glyph: the slug wins over a name the list lacks
+    expect(categoryGlyphKey({ name: "בשר טרי", slug: "meat" })).toBe("meat");
     expect(categoryGlyphKey(null)).toBe("");
   });
 });
