@@ -20,6 +20,8 @@
 | ‏noindex | **לא נמצאה שום דליפה.** אף פליטה לא תלויה ב-`NODE_ENV`, ב-`VERCEL_ENV`, ב-hostname או בדגל, חוץ מ-owner-preview שדורש query מפורש. |
 | ‏title / description | לכל route יש title ייעודי. אין כפילות בין routes. |
 
+> **עדכון 21/11 (MEH-3638):** דפי תוכן (עסק, מתכון, אירוע, מארגן, חוויה, רכישה קבוצתית) עברו מ-`buildAlternates` ל-`buildUntranslatedEntityMeta`. אין להם צמד hreflang, וגרסת ה-/en שלהם היא `noindex, follow`, כי התוכן העיקרי בהם עברית. ב-sitemap הם מופיעים רק בעברית. הדפים הקבועים נשארים עם שני ה-locales.
+
 ---
 
 ## 1. תוקן כאן — `/producers` נעלם מה-sitemap כשה-backend למטה
