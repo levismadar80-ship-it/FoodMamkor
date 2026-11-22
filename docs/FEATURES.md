@@ -101,6 +101,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
 | `/producer/dashboard/tools` | «כלים» tab: launcher for creation tools |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
+| `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
 | `/producer/dashboard/events` | Manage events |
 | `/producer/dashboard/events/new` | Create an event |
 | `/producer/dashboard/events/[id]/edit` | Edit an event |
@@ -180,7 +181,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | "קרוב אלי" (geolocation) — single re-used marker, no leak | `MapComponent.jsx` |
 | ✅ | v1 | Map ↔ list hover sync (bidirectional) | `MapClient.jsx` |
 | ✅ | v1 | Mobile bottom-sheet for selected producer | `MapClient.jsx` |
-| ✅ | v1 | Category legend = filter (toggleable) | `MapClient.jsx` |
+| ✅ | v1 | Category legend = filter (toggleable), one row per group since MEH-3076 | `map/components/MapPane.jsx` |
 | ✅ | v1 | Producer detail page with sticky contact sidebar | `frontend/app/[slug]/page.js`, `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — mobile column order fixed (name above fold), inline mobile CTA, IO StickyContactBar | `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — short_description subtitle + contact_name micro-line | `producer/[id]/ProducerDetail.jsx` |

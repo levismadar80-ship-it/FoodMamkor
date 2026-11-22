@@ -103,8 +103,8 @@ def test_a_failed_checkin_is_logged_and_does_not_break_the_job(
     written without passing through stdlib `logging` and caplog sees nothing.
     Measured the hard way — CI showed the rendered `heartbeat_checkin_failed`
     line in the captured output while the caplog assertion failed on the same
-    run. tests/test_seed_env_gate.py:145 and test_rating_dispatch.py:190
-    already use this helper for the same reason.
+    run. tests/test_seed_env_gate.py:145 already uses this helper for the
+    same reason.
     """
     monkeypatch.setenv("ENV", "production")
 
