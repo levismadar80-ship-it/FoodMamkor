@@ -607,11 +607,14 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 // PRESENCE at the right step — the VALUES are locked in he.json/en.json and
 // t() is mocked to the key path here, so this pins placement, not wording.
 describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
-  it("ACCOUNT carries the duration hint", async () => {
+  // MEH-3663 (Sapir 22/11): ACCOUNT opens on the sign-in options — the
+  // «אפשר לעצור…» line and the «כל בית עסק עובר אישור אישי» card are gone.
+  // The frame itself is asserted first, so a missing frame cannot pass this.
+  it("ACCOUNT carries neither the pause line nor the approval card", async () => {
     await renderWizard();
-    expect(screen.getByTestId("register-account-duration-hint")).toHaveTextContent(
-      `${K}.steps.account.duration_hint`,
-    );
+    expect(screen.getByTestId("register-frame-account")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-account-duration-hint")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-account-reassurance")).not.toBeInTheDocument();
   });
 
   // MEH-3656: the free-forever line left DETAILS with the other helper lines
