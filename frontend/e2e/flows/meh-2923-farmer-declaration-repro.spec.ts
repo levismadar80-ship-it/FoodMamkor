@@ -5,7 +5,7 @@ import { pickCity } from "./_pick-city";
  * MEH-2923 chunk 1 — reproduce the pilot finding, NO fix.
  *
  * Pilot: category «ירקות», tick 2 of the 3 STORY checkboxes, click «הצטרפו» →
- * reached the «בדקו את תיבת האימייל» screen with no message. The client gate
+ * reached the «בדקו את תיבת המייל» screen with no message. The client gate
  * (RegisterProducerClient.jsx: farmerDeclarationRequired && !farmerConfirmed)
  * should stop that. This spec records what actually happens, per combination
  * of the box left unticked, and whether POST /auth/register/producer fired.

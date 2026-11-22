@@ -50,12 +50,12 @@ const { default: NewExperiencePage } = await import("@/app/[locale]/producer/das
 
 // The 403 the server sends for an unverified email (auth.py:require_verified_producer).
 const EMAIL_403 = Object.assign(new Error("403"), {
-  response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } } },
+  response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } } },
 });
 // Every element whose OWN text carries the gate sentence, in any wording.
 const gateMentions = () =>
   [...document.querySelectorAll("body *")].filter((el) =>
-    [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.includes("יש לאמת את כתובת האימייל תחילה")),
+    [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.includes("יש לאמת את כתובת המייל תחילה")),
   );
 
 const wrap = (node) =>

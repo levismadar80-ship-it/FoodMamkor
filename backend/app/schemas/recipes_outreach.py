@@ -398,7 +398,7 @@ class BusinessSuggestionCreate(BaseModel):
         # The length cap lives here, not in Field(...) — see the docstring.
         # 254 is the column width and the RFC 5321 maximum for an address.
         if normalized is not None and len(normalized) > 254:
-            raise ValueError("כתובת אימייל לא תקינה")
+            raise ValueError("כתובת מייל לא תקינה")
         return normalized
 
     @model_validator(mode="after")
