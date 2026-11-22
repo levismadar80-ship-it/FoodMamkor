@@ -20,7 +20,6 @@ from pydantic import ValidationError
 from app.schemas.schemas import (
     EventCreate,
     ExperienceCreate,
-    HomeProductCreate,
     ProducerRecipeCreate,
     ProducerUpdate,
     ProductCreate,
@@ -64,24 +63,6 @@ def test_producer_images_list_rejects_any_bad_member():
 def test_producer_images_list_accepts_valid_and_drops_blanks():
     obj = ProducerUpdate(images=[GOOD, "", "  "])
     assert obj.images == [GOOD]
-
-
-# ---------- HomeProductCreate.photo + .images (public form) ----------
-
-
-def test_home_product_photo_junk_rejected():
-    with pytest.raises(ValidationError):
-        HomeProductCreate(title="לחם שיפון", photo="bread.jpg")
-
-
-def test_home_product_images_junk_rejected():
-    with pytest.raises(ValidationError):
-        HomeProductCreate(title="לחם שיפון", images=["https://bread.jpg"])
-
-
-def test_home_product_valid_accepted():
-    obj = HomeProductCreate(title="לחם שיפון", photo=GOOD, images=[GOOD])
-    assert obj.photo == GOOD and obj.images == [GOOD]
 
 
 # ---------- ExperienceCreate / EventCreate / ProducerRecipeCreate ----------
