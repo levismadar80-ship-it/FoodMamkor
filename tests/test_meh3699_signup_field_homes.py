@@ -84,17 +84,39 @@ def test_delivery_only_business_counts_as_located_by_its_areas(db):
     assert sfd.measure(db, SUNDAY).with_location == 1
 
 
+def _record_reports(monkeypatch):
+    reported = []
+    monkeypatch.setattr(sfd, "report_to_sentry", lambda rates, field: reported.append(field))
+    return reported
+
+
 def test_zero_share_over_three_signups_warns(db, monkeypatch):
     for _ in range(3):
         _business(db, referral="")
-    sent = []
-    monkeypatch.setattr(sfd.settings, "admin_email", "admin@example.com")
-    monkeypatch.setattr(sfd, "send_email", lambda to, subject, body: sent.append((to, subject, body)))
-    rates = sfd.send_signup_fill_digest(db, SUNDAY)
+    reported = _record_reports(monkeypatch)
+    rates = sfd.check_signup_fill(db, SUNDAY)
     assert rates is not None and rates.zero_fields() == ["referral_source"]
-    assert len(sent) == 1
-    assert "אזהרה" in sent[0][1]
-    assert "ענו «מאיפה שמעתם»: 0 (0%)" in sent[0][2]
+    assert reported == ["referral_source"]
+
+
+def test_sentry_report_is_tagged_and_grouped_per_field(monkeypatch):
+    """The weekly Claude check searches Sentry by this tag; one issue per field."""
+    import sentry_sdk
+
+    seen = []
+
+    def fake_capture(message, level=None):
+        scope = sentry_sdk.get_current_scope()
+        seen.append((message, level, dict(scope._tags), list(scope._fingerprint or [])))
+
+    monkeypatch.setattr(sentry_sdk, "capture_message", fake_capture)
+    sfd.report_to_sentry(sfd.FillRates(signups=4, with_referral=0, with_location=4), "referral_source")
+    assert len(seen) == 1
+    message, level, tags, fingerprint = seen[0]
+    assert level == "warning"
+    assert "referral_source" in message and "4 signups" in message
+    assert tags[sfd.SENTRY_TAG] == "referral_source"
+    assert fingerprint == ["signup-fill-zero", "referral_source"]
 
 
 def test_two_signups_with_zero_do_not_warn(db):
@@ -103,15 +125,13 @@ def test_two_signups_with_zero_do_not_warn(db):
     assert sfd.measure(db, SUNDAY).zero_fields() == []
 
 
-def test_healthy_week_sends_nothing(db, monkeypatch):
-    """Sapir 22/11: email only on a warning, never a weekly «all fine»."""
+def test_healthy_week_reports_nothing(db, monkeypatch):
+    """Sapir 22/11: only on a warning, never a weekly «all fine»."""
     for _ in range(3):
         _business(db)
-    sent = []
-    monkeypatch.setattr(sfd.settings, "admin_email", "admin@example.com")
-    monkeypatch.setattr(sfd, "send_email", lambda *a: sent.append(a))
-    assert sfd.send_signup_fill_digest(db, SUNDAY) is None
-    assert sent == []
+    reported = _record_reports(monkeypatch)
+    assert sfd.check_signup_fill(db, SUNDAY) is None
+    assert reported == []
 
 
 def test_business_owned_by_a_test_account_is_not_counted(db):
@@ -126,18 +146,15 @@ def test_business_owned_by_a_test_account_is_not_counted(db):
 
 
 @pytest.mark.parametrize("weekday_offset", [1, 3])
-def test_nothing_sent_on_another_day(db, monkeypatch, weekday_offset):
-    _business(db)
-    sent = []
-    monkeypatch.setattr(sfd.settings, "admin_email", "admin@example.com")
-    monkeypatch.setattr(sfd, "send_email", lambda *a: sent.append(a))
-    assert sfd.send_signup_fill_digest(db, SUNDAY + timedelta(days=weekday_offset)) is None
-    assert sent == []
+def test_nothing_reported_on_another_day(db, monkeypatch, weekday_offset):
+    for _ in range(3):
+        _business(db, referral="")
+    reported = _record_reports(monkeypatch)
+    assert sfd.check_signup_fill(db, SUNDAY + timedelta(days=weekday_offset)) is None
+    assert reported == []
 
 
-def test_nothing_sent_without_signups(db, monkeypatch):
-    sent = []
-    monkeypatch.setattr(sfd.settings, "admin_email", "admin@example.com")
-    monkeypatch.setattr(sfd, "send_email", lambda *a: sent.append(a))
-    assert sfd.send_signup_fill_digest(db, SUNDAY) is None
-    assert sent == []
+def test_nothing_reported_without_signups(db, monkeypatch):
+    reported = _record_reports(monkeypatch)
+    assert sfd.check_signup_fill(db, SUNDAY) is None
+    assert reported == []
