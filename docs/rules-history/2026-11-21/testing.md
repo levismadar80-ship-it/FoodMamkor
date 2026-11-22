@@ -1,0 +1,428 @@
+# Testing rules
+
+Rules 5, 5a, 20 and the pre-merge pipeline. Incidents and measurements live
+verbatim in [docs/rules-history/testing.md](../../docs/rules-history/testing.md)
+(to 26/10) and [2026-11-13/testing.md](../../docs/rules-history/2026-11-13/testing.md)
+(to 13/11) — same headings; read them before re-opening a rule.
+
+---
+
+## Rule 5 — Tests before implementation
+
+Failing test first (pytest backend, playwright/component frontend), then make
+it pass. See [docs/TESTING.md](../../docs/TESTING.md).
+
+### Frontend critical flows — Playwright test required before writing code
+
+login / register · WhatsApp button click · פרסום מוצר שכנה · טופס הרשמת עסק.
+
+### NOT required for
+
+Styling, color/spacing tweaks, minor UI adjustments.
+
+### Test dummy URLs must be real backend routes with a matching method
+
+`scripts/check_api_contract.py` (Deploy gate) scans `frontend/__tests__/**` too.
+Use a real route with the verb you call (`GET /auth/me`, not PATCH-only
+`/users/me`). Before pushing: `python scripts/check_api_contract.py` → 0
+mismatches, 0 orphans.
+
+---
+
+## Every new guard test must be shown failing (MEH-1619)
+
+- Every new/strengthened assertion ships with a **demonstrated failing run**:
+  break the guarded thing → red, restore → green; both outcomes in the PR body.
+- **The construction must discriminate:** would the OLD assertion have passed
+  it? If not, the run is not evidence for the change.
+- A classifier ships a **self-test** run first, against the **real**
+  implementation (never a copy), with at least one case **anchored to a real
+  repo file** (MEH-1909). After synthetic cases pass, run the probe over the
+  real corpus and **read the output**, not the exit code.
+- Prefer `&&` over `||` between cues; split checks so the failure names the
+  missing cue.
+- An assertion entailed by the lines above it (or by its own filter) is not a
+  check — delete it. Assert counts that the change under test can falsify.
+- A guard that consults its own subject (`count()===0 → skip`, `if (!el)
+  return`) can never fail; gate on something the product cannot move (project
+  name, env var, fixture). Lifting a quarantine is not the fix. Review question:
+  if the element vanished, does this go red?
+  In `frontend/e2e/**/*.spec.*` this is held by
+  `scripts/checks/e2e-self-skip-ratchet.mjs` (inside `npm run lint:ratchet`,
+  MEH-3520): a new skip or fixme, a new `expect` inside a branch or a new
+  branch in a test body fails the PR. A skip gated on something the product
+  cannot move takes `// eslint-disable-next-line <rule> -- <reason>`; the
+  reason is required. It does not see an alias (`const t = test`), a
+  `try/catch` around an `expect`, or a loop that runs zero times.
+  `scripts/checks/e2e-self-skip-guard.sh` (Repo guards, every PR) runs the
+  ratchet's self-test and fails a baseline total that rises, unless the
+  branch also changes the ratchet or its lint config (then it warns).
+- A green VRT is not evidence the frame is unchanged (2% tolerance swallows
+  copy changes; a pass writes no PNG) — read the rendered text. Tolerance is
+  MEH-1765's call only.
+- **Restoring an old artifact is not ratification.** Before restoring a
+  baseline (or reusing any audited artifact: lock hash, cache, verdict,
+  benchmark, screenshot), count what changed since its capture; if not zero,
+  **reproduce, don't restore**. Record the as-of next to artifacts.
+- Regen by label: [docs/ci/vrt-label-trigger.patch.md](../../docs/ci/vrt-label-trigger.patch.md).
+
+---
+
+## Clock-dependent tests seed from the Israel clock (MEH-2290 · MEH-2380)
+
+The code measures days in Asia/Jerusalem (`israel_today()`,
+`business_days_waiting`, `astimezone(ISRAEL_TZ)`). A test that feeds it a
+timestamp built from the UTC clock is green at most hours and red at one.
+
+- **A datetime "N days ago" is `israel_days_ago(N)`** (`tests/conftest.py`),
+  never `datetime.now(timezone.utc) - timedelta(days=N)`: N × 24 h is N Israel
+  days only while the UTC offset is the same at both ends. The week after a
+  DST switch, 21:00–22:00 UTC, it is N ± 1.
+- **A date relative to today is `israel_today() ± timedelta(days=N)`**, never
+  `date.today()`: the runner is UTC and Israel is already tomorrow from
+  21:00/22:00 UTC. Existing `date.today()` seeds survive on margin only.
+- **A hard-coded date compared with the clock freezes the clock** —
+  `monkeypatch.setattr(<consumer module>, "israel_today", lambda: date(...))`
+  — or it expires (MEH-2290).
+- **An exact count over a window is pinned with the clock frozen at the window
+  edge** (the two `*_NOW` anchors in `tests/test_admin_queue_sla_aging.py`),
+  not only at the hour the suite happens to run.
+- Review question: what does this assertion read at 21:30 UTC on the Monday
+  after the clock change — late October, and late March?
+- `scripts/checks/test-clock-guard.sh` (blocking since MEH-3160; warn-only
+  before, MEH-2382) fails on any `date.today()` in `tests/`; `guard-ok:
+  <reason>` within ±1 line is the escape hatch. `israel-clock-guard.sh` does
+  the same for a private Israel formatter in `frontend/`.
+
+---
+
+## `networkidle` is banned in specs (MEH-215)
+
+No **unbounded** `waitForLoadState("networkidle")` / `waitUntil: "networkidle"`
+in `e2e/flows/**` or `e2e/visual/**` (the globs `playwright.config.ts` runs).
+The only sanctioned form is a bounded, caught wait
+(`e2e/visual/parity.spec.ts`, ~5 s) — don't "fix" it. The `timeout` is the
+operative half; a bare `.catch` is not enough. To prove something did **not**
+happen, await the unwanted event with a bound and require it times out. To
+wait for readiness, gate on that thing (`data-testid`, response, URL). The
+Cloudinary-401 cause is unestablished — don't state it as fact.
+
+### Sweep result (2026-08-09) — where this actually bites
+
+Only CI-run specs matter. `parity.spec.ts` is converted;
+`e2e/screenshots.spec.ts` (not run by CI) is ticketed; don't bulk-"fix" the
+`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` since
+MEH-3531; the two in live use stay in `frontend/e2e/`).
+
+---
+
+## E2E flake prevention — four shapes that kept staging red (MEH-2972)
+
+With ~1,550 tests, a tiny per-test flake rate makes most full runs red. Review
+every new E2E assertion for these shapes (a fifth, MEH-3449, and a sixth,
+MEH-3486 · MEH-3488, added since):
+
+- **No wall-clock budget on a CI runner.** "X within N ms" fails on a loaded
+  runner with no product change. Count frames (`requestAnimationFrame` ticks)
+  or assert ordering. `manual/join.spec.ts` swipe test is the worked case.
+- **Read a recorded-writes array only after a state that only the save can
+  produce,** or with `expect.poll`. A UI assertion that is also true BEFORE the
+  action passes instantly; an optimistic UI shows the result before the request
+  is sent. Both read the array too early (`dashboard-locations` «קבעו כראשי»,
+  `dashboard-manage-events` cancel/reactivate).
+- **A stubbed spec goes stale when the product adds a new `/api` read.** When a
+  PR adds a fetch to a page, grep the specs that stub that page and stub it too.
+- **The whole CI suite comes from one IP.** Per-IP limits (120/min on events
+  and group-buys) answer 429 to nav-gate reads; MEH-2947 is the durable fix.
+  Don't add a per-page-load read without checking its limit.
+
+- **A click into a moving element can be lost with no error (MEH-3449).**
+  Playwright checks the hit target on the first pointer event only; a layout
+  shift between mousedown and mouseup sends `click` to a common ancestor and
+  the handler never runs, while the click "succeeds". Before clicking into a
+  deep-linked or just-re-rendered card, gate on `layoutSettled`
+  (`e2e/flows/_layout-settled.ts`). The symptom is a write or request that
+  "never left the browser", first attempt only.
+
+- **Hit-test before a click into a layered screen, and prove a pick landed
+  (MEH-3486 · MEH-3488).** A click on an element under a sheet or a pill times
+  out after 20 s on the device whose geometry covers it and passes everywhere
+  else (measured 20/11: Chromium's click retry scrolled the Leaflet pane and
+  rescued it, so only WebKit went red). Use the
+  spec's helper (`tapMarker` in `manual/_map-shared.ts`, `pickCity` in
+  `flows/_pick-city.ts`); `E2EClickPreconditionGuard.test.js` holds both.
+
+**A flaky warning on staging gets a Linear card the same day.** From the
+MEH-2972 workflow change on, a test that passes only on retry no longer fails a
+staging or nightly run; `e2e-report` prints a `::warning::` with the count
+instead. That trade only holds if every warning becomes a card — name the test
+and the line, and link the run.
+
+---
+
+## A green that has two possible causes is not a signal
+
+**Check the instrument before the claim.** Before a claim rests on a tool's
+output, run that tool once against a case whose answer you already know — that
+validates both its green and its red. Read the spec before measuring a
+documented system; then check the spec covers the exact token you use.
+
+- Name at least one *other* world where this check is green; if you can, it
+  doesn't discriminate yet.
+- For any stored reference (baseline, golden file, fixture, hash) ask whether
+  reference and subject could be wrong **together**.
+- A green that appears the moment a bug is fixed elsewhere is a defect report
+  about the check.
+- A CI aggregator's `skipped` reads like `success` — a skip it enforces must
+  have *run*.
+- A citation in a rules file must resolve — check it (`get_issue`) when you
+  write it; archived ≠ never existed.
+- **A probe must not count itself.** Never `pgrep -f` / `pkill -f` (the invoking
+  shell matches). Use `ps -eo pid,comm | grep -iE "node|next"` (control:
+  `ps -eo pid,comm | wc -l` is in the tens); `pgrep -x` only for names ≤ 15
+  chars. Prefer `run_in_background` over `&` + kill. Verify what the writer
+  actually is before killing anything.
+
+### A probe whose null output is also its reassuring output is not evidence
+
+`(none)` / `0 findings` / `no rows` also means "never ran". Such a probe ships
+with a **control** that exercises a path known to produce output, runs first,
+and fails loudly saying every null in the run is void. Review question: if this
+probe were dead, what would it print?
+
+---
+
+## The artifact that asserts coverage is the one least likely to be checked
+
+A docstring, a count in a log line, a test-case name each read as verification
+and are none. **Derive counts** (`len(ran)`), never state them; **name a case
+after the input it covers**, not its class; when a reviewer names two sites,
+**grep for the third**; show the guard failing against the old code before
+claiming it guards.
+
+### Corollary — the control itself is an artifact, and it lies the same way
+
+A red for the wrong reason (invocation error, wrong cwd) is not discrimination;
+a no-op edit can print exactly what a working count would. Ask: did the
+evidence actually run, against what I think it ran against?
+
+### Why this is stated as a rule and not an anecdote — the count is the argument
+
+Eight instances in one week:
+
+1. **MEH-1909** — `ast` probe, `None` for all 14 real revisions.
+2. **ORDERS §3.0 (10/08)** — DNS probe whose own control also returned zero.
+3. **ORDERS §3.0 (10/08)** — routes inventory and self-test built on one wrong guess.
+4. **#2786 (11/08)** — six "successful" PNGs of an error boundary.
+
+---
+
+## A test runs the code; it does not read it as text (MEH-3531)
+
+A test that opens a source file and asserts a string is in it (`readFileSync`
+on `components/**`, `read_text()` on `backend/app/**`) breaks on every
+refactor and passes on most bugs; Google calls it a change-detector test.
+
+- **New test → behaviour.** Render, call, request, then assert what came out.
+  Read source text only where nothing runs it (a config shape, a registry
+  entry, a docs link) — and say so in one comment line.
+- **An existing source-text test that breaks** is replaced by a behavioural
+  test or by a lint rule, not patched to the new text.
+- A guard in `scripts/checks/` is source-text by nature and is not covered
+  here.
+
+---
+
+## Tests that pass for the wrong reason (MEH-3295)
+
+A green test is evidence only if it would go red when the code broke. Four
+mechanical checks, then one rule for the threads:
+
+- **A vitest test with no `expect` fails** (`expect.requireAssertions` in
+  `frontend/vitest.config.js`). "Does not throw" is
+  `expect(() => fn()).not.toThrow()`. Never switch the option off for a test.
+- **`scripts/checks/test-honesty-guard.sh`** (Repo guards, blocking) fails a
+  NEW pytest test with no assert / `pytest.raises` / mock `assert_*` /
+  asserting helper, a skip or xfail whose reason names no `MEH-<N>`, a
+  non-strict xfail, a vitest `.only`, a vitest `.skip`/`.todo` without a card.
+  "Not raising is the behaviour" → `# no-assert: <reason>` in the test.
+  `test-honesty-baseline.txt` only shrinks.
+- **Mutation testing on the money-and-permissions set** — `[tool.mutmut]
+  only_mutate` in `backend/pyproject.toml`. A PR that changes one of those
+  files runs `bash scripts/mutation/run.sh` (≈1 h, one child, its own
+  `mehamakor_mutation` database) and pastes its table under `## Mutation`
+  (`mutation-guard.sh` warns, and fails from 22/11, without it). Every `NEW SURVIVOR` is killed by a
+  new test, or explained in `backend/mutation-survivors.txt` with a reason.
+  The weekly repo-health scan (MEH-3143) re-runs the whole set and opens a
+  card per new survivor. Google runs it the same way: changed code only, at
+  review time (Petrović et al., ICSE-SEIP 2018; TSE 2021).
+- **Property tests for pure money and date math** (Hypothesis,
+  `tests/test_meh3295_properties.py`). A new fee, rounding, cap or
+  business-day function gets a rule checked against an independent oracle,
+  not only examples.
+- A strict xfail or skip whose card is Done/Canceled has outlived its reason:
+  the weekly scan opens a card for it.
+
+---
+
+## Rule 5a — Adversarial review before every merge to staging
+
+Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
+the PR. The independent pass is a **fresh reviewer subagent** given the diff and
+the card's acceptance_criteria; its findings are fixed or answered in the PR. Its
+brief always asks one more question: which docs describe what this diff changed
+(rule 11), and were they updated in it (MEH-3192 — no guard can see this). The
+`claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
+its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
+the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
+web-search CVE check ([security.md](./security.md)).
+
+**RED-tier PRs: the fresh reviewer runs on Fable (Sapir 15/11, MEH-3271).** For a
+RED-tier PR (auth, schema/Alembic, security, central components, prod — ADR-016)
+the rule-5a reviewer subagent is started with `model: "fable"`. If Fable is
+refused or its usage is exhausted, run the same reviewer on Opus and say so in
+the PR body — never skip the review. YELLOW/GREEN keep the default reviewer.
+Measured cost (14/11): ~120k tokens for a small PR, ~165–215k for a whole area;
+on 14/11 every Fable pass found a bug the earlier passes missed.
+
+**Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
+findings, stop the fix loop and hand Sapir the remaining findings as one list.
+They are reported, never dropped. Past round 3 the finder mostly surfaces
+pre-existing bugs, and those belong to their own cards.
+
+---
+
+## Rule 20 — Review order: CI before adversarial (mandatory)
+
+`npm run build → pytest tests/test_api.py → /adversarial-review → merge`.
+Never adversarial before CI passes.
+
+### Exception — central components
+
+`MapClient.jsx`, `ProducerDetail`, `main.py` (`.claude/central-components.json`):
+run adversarial even if the build fails.
+
+---
+
+## Definition of Done (every PR, no exceptions)
+
+- [ ] `npm run build` passes
+- [ ] `pytest tests/test_api.py` passes
+- [ ] `/adversarial-review` עבר — all REFEREE verdicts fixed
+
+---
+
+## Required status checks + docs-only merge (MEH-716)
+
+`protect-staging` (ruleset 15240090) requires exactly two aggregators:
+`CI gate` and `Deploy gate`. Named jobs skip on docs/config-only diffs and a
+skipped leg still aggregates to success — docs-only PRs merge with no override
+and **don't poll E2E**. `Playwright E2E` runs on a PR whose diff touches the
+frontend or backend paths, or that carries the `run-e2e` label (MEH-2956 —
+until then label-only, MEH-2779; staging pushes always), and carries no vote until
+Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
+(both are hers). So with auto-merge armed a PR lands on the two gates
+alone — an instruction like "wait for N green E2E runs" is enforced only by
+**not arming auto-merge** until it is checked. A release PR (base `main`) gets
+the same E2E run since 20/11 (MEH-1932); before that GitHub never created one. "Waiting for status / expected"
+right after a push = gates still registering; retry once. Re-measure any
+as-of claim here before acting on it.
+
+**Two CI modes (MEH-3453), decided per run.** Private = the repo is private
+or the repo variable `CI_MODE=private`; public otherwise. Public: every job on
+`ubuntu-latest`, E2E as above with 4 shards on a PR (2 on staging/nightly),
+pytest and vitest 3 shards each. Private: every job on `self-hosted` (Sapir's
+PC runner), E2E only on a `run-e2e` PR, the nightly and a manual run (no E2E
+on a push to staging), WebKit weekly (Sunday 02:30 UTC), pytest and vitest 1
+shard. In private mode a PR without `run-e2e` gets no E2E job and no
+`E2E gate` job at all — that is the mode, not a broken trigger.
+**WebKit core blocks (MEH-3153).** `e2e-webkit-core` runs the specs in
+`frontend/e2e/webkit-core.txt` in WebKit (iPhone 13) on every push to staging
+(public mode) and on every `run-e2e` PR (both modes). It is a leg of `E2E gate`
+and votes in `staging_health.py`; the whole-suite WebKit run stays nightly and
+non-voting. Add a spec to the list only after it was green on recent nights.
+In both modes the nightly skips (Chromium, WebKit and `E2E gate`) when the
+newest nightly or manual run on the same staging commit that executed the
+suite was green (MEH-3507); push runs do not count, and any probe error runs it.
+
+---
+
+## Guarded registries — path-drift validator (MEH-1030)
+
+`scripts/validate-registry-paths.py` (pre-commit) asserts every path listed in
+`.claude/central-components.json` and the `PATH EXCEPTIONS` section of
+`.claude/hooks/rtl-allowlist.txt` still resolves. Adding a registry takes
+**both** steps: an entry in `REGISTRIES` in the script **and** its path in the
+hook's `files:` regex in `.pre-commit-config.yaml`.
+
+---
+
+## Driving Playwright against staging from the CC sandbox — TLS **and** the protection bypass
+
+A harness pointed at staging needs both; either alone measures nothing.
+
+### 1. Cap TLS at 1.2
+
+`chromium.launch({ args: ["--ssl-version-max=tls1.2"] })` — sandbox only.
+Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
+
+### 2. Send the Vercel Deployment Protection headers
+
+`extraHTTPHeaders: { "x-vercel-protection-bypass":
+process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
+"true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
+Never write the secret to a file, commit, PR body or log.
+
+### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
+
+Staging carries three QA users, and their passwords are in every session's env:
+
+| Role | Account | Password env var |
+|---|---|---|
+| business owner (`/producer/dashboard`) | `demo-owner@example.com` | `DEMO_OWNER_PASSWORD` |
+| consumer | `demo-consumer@example.com` | `DEMO_CONSUMER_PASSWORD` |
+| admin (`/admin`) | `demo-admin@example.com` | `DEMO_ADMIN_PASSWORD` |
+
+Log in inside the same Playwright context (fill `/login`, or POST
+`/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372) — one login
+per role per run. Never write "I could not see the dashboard / admin": check it
+on the demo account, or say which step failed. If a login is refused, that is a
+finding to report (the E2E run logs in with the same three on every staging
+push). Staging only — the seed refuses production. Details:
+[docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) «Staging QA auth fixtures».
+`DemoAccountsRuleSync.test.js` keeps this table equal to `global-setup.ts`.
+
+### Corollary — a Railway `000` from the sandbox is NOT an outage
+
+`*.up.railway.app` is egress-blocked here. Probe the backend through
+`staging.mehamakor.co.il/api/…` with the headers above.
+
+---
+
+## QA-artifacts screenshot size discipline (MEH-1156)
+
+### QA screenshots live outside the repo (MEH-3534 — the 2 MB-per-PR cap is now 0)
+
+Screenshots and recordings are **never committed**. 242 MB of them had reached
+the tip of staging by 20/11; the old ones are in history at the commit named in
+[docs/media-archive.md](../../docs/media-archive.md).
+
+- Capture into `qa-artifacts/MEH-XXXX/` as before (the `qa-*.mjs` scripts
+  write there; `.gitignore` keeps the images out), compress with
+  `node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/` (from
+  `frontend/`; WebP q80, ≤ 1440 px), **read** them, then upload them to the
+  card's evidence folder `QA-evidence/MEH-XXXX` in the project Drive (parent
+  folder id `16cZYv36Y0EoMTCzggHXZU-d2xvPLn4MW`; Google Drive connector,
+  `create_file` with a file reference; Sapir's choice 21/11).
+- The PR body carries `Screenshots: <https link to that folder>` (or a
+  `## Screenshots` section with the links). `pr-evidence-guard.sh` checks it
+  for every UI PR (rule 23).
+- `scripts/checks/heavy-media-guard.sh` fails any image or video tracked
+  outside `frontend/public/`, `frontend/e2e/visual/`, `design-reference/`,
+  `logo/` and `docs/research/screenshots/2026-05/`. A new folder that the
+  product or a test really reads goes into its `ALLOW_RE`, with the reason.
+- Text evidence (`.md`, `.json`, `.log`) still goes in `qa-artifacts/MEH-XXXX/`.
+- No Drive connector in the session → say so in the PR body, describe what
+  each screenshot showed, and leave the `Screenshots:` line for the session
+  that can upload; never commit the images to get past the guard.

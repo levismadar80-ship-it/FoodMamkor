@@ -37,7 +37,7 @@ test.describe("Producer register wizard (5-frame)", () => {
         ]),
       }),
     );
-    // Non-upgrade ack: 200 with NO access_token → STORY submit → CONFIRM
+    // Non-upgrade ack: 200 with NO access_token → CATEGORY submit → CONFIRM
     // (inbox-check screen, didUpgrade === false).
     await page.route(REGISTER_POST, (route) => {
       if (route.request().method() !== "POST") return route.continue();
@@ -49,10 +49,8 @@ test.describe("Producer register wizard (5-frame)", () => {
     });
   });
 
-  test("ACCOUNT → DETAILS → CATEGORY → STORY → CONFIRM (new-registration path)", async ({ page }) => {
+  test("ACCOUNT → DETAILS → CATEGORY → CONFIRM (new-registration path, MEH-3656)", async ({ page }) => {
     await page.goto("/register/producer");
-    // MEH-994: click through the pre-flight intro screen to reach frame 01.
-    await page.getByTestId("register-preflight-start").click();
 
     // ── ACCOUNT ──
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -81,20 +79,12 @@ test.describe("Producer register wizard (5-frame)", () => {
     // MEH-952: "חלב וגבינות" is a license-required category — the number is now
     // gated inline on CATEGORY (blocking error), so fill it before advancing.
     await page.getByTestId("register-category-license").fill("1234567");
-    await page.getByTestId("register-category-next").click();
 
-    // ── STORY (frame 03) — tagline (short_description) + declarations ──
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
-    await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-    // MEH-1471: the attribution dropdown on STORY. MEH-2183 made it OPTIONAL —
-    // leaving it empty no longer blocks submit — but this spec keeps picking a
-    // key so it still exercises the populated path end to end.
-    await page.getByTestId("register-referral-source").selectOption("instagram");
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
-    for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
+    for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
       await cb.check();
     }
-    await page.getByTestId("register-story-submit").click();
+    await page.getByTestId("register-category-submit").click();
 
     // ── CONFIRM (frame, non-upgrade) — inbox-check success state ──
     // testid assertion (not getByText) so the /בדקי/ heading-vs-body
@@ -110,8 +100,6 @@ test.describe("Producer register wizard (5-frame)", () => {
   // field's aria-invalid + aria-describedby (inline as-you-type).
   test("error states expose ARIA (role=alert + phone aria-invalid/describedby)", async ({ page }) => {
     await page.goto("/register/producer");
-    // MEH-994: click through the pre-flight intro screen to reach frame 01.
-    await page.getByTestId("register-preflight-start").click();
 
     // ── ACCOUNT: invalid email → stepError announced as role="alert" ──
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -141,29 +129,25 @@ test.describe("Producer register wizard (5-frame)", () => {
     await phone.fill("0501234567"); // valid → wiring clears
     await expect(phone).not.toHaveAttribute("aria-invalid");
 
-    // advance DETAILS → CATEGORY → STORY (city + address to satisfy the form)
+    // advance DETAILS → CATEGORY, the submitting frame (MEH-3656)
     await pickCity(page.getByTestId("register-details-city"), "תל אביב"); // MEH-2241 chunk B: the gate needs a picked town, not typed text
     await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
     await page.getByTestId("register-details-next").click();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
     await page.getByTestId("register-category-license").fill("1234567"); // MEH-952: license gate on CATEGORY
-    await page.getByTestId("register-category-next").click();
 
-    // ── STORY: submit WITHOUT the declarations → submit error as role="alert" ──
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
-    await page.getByTestId("register-story-submit").click();
-    await expect(page.getByTestId("register-frame-story").getByRole("alert")).toBeVisible(); // submit-gate error
-    await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
+    // ── CATEGORY: submit WITHOUT the declarations → submit error as role="alert" ──
+    await page.getByTestId("register-category-submit").click();
+    await expect(page.getByTestId("register-frame-category").getByRole("alert")).toBeVisible(); // submit-gate error
+    await expect(page.getByTestId("register-frame-category")).toBeVisible(); // still on CATEGORY (blocked)
     await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible(); // did NOT silently advance to CONFIRM
   });
 
   // MEH-971 chunk 1: the license-pending opt-in relaxes the CATEGORY advance
   // gate. Two cases in one flow — unchecked + empty license → blocked;
-  // checked → advances to STORY with no license number entered.
+  // checked → submits with no license number entered (MEH-3656: CATEGORY submits).
   test("license-pending opt-in bypasses the CATEGORY license gate", async ({ page }) => {
     await page.goto("/register/producer");
-    // MEH-994: click through the pre-flight intro screen to reach frame 01.
-    await page.getByTestId("register-preflight-start").click();
 
     // ACCOUNT → DETAILS
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -184,14 +168,22 @@ test.describe("Producer register wizard (5-frame)", () => {
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
     await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
 
-    // (a) unchecked + empty license → advance BLOCKED (stays on CATEGORY).
-    await page.getByTestId("register-category-next").click();
-    await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await expect(page.getByTestId("register-frame-story")).not.toBeVisible();
+    // Consent boxes ticked up front, so the only thing that can block is the licence.
+    // Every box except the opt-in, selected without a branch in the test body.
+    const consent = page
+      .getByTestId("register-frame-category")
+      .locator('input[type="checkbox"]:not([data-testid="register-license-pending-optin"])');
+    await expect(consent).not.toHaveCount(0);
+    for (const cb of await consent.all()) await cb.check();
 
-    // (b) check the opt-in → advance SUCCEEDS to STORY (no license entered).
+    // (a) unchecked + empty license → submit BLOCKED (stays on CATEGORY).
+    await page.getByTestId("register-category-submit").click();
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible();
+
+    // (b) check the opt-in → submit SUCCEEDS (no license entered).
     await page.getByTestId("register-license-pending-optin").check();
-    await page.getByTestId("register-category-next").click();
-    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+    await page.getByTestId("register-category-submit").click();
+    await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
   });
 });

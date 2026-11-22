@@ -221,7 +221,6 @@ async function stubPasswordCheck(page: Page): Promise<void> {
  * limiter is untouched.
  */
 async function reachDetailsFrame(page: Page): Promise<void> {
-  await page.getByTestId("register-preflight-start").click();
   await expect(page.getByTestId("register-frame-account")).toBeVisible({ timeout: 15_000 });
   await page.getByTestId("register-account-name").fill("בדיקת פריפיל");
   await page.getByTestId("register-account-email").fill(`prefill+${RUN_TAG}@mehamakor.online`);
@@ -564,7 +563,6 @@ test.describe("MEH-2238 — the owner opens the link", () => {
         "z".repeat(43),
       );
       try {
-        await page.getByTestId("register-preflight-start").click();
         await expect(page.getByTestId("register-frame-account")).toBeVisible({
           timeout: 15_000,
         });
