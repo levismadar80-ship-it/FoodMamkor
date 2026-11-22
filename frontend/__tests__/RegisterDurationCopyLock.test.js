@@ -15,9 +15,8 @@
  * journey, one number, now across six keys instead of five.
  *
  * MEH-3663 moved it back to «כ־3 דקות»: MEH-3656 cut the business form to three
- * short steps. The ACCOUNT step's duration_hint lost its figure — the page
- * subtitle above it already says it — so it left the locked set and a test now
- * pins that it carries none. /join's meta_line («כ-5 דקות», with a hyphen the
+ * short steps. The ACCOUNT step's duration_hint left the locked set, and on
+ * 22/11 the line itself was deleted (Sapir). /join's meta_line («כ-5 דקות», with a hyphen the
  * set never looked for) joined the set.
  *
  * Same class as RegisterSuccessCopyLock (MEH-2136): a contradiction nothing in
@@ -96,11 +95,5 @@ describe("registration duration copy is one number (MEH-2185)", () => {
       expect(read(he, path), `${path} should still read «${figure}»`).toContain(figure);
       expect(read(he, path), `${path} was swept by mistake`).not.toContain("כ־3 דקות");
     }
-  });
-
-  it("the ACCOUNT step's hint carries no figure — the subtitle above it does (MEH-3663)", () => {
-    const path = "auth.register.producer.steps.account.duration_hint";
-    expect(read(he, path)).not.toMatch(/\d/);
-    expect(read(en, path)).not.toMatch(/\d/);
   });
 });
