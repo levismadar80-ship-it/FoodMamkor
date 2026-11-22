@@ -161,6 +161,41 @@ def _refetch_apple_jwks_for_kid_miss() -> list[Any] | None:
         return None
 
 
+def _report_unexpected_verifier_error(provider: str, exc: BaseException) -> None:
+    """MEH-3725: a token the provider rejects is the user's problem and stays
+    a warning. Anything else — the library failed to import, its API changed
+    (a TypeError after a major bump), the provider's keys could not be
+    fetched — fails EVERY sign-in with the same "invalid token" answer, so it
+    goes to Sentry. Same blind spot as the anthropic 2.x bump (#5154): a
+    caught exception and a mocked test suite. Never raises."""
+    try:
+        from app.sentry import capture_background_exception  # noqa: PLC0415
+
+        capture_background_exception(exc, task=f"oauth.{provider}")
+    except Exception:  # pragma: no cover — reporting must never break sign-in
+        logger.debug("[%s AUTH] Sentry report failed", provider.upper())
+
+
+def _is_expected_apple_error(exc: BaseException) -> bool:
+    """A rejected or malformed Apple token: PyJWT's own errors, a header with
+    no ``kid`` (KeyError), or a bad value. Everything else is unexpected."""
+    try:
+        import jwt as pyjwt  # noqa: PLC0415
+
+        if isinstance(exc, pyjwt.PyJWTError):
+            return True
+    except Exception:  # noqa: BLE001 — PyJWT missing is itself unexpected
+        return False
+    return isinstance(exc, (KeyError, ValueError))
+
+
+def _is_expected_google_error(exc: BaseException) -> bool:
+    """google-auth raises ValueError (MalformedError, InvalidValue, …) for a
+    token it rejects. TransportError — Google's certs could not be fetched —
+    is NOT a ValueError and is unexpected: it fails every Google sign-in."""
+    return isinstance(exc, ValueError)
+
+
 def verify_apple_token(id_token: str) -> dict[str, Any] | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
@@ -211,6 +246,8 @@ def verify_apple_token(id_token: str) -> dict[str, Any] | None:
         return payload
     except Exception as e:
         logger.warning(f"[APPLE AUTH] Verification failed: {e}")
+        if not _is_expected_apple_error(e):
+            _report_unexpected_verifier_error("apple", e)
         return None
 
 
@@ -230,4 +267,6 @@ def verify_google_token(id_token: str) -> dict[str, Any] | None:
         return cast(dict[str, Any], info)
     except Exception as e:
         logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
+        if not _is_expected_google_error(e):
+            _report_unexpected_verifier_error("google", e)
         return None
