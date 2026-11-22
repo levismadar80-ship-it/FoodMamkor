@@ -6,6 +6,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
+import homes from "@/lib/signup-field-homes.json";
+import { ANCHOR_TO_KEY } from "@/lib/dashboard-edit-anchors";
 
 // MEH-866: wizard coverage for the B/C/D wirings that shipped with zero tests —
 // 5-frame nav (MEH-847), city/address payload (MEH-853), short_description
@@ -1059,3 +1061,43 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
 // These assert the observable end state (what is in localStorage after submit),
 // not that a particular line moved — ADR-032 §3.6.
 const DRAFT_KEY = "producer_registration_draft";
+
+// MEH-3699: every field the signup request carries has a home
+// (lib/signup-field-homes.json). This walks the BUSINESS path and checks that
+// each field the registry says is asked at signup is really on one of its
+// frames. A field removed from signup must get a dashboard home in the
+// registry, or this goes red: MEH-3656 removed «מאיפה שמעתם» with no home
+// and nothing noticed (MEH-3697).
+describe("RegisterProducerClient — signup field homes (MEH-3699)", () => {
+  const { fields } = homes;
+  const present = (locator) => {
+    const [kind, value] = locator.split(/:(.*)/s);
+    if (kind === "testid") return screen.queryAllByTestId(value).length > 0;
+    if (kind === "id") return document.getElementById(value) !== null;
+    if (kind === "text") return screen.queryAllByText(value, { exact: false }).length > 0;
+    throw new Error(`unknown locator kind «${kind}» in signup-field-homes.json`);
+  };
+
+  it("every field has at least one home, and every anchor exists in the dashboard", () => {
+    for (const [name, home] of Object.entries(fields)) {
+      const homesOf = ["signup", "dashboard", "shown_with", "system"].filter((k) => home[k]);
+      expect(homesOf.length, `${name} has no home`).toBeGreaterThan(0);
+      if (home.dashboard) expect(ANCHOR_TO_KEY, `${name}: #${home.dashboard}`).toHaveProperty([home.dashboard]);
+      if (home.shown_with) expect(fields[home.shown_with]?.signup, `${name}: shown_with`).toBeTruthy();
+    }
+  });
+
+  it("every field the registry places in signup is on the business path", async () => {
+    const wanted = Object.entries(fields).filter(([, h]) => h.signup);
+    const seen = new Set();
+    const look = () => wanted.forEach(([name, h]) => present(h.signup) && seen.add(name));
+    await renderWizard();
+    look();
+    await fillAccountToDetails();
+    look();
+    await fillDetailsToStory();
+    look();
+    const missing = wanted.map(([n]) => n).filter((n) => !seen.has(n));
+    expect(missing, "asked at signup per the registry, but not on any business frame").toEqual([]);
+  });
+});
