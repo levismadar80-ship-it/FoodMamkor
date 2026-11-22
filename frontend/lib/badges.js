@@ -113,7 +113,8 @@ export const BADGE_CONFIG = {
     // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a
     // LocaleLink when aboutHref is set — mirrors the verified → /about#verification
     // pattern, MEH-1336). Editorial opinion → publish the criteria.
-    aboutHref: "/about#editors-pick",
+    // MEH-3667: the full text moved from /about to /about/badges, same anchor.
+    aboutHref: "/about/badges#editors-pick",
     color: "accent",
   },
   // MEH-2213: the "license" badge is REMOVED from every reader surface. It was

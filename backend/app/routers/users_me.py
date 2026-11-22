@@ -80,11 +80,15 @@ def _change_email(
     # to matching by email, so an OAuth account parked on someone else's
     # address would catch that person's first sign-in.
     if user.google_id or user.apple_id:
-        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+        raise HTTPException(
+            status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה."
+        )
     # MEH-3104: the protected owner account is matched by exact email
     # (services/account_guards.is_super_admin); moving it would drop the protection.
     if is_super_admin(user):
-        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+        raise HTTPException(
+            status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה."
+        )
     # MEH-3104: a session alone is not enough to move the account. Without
     # this, a stolen session could change the address, ask for a password
     # reset there and take the account. MEH-3425: wrong passwords are capped
@@ -100,7 +104,7 @@ def _change_email(
     )
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
-        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+        raise HTTPException(status_code=409, detail="המייל כבר בשימוש")
     user.email = new_email  # type: ignore[assignment]
     user.email_verified = False  # type: ignore[assignment]
     user.email_verify_token = secrets.token_urlsafe(32)  # type: ignore[assignment]
@@ -219,7 +223,7 @@ def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added respon
         db.rollback()
         if not email_changed:
             raise
-        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+        raise HTTPException(status_code=409, detail="המייל כבר בשימוש")
     db.refresh(user)
 
     if email_changed:
@@ -268,9 +272,16 @@ async def change_password(  # noqa: PLR0913 — +background_tasks (MEH-3591)
     password_changed_at (MEH-305 iat gate).
     """
     if not user.password_hash:
+        # MEH-3600: name the provider this account actually signs in with, so
+        # the line stays true when Apple sign-in is switched on (Sapir 21/11).
+        provider = "Google" if user.google_id else "Apple" if user.apple_id else None
         raise HTTPException(
             status_code=400,
-            detail="SET_PASSWORD_UNSUPPORTED",
+            detail=(
+                f"לחשבון הזה אין סיסמה, כי הכניסה אליו היא דרך {provider}."
+                if provider
+                else "לחשבון הזה אין סיסמה."
+            ),
         )
     # MEH-306: bcrypt verify blocks ~50-200ms; offload to a thread
     # so the async handler doesn't block the event loop.

@@ -219,13 +219,15 @@ def test_signup_name_and_phone_do_not_reach_the_visitor_mail(
     client, db, monkeypatch, rotating_ip
 ):
     mails = []
-    monkeypatch.setattr(
-        registration_emails,
-        "send_email",
-        lambda to, subject, body, html=None, test_cause=False: mails.append(
-            (to, subject, body, html or "")
-        ),
-    )
+    # MEH-3535: the sign-up emails are queued and sent by the outbox, so the
+    # capture sits at the outbox's send call.
+    import app.services.email_outbox as email_outbox
+
+    def _capture(to, subject, body, html=None, reply_to=None):
+        mails.append((to, subject, body, html or ""))
+        return "sent"
+
+    monkeypatch.setattr(email_outbox.email_service, "send_email_result", _capture)
     owner = _owner(db, email="owner-x@example.com")
     ev = _event(db, owner)
     marker = "קנו עכשיו בזול"
@@ -237,6 +239,7 @@ def test_signup_name_and_phone_do_not_reach_the_visitor_mail(
         phone="052-7654321",
     )
     assert resp.status_code == 201
+    email_outbox.dispatch_due(db)
     to_victim = [m for m in mails if m[0] == VICTIM]
     assert len(to_victim) == 1, mails
     _, subject, body, html = to_victim[0]

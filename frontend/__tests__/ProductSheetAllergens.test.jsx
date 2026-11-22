@@ -27,6 +27,8 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   WhatsappLogo: () => <span />,
   X: () => <span />,
   Phone: () => <span />,
@@ -54,9 +56,13 @@ const renderSheet = (extra) =>
 const UNDECLARED = "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.";
 
 describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () => {
-  it("nothing declared: the «לא ציין» line, no declaration line", () => {
+  // MEH-3585: nothing declared → no allergen block at all (said once above the
+  // product list instead, ProducerSectionsAllergensNote.test.jsx).
+  it("nothing declared: no allergen block, no heading, no declaration line", () => {
     renderSheet({});
-    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toHaveTextContent(UNDECLARED);
+    expect(screen.queryByTestId("product-sheet-facts")).toBeNull();
+    expect(screen.queryByText("אלרגנים")).toBeNull();
+    expect(screen.queryByText(UNDECLARED)).toBeNull();
     expect(screen.queryByTestId("product-sheet-allergens")).toBeNull();
     expect(screen.queryByTestId("product-sheet-may-contain")).toBeNull();
     expect(screen.queryByText("לפי הצהרת בית העסק")).toBeNull();
@@ -65,15 +71,16 @@ describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () =
   it("blank ingredients and empty lists count as not filled", () => {
     renderSheet({ ingredients: "   ", allergens: [], may_contain: [] });
     expect(screen.queryByTestId("product-sheet-ingredients")).toBeNull();
-    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toBeInTheDocument();
+    expect(screen.queryByTestId("product-sheet-facts")).toBeNull();
     expect(screen.queryByTestId("product-sheet-facts-declared")).toBeNull();
   });
 
-  it("ingredients only: ingredients + «לא ציין» + declaration", () => {
+  it("ingredients only: ingredients + declaration, no allergen line", () => {
     renderSheet({ ingredients: "קמח כוסמין מלא, מים, מלח" });
     expect(screen.getByRole("heading", { name: "רכיבים" })).toBeInTheDocument();
     expect(screen.getByTestId("product-sheet-ingredients")).toHaveTextContent("קמח כוסמין מלא, מים, מלח");
-    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toBeInTheDocument();
+    expect(screen.queryByText(UNDECLARED)).toBeNull();
+    expect(screen.queryByTestId("product-sheet-allergens")).toBeNull();
     expect(screen.getByTestId("product-sheet-facts-declared")).toHaveTextContent("לפי הצהרת בית העסק");
   });
 

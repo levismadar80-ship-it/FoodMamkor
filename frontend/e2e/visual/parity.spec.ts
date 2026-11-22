@@ -1208,7 +1208,12 @@ test.describe("Visual parity — MEH-991", () => {
     // after scrollIntoViewIfNeeded landed at a different offset run to run (CI
     // 20/11: 0.23 then 0.31 of the frame differed on the retry), because the
     // sections above it settle at different heights.
-    await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
+    // MEH-3666: the fixture has one in-page answer (pickup only), and a lone
+    // answer starts open, so no click: a click would close it.
+    await expect(page.locator('[data-testid="quick-answer-toggle"]:visible').first()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     const answer = page.locator('[data-testid="quick-answer-content"]:visible').first();
     await answer.waitFor({ timeout: 5_000 });
     await settle(page);

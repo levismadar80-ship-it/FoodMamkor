@@ -50,7 +50,7 @@ describe("formatDistance — whole approximate km (MEH-3219 / B17, string 16)", 
     [12.6, 13],
     [53.9, 54],
   ])("%s km → %s", (km, n) => {
-    expect(formatDistance(km, { unit: "he" })).toBe(`כ-${n} ק"מ`);
+    expect(formatDistance(km, { unit: "he" })).toBe(`כ-${n} ק״מ`);
     expect(formatDistance(km)).toBe(`⁦about ${n} km⁩`);
   });
 

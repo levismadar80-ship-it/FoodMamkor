@@ -24,6 +24,9 @@ TODAY = date(2026, 11, 16)  # a Monday, no DST edge
 @pytest.fixture
 def sent(monkeypatch):
     """Every email the router queued, as (kind, to)."""
+    from _queued_mail import route_queued_mail_to_senders  # MEH-3535
+
+    route_queued_mail_to_senders(monkeypatch)
     # REUSES: tests/test_meh2763_registrations.py:30 — the same three patches.
     calls = []
     for name in (

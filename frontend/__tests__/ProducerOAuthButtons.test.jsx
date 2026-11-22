@@ -223,12 +223,12 @@ describe("ProducerOAuthButtons — finish(): success + loading (:34-43, :62-64)"
 
 describe("ProducerOAuthButtons — finish(): error branches (:44-61)", () => {
   it("409 with a backend detail: toast (5s) + onError(detail, {redirectToLogin}) — no token, no onSuccess", async () => {
-    apiMock.post.mockImplementationOnce(reject(409, "כבר קיים חשבון עם האימייל הזה"));
+    apiMock.post.mockImplementationOnce(reject(409, "כבר קיים חשבון עם המייל הזה"));
     const { onSuccess, onError } = mount();
     await googleSignIn();
 
-    expect(toastMock.error).toHaveBeenCalledWith("כבר קיים חשבון עם האימייל הזה", { duration: 5000 });
-    expect(onError).toHaveBeenCalledWith("כבר קיים חשבון עם האימייל הזה", { redirectToLogin: true });
+    expect(toastMock.error).toHaveBeenCalledWith("כבר קיים חשבון עם המייל הזה", { duration: 5000 });
+    expect(onError).toHaveBeenCalledWith("כבר קיים חשבון עם המייל הזה", { redirectToLogin: true });
     expect(onSuccess).not.toHaveBeenCalled();
     expect(localStorage.getItem("token")).toBeNull();
   });

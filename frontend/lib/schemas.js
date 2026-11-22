@@ -98,6 +98,8 @@ export const ProducerListSchema = z.object({
     // MEH-3255 (D10): served on every nested category; declared so the
     // nested-parity guard does not strip it.
     requires_license: z.boolean().optional(),
+    // MEH-3076: stable key for the /en category name (lib/category-label.js).
+    slug: z.string().nullable().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
@@ -198,6 +200,8 @@ export const ProducerListSchema = z.object({
     pickup_days: z.array(z.string()).nullable().optional(),
     order_cutoff_day: z.string().nullable().optional(),
     order_cutoff_time: z.string().nullable().optional(),
+    // MEH-3593: «הוראות איסוף» — declared so the parse does not strip it.
+    pickup_note: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
@@ -428,6 +432,8 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-2952 chunk 3: true only for a seeded test business — the page then
   // carries robots noindex and no JSON-LD. Declared because z.object strips.
   noindex: z.boolean().optional(),
+  // MEH-3611: the business logo beside its name. Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),
@@ -665,4 +671,6 @@ export const LocationInputSchema = z.object({
   pickup_days: z.array(z.string()).max(14).optional(),
   order_cutoff_day: z.string().nullable().optional(),
   order_cutoff_time: z.string().nullable().optional(),
+  // MEH-3593: the server enforces ≥ 3 letters and one line (Hebrew 422).
+  pickup_note: z.string().trim().max(200).nullable().optional(),
 });

@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPriceRange, isPriceLabel } from "@/lib/utils";
+import { formatPriceRange, isPriceLabel, priceLabelText } from "@/lib/utils";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
@@ -37,9 +37,11 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
-import OrderStepper from "@/components/public/OrderStepper";
+import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
+import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import { shekelsText } from "@/lib/product-orders";
-import { unitPriceAgorot } from "@/lib/order-cart";
+import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
 import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
@@ -53,6 +55,7 @@ import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
 import FactLine from "@/components/ui/FactLine";
+import { allergensDeclared } from "@/lib/allergens"; // MEH-3585
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -225,7 +228,7 @@ export default function ProducerSections({
   // column (revision 9849fab1637a), so there is nothing to fall back to.
   // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
   // nor, on its own, makes the signature block appear.
-  const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
+  const producerPriceLabel = isPriceLabel(producer.price_range) ? priceLabelText(producer.price_range) : null;
   const hasSignature = !!(producer.top_product_name || producerPriceLabel);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
@@ -267,6 +270,9 @@ export default function ProducerSections({
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
   const gridAll = orderProducts(gridUnsorted, productGroups);
+  // MEH-3666: «המוצר המוביל» needs something to lead. With no other product
+  // beside the signature card, the card stays and only the eyebrow goes.
+  const showSignatureLabel = gridAll.length > 0;
   // MEH-3055: chips only when 2+ groups actually hold products (Etsy shows its
   // sections as filters; one group is no choice at all). Counted over the GRID
   // (signature product excluded): a group whose only product is the signature
@@ -369,7 +375,7 @@ export default function ProducerSections({
       : null;
   const signatureFreeTextPrice = signatureNumericPrice
     ? null
-    : (isPriceLabel(signatureProduct?.price_range) ? signatureProduct.price_range : null) ||
+    : (isPriceLabel(signatureProduct?.price_range) ? priceLabelText(signatureProduct.price_range) : null) ||
       producerPriceLabel;
 
   return (
@@ -405,12 +411,6 @@ export default function ProducerSections({
       {!producer.description && <ReservistBadgeLine producer={producer} className="mt-8" />}
       {!producer.description && <OwnerCard producer={producer} />}
 
-      {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
-          products, per the chunk-4 spec — it is tonight's thing and expires,
-          the catalogue does not. OUTSIDE the products gate below on purpose:
-          a business with a bag and no catalogue must still show the bag. */}
-      <RescueSection producer={producer} />
-
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature
           product exists (no product entries) so the moved-out header
@@ -422,6 +422,13 @@ export default function ProducerSections({
             <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
           </div>
+          {/* MEH-3585: said ONCE for the list, not on every product sheet —
+              and only while at least one product has no allergen answer. */}
+          {producer.products?.some((p) => !allergensDeclared(p)) && (
+            <p className="-mt-2 mb-4 text-xs text-fg-muted" data-testid="products-allergens-note">
+              {t("producer.detail.sections.products.allergens_note")}
+            </p>
+          )}
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
               MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
@@ -467,13 +474,16 @@ export default function ProducerSections({
               <div className="min-w-0">
                 {/* MEH-1463: accent eyebrow so the card reads as "the signature
                     product", not just a bigger unlabeled row. */}
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-                  {t("producer.detail.sections.products.signature_label")}
-                </p>
+                {showSignatureLabel && (
+                  <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+                    {t("producer.detail.sections.products.signature_label")}
+                  </p>
+                )}
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
+                <ProductWeekdaysLine product={signatureProduct} />{/* MEH-3618 */}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
@@ -529,7 +539,8 @@ export default function ProducerSections({
                   : null;
                 // MEH-1305 F: numeric prices go through the canonical
                 // formatPriceRange (MEH-1140) and are bidi-isolated; a free-text
-                // price_range is DATA (MEH-1140 — never reformatted) and renders
+                // price_range is DATA (MEH-1140 — never reformatted, except a
+                // bare number or range, MEH-3076 priceLabelText) and renders
                 // in the natural direction, since forcing dir="ltr" corrupts a
                 // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
                 const numericPrice =
@@ -539,7 +550,7 @@ export default function ProducerSections({
                 // MEH-2924: no price at all = a seasonal price, said in words.
                 const freeTextPrice = numericPrice
                   ? null
-                  : product.price_range || t("product_price.varies");
+                  : priceLabelText(product.price_range) || t("product_price.varies");
                 // MEH-3216 stage 5b: the product as the order menu has it, or
                 // undefined when this business takes no orders or did not open
                 // this product for ordering. Only then does the row get «הוספה».
@@ -588,6 +599,7 @@ export default function ProducerSections({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
+                      <ProductWeekdaysLine product={product} />{/* MEH-3618 */}
                       {/* MEH-1901: the row clamp goes from one line to two. One
                           line was too little to judge whether the sheet is worth
                           opening; the full text now lives in the sheet either
@@ -595,6 +607,10 @@ export default function ProducerSections({
                           the ticket's verification greps the repo for it.) */}
                       {product.description && (
                         <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{product.description}</p>
+                      )}
+                      {/* MEH-3617: the sizes or flavours, by name. */}
+                      {variantsOf(product).length > 0 && (
+                        <p className="text-xs text-fg-muted mt-0.5" data-testid="product-variant-names">{variantNamesLine(product)}</p>
                       )}
                       {/* Same price cell/position for every card. MEH-1168 P1:
                           the ₪-suffixed numeric amount is bidi-isolated so RTL
@@ -610,9 +626,9 @@ export default function ProducerSections({
                           carry them. Each row now names its own flags — icon +
                           the same label as the sheet (MEH-2584 icon+word). */}
                       <ProductDietPills product={product} t={t} />
-                      {orderable?.price_is_estimate && (
+                      {orderable && typeof rowEstimateAgorot(orderable) === "number" && (
                         <p className="text-xs text-fg-muted mt-1" data-testid="order-estimate">
-                          {t("producer.detail.order_cart.estimate", { price: shekelsText(unitPriceAgorot(orderable)) })}
+                          {t("producer.detail.order_cart.estimate", { price: shekelsText(rowEstimateAgorot(orderable)) })}
                         </p>
                       )}
                       {orderable?.contains_alcohol && (
@@ -634,10 +650,11 @@ export default function ProducerSections({
                   <div key={product.id} className={`${desktopOnly ? "hidden md:block" : "block"} relative`}>
                     {row}
                     <div className="absolute end-0 top-1/2 -translate-y-1/2">
-                      <OrderStepper
-                        product={orderable}
-                        qty={orderCart.picks[orderable.id] ?? 0}
+                      <RowOrderControl
+                        orderable={orderable}
+                        picks={orderCart.picks}
                         onChange={orderCart.change}
+                        onChoose={() => openSheetFor(product)}
                       />
                     </div>
                   </div>
@@ -700,6 +717,11 @@ export default function ProducerSections({
               onPrev={goPrevProduct}
               onNext={goNextProduct}
               onClose={closeSheet}
+              order={orderCart?.menu ? {
+                orderable: orderCart.byId.get(String(openProduct.id)) ?? null,
+                picks: orderCart.picks,
+                onChange: orderCart.change,
+              } : null}
             />
           )}
         </section>
@@ -740,6 +762,14 @@ export default function ProducerSections({
       {/* Events + experiences (one list) and open group buys — MEH-2602,
           reshaped under MEH #2659. */}
       <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
+
+      {/* MEH-3585 (Sapir 21/11): the rescue bag moved here from above
+          «מוצרים». The catalogue — what this business always makes — comes
+          first; dated offers come after it, and the bag sits right after the
+          group buys (ProducerActivities ends with them), in the same card
+          anatomy, so the page's two deals read as one family. Was MEH-2648's
+          slot before products. Renders even with no catalogue. */}
+      <RescueSection producer={producer} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
