@@ -16,7 +16,6 @@ History:  MEH-3698 (creation)
 """
 
 from fastapi import APIRouter, Depends, Request, Response
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -27,16 +26,11 @@ from app.rate_limit import limiter
 from app.routers import product_orders as product_orders_module
 from app.routers import rescue as rescue_module
 from app.routers.group_buys import _public_group_buys
+from app.schemas.my_orders_any import MyOrdersAnyOut
 from app.services.product_order_views import BUYER_VIEW_AFTER_CLOSE
 from app.utils.clock import utc_now
 
 router = APIRouter(tags=["users"])
-
-
-class MyOrdersAnyOut(BaseModel):
-    """`any`: at least one row in one of the three lists /my-orders shows."""
-
-    any: bool
 
 
 def _has_product_order(db: Session, user: User) -> bool:

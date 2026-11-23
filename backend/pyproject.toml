@@ -337,6 +337,7 @@ files = [
     "app/routers/group_buy_mine.py",
     "app/routers/my_orders_any.py",
     "app/schemas/group_buy_mine.py",
+    "app/schemas/my_orders_any.py",
     "app/services/group_buy_pickup_place.py",
     "app/services/group_buy_pickup_reminder.py",
     "app/services/group_buy_delist.py",
