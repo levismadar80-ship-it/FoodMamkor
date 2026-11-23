@@ -23,7 +23,12 @@
  */
 
 import { CaretRight } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
 
+/**
+ * @param {{ title: string, marker?: import("react").ReactNode, statusLine?: string,
+ *   previews?: import("react").ReactNode[], onClick?: () => void, href?: string, testId?: string }} props
+ */
 export default function EditHubCard({
   title,
   // MEH-1132 next-step gold dot, rendered beside the title when the group holds
@@ -35,15 +40,14 @@ export default function EditHubCard({
   // — MEH-1158 primitives, composed by the page from the fetched profile.
   previews = [],
   onClick,
+  // MEH-3723: a tile that opens a page of its own (the Google profile tool)
+  // passes href instead of onClick and renders as a link.
+  href,
   testId,
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={testId}
-      className="w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
-    >
+  const className = "w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition";
+  const content = (
+    <>
       <span className="min-w-0">
         <span className="block text-base font-bold text-text">
           {title}
@@ -76,6 +80,15 @@ export default function EditHubCard({
         aria-hidden="true"
         className="shrink-0 text-fg-muted rtl:rotate-180"
       />
+    </>
+  );
+  return href ? (
+    <Link href={href} data-testid={testId} className={className}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} data-testid={testId} className={className}>
+      {content}
     </button>
   );
 }

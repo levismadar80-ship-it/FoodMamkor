@@ -128,11 +128,9 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const section = await screen.findByTestId("tools-group-reviews");
     expect(hrefs(section)).toEqual(["/producer/dashboard/reviews"]);
     expect(within(section).getByTestId("request-review-stub")).toBeInTheDocument();
-    // MEH-3641: the Google profile tile shares the content group with recipes.
-    expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual([
-      "/producer/dashboard/recipes",
-      "/producer/dashboard/google-profile",
-    ]);
+    // MEH-3723: the Google profile tile moved to the edit tab; recipes stay.
+    expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual(["/producer/dashboard/recipes"]);
+    expect(screen.queryByTestId("tools-google-profile-tile")).toBeNull();
   });
 
   it("a pending business has no reviews group, and «הזדמנויות» carries the locked line (0 items)", async () => {
@@ -141,8 +139,6 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const card = await screen.findByTestId("tool-group-opportunities");
     expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
     expect(screen.queryByTestId("tools-group-reviews")).toBeNull();
-    // MEH-3641: a pending business can already prepare its Google profile.
-    expect(hrefs(screen.getByTestId("tools-group-content"))).toContain("/producer/dashboard/google-profile");
   });
 
   it("a closed group shows «חדש» when one of its tools is new", async () => {

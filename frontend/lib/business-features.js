@@ -92,7 +92,7 @@ export const BUSINESS_FEATURES = [
   // MEH-3641: «הפרופיל שלכם בגוגל» — guide, owner self-link of the place_id,
   // live check. Copy chosen by Claude on Sapir's delegation (21/11). No tile:
   // «found» already has its 4.
-  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "tools", href: "/producer/dashboard/google-profile" } },
+  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "edit", href: "/producer/dashboard/google-profile" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
