@@ -318,6 +318,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `startup.py` | — אין כותרת — |
 | `utils/clock.py` | Asia/Jerusalem-aware "now"/"today" helpers so availability and vacation logic compare against Israel local time, not the server's UTC clock (Railway runs UTC). |
 | `utils/hebrew_search.py` | Turn a raw Hebrew search string into per-token ILIKE patterns so a row matches when EVERY token hits at least one searchable field — instead of the whole … |
+| `utils/money.py` | The agorot ↔ shekels conversions that order and rescue code shared as copies — one definition of each. |
 | `utils/phone.py` | Canonicalize an Israeli mobile number to a single comparable form so a Meta webhook 'from' (international, no "+") can be matched against an unvalidated, … |
 | `utils/pii.py` | PII masking helpers for log/error output. |
 | `utils/sql.py` | SQL LIKE/ILIKE pattern hygiene — escape user input so '%'/'_' match literally instead of acting as wildcards. |
