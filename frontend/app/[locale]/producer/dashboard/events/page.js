@@ -112,9 +112,10 @@ export default function ManageEventsPage() {
 
       {/* MEH-2784: events of an unapproved business are hidden from the public
           (events.py:241), and nothing here said so. */}
-      {/* MEH-3753: a draft (or rejected / paused) business is not live
-          either — the note was shown to pending only. */}
-      {Boolean(user?.producer_status) && user.producer_status !== "approved" && (
+      {/* MEH-3753: a draft business is not live either — the note was shown
+          to pending only. Rejected / paused are left out: the copy promises
+          an approval that is not on its way. */}
+      {["draft", "pending"].includes(user?.producer_status) && (
         <p data-testid="events-pending-note" role="status" className="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-md px-4 py-3 mb-4">
           {t("pending_note")}
         </p>

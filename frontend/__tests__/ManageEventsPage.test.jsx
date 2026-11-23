@@ -138,9 +138,9 @@ describe("MEH-1405 — ManageEventsPage", () => {
     expect(screen.getByTestId("duplicate-e2")).toHaveTextContent(L.action_duplicate);
   });
 
-  // MEH-3753: the note «האירועים יופיעו באתר אחרי שהעסק יאושר» is for every
-  // business that is not approved — a draft owner saw nothing before.
-  it.each(["draft", "pending", "rejected", "inactive"])(
+  // MEH-3753: the note «האירועים יופיעו באתר אחרי שהעסק יאושר» is for a
+  // business waiting to go live — a draft owner saw nothing before.
+  it.each(["draft", "pending"])(
     "a %s business sees the not-live note above its events",
     async (status) => {
       AUTH.user.producer_status = status;
@@ -158,7 +158,7 @@ describe("MEH-1405 — ManageEventsPage", () => {
     expect(screen.getByTestId("events-pending-note")).toBeInTheDocument();
   });
 
-  it.each([["approved"], [undefined]])("no note when the status is %s", async (status) => {
+  it.each([["approved"], ["rejected"], ["inactive"], [undefined]])("no note when the status is %s", async (status) => {
     if (status) AUTH.user.producer_status = status;
     await renderPage();
     await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
