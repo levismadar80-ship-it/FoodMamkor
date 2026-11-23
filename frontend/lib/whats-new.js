@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.12 (23/11): every PR in this release is launch tier ג׳ (internal) or a
+  // dependency bump — the unified «צרו קשר» sheet (#5175) and the shorter
+  // signup licensing text (#5174) change no business tool. Nothing for
+  // businesses, so items: 0 (docs/release/whats-new.md step 5; not shown).
+  { version: "1.5.12", key: "v1_5_12", date: "2026-11-23", items: 0 },
   // 1.5.11 (21/11): delivery time, own minimum and per-zone order cutoff,
   // nationwide zones (MEH-3511); pickup days and cutoff per pickup point
   // (MEH-3512); business-page assistant suggestions and zone/group/workshop
