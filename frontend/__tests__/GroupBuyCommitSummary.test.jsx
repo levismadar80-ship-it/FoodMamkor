@@ -70,4 +70,19 @@ describe("member card: what happens next (MEH-3734)", () => {
     expect(text("group-buy-member-next")).toBeNull();
     expect(screen.getByTestId("group-buy-my-groups")).toBeTruthy();
   });
+
+  it.each(["cancelled", "expired", "fulfilled"])("a %s group drops the pay line: nothing is left to arrange", (status) => {
+    panel({ status }, false);
+    expect(text("group-buy-member-pay")).toBeNull();
+  });
+
+  it("a funded group past its deadline (not joinable, pickup still ahead) keeps the pay line", () => {
+    panel({ status: "funded" }, false);
+    expect(text("group-buy-member-pay")).toBe("pay_line");
+  });
+
+  it("an open group with no deadline shows no «next» line rather than «…עד ,…»", () => {
+    panel({ deadline: null });
+    expect(text("group-buy-member-next")).toBeNull();
+  });
 });

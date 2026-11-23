@@ -45,7 +45,9 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
     ? null
     : gb.status === "funded"
       ? pickupWhen && t("member_next_funded_pickup", { when: pickupWhen })
-      : t("member_next_open", { date: cancelUntil || "" });
+      : cancelUntil && t("member_next_open", { date: cancelUntil });
+  // A cancelled or closed group has nothing left to pay for (edge-case audit).
+  const stillOn = gb.status === "open" || gb.status === "funded";
 
   const save = async () => {
     setError("");
@@ -78,7 +80,7 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
         <p className="text-sm text-text text-center" data-testid="group-buy-member-next">{next}</p>
       )}
       {/* MEH-3734: the page's approved pay line, repeated where she now looks. */}
-      <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>
+      {stillOn && <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>}
       {joinable && full && (
         <p className="text-sm text-fg-muted text-center" data-testid="group-buy-full-member">{t("full_member")}</p>
       )}
