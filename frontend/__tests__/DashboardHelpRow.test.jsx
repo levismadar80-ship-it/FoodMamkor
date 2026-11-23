@@ -142,7 +142,9 @@ describe("help row on the dashboard home (MEH-3106)", () => {
       render(<ProducerDashboardPage />);
       const row = await screen.findByTestId("dashboard-help-row");
       expect(row).toHaveTextContent("help_row.title");
-      expect(row).toHaveTextContent("help_row.body");
+      // MEH-3767: one line — the title and the button, no body paragraph.
+      expect(row.querySelectorAll("p")).toHaveLength(1);
+      expect(row).not.toHaveTextContent("help_row.body");
       expect(screen.queryByRole("dialog")).toBeNull();
       fireEvent.click(screen.getByTestId("dashboard-help-cta"));
       const dialog = await screen.findByRole("dialog");

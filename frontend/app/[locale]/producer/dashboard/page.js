@@ -3,7 +3,7 @@
 
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { Eye, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { useTranslations } from "next-intl";
@@ -34,65 +34,11 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
-import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
 import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
-
-function VanityLinkCard({ slug }) {
-  const t = useTranslations("dashboard.producer.vanity_link");
-  const url = `${SITE_URL}/p/${slug}`;
-  const [copied, setCopied] = useState(false);
-
-  // MEH-3064: a failed copy says so — this one used to do nothing at all
-  // (no catch: an unhandled rejection and a dead button).
-  const tFollowers = useTranslations("sweep_tail.followers");
-  const copy = () => {
-    copyOrThrow(url)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => showToast.error(tFollowers("share_error")));
-  };
-
-  // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
-  // stories matter most to food businesses and are reachable only there. The
-  // existing message rides as text, the link only as `url`. No sheet (most
-  // desktops) → the same copy as the button beside it.
-  const tShare = useTranslations("share");
-  // MEH-2884: the same helper the insights followers card uses.
-  const share = () =>
-    shareOrCopy({ url, text: t("wa_text_template", { url: "" }).trim(), copy });
-
-  return (
-    <div className="bg-surface border border-border rounded-lg p-5 mb-6">
-      <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2 mb-3">
-        <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={copy}
-          data-testid="vanity-copy"
-          className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
-        >
-          {copied ? t("copied") : t("copy_cta")}
-        </button>
-        <button
-          type="button"
-          onClick={share}
-          data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
-        >
-          {tShare("trigger")}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Module:   producer/dashboard/page (Overview / סקירה index)
@@ -824,48 +770,10 @@ export default function ProducerDashboardPage() {
       </div>
       )}
 
-      {/* MEH-2884 (placement audit item 7): rescue bags are a DAILY job when
-          the pilot is on, so home gets a short entry right after the
-          availability switch. The tool itself stays in «כלים»; same strings
-          and flag as its tile there (tools/page.js). Approved business
-          only: it is a daily entry for a live business; a pending one still
-          finds the tile in «כלים», with its «locked until approved» line.
-          Never an organizer. */}
-      {rescueBagsEnabled() && isApproved && !isOrganizer && (
-        <LocaleLink
-          href="/producer/dashboard/rescue"
-          data-testid="home-rescue-card"
-          className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
-        >
-          <ShoppingBag size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-          <span>
-            <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
-            <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
-          </span>
-        </LocaleLink>
-      )}
-
-      {/* MEH-2883 (placement audit 2026-11): «הלינק שלי» comes AFTER the
-          availability switch — the switch is the daily action of a live
-          business (MEH-1134's intent), sharing is now and then. */}
-      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
-          surfaces ONLY when the profile is complete AND approved — sharing an
-          unpublished/incomplete page sends visitors to a dead listing. When
-          locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
-          organizer (its public link above points to /organizers/{slug}). */}
-      {isOrganizer ? null : slug && isComplete && isApproved ? (
-        <VanityLinkCard slug={slug} />
-      ) : slug ? (
-        <div
-          data-testid="share-locked-hint"
-          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
-        >
-          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
-          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
-        </div>
-      ) : null}
-
+      {/* MEH-3767: the always-on rescue-bags card (MEH-2884) and «הלינק
+          שלי» (MEH-53) left the home. Live bags are a row of «מה מחכה לך»
+          (OwnerAttentionCard), the tool itself stays in «כלים»; the link sits
+          on «שיתוף» next to the QR card. */}
 
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner (below the analytics
@@ -895,14 +803,12 @@ export default function ProducerDashboardPage() {
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
       {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
+      {/* MEH-3767: one quiet line, not a card — it is a way out, not a task. */}
       <div
         data-testid="dashboard-help-row"
-        className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
+        className="border-t border-border pt-2 mb-6 flex items-center justify-between gap-3"
       >
-        <div className="min-w-0">
-          <p className="font-semibold text-text text-sm">{t("help_row.title")}</p>
-          <p className="text-sm text-fg-muted">{t("help_row.body")}</p>
-        </div>
+        <p className="text-sm text-fg-muted min-w-0">{t("help_row.title")}</p>
         <button
           type="button"
           data-testid="dashboard-help-cta"

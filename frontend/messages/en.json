@@ -5126,7 +5126,6 @@
       },
       "help_row": {
         "title": "Need help?",
-        "body": "Write to us and we'll get back to you by the end of the business day.",
         "cta": "Contact the team"
       },
       "whats_new": {
@@ -5267,7 +5266,9 @@
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
         "menu_cta": "Upload a menu",
         "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
-        "allergens_cta": "Mark them"
+        "allergens_cta": "Mark them",
+        "rescue": "{count, plural, one {Surprise bags open today} other {# surprise-bag offers open today}}",
+        "rescue_cta": "Manage"
       },
       "status": {
         "pending": {
