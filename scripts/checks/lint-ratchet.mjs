@@ -198,7 +198,7 @@ export function compare(current, baseline) {
 }
 
 const total = (counts) => [...counts.values()].reduce((a, b) => a + b, 0);
-const show = (key) => key.replace("\t", "  ·  ");
+const show = (key) => key.replaceAll("\t", "  ·  ");
 
 const parseBaselineIfPresent = () =>
   existsSync(BASELINE_PATH) ? parseBaseline(readFileSync(BASELINE_PATH, "utf8")) : new Map();
@@ -305,7 +305,7 @@ function selfTest() {
     check(
       "real-payload/counts-match-known-values",
       wrong.length === 0,
-      wrong.map(([k, v]) => `${k.replace("\t", " · ")}: expected ${v}, got ${realCounts.get(k)}`).join("; "),
+      wrong.map(([k, v]) => `${k.replaceAll("\t", " · ")}: expected ${v}, got ${realCounts.get(k)}`).join("; "),
     );
     // Every expectation above must also agree with the committed baseline —
     // otherwise the fixture and the baseline have drifted apart and one of them
@@ -481,7 +481,7 @@ function selfTest() {
     check(
       "gate-wiring/violation-exits-1",
       dirtyCode === 1,
-      `main() returned ${dirtyCode} on a payload one above baseline at "${firstKey?.replace("\t", " · ")}" — ` +
+      `main() returned ${dirtyCode} on a payload one above baseline at "${firstKey?.replaceAll("\t", " · ")}" — ` +
         `this is the assertion that catches a regression in the exit-code decision itself`,
     );
   }
