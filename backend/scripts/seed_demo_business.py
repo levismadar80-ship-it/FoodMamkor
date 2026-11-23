@@ -78,6 +78,7 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
 )
 from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from scripts._seed_every_state import seed_every_state  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # MEH-3542: the rest of this program lives in the parts below, moved
 # verbatim and dependencies-first; every name is re-exported here.
@@ -1143,6 +1144,8 @@ def main() -> None:
             # MEH-2981: same contract — a live demo group buy, added only if
             # none is open, so a plain run (no --refresh) restores the tab.
             seed_open_group_buy(db)
+            # MEH-3630: one demo row per status (_seed_every_state.py).
+            seed_every_state(db)
             # MEH-2952 chunk 4: opt-in only — see mark_demo_businesses_as_test.
             if args.mark_test:
                 mark_demo_businesses_as_test(db, hidden=True)
