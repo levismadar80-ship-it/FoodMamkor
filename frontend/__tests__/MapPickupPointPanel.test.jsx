@@ -13,7 +13,12 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>,
 }));
 
+vi.mock("@/components/MapProducerCard", () => ({
+  default: ({ producer }) => <div data-testid="map-producer-card">{producer.name}</div>,
+}));
+
 import MapPickupPointPanel, { isPickupPoint } from "@/app/[locale]/map/components/MapPickupPointPanel";
+import MobileSheetSelectedCard from "@/app/[locale]/map/components/MobileSheetSelectedCard";
 
 const producer = { id: "7e57a6f0-0000-4000-8000-000000000007", slug: "meshek-dugma", name: "משק הדוגמה" };
 const point = (over = {}) => ({
@@ -82,5 +87,27 @@ describe("MapPickupPointPanel", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByTestId("map-pickup-business-link").getAttribute("href")).toBe(`/producer/${producer.id}?from=map`);
+  });
+
+  it("several days and opening hours: every day is listed", () => {
+    show(point({ pickup_days: ["שלישי", "שישי"], opening_hours: "16:00-19:00" }));
+    const days = screen.getByTestId("pickup-days").textContent;
+    expect(days).toContain("שלישי");
+    expect(days).toContain("שישי");
+  });
+
+  it("the phone's picked card mounts the panel for a pickup pin and not for a branch", () => {
+    const mount = (location) =>
+      render(
+        <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+          <MobileSheetSelectedCard selectedProducer={producer} selectedLocation={location} onClose={() => {}} />
+        </NextIntlClientProvider>,
+      );
+    const pickup = mount(point());
+    expect(pickup.getByTestId("map-pickup-panel")).toBeTruthy();
+    pickup.unmount();
+    const branch = mount(point({ kind: "branch" }));
+    expect(branch.getByTestId("map-producer-card")).toBeTruthy();
+    expect(branch.queryByTestId("map-pickup-panel")).toBeNull();
   });
 });
