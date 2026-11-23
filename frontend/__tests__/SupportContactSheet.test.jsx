@@ -78,3 +78,13 @@ describe("/contact and the sheet name WhatsApp the same way (MEH-3720)", () => {
     expect(he.contact[key]).toBe(he.dashboard.producer.status.support[key]);
   });
 });
+
+describe("the dashboard help row promises the same reply time as /contact", () => {
+  // Reads the message catalog, not source: the promise lives only in copy.
+  const days = (s) => s.match(/(\d+)\s*ימי עסקים/)?.[1];
+  it("both name the same number of business days", () => {
+    const contact = days(he.contact.response_sla);
+    expect(contact).toBeTruthy();
+    expect(days(he.dashboard.producer.help_row.body)).toBe(contact);
+  });
+});
