@@ -66,7 +66,7 @@ vi.mock("@/lib/api", () => ({
       if (url === "/producers/me") {
         if (stateRef.current.profileFails) return Promise.reject(new Error("network"));
         return Promise.resolve({
-          data: { id: 7, name: "חוות ערוגות נועם", slug: "arugot-noam", status: stateRef.current.status, kind: stateRef.current.kind, images: [], categories: [] },
+          data: { id: 7, name: "חוות ערוגות נועם", slug: stateRef.current.noSlug ? null : "arugot-noam", status: stateRef.current.status, kind: stateRef.current.kind, images: [], categories: [] },
         });
       }
       return Promise.resolve({ data: [] });
@@ -125,6 +125,14 @@ describe("«שיתוף» — «הלינק שלי» first, with its share-gate (M
     render(<SharePage />);
     expect(await screen.findByTestId("share-locked-hint")).toBeInTheDocument();
     expect(screen.queryByTestId("vanity-share")).toBeNull();
+  });
+
+  it("approved + complete but no slug yet: neither the link nor the locked hint, the rest of the page stays", async () => {
+    stateRef.current = { ...stateRef.current, noSlug: true };
+    render(<SharePage />);
+    await screen.findByTestId("share-page-content");
+    expect(screen.queryByTestId("vanity-share")).toBeNull();
+    expect(screen.queryByTestId("share-locked-hint")).toBeNull();
   });
 
   it("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {

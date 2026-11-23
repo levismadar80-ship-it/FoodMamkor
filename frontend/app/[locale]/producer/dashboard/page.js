@@ -44,7 +44,7 @@ import Input from "@/components/ui/Input";
  * Module:   producer/dashboard/page (Overview / סקירה index)
  * Purpose:  The slim Overview index of the dashboard hub (MEH-964). Shows the
  *           at-a-glance surfaces: greeting, status banners, holiday hint,
- *           vanity link, availability toggle, completeness card, and the
+ *           availability toggle, completeness card, and the
  *           top-line 4-KPI strip (OverviewStatsHero; the conversion line
  *           and weekly badge were removed in MEH-2430).
  * Touches:  GET /producers/me/dashboard, /producers/me/analytics,
@@ -599,7 +599,7 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-3076 (Sapir 21/11, «מספרים למעלה»): the numbers come right after
           «מה מחכה לך» and the status banners, before the holiday hint, the
-          status switch, rescue bags and «הלינק שלי» — an owner opens the
+          status switch (rescue bags and «הלינק שלי» left the home, MEH-3767) — an owner opens the
           dashboard to see what came in, and on a phone these sat a screen down. */}
       {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
           Deep analytics (windowed cards + charts) live in the insights tab
@@ -626,8 +626,8 @@ export default function ProducerDashboardPage() {
         <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
       ) : !isApproved ? null : (
         // MEH-3079: not while pending — its «שתפו» contradicted the
-        // share-locked line of «הלינק שלי» (new-business walkthrough 18/11;
-        // that card sits below the numbers since MEH-3076).
+        // share-locked line of «הלינק שלי» (new-business walkthrough 18/11).
+        // That card is on «שיתוף» since MEH-3767; the gate stays.
         // MEH-2884 (placement audit item 5): ONE empty state for the numbers
         // — the activity pulse's own empty card is gone — and it carries the
         // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
@@ -645,9 +645,9 @@ export default function ProducerDashboardPage() {
             <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
           </div>
-          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
-              profile incomplete that slot shows «share locked», and a «שתפו»
-              here would contradict it (MEH-2884 review). */}
+          {/* Same gate as «הלינק שלי» on «שיתוף» (slug + complete + approved):
+              with the profile incomplete that card shows «share locked», and a
+              «שתפו» here would contradict it (MEH-2884 review, MEH-3767). */}
           {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
         </div>
       )}
@@ -683,8 +683,8 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
           שיתוף» are one-time / occasional jobs, so they live in «כלים» →
-          «שיתוף» (share/page.js, MEH-3749), not on the daily home. Home keeps the
-          one short «הלינק שלי» card above. */}
+          «שיתוף» (share/page.js, MEH-3749), not on the daily home. «הלינק שלי»
+          joined them there in MEH-3767. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
