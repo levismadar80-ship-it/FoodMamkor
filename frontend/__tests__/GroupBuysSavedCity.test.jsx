@@ -124,5 +124,36 @@ describe("/group-buys starts from the saved city (MEH-3736)", () => {
     release();
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.getByTestId("city-input").value).toBe("חיפה");
+    expect(listCalls().every(([, c]) => c.params.city !== "זכרון יעקב")).toBe(true);
+  });
+
+  it("clearing the seeded field lists all cities again", async () => {
+    localStorage.setItem("user_city", "זכרון יעקב");
+    mockApi(1);
+    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
+    await waitFor(() => expect(screen.getByTestId("city-input").value).toBe("זכרון יעקב"));
+    const before = listCalls().length;
+    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "" } });
+    await waitFor(() => expect(listCalls().length).toBeGreaterThan(before));
+    expect(listCalls().at(-1)[1]).toEqual({ params: { status: "open" } });
+  });
+
+  it("an older all-cities answer landing last does not replace the city's list", async () => {
+    localStorage.setItem("user_city", "זכרון יעקב");
+    let releaseAll;
+    api.get.mockImplementation((url, cfg) => {
+      if (url === "/group-buys/counts") {
+        return Promise.resolve({ data: cfg?.params?.city ? { open: 1, funded: 0, fulfilled: 0 } : ALL });
+      }
+      if (cfg?.params?.city) return Promise.resolve({ data: [{ ...GB, id: "gb-city" }] });
+      return new Promise((r) => {
+        releaseAll = () => r({ data: [{ ...GB, id: "gb-all" }] });
+      });
+    });
+    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
+    await waitFor(() => expect(screen.getByTestId("group-buy-card").getAttribute("href")).toContain("gb-city"));
+    releaseAll();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("group-buy-card").getAttribute("href")).toContain("gb-city");
   });
 });

@@ -247,22 +247,29 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, statusFilter]);
 
+  // MEH-3736: only the latest list request may write. The saved-city seed
+  // makes «all cities, then my city» a routine pair of requests, and an older
+  // answer landing last would show every city under a filled city field.
+  const lastLoad = useRef(0);
   const load = async ({ quiet = false } = {}) => {
+    const id = ++lastLoad.current;
     if (!quiet) setLoading(true);
     setError(false);
     try {
       const params = { status: statusFilter };
       if (city) params.city = city;
       const r = await api.get("/group-buys", { params });
+      if (id !== lastLoad.current) return;
       setItems(r.data);
     } catch {
+      if (id !== lastLoad.current) return;
       if (quiet) return; // the server's list stays on screen
       // MEH-863 F12: surface the failure (error state + retry) instead of
       // swallowing it into the empty state (MEH-325 silent-except pattern).
       setError(true);
       setItems([]);
     } finally {
-      setLoading(false);
+      if (id === lastLoad.current) setLoading(false);
     }
   };
 
