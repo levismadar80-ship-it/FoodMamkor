@@ -34,8 +34,10 @@ def report_ops_alert(
 ) -> bool:
     """Send one Sentry warning tagged ``ops_alert=<kind>``.
 
-    Returns True when the event was handed to an active Sentry client, False
-    when Sentry is off or anything failed. Never raises.
+    Returns True when an active Sentry client accepted the event (it returned
+    an event id), False when Sentry is off, the event was dropped in-process
+    or anything failed. Never raises. A server-side quota drop is not visible
+    here.
     """
     try:
         if not sentry_sdk.get_client().is_active():
@@ -47,8 +49,10 @@ def report_ops_alert(
             scope.fingerprint = ["ops-alert", kind, key]
             for name, value in (extra or {}).items():
                 scope.set_extra(name, value)
-            sentry_sdk.capture_message(message, level="warning")
-        return True
+            event_id = sentry_sdk.capture_message(message, level="warning")
+        # MEH-3705: None = dropped in-process (before_send burst cap, sampling);
+        # say False so the caller falls back to the email.
+        return event_id is not None
     except Exception:  # reporting must never fail the caller
         logger.warning("[OPS-ALERT] could not send %s/%s", kind, key, exc_info=True)
         return False

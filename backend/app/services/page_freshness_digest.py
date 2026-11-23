@@ -4,8 +4,10 @@ Purpose:  Once a week (Sunday, Israel clock) report to Sentry (ops_alert,
           MEH-3705; email to the admin when Sentry is off) the live pages
           whose owner has not confirmed them for 60+ days, so they reach her
           without her having to remember to open the admin filter.
-Touches:  reads producers + users; sends one email via
-          app.services.email.send_email (Resend, fail-open). Writes nothing.
+Touches:  reads producers + users; sends one Sentry warning via
+          app.services.ops_alert, or one email via
+          app.services.email.send_email (Resend, fail-open) when Sentry is
+          off. Writes nothing.
 Does NOT: email owners (page_freshness.send_freshness_emails); decide what
           "stale" is (page_freshness.stale_clause, the same SQL as the admin
           «לא נבדק יותר מ-60 יום» filter); hold the scheduler (app.startup's
@@ -108,10 +110,11 @@ def build_email(pages: list[StalePage]) -> tuple[str, str]:
 
 
 def send_stale_digest(db: Session, now: datetime | None = None) -> int:
-    """Send the weekly digest. Returns how many pages were listed.
+    """Send the weekly digest (Sentry ops_alert, or email when Sentry is off,
+    MEH-3705). Returns how many pages were listed.
 
     Off with the freshness flag; on any day but Sunday (Israel) it does
-    nothing; with nothing stale, no email. No sent-flag: the daily tick runs
+    nothing; with nothing stale, nothing is sent. No sent-flag: the daily tick runs
     once a day, so Sunday sends once."""
     if not freshness_enabled():
         return 0
@@ -127,7 +130,8 @@ def send_stale_digest(db: Session, now: datetime | None = None) -> int:
         "pages-stale",
         "weekly-digest",
         f"{len(pages)} live page(s) unconfirmed for 60+ days",
-        {"pages": [_line(p) for p in pages]},
+        # One string, not a list: the SDK trims a list extra to 10 items.
+        {"pages": "\n".join(_line(p) for p in pages)},
     ):
         logger.info(
             "[PAGE-FRESHNESS] stale digest sent to Sentry, %d page(s)", len(pages)

@@ -6,8 +6,8 @@ Purpose:  Free replacement for the Sentry cron monitors the $0 plan does not
           warning tagged ops_alert (MEH-3705), or an email to the admin when
           Sentry is not active.
 Touches:  admin_settings (keys `job_ok:<slug>`, `job_stale_alerted:<slug>`),
-          Resend via services/email.py (one email per overdue job per Israel
-          day).
+          Sentry via services/ops_alert.py, or Resend via services/email.py
+          when Sentry is off (one alert per overdue job per Israel day).
 Does NOT: replace Sentry for the scheduler as a whole — `auto-reply-watchdog`
           keeps the plan's one Sentry cron monitor, and that is what notices a
           dead scheduler thread (this checker runs on the same thread). Does
@@ -172,8 +172,8 @@ def check_jobs(
     booted_at: datetime,
     now: datetime | None = None,
 ) -> list[str]:
-    """Email the admin about each overdue job, once per Israel day. Returns
-    the overdue slugs."""
+    """Report each overdue job once per Israel day (Sentry, or an email to
+    the admin when Sentry is off, MEH-3705). Returns the overdue slugs."""
     from app.database import SessionLocal
     from app.utils.clock import israel_today
 

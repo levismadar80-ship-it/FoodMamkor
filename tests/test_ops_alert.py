@@ -46,6 +46,9 @@ class _FakeSentry:
         self.active = active
         self.events: list[tuple[str, str, _FakeScope]] = []
         self._scope = _FakeScope()
+        # capture_message returns None when before_send or sampling drops
+        # the event; a test sets this to None to play that.
+        self.event_id: str | None = "evt"
 
     def get_client(self) -> Any:
         active = self.active
@@ -60,9 +63,9 @@ class _FakeSentry:
         self._scope = _FakeScope()
         return self._scope
 
-    def capture_message(self, message: str, level: str) -> str:
+    def capture_message(self, message: str, level: str) -> str | None:
         self.events.append((message, level, self._scope))
-        return "evt"
+        return self.event_id
 
 
 @pytest.fixture
@@ -99,7 +102,14 @@ def test_never_raises(monkeypatch):
     assert ops_alert.report_ops_alert("job-stale", "k", "m") is False
 
 
-def test_explicit_fingerprint_gives_each_key_its_own_budget_bucket():
+def test_dropped_event_is_reported_as_not_sent(fake_sentry):
+    # A client-side drop (before_send burst cap, sampling) returns no event id;
+    # the caller must hear False so it falls back to the email.
+    fake_sentry.event_id = None
+    assert ops_alert.report_ops_alert("job-stale", "k", "m") is False
+
+
+def test_event_fingerprint_differs_per_key():
     # The before_send burst cap keys on _event_fingerprint. Two slugs must not
     # share one bucket (the MEH-3515 failure shape).
     from app.sentry import _event_fingerprint
@@ -134,12 +144,21 @@ def test_overdue_job_goes_to_sentry_not_email(db, fake_sentry, mails):
     assert fake_sentry.events[0][2].fingerprint == ["ops-alert", "job-stale", "daily-a"]
 
 
-def test_overdue_job_emails_when_sentry_is_off(db, fake_sentry, mails):
+def test_overdue_job_emails_once_a_day_when_sentry_is_off(db, fake_sentry, mails):
     fake_sentry.active = False
+    _ok(db, "daily-a", NOW - timedelta(hours=30))
+    jobs = [("daily-a", DAILY)]
+    job_staleness.check_jobs(jobs, booted_at=BOOT, now=NOW)
+    job_staleness.check_jobs(jobs, booted_at=BOOT, now=NOW)  # same Israel day
+    assert len(mails) == 1 and "daily-a" in mails[0]
+    assert fake_sentry.events == []
+
+
+def test_overdue_job_emails_when_sentry_drops_the_event(db, fake_sentry, mails):
+    fake_sentry.event_id = None
     _ok(db, "daily-a", NOW - timedelta(hours=30))
     job_staleness.check_jobs([("daily-a", DAILY)], booted_at=BOOT, now=NOW)
     assert len(mails) == 1 and "daily-a" in mails[0]
-    assert fake_sentry.events == []
 
 
 # --- page freshness digest (0 / 1 / many stale pages) -----------------------
@@ -181,7 +200,7 @@ def test_stale_digest_goes_to_sentry_not_email(
     assert len(fake_sentry.events) == 1
     scope = fake_sentry.events[0][2]
     assert scope.tags[ops_alert.OPS_ALERT_TAG] == "pages-stale"
-    assert len(scope.extras["pages"]) == count
+    assert len(scope.extras["pages"].splitlines()) == count
 
 
 def test_no_stale_pages_sends_nothing_anywhere(db, monkeypatch, digest, fake_sentry):
@@ -197,3 +216,62 @@ def test_stale_digest_emails_when_sentry_is_off(db, monkeypatch, digest, fake_se
     monkeypatch.setattr(dg, "find_stale", lambda _db, _now: _pages(dg, 2))
     assert dg.send_stale_digest(db, now=SUNDAY) == 2
     assert len(calls) == 1 and fake_sentry.events == []
+
+
+# --- the real SDK: what actually leaves the process ------------------------
+
+
+@pytest.fixture
+def real_sentry():
+    """A real sentry_sdk client: before_send records the event and lets it
+    through to a transport that sends nothing. Restores the previous client."""
+    import sentry_sdk
+    from sentry_sdk.transport import Transport
+
+    class _NoNetwork(Transport):
+        def capture_envelope(self, envelope: Any) -> None:
+            return None
+
+    captured: list[dict[str, Any]] = []
+
+    def keep(event: dict[str, Any], _hint: Any) -> dict[str, Any]:
+        captured.append(event)
+        return event  # the null transport below drops it
+
+    previous = sentry_sdk.get_client()
+    client = sentry_sdk.Client(
+        dsn="https://public@example.invalid/1",
+        before_send=keep,
+        default_integrations=False,
+        transport=_NoNetwork,
+    )
+    sentry_sdk.get_global_scope().set_client(client)
+    try:
+        yield captured
+    finally:
+        sentry_sdk.get_global_scope().set_client(previous)
+        client.close()
+
+
+def test_real_sdk_event_shape(real_sentry):
+    assert ops_alert.report_ops_alert(
+        "job-stale", "daily-a", "overdue", {"last_ok": "x"}
+    )
+    (event,) = real_sentry
+    assert event["level"] == "warning"
+    assert event["fingerprint"] == ["ops-alert", "job-stale", "daily-a"]
+    assert event["tags"][ops_alert.OPS_ALERT_TAG] == "job-stale"
+    assert event["extra"]["last_ok"] == "x"
+
+
+def test_real_sdk_keeps_every_stale_page(db, monkeypatch, digest, real_sentry):
+    # The SDK trims a list extra to 10 items; 25 pages must all arrive.
+    dg, calls = digest
+    monkeypatch.setattr(ops_alert, "sentry_sdk", __import__("sentry_sdk"))
+    monkeypatch.setattr(dg, "find_stale", lambda _db, _now: _pages(dg, 25))
+    assert dg.send_stale_digest(db, now=SUNDAY) == 25
+    (event,) = real_sentry
+    pages = event["extra"]["pages"]
+    lines = pages.splitlines() if isinstance(pages, str) else list(pages)
+    assert len(lines) == 25
+    assert calls == []
