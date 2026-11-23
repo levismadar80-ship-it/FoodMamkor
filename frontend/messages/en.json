@@ -1323,6 +1323,9 @@
       "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
       "pickup_place_label": "Pickup place",
       "cancel_until_short": "You can leave until {date}",
+      "member_next_open": "We'll email you when the group reaches its goal. If it doesn't by {date}, your commitment is cancelled and you owe nothing.",
+      "member_next_funded_pickup": "The group reached its goal. Pickup: {when}.",
+      "member_my_groups": "All my group buys",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
       "calendar_title": "Pickup: {title}"

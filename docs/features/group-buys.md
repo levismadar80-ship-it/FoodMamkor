@@ -36,6 +36,7 @@
 * `frontend/__tests__/GroupBuyAfterGoal.test.jsx` — מה רואים כשהקבוצה מגיעה ליעד: «הקבוצה הגיעה ליעד» ומספר המצטרפות לבד (לא «2 מתוך 2», שנקרא כמו «מלאה»), «נשארו N מקומות» כשיש תקרה, באנר «עוד אפשר להצטרף» למי שלא הצטרפה, ו«איך זה עובד» שנשאר כל עוד אפשר להצטרף (MEH-3588).
 * `tests/test_meh3691_no_self_buying.py` · `frontend/__tests__/GroupBuyOwnerNoJoin.test.jsx` — החשבון של בית העסק לא מצטרף לקבוצה של עצמו ולא נרשם לרשימת ההמתנה שלה: שני המסלולים עונים 403, והדף לא מציג לו טופס הצטרפות או רשימת המתנה. בית עסק אחר מצטרף כמו כל לקוח (MEH-3691).
 * `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` · `frontend/__tests__/GroupBuyGuestLogin.test.jsx` — הצטרפות אחרי Google בחלונית, פעם אחת ובכמות שנבחרה; סגירת החלונית לא שולחת כלום; «היכנסו» נושא את הדרך חזרה (MEH-3679, MEH-2982).
+* `frontend/__tests__/GroupBuyCommitSummary.test.jsx` — אחרי הצטרפות: שורת «מה הלאה» (פתוחה / הגיעה ליעד עם מועד איסוף / בלי), שורת התשלום, ביטול ככפתור וקישור ל«הקבוצות שלי» (`frontend/components/group-buy/GroupBuyMemberPanel.jsx`, MEH-3734).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
 
 **מזהי רישום שזה מכסה.** `group_buys`.
