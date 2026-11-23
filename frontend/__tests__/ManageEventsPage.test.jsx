@@ -57,6 +57,7 @@ async function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete AUTH.user.producer_status;
   api.get.mockResolvedValue({ data: EVENTS });
   api.put.mockResolvedValue({ data: {} });
   api.delete.mockResolvedValue({ data: {} });
@@ -135,5 +136,32 @@ describe("MEH-1405 — ManageEventsPage", () => {
     await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
     expect(screen.getByTestId("duplicate-e1")).toHaveAttribute("href", "/producer/dashboard/events/new?from=e1");
     expect(screen.getByTestId("duplicate-e2")).toHaveTextContent(L.action_duplicate);
+  });
+
+  // MEH-3753: the note «האירועים יופיעו באתר אחרי שהעסק יאושר» is for every
+  // business that is not approved — a draft owner saw nothing before.
+  it.each(["draft", "pending", "rejected", "inactive"])(
+    "a %s business sees the not-live note above its events",
+    async (status) => {
+      AUTH.user.producer_status = status;
+      await renderPage();
+      await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
+      expect(screen.getByTestId("events-pending-note")).toHaveTextContent(L.pending_note);
+    },
+  );
+
+  it("a draft business with 0 events still sees the note", async () => {
+    AUTH.user.producer_status = "draft";
+    api.get.mockResolvedValue({ data: [] });
+    await renderPage();
+    await waitFor(() => expect(screen.getByText(L.empty_title)).toBeInTheDocument());
+    expect(screen.getByTestId("events-pending-note")).toBeInTheDocument();
+  });
+
+  it.each([["approved"], [undefined]])("no note when the status is %s", async (status) => {
+    if (status) AUTH.user.producer_status = status;
+    await renderPage();
+    await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
+    expect(screen.queryByTestId("events-pending-note")).toBeNull();
   });
 });

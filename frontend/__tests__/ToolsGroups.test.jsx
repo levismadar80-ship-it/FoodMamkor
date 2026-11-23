@@ -145,6 +145,21 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(hrefs(screen.getByTestId("tools-group-content"))).toContain("/producer/dashboard/google-profile");
   });
 
+  // MEH-3753: group buys and bags are refused to every unapproved status,
+  // so the line is too — a draft owner used to tap in with no warning.
+  it.each(["draft", "rejected", "inactive"])("a %s business also sees the locked line", async (status) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
+  });
+
+  it("an approved business has no locked line", async () => {
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).queryByTestId("tool-locked-line")).toBeNull();
+  });
+
   it("a closed group shows «חדש» when one of its tools is new", async () => {
     state.newTools = new Set(["/producer/dashboard/experiences"]);
     render(<ToolsPage />);

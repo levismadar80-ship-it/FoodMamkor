@@ -149,7 +149,9 @@ export default function ProducerDashboardToolsPage() {
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
   const rescueOn = rescueBagsEnabled();
-  const lockedLine = producer.status === "pending" && (
+  // MEH-3753: every unapproved status, not only pending — the server refuses
+  // group buys and bags to a draft too (group_buys.py, rescue_writes.py).
+  const lockedLine = Boolean(producer.status) && !approved && (
     <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
       {t("quick_links.locked_until_approved")}
     </p>
