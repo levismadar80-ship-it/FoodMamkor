@@ -71,7 +71,7 @@
     "knip": "^6.46.1",
     "orval": "8.48.0",
     "postcss": "^8.5.33",
-    "tailwindcss": "^3.4.13",
+    "tailwindcss": "^4.3.5",
     "vitest": "^4.1.12"
   },
   "overrides": {
