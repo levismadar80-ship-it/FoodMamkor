@@ -76,11 +76,12 @@ beforeEach(() => {
 });
 
 describe("«כלים» grouped by task (MEH-3669)", () => {
-  it("shows the groups in order: offer → reviews → content → share", async () => {
+  // MEH-3749: «שיתוף» is a tile in the content group now, not a section.
+  it("shows the groups in order: offer → reviews → content", async () => {
     render(<ToolsPage />);
     await screen.findByTestId("tools-grid");
     const h2 = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.content_heading`, "share.quiet_label"]);
+    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.content_heading`]);
   });
 
   it("«אירועים» is closed by default and holds no tool link (many × closed)", async () => {
@@ -128,10 +129,12 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const section = await screen.findByTestId("tools-group-reviews");
     expect(hrefs(section)).toEqual(["/producer/dashboard/reviews"]);
     expect(within(section).getByTestId("request-review-stub")).toBeInTheDocument();
-    // MEH-3641: the Google profile tile shares the content group with recipes.
+    // MEH-3641: the Google profile tile shares the content group with recipes;
+    // MEH-3749: so does the «שיתוף» tile, for an approved business.
     expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual([
       "/producer/dashboard/recipes",
       "/producer/dashboard/google-profile",
+      "/producer/dashboard/share",
     ]);
   });
 
@@ -179,6 +182,7 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(spokes).toEqual(expect.arrayContaining([
       "/producer/dashboard/events", "/producer/dashboard/experiences", "/producer/dashboard/group-buys",
       "/producer/dashboard/rescue", "/producer/dashboard/reviews", "/producer/dashboard/recipes",
+      "/producer/dashboard/share",
     ]));
     for (const spoke of spokes) {
       NAV.pathname = spoke;

@@ -4,13 +4,15 @@
  *
  * Home (daily): «לצפייה בעמוד שלך» + the short «הלינק שלי» card render from
  * the profile's slug. The QR card and «ערכת שיתוף» are NOT on home.
- * Tools («כלים» → «שיתוף», one-time / occasional): the QR card and «ערכת
- * שיתוף», approved business only.
+ * «שיתוף» (one-time / occasional): the QR card and «ערכת שיתוף» on a page of
+ * their own since MEH-3749, reached from one «שיתוף» tile in «כלים»;
+ * approved business only.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
 import ToolsPage from "@/app/[locale]/producer/dashboard/tools/page";
+import SharePage from "@/app/[locale]/producer/dashboard/share/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 // A stable user object, as the real AuthProvider gives: the tools page's fetch
@@ -103,20 +105,32 @@ describe("home — the numbers come before the status switch and the link (MEH-3
   });
 });
 
-describe("tools — «שיתוף» holds the QR card and «ערכת שיתוף» (MEH-2882 PR 1)", () => {
-  it("approved + complete: the share section with the QR card and the share kit", async () => {
+describe("«שיתוף» — its own page, one tile in «כלים» (MEH-3749)", () => {
+  it("approved: «כלים» has the «שיתוף» tile and no QR card or share kit of its own", async () => {
     render(<ToolsPage />);
-    const section = await screen.findByTestId("tools-share-section");
-    expect(section.getAttribute("id")).toBe("share");
-    await waitFor(() => expect(section.querySelector('[data-testid="business-qr-card"]')).not.toBeNull());
-    expect(section.querySelector('[data-testid="share-kit-section"]')).not.toBeNull();
+    const tile = await screen.findByTestId("tools-share-tile");
+    expect(tile.getAttribute("href")).toBe("/producer/dashboard/share");
+    expect(screen.queryByTestId("business-qr-card")).toBeNull();
+    expect(screen.queryByTestId("share-kit-section")).toBeNull();
   });
 
-  it("pending: no share section (nothing to share before the page is public)", async () => {
+  it("approved: the share page holds the QR card and the share kit", async () => {
+    render(<SharePage />);
+    const content = await screen.findByTestId("share-page-content");
+    await waitFor(() => expect(content.querySelector('[data-testid="business-qr-card"]')).not.toBeNull());
+    expect(content.querySelector('[data-testid="share-kit-section"]')).not.toBeNull();
+  });
+
+  it("pending: no tile in «כלים», and the share page says it waits for approval", async () => {
     stateRef.current = { ...stateRef.current, status: "pending" };
-    render(<ToolsPage />);
+    const { unmount } = render(<ToolsPage />);
     await screen.findByTestId("tools-grid");
-    expect(screen.queryByTestId("tools-share-section")).toBeNull();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByTestId("tools-share-tile")).toBeNull();
+    unmount();
+    render(<SharePage />);
+    expect(await screen.findByTestId("share-page-locked")).toBeInTheDocument();
+    expect(screen.queryByTestId("share-page-content")).toBeNull();
   });
 });
 
@@ -129,7 +143,7 @@ describe("review of #4263 — the gates on the slug's new source", () => {
     expect(screen.queryByTestId("view-public-link")).toBeNull();
   });
 
-  it("an approved organizer's view link is /organizers/{slug}, and tools has no share section for it", async () => {
+  it("an approved organizer's view link is /organizers/{slug}, and tools has no share tile for it", async () => {
     stateRef.current = { ...stateRef.current, kind: "organizer" };
     const { unmount } = render(<ProducerDashboardPage />);
     const view = await screen.findByTestId("view-public-link");
@@ -139,13 +153,13 @@ describe("review of #4263 — the gates on the slug's new source", () => {
     render(<ToolsPage />);
     await screen.findByTestId("tools-grid");
     await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByTestId("tools-share-section")).toBeNull();
+    expect(screen.queryByTestId("tools-share-tile")).toBeNull();
   });
 
-  it("tools: a failed profile fetch says so instead of hiding the share section silently", async () => {
+  it("share page: a failed profile fetch says so instead of rendering nothing", async () => {
     stateRef.current = { ...stateRef.current, profileFails: true };
-    render(<ToolsPage />);
-    expect(await screen.findByTestId("tools-share-error")).toBeInTheDocument();
-    expect(screen.queryByTestId("tools-share-section")).toBeNull();
+    render(<SharePage />);
+    expect(await screen.findByTestId("share-page-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("share-page-content")).toBeNull();
   });
 });

@@ -68,6 +68,7 @@ const TABS = [
       "/producer/dashboard/rescue",
       "/producer/dashboard/reviews", // MEH-3107
       "/producer/dashboard/google-profile", // MEH-3641
+      "/producer/dashboard/share", // MEH-3749
     ],
   },
 ];

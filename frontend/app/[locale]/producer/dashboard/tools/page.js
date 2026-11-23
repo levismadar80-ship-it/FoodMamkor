@@ -7,7 +7,7 @@
  *           1A). Launcher for the producer creation/manage tool routes:
  *           manage events / experiences / group buys / recipes + the reviews
  *           deep link.
- * Touches:  GET /producers/me (the «שיתוף» section, MEH-2882 PR 1); GET /producers/me/dashboard (read — for producer.id used by the
+ * Touches:  GET /producers/me (kind, for the Google and «שיתוף» tiles); GET /producers/me/dashboard (read — for producer.id used by the
  *           reviews deep link).
  * Does NOT: build any tool internals — each link points at its existing,
  *           already-shipped route. The grid markup below is byte-identical to
@@ -23,7 +23,8 @@
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
  *           in the dashboard shell nav; reviews card marked candidate-to-move);
  *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
- *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile).
+ *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3749 (the «שיתוף» section
+ *           became a tile; its page is share/page.js).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -33,14 +34,10 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, GoogleLogo } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, GoogleLogo, ShareNetwork } from "@phosphor-icons/react";
 import api from "@/lib/api";
-import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
-import BusinessQrCard from "@/components/producer/BusinessQrCard";
-import ShareKitSection from "@/components/producer/ShareKitSection";
-import { producerCompleteness } from "@/lib/producer-completeness";
 import NewToolPill from "@/components/producer/NewToolPill";
 import ToolGroupCard from "@/components/producer/ToolGroupCard";
 
@@ -54,6 +51,8 @@ export default function ProducerDashboardToolsPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
   const tShare = useTranslations("share");
+  // MEH-3749: the «שיתוף» tile line reuses the two tools' names.
+  const tFeat = useTranslations("business_features.items");
   const tNav = useTranslations("nav");
   // MEH-3669: «קבוצת רכישה» already lives here; reuse it (messages-hygiene-guard).
   const tType = useTranslations("home.whats_on.type");
@@ -65,12 +64,10 @@ export default function ProducerDashboardToolsPage() {
   // retry-counter shape as dashboard/page.js's loadError/analyticsError.
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  // MEH-2882 PR 1: the «שיתוף» section (QR card + «ערכת שיתוף») needs the
-  // owner profile — slug, images, categories, completeness. GET
-  // /producers/me/dashboard has none of them (MEH-2880). A failed profile
-  // fetch only hides that section; the tool tiles still render.
+  // The owner profile's `kind` gates the Google and «שיתוף» tiles (an
+  // organizer sees neither). A failed fetch only hides those two tiles; the
+  // share page itself reports its own load error (MEH-3749).
   const [profile, setProfile] = useState(null);
-  const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -88,27 +85,9 @@ export default function ProducerDashboardToolsPage() {
       });
     api
       .get("/producers/me")
-      .then((r) => {
-        setProfile(r.data);
-        setProfileError(false);
-      })
-      .catch(() => {
-        setProfile(null);
-        setProfileError(true);
-      });
+      .then((r) => setProfile(r.data))
+      .catch(() => setProfile(null));
   }, [user, authLoading, router, attempt]);
-
-  // MEH-2880 review: /qr-card's back link (and any deep link) lands on
-  // #share, which mounts only after both fetches return — the browser's own
-  // hash scroll has already run by then. Scroll once the section exists
-  // (REUSES: edit/page.js hash effect).
-  const shareReady = Boolean(data && profile);
-  useEffect(() => {
-    if (!shareReady || typeof window === "undefined" || window.location.hash !== "#share") return;
-    requestAnimationFrame(() => {
-      document.getElementById("share")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [shareReady]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
@@ -237,38 +216,21 @@ export default function ProducerDashboardToolsPage() {
                 <p className="text-sm text-fg-muted">{t("quick_links.google_profile.sub")}</p>
               </Link>
             )}
+            {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of their
+                own (Sapir 23/11); this tile is its one entry. Same gates the
+                section had: approved business, never an organizer. The line is
+                two existing tool names, so no new copy. */}
+            {approved && profile && profile.kind !== "organizer" && (
+              <Link href="/producer/dashboard/share" data-testid="tools-share-tile" className={CARD}>
+                <ShareNetwork size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{tShare("quiet_label")}</p>
+                <p className="text-sm text-fg-muted">{`${tFeat("qr_code.tile_title")} · ${tFeat("share_cards.tile_title")}`}</p>
+              </Link>
+            )}
           </div>
         </section>
       </div>
 
-      {/* MEH-2882 PR 1 (placement audit 2026-11): sharing materials that are
-          made once or now and then — the printable QR card (→ /qr-card) and
-          «ערכת שיתוף» — live here, not on the daily home. Approved business
-          only, never an organizer: the same gates the cards had on home. */}
-      {/* MEH-2880 review: a failed profile fetch says so (same card copy and
-          retry as home) instead of the section silently missing. */}
-      {approved && !profile && profileError && (
-        <div role="alert" data-testid="tools-share-error" className="mt-8 bg-surface border border-border rounded-lg p-5 text-center">
-          <p className="text-fg-muted mb-3">{t("section_errors.profile")}</p>
-          <Button variant="primary" size="sm" onClick={() => setAttempt((n) => n + 1)}>
-            {t("section_errors.retry_cta")}
-          </Button>
-        </div>
-      )}
-      {approved && profile && profile.kind !== "organizer" && (
-        // scroll-mt clears the sticky header AND the sticky dashboard tab bar
-        // (DashboardLayoutClient: top-[var(--chrome-top)]).
-        <section id="share" data-testid="tools-share-section" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)+4rem)]">
-          <h2 className={H2}>{tShare("quiet_label")}</h2>
-          <BusinessQrCard
-            producer={profile}
-            isComplete={producerCompleteness(profile).missing.length === 0}
-            isApproved={approved}
-            isOrganizer={false}
-          />
-          <ShareKitSection profile={profile} />
-        </section>
-      )}
     </div>
   );
 }
