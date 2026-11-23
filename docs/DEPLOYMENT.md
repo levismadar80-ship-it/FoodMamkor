@@ -1067,7 +1067,10 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    owns three known-password QA users — `demo-owner@example.com` (role
    `producer`, linked to the `/ruach-hasadeh` demo), `demo-consumer@example.com`
    (role `consumer`), and `demo-admin@example.com` (role `admin`, **no**
-   producer linkage — MEH-1528). Their passwords come from the env vars
+   producer linkage — MEH-1528). The every-state seed (MEH-3761,
+   `_seed_every_state.py`) also creates `state-*@example.com` accounts (blocked,
+   unverified, buyers, reviewers, business owners) with random passwords that
+   nobody signs in with; they exist only so each status has a row. Their passwords come from the env vars
    **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** /
    **`DEMO_ADMIN_PASSWORD`** (set on the Railway staging backend + GitHub Actions
    secrets, same values). To (re)apply them **non-destructively** — no

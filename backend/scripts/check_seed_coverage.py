@@ -227,7 +227,7 @@ SEEDED_SURFACES = [
 ]
 
 # ---------------------------------------------------------------------------
-# MEH-3630: one demo row in every status the site can show (Sapir 24/11:
+# MEH-3761: one demo row in every status the site can show (Sapir, plan MEH-3630:
 # «מידע איכותי מכל אפשרות שיכולה להיות באתר»), seeded by
 # scripts/_seed_every_state.py. One surface per (column, value), named after
 # the value, so a state that loses its demo row turns this gate red. The

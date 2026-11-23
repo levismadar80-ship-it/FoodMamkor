@@ -3,10 +3,10 @@ Module:   _seed_every_state
 Purpose:  Put one demo row in every status the site can show, so staging has
           a business waiting for approval, a rejected recipe, a full workshop,
           a no-show surprise bag and the rest — not only the "everything is
-          fine" state the main demo seed draws (MEH-3630, Sapir 24/11).
+          fine" state the main demo seed draws (MEH-3761).
 Touches:  users, producers, experiences, registrations, rescue_offers,
           rescue_orders, group_buys, group_buy_commits, producer_recipes,
-          producer_reviews (+ the demo business's rating aggregate), reports,
+          producer_reviews (+ the paused business's rating aggregate), reports,
           category_requests, producer_name_change_requests,
           kashrut_badge_requests, outreach_leads, billable_events.
 Does NOT: decide where it may run — seed_demo_business.py's
@@ -17,8 +17,8 @@ Does NOT: decide where it may run — seed_demo_business.py's
           approved table below.
 Related:  backend/scripts/seed_demo_business.py `main` (the caller) ·
           backend/scripts/check_seed_coverage.py (one surface per state here) ·
-          docs/STATE_MACHINES.md · /mnt/project-files plan approved 24/11.
-History:  MEH-3630 (creation).
+          docs/STATE_MACHINES.md · /mnt/project-files/staging-data/seed-every-state-plan.md.
+History:  MEH-3761 (creation; plan card MEH-3630).
 """
 
 from __future__ import annotations
@@ -44,8 +44,8 @@ from app.pricing import current_price_list
 from app.services.review_conflicts import recompute_producer_rating
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 
-# MEH-3630: every Hebrew string below was approved word for word by Sapir on
-# 24/11 (plan table rows 1-23). DO NOT add Hebrew here without that approval
+# MEH-3761: every Hebrew string below was approved word for word by Sapir in
+# the project thread (plan table rows 1-23). DO NOT add Hebrew here without that approval
 # (workflow rule 22). Where a column needs text the table has no row for
 # (a description, ingredients), the row's own approved title is reused.
 COPY = {
@@ -81,6 +81,7 @@ COPY = {
 DEMO_SLUG = "ruach-hasadeh"
 OWNER_EMAIL = "demo-owner@example.com"
 MARKER_SLUG = "demo-state-draft"
+PAUSED_SLUG = "demo-state-paused"
 STATE_EMAIL = "state-{}@example.com"
 
 
@@ -140,7 +141,7 @@ def _seed_businesses_and_users(db: Any) -> dict[str, Producer]:
             rejection_reason=COPY["biz_rejected_reason"],
             submitted_for_review_at=now - timedelta(days=6),
         ),
-        "paused": _business(db, "demo-state-paused", COPY["biz_paused"], "inactive"),
+        "paused": _business(db, PAUSED_SLUG, COPY["biz_paused"], "inactive"),
     }
     _user(db, "blocked", role="consumer", is_blocked=True)
     _user(db, "unverified", role="consumer", email_verified=False)
@@ -283,11 +284,16 @@ def _seed_recipes(db: Any, demo: Producer) -> None:
         )
 
 
-def _seed_reviews(db: Any, demo: Producer, reviewers: list[User]) -> None:
+def _seed_reviews(db: Any, paused: Producer, reviewers: list[User]) -> None:
+    # MEH-3761: on the paused business, not the demo one. A FLAGGED review
+    # still publishes and counts in the rating (reviews.py, MEH-2390), so on
+    # /ruach-hasadeh it would put abusive demo text on the public page and
+    # move the rating the VRT and seed tests read. /admin/reviews lists every
+    # business's reviews, so the admin queue shows them all the same.
     owner_reply_at = utc_now()
     db.add(
         ProducerReview(
-            producer_id=demo.id,
+            producer_id=paused.id,
             user_id=reviewers[0].id,
             stars=1,
             body=COPY["review_hidden"],
@@ -296,7 +302,7 @@ def _seed_reviews(db: Any, demo: Producer, reviewers: list[User]) -> None:
     )
     db.add(
         ProducerReview(
-            producer_id=demo.id,
+            producer_id=paused.id,
             user_id=reviewers[1].id,
             stars=1,
             body=COPY["review_flagged"],
@@ -305,7 +311,7 @@ def _seed_reviews(db: Any, demo: Producer, reviewers: list[User]) -> None:
     )
     db.add(
         ProducerReview(
-            producer_id=demo.id,
+            producer_id=paused.id,
             user_id=reviewers[2].id,
             stars=3,
             body=None,
@@ -315,8 +321,6 @@ def _seed_reviews(db: Any, demo: Producer, reviewers: list[User]) -> None:
             reply_ai_moderation_status="FLAGGED",
         )
     )
-    db.flush()
-    recompute_producer_rating(demo.id, db)
 
 
 def _seed_reports_and_kashrut(db: Any, demo: Producer, reporters: list[User]) -> None:
@@ -386,6 +390,8 @@ def _seed_standalone(db: Any) -> None:
         (COPY["lead_declined"], "declined"),
     ):
         db.add(OutreachLead(name=name, status=status, city="תל אביב"))
+    reviewers = [_user(db, f"reviewer-{i}", role="consumer") for i in range(1, 4)]
+    _seed_reviews(db, businesses["paused"], reviewers)
 
 
 def _seed_on_demo(db: Any, demo: Producer, host: User) -> None:
@@ -397,7 +403,6 @@ def _seed_on_demo(db: Any, demo: Producer, host: User) -> None:
     _seed_rescue(db, demo, people)
     _seed_group_buys(db, demo, people)
     _seed_recipes(db, demo)
-    _seed_reviews(db, demo, people[:3])
     _seed_reports_and_kashrut(db, demo, people[:3])
     _seed_billing(db, demo, registrations)
 
@@ -430,8 +435,13 @@ def seed_every_state(db: Any) -> bool:
         _seed_on_demo(db, demo, host)
         seeded = True
     db.commit()
+    paused = db.query(Producer).filter(Producer.slug == PAUSED_SLUG).first()
+    if seeded and paused is not None:
+        # After the commit: it commits on its own, and a commit in the middle
+        # would leave a half seeded behind the marker that skips it next time.
+        recompute_producer_rating(paused.id, db)
     print(
-        "Seeded every-state demo rows (MEH-3630)."
+        "Seeded every-state demo rows (MEH-3761)."
         if seeded
         else "Every-state demo rows already present — skipping."
     )
