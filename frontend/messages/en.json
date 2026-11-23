@@ -6222,6 +6222,19 @@
             "orders": "Orders",
             "last": "Last order"
           }
+        },
+        "fill": {
+          "title": "Tell us how you take orders",
+          "intro": "For example: “Order by Thursday evening, pick up Friday morning.” We'll draft your settings from it, and nothing is saved without your approval."
+        },
+        "help": {
+          "slot_cap": "How many orders you can prepare for the same slot.",
+          "cancel_cutoff_hours": "Up to how long before the slot customers can cancel on their own.",
+          "min_order": "The lowest amount an order can be.",
+          "slot_minutes": "How long each pickup or delivery window lasts.",
+          "lead_time_hours": "How many hours before the slot an order must be placed, so you have time to prepare.",
+          "windows": "The days and hours when orders can be picked up or delivered.",
+          "product_ids": "Which products customers can order from your page."
         }
       },
       "weekly_summary": {

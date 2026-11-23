@@ -12,23 +12,34 @@
  *           for ordering; the server says so in Hebrew and the row shows it.
  *           Renders NOTHING for a business with no products (0 items).
  * Related:  lib/product-ordering.js, OrderSettingsCard.jsx (same fold)
- * History:  MEH-3216 gaps (creation)
+ * History:  MEH-3216 gaps (creation) · MEH-3752 (an order-setup draft marks
+ *           products to open; they wait, switched on, for «שמירה», which
+ *           saves each through the same per-row route; a «?» on the first
+ *           «פתוח להזמנה באתר»)
  */
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 
+import FieldHelpLabel from "@/components/FieldHelpLabel";
+import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Switch from "@/components/ui/Switch";
 import { detailToMessage } from "@/lib/errors";
 import { loadProductsOrdering, saveProductOrdering } from "@/lib/product-ordering";
+import { draftProductIds } from "@/lib/order-setup-draft";
 
-/** @param {{ id: string, label: string, checked: boolean, busy: boolean, onChange: (on: boolean) => void }} props */
-function SwitchLine({ id, label, checked, busy, onChange }) {
+/** @param {{ id: string, label: string, checked: boolean, busy: boolean, onChange: (on: boolean) => void, help?: string }} props
+ *   help: the field's «?» text (MEH-3752), shown on one row only. */
+function SwitchLine({ id, label, checked, busy, onChange, help = undefined }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <span id={id} className="text-sm text-fg-muted">{label}</span>
+      {help ? (
+        <FieldHelpLabel labelId={id} label={label} help={help} testId="order-help-product_ids" />
+      ) : (
+        <span id={id} className="text-sm text-fg-muted">{label}</span>
+      )}
       {/* aria-busy, not disabled: a disabled button drops keyboard focus on
           every tap. A tap while saving is ignored instead. */}
       <Switch checked={checked} aria-busy={busy} aria-labelledby={id} onClick={() => !busy && onChange(!checked)} data-testid={id} />
@@ -36,8 +47,12 @@ function SwitchLine({ id, label, checked, busy, onChange }) {
   );
 }
 
-/** @param {{ product: any, onSaved: (product: any) => void }} props */
-function ProductRow({ product, onSaved }) {
+/**
+ * @param {{ product: any, onSaved: (product: any) => void, help?: string, pending?: boolean, onPending?: (on: boolean) => void, error?: string | null }} props
+ *   pending: a draft opens this product, not saved yet — the switch shows on
+ *   and a tap takes it back, with no call. error: its draft save failed.
+ */
+function ProductRow({ product, onSaved, help = undefined, pending = false, onPending = undefined, error = null }) {
   const t = useTranslations("dashboard.producer.orders");
   const [state, setState] = useState(/** @type {{ busy?: boolean, error?: string|null }} */ ({}));
   const save = async (/** @type {{ is_orderable?: boolean, in_stock?: boolean }} */ change) => {
@@ -56,9 +71,10 @@ function ProductRow({ product, onSaved }) {
       <SwitchLine
         id={`orderable-${key}`}
         label={t("products.orderable")}
-        checked={product.is_orderable}
+        checked={product.is_orderable || pending}
         busy={Boolean(state.busy)}
-        onChange={(on) => save({ is_orderable: on })}
+        onChange={(on) => (pending ? onPending?.(on) : save({ is_orderable: on }))}
+        help={help}
       />
       <SwitchLine
         id={`sold-out-${key}`}
@@ -67,19 +83,61 @@ function ProductRow({ product, onSaved }) {
         busy={Boolean(state.busy)}
         onChange={(soldOut) => save({ in_stock: !soldOut })}
       />
-      {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
+      {(state.error || error) && <InlineMessage tone="error">{state.error || error}</InlineMessage>}
     </li>
   );
 }
 
 /**
- * @param {{ setUp?: boolean, initial?: any[] | null, onChange?: (products: any[]) => void, onError?: () => void }} props
+ * The products a draft opens (MEH-3752): the closed ones it names wait,
+ * switched on, until `saveAll` saves each through the per-row route. One
+ * that fails stays waiting with its Hebrew error.
+ * @param {Record<string, unknown> | null} draft
+ * @param {any[] | null} products
+ * @param {(saved: any) => void} replace
+ * @param {string} failedText
+ */
+function useDraftedProducts(draft, products, replace, failedText) {
+  const [pending, setPending] = useState(/** @type {string[]} */ ([]));
+  const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
+  const [busy, setBusy] = useState(false);
+  const [applied, setApplied] = useState(/** @type {any} */ (null));
+  if (draft && products && draft !== applied) {
+    setApplied(draft);
+    const closed = new Set(products.filter((p) => !p.is_orderable).map((p) => String(p.id)));
+    setPending(draftProductIds(draft).filter((id) => closed.has(id)));
+    setErrors({});
+  }
+  const drop = (/** @type {string} */ id) => setPending((old) => old.filter((x) => x !== id));
+  const saveAll = async () => {
+    setBusy(true);
+    /** @type {Record<string, string>} */
+    const failed = {};
+    for (const id of pending) {
+      try {
+        // One at a time: the same route and checks as a tap on the switch.
+        // eslint-disable-next-line no-await-in-loop
+        replace(await saveProductOrdering(products?.find((p) => String(p.id) === id), { is_orderable: true }));
+      } catch (err) {
+        failed[id] = detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || failedText;
+      }
+    }
+    setErrors(failed);
+    setPending(Object.keys(failed));
+    setBusy(false);
+  };
+  return { pending, errors, busy, drop, saveAll };
+}
+
+/**
+ * @param {{ setUp?: boolean, initial?: any[] | null, onChange?: (products: any[]) => void, onError?: () => void, draft?: Record<string, unknown> | null }} props
  *   setUp: ordering is on with a window — the card then starts folded, but
  *   only once at least one product is open for ordering (otherwise this card
  *   is the next thing she has to do). `initial` skips the read (tests).
  */
-export default function OrderProductsCard({ setUp = false, initial = null, onChange = undefined, onError = undefined }) {
+export default function OrderProductsCard({ setUp = false, initial = null, onChange = undefined, onError = undefined, draft = null }) {
   const t = useTranslations("dashboard.producer.orders");
+  const tHelp = useTranslations("dashboard.producer.orders.help");
   const [products, setProducts] = useState(/** @type {any[] | null} */ (initial));
   const [failed, setFailed] = useState(false);
   // Decided once, on the first list: flipping the first «פתוח להזמנה באתר»
@@ -108,21 +166,36 @@ export default function OrderProductsCard({ setUp = false, initial = null, onCha
   useEffect(() => {
     if (products) onChange?.(products);
   }, [products, onChange]);
-  if (failed) return <InlineMessage tone="error">{t("load_error")}</InlineMessage>;
-  if (!products || products.length === 0) return null;
   const replace = (/** @type {any} */ saved) =>
     setProducts((old) => (old ?? []).map((p) => (p.id === saved.id ? saved : p)));
+  const drafted = useDraftedProducts(draft, products, replace, t("actions.failed"));
+  if (failed) return <InlineMessage tone="error">{t("load_error")}</InlineMessage>;
+  if (!products || products.length === 0) return null;
+  const folded = startFolded === null ? setUp && products.some((p) => p.is_orderable) : startFolded;
   return (
-    <details open={startFolded === null ? !(setUp && products.some((p) => p.is_orderable)) : !startFolded} className="group rounded-lg border border-border bg-surface p-4 space-y-3" id="order-products" data-testid="order-products">
+    <details open={!folded || drafted.pending.length > 0} className="group rounded-lg border border-border bg-surface p-4 space-y-3" id="order-products" data-testid="order-products">
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
         <h2 className="font-bold text-lg text-text">{t("products.title")}</h2>
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
       </summary>
       <ul className="divide-y divide-border">
-        {products.map((product) => (
-          <ProductRow key={product.id} product={product} onSaved={replace} />
+        {products.map((product, index) => (
+          <ProductRow
+            key={product.id}
+            product={product}
+            onSaved={replace}
+            help={index === 0 ? tHelp("product_ids") : undefined}
+            pending={drafted.pending.includes(String(product.id))}
+            onPending={(on) => !on && drafted.drop(String(product.id))}
+            error={drafted.errors[String(product.id)] ?? null}
+          />
         ))}
       </ul>
+      {drafted.pending.length > 0 && (
+        <Button size="sm" onClick={drafted.saveAll} loading={drafted.busy} data-testid="order-products-save">
+          {t("settings.save")}
+        </Button>
+      )}
     </details>
   );
 }

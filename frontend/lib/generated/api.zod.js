@@ -6820,7 +6820,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  * @summary Fill My Form
  */
 export const FillMyFormProducersMeAiFillFormPostResponse = /*#__PURE__*/ zod.object({
-  "draft": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.int()]))),/*#__PURE__*/ zod.null()])),
   "form": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('Field key -> value. A field the text does not state is null, or an\nempty list for a list field; the form decides which keys it reads.'))
 

@@ -13,7 +13,7 @@ Does NOT: save — the screen fills its form and the owner saves through the
           reader (routers/menu_import.py) keep their routes (the card's scope).
 Related:  routers/page_fill.py (same limits, REUSES _business_key and
           _mark_owner) · schemas/form_fill.py
-History:  MEH-3740 (creation)
+History:  MEH-3740 (creation) · MEH-3752 (order_setup gets the owner's products)
 """
 
 import asyncio
@@ -51,6 +51,7 @@ def _owner_products(db: Session, user: User) -> list[tuple[str, str]]:
 # form -> {field key: the owner's own options}. Only lists the owner owns.
 _CHOICES: dict[str, dict[str, Callable[[Session, User], list[tuple[str, str]]]]] = {
     "recipe": {"product_ids": _owner_products},
+    "order_setup": {"product_ids": _owner_products},  # MEH-3752
 }
 
 

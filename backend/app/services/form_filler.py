@@ -16,7 +16,8 @@ Does NOT: save (the owner approves, and the form's own route writes with
 Related:  services/page_filler.py (same draft-only shape, MEH-3483) ·
           services/ai_text.py (wrap, drop_unbacked) · routers/form_fill.py
 History:  MEH-3740 (creation, form=recipe) · MEH-3751 (form=event: enum,
-          date, time and city fields; today's date in the prompt)
+          date, time and city fields; today's date in the prompt) ·
+          MEH-3752 (form=order_setup: windows, `allowed` and `days`)
 """
 
 from __future__ import annotations
@@ -31,7 +32,8 @@ from typing import Any
 
 from app.config import ai_fast_request_kwargs
 from app.data.cities import STATIC_SPELLING_BY_KEY, canonical_city, city_key
-from app.services import ai_budget, ai_text
+from app.services import ai_budget, ai_text, form_fill_windows
+from app.services.form_fill_windows import day_named, hour_stated
 from app.services.description_writer import _TERMS
 from app.services.menu_reader import _get_client  # REUSES: one Anthropic client
 from app.utils.clock import israel_today
@@ -85,6 +87,8 @@ def _json_type(field: dict[str, Any]) -> dict[str, object]:
         return {"type": "array", "items": {"type": "integer"}}
     if kind == "enum":
         return {"type": ["string", "null"], "enum": [*field["values"], None]}
+    if kind == "windows":
+        return form_fill_windows.json_type()
     return {"type": ["string", "null"]}
 
 
@@ -148,6 +152,8 @@ def _stated(value: int, field: dict[str, Any], source: str) -> bool:
         return True
     if _number_by(value, unit, text):
         return True
+    if field.get("days") and _days_stated(value, text):
+        return True
     return bool(field.get("hours")) and _hours_stated(value, text)
 
 
@@ -159,6 +165,14 @@ def _free(field: dict[str, Any], unit: str, text: str) -> bool:
         rf"[1-9]\d*\s*[-־]?\s*(?:{unit})(?![א-ת])|(?:{unit})\s*[1-9]", text
     )
     return said and not priced
+
+
+def _days_stated(value: int, source: str) -> bool:
+    """`value` hours, written in days: «3 ימים», «יומיים» (MEH-3752). A bare
+    «יום» is not one: «ביום שישי» names a day, not 24 hours."""
+    if value == 48 and "יומיים" in source:  # noqa: PLR2004 — two days
+        return True
+    return value % 24 == 0 and value > 0 and _number_by(value // 24, "ימים|יום", source)
 
 
 def _hours_stated(value: int, source: str) -> bool:
@@ -189,6 +203,8 @@ def _int(value: object, field: dict[str, Any], source: str) -> int | None:
         return None
     if not int(field.get("min", 0)) <= value <= int(field["max"]):
         return None
+    if "allowed" in field and value not in field["allowed"]:
+        return None  # e.g. a slot is 30, 60 or 120 minutes, nothing between
     return value if _stated(value, field, source) else None
 
 
@@ -226,26 +242,6 @@ def _time(value: object, source: str) -> str | None:
         return None
     hhmm = value.strip()
     return hhmm if hour_stated(hhmm, source) else None
-
-
-# 0 = Sunday … 6 = Saturday, as producers.order_window.
-DAYS = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
-
-
-def day_named(weekday: int, source: str) -> bool:
-    """«שישי», «בשישי», «יום שישי»; not inside another word («שנית»)."""
-    name = re.escape(DAYS[weekday])
-    return bool(re.search(rf"(?<![א-ת])(?:ו?ב|ה)?{name}(?![א-ת])", source))
-
-
-def hour_stated(hhmm: str, source: str) -> bool:
-    """«09:00» or «9:00» as written, or a whole hour as a stand-alone number."""
-    hour, minutes = int(hhmm[:2]), hhmm[3:]
-    if hhmm in source or f"{hour}:{minutes}" in source:
-        return True
-    return minutes == "00" and bool(
-        re.search(rf"(?<![\d:.]){hour}(?![\d.]|:\d)", source)
-    )
 
 
 def _city(value: object, source: str) -> str | None:
@@ -313,6 +309,8 @@ def _value(  # noqa: PLR0911 — one branch per field type
         return _time(raw, source)
     if kind == "city":
         return _city(raw, source)
+    if kind == "windows":
+        return form_fill_windows.windows(raw, int(f["max"]), source)
     return _text(raw, f, source)
 
 

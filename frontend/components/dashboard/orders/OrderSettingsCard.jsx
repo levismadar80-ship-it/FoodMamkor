@@ -12,13 +12,17 @@
  *           windows (OrderWindowsCard).
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps (the
  *           per-slot cap is always shown and holds for manual confirm too);
- *           MEH-3216 «מספר עוסק או ח״פ» (needed to switch ordering on)
+ *           MEH-3216 «מספר עוסק או ח״פ» (needed to switch ordering on);
+ *           MEH-3752 (a «?» on the five numbers; an order-setup draft fills
+ *           them, never the on/off switches or the business ID)
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
+
+import FieldHelpLabel from "@/components/FieldHelpLabel";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -27,6 +31,7 @@ import Select from "@/components/ui/Select";
 import Switch from "@/components/ui/Switch";
 import { detailToMessage } from "@/lib/errors";
 import { agorotFromInput, saveSettings, shekelsText } from "@/lib/product-orders";
+import { applySettingsDraft } from "@/lib/order-setup-draft";
 
 const SLOT_MINUTES = [30, 60, 120];
 const HOUR_CHOICES = [0, 1, 2, 3, 6, 12, 24, 48];
@@ -95,41 +100,73 @@ export function toBody(form) {
   };
 }
 
+/**
+ * A label with its «?» (MEH-3752), over the control the caller renders.
+ * @param {{ id: string, field: string, label: string, children: import("react").ReactNode }} props
+ */
+function Helped({ id, field, label, children }) {
+  const tHelp = useTranslations("dashboard.producer.orders.help");
+  return (
+    <div>
+      <FieldHelpLabel htmlFor={id} label={label} help={tHelp(field)} testId={`order-help-${field}`} />
+      {children}
+    </div>
+  );
+}
+
 /** @param {{ form: any, set: (key: string, value: any) => void }} props */
 function TimingFields({ form, set }) {
   const t = useTranslations("dashboard.producer.orders.settings");
+  const uid = useId();
   const number = (/** @type {any} */ e) => Number(e.target.value);
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <Select label={t("cutoff_label")} value={form.cancel_cutoff_hours} onChange={(e) => set("cancel_cutoff_hours", number(e))}>
-        {withCurrent(HOUR_CHOICES, form.cancel_cutoff_hours).map((hours) => (
-          <option key={hours} value={hours}>{t("cutoff", { hours })}</option>
-        ))}
-      </Select>
-      <Select label={t("slot_minutes")} value={form.slot_minutes} onChange={(e) => set("slot_minutes", number(e))}>
-        {SLOT_MINUTES.map((minutes) => (
-          <option key={minutes} value={minutes}>{t(`slot_${minutes}`)}</option>
-        ))}
-      </Select>
-      <Select label={t("lead_time")} value={form.lead_time_hours} onChange={(e) => set("lead_time_hours", number(e))}>
-        {withCurrent(HOUR_CHOICES, form.lead_time_hours).map((hours) => (
-          <option key={hours} value={hours}>{t("lead_hours", { hours })}</option>
-        ))}
-      </Select>
+      <Helped id={`${uid}cutoff`} field="cancel_cutoff_hours" label={t("cutoff_label")}>
+        <Select id={`${uid}cutoff`} value={form.cancel_cutoff_hours} onChange={(e) => set("cancel_cutoff_hours", number(e))}>
+          {withCurrent(HOUR_CHOICES, form.cancel_cutoff_hours).map((hours) => (
+            <option key={hours} value={hours}>{t("cutoff", { hours })}</option>
+          ))}
+        </Select>
+      </Helped>
+      <Helped id={`${uid}slot`} field="slot_minutes" label={t("slot_minutes")}>
+        <Select id={`${uid}slot`} value={form.slot_minutes} onChange={(e) => set("slot_minutes", number(e))}>
+          {SLOT_MINUTES.map((minutes) => (
+            <option key={minutes} value={minutes}>{t(`slot_${minutes}`)}</option>
+          ))}
+        </Select>
+      </Helped>
+      <Helped id={`${uid}lead`} field="lead_time_hours" label={t("lead_time")}>
+        <Select id={`${uid}lead`} value={form.lead_time_hours} onChange={(e) => set("lead_time_hours", number(e))}>
+          {withCurrent(HOUR_CHOICES, form.lead_time_hours).map((hours) => (
+            <option key={hours} value={hours}>{t("lead_hours", { hours })}</option>
+          ))}
+        </Select>
+      </Helped>
     </div>
   );
 }
 
 /**
- * @param {{ settings: any, onSaved: (settings: any) => void, collapsed?: boolean }} props
+ * @param {{ settings: any, onSaved: (settings: any) => void, collapsed?: boolean, draft?: Record<string, unknown> | null }} props
  *   collapsed: start closed — the page closes it once ordering is set up,
  *   so the tab opens on the orders and the one-time settings wait a tap away.
+ *   draft: an order-setup draft (MEH-3752); each new one fills the numbers,
+ *   and she saves with the usual button.
  */
-export default function OrderSettingsCard({ settings, onSaved, collapsed = false }) {
+export default function OrderSettingsCard({ settings, onSaved, collapsed = false, draft = null }) {
   const t = useTranslations("dashboard.producer.orders.settings");
   const tActions = useTranslations("dashboard.producer.orders.actions");
+  const uid = useId();
   const [form, setForm] = useState(() => toForm(settings));
   const [state, setState] = useState(/** @type {{ busy?: boolean, error?: string|null, saved?: boolean }} */ ({}));
+  // A new draft fills the form while rendering (React's "adjust state on a
+  // prop change"), once per draft.
+  const [applied, setApplied] = useState(/** @type {any} */ (null));
+  if (draft && draft !== applied) {
+    setApplied(draft);
+    setForm((old) => applySettingsDraft(old, draft));
+    setState({});
+  }
   const set = (/** @type {string} */ key, /** @type {any} */ value) => setForm((old) => ({ ...old, [key]: value }));
 
   const save = async () => {
@@ -196,9 +233,13 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
       />
       {/* MEH-3216 gaps: one cap per slot, by hand or automatic — the server
           stops offering a slot that holds this many open orders. */}
-      <Input label={t("slot_cap")} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} data-testid="orders-slot-cap" />
+      <Helped id={`${uid}cap`} field="slot_cap" label={t("slot_cap")}>
+        <Input id={`${uid}cap`} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} data-testid="orders-slot-cap" />
+      </Helped>
       <SwitchRow id="orders-shabbat" label={t("shabbat")} checked={form.shabbat_observant} onChange={(on) => set("shabbat_observant", on)} />
-      <Input label={t("min_order")} inputMode="decimal" dir="ltr" value={form.minimum} onChange={(e) => set("minimum", e.target.value)} />
+      <Helped id={`${uid}min`} field="min_order" label={t("min_order")}>
+        <Input id={`${uid}min`} inputMode="decimal" dir="ltr" value={form.minimum} onChange={(e) => set("minimum", e.target.value)} data-testid="orders-min-order" />
+      </Helped>
       <TimingFields form={form} set={set} />
       {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}

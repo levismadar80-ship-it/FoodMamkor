@@ -4565,6 +4565,22 @@
                   "type": "array"
                 },
                 {
+                  "items": {
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                {
                   "type": "null"
                 }
               ]

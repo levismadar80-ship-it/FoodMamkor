@@ -14,17 +14,20 @@
  *           kept mounted and hidden, tap only).
  * Related:  components/RecipeForm.jsx (nine fields) ·
  *           backend/app/data/form_maps/recipe.json (the field keys).
- * History:  MEH-3740 (creation)
+ * History:  MEH-3740 (creation) · MEH-3752 (labelId: a control named by
+ *           aria-labelledby, such as a Switch)
  */
 
 import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 
 /**
- * @param {{ htmlFor?: string, label: string, help: string, required?: boolean, testId?: string }} props
+ * @param {{ htmlFor?: string, labelId?: string, label: string, help: string, required?: boolean, testId?: string }} props
  *   htmlFor: omit for a group heading (a <span>, not an orphan <label>).
+ *   labelId: the label's own id, for a control that points at it with
+ *   aria-labelledby.
  */
-export default function FieldHelpLabel({ htmlFor, label, help, required = false, testId }) {
+export default function FieldHelpLabel({ htmlFor, labelId, label, help, required = false, testId }) {
   const t = useTranslations("whats_this");
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -32,7 +35,7 @@ export default function FieldHelpLabel({ htmlFor, label, help, required = false,
   return (
     <div className="mb-1">
       <div className="flex items-center gap-1">
-        <Tag {...(htmlFor ? { htmlFor } : {})} className="text-sm font-medium text-text">
+        <Tag {...(htmlFor ? { htmlFor } : {})} id={labelId} className="text-sm font-medium text-text">
           {label}
           {required && (
             <>
