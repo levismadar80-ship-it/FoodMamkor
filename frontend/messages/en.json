@@ -6194,6 +6194,10 @@
         "heading": "Weekly summary by email",
         "helper": "Every week your page had views, we'll send you a short email with the numbers.",
         "label": "Get the weekly summary"
+      },
+      "closed_day_orders": {
+        "warning": "{count, plural, one {One order you already accepted falls} other {# orders you already accepted fall}} on days you closed: {list}. They stay valid, so let your customers know.",
+        "action": "To orders"
       }
     },
     "page_preview": {

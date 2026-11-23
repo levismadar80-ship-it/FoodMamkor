@@ -21,11 +21,12 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
+import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { nextOrderRange } from "@/lib/order-window";
 import {
   MAX_SPECIAL_DATES,
@@ -44,6 +45,8 @@ import Input from "@/components/ui/Input";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
+  const tClosed = useTranslations("dashboard.producer.closed_day_orders");
+  const locale = useLocale();
   const tHoliday = useTranslations("holidays");
   // Range mechanics and the save/revert buttons REUSE the order-window copy —
   // same nouns, same verbs, and one place to fix them.
@@ -177,6 +180,11 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
+      // MEH-3770: orders she already accepted on a date she just closed.
+      const closedDates = Object.entries(current || {})
+        .filter(([, entry]) => Array.isArray(entry?.ranges) && entry.ranges.length === 0)
+        .map(([day]) => day);
+      if (closedDates.length > 0) warnClosedDayOrders({ dates: closedDates }, { t: tClosed, locale });
     } catch (error) {
       setErrorMsg(detailToMessage(error?.response?.data?.detail) || tRange("save_error"));
     } finally {
