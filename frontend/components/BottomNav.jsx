@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Basket, Compass, MapTrifold, Flower, CalendarBlank, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch"; // MEH-3628
 import { useTranslations } from "next-intl";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
@@ -112,6 +113,7 @@ const HUB_GROUP_BY_GATE = {
 export default function BottomNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const intent = useIntentPrefetch(); // MEH-3628
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
   // Stable identity so AccountSheet's focus effect (deps [open, onClose]) runs
@@ -558,6 +560,9 @@ export default function BottomNav() {
               >
                 <Link prefetch={false}
                   href={tab.href}
+                  // MEH-3628: load the page from the first touch (Sapir 21/11);
+                  // not the tab already open.
+                  {...(active ? {} : intent(tab.href))}
                   className={tabCls(active)}
                   aria-current={active ? "page" : undefined}
                 >

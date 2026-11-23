@@ -91,12 +91,11 @@ def _get_ai_client() -> Any:
 
         if not settings.anthropic_api_key:
             return None
-        import httpx
         import anthropic
 
         _ai_client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
         return _ai_client
     except Exception as exc:

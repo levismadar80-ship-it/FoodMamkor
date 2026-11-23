@@ -30,7 +30,10 @@ on:
     # not re-run the gate and the stale green stands — the marker would never
     # block anything. Removing it would likewise not clear the red without a
     # push, which rule 30 does not permit CC to manufacture.
-    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    # `edited` (22/11, Sapir): pr-evidence-guard reads the PR body, so a line
+    # added to the body must re-run it. Without it the red stood until the next
+    # push, and that push spent a Vercel deployment for nothing (#5109).
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -44,10 +47,10 @@ concurrency:
   # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
   # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
   # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
-  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-edited | ...-code
   # Each action class cancels only its own kind, so a label toggle can never
   # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled' || github.event.action == 'edited') && github.event.action || 'code' }}
   cancel-in-progress: true
 
 jobs:
@@ -222,7 +225,7 @@ jobs:
       deps: ${{ steps.filter.outputs.deps }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -250,8 +253,16 @@ jobs:
               # Without this line a PR touching only the tool skips both.
               - 'scripts/check_api_contract.py'
               - 'Dockerfile'
+              # MEH-3694: pytest reads .github itself — tests/test_meh3599_jobs_map.py
+              # reads every workflow's cron lines, tests/test_meh2952_is_test_guards.py
+              # reads .github/scripts. So any .github change still runs the backend legs.
+              - '.github/**'
+            # MEH-3694 (Sapir 22/11): only THIS file. The frontend/backend jobs
+            # below are defined here, so an edit here can break them; an edit to
+            # e2e.yml, staging-health.yml or any other workflow cannot. Before,
+            # every workflow-only PR paid for build + vitest + knip + tsc.
             workflows:
-              - '.github/workflows/**'
+              - '.github/workflows/pr-checks.yml'
             # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
             # If the two lists diverge the gate silently stops covering a manifest.
             deps:
@@ -425,7 +436,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true
@@ -604,7 +615,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true
@@ -706,7 +717,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true
@@ -757,7 +768,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true
@@ -834,7 +845,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true
@@ -1080,7 +1091,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "latest"
           enable-cache: true

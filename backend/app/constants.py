@@ -76,7 +76,10 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 #     takes responsibility for them, and is told Mehamakor checks licences
 #     only for «מאומת» ("אנחנו אחראים לבדוק אילו רישיונות… ידוע לנו שמהמקור
 #     לא בודקת רישיונות…"). Rows signed on v2 keep v2.
-DECLARATION_VERSION: str = "2026-11-v3"
+#   v4 ("2026-11-v4") — MEH-3721 (Sapir 22/11, shorter signup step): the same
+#     three elements in fewer words ("…בודקת רישיונות רק לבתי עסק עם תג
+#     «מאומת»…"). Rows signed on v3 keep v3.
+DECLARATION_VERSION: str = "2026-11-v4"
 
 # MEH-1995: the version string stamped into users.terms_version when a user
 # ticks the terms checkbox at registration. Same reasoning as

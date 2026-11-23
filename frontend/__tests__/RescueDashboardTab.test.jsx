@@ -143,7 +143,7 @@ describe("«לא הגיע» and the pickup window", () => {
     mockOrders([order({ pickup_end: new Date(Date.now() - 60_000).toISOString() })]);
     render(<RescueTab />);
     fireEvent.click(await screen.findByTestId("rescue-order-noshow"));
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no_show"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no-show"));
   });
 });
 

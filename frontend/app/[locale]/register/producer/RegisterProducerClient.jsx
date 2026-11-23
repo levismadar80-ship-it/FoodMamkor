@@ -34,10 +34,7 @@ const ADDRESS_CONFIRM_ZOOM = 16;
 import { validateIsraeliPhone } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
-import {
-  hasLicenseFormatWarning,
-  licenseRequiringCategoryNames,
-} from "@/lib/license-required-categories";
+import { licenseRequiringCategoryNames } from "@/lib/license-required-categories";
 // MEH-1977: the draft's on-disk rules (envelope, 7-day expiry, what counts as
 // content) live in one module so they can be tested without rendering this
 // wizard. What is NOT there: which step a restored draft may land on — that
@@ -160,16 +157,6 @@ function RegisterProducerPageBody({ routeKind }) {
   // block sets fieldErrors too, but moves nobody — the summary's copy
   // ("הועברתם לשדה") would be a false statement there.
   const [submitBounced, setSubmitBounced] = useState(false);
-  // MEH-952: blocking error shown next to the license field on CATEGORY when a
-  // license-required category is selected but the number is blank — surfaces the
-  // requirement at the field instead of letting the backend 422 land on STORY.
-  // The backend check in license_validation.py stays the unchanged backstop.
-  const [licenseRequiredError, setLicenseRequiredError] = useState(false);
-  // MEH-971: license-pending opt-in. When checked (license-required category
-  // only), the CATEGORY advance gate stops blocking on an empty license and the
-  // submit sends license_pending:true so the producer can register without a
-  // license number and enter the pending queue.
-  const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
@@ -210,10 +197,6 @@ function RegisterProducerPageBody({ routeKind }) {
   // can restore it. Plain ref (not state) — the value is read only inside
   // the undo handler; no re-render needed when it changes.
   const descriptionBeforeDisableRef = useRef("");
-  // MEH-530: optional path expanded-toggle. Required path renders the field
-  // directly (no toggle). Whether the path is required is derived live from
-  // the selected category IDs against the categories list fetched at mount.
-  const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
 
   // MEH-0000: every number a user SEES comes from a position in this array.
@@ -249,12 +232,11 @@ function RegisterProducerPageBody({ routeKind }) {
   const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
-  // MEH-2928: the names, not just the boolean, so the hint can say which.
-  const licenseCategoryNames = isOrganizer
-    ? []
-    : licenseRequiringCategoryNames(categories, form.category_ids);
-  const licenseRequired = licenseCategoryNames.length > 0;
-  const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
+  // Sapir 22/11: signup no longer asks for the licence number — the dashboard
+  // does (anchor #license). A licence-required category registers as
+  // license_pending, so the backend's register-time 422 is skipped.
+  const licenseRequired =
+    !isOrganizer && licenseRequiringCategoryNames(categories, form.category_ids).length > 0;
   // MEH-1807: the phone field has two distinct error sources — the pre-existing
   // as-you-type format check (fires only once something is typed) and the new
   // required-gate message (fires on empty too). One derived string so the
@@ -608,16 +590,6 @@ function RegisterProducerPageBody({ routeKind }) {
         ? prev.category_ids.filter((c) => c !== id)
         : [...prev.category_ids, id],
     }));
-    // MEH-952: any category change invalidates a prior "license required" block —
-    // clear it so re-selecting a license-required category can't resurface the
-    // error before the user clicks "next" again (the error <p> lives inside the
-    // licenseRequired branch, which remounts on re-select with stale state).
-    setLicenseRequiredError(false);
-    // MEH-971 chunk 1: a category change also drops a prior license-pending
-    // opt-in so the checkbox can't reappear pre-checked after toggling away
-    // from and back to a license-required category (payload is already guarded
-    // by licenseRequired, but the stale checked state would mislead).
-    setLicensePending(false);
   };
 
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
@@ -666,9 +638,10 @@ function RegisterProducerPageBody({ routeKind }) {
         // server's scheme guard treats "" the same, this keeps the body clean).
         // MEH-3656: the field left DETAILS; the link is added in the dashboard.
         external_order_form: null,
-        // MEH-971 chunk 1: only true when a license-required category is
-        // selected AND the opt-in box is checked (backend default False).
-        license_pending: licenseRequired && licensePending,
+        // Sapir 22/11: no licence field at signup. A licence-required category
+        // with no number (one can still arrive in a shared draft) registers as
+        // pending; the number is added in the dashboard.
+        license_pending: licenseRequired && !String(form.producer_license_number || "").trim(),
         // MEH-1471: self-reported attribution, from the STORY-step dropdown.
         // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
         // backend stores NULL. The free-text answer is sent only when "other"
@@ -1020,22 +993,12 @@ function RegisterProducerPageBody({ routeKind }) {
             categoriesFailed={categoriesFailed}
             fieldErrors={fieldErrors}
             form={form}
-            licenseCategoryNames={licenseCategoryNames}
-            licenseOptionalExpanded={licenseOptionalExpanded}
-            licensePending={licensePending}
-            licenseRequired={licenseRequired}
-            licenseRequiredError={licenseRequiredError}
-            licenseWarning={licenseWarning}
             loadCategories={loadCategories}
             numberedTitle={numberedTitle}
-            requestFocus={requestFocus}
             runRequiredGate={runRequiredGate}
             set={set}
             setAndSave={setAndSave}
             setError={setError}
-            setLicenseOptionalExpanded={setLicenseOptionalExpanded}
-            setLicensePending={setLicensePending}
-            setLicenseRequiredError={setLicenseRequiredError}
             setShowCategoryModal={setShowCategoryModal}
             setStep={setStep}
             setStepError={setStepError}

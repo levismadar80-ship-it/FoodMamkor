@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
+
+// MEH-3626: while the list loads, the chip row no longer draws every chip
+// (it drew them, then dropped the empty ones). Wait for the list first.
+const waitForChips = () => screen.findByTestId("chip-row");
 import api from "@/lib/api";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
@@ -131,6 +135,7 @@ afterEach(() => {
 describe("/events category chips are multi-select (MEH-2847)", () => {
   it("two chips → both selected, both in the URL, both sent to the API", async () => {
     render(<EventsClient />);
+    await waitForChips();
 
     clickChip(MARKET);
     clickChip(HARVEST);
@@ -142,6 +147,7 @@ describe("/events category chips are multi-select (MEH-2847)", () => {
 
   it("tapping a selected chip removes only that one", async () => {
     render(<EventsClient />);
+    await waitForChips();
 
     clickChip(MARKET);
     clickChip(HARVEST);
@@ -154,6 +160,7 @@ describe("/events category chips are multi-select (MEH-2847)", () => {
 
   it("«הכל» clears every selected chip, the URL and the API filter", async () => {
     render(<EventsClient />);
+    await waitForChips();
     clickChip(MARKET);
     clickChip(HARVEST);
     await waitFor(() => expect(urlCategories()).toEqual([MARKET, HARVEST]));
@@ -201,6 +208,7 @@ describe("/experiences category chips are multi-select too (MEH-2847)", () => {
   it("two chips → both selected, both in the URL, both sent to /experiences", async () => {
     setUrl("/experiences");
     render(<EventsClient initialTab="experiences" />);
+    await waitForChips();
 
     clickChip(COOKING);
     clickChip(FOOD_TOUR);

@@ -1,8 +1,11 @@
 /**
  * MEH-3672 — the screen index behind /admin/copy is built from the code.
  *
- * 1. The committed lib/copy-screens.json equals a fresh build, so a
- *    page that starts reading a new group cannot leave the admin screen wrong.
+ * 1. MEH-3693: lib/copy-screens.json is not committed. It is written by the
+ *    builder on `npm install` / `npm run dev` / `npm run build`
+ *    (package.json postinstall / predev / prebuild), so no branch can carry a
+ *    stale copy. The test checks the hooks are wired and that the builder
+ *    writes the file the page imports.
  * 2. The detector itself, on inputs with a known answer (namespace call,
  *    options-object namespace, root `useTranslations()` + t("group.key"), a
  *    group that is not in he.json), and on the real tree: /map reads `map`.
@@ -12,6 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   build,
+  OUT as BUILDER_OUT,
   groupsInSource,
   routeOf,
 } from "../scripts/build-copy-screens.mjs";
@@ -20,9 +24,28 @@ const OUT = path.join(__dirname, "..", "lib", "copy-screens.json");
 const GROUPS = new Set(["map", "admin", "seo", "common"]);
 
 describe("copy-screens.json", () => {
-  it("is up to date with the code (run `node scripts/build-copy-screens.mjs`)", () => {
-    const committed = JSON.parse(fs.readFileSync(OUT, "utf8"));
-    expect(committed).toEqual(build());
+  it("is generated, not committed: the builder writes lib/copy-screens.json on install, dev and build", () => {
+    // Source-text by nature for the two config reads below (package.json and
+    // .gitignore are not run by anything a test can call) — testing.md MEH-3531.
+    expect(path.resolve(BUILDER_OUT)).toBe(path.resolve(OUT));
+    const { scripts } = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"),
+    );
+    for (const hook of ["postinstall", "predev", "prebuild"]) {
+      expect(scripts[hook], hook).toContain("scripts/build-copy-screens.mjs");
+    }
+    const ignore = fs.readFileSync(
+      path.join(__dirname, "..", "..", ".gitignore"),
+      "utf8",
+    );
+    expect(ignore.split("\n")).toContain("frontend/lib/copy-screens.json");
+  });
+
+  it("the file the install hook wrote matches a fresh build of this tree", () => {
+    // npm ci ran postinstall before vitest, so the file exists in CI; if the
+    // hook stopped running this goes red (missing file) instead of passing.
+    const written = JSON.parse(fs.readFileSync(OUT, "utf8"));
+    expect(written).toEqual(build());
   });
 
   it("names /map as a screen that reads the map group (real tree)", () => {

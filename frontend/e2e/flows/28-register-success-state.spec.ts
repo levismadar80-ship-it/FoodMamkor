@@ -67,8 +67,8 @@ async function stubSession(page, roleRef: { current: string }) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      // id 1 mirrors flows/18: a license-required category, so the MEH-952
-      // inline license gate is exercised rather than bypassed.
+      // id 1 mirrors flows/18: a license-required category (no licence field
+      // at signup since 22/11 — it registers as pending).
       body: JSON.stringify([
         // MEH-2139: CategorySelector keys the POPULAR grid by `slug`, not by the
         // Hebrew name — a slug-less stub renders no chip at all.
@@ -99,7 +99,6 @@ async function driveWizardToStorySubmitReady(page) {
 
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
   await page.getByTestId("category-chip-1").click();
-  await page.getByTestId("register-category-license").fill("1234567");
 
   for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
     await cb.check();

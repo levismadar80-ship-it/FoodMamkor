@@ -570,6 +570,15 @@
       "notes": "Authored locally during 2026-05-10 batch conflict resolution session. Pure documentation — codifies 6 categorization rules for git merge conflict resolution. No scripts, no network calls.",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": []
+    },
+    "last30days": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Authored internally (MEH-3730) as a light local replacement for mvanhorn/last30days-skill, which was rejected: 795 files, a Python engine calling many hosts, two paid API keys. This one is prose only: a single SKILL.md, no scripts, no executables, no tools/ path, no env vars or credentials. Its only network use is the session's own WebSearch / WebFetch tools under the operator's permissions; the skill adds method, not capability. Audited 2026-11-23: read end to end, no exec/network/secret/prompt-injection patterns beyond the prose mention of WebSearch/WebFetch.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
     }
   }
 }

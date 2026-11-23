@@ -422,6 +422,7 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
+    capacity.refuse_own_group(gb, current_user)  # MEH-3691
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
     # relationship and can be stale within the serialized critical section.

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
 import { findExperienceCategory, OTHER_CATEGORY } from "../../lib/event-categories";
+import { layoutSettled } from "./_layout-settled";
 
 /**
  * Spec:     47-item-back-row
@@ -48,6 +49,9 @@ for (const kind of ["events", "experiences"] as const) {
     await page.goto(`/${kind}`);
     const card = page.locator(`a[href$="/${kind}/${item.id}"]`).first();
     await expect(card, `the /${kind} list must link to ${item.id}`).toHaveCount(1);
+    // MEH-3729: the list still shifts (images, chips) when the card first
+    // appears; a click inside that window is lost with no error (MEH-3449).
+    await layoutSettled(card);
     await card.click();
     await expect(page).toHaveURL(new RegExp(`/${kind}/${item.id}(?:[?#]|$)`));
 

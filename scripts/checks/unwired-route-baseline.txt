@@ -49,8 +49,12 @@ GET	/webhook/whatsapp	webhook
 POST	/webhook/whatsapp	webhook
 GET	/health	health
 GET	/health/places	health
+GET	/health/ai	health
 GET	/health/liveness	health
 GET	/health/readiness	health
 #
 # --- real gaps: built on the server, no screen yet. Each has its card.
 POST	/producers/me/availability-confirm	pending-ui	MEH-2697
+#
+# --- old spellings kept through a release, each with the card that removes it
+POST	/rescue/orders/{_}/no_show	unused	MEH-3711

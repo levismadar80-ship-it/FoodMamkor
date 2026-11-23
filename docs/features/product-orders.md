@@ -28,5 +28,6 @@
 * `frontend/__tests__/OrderOnboarding.test.jsx` (הכרטיס, רשימת הצעדים ושורת העמלה)
 * `frontend/__tests__/ProductOrdersDashboard.test.jsx`, `frontend/__tests__/OrderStatusPage.test.jsx`, `frontend/__tests__/OrderAddToCalendar.test.jsx`, `frontend/__tests__/OrderWriteReview.test.jsx`, `tests/test_meh3620_order_review_url.py`, `tests/test_meh3624_order_review_email.py`, `frontend/__tests__/OrderCart.test.js`, `frontend/__tests__/OrderCartRows.test.jsx`, `frontend/__tests__/OrderSheet.test.jsx`, `frontend/__tests__/OrderSheetVerifiedPhone.test.jsx`, `tests/test_meh3680_verified_buyer_order.py`
 * `tests/test_meh3216_order_cart.py`, `tests/test_meh3216_order_quote.py`
+* `tests/test_meh3691_no_self_buying.py` — חשבון מחובר של בית עסק לא מזמין מבית העסק של עצמו (403, נבדק לפני קוד הטלפון); בית עסק אחר מזמין כמו כל לקוח (MEH-3691).
 * `tests/test_meh3617_product_variants.py` · `frontend/__tests__/ProductVariantsOrder.test.jsx` · `frontend/__tests__/ProductVariantsField.test.jsx` — אפשרויות: 0 / 1 / רבות, אחת שאזלה, כולן אזלו, מחיר מהשרת, הרשאות, תקרה, JSON-LD.
 * `tests/test_meh3618_product_weekdays.py` · `frontend/__tests__/ProductWeekdays.test.jsx` — ימים: NULL, עגלה עם 0 / 1 / רבים עם יום משותף / בלי, שעון ישראל (חמישי 23:30, שישי 00:30, שעון קיץ), property test של מסכה ↔ ימים, IDOR.
