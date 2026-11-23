@@ -90,7 +90,7 @@ export function shekels(agorot) {
  * HH:MM in Asia/Jerusalem.
  *
  * NOT `toLocaleTimeString` with no zone: the browser's zone is the visitor's,
- * and a pickup window is a fact about a shop in Israel. `lib/orderWindow.js`
+ * and a pickup window is a fact about a shop in Israel. `lib/order-window-status.js`
  * owns the same primitive for store hours (israel-clock-guard, MEH-1988) —
  * this formats an instant rather than deriving "open now", so it reads the
  * zone directly instead of reaching into that module's day logic.

@@ -58,7 +58,7 @@ import { EVENT_CATEGORIES, findExperienceCategory } from "@/lib/event-categories
 import { israelLocalToUtcStamp } from "@/lib/event-ics";
 import { eventWhen } from "@/lib/event-when";
 import { formatEventDate } from "@/lib/format-date";
-import { israelNowParts } from "@/lib/orderWindow";
+import { israelNowParts } from "@/lib/order-window-status";
 import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 import StruckPrice from "@/components/ui/StruckPrice";

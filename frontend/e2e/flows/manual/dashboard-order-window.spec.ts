@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
  *           save exercises the seed parser on what the client sent. That is a
  *           client round-trip, not persistence: no byte reaches a server.
  * Does NOT: cover the public-page status between ranges (MT:MEH-1869:8 —
- *           /producer/[id] page group, lib/orderWindow status helper), or
+ *           /producer/[id] page group, lib/order-window-status status helper), or
  *           mobile (MT:MEH-1869:9). Does NOT cover MT:MEH-1870 / MT:MEH-1403 /
  *           MT:MEH-1884:6-7 — see the drift block: the surfaces those rows
  *           describe no longer exist.

@@ -201,7 +201,7 @@ the ticket's "same problem solved differently in different places":
 | Surface | What it owns |
 |---|---|
 | `frontend/lib/order-window.js` (3.4 KB, 2 consumers) | editor ↔ backend JSONB serialization |
-| `frontend/lib/orderWindow.js` (7.3 KB, 5 consumers) | open / closing-soon / closed status + display ranges |
+| `frontend/lib/order-window-status.js` (7.3 KB, 5 consumers) | open / closing-soon / closed status + display ranges |
 | `HoursEditor.jsx:173` | 47 lines shared with ↓ |
 | `OrderWindowEditor.jsx:134` | …this |
 
@@ -210,12 +210,12 @@ not a "delete one" case — and it would be wrong to report it as one. But two
 things are real:
 
 1. **The weekday list has two owners.** `ORDER_WINDOW_DAYS`
-   (`order-window.js:21`) and `ORDER_DAY_KEYS` (`orderWindow.js:27`) are
+   (`order-window.js:21`) and `ORDER_DAY_KEYS` (`order-window-status.js:27`) are
    **byte-identical** seven-element arrays. That is Smell #1 from
    `.claude/rules/workflow.md` — two parallel mechanisms owning one fact, each
    working fine on its own, drift invisible until it bites.
 2. **The filenames differ only by casing convention** — `order-window.js` vs
-   `orderWindow.js` in the same directory. Independently of the duplication,
+   `order-window-status.js` in the same directory. Independently of the duplication,
    that is a trap for anyone importing by memory.
 
 **Fix S** for the shared constant, **M** for the editor clone. 🟢 GREEN
@@ -250,7 +250,7 @@ important line in this report: the other two "unused files"
 the same treatment before anyone touches them.
 
 **2 · "Unused export" ≠ "unused code".** Knip flags `ORDER_DAY_KEYS`
-(`orderWindow.js:27`) as an unused export — accurate, and harmless: the constant
+(`order-window-status.js:27`) as an unused export — accurate, and harmless: the constant
 is used three times *inside its own module* (`:85`, `:158`, `:174`). Only the
 `export` keyword is unnecessary. The same applies to the
 `components/ui/index.js` entries (`EmptyState`, `Popover`, `Tooltip`,

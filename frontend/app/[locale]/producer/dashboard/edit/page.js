@@ -95,7 +95,7 @@ import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
@@ -226,7 +226,7 @@ function EditPageInner() {
   const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
-  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  // WhatsAppQuestionChips does (lib/resolved-questions.js explains why).
   const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");

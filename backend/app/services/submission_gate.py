@@ -102,7 +102,7 @@ ORGANIZER_SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
 def _is_usable_coord(value: object) -> bool:
     """A coordinate is usable only when it is a real, non-NaN number.
 
-    Mirrors producerPoints.js:20's `isUsableCoord`. `bool` is excluded
+    Mirrors producer-points.js:20's `isUsableCoord`. `bool` is excluded
     explicitly because in Python `isinstance(True, int)` is True, so a stray
     boolean would otherwise read as the latitude 1.
     """
@@ -115,7 +115,7 @@ def _has_location(producer: Producer) -> bool:
     """True when the business has told us where it is — by whichever of the
     two shapes applies to it.
 
-    Mirrors producer-completeness.js:50-72 + producerPoints.js, which is what
+    Mirrors producer-completeness.js:50-72 + producer-points.js, which is what
     the dashboard checklist shows the owner. The two must agree: a checklist
     row that reads done while the server 422s on the same field is the worst
     possible version of this feature.

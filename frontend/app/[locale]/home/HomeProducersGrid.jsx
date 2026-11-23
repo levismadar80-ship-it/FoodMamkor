@@ -21,7 +21,7 @@ import { chipsToQuery } from "@/lib/filter-url";
 import { useChipCopy } from "@/lib/use-chip-copy";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 // MEH-2767: visibleAxisChips is the one chip gate home, /producers and /map
 // share (it replaced MEH-1934's visibleGatedDietKeys + MEH-2131's open-now
@@ -158,7 +158,7 @@ export function HomeProducersGrid({
   // MEH-2131: same clock discipline as /producers — null through the SSR pass
   // and the first client render, filled in afterwards. The chip's PRESENCE
   // depends on it, so reading `new Date()` during render would make the server
-  // and client DOM disagree (lib/orderWindow.js header).
+  // and client DOM disagree (lib/order-window-status.js header).
   const [openNowClock, setOpenNowClock] = useState(null);
   useEffect(() => {
     setOpenNowClock(new Date());
@@ -242,7 +242,7 @@ export function HomeProducersGrid({
   // since the row scrolls sideways on a phone and would clip it. State, not a
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
-  // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
+  // MEH-2537: focus under the sticky «סינון» — lib/keep-focused-chip-clear.js.
   return (
     // MEH-2712: pb-8 so the gap to the mini-map below is 56px on phones, not
     // ~104px. MEH-2747: the mini-map follows this grid on desktop too now, so

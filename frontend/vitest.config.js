@@ -4,7 +4,7 @@ import { transformWithOxc } from "vite";
 import path from "path";
 
 // MEH-729: ~55 source files carry JSX inside a `.js` extension
-// (lib/highlightMatch.js:18, lib/auth-context.js:173, app/**/page.js …).
+// (lib/highlight-match.js:18, lib/auth-context.js:173, app/**/page.js …).
 // Vitest's oxc transform derives the parser `lang` from the file extension,
 // so a `.js` file is parsed as plain JS and throws
 // `[PARSE_ERROR] Unexpected JSX expression`. Next.js/SWC tolerates JSX-in-.js

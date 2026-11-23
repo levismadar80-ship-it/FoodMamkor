@@ -8,7 +8,7 @@ import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
-import { firstFailureMessage } from "@/lib/passwordMessages";
+import { firstFailureMessage } from "@/lib/password-messages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
