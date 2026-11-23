@@ -409,6 +409,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `home-categories.js` | Category card data for the homepage category grid. Pure module (no React imports) so it can be consumed by both the HomeCategoryGrid component … |
 | `hours-serialize.js` | The inverse of lib/hours.parseHours — turn the structured 7-day opening-hours editor model into the canonical backend string ("Sun-Thu 09:00-18:00, Fri … |
 | `hours.js` | Parse a producer's 'opening_hours' string and compute the current open/closed status in Asia/Jerusalem time. … |
+| `hub-faq.js` | MEH-3737: which questions each hub list shows under it, in order. The keys name 'items.<key>' in the messages namespace of each list. … |
 | `hub-landing.js` | MEH-2975 — where a link to the listing hub should land. The hub is four routes under one tab row (ListingHubTabs); … |
 | `hub-layout.js` | MEH-3013: the content width every «מה קורה» hub tab uses below the shared head (components/HubShell.jsx) — the same width the tab row and hero text use. … |
 | `i18n-seo.js` | Shared i18n SEO helpers — MEH-476 PR 3b2. |
@@ -634,6 +635,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `HomepageMiniMapSkeleton.jsx` | SSR-able loading fallback for the HomepageMiniMap dynamic import on the homepage. Reserves height on first paint (before JS hydrates) so the above-the-fold … |
 | `HoursText.jsx` | MEH-2604: free-text hours as the owner typed them («א׳–ה׳ 9:00–17:00»), rendered inside the RTL page with every time RANGE isolated left-to-right. |
 | `HubAlertHint.jsx` | MEH-3117 — the way out of an empty hub tab (/rescue, /group-buys): one line saying how to hear about the next one (save a business, turn on its alert) and a … |
+| `HubFaq.jsx` | A short «שאלות נפוצות» block at the bottom of a hub list (/group-buys, /rescue): closed <details> rows and the matching FAQPage JSON-LD, both built from the … |
 | `HubShell.jsx` | MEH-3013 — the ONE head every «מה קורה» tab renders: the photo hero (eyebrow · H1 · subtitle) and, directly under it, the shared tab row. … |
 | `ImageGallery.jsx` | — אין כותרת — |
 | `ImageWithFallback.jsx` | — אין כותרת — |

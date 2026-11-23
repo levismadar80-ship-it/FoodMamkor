@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import HubShell from "@/components/HubShell";
 import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
 import HubFaq from "@/components/HubFaq";
+import { HUB_FAQ } from "@/lib/hub-faq";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import { buildAlternates } from "@/lib/i18n-seo";
@@ -29,9 +30,6 @@ export async function generateMetadata({ params }) {
     alternates: buildAlternates("/rescue", locale),
   };
 }
-
-// MEH-3737: the questions shown, in order (messages rescue.faq.items).
-const RESCUE_FAQ = ["contents", "allergens", "pay", "cancel", "no_show", "mine"];
 
 // MEH-3049: the locale is passed explicitly and set for the request. Without it
 // next-intl falls back to headers(), which turned /rescue into a per-request
@@ -71,7 +69,7 @@ export default async function RescuePage({ params }) {
         <RescueList />
       </div>
       {/* MEH-3737: common questions under the list, with FAQPage JSON-LD. */}
-      <HubFaq namespace="rescue.faq" keys={RESCUE_FAQ} anchor="faq" path="/rescue" />
+      <HubFaq faq={HUB_FAQ.rescue} locale={locale} />
     </div>
   );
 }

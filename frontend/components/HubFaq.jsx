@@ -15,25 +15,30 @@
 import { getTranslations } from "next-intl/server";
 import { CaretDown } from "@phosphor-icons/react/ssr";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { SITE_URL, serializeJsonLd } from "@/lib/seo";
+import { serializeJsonLd } from "@/lib/seo";
+import { urlForLocalePath } from "@/lib/i18n-seo";
+import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
 
 /**
- * @param {{ namespace: string, keys: string[], anchor: string, path: string }} props
+ * @param {{ faq: { namespace: string, keys: readonly string[], path: string }, locale: string, anchor?: string }} props
  *   namespace: messages root holding `items.<key>.q|a`. The heading is the
  *   shared «שאלות נפוצות» (diet_pages.faq_heading), not a copy of it.
  */
-export default async function HubFaq({ namespace, keys, anchor, path }) {
-  const t = await getTranslations(namespace);
-  const tHeading = await getTranslations("diet_pages");
+export default async function HubFaq({ faq, locale, anchor = "faq" }) {
+  const { namespace, keys, path } = faq;
+  // DO NOT drop `locale` — without it next-intl reads headers() and the hub
+  // page turns per-request (MEH-3049, HubRoutesStaticGuard).
+  const t = await getTranslations({ locale, namespace });
+  const tHeading = await getTranslations({ locale, namespace: "diet_pages" });
   const items = keys.map((k) => ({ key: k, q: t(`items.${k}.q`), a: t(`items.${k}.a`) }));
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${SITE_URL}${path}#${anchor}`,
+    "@id": `${urlForLocalePath(path, locale)}#${anchor}`,
     mainEntity: items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: i.a } })),
   };
   return (
-    <section id={anchor} aria-labelledby={`${anchor}-title`} className="max-w-5xl mx-auto px-4 pb-16" data-testid="hub-faq">
+    <section id={anchor} aria-labelledby={`${anchor}-title`} className={`${HUB_CONTENT_CLASS} pb-16`} data-testid="hub-faq">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <SectionHeading id={`${anchor}-title`} size="content" className="mb-3">
         {tHeading("faq_heading")}
