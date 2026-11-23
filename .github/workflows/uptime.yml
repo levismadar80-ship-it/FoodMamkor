@@ -35,6 +35,10 @@ jobs:
       # outage issue needs two consecutive failing ticks, so a URL probed on
       # every other tick could never open one.
       PLACES_URL: https://mehamakor.co.il/api/health/places
+      # MEH-3724: the Anthropic client, built as the product builds it, plus
+      # one token-free call (list models). AI fails open, so this is the only
+      # signal that chat/moderation/bio/menu/risk went quietly "offline".
+      AI_URL: https://mehamakor.co.il/api/health/ai
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
@@ -64,6 +68,13 @@ jobs:
           echo "$PLACES_URL -> HTTP $pcode"
           if [ "$pcode" != "200" ] || ! printf '%s\n' "$pbody" | grep -q '"status":"ok"'; then
             echo "::warning::Google Places check not ok: $(printf '%s\n' "$pbody" | head -n 1 | cut -c1-200)"
+            fail=1
+          fi
+          abody=$(curl -sS --max-time 20 --retry 2 --retry-delay 5 -w '\n%{http_code}' "$AI_URL" || printf '\n000')
+          acode=$(printf '%s\n' "$abody" | tail -n 1)
+          echo "$AI_URL -> HTTP $acode"
+          if [ "$acode" != "200" ] || ! printf '%s\n' "$abody" | grep -q '"status":"ok"'; then
+            echo "::warning::AI check not ok: $(printf '%s\n' "$abody" | head -n 1 | cut -c1-200)"
             fail=1
           fi
           hdr=$(curl -sS -o /dev/null -D - --max-time 20 --retry 2 --retry-delay 5 \
@@ -140,7 +151,7 @@ jobs:
               # first failure: create closed, marked pending; the next tick decides
               n=$(gh issue create --title "$title" --label uptime --body "first-failure-pending" | grep -oE '[0-9]+$')
               gh issue close "$n" --comment "first failure at $now — waiting for the next tick before alerting ($RUN_URL)"
-            fi 
+            fi
           else
             if [ -n "$open" ]; then
               gh issue close "$open" --comment "recovered at $now — $RUN_URL"
