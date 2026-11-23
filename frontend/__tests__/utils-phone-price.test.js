@@ -81,7 +81,7 @@ it("landline 03-123-4567 → empty (not a WhatsApp number)", () => {
 
 // --- Garbage-in, garbage-out (doesn't crash) ---
 it("letters stripped, too few digits left: 050-abc-1234 → empty", () => {
-  // Only digits survive, and 9 of them is not a full mobile number.
+  // Only digits survive (0501234 → 972501234), too short for a mobile number.
   expect(normalizePhone("050-abc-1234")).toBe("");
 });
 

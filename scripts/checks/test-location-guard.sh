@@ -19,8 +19,8 @@
 #
 # THE RULES
 #   1. Under frontend/, a *.test.* / *.spec.* file lives in frontend/__tests__/
-#      (and ends .js/.jsx/.ts/.tsx — vitest's include) or in frontend/e2e/
-#      (Playwright's testDir; its projects pick the subfolders).
+#      (as *.test.{js,jsx,ts,tsx} — vitest's include) or in a frontend/e2e/
+#      folder a Playwright config collects (flows, visual, golden, mobile-audit).
 #   2. Under backend/, no test_*.py: pytest runs the repo-root
 #      tests/ only (tests/CLAUDE.md).
 #
@@ -37,7 +37,12 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
+# Pre-existing specs no CI config collects (playwright.config.ts testMatch is
+# e2e/flows + e2e/visual; golden has its own). Run by hand; listed so a NEW
+# one still fails. Found by the MEH-3714 reviewer.
 ALLOW=(
+  frontend/e2e/rtl.spec.ts
+  frontend/e2e/screenshots.spec.ts
 )
 
 # Prints a reason when PATH breaks a rule, nothing when it is fine.
@@ -49,10 +54,15 @@ classify() {
   esac
   if [[ "$p" == frontend/* ]] && [[ "$(basename "$p")" =~ \.(test|spec)\.[a-z]+$ ]]; then
     case "$p" in
-      frontend/e2e/*) return 0 ;;
+      # playwright.config.ts collects flows + visual, its golden project golden;
+      # playwright.mobile-audit.config.ts collects mobile-audit.
+      frontend/e2e/flows/*|frontend/e2e/visual/*|frontend/e2e/golden/*|frontend/e2e/mobile-audit/*) return 0 ;;
+      frontend/e2e/*)
+        echo "in frontend/e2e but outside flows/, visual/, golden/, mobile-audit/ — no Playwright config collects it"
+        return 0 ;;
       frontend/__tests__/*)
-        [[ "$p" =~ \.(js|jsx|ts|tsx)$ ]] && return 0
-        echo "in __tests__ but vitest only collects .js/.jsx/.ts/.tsx (vitest.config.js include)"
+        [[ "$p" =~ \.test\.(js|jsx|ts|tsx)$ ]] && return 0
+        echo "in __tests__ but vitest only collects *.test.{js,jsx,ts,tsx} (vitest.config.js include)"
         return 0 ;;
     esac
     echo "outside frontend/__tests__/ and frontend/e2e/ — no runner collects it"
@@ -77,6 +87,9 @@ if [ "${1:-}" = "--self-test" ]; then
   expect bad frontend/components/Foo.test.jsx
   expect bad frontend/__tests__/foo.test.mjs
   expect bad backend/app/services/test_money.py
+  expect bad frontend/__tests__/foo.spec.js
+  expect bad frontend/e2e/new-probe.spec.ts
+  expect ok  frontend/e2e/mobile-audit/mobile-audit.spec.ts  # real file, own config
   expect ok  frontend/__tests__/utils-phone-price.test.js   # real file (MEH-1909 anchor)
   expect ok  frontend/e2e/flows/05-map-navigation.spec.ts   # real file
   expect ok  frontend/lib/utils.js
