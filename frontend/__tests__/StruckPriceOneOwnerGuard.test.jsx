@@ -57,13 +57,9 @@ describe("StruckPrice renders", () => {
   });
 });
 
-// Files allowed to strike a price by hand, with the reason. Keep it short.
-const HAND_STRUCK_ALLOWED = {
-  // Open PR #5044 rewrites both (OfferCard); the follow-up moves them here.
-  "app/[locale]/producer/[id]/components/ProducerActivities.jsx": "#5044 owns it",
-  "components/rescue/RescueSection.jsx": "#5044 owns it",
-  "components/ui/OfferCard.jsx": "added by #5044; moves to StruckPrice after it",
-};
+// Files allowed to strike a price by hand, with the reason. Keep it empty:
+// since #5044 merged (21/11) every struck price goes through StruckPrice.
+const HAND_STRUCK_ALLOWED = {};
 
 const SCAN_DIRS = ["app", "components"];
 const SKIP = /__tests__|\.(test|spec)\.|node_modules|\.next/;
@@ -158,7 +154,11 @@ describe("one owner for a struck price", () => {
     for (const f of files) {
       const rel = path.relative(ROOT, f).split(path.sep).join("/");
       if (rel === "components/ui/StruckPrice.jsx" || rel in HAND_STRUCK_ALLOWED) continue;
-      const lines = handStruckPrices(fs.readFileSync(f, "utf8"));
+      const src = fs.readFileSync(f, "utf8");
+      // Parsing ~1,000 files with babel ran past the 5 s timeout on CI. Both
+      // struck shapes need one of these strings literally, so the rest are skipped.
+      if (!/line-through|<s[\s>]/.test(src)) continue;
+      const lines = handStruckPrices(src);
       for (const l of lines) offenders.push(`${rel}:${l}`);
     }
     expect(offenders, "use <StruckPrice> from components/ui/StruckPrice.jsx").toEqual([]);

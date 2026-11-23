@@ -565,7 +565,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     private CI mode (testing.md «Two CI modes», MEH-3453) the label is also
     what starts the run at all; the shard count is 4 on a public PR, 2 else. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
     the run read `cancelled`). Rule 39 = when a red may be passed; this = there
-    must be a run at all.
+    must be a run at all. Exempt: a PR whose only `frontend/` files are unit tests
+    (`frontend/__tests__/**`, `*.test.*` outside `frontend/e2e/`) — the E2E
+    suite neither runs nor ships them (Sapir 22/11, MEH-3694;
+    `pr-evidence-guard.sh` holds it). It still needs the rule-5a reviewer.
 41. **Nothing merges to staging while staging is red — any session, any PR
     (Sapir 11/11).** The only PR that may merge into a red staging is the one
     that fixes the red, and its body says so.
@@ -600,6 +603,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     (18/11). A PR that adds Hebrew to
     `frontend/messages/he.json` fails `scripts/checks/hebrew-copy-skills-guard.sh` unless its `Skills:` line names
     `hebrew-content-writer` and `clarify`.
+    A PR that adds a component, hook or helper module also carries `Reuse:`
+    (what existing code it checked first, MEH-3612); `reuse-line-guard.sh` warns.
 
     | Task | Skills |
     |---|---|

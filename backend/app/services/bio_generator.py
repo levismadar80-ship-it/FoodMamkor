@@ -34,11 +34,10 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
         return _client
     except Exception as e:

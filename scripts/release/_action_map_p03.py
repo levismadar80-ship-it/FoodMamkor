@@ -557,7 +557,7 @@ EXTRAS: list[Extra] = [
         "rescue: handover / no-show before the pickup window closed",
         [
             [
-                "POST /rescue/orders/{order_id}/no_show",
+                "POST /rescue/orders/{order_id}/no-show",
                 "POST /rescue/orders/{order_id}/handed",
             ]
         ],

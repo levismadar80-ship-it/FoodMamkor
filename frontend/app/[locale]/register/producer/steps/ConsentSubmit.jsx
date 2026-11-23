@@ -150,7 +150,9 @@ export default function ConsentSubmit({ agreedToTerms, backTestId, beforeSubmit,
           email: (_chunks) => (
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="text-primary underline break-all"
+              // whitespace-nowrap, not break-all: break-all split the address after its
+              // first letter at 390 (Sapir 22/11). It fits one line on a phone.
+              className="text-primary underline whitespace-nowrap"
               dir="ltr"
             >
               {CONTACT_EMAIL}

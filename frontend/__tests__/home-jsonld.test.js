@@ -1,8 +1,8 @@
 // MEH-804: the homepage previously emitted no JSON-LD. buildHomeJsonLd()
-// supplies the site-level Organization + WebSite graph plus a SearchAction
-// (sitelinks search box). These guards lock the @id wiring (must match
-// buildJsonLd's #organization/#website so the cross-page graph is consistent),
-// the SearchAction target (/producers?q= — the real param, MEH-819), and locale-awareness.
+// supplies the site-level Organization + WebSite graph. These guards lock the
+// @id wiring (must match buildJsonLd's #organization/#website so the
+// cross-page graph is consistent), the absence of the retired SearchAction
+// (MEH-3638), and locale-awareness.
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({
@@ -28,11 +28,10 @@ describe("buildHomeJsonLd (MEH-804)", () => {
     expect(org.logo.url).toBe(`${SITE}/logo.png`);
   });
 
-  it("includes a SearchAction targeting the real /producers?q= param", () => {
-    const { potentialAction } = webNode("he");
-    expect(potentialAction["@type"]).toBe("SearchAction");
-    expect(potentialAction.target.urlTemplate).toBe(`${SITE}/producers?q={search_term_string}`);
-    expect(potentialAction["query-input"]).toBe("required name=search_term_string");
+  // MEH-3638: Google retired the sitelinks search box; the markup is gone.
+  it("carries no SearchAction", () => {
+    expect(webNode("he")).not.toHaveProperty("potentialAction");
+    expect(webNode("en")).not.toHaveProperty("potentialAction");
   });
 
   it("is locale-aware on inLanguage", () => {

@@ -979,6 +979,10 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
+    # MEH-3630: weekly wipe + re-seed of the staging DB, staging only.
+    from app.services import staging_reset_job
+
+    staging_reset_job.register(followup_scheduler)
     # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED), and
     # MEH-3535: the email queue — both here unless the worker service owns them.
     _register_outbox_jobs(followup_scheduler)
@@ -1096,6 +1100,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # (The staging weekly reset takes an advisory lock anyway — MEH-3630.)
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
 

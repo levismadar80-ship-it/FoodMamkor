@@ -59,7 +59,12 @@ def _install_anthropic_mock(
 
     fake_client = SimpleNamespace(messages=SimpleNamespace(create=messages_create))
 
-    fake_anthropic = SimpleNamespace(Anthropic=lambda **kwargs: fake_client)
+    # The real module exposes DefaultHttpxClient (anthropic 1.0+, httpx2);
+    # producer_risk passes it as http_client, so the fake must too.
+    fake_anthropic = SimpleNamespace(
+        Anthropic=lambda **kwargs: fake_client,
+        DefaultHttpxClient=lambda **kwargs: MagicMock(),
+    )
     fake_httpx = SimpleNamespace(Client=lambda **kwargs: MagicMock())
 
     monkeypatch.setitem(__import__("sys").modules, "anthropic", fake_anthropic)
