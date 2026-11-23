@@ -5058,6 +5058,16 @@ export const HealthAliasHeadResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zo
 
 
 /**
+ * Is the Anthropic client buildable and answering right now?
+ *
+ * Unauthenticated so the uptime cron can hit it; rate-limited, and the call
+ * it makes spends no tokens. 503 is the alerting signal.
+ * @summary Ai Health
+ */
+export const AiHealthHealthAiGetResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Liveness
  */
 export const LivenessHealthLivenessGetResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown())

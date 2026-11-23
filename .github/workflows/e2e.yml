@@ -101,7 +101,9 @@ jobs:
         actions: read
         pull-requests: read
       outputs:
-        frontend: ${{ steps.filter.outputs.frontend }}
+        # MEH-3694: on a PR, a frontend diff made only of unit tests is not a
+        # frontend change for this suite (it neither runs nor ships them).
+        frontend: ${{ steps.unit_only.outputs.only == 'true' && 'false' || steps.filter.outputs.frontend }}
         backend: ${{ steps.filter.outputs.backend }}
         nightly_unchanged: ${{ steps.nightly.outputs.unchanged }}
       steps:
@@ -162,7 +164,7 @@ jobs:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
           with:
             fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
-        - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
+        - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
           id: filter
           with:
             filters: |
@@ -183,6 +185,29 @@ jobs:
                 - 'backend/pyproject.toml'
                 - 'backend/alembic.ini'
                 - 'scripts/e2e/**'
+        # MEH-3694 (Sapir 22/11): a PR whose frontend files are all vitest unit
+        # tests (frontend/__tests__/**, *.test.* outside frontend/e2e/) does not
+        # start the suite in public mode. PR only — push, nightly and manual runs
+        # keep the plain filter. Fails closed: if this step errors, the job fails
+        # and E2E gate goes red on R_FILTER. Same list as pr-evidence-guard.sh's
+        # is_unit_test_file (rule 40's exemption).
+        - name: Unit-test-only frontend diff? (MEH-3694)
+          id: unit_only
+          if: github.event_name == 'pull_request' && steps.filter.outputs.frontend == 'true'
+          run: |
+            set -euo pipefail
+            # --no-renames: a file moved from frontend/lib/ into __tests__/ lists
+            # both paths, so the shipped side still counts.
+            files="$(git diff --name-only --no-renames HEAD^1 HEAD)"
+            [ -n "$files" ] || { echo "::error::empty diff against HEAD^1"; exit 1; }
+            # The prefixes are the `frontend` filter's globs above; keep the two
+            # lists equal. One awk, no `|| true`: any failure here fails the job.
+            rest="$(printf '%s\n' "$files" | awk '
+              /^(frontend\/|public\/|package\.json$|package-lock\.json$)/ &&
+              !(/^frontend\/__tests__\// || (/\.test\.(js|jsx|ts|tsx|mjs)$/ && !/^frontend\/e2e\//))')"
+            if [ -z "$rest" ]; then only=true; else only=false; fi
+            echo "only=$only" >> "$GITHUB_OUTPUT"
+            echo "frontend files that are not unit tests: ${rest:-none} -> only=$only"
 
   e2e:
     # NOTE (MEH-1044): job name kept verbatim although the target is now

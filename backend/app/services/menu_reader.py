@@ -105,15 +105,14 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
-        # CLAUDE.md lock: always an explicit httpx.Client. A menu with several
+        # CLAUDE.md lock: always the SDK's DefaultHttpxClient (httpx2). A menu with several
         # pages takes ~5–15 s; 60 s and no retry stay under the browser's
         # 120 s upload timeout (lib/api.js), so a slow read ends as a 503 the
         # screen can show, not as a request the browser gave up on.
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(timeout=60.0),
+            http_client=anthropic.DefaultHttpxClient(timeout=60.0),
             max_retries=0,
         )
     except Exception as exc:  # pragma: no cover - import failure only

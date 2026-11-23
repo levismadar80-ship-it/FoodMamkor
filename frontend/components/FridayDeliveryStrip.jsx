@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { producerPath } from "@/lib/producer-path";
 
 function ProducerMiniCard({ producer }) {
   // Strings live under group_buys.friday_delivery (today/title/title_alt) —
@@ -33,7 +34,7 @@ function ProducerMiniCard({ producer }) {
 
   return (
     <Link
-      href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
+      href={producerPath(producer)}
       className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface transition group"
       aria-label={producer.name}
     >

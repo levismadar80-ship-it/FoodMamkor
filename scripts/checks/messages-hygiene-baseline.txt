@@ -125,6 +125,7 @@ duplicate	2	השמירה לא הצליחה — בדקו את החיבור ונס
 duplicate	2	התג הוסר
 duplicate	2	התחברו
 duplicate	2	התקשרו
+duplicate	2	זמינות ב׳–ה׳ 9:00–17:00
 duplicate	2	חובה לבחור עיר
 duplicate	2	חובה לבחור תאריך
 duplicate	2	חוויות וסדנאות אוכל אצל בתי עסק מקומיים
@@ -488,7 +489,6 @@ duplicate	6	אשרי
 duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
-duplicate	6	וואטסאפ
 duplicate	6	חזרה לכלים
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
@@ -497,6 +497,7 @@ duplicate	6	תאריך
 duplicate	7	איסוף עצמי
 duplicate	7	אירועים
 duplicate	7	הועתק
+duplicate	7	וואטסאפ
 duplicate	7	מאומת
 duplicate	7	מוצרים
 duplicate	7	סגרו

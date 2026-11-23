@@ -295,6 +295,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/review_reports.py` | «דיווח על ביקורת» (MEH-3260) — build the admin email for a visitor's report on one review, and drop a repeat of the same report. |
 | `services/sanitization.py` | HTML sanitization helper — defense-in-depth per ASVS V13 (MEH-329). |
 | `services/signup_fill_digest.py` | Once a week (Sunday, Israel clock) check what share of the businesses that signed up in the last 7 days have a referral source («מאיפה שמעתם») and a location, … |
+| `services/staging_reset_job.py` | Once a week, put the STAGING database back to the seed recipe by running 'scripts/reset_staging.py --confirm', so E2E users and hand-made test rows stop … |
 | `services/submission_confirmation.py` | Confirm in writing, to the business owner, that a profile reached the review queue — fixing the submission timestamp and the "עד 3 ימי עסקים" promise the SLA … |
 | `services/submission_gate.py` | The single answer to "may this business be sent to the admin review queue, and if not, what is it missing?". … |
 | `services/trust_tier.py` | MEH-51: real-time trust tier computation — never stored, always computed. |
@@ -705,6 +706,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `SpeedInsightsRedacted.jsx` | — אין כותרת — |
 | `StatusPage.jsx` | — אין כותרת — |
 | `StoryCardCanvas.jsx` | <reference path="../types/browser-globals.d.ts" /> |
+| `SupportContactSheet.jsx` | The one «צרו קשר» sheet for business owners: WhatsApp · email · form, in that order, wherever the dashboard offers to reach the team (help row, rejected / … |
 | `Toaster.jsx` | — אין כותרת — |
 | `TrustBadge.jsx` | — אין כותרת — |
 | `UnverifiedEmailNotice.jsx` | Inline notice shown in a producer create form when the API rejects the publish with the verified-email 403 — the gate message plus a "שלחו שוב" resend CTA, so … |
