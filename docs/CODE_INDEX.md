@@ -753,6 +753,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/RescueTab.jsx` | — אין כותרת — |
 | `dashboard/google-profile/GoogleProfileCheck.jsx` | Compare what Google shows with the business page, on request (MEH-3641): name, phone and website each get a verdict; … |
 | `dashboard/google-profile/GoogleProfileGuide.jsx` | The three steps to open or fix a Google Business Profile, the business page's link to paste into it, and Google's rule on review incentives (MEH-3641). |
+| `dashboard/google-profile/GoogleProfileHubTile.jsx` | The «הפרופיל בגוגל» tile in the edit tab's hub, after «קשר» (MEH-3723, Sapir's pick 22/11). … |
 | `dashboard/google-profile/GoogleProfileLink.jsx` | Find the business's own Google profile and link it, or unlink it (MEH-3641). The server accepts a link only when the Google name or phone matches the … |
 | `dashboard/google-profile/GoogleProfileTool.jsx` | The body of /producer/dashboard/google-profile (MEH-3641): reads whether the business is linked and whether Google can be asked, then shows the link half, the … |
 | `dashboard/orders/OrderActions.jsx` | The buttons an order's status offers the business, and the one dialog a button opens. … |
@@ -788,7 +789,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer/FirstMomentCard.jsx` | A once-only «רגע ראשון» card at the top of the dashboard home — first review, first WhatsApp click, 100 views, first follower (MEH-3200 part 2; … |
 | `producer/LinkEverywhere.jsx` | MEH-3331 — «הקישור שלך בכל מקום»: four places a business puts its page link once (Instagram bio, Facebook page button, Google profile, WhatsApp Business … |
 | `producer/MonthValueLine.jsx` | One line on the dashboard home: what the business got through the site this month, as bookings and their value (MEH-3194 point 1 — the value is shown before … |
-| `producer/NewToolPill.jsx` | The «חדש» pill on a «כלים» tile whose tool arrived in a release of the last 14 days (MEH-3200 part 2, copy approved 14/11). … |
+| `producer/NewToolPill.jsx` | The «חדש» pill on a «כלים» tile (or an «עריכה» hub tile, MEH-3723) whose tool arrived in a release of the last 14 days (MEH-3200 part 2, copy approved 14/11). … |
 | `producer/OrdersIntroCard.jsx` | «חדש: הזמנות מראש מהעמוד שלכם» — tells a business that on-site ordering exists and takes it to the «הזמנות» tab. … |
 | `producer/OwnerAttentionCard.jsx` | «מה מחכה לך» — the top of the dashboard home lists what is waiting for the owner right now, each row one tap from the tool that handles it (MEH-3108; … |
 | `producer/OwnerWelcomeCard.jsx` | A one-time «ברוכים הבאים למהמקור» note from the founders (Sapir + Topaz, MEH-3323) at the top of the dashboard home for a new business (≤ 30 days old), closed … |

@@ -5148,7 +5148,7 @@
             "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
             "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
             "i4": "The dashboard home shows how many orders reached you through the site this month.",
-            "i5": "New tool in the «Tools» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
+            "i5": "New tool in the «Edit» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
           },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
@@ -8114,7 +8114,6 @@
     }
   },
   "google_profile": {
-    "back": "Back to tools",
     "title": "Your Google profile",
     "lead": "Many customers search Google first. A Google business profile with a link to your page here helps them find you.",
     "loading": "Loading…",

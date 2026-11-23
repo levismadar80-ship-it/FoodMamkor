@@ -23,8 +23,9 @@
  *           הצגת-העסק card — duplicate of the persistent "צפייה בדף" link now
  *           in the dashboard shell nav; reviews card marked candidate-to-move);
  *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
- *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3749 (the «שיתוף» section
- *           became a tile; its page is share/page.js).
+ *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3723 (that tile moved
+ *           to the edit tab); MEH-3749 (the «שיתוף» section became a tile; its
+ *           page is share/page.js).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -34,7 +35,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, GoogleLogo, ShareNetwork } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, ShareNetwork } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
@@ -197,10 +198,9 @@ export default function ProducerDashboardToolsPage() {
             <RequestReviewCard />
           </section>
         )}
-        {/* MEH-590: producer recipes. MEH-3641: «הפרופיל שלכם בגוגל» sits here
-            too — every status (a pending business can prepare its Google
-            profile), never an organizer (the server 404s an organizer); the
-            reviews group waits for approval, so it cannot hold this tile. */}
+        {/* MEH-590: producer recipes. MEH-3723: «הפרופיל בגוגל» moved to the
+            edit tab's hub (GoogleProfileHubTile), next to the business details
+            it checks. */}
         <section data-testid="tools-group-content" className="mt-8">
           <h2 className={H2}>{t("quick_links.groups.content_heading")}</h2>
           <div className={GRID}>
@@ -209,13 +209,6 @@ export default function ProducerDashboardToolsPage() {
               <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
               <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
             </Link>
-            {profile?.kind !== "organizer" && (
-              <Link href="/producer/dashboard/google-profile" data-testid="tools-google-profile-tile" className={CARD}>
-                <GoogleLogo size={24} className="text-primary mb-2" aria-hidden="true" />
-                <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.google_profile.title")}<NewToolPill href="/producer/dashboard/google-profile" /></p>
-                <p className="text-sm text-fg-muted">{t("quick_links.google_profile.sub")}</p>
-              </Link>
-            )}
             {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of their
                 own (Sapir 23/11); this tile is its one entry. Same gates the
                 section had: approved business, never an organizer. The line is

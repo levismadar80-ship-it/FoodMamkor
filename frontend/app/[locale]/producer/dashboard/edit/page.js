@@ -75,6 +75,7 @@ import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import LocationsEditor from "./LocationsEditor";
+import GoogleProfileHubTile from "@/components/dashboard/google-profile/GoogleProfileHubTile";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
@@ -778,7 +779,10 @@ function EditPageInner() {
                 onClick={() => enterGroup(g)}
               />
             );
-          })}
+          }).flatMap((tile, i) =>
+            // MEH-3723: «הפרופיל בגוגל» right after «קשר»; never an organizer.
+            visibleGroupKeys[i] === "contact" && !isOrganizer ? [tile, <GoogleProfileHubTile key="google-profile" />] : [tile]
+          )}
         </div>
       </div>
 
