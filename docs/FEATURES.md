@@ -94,6 +94,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
+| `/producer/dashboard/orders/preview` | «איך זה נראה ללקוחות»: her business page in preview mode with her own order menu, so she sees the order form a buyer gets (slots, cancel line, minimum) even before ordering is on; sending and the WhatsApp code are off (MEH-3746) |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
 | `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches, «מה להכין» on the today list, «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |

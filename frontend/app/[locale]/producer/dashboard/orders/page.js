@@ -14,7 +14,8 @@
  *           answers 404 and this page renders the site's 404. No build flag.
  * Related:  components/dashboard/orders/* · lib/product-orders.js ·
  *           DashboardLayoutClient.jsx (the tab) · lib/use-orders-tab.js
- * History:  MEH-3316 (creation; stage 4 of MEH-3216) · settings start closed
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216) · MEH-3746 the link to
+ *           the order preview beside the title · · settings start closed
  *           once set up, 18/11 · MEH-3216 gaps: the products card (its own
  *           read, GET /producers/me/products/ordering) · MEH-3561 (customers card)
  */
@@ -22,6 +23,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Eye } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -33,6 +35,7 @@ import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import api from "@/lib/api";
+import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
@@ -95,7 +98,18 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6" data-testid="orders-page">
-      <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
+        {/* MEH-3746: the order form as a buyer sees it, before ordering is on. */}
+        <Link
+          href="/producer/dashboard/orders/preview"
+          data-testid="orders-preview-link"
+          className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
+        >
+          <Eye size={16} aria-hidden="true" />
+          {t("preview_link")}
+        </Link>
+      </div>
       {failed && (
         <div className="space-y-2">
           <InlineMessage tone="error">{t("load_error")}</InlineMessage>

@@ -5,15 +5,18 @@
  * Purpose:  The buyer's picks on one business page, held by ProducerDetail so
  *           the product rows and the order bar read the same state.
  * Touches:  GET /producers/{id}/order-menu, once per business, and only when
- *           the page payload says `takes_site_orders`.
+ *           the page payload says `takes_site_orders`; inside the owner's
+ *           preview GET /producers/me/order-menu/preview instead (MEH-3746).
  * Does NOT: persist — the picks live in memory and a reload starts empty.
  * Related:  lib/order-cart.js (the pure helpers this wraps)
- * History:  MEH-3216 stage 5b (creation)
+ * History:  MEH-3216 stage 5b (creation); MEH-3746 (inside the owner's
+ *           preview: her own menu, read even while ordering is off)
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { keepOrderable, loadOrderMenu, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
+import { keepOrderable, loadOrderMenu, loadOwnerMenuPreview, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
+import { usePreviewMode } from "@/lib/preview-mode";
 
 /** @typedef {import("@/lib/order-cart").OrderMenu} OrderMenu */
 /** @typedef {import("@/lib/order-cart").MenuProduct} MenuProduct */
@@ -39,7 +42,9 @@ const NO_PICKS = Object.freeze({});
  */
 export function useOrderCart(producer) {
   const producerId = producer?.id;
-  const takesOrders = Boolean(producer?.takes_site_orders);
+  // MEH-3746: the owner's preview shows the order form before ordering is on.
+  const preview = usePreviewMode();
+  const takesOrders = preview || Boolean(producer?.takes_site_orders);
   const [menu, setMenu] = useState(/** @type {OrderMenu | null} */ (null));
   const [picks, setPicks] = useState(/** @type {Record<string, number>} */ ({}));
   // Bumped to read the menu again: the order sheet does it when the server
@@ -53,7 +58,7 @@ export function useOrderCart(producer) {
     // takes no orders, so no state is reset here.
     if (!producerId || !takesOrders) return undefined;
     let live = true;
-    loadOrderMenu(producerId).then((loaded) => {
+    (preview ? loadOwnerMenuPreview() : loadOrderMenu(producerId)).then((loaded) => {
       if (!live) return;
       setMenu(loaded);
       setPicks((current) => (loaded ? keepOrderable(current, loaded.products) : {}));
@@ -61,7 +66,7 @@ export function useOrderCart(producer) {
     return () => {
       live = false;
     };
-  }, [producerId, takesOrders, generation]);
+  }, [producerId, takesOrders, preview, generation]);
 
   const open = takesOrders ? menu : null;
   const shown = open ? picks : NO_PICKS;

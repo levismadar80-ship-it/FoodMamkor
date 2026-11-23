@@ -15,7 +15,8 @@ Related:  app/routers/product_orders.py (the flag gate and the settings
           app/schemas/product_order_offer.py (the shapes)
 History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3263 (the two
           shared reads moved to services/product_order_menu.py); MEH-3216
-          gaps (GET of the owner's products with their ordering fields)
+          gaps (GET of the owner's products with their ordering fields);
+          MEH-3746 (the owner's preview of her own order menu)
 
 A file of its own because producer_me.py is on the file-size baseline and
 does not grow (code-execution.md §16).
@@ -40,6 +41,7 @@ from app.models.product_orders import (
 from app.rate_limit import limiter
 from app.routers.product_orders import (
     NO_BUSINESS_DETAIL,
+    _defaults,
     require_product_orders_enabled,
 )
 from app.schemas.product_order_offer import (
@@ -258,14 +260,22 @@ def get_order_menu(
             status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND_DETAIL
         )
     assert producer is not None and row is not None  # takes_orders() said so
+    return _menu_body(db, producer, row)
+
+
+def _menu_body(
+    db: Session, producer: Producer, row: ProducerOrderSettings
+) -> dict[str, Any]:
+    """The order menu as a buyer reads it. One shape for the public route and
+    the owner's preview, so the preview cannot drift from what buyers see."""
     slots = offered_slots(db, producer, row, utc_now())
     return {
-        "producer_id": producer_id,
+        "producer_id": producer.id,
         "min_order_agorot": row.min_order_agorot,
         "cancel_cutoff_hours": row.cancel_cutoff_hours,
         "lead_time_hours": row.lead_time_hours,
         "business_id_number": row.business_id_number,
-        "products": _menu_products(db, producer_id, bool(row.alcohol_licensed)),
+        "products": _menu_products(db, producer.id, bool(row.alcohol_licensed)),
         "slots": [
             {
                 "start": slot.start.replace(tzinfo=UTC),
@@ -276,3 +286,41 @@ def get_order_menu(
             for slot in slots
         ],
     }
+
+
+@me_router.get(
+    "/producers/me/order-menu/preview",
+    response_model=OrderMenuOut,
+    dependencies=[Depends(require_product_orders_enabled)],
+)
+@limiter.limit("60/minute")
+def get_my_order_menu_preview(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3746: the caller's own order menu, exactly as a buyer would get it,
+    BEFORE ordering is switched on — the public route 404s until then, so the
+    owner could not see what her settings do. No `takes_orders()` gate here:
+    only her own business is read (no id is taken from the request), and a
+    business that never saved settings gets the defaults, unsaved. Read only:
+    the preview cannot place an order (MEH-3691 refuses an owner's order)."""
+    producer_id = _own_producer_id(user)
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
+        )
+    row = (
+        db.query(ProducerOrderSettings)
+        .filter(ProducerOrderSettings.producer_id == producer_id)
+        .first()
+    )
+    if row is None:
+        # Transient, never added to the session: nothing is written.
+        row = ProducerOrderSettings(**_defaults(producer_id))
+    body = _menu_body(db, producer, row)
+    # The buyer's shape requires a business number; before she typed one the
+    # preview shows the seller line without it, which is what is missing.
+    body["business_id_number"] = body["business_id_number"] or ""
+    return body
