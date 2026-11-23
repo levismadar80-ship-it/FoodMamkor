@@ -32,7 +32,7 @@ const TEXT_MIN = 20;
 const TEXT_MAX = 6000;
 
 /** @param {Record<string, unknown>} draft @returns {boolean} the text gave at least one field */
-export function draftHasContent(draft) {
+function draftHasContent(draft) {
   return Object.values(draft).some((v) => (Array.isArray(v) ? v.length > 0 : v !== null && v !== ""));
 }
 
