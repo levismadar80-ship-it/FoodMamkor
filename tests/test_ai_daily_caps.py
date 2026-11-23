@@ -187,3 +187,65 @@ def test_every_business_ai_generation_route_has_a_daily_cap():
         f"{missing}. Add `@limiter.limit('<N>/day', key_func=_business_key)` "
         "(routers/product_describe.py) on top of the per-IP hourly limit."
     )
+
+
+# ---------------------------------------------------------------------------
+# MEH-3498 — the site-wide daily ceiling (services/ai_budget.py).
+# ---------------------------------------------------------------------------
+
+DIRECT_CALL = re.compile(r"\.messages\.(create|stream|parse)\(")
+BUDGET_CALL = re.compile(r"ai_budget\.allow\(")
+
+# Modules whose model call does NOT spend the ceiling, and why. Moderation
+# keeps running above it (the card); the chat's intent call rides on the one
+# unit chat() spends per message.
+BUDGET_EXEMPT = {
+    "app.services.approved_edit_moderation": "moderation on save",
+    "app.services.moderation_common": "moderation on save",
+    "app.services.producer_risk": "moderation on save",
+    "app.routers.reviews": "moderation on save",
+    "app.services.chat_intent_router": "counted once per message in routers/chat.py chat()",
+}
+
+# The reference: the shared helper behind two owner tools.
+CONTROL_BUDGETED = ("app.services.ai_text", "ask")
+
+
+def _unbudgeted_calls(mod: str) -> list[str]:
+    """Functions in `mod` that call the model directly with no ai_budget.allow."""
+    tree = ast.parse(SRC[mod])
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        seg = ast.get_source_segment(SRC[mod], n) or ""
+        inner = [
+            c
+            for c in ast.walk(n)
+            if c is not n and isinstance(c, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
+        if inner:  # judge the innermost function that holds the call
+            continue
+        if DIRECT_CALL.search(seg) and not BUDGET_CALL.search(seg):
+            out.append(n.name)
+    return out
+
+
+def test_every_model_call_spends_the_site_wide_ceiling():
+    direct = {m for m, s in SRC.items() if DIRECT_CALL.search(s)}
+    # CONTROL: the walker sees the reference call and judges it budgeted.
+    mod, func = CONTROL_BUDGETED
+    assert mod in direct, "walker lost the control module"
+    assert func not in _unbudgeted_calls(mod)
+    assert len(direct - set(BUDGET_EXEMPT)) >= 6, sorted(direct)
+    stale = set(BUDGET_EXEMPT) - direct
+    assert not stale, f"Exempt but no longer calls the model: {sorted(stale)}"
+    missing = sorted(
+        f"{m}.{f}" for m in direct - set(BUDGET_EXEMPT) for f in _unbudgeted_calls(m)
+    )
+    assert not missing, (
+        f"Model call(s) outside the site-wide ceiling: {missing}. Call "
+        "`ai_budget.allow(<tier>)` before the call and answer as if the key "
+        "were missing when it is False, or add the module to BUDGET_EXEMPT "
+        "with the reason (services/ai_budget.py, MEH-3498)."
+    )

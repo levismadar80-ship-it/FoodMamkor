@@ -17,7 +17,7 @@
 * `backend/app/services/chat_site_knowledge.py` — MEH-3528: הכלים שבית עסק מקבל נכנסים להנחיה מ-`backend/app/data/chat_business_features.json`, שנבנה מהרישום ומ-he.json ב-`frontend/lib/chat-knowledge.js`. אחרי שינוי ברישום או בקופי שלו: `WRITE_CHAT_KNOWLEDGE=1 npx vitest run __tests__/ChatKnowledgeSync.test.js`.
 * `backend/app/services/chat_intent_router.py` — המסווג (שאלה על נתונים חיים או שאלה כללית). ה-system של שתי הקריאות נשלח כרשימת בלוקים: החלק הקבוע נושא `cache_control` (prompt caching, ‏MEH-3384), והנתונים החיים יושבים בבלוק נפרד אחריו, כדי ששאלה משתנה לא תבטל את ה-cache.
 
-**Flags.** אין. בלי `ANTHROPIC_API_KEY` הצ'אט מחזיר הודעת «לא זמין» בעברית ולא קורס.
+**Flags.** אין. בלי `ANTHROPIC_API_KEY` הצ'אט מחזיר הודעת «לא זמין» בעברית ולא קורס. אותה הודעה חוזרת כשהתקרה היומית של כל האתר ל-AI נגמרה (MEH-3498, `backend/app/services/ai_budget.py`; הצ'אט סופר יחידה אחת לכל הודעה, והטסט `tests/test_meh3498_ai_budget.py`).
 
 **טסטים**
 * `tests/test_meh3004_chat_group_buys_rescue.py`

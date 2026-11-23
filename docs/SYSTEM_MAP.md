@@ -122,7 +122,12 @@ inventory.
    (its sr-only index reads `/producers`; the pins load in the browser). A
    failed regeneration keeps the last good page.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
-   offline. Nobody is told unless they look at Sentry.
+   offline. Nobody is told unless they look at Sentry. Before the account
+   runs dry, the site's own daily ceiling usually comes first (MEH-3498,
+   `backend/app/services/ai_budget.py`): 3,000 fast-model calls and 200
+   Opus calls per Israel day, shared by the chat and every owner AI tool.
+   Above it those tools answer as if the key were missing, moderation keeps
+   running, and an ERROR goes to Sentry at 80% and at the ceiling.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,
    which is when they are needed.
 7. **Cloudinary credits.** Past the plan's allowance the account is disabled

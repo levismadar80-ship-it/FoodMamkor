@@ -24,6 +24,7 @@ import logging
 from typing import Any
 
 from app.config import AI_MENU_MODEL
+from app.services import ai_budget
 from app.services.menu_reader import (
     _get_client,
 )  # REUSES: one Anthropic client, http_client lock
@@ -76,7 +77,7 @@ fine only when the product clearly stands apart.
 def _ask(names: list[str], existing: list[str], room: int) -> dict[str, Any] | None:
     """One call to the model. None = could not ask or could not read the answer."""
     client = _get_client()
-    if client is None:
+    if client is None or not ai_budget.allow("menu"):  # MEH-3498
         return None
     prompt = _PROMPT.format(
         products="\n".join(
