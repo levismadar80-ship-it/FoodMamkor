@@ -50,8 +50,9 @@ new router:
   answer goes in `scripts/checks/hebrew-detail-allowlist.tsv` with its reason.
 
 ## Gotchas
-- `httpx.Client()` must be passed to the Anthropic SDK explicitly —
-  `httpx 0.28+` renamed `proxies=` to `proxy=` (`.claude/rules/backend.md`).
+- `anthropic.DefaultHttpxClient()` must be passed to the Anthropic SDK
+  explicitly — since SDK 1.0 a plain `httpx.Client` raises TypeError
+  (httpx2), and fail-open hides it (`.claude/rules/backend.md`).
 - Resend, never SMTP — Railway blocks ports 25/465/587
   (`.claude/rules/backend.md`).
 - Rate-limit key uses `X-Real-IP` not `request.client.host` (MEH-256;

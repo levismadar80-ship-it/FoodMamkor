@@ -6,6 +6,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
+import homes from "@/lib/signup-field-homes.json";
+import { ANCHOR_TO_KEY } from "@/lib/dashboard-edit-anchors";
 
 // MEH-866: wizard coverage for the B/C/D wirings that shipped with zero tests —
 // 5-frame nav (MEH-847), city/address payload (MEH-853), short_description
@@ -660,15 +662,31 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
   });
 });
 
-// MEH-3656: the MEH-1471 «referral source» block is gone with the dropdown —
-// a business is no longer asked where she heard of us at signup (MEH-3653).
-// The server still accepts the field as optional.
-describe("RegisterProducerClient — no attribution question at signup (MEH-3656)", () => {
-  it("the submitting frame has no attribution dropdown, and the body carries none", async () => {
+// MEH-3697: the MEH-1471 «referral source» question came back to the business
+// path, on its last step (CATEGORY). MEH-3656 had dropped it with the story
+// step and no dashboard screen asked it (Sapir 22/11). Still optional.
+describe("RegisterProducerClient — attribution question on the last step (MEH-3697)", () => {
+  it("a business sees the dropdown on the submitting frame and its pick is posted", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    expect(screen.queryByTestId("register-referral-source")).not.toBeInTheDocument();
+    const select = screen.getByTestId("register-referral-source");
+    fireEvent.change(select, { target: { value: "other" } });
+    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
+      target: { value: "חברה מהשוק" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1].referral_source).toBe("other");
+    expect(api.post.mock.calls[0][1].referral_source_other).toBe("חברה מהשוק");
+  });
+
+  it("left empty, the submit still goes through with an empty source (optional)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-referral-source")).toBeInTheDocument();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -676,79 +694,44 @@ describe("RegisterProducerClient — no attribution question at signup (MEH-3656
   });
 });
 
-describe("RegisterProducerClient — license-required error placement (MEH-952)", () => {
-  // Walk ACCOUNT → DETAILS → CATEGORY and select the (license-required) category.
+describe("RegisterProducerClient — no licence field at signup (Sapir 22/11)", () => {
+  // The licence number moved to the dashboard (anchor #license). A business in
+  // a licence-required category signs up without it and is sent as pending, so
+  // the backend's register-time 422 (ensure_license_for_categories) is skipped.
   async function reachCategoryAndPick() {
     await fillAccountToDetails();
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
     fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-      // MEH-2640: answer step 2's one required question.
-      fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
-      fireEvent.click(nextBtn()); // → CATEGORY
-    fireEvent.click(await screen.findByTestId("pick-category")); // license-required id 1
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn()); // → CATEGORY
+    fireEvent.click(await screen.findByTestId("pick-category")); // id 1
   }
 
-  it("blocks the advance and shows the error at the field when license is blank", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
-    await reachCategoryAndPick();
-    // license left blank → next is blocked
-    fireEvent.click(screen.getByTestId("register-category-submit"));
-    // still on CATEGORY, and nothing was sent (MEH-3656: CATEGORY submits)
-    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
-    expect(api.post).not.toHaveBeenCalled();
-    // blocking error surfaced inline (role=alert, the verbatim backend-mirror key)
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-  });
-
-  it("clears the error and submits once a license number is entered", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
-    await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    // typing a number clears the blocking error (onChange), then advance succeeds
-    fireEvent.change(screen.getByLabelText(`${K}.fields.license_required_label`), {
-      target: { value: "1234567" },
-    });
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  async function submit() {
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByTestId("register-category-submit"));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    expect(api.post.mock.calls[0][1]).toMatchObject({ producer_license_number: "1234567" });
-  });
+    return api.post.mock.calls[0][1];
+  }
 
-  it("does not resurface the error when the category is deselected and re-selected", async () => {
+  it("a licence-required category shows no licence input and submits as pending", async () => {
     api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
     await renderWizard();
     await reachCategoryAndPick();
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked → error shown
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    // deselect (licenseRequired → false, branch unmounts) then re-select (remounts):
-    // toggleCategory clears the flag, so no phantom error before the next click.
-    fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
-    fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /license/i })).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_required_label`)).toBeNull();
+    expect(screen.queryByText(`${K}.fields.license_pending_optin_label`)).toBeNull();
+    const body = await submit();
+    expect(body).toMatchObject({ license_pending: true, producer_license_number: "" });
   });
 
-  // MEH-2105: this gate was the only per-step block that never called
-  // requestFocus — on a 375px viewport the red line rendered ~67px below the
-  // fold while every sibling gate (ACCOUNT fields, runRequiredGate) scrolls
-  // its offender to block:"center". Observed the way MEH-1807 observes its
-  // gates: focus landed on the field, and the setup.js scrollIntoView shim
-  // saw the centred scroll. The pre-click control proves the field was NOT
-  // already focused, so the post-click assertion is falsifiable.
-  it("moves focus to the licence field when the gate blocks (MEH-2105)", async () => {
-    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
-    await renderWizard();
+  it("a category with no licence requirement is not sent as pending (control)", async () => {
+    await renderWizard(); // default fixture: «ביצים», no licence
     await reachCategoryAndPick();
-    const licenseInput = screen.getByTestId("register-category-license");
-    expect(document.activeElement).not.toBe(licenseInput); // control
-    fireEvent.click(screen.getByTestId("register-category-submit")); // blocked
-    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
-    expect(document.activeElement).toBe(licenseInput);
-    expect(licenseInput.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    const body = await submit();
+    expect(body.license_pending).toBe(false);
   });
 });
 
@@ -917,6 +900,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
   // MEH-3656 (fresh review): a business no longer sees the story fields or the
   // store link, so values restored from an older draft must not be posted —
   // a 2-letter tagline would 422 on a field she cannot see or fix.
+  // MEH-3697: the referral source is asked on this frame again, so a value
+  // restored from the draft is visible and editable, and it is posted.
   it("does not post story fields or a store link restored from an older draft", async () => {
     seedForeignDraft({ city: "חיפה" });
     await renderWizard();
@@ -938,8 +923,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     expect(body.description, "description").toBe("");
     expect(body.short_description, "short_description").toBe("");
     expect(body.external_order_form, "external_order_form").toBeNull();
-    expect(body.referral_source, "referral_source").toBe("");
-    expect(body.referral_source_other, "referral_source_other").toBe("");
+    expect(body.referral_source, "referral_source").toBe("other");
+    expect(body.referral_source_other, "referral_source_other").toBe("חברה");
   });
 
   // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
@@ -1041,3 +1026,43 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
 // These assert the observable end state (what is in localStorage after submit),
 // not that a particular line moved — ADR-032 §3.6.
 const DRAFT_KEY = "producer_registration_draft";
+
+// MEH-3699: every field the signup request carries has a home
+// (lib/signup-field-homes.json). This walks the BUSINESS path and checks that
+// each field the registry says is asked at signup is really on one of its
+// frames. A field removed from signup must get a dashboard home in the
+// registry, or this goes red: MEH-3656 removed «מאיפה שמעתם» with no home
+// and nothing noticed (MEH-3697).
+describe("RegisterProducerClient — signup field homes (MEH-3699)", () => {
+  const { fields } = homes;
+  const present = (locator) => {
+    const [kind, value] = locator.split(/:(.*)/s);
+    if (kind === "testid") return screen.queryAllByTestId(value).length > 0;
+    if (kind === "id") return document.getElementById(value) !== null;
+    if (kind === "text") return screen.queryAllByText(value, { exact: false }).length > 0;
+    throw new Error(`unknown locator kind «${kind}» in signup-field-homes.json`);
+  };
+
+  it("every field has at least one home, and every anchor exists in the dashboard", () => {
+    for (const [name, home] of Object.entries(fields)) {
+      const homesOf = ["signup", "dashboard", "shown_with", "system"].filter((k) => home[k]);
+      expect(homesOf.length, `${name} has no home`).toBeGreaterThan(0);
+      if (home.dashboard) expect(ANCHOR_TO_KEY, `${name}: #${home.dashboard}`).toHaveProperty([home.dashboard]);
+      if (home.shown_with) expect(fields[home.shown_with]?.signup, `${name}: shown_with`).toBeTruthy();
+    }
+  });
+
+  it("every field the registry places in signup is on the business path", async () => {
+    const wanted = Object.entries(fields).filter(([, h]) => h.signup);
+    const seen = new Set();
+    const look = () => wanted.forEach(([name, h]) => present(h.signup) && seen.add(name));
+    await renderWizard();
+    look();
+    await fillAccountToDetails();
+    look();
+    await fillDetailsToStory();
+    look();
+    const missing = wanted.map(([n]) => n).filter((n) => !seen.has(n));
+    expect(missing, "asked at signup per the registry, but not on any business frame").toEqual([]);
+  });
+});

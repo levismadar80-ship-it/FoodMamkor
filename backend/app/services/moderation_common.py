@@ -51,13 +51,13 @@ def make_anthropic_client(tag: str) -> Any:
     try:
         # Lazy imports: a broken anthropic install must not crash module load.
         import anthropic
-        import httpx
 
-        # DO NOT drop the explicit http_client — .claude/rules/backend.md
-        # (the SDK's own httpx.Client(proxies=...) breaks on httpx 0.28+).
+        # DO NOT drop the explicit http_client — .claude/rules/backend.md.
+        # It must be the SDK's DefaultHttpxClient: anthropic 1.0+ runs on
+        # httpx2 and raises TypeError on a plain httpx.Client.
         return anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
     except Exception as e:  # pragma: no cover — defensive
         logger.warning(f"{tag} anthropic client init failed: %s", e)

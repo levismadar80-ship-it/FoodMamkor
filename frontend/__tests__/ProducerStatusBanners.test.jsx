@@ -37,6 +37,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   EnvelopeSimple: (p) => <span {...p} />,
   Eye: (p) => <span {...p} />,
   LockSimple: (p) => <span {...p} />,

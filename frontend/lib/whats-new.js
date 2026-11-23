@@ -38,12 +38,23 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.13 (23/11): the self-purchase block (#5164, MEH-3691) fixes an
+  // existing tool rather than adding one; the rest is tests, CI and
+  // dependency bumps. Nothing for businesses, so items: 0.
+  { version: "1.5.13", key: "v1_5_13", date: "2026-11-23", items: 0 },
+  // 1.5.12 (23/11): every PR in this release is launch tier ג׳ (internal) or a
+  // dependency bump — the unified «צרו קשר» sheet (#5175) and the shorter
+  // signup licensing text (#5174) change no business tool. Nothing for
+  // businesses, so items: 0 (docs/release/whats-new.md step 5; not shown).
+  { version: "1.5.12", key: "v1_5_12", date: "2026-11-23", items: 0 },
   // 1.5.11 (21/11): delivery time, own minimum and per-zone order cutoff,
   // nationwide zones (MEH-3511); pickup days and cutoff per pickup point
   // (MEH-3512); business-page assistant suggestions and zone/group/workshop
   // facts (MEH-3505, MEH-3510); orders-through-the-site line on the dashboard
   // home (MEH-3194). Copy under Sapir's standing approval (20/11 13:54Z).
-  { version: "1.5.11", key: "v1_5_11", date: "2026-11-21", items: 5 },
+  // i5: the Google profile tool (google_profile, from whats-new-pending.md),
+  // approved by Sapir 22/11 «מאשרת הכל».
+  { version: "1.5.11", key: "v1_5_11", date: "2026-11-21", items: 6, tools: ["/producer/dashboard/google-profile"] },
   // 1.5.10 (20/11): delivery zones (MEH-3484), next delivery date (MEH-3485),
   // business-page chat (MEH-3489), free-text page draft (MEH-3483), product
   // groups and description suggestion, AI review reply (MEH-3480), «מארז»

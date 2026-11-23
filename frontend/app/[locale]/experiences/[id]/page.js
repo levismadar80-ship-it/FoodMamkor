@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import ExperienceDetailClient from "./ExperienceDetailClient";
 import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { fetchSsrEntity } from "@/lib/ssr-entity-fetch";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, OG_LOCALE } from "@/lib/i18n-seo";
 import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Event JSON-LD
 
@@ -34,7 +34,8 @@ export async function generateMetadata(props) {
     getTranslations({ locale, namespace: "seo.experience" }),
   ]);
   const path = `/experiences/${id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
   // MEH-2101: meant to yield a REAL 404 status. MEH-3199 measured 14/11 on a
   // local build, before and after: 200 + noindex for a missing id (see
   // not-found.js). A page-level
@@ -77,6 +78,7 @@ export async function generateMetadata(props) {
       images: experience?.image_url ? [experience.image_url] : [siteOgImageUrl(locale)],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 

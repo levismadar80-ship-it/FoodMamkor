@@ -70,6 +70,14 @@ class WhatsAppTemplate(BaseModel):
     # DO NOT set True on a template whose Meta text holds a link (MEH-3414).
     sends_outside_production: ClassVar[bool] = False
 
+    # MEH-3596: the category WhatsApp Manager shows for this template —
+    # UTILITY, MARKETING or AUTHENTICATION. Meta sets it from the content and
+    # can change it after approval, so this is what Meta SHOWS, not what was
+    # submitted. No default on purpose: every subclass states its own, and
+    # tests/test_meh3596_channel_policy.py fails a class that does not.
+    # Policy: .claude/rules/notifications.md.
+    meta_category: ClassVar[str]
+
     def to_components(self) -> list[dict[str, object]]:
         """Build the Meta `components` array from the model fields.
 
@@ -92,6 +100,7 @@ class ProducerWelcomeV1(WhatsAppTemplate):
     """Sent to a producer at signup. One param: business name."""
 
     name: ClassVar[str] = "producer_welcome_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
 
 
@@ -105,6 +114,7 @@ class ProducerWelcomeV2(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "producer_welcome_v2"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
 
 
@@ -112,6 +122,7 @@ class ProducerApprovedV1(WhatsAppTemplate):
     """Sent once an admin approves the producer. One param: business name."""
 
     name: ClassVar[str] = "producer_approved_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
 
 
@@ -124,6 +135,7 @@ class ProducerChangesRequestedV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "producer_changes_requested_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
     missing_details: str
 
@@ -132,12 +144,14 @@ class AfterHoursResponseHe(WhatsAppTemplate):
     """Auto-reply outside business hours. No params."""
 
     name: ClassVar[str] = "after_hours_response_he"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
 
 
 class VacationResponseHeV2(WhatsAppTemplate):
     """Auto-reply while on vacation. One param: return date (ISO string)."""
 
     name: ClassVar[str] = "vacation_response_he_v2"
+    meta_category: ClassVar[str] = "MARKETING"  # WhatsApp Manager, read 21/11/2026
     return_date: str
 
 
@@ -153,6 +167,7 @@ class OtpCodeV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "producer_otp_v1"
+    meta_category: ClassVar[str] = "AUTHENTICATION"  # WhatsApp Manager, read 21/11/2026
     # MEH-3414: the code and a copy-code button, no link to the site — and the
     # OTP_TEST_NUMBERS harness needs it on staging.
     sends_outside_production: ClassVar[bool] = True
@@ -194,6 +209,7 @@ class FavoriteAlertHeV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "favorite_alert_he_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
     update_line: str
     url_path: str
@@ -230,6 +246,7 @@ class KashrutExpiryReminderV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "kashrut_expiry_reminder"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     owner_name: str
     producer_name: str
     expires_at: str
@@ -271,6 +288,7 @@ class RescueCodesDigestV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "rescue_codes_digest_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
     window: str
     codes: str
@@ -286,7 +304,9 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     never arrived; a business-initiated message has to be an approved
     template.
 
-    UTILITY category, no buttons — two body params in {{n}} order:
+    Submitted as UTILITY; WhatsApp Manager shows it as MARKETING (read
+    21/11/2026, MEH-3596). Meta reads a message to the admin as not about the
+    recipient's own order or account. No buttons — two body params in {{n}} order:
 
         {{1}} producer_name — the business's name
         {{2}} city          — its city, «לא צוין» when empty
@@ -302,13 +322,16 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "admin_business_pending_v1"
+    meta_category: ClassVar[str] = "MARKETING"  # WhatsApp Manager, read 21/11/2026
     producer_name: str
     city: str
 
 
 # --- MEH-3296: on-site product orders ---------------------------------------
 #
-# UTILITY category, no buttons. Bodies are the approved copy table of 14/11
+# Submitted as UTILITY, no buttons. WhatsApp Manager shows five of the six as
+# UTILITY and product_order_change_v1 as MARKETING (read 21/11/2026, MEH-3596);
+# each class's meta_category says which. Bodies are the approved copy table of 14/11
 # (/mnt/project-files/product-ordering/copy-table-he.md), one {{n}} per field
 # in field order. The exact bodies submitted to Meta (18/11) live in
 # whatsapp_template_bodies.py and are linted by tests/test_whatsapp_template_lint.py.
@@ -324,6 +347,7 @@ class ProductOrderNewV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_new_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     customer_name: str
     count: str
     total: str
@@ -341,6 +365,7 @@ class ProductOrderWaitingV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_waiting_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     hours: str
     deadline: str
     link: str
@@ -353,6 +378,7 @@ class ProductOrderConfirmedV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_confirmed_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     business_name: str
     fulfilment: str
     day: str
@@ -369,6 +395,7 @@ class ProductOrderChangeV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_change_v1"
+    meta_category: ClassVar[str] = "MARKETING"  # WhatsApp Manager, read 21/11/2026
     business_name: str
     link: str
 
@@ -380,6 +407,7 @@ class ProductOrderClosedV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_closed_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     business_name: str
     link: str
 
@@ -391,6 +419,7 @@ class ProductOrderTomorrowV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "product_order_tomorrow_v1"
+    meta_category: ClassVar[str] = "UTILITY"  # WhatsApp Manager, read 21/11/2026
     fulfilment: str
     business_name: str
     starts: str

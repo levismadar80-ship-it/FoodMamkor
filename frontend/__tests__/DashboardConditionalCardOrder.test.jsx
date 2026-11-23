@@ -78,6 +78,7 @@ vi.mock("@/components/ReviewCardCanvas", () => ({
   default: () => <div data-testid="review-card-canvas-stub" />,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   WhatsappLogo: (p) => <span {...p} />,
   Eye: (p) => <span {...p} />,
   Sparkle: (p) => <span {...p} />,
