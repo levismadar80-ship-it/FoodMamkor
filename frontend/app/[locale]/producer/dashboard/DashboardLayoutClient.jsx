@@ -321,7 +321,6 @@ export default function ProducerDashboardLayout({ children }) {
               // MEH-3745: below sm the label sits under the icon like the tabs
               // beside it (MEH-2429 had dropped it; a bare eye was not read as
               // "my page"). sm+ keeps the inline row.
-              title={t("view_page")}
               className="sm:ms-auto shrink-0 inline-flex flex-col sm:flex-row whitespace-nowrap items-center justify-center gap-0.5 sm:gap-1.5 min-w-touch px-1 sm:px-3 py-2 sm:py-3 text-xs sm:text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
               <Eye size={20} aria-hidden="true" />

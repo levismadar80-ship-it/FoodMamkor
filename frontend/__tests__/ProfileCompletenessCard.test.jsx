@@ -120,6 +120,10 @@ describe("ProfileCompletenessCard — improve mode (after submission)", () => {
     render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
     const hours = screen.getByTestId("completeness-row-hours");
     expect(hours.querySelector("a [data-testid='row-caret']")).not.toBeNull();
+    // An undone link row is in the link colour; a done one stays plain, caret grey.
+    expect(hours.querySelector("a > span:not([data-testid])")?.className ?? "").toMatch(/\btext-primary\b/);
+    const image = screen.getByTestId("completeness-row-location");
+    expect(image.querySelector("[data-testid='row-caret']")?.getAttribute("class")).toMatch(/\btext-fg-muted\b/);
     cleanup();
     // Draft mode: a done phone row is plain text (its OTP card opens in place).
     render(<ProfileCompletenessCard producer={{ ...draft, images: [] }} />);

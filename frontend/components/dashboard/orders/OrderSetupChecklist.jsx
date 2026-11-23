@@ -159,7 +159,7 @@ export default function OrderSetupChecklist({
                   size={16}
                   aria-hidden="true"
                   data-testid="row-caret"
-                  className="ms-auto shrink-0 text-primary ltr:rotate-180"
+                  className={`ms-auto shrink-0 ltr:rotate-180 ${step.done ? "text-fg-muted" : "text-primary"}`}
                 />
               </Go>
             </li>
