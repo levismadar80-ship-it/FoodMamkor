@@ -31043,6 +31043,23 @@
         "summary": "Health Alias"
       }
     },
+    "/health/ai": {
+      "get": {
+        "description": "Is the Anthropic client buildable and answering right now?\n\nUnauthenticated so the uptime cron can hit it; rate-limited, and the call\nit makes spends no tokens. 503 is the alerting signal.",
+        "operationId": "ai_health_health_ai_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ai Health"
+      }
+    },
     "/health/liveness": {
       "get": {
         "operationId": "liveness_health_liveness_get",
@@ -36851,7 +36868,7 @@
         ]
       }
     },
-    "/rescue/orders/{order_id}/no_show": {
+    "/rescue/orders/{order_id}/no-show": {
       "post": {
         "description": "The business records that nobody came for the bag — only after\n`pickup_end`: before that the buyer may still be on their way, and a\nno-show blocks reserving again. The buyer is mailed each time (MEH-3226).",
         "operationId": "mark_no_show_rescue_orders__order_id__no_show_post",

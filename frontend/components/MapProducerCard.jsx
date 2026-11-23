@@ -24,6 +24,7 @@ import {
   FULFILLMENT_ICON_PX,
 } from "@/lib/fulfillmentTags";
 import { COLOR } from "@/lib/color-tokens";
+import { producerPath } from "@/lib/producer-path";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
@@ -81,7 +82,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // MEH-1414: every map link carries `?from=map`. The producer page keys its
   // "חזרה למפה" link on it, and useProducerData.js already reads `?from=` as
   // the analytics referrer (ProducerCard.jsx does the same via `referrer`).
-  const baseHref = `${p.slug ? `/${p.slug}` : `/producer/${p.id}`}?from=${MAP_REFERRER}`;
+  const baseHref = `${producerPath(p)}?from=${MAP_REFERRER}`;
   const category = p.categories?.[0];
   // MEH-798/MEH-1243: category color + Phosphor glyph drive the meta line + the
   // pin-echo selected state + the no-photo placeholder.

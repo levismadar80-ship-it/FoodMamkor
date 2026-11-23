@@ -127,8 +127,11 @@ refactor PR.
 
 ## Anthropic `proxies` kwarg TypeError
 
-**Pattern:** initializing `anthropic.Anthropic(api_key=...)` without
-`http_client=httpx.Client()`.
+**Pattern:** initializing `anthropic.Anthropic(api_key=...)` without our own
+`http_client`, or (anthropic 1.0+) with a plain `httpx.Client` instead of the
+SDK's `DefaultHttpxClient` — the second raises `TypeError: Invalid
+http_client argument; httpx.Client is from the httpx package, but this SDK
+uses httpx2`.
 
 **Error:**
 `TypeError: Client.__init__() got an unexpected keyword argument 'proxies'`
@@ -137,7 +140,7 @@ refactor PR.
 `backend/app/services/moderation_common.py` (`make_anthropic_client`, MEH-3619).
 
 **Fix:** always
-`anthropic.Anthropic(api_key=..., http_client=httpx.Client())`.
+`anthropic.Anthropic(api_key=..., http_client=anthropic.DefaultHttpxClient())`.
 
 **Why this is sneaky:** the error is caught by the AI fail-open
 mechanism, so there's no user-facing 5xx — just a silent "offline"

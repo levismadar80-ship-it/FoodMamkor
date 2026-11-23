@@ -78,3 +78,6 @@ meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66
 meh-3617-expected-tables-66	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
 meh-3592-expected-tables	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
 release-train-3-expected-tables-67	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2cf40e0ef, sha256 matched the prepared file
+meh-3694-path-filters	applied	.github/workflows/pr-checks.yml	MEH-3694 (Sapir 22/11): only THIS file.	2026-11-22	tests-only and unrelated workflow-only PRs skip heavy jobs; committed 22/11 via the web editor (Claude in Chrome), 7ea7921a2 · 075085948 · e8b8365f1, sha256 matched all three prepared files
+pr-checks-edited-trigger	applied	.github/workflows/pr-checks.yml	unlabeled, edited]	2026-11-22	committed 22/11 via the web editor (Claude in Chrome), 7e80274567, sha256 matched the prepared file
+ai-health-probe	pending	.github/workflows/uptime.yml	AI_URL: https://mehamakor.co.il/api/health/ai	2026-11-22	apply after MEH-3724 is in production; sha256 in the patch doc

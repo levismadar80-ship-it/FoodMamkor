@@ -2,7 +2,7 @@
 
 **מה היא עושה.** ארבע דרכים שבית עסק מגיע לאתר: הרשמה עצמית בטופס רב-שלבי, אימוץ של דף טיוטה שהצוות הכין (קישור claim), הזמנת בעלים, ופרסום טיוטה באישור כתוב של בעלת העסק אחרי שראתה אותה בקישור תצוגה מקדימה (MEH-3377). ‏`/join` הוא דף השיווק שמסביר מה בית עסק מקבל.
 
-**הטופס לבית עסק — 3 שלבים (MEH-3656).** חשבון → פרטי העסק → קטגוריה, וההסכמות וכפתור «הצטרפו» בשלב הקטגוריה. אין מסך פתיחה לפני השלב הראשון, ואין שלב סיפור לבית עסק: תיאור, משפט קצר וקישור לחנות חיצונית נכתבים בלוח הבקרה אחרי ההרשמה. השאלה «איך הגעתם אלינו» (אופציונלית) נשאלת בשלב הקטגוריה, האחרון, מאז MEH-3697 — רכיב אחד לשני המסלולים: `frontend/app/[locale]/register/producer/steps/ReferralSourceField.jsx`. שלב הסיפור נשאר רק למארגני אירועים. ההסכמות עצמן נמצאות ברכיב אחד שמשמש את שני המסלולים: `frontend/app/[locale]/register/producer/steps/ConsentSubmit.jsx`.
+**הטופס לבית עסק — 3 שלבים (MEH-3656).** חשבון → פרטי העסק → קטגוריה, וההסכמות וכפתור «הצטרפו» בשלב הקטגוריה. אין מסך פתיחה לפני השלב הראשון, ואין שלב סיפור לבית עסק: תיאור, משפט קצר וקישור לחנות חיצונית נכתבים בלוח הבקרה אחרי ההרשמה. השאלה «איך הגעתם אלינו» (אופציונלית) נשאלת בשלב הקטגוריה, האחרון, מאז MEH-3697 — רכיב אחד לשני המסלולים: `frontend/app/[locale]/register/producer/steps/ReferralSourceField.jsx`. לכל שדה בבקשת ההרשמה יש «בית» — שלב בהרשמה או כרטיס בלוח הבקרה — ברשימה `frontend/lib/signup-field-homes.json` (MEH-3699); שדה שיוצא מההרשמה בלי בית בלוח הבקרה מפיל את `frontend/__tests__/RegisterProducerClient-01.test.jsx`, ושדה חדש בסכמה בלי שורה ברשימה מפיל את `tests/test_meh3699_signup_field_homes.py`. בכל יום ראשון נבדק אחוז העסקים החדשים שענו «מאיפה שמעתם» ושיש להם מיקום, וכשאחד מהם 0% (מ-3 הרשמות ומעלה) נרשמת אזהרה ב-Sentry עם התג `signup_fill_zero` (`backend/app/services/signup_fill_digest.py`); סבב הבוקר היומי של Claude ‏(«סבב בוקר: בריאות האתר») קורא אותה ומטפל, בלי מייל למנהלת המערכת. שלב הסיפור נשאר רק למארגני אירועים. ההסכמות עצמן נמצאות ברכיב אחד שמשמש את שני המסלולים: `frontend/app/[locale]/register/producer/steps/ConsentSubmit.jsx`.
 
 **Routes**
 * `frontend/app/[locale]/register/` · `frontend/app/[locale]/register/producer/` · `frontend/app/[locale]/register/organizer/`
@@ -35,6 +35,6 @@
 * `frontend/__tests__/OwnerInviteAcceptSignsIn.test.jsx` · `frontend/__tests__/OwnerInviteExistingAccount.test.jsx` · `frontend/__tests__/ClaimPage.test.jsx`
 * `tests/test_meh3409_admin_draft_missing.py` · `frontend/__tests__/AdminDraftMissing.test.jsx`
 * `tests/test_expansion_registration.py` · `tests/test_organizer_registration.py`
-* פיילוט MEH-2913 (קטגוריות 5, רישיון לפי קטגוריה, «איך קונים» בשתי תיבות, קישור לחנות): `frontend/e2e/flows/38-register-delivery-axis.spec.ts` · `frontend/__tests__/RegisterDeliveryAxis.test.jsx` · `frontend/__tests__/CategoryStepLicenseHint.test.jsx` · `frontend/__tests__/StoreLinkForPayload.test.js` · `tests/test_meh2938_register_store_link.py` · `tests/test_producer_categories.py`
+* פיילוט MEH-2913 (קטגוריות 5, רישיון לפי קטגוריה, «איך קונים» בשתי תיבות, קישור לחנות): `frontend/e2e/flows/38-register-delivery-axis.spec.ts` · `frontend/__tests__/RegisterDeliveryAxis.test.jsx` · `frontend/__tests__/StoreLinkForPayload.test.js` · `tests/test_meh2938_register_store_link.py` · `tests/test_producer_categories.py`
 
 **מזהי רישום שזה מכסה.** `draft_claim`, `social_signup`, `onboarding_emails`, `wa_approval`, `guides`.

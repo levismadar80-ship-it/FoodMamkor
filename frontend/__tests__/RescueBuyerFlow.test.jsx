@@ -211,19 +211,37 @@ describe("the flag gate", () => {
 });
 
 describe("the list — 0 / 1 / many", () => {
-  it("0 bags says so, and in the town's name when a town is set", async () => {
+  // MEH-3626: the same empty state as /group-buys — a heading, one line under
+  // it, and the alert hint as the way out (not one plain sentence).
+  it("0 bags says so as a heading, in the town's name when a town is set", async () => {
     fetchOffers.mockResolvedValue([]);
     render(<RescueList initialCity="חיפה" />);
     const empty = await screen.findByTestId("rescue-list-empty");
-    expect(empty.textContent).toBe(lookup("rescue.list.empty_city").replace("{city}", "חיפה"));
+    const heading = within(empty).getByRole("heading", { level: 2 });
+    expect(heading.textContent).toBe(lookup("rescue.list.empty_title_city").replace("{city}", "חיפה"));
+    expect(within(empty).getByText(lookup("rescue.list.empty_subtitle"))).toBeTruthy();
+    expect(within(empty).getByTestId("hub-alert-hint-rescue")).toBeTruthy();
   });
 
-  it("0 bags with no town set uses the town-less copy", async () => {
+  it("0 bags with no town set uses the town-less heading", async () => {
     fetchOffers.mockResolvedValue([]);
     render(<RescueList />);
-    expect((await screen.findByTestId("rescue-list-empty")).textContent).toBe(
-      lookup("rescue.list.empty"),
-    );
+    const empty = await screen.findByTestId("rescue-list-empty");
+    expect(within(empty).getByRole("heading", { level: 2 }).textContent).toBe(lookup("rescue.list.empty_title"));
+  });
+
+  it("while loading: a skeleton with a status label, and no empty state yet", async () => {
+    let resolve;
+    fetchOffers.mockReturnValue(new Promise((r) => { resolve = r; }));
+    render(<RescueList />);
+    const loading = screen.getByTestId("rescue-list-loading");
+    expect(loading.getAttribute("role")).toBe("status");
+    expect(loading.getAttribute("aria-label")).toBe(lookup("rescue.list.loading"));
+    expect(loading.textContent).toBe(""); // no visible line that appears and vanishes
+    expect(screen.queryByTestId("rescue-list-empty")).toBeNull();
+    resolve([]);
+    expect(await screen.findByTestId("rescue-list-empty")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-list-loading")).toBeNull();
   });
 
   it("1 bag uses the singular count, not '1 בתי עסק'", async () => {

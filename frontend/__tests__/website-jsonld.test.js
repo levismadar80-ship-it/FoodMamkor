@@ -41,19 +41,18 @@ describe("WebSite JSON-LD (MEH-2851)", () => {
     expect(site.alternateName).toBe("Mehamakor");
   });
 
-  it("is the same node on both surfaces, apart from the home page's SearchAction", () => {
+  // MEH-3638: the home page no longer adds a SearchAction (Google retired the
+  // sitelinks search box), so the two surfaces carry the identical node.
+  it("is the same node on both surfaces", () => {
     const home = findNode(buildHomeJsonLd("he"), "WebSite");
     const producer = findNode(buildJsonLd(PRODUCER, "he"), "WebSite");
-    const { potentialAction, ...homeWithoutSearch } = home;
-    expect(potentialAction, "control: the home page keeps its SearchAction").toBeTruthy();
-    expect(homeWithoutSearch).toEqual(producer);
+    expect(home).toEqual(producer);
   });
 
-  it("the home page keeps its sitelinks SearchAction unchanged", () => {
-    const { potentialAction } = findNode(buildHomeJsonLd("he"), "WebSite");
-    expect(potentialAction["@type"]).toBe("SearchAction");
-    expect(potentialAction.target.urlTemplate).toMatch(/\/producers\?q=\{search_term_string\}$/);
-    expect(potentialAction["query-input"]).toBe("required name=search_term_string");
+  it("the home page carries no SearchAction (MEH-3638)", () => {
+    const home = findNode(buildHomeJsonLd("he"), "WebSite");
+    expect(home.name, "control: the WebSite node is still there").toBe("מהמקור");
+    expect(home).not.toHaveProperty("potentialAction");
   });
 
   it("keeps @id, url, inLanguage and publisher, and the en locale tag", () => {

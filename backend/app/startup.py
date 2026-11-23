@@ -299,6 +299,7 @@ def _run_followup_job() -> None:
     from app.services.pending_nudge import send_pending_nudges
     from app.services.page_freshness import send_freshness_emails
     from app.services.page_freshness_digest import send_stale_digest
+    from app.services.signup_fill_digest import check_signup_fill
 
     db = SessionLocal()
     try:
@@ -357,6 +358,14 @@ def _run_followup_job() -> None:
             db.rollback()
             capture_background_exception(exc, task="page_freshness_digest")
             log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
+        # MEH-3699, Sunday only: the share of new businesses with a referral
+        # source and a location; a zero share is a Sentry warning, not an email.
+        try:
+            check_signup_fill(db)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="signup_fill_digest")
+            log.error("[SIGNUP-FILL] digest crashed", exc_info=True)
     finally:
         db.close()
 
@@ -970,6 +979,10 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
+    # MEH-3630: weekly wipe + re-seed of the staging DB, staging only.
+    from app.services import staging_reset_job
+
+    staging_reset_job.register(followup_scheduler)
     # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED), and
     # MEH-3535: the email queue — both here unless the worker service owns them.
     _register_outbox_jobs(followup_scheduler)
@@ -1087,6 +1100,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # (The staging weekly reset takes an advisory lock anyway — MEH-3630.)
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
 

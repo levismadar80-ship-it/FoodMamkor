@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
+import { CheckCircle, Leaf, Envelope, Timer, WhatsappLogo } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
@@ -11,6 +11,8 @@ import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { env } from "@/lib/env";
+import { getWhatsAppChatHref } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
 import SectionHeading from "@/components/ui/SectionHeading";
@@ -118,6 +120,23 @@ export default function ContactClient() {
           </p>
 
           <div className="bg-green-50/60 border border-border rounded-md p-4 mb-6 text-sm">
+            {/* MEH-3720: WhatsApp first, as in the dashboard sheet — one contact pattern.
+                Same copy as dashboard.producer.status.support; the dashboard
+                namespace is route-scoped (lib/client-messages.js), so /contact
+                carries its own keys. */}
+            <p className="flex items-center gap-2 flex-wrap mb-2">
+              <WhatsappLogo size={16} weight="fill" className="text-[#25D366]" aria-hidden="true" />
+              <a
+                href={getWhatsAppChatHref(env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000")}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="contact-whatsapp"
+                className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current font-medium"
+              >
+                {t("whatsapp_label")}
+              </a>
+              <span className="text-fg-muted">{t("whatsapp_hours")}</span>
+            </p>
             <p className="flex items-center gap-2 flex-wrap">
               <Envelope size={16} className="text-primary" aria-hidden="true" />
               <span>{t("email_label")}</span>
