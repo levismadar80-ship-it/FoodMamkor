@@ -227,3 +227,15 @@ export function visibleBusinessFeatures() {
 export function countVisibleBusinessFeatures() {
   return visibleBusinessFeatures().length;
 }
+
+/**
+ * MEH-3723: the dashboard tab that holds a tool, by its landing href — so the
+ * «חדש» dot lands on the tab where the new tool actually lives (the Google
+ * profile moved from «כלים» to «עריכה»). An href no entry claims stays on «כלים».
+ * @param {string} href
+ * @returns {string} a tab key: "tools", "edit", "insights", …
+ */
+export function dashboardTabForHref(href) {
+  const feature = BUSINESS_FEATURES.find((f) => f.dashboard?.href === href);
+  return feature?.dashboard?.home || "tools";
+}

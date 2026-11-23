@@ -97,6 +97,21 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     );
   });
 
+  // MEH-3723: the tool was open to a pending business in «כלים» (MEH-3641);
+  // it stays open to her from the edit hub.
+  it("a pending business also gets the Google profile tile", async () => {
+    api.get.mockImplementation((url) =>
+      url === "/producers/me"
+        ? Promise.resolve({ data: { ...PROFILE, status: "pending" } })
+        : Promise.resolve({ data: [] }),
+    );
+    mount();
+    await screen.findByTestId("edit-hub");
+    expect(screen.getByTestId("hub-card-google-profile").getAttribute("href")).toBe(
+      "/producer/dashboard/google-profile",
+    );
+  });
+
   it("entering a group via a hub tile pushes ?group with scroll:false", async () => {
     mount();
     fireEvent.click(await screen.findByTestId("hub-card-contact"));

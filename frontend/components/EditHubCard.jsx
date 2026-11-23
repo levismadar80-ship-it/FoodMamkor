@@ -11,11 +11,12 @@
  *           next-step marker.
  * Does NOT: own navigation, URL state, or any card logic — the page
  *           (producer/dashboard/edit/page.js) passes onClick (router.push into
- *           the group) and composes every prop. Purely a styled <button>.
+ *           the group) and composes every prop. A styled <button>, or a <Link> when `href` is given (MEH-3723).
  * Related:  components/EditAccordionCard.jsx (the spoke card + PreviewThumbs/
  *           Chips primitives reused here); app/[locale]/producer/dashboard/
  *           edit/page.js (GROUPS config, group state, previews map).
  * History:  MEH-1408 (creation — edit-tab hub-and-spoke, shell-only).
+ *           MEH-3723 (optional `href`: a tile that opens its own page).
  *
  * RTL: logical properties only; the drill-in caret uses CaretRight +
  * rtl:rotate-180 (the MEH-1355/MEH-938 forward-indicator convention) so it
