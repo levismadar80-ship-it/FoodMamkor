@@ -47,6 +47,17 @@ OFFER_BATCH = 10
 JOINS_CLOSED = "בית העסק עצר את ההצטרפות לקבוצה הזאת"
 FULL = "קבוצת הרכישה מלאה"
 LAST_CALL_REFUSED = "ב-24 השעות האחרונות אי אפשר לבטל אם הקבוצה תרד מתחת ליעד"
+# MEH-3691: copy approved word for word by Sapir, 22/11.
+OWN_GROUP = "אי אפשר להצטרף לקבוצת הרכישה של בית העסק שלך"
+
+
+def refuse_own_group(gb: GroupBuy, user: User) -> None:
+    """MEH-3691: the business's own account neither joins its group nor waits
+    for a place in it. A self-join counted towards the minimum and misled the
+    other buyers; a waitlist row held a freed place for someone who cannot
+    take it."""
+    if user.producer_id is not None and user.producer_id == gb.producer_id:
+        raise HTTPException(status_code=403, detail=OWN_GROUP)
 
 
 def counts(db: Session, gb_id: Any) -> tuple[int, int]:

@@ -99,7 +99,7 @@ if (criticals.length === 0) {
   lines.push("|---|---|---|---|---|---|");
   criticals.slice(0, 10).forEach((f, i) => {
     lines.push(
-      `| ${i + 1} | \`${f.route}\` | ${f.viewport} | ${f.checkName} | ${f.detail.replace(/\|/g, "\\|").slice(0, 160)} | [img](${SHOT_REL}/${f.screenshot}) |`
+      `| ${i + 1} | \`${f.route}\` | ${f.viewport} | ${f.checkName} | ${f.detail.replace(/[\\|]/g, "\\$&").slice(0, 160)} | [img](${SHOT_REL}/${f.screenshot}) |`
     );
   });
 }
@@ -128,7 +128,7 @@ for (const route of routes) {
   lines.push("|---|---|---|---|");
   for (const f of rf) {
     lines.push(
-      `| ${SEV_EMOJI[f.severity]} ${f.severity} | ${f.viewport} | ${f.checkName} | ${f.detail.replace(/\|/g, "\\|").slice(0, 200)} |`
+      `| ${SEV_EMOJI[f.severity]} ${f.severity} | ${f.viewport} | ${f.checkName} | ${f.detail.replace(/[\\|]/g, "\\$&").slice(0, 200)} |`
     );
   }
   lines.push("");

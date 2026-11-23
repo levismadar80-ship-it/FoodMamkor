@@ -155,6 +155,7 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
     if not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     _refuse_unless_running(gb)
+    capacity.refuse_own_group(gb, current_user)  # MEH-3691
     if gb.joins_closed_at is not None:
         raise HTTPException(status_code=400, detail=capacity.JOINS_CLOSED)
     people, units = capacity.counts(db, gb.id)
