@@ -1,0 +1,23 @@
+{
+  "form": "recipe",
+  "subject": "a recipe that a small Israeli food business wants to publish on its page",
+  "fields": [
+    {"key": "title", "type": "text", "max": 200, "ai": true,
+     "prompt": "the recipe's name, in Hebrew, as the text gives it"},
+    {"key": "description", "type": "text", "max": 2000, "ai": true, "claims": true,
+     "prompt": "one or two plain Hebrew sentences on what is special about the recipe, only from the text"},
+    {"key": "ingredients", "type": "lines", "max": 5000, "ai": true,
+     "prompt": "one ingredient per item, with its amount, as written"},
+    {"key": "instructions", "type": "lines", "max": 10000, "ai": true,
+     "prompt": "one step per item, in order, as written"},
+    {"key": "prep_time_min", "type": "int", "min": 0, "max": 1440, "ai": true,
+     "prompt": "minutes of hands-on work, only if the text gives a number"},
+    {"key": "cook_time_min", "type": "int", "min": 0, "max": 1440, "ai": true,
+     "prompt": "minutes in the oven or on the stove, only if the text gives a number"},
+    {"key": "servings", "type": "int", "min": 1, "max": 100, "ai": true,
+     "prompt": "how many people or pieces, only if the text gives a number"},
+    {"key": "image_url", "type": "image", "ai": false},
+    {"key": "product_ids", "type": "choices", "max": 10, "ai": true,
+     "prompt": "numbers from the owner's product list below for products the recipe uses; never a number not in the list"}
+  ]
+}

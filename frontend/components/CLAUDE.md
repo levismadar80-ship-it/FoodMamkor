@@ -45,6 +45,8 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
+| A form field's label with a «?» that opens its explanation inline under it (dashboard forms, MEH-3740) | `FieldHelpLabel.jsx` | — |
+| «fill this form from text» box over a dashboard form (one engine, `form` = the field map) | `FormFillBox.jsx` | — |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
