@@ -372,6 +372,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `diet-pages.js` | Single owner of the six indexable diet landing pages (MEH-1935) — slug → attribute key → API filter param → page path. … |
 | `distance.js` | Distance helpers (MEH-12). JS port of the Haversine formula that the backend uses in raw SQL on producers.lat/lng (see CLAUDE.md "no PostGIS" decision). … |
 | `edit-accordion-chips.js` | Answer one question per edit-hub accordion card — does this card gate the submit button, or is it optional? The header chip («חובה» / «רשות») is rendered from … |
+| `edit-auto-open.js` | Which card opens by itself when the owner taps a group tile in the «עריכה» hub — so she reaches a form in one tap instead of two (MEH-3762, part 2 of the … |
 | `email-typo.js` | Suggest a fix for a mistyped email DOMAIN (gmial.com → gmail.com, gmail.con → gmail.com, walla.co.ill → walla.co.il) — the mailcheck pattern (MEH-3123, Sapir … |
 | `entity-registry.js` | One list of the site's public entities (business, organizer, event, workshop, group buy, recipe, rescue bag) and, per entity, which shared building blocks its … |
 | `env.client.js` | CLIENT-SAFE INVARIANT |

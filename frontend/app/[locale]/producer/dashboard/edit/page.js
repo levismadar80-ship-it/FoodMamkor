@@ -109,6 +109,7 @@ import {
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
+import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
@@ -775,7 +776,12 @@ function EditPageInner() {
                 marker={tile.marker}
                 statusLine={tile.statusLine}
                 previews={tile.previews}
-                onClick={() => enterGroup(g)}
+                // MEH-3762: one tap to a form — the group's first missing
+                // card (or its only card) opens as the group opens.
+                onClick={() => {
+                  setOpenKey(autoOpenKeyFor(g, membersOf(g), cardFilled));
+                  enterGroup(g);
+                }}
               />
             );
           })}
