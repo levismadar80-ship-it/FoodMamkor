@@ -7099,9 +7099,7 @@
       "empty_title": "No rescue bags yet today",
       "empty_title_city": "No rescue bags in {city} yet today",
       "empty_subtitle": "Worth checking again this afternoon",
-      "count": "{count, plural, one {one bag} other {# bags}}",
-      "group_today": "Today",
-      "group_tomorrow": "Tomorrow"
+      "count": "{count, plural, one {one bag} other {# bags}}"
     },
     "row": {
       "left": "{count, plural, one {one left} other {# left}}",

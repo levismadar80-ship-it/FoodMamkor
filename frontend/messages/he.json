@@ -7095,9 +7095,7 @@
       "empty_title": "עדיין אין סלי הפתעה היום",
       "empty_title_city": "עדיין אין סלי הפתעה ב{city} היום",
       "empty_subtitle": "שווה לבדוק שוב אחר הצהריים",
-      "count": "{count, plural, one {סל אחד} two {שני סלים} other {# סלים}}",
-      "group_today": "היום",
-      "group_tomorrow": "מחר"
+      "count": "{count, plural, one {סל אחד} two {שני סלים} other {# סלים}}"
     },
     "row": {
       "left": "{count, plural, one {נשאר סל אחד} two {נשארו שני סלים} other {נשארו # סלים}}",

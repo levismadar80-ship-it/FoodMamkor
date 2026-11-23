@@ -132,7 +132,7 @@ describe("the /rescue list", () => {
     render(<RescueList />);
     await screen.findAllByTestId("rescue-bag-row");
     const days = screen.getAllByTestId("rescue-list-day").map((el) => el.textContent);
-    expect(days).toEqual([r.list.group_today, r.list.group_tomorrow]);
+    expect(days).toEqual([he.events.list.when_today, he.events.list.when_tomorrow]);
     const tomorrow = screen.getByTestId("rescue-list-group-tomorrow");
     expect(within(tomorrow).getAllByTestId("rescue-bag-row")).toHaveLength(2);
     expect(within(screen.getByTestId("rescue-list-group-today")).getAllByTestId("rescue-bag-row")).toHaveLength(1);
@@ -142,7 +142,7 @@ describe("the /rescue list", () => {
     fetchOffers.mockResolvedValue([offer({ id: "t1", date: TOMORROW })]);
     render(<RescueList />);
     await screen.findAllByTestId("rescue-bag-row");
-    expect(screen.getAllByTestId("rescue-list-day").map((el) => el.textContent)).toEqual([r.list.group_tomorrow]);
+    expect(screen.getAllByTestId("rescue-list-day").map((el) => el.textContent)).toEqual([he.events.list.when_tomorrow]);
   });
 });
 

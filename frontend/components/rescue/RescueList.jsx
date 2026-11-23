@@ -137,7 +137,8 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
             <div key={group.key || "all"} data-testid={group.key ? `rescue-list-group-${group.key}` : undefined}>
               {group.key && (
                 <p className="font-headline-md text-base font-black text-text mb-2" data-testid="rescue-list-day">
-                  {t(group.key === "tomorrow" ? "list.group_tomorrow" : "list.group_today")}
+                  {/* The same «היום» / «מחר» the events list shows. */}
+                  {tHub(group.key === "tomorrow" ? "when_tomorrow" : "when_today")}
                 </p>
               )}
               <ul className="border-t border-border" data-testid="rescue-list-rows">
