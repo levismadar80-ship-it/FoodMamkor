@@ -1,6 +1,6 @@
 // MEH-3746 — the owner's preview of the order form.
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, renderHook, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 
 import he from "@/messages/he.json";
@@ -37,10 +37,12 @@ function sheet(inPreview) {
   );
   return render(
     <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
-      {inPreview ? <PreviewModeProvider>{tree}</PreviewModeProvider> : tree}
+      {inPreview ? <PreviewModeProvider ownerOrderMenu>{tree}</PreviewModeProvider> : tree}
     </NextIntlClientProvider>,
   );
 }
+
+const OwnerPreview = ({ children }) => <PreviewModeProvider ownerOrderMenu>{children}</PreviewModeProvider>;
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -60,9 +62,29 @@ describe("OrderSheet inside the owner's preview", () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  it("sends no WhatsApp code", () => {
+  // With a valid phone, so only the preview guard can keep the button off
+  // (an empty phone disables it anyway — fresh review).
+  it("sends no WhatsApp code, even with a valid phone", () => {
     sheet(true);
-    expect(screen.getByTestId("order-sheet-send-code")).toBeDisabled();
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    const ask = screen.getByTestId("order-sheet-send-code");
+    expect(ask).toBeDisabled();
+    fireEvent.click(ask);
+    expect(api.post).not.toHaveBeenCalledWith("/product-orders/phone-code", expect.anything());
+  });
+
+  it("outside the preview the same phone can ask for the code (control)", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: {} });
+    sheet(false);
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    expect(screen.getByTestId("order-sheet-send-code")).toBeEnabled();
+  });
+
+  it("a submit of the form (Enter in a field) posts no order", async () => {
+    sheet(true);
+    fireEvent.submit(screen.getByTestId("order-sheet-phone").closest("form"));
+    await wait(50);
+    expect(api.post).not.toHaveBeenCalledWith("/product-orders", expect.anything());
   });
 
   it("outside the preview the sheet quotes as before (control)", async () => {
@@ -81,10 +103,31 @@ describe("useOrderCart inside the owner's preview", () => {
   it("reads her own preview menu even while the page says she takes no orders", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: MENU });
     const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }), {
-      wrapper: PreviewModeProvider,
+      wrapper: OwnerPreview,
     });
     await waitFor(() => expect(result.current.menu?.producer_id).toBe(PRODUCER));
     expect(api.get).toHaveBeenCalledWith("/producers/me/order-menu/preview");
+  });
+
+  // The draft-preview page (no login) is in preview mode too: it must not
+  // call the owner route (fresh review).
+  it("preview mode without ownerOrderMenu reads nothing", async () => {
+    const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }), {
+      wrapper: PreviewModeProvider,
+    });
+    await wait(50);
+    expect(api.get).not.toHaveBeenCalled();
+    expect(result.current.menu).toBeNull();
+  });
+
+  it("a menu of another business is dropped", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { ...MENU, producer_id: "7e57a6f0-0000-4000-8000-000000000099" } });
+    const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }), {
+      wrapper: OwnerPreview,
+    });
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    await wait(20);
+    expect(result.current.menu).toBeNull();
   });
 
   it("outside the preview a business that takes no orders reads nothing (control)", async () => {

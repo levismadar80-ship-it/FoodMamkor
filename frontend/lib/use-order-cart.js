@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { keepOrderable, loadOrderMenu, loadOwnerMenuPreview, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
-import { usePreviewMode } from "@/lib/preview-mode";
+import { useOwnerOrderMenu } from "@/lib/preview-mode";
 
 /** @typedef {import("@/lib/order-cart").OrderMenu} OrderMenu */
 /** @typedef {import("@/lib/order-cart").MenuProduct} MenuProduct */
@@ -43,7 +43,9 @@ const NO_PICKS = Object.freeze({});
 export function useOrderCart(producer) {
   const producerId = producer?.id;
   // MEH-3746: the owner's preview shows the order form before ordering is on.
-  const preview = usePreviewMode();
+  // Only where the page opts in (OrderPreviewClient), never from preview mode
+  // alone: the draft-preview page has no owner session (fresh review).
+  const preview = useOwnerOrderMenu();
   const takesOrders = preview || Boolean(producer?.takes_site_orders);
   const [menu, setMenu] = useState(/** @type {OrderMenu | null} */ (null));
   const [picks, setPicks] = useState(/** @type {Record<string, number>} */ ({}));
@@ -58,8 +60,11 @@ export function useOrderCart(producer) {
     // takes no orders, so no state is reset here.
     if (!producerId || !takesOrders) return undefined;
     let live = true;
-    (preview ? loadOwnerMenuPreview() : loadOrderMenu(producerId)).then((loaded) => {
+    (preview ? loadOwnerMenuPreview() : loadOrderMenu(producerId)).then((read) => {
       if (!live) return;
+      // The owner route answers for HER business; a page of another business
+      // never shows her menu.
+      const loaded = read && read.producer_id === producerId ? read : null;
       setMenu(loaded);
       setPicks((current) => (loaded ? keepOrderable(current, loaded.products) : {}));
     });

@@ -14,10 +14,11 @@
  *           answers 404 and this page renders the site's 404. No build flag.
  * Related:  components/dashboard/orders/* · lib/product-orders.js ·
  *           DashboardLayoutClient.jsx (the tab) · lib/use-orders-tab.js
- * History:  MEH-3316 (creation; stage 4 of MEH-3216) · MEH-3746 the link to
- *           the order preview beside the title · · settings start closed
- *           once set up, 18/11 · MEH-3216 gaps: the products card (its own
- *           read, GET /producers/me/products/ordering) · MEH-3561 (customers card)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216) · settings start
+ *           closed once set up, 18/11 · MEH-3216 gaps: the products card (its
+ *           own read, GET /producers/me/products/ordering) · MEH-3561
+ *           (customers card) · MEH-3746 (the link to the order preview beside
+ *           the title)
  */
 
 import { useCallback, useEffect, useState } from "react";

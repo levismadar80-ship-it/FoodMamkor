@@ -7,7 +7,7 @@
  *           with her own order menu: she picks products and opens the order
  *           form to see what a buyer sees.
  * Does NOT: fetch the menu itself (lib/use-order-cart.js does, and switches to
- *           the owner's preview route under PreviewModeProvider) or decide
+ *           the owner's preview route under `ownerOrderMenu`) or decide
  *           what is inert (each consumer of usePreviewMode does).
  * Related:  dashboard/preview/PreviewClient.jsx (the same shell for a business
  *           not yet approved), components/public/OrderSheet.jsx
@@ -43,7 +43,7 @@ export default function OrderPreviewClient() {
         <Eye size={18} aria-hidden="true" className="shrink-0 mt-0.5 text-primary" />
         <span>{t("preview_banner")}</span>
       </p>
-      <PreviewModeProvider>
+      <PreviewModeProvider ownerOrderMenu>
         <ProducerDetail fetchPath={`/producers/${producerId}`} />
       </PreviewModeProvider>
     </div>

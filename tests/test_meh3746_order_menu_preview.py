@@ -29,14 +29,14 @@ def flag_on(monkeypatch):
     monkeypatch.setattr(offer_module, "utc_now", lambda: NOW)
 
 
-def _owner(db):
+def _owner(db, product="חלה"):
     producer = make_producer(db, name=f"מאפייה {uuid.uuid4().hex[:6]}")
     user = make_user(db, role="producer", email=f"o{uuid.uuid4().hex[:8]}@example.com")
     user.producer_id = producer.id
     user.is_producer = True
     db.add_all(
         [
-            Product(producer_id=producer.id, name="חלה", price_min=28, price_max=28),
+            Product(producer_id=producer.id, name=product, price_min=28, price_max=28),
             ProducerOrderWindow(
                 producer_id=producer.id,
                 weekday=MON,
@@ -113,16 +113,24 @@ def test_a_guest_gets_401(client, db, flag_on):
     assert client.get(PREVIEW).status_code == 401
 
 
-def test_a_consumer_without_a_business_is_refused(client, db, flag_on):
-    consumer = make_user(db, role="consumer", email=f"c{uuid.uuid4().hex[:8]}@example.com")
-    assert client.get(PREVIEW, headers=auth_header(consumer)).status_code in (403, 404)
+@pytest.mark.parametrize("role", ["consumer", "admin"])
+def test_a_user_who_is_not_a_business_owner_gets_403(client, db, flag_on, role):
+    user = make_user(db, role=role, email=f"c{uuid.uuid4().hex[:8]}@example.com")
+    assert client.get(PREVIEW, headers=auth_header(user)).status_code == 403
+
+
+def test_a_producer_account_with_no_business_gets_404(client, db, flag_on):
+    user = make_user(db, role="producer", email=f"n{uuid.uuid4().hex[:8]}@example.com")
+    assert client.get(PREVIEW, headers=auth_header(user)).status_code == 404
 
 
 def test_another_owner_sees_only_her_own_business(client, db, flag_on):
-    _, first = _owner(db)
-    other, second = _owner(db)
+    _, first = _owner(db, product="עוגת גבינה")
+    other, second = _owner(db, product="לחם שיפון")
     menu = client.get(PREVIEW, headers=auth_header(other)).json()
     assert menu["producer_id"] == str(second.id) != str(first.id)
+    names = [p["name"] for p in menu["products"]]
+    assert names == ["לחם שיפון"]
 
 
 def test_the_route_is_closed_while_the_feature_flag_is_off(client, db, monkeypatch):
