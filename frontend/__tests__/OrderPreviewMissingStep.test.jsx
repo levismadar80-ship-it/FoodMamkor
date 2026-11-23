@@ -61,6 +61,8 @@ describe("OrderPreviewClient missing-step line", () => {
     const line = await screen.findByTestId("order-preview-missing");
     expect(line.getAttribute("data-step")).toBe("no_slots");
     expect(line.textContent).toContain(t.preview_no_slots);
+    expect(line.getAttribute("role")).toBe("status");
+    expect(screen.getByRole("link", { name: t.preview_fix_link }).getAttribute("href")).toBe("/producer/dashboard/orders");
   });
 
   it("read failed → the reload line, with no link", async () => {
@@ -68,15 +70,24 @@ describe("OrderPreviewClient missing-step line", () => {
     page();
     const line = await screen.findByTestId("order-preview-missing");
     expect(line.textContent).toContain(t.preview_load_failed);
+    expect(line.getAttribute("role")).toBe("alert");
     expect(screen.queryByRole("link", { name: t.preview_fix_link })).toBeNull();
+  });
+
+  it("while the menu is still loading → no line flashes", async () => {
+    vi.mocked(api.get).mockReturnValue(new Promise(() => {}));
+    page();
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    expect(screen.getByTestId("order-preview").getAttribute("data-menu-step")).toBe("loading");
+    expect(screen.getByTestId("order-preview-banner")).toBeTruthy();
+    expect(screen.queryByTestId("order-preview-missing")).toBeNull();
   });
 
   it("a full menu → no line (control)", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: menu() });
     page();
-    await waitFor(() => expect(api.get).toHaveBeenCalled());
-    await new Promise((r) => setTimeout(r, 20));
-    expect(screen.getByTestId("order-preview-banner")).toBeTruthy();
+    // Waits for the settled state itself, not for time to pass.
+    await waitFor(() => expect(screen.getByTestId("order-preview").getAttribute("data-menu-step")).toBe("ready"));
     expect(screen.queryByTestId("order-preview-missing")).toBeNull();
   });
 });

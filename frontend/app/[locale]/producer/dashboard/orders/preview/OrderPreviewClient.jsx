@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, Info } from "@phosphor-icons/react";
+import { Eye, Info, Warning } from "@phosphor-icons/react";
 
 import BackLink from "@/components/ui/BackLink";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -29,12 +29,17 @@ import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 
 /**
  * MEH-3763: which step the order form still lacks, or null when a buyer can
- * order. "loading" until the read settles, so no line flashes.
+ * order. "loading" until the read settles, so no line flashes. A second read
+ * of the menu useOrderCart also loads (inside ProducerDetail), on purpose: the
+ * cart does not report an empty or failed menu, and one cheap GET per visit
+ * keeps this page from reaching into it. Waits for the owner's business id.
+ * @param {string | undefined} producerId
  * @returns {"loading" | "failed" | "no_products" | "no_slots" | null}
  */
-function useMissingStep() {
+function useMissingStep(producerId) {
   const [step, setStep] = useState(/** @type {"loading" | "failed" | "no_products" | "no_slots" | null} */ ("loading"));
   useEffect(() => {
+    if (!producerId) return undefined;
     let live = true;
     loadOwnerMenuPreview().then((menu) => {
       if (!live) return;
@@ -46,7 +51,7 @@ function useMissingStep() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [producerId]);
   return step;
 }
 
@@ -60,8 +65,9 @@ function stepKey(step) {
 function MissingStepLine({ step }) {
   const tr = useTranslations("dashboard.producer.orders");
   const failed = step === "failed";
+  const Icon = failed ? Warning : Info;
+  // REUSES: components/ui/InlineMessage.jsx — the one in-page message look.
   return (
-    // REUSES: components/ui/InlineMessage.jsx — the one in-page message look.
     <InlineMessage
       tone={failed ? "error" : "info"}
       variant="box"
@@ -69,7 +75,7 @@ function MissingStepLine({ step }) {
       data-step={step}
       className="flex items-start gap-2 rounded-md px-4 py-3 mx-4 mt-2 text-start"
     >
-      <Info size={18} aria-hidden="true" className="shrink-0 mt-0.5" />
+      <Icon size={18} aria-hidden="true" className="shrink-0 mt-0.5" />
       <span>
         {tr(stepKey(step))}{" "}
         {!failed && (
@@ -86,13 +92,13 @@ export default function OrderPreviewClient() {
   const t = useTranslations("dashboard.producer.orders");
   const { user, loading } = useAuth();
   const producerId = user?.producer_id;
-  const step = useMissingStep();
+  const step = useMissingStep(producerId);
   // The dashboard layout owns the auth gate; this is only the window before
   // `user` arrives — no fetch for `/producers/undefined`.
   if (loading || !producerId) return null;
 
   return (
-    <div className="max-w-6xl mx-auto" data-testid="order-preview">
+    <div className="max-w-6xl mx-auto" data-testid="order-preview" data-menu-step={step ?? "ready"}>
       <div className="px-4 pt-4">
         <BackLink href="/producer/dashboard/orders" label={t("title")} />
       </div>
