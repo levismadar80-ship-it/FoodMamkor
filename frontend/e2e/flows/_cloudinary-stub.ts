@@ -99,6 +99,16 @@ async function fulfillPlaceholder(route: Route): Promise<void> {
   });
 }
 
+// The `url` param of /_next/image, matched on its parsed host rather than a
+// substring (CodeQL alert #32): a relative or unparsable value is not Cloudinary.
+function isCloudinaryHost(target: string): boolean {
+  try {
+    return new URL(target).hostname === "res.cloudinary.com";
+  } catch {
+    return false;
+  }
+}
+
 // `page` is deliberately NOT declared in the extend generic: an empty generic is
 // how Playwright is told this OVERRIDES the built-in fixture rather than
 // declaring a new one that shadows it.
@@ -114,7 +124,7 @@ export const test = base.extend({
     });
     await page.route("**/_next/image**", async (route) => {
       const target = new URL(route.request().url()).searchParams.get("url") || "";
-      if (!target.includes("res.cloudinary.com")) {
+      if (!isCloudinaryHost(target)) {
         // Unsplash and any other remotePattern host — untouched, always real.
         await route.continue();
         return;

@@ -28,11 +28,22 @@ from app.models import User
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-def prompt(label: str, *, hidden: bool = False) -> str:
+def prompt(label: str) -> str:
     while True:
-        value = (getpass.getpass(label) if hidden else input(label)).strip()
+        value = input(label).strip()
         if value:
             return value
+        print("ערך ריק — נסי שוב.")
+
+
+# A separate reader for the password, so nothing read by getpass shares a
+# return path with the email that the messages below print (CodeQL
+# py/clear-text-logging-sensitive-data, alerts #2/#3).
+def prompt_password(label: str) -> str:
+    while True:
+        secret = getpass.getpass(label).strip()
+        if secret:
+            return secret
         print("ערך ריק — נסי שוב.")
 
 
@@ -41,7 +52,7 @@ def main() -> int:
         email, password = sys.argv[1], sys.argv[2]
     else:
         email = prompt("Email: ")
-        password = prompt("Password: ", hidden=True)
+        password = prompt_password("Password: ")
 
     if not EMAIL_RE.match(email):
         print(f"❌ אימייל לא תקין: {email}")
