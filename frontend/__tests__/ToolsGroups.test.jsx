@@ -154,9 +154,22 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
   });
 
-  // The line says «אחרי אישור העסק»: not for approved, not for a rejected or
-  // paused business (no approval is on its way), not for a missing status.
-  it.each([["approved"], ["rejected"], ["inactive"], [undefined]])("no locked line when the status is %s", async (status) => {
+  // Each unapproved status gets the line that is true for it: a draft or a
+  // pending business waits for approval; a rejected one has to fix and
+  // resubmit; a paused one is closed until it is active again.
+  it.each([
+    ["draft", "dashboard.producer.quick_links.locked_until_approved"],
+    ["pending", "dashboard.producer.quick_links.locked_until_approved"],
+    ["rejected", "dashboard.producer.quick_links.locked_rejected"],
+    ["inactive", "dashboard.producer.quick_links.locked_inactive"],
+  ])("a %s business sees %s", async (status, key) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toHaveTextContent(key);
+  });
+
+  it.each([["approved"], [undefined]])("no locked line when the status is %s", async (status) => {
     state.status = status;
     render(<ToolsPage />);
     const card = await screen.findByTestId("tool-group-opportunities");

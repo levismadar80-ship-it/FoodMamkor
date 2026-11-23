@@ -158,7 +158,20 @@ describe("MEH-1405 — ManageEventsPage", () => {
     expect(screen.getByTestId("events-pending-note")).toBeInTheDocument();
   });
 
-  it.each([["approved"], ["rejected"], ["inactive"], [undefined]])("no note when the status is %s", async (status) => {
+  // A rejected or paused business is not waiting for an approval, so it gets
+  // its own note, not the «אחרי שהעסק יאושר» one.
+  it.each([
+    ["rejected", "rejected_note"],
+    ["inactive", "inactive_note"],
+  ])("a %s business sees its own note (%s)", async (status, key) => {
+    AUTH.user.producer_status = status;
+    await renderPage();
+    await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
+    expect(L[key]).toBeTruthy();
+    expect(screen.getByTestId("events-pending-note")).toHaveTextContent(L[key]);
+  });
+
+  it.each([["approved"], [undefined]])("no note when the status is %s", async (status) => {
     if (status) AUTH.user.producer_status = status;
     await renderPage();
     await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
