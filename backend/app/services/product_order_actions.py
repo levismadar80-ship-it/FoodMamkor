@@ -362,7 +362,16 @@ def release_unaccepted_orders(db: Session, producer_id: Any) -> tuple[int, bool]
     Row-locked, so a business confirming at the same moment waits and then
     finds the order closed. Does not commit (booking_cancellations' caller)."""
     # REUSES: services/product_order_privacy.py::release_buyer_orders
-    orders = _unaccepted(db, producer_id).with_for_update().all()
+    # The business row first, in the mode order creation takes it
+    # (product_order_create._locked_business): an order being written now
+    # commits before this read, or waits and then finds the business gone.
+    db.query(Producer).filter(Producer.id == producer_id).with_for_update(
+        key_share=True
+    ).first()
+    # By id, so two multi-row lockers (release_buyer_orders) meet in one order.
+    orders = (
+        _unaccepted(db, producer_id).order_by(ProductOrder.id).with_for_update().all()
+    )
     for order in orders:
         apply_transition(db, order, "cancelled", SYSTEM, DELISTED_ORDER_NOTE)
         clear_proposal(order)

@@ -428,6 +428,12 @@ def _still_relevant(
 ) -> bool:
     if row.kind == "business_reminder":
         return str(order.status) == "pending"
+    if row.kind == "new_order":
+        # MEH-3768: an order closed before its «new order» went out (the
+        # business was taken off the site, the buyer cancelled at once) is not
+        # news to the business. Auto-confirmed stays relevant: the email still
+        # tells her about it, the WhatsApp is skipped in _compose.
+        return str(order.status) not in ("cancelled", "declined", "expired")
     if row.kind == "day_before":
         return str(order.status) in ("confirmed", "ready") and bool(
             order.slot_start > now
