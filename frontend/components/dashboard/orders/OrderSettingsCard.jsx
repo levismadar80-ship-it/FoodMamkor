@@ -120,7 +120,7 @@ function TimingFields({ form, set }) {
   const uid = useId();
   const number = (/** @type {any} */ e) => Number(e.target.value);
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
       <Helped id={`${uid}cutoff`} field="cancel_cutoff_hours" label={t("cutoff_label")}>
         <Select id={`${uid}cutoff`} value={form.cancel_cutoff_hours} onChange={(e) => set("cancel_cutoff_hours", number(e))}>
           {withCurrent(HOUR_CHOICES, form.cancel_cutoff_hours).map((hours) => (
