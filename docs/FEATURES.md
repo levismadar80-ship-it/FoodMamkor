@@ -40,7 +40,7 @@ left in v1" vs "what's planned for v2".
 | `/producers/diet/[dietSlug]` | SEO landing page: businesses by diet (vegan, gluten-free …) |
 | `/[slug]` | Business page (canonical vanity URL): about, products, order/contact, delivery checker, reviews, events, recipes, mini-map |
 | `/[slug]/recipes/[recipe_id]` | A business's recipe, with servings scaler and ingredient checklist |
-| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`) |
+| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`). A business with a slug answers a 308 to `/{slug}` (MEH-3708); `?preview=1` keeps the id page |
 | `/p/[slug]` | Redirect stub to `/[slug]`, noindex |
 | `/business-gone` | Shown (via middleware rewrite) for a deleted business URL |
 | `/events` | Events hub tab: markets, farm days, workshops; date chips |

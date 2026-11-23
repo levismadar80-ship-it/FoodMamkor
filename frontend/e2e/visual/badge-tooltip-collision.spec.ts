@@ -345,7 +345,7 @@ for (const vp of [
       }
 
       await mockMasthead(page);
-      await page.goto(`/producer/${borrowedId}`);
+      await page.goto(`/producer/${borrowedId}?preview=1`);
 
       // The masthead only exists for an IMAGELESS verified producer (the
       // `!images.length` branch, ImageGallery.jsx:78) — which the fixture

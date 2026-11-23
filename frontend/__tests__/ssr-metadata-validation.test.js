@@ -97,7 +97,9 @@ beforeEach(() => {
 const PRODUCER_OK = {
   id: "11111111-1111-1111-1111-111111111111",
   name: "מאפיית רוח השדה",
-  slug: "ruach-hasade",
+  // MEH-3708: no slug — a business WITH one is a 308 to /{slug} from this
+  // page (ProducerIdRedirect.test.js), so its body never renders here.
+  slug: null,
   city: "כפר סבא",
   avg_rating: 4.8,
   whatsapp_group: "https://chat.whatsapp.com/x", // declared by ProducerDetailOut, NOT by the Zod schema
