@@ -69,6 +69,8 @@
 import { appendFileSync } from "node:fs";
 import { test as base, expect, type Page, type Locator, type Route } from "@playwright/test";
 import { guardUnstubbedMe } from "./_unstubbed-me-guard";
+// REUSES: lib/cloudinary.js — host match, not substring (CodeQL alert #32).
+import { isCloudinaryUrl } from "../../lib/cloudinary";
 
 const STUB_ENABLED = process.env.E2E_CLOUDINARY_STUB !== "0";
 const COUNT_FILE = process.env.E2E_CLOUDINARY_COUNT || "";
@@ -99,16 +101,6 @@ async function fulfillPlaceholder(route: Route): Promise<void> {
   });
 }
 
-// The `url` param of /_next/image, matched on its parsed host rather than a
-// substring (CodeQL alert #32): a relative or unparsable value is not Cloudinary.
-function isCloudinaryHost(target: string): boolean {
-  try {
-    return new URL(target).hostname === "res.cloudinary.com";
-  } catch {
-    return false;
-  }
-}
-
 // `page` is deliberately NOT declared in the extend generic: an empty generic is
 // how Playwright is told this OVERRIDES the built-in fixture rather than
 // declaring a new one that shadows it.
@@ -124,7 +116,7 @@ export const test = base.extend({
     });
     await page.route("**/_next/image**", async (route) => {
       const target = new URL(route.request().url()).searchParams.get("url") || "";
-      if (!isCloudinaryHost(target)) {
+      if (!isCloudinaryUrl(target)) {
         // Unsplash and any other remotePattern host — untouched, always real.
         await route.continue();
         return;
