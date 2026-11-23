@@ -673,10 +673,10 @@ class TestCancelNotification:
         producer, owner = _producer_user(db, email="cn_own9@test.com")
         gb = _make_group_buy(db, producer, min_participants=5)
         self._join(client, db, gb, "cn_o1@test.com")
-        resp = client.post(
-            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(owner)
-        )
-        assert resp.status_code == 201, resp.text
+        # MEH-3691: the commit route now refuses an owner's own group, so the
+        # self-join is a row that predates the refusal, written directly.
+        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=owner.id, quantity=1))
+        db.commit()
 
         assert self._patch(client, gb, "cancelled", owner).status_code == 200
         assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]
