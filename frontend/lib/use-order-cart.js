@@ -7,12 +7,17 @@
  * Touches:  GET /producers/{id}/order-menu, once per business, and only when
  *           the page payload says `takes_site_orders`.
  * Does NOT: persist — the picks live in memory and a reload starts empty.
+ *           The one hand-off in is «להזמין שוב» (lib/order-again.js): a
+ *           stash left by the order page, merged once when the menu loads.
  * Related:  lib/order-cart.js (the pure helpers this wraps)
- * History:  MEH-3216 stage 5b (creation)
+ * History:  MEH-3216 stage 5b (creation); MEH-3764 («להזמין שוב» hand-off)
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
+import { applyOrderAgain, takeOrderAgain } from "@/lib/order-again";
+import { showToast } from "@/lib/toast";
 import { keepOrderable, loadOrderMenu, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
 
 /** @typedef {import("@/lib/order-cart").OrderMenu} OrderMenu */
@@ -30,6 +35,17 @@ import { keepOrderable, loadOrderMenu, pickedCount, pickedTotalAgorot, setQty } 
  * }} OrderCart
  */
 
+/**
+ * The one toast that says what «להזמין שוב» put in the cart.
+ * @param {(key: string, values?: Record<string, string>) => string} t
+ * @param {{ added: number, skipped: string[] }} result
+ */
+function orderAgainToast(t, { added, skipped }) {
+  if (added === 0) showToast.info(t("none_available"));
+  else if (skipped.length > 0) showToast.info(t("added_some", { names: skipped.join(", ") }));
+  else showToast.success(t("added_all"));
+}
+
 /** @type {Record<string, number>} */
 const NO_PICKS = Object.freeze({});
 
@@ -38,6 +54,7 @@ const NO_PICKS = Object.freeze({});
  * @returns {OrderCart}
  */
 export function useOrderCart(producer) {
+  const t = useTranslations("order_again");
   const producerId = producer?.id;
   const takesOrders = Boolean(producer?.takes_site_orders);
   const [menu, setMenu] = useState(/** @type {OrderMenu | null} */ (null));
@@ -56,12 +73,34 @@ export function useOrderCart(producer) {
     loadOrderMenu(producerId).then((loaded) => {
       if (!live) return;
       setMenu(loaded);
-      setPicks((current) => (loaded ? keepOrderable(current, loaded.products) : {}));
+      // MEH-3764: read after the menu, so a stash is spent only once it can be
+      // checked against what is orderable now.
+      const stash = loaded ? takeOrderAgain(producerId) : null;
+      const kept = (/** @type {Record<string, number>} */ current) => (loaded ? keepOrderable(current, loaded.products) : {});
+      if (!stash || !loaded) {
+        setPicks(kept);
+        return;
+      }
+      // The toast is worked out against an empty cart: a stash is read on the
+      // first menu load after the order page sent her here, before any pick
+      // could be made (picking needs the menu). The cart itself merges into
+      // whatever it holds, to stay right if that ever changes.
+      setPicks((current) => applyOrderAgain(kept(current), stash.lines, loaded.products).picks);
+      orderAgainToast(t, applyOrderAgain({}, stash.lines, loaded.products));
     });
     return () => {
       live = false;
     };
+    // `t` is read, not reacted to: a locale switch must not re-read the menu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producerId, takesOrders, generation]);
+
+  // MEH-3764: «להזמין שוב» to a business that stopped taking site orders.
+  useEffect(() => {
+    if (!producerId || takesOrders) return;
+    if (takeOrderAgain(producerId)) showToast.info(t("not_taking"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [producerId, takesOrders]);
 
   const open = takesOrders ? menu : null;
   const shown = open ? picks : NO_PICKS;

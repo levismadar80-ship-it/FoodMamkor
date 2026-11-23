@@ -436,6 +436,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `og-producer-card.js` | The branded link-preview image of a business page (1200×630): what WhatsApp and Facebook show when the page is pasted. … |
 | `og-rtl.js` | Hebrew text for next/og (Satori), which has no bidi: it lays every string out LTR, so «מאפייה» comes out «הייפאמ». … |
 | `og-site-image.js` | The one owner of the site's link-preview image path, per locale. A page that sets its own 'openGraph' replaces the layout's object (Next merges metadata … |
+| `order-again.js` | «להזמין שוב»: carry a finished order's lines from its status page to the business page, where they fill the cart again — the items still on the menu are … |
 | `order-cart.js` | What a buyer has picked on a business page before she sends an order request: the menu read, and the pure sums over her picks. |
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |

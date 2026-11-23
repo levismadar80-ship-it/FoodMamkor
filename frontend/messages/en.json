@@ -8002,6 +8002,13 @@
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
   },
+  "order_again": {
+    "button": "Order again",
+    "added_all": "We added the items from last time to your order",
+    "added_some": "We added what can be ordered now. Not available right now: {names}",
+    "none_available": "The items from last time are not available right now",
+    "not_taking": "This business is not taking orders on the site right now"
+  },
   "product_variants": {
     "from": "From ",
     "choose": "Choose",
