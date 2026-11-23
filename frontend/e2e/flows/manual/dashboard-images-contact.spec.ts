@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import { layoutSettled } from "../_layout-settled";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import type { Route } from "@playwright/test";
 import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
@@ -257,22 +258,12 @@ test.describe("contact channels — the wire", () => {
     const email = b(page).getByRole("textbox", { name: "מייל" });
     await expect(email).toHaveValue("owner@example.com");
     await email.fill("");
-    // MEH-3449: one first attempt in CI ended with no PUT at all, and 104 local
-    // repeats (CPU ×4/×8/×16) never did; the cause is NOT established. Before
-    // the click, gate on the state the click needs — the button enabled (it is
-    // `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not as a
-    // missing PUT. After the click, a failure says what the card showed.
-    await expect(save(page), "the save button never enabled — the card did not see the edit").toBeEnabled();
-    // MEH-3449 cause: a layout shift between the click's mousedown and mouseup
-    // loses the click silently (Playwright checks the hit target on mousedown
-    // only — flows/_layout-settled.ts). The edit has one more render to come
-    // (the unsaved banner, a render after the button enables); wait for it and
-    // for the button to stop moving before clicking.
-    await expect(banner(page)).toBeVisible();
-    await layoutSettled(save(page));
+    // MEH-3449 · MEH-3685 cause: the unsaved banner mounts a render after the button
+    // enables and shifts the card; clickSaveAfterEdit waits for it and for the
+    // button to stop moving (flows/_save-after-edit.ts).
     const seen: string[] = [];
     page.on("request", (r) => seen.push(`${r.method()} ${new URL(r.url()).pathname}`));
-    await save(page).click();
+    await clickSaveAfterEdit(page, save(page));
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length, {
       message: "the PUT never left the browser",
     }).toBe(1).catch(async (e: Error) => {
@@ -301,7 +292,7 @@ test.describe("contact channels — the wire", () => {
     // MEH-2626: the field is the business's WhatsApp UPDATES link now
     // (dashboard.producer.contact_channels.field_whatsapp_group).
     await b(page).getByLabel("עדכונים בוואטסאפ", { exact: true }).fill("https://chat.whatsapp.com/ABCdef123");
-    await save(page).click();
+    await clickSaveAfterEdit(page, save(page));
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length).toBe(1);
     expect(writes.find((w) => w.method === "PUT")!.body).toMatchObject({ phone: "050-123-4567", contact_email: "owner@example.com", whatsapp_group: "https://chat.whatsapp.com/ABCdef123" });
     await expect(save(page)).toHaveText("נשמר");
