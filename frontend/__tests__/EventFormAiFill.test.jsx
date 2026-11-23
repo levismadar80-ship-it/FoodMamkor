@@ -132,7 +132,7 @@ describe("the «?» on every event field (MEH-3751)", () => {
     expect(Object.keys(labels).sort()).toEqual(KEYS.filter((k) => k !== "image_url").sort());
     for (const [id, text] of Object.entries(labels)) {
       // CitySearch also carries its own sr-only label, hence getAll.
-      const controls = screen.getAllByLabelText(new RegExp(`^${text.replace(/[()]/g, "\\$&")}`), { selector: "input,textarea,select" });
+      const controls = screen.getAllByLabelText(new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), { selector: "input,textarea,select" });
       expect(controls, id).toContain(field(id));
     }
   });
