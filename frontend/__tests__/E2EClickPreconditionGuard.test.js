@@ -75,11 +75,16 @@ const MARKER_CLICK = /markerOf\([^;]*?\.click\(/gs;
 // clickSaveAfterEdit (e2e/flows/_save-after-edit.ts), which waits for the
 // unsaved banner's render. A bare `save(page).click()` / `saveBtn(...).click()`
 // can lose its click to that render.
-const SAVE_CLICK = /\bsave(?:Btn)?\([^;]*?\)\s*\.click\(/s;
+// Three ways a spec names a save button: a `save(…)`/`saveBtn(…)` locator, a
+// role name «שמרו…»/«שמירה…», or a testid ending `-save`. BLIND SPOT, stated so
+// the scan is not read as stronger than it is: a save locator stored in a
+// variable first (`const s = saveBtn(page); await s.click()`) passes unseen.
+const SAVE_CLICK = /(?:\bsave(?:Btn)?\(|name:\s*\/?\^?\(?["']?(?:שמרו|שמירה)|-save["'])[^;]*?\.click\(/s;
 const EDIT_PAGE = /producer\/dashboard\/edit/;
 // Cards that do not report dirty to the page: no banner, nothing to wait for.
 const SAVE_EXEMPT = {
   "dashboard-locations.spec.ts": "LocationsEditor.jsx never calls reportDirty — no unsaved banner mounts",
+  "dashboard-products.spec.ts": "the product form («שמרו שינויים») is not a reportDirty card — no unsaved banner mounts",
 };
 
 function saveClickOffenders(file, src) {
@@ -122,6 +127,10 @@ describe("E2E click preconditions (MEH-3486 · MEH-3488)", () => {
     expect(saveClickOffenders(f, onEdit(`await saveBtn(page).click();`))).toHaveLength(1);
     expect(saveClickOffenders(f, onEdit(`await saveBtn(page, "license").click();`))).toHaveLength(1);
     expect(saveClickOffenders(f, onEdit(`await save(page).click();`))).toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();`)), "a save found by its Hebrew name").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await body(page).getByRole("button", { name: /^(שמירה|בשמירה…)$/ }).click();`)), "a regex name").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await page.getByTestId("offer-save").click();`)), "a -save testid").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));`))).toHaveLength(0);
     expect(saveClickOffenders(f, onEdit(`await clickSaveAfterEdit(page, saveBtn(page));`))).toHaveLength(0);
     expect(saveClickOffenders(f, onEdit(`await expect(saveBtn(page)).toBeDisabled();`))).toHaveLength(0);
     expect(saveClickOffenders(f, `await page.goto("/admin");\nawait saveBtn(page).click();`), "another page has no banner").toHaveLength(0);

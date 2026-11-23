@@ -258,12 +258,7 @@ test.describe("contact channels — the wire", () => {
     const email = b(page).getByRole("textbox", { name: "מייל" });
     await expect(email).toHaveValue("owner@example.com");
     await email.fill("");
-    // MEH-3449: one first attempt in CI ended with no PUT at all, and 104 local
-    // repeats (CPU ×4/×8/×16) never did; the cause is NOT established. Before
-    // the click, gate on the state the click needs — the button enabled (it is
-    // `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not as a
-    // missing PUT. After the click, a failure says what the card showed.
-    // MEH-3449 cause: the unsaved banner mounts a render after the button
+    // MEH-3449 · MEH-3685 cause: the unsaved banner mounts a render after the button
     // enables and shifts the card; clickSaveAfterEdit waits for it and for the
     // button to stop moving (flows/_save-after-edit.ts).
     const seen: string[] = [];
