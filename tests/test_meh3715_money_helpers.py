@@ -61,12 +61,16 @@ def test_no_second_agorot_conversion() -> None:
     assert len(srcs) > 50, (
         "control: app/ sources not found — the scan is looking in the wrong place"
     )
-    pattern = re.compile(r"\*\s*_?AGOROT_PER_SHEKEL\)\.to_integral_value\(\)")
+    pattern = re.compile(
+        r"\*\s*(?:_?AGOROT_PER_SHEKEL|100|Decimal\(\s*[\"']?100[\"']?\s*\))\s*\)\s*\.to_integral_value\(\)"
+    )
     offenders = [str(p.relative_to(APP)) for p, s in srcs if pattern.search(s)]
     assert offenders == [], f"use app.utils.money.agorot_from_shekels: {offenders}"
 
 
 def test_no_second_shekels_text() -> None:
-    pattern = re.compile(r"divmod\(int\(agorot\),\s*(100|_?AGOROT_PER_SHEKEL)\)")
+    pattern = re.compile(
+        r"divmod\(\s*int\(\s*\w+\s*\)\s*,\s*(?:100|_?AGOROT_PER_SHEKEL)\s*\)"
+    )
     offenders = [str(p.relative_to(APP)) for p, s in _sources() if pattern.search(s)]
     assert offenders == [], f"use app.utils.money.shekels_text: {offenders}"
