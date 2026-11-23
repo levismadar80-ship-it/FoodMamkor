@@ -114,10 +114,27 @@ describe("the «?» on every event field (MEH-3751)", () => {
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 
-  it("keeps each label tied to its control", () => {
+  it("keeps every field's visible label tied to its control", () => {
     renderForm();
-    expect(screen.getByLabelText(new RegExp(he.sweep_tail.event_new.field_title_label), { selector: "input" })).toBe(field("title"));
-    expect(screen.getByLabelText(he.sweep_tail.event_new.field_price_label_full, { selector: "input" })).toBe(field("price"));
+    const T = he.sweep_tail.event_new;
+    const labels = {
+      title: T.field_title_label,
+      description: T.field_description_label,
+      category: T.field_category_label,
+      event_date: T.field_date_label,
+      event_time: T.field_time_label,
+      end_time: T.field_end_time_label,
+      location: T.field_location_label,
+      city: T.field_city_label,
+      price: T.field_price_label_full,
+      max_participants: T.field_max_participants_label_full,
+    };
+    expect(Object.keys(labels).sort()).toEqual(KEYS.filter((k) => k !== "image_url").sort());
+    for (const [id, text] of Object.entries(labels)) {
+      // CitySearch also carries its own sr-only label, hence getAll.
+      const controls = screen.getAllByLabelText(new RegExp(`^${text.replace(/[()]/g, "\\$&")}`), { selector: "input,textarea,select" });
+      expect(controls, id).toContain(field(id));
+    }
   });
 });
 
@@ -137,6 +154,7 @@ describe("«יש לכם מודעה על האירוע?» (MEH-3751)", () => {
     renderForm();
     await fillFrom(FULL);
     await waitFor(() => expect(field("title").value).toBe(FULL.title));
+    expect(screen.getByTestId("form-fill-event-text")).not.toBeVisible(); // the box closes again
     expect(field("description").value).toBe(FULL.description);
     expect(field("category").value).toBe("שוק");
     expect(field("event_date").value).toBe("2026-11-27");
@@ -152,6 +170,18 @@ describe("«יש לכם מודעה על האירוע?» (MEH-3751)", () => {
     await fillFrom({ ...EMPTY, event_time: "10:30" });
     await waitFor(() => expect(field("event_time").value).toBe("10:30"));
     expect(field("title").value).toBe("השם שלי");
+  });
+
+  it("clears the errors of the fields it filled, and only those", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: he.sweep_tail.event_new.submit }));
+    await waitFor(() => expect(field("title")).toHaveAttribute("aria-invalid", "true"));
+    expect(document.getElementById("city-error")).toBeInTheDocument();
+    await fillFrom({ ...EMPTY, title: "שוק איכרים" });
+    await waitFor(() => expect(field("title").value).toBe("שוק איכרים"));
+    expect(field("title")).not.toHaveAttribute("aria-invalid", "true");
+    expect(document.getElementById("city-error")).toBeInTheDocument();
+    expect(document.getElementById("category-error")).toBeInTheDocument();
   });
 
   it("says so when the post filled nothing, and keeps the text", async () => {

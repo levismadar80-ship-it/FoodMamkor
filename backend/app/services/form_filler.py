@@ -41,7 +41,8 @@ logger = logging.getLogger(__name__)
 MAPS_DIR = Path(__file__).resolve().parent.parent / "data" / "form_maps"
 _FORM_NAME = re.compile(r"^[a-z_]{1,40}$")
 # Stand-alone numbers in the text: «45 דקות», «ל-6 מנות»; not pieces of a phone.
-_NUMBER = re.compile(r"(?<!\d)\d{1,6}(?!\d)")
+_NUMBER = re.compile(r"(?<!\d)\d{1,4}(?!\d)")
+_THOUSANDS = re.compile(r"(?<=\d),(?=\d{3}(?!\d))")
 _TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 # A drafted date further out than this is more likely a misread than a plan.
 DATE_HORIZON = timedelta(days=366)
@@ -138,15 +139,26 @@ def _stated(value: int, field: dict[str, Any], source: str) -> bool:
     with `zero_words` takes 0 from «בחינם». A field without units takes the
     number anywhere in the text.
     """
-    if value == 0 and any(w in source for w in field.get("zero_words", [])):
-        return True  # «בחינם» states a price of 0 with no digit
     units = field.get("units")
     if not units:
         return value in {int(n) for n in _NUMBER.findall(source)}
+    text = _THOUSANDS.sub("", source)  # «1,500 ש"ח» is 1500
     unit = "|".join(re.escape(u) for u in units)
-    if _number_by(value, unit, source):
+    if value == 0 and _free(field, unit, text):
         return True
-    return bool(field.get("hours")) and _hours_stated(value, source)
+    if _number_by(value, unit, text):
+        return True
+    return bool(field.get("hours")) and _hours_stated(value, text)
+
+
+def _free(field: dict[str, Any], unit: str, text: str) -> bool:
+    """«בחינם» states 0, unless the text also prices something («חינם לילדים,
+    30 ש"ח למבוגרים»): then 0 is not the price per participant."""
+    said = any(w in text for w in field.get("zero_words", []))
+    priced = re.search(
+        rf"[1-9]\d*\s*[-־]?\s*(?:{unit})(?![א-ת])|(?:{unit})\s*[1-9]", text
+    )
+    return said and not priced
 
 
 def _hours_stated(value: int, source: str) -> bool:
@@ -165,7 +177,8 @@ def _hours_stated(value: int, source: str) -> bool:
 def _number_by(value: int, unit: str, source: str) -> bool:
     n = rf"(?<![\d.]){value}(?![\d.])"
     return bool(
-        re.search(rf"{n}\s*[-־]?\s*(?:{unit})", source)
+        # A whole unit word: «20 שח» but not «20 שחקנים».
+        re.search(rf"{n}\s*[-־]?\s*(?:{unit})(?![א-ת])", source)
         or re.search(rf"(?:{unit})\s*{n}", source)
     )
 
@@ -183,21 +196,56 @@ def _enum(value: object, field: dict[str, Any]) -> str | None:
     return value if isinstance(value, str) and value in field["values"] else None
 
 
-def _date(value: object, today: date) -> str | None:
-    """A real day, not before today and within a year (a past event is not drafted)."""
+def _date(value: object, today: date, source: str) -> str | None:
+    """A real day, not before today and within a year (a past event is not
+    drafted), that the text dates: its day of the month, «היום», «מחר», or
+    its weekday («ביום שישי»). A post with no date gets none, not today."""
     if not isinstance(value, str):
         return None
     try:
         day = date.fromisoformat(value.strip())
     except ValueError:
         return None
-    return day.isoformat() if today <= day <= today + DATE_HORIZON else None
+    if not today <= day <= today + DATE_HORIZON:
+        return None
+    dated = (
+        re.search(rf"(?<![\d:.]){day.day}(?![\d:])", source)
+        or (day == today and "היום" in source)
+        or (
+            day == today + timedelta(days=1)
+            and re.search(r"(?<![א-ת])מחר(?![א-ת])", source)
+        )
+        or day_named((day.weekday() + 1) % 7, source)  # date.weekday(): Monday = 0
+    )
+    return day.isoformat() if dated else None
 
 
-def _time(value: object) -> str | None:
+def _time(value: object, source: str) -> str | None:
+    """HH:MM whose hour the text writes («09:00», «9:30», «בשעה 9»)."""
     if not isinstance(value, str) or not _TIME.match(value.strip()):
         return None
-    return value.strip()
+    hhmm = value.strip()
+    return hhmm if hour_stated(hhmm, source) else None
+
+
+# 0 = Sunday … 6 = Saturday, as producers.order_window.
+DAYS = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
+
+
+def day_named(weekday: int, source: str) -> bool:
+    """«שישי», «בשישי», «יום שישי»; not inside another word («שנית»)."""
+    name = re.escape(DAYS[weekday])
+    return bool(re.search(rf"(?<![א-ת])(?:ו?ב|ה)?{name}(?![א-ת])", source))
+
+
+def hour_stated(hhmm: str, source: str) -> bool:
+    """«09:00» or «9:00» as written, or a whole hour as a stand-alone number."""
+    hour, minutes = int(hhmm[:2]), hhmm[3:]
+    if hhmm in source or f"{hour}:{minutes}" in source:
+        return True
+    return minutes == "00" and bool(
+        re.search(rf"(?<![\d:.]){hour}(?![\d.]|:\d)", source)
+    )
 
 
 def _city(value: object, source: str) -> str | None:
@@ -206,10 +254,18 @@ def _city(value: object, source: str) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     city = canonical_city(value)
-    named = value.strip() in source or (city is not None and city in source)
+    named = _word_in(value.strip(), source) or (
+        city is not None and _word_in(city, source)
+    )
     if city and city_key(city) in STATIC_SPELLING_BY_KEY and named:
         return city
     return None
+
+
+def _word_in(name: str, source: str) -> bool:
+    """`name` as its own word, with a Hebrew prefix letter allowed («בחיפה»);
+    «יהוד» is not named by «אור יהודה»."""
+    return bool(re.search(rf"(?<![א-ת])[בלמו]?{re.escape(name)}(?![א-ת])", source))
 
 
 def _choices(
@@ -252,9 +308,9 @@ def _value(  # noqa: PLR0911 — one branch per field type
     if kind == "enum":
         return _enum(raw, f)
     if kind == "date":
-        return _date(raw, today)
+        return _date(raw, today, source)
     if kind == "time":
-        return _time(raw)
+        return _time(raw, source)
     if kind == "city":
         return _city(raw, source)
     return _text(raw, f, source)

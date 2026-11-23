@@ -60,7 +60,7 @@ def _patch(monkeypatch, answer):
     return calls
 
 
-def _draft(data, source=POST, monkeypatch=None):
+def _draft(data, source=POST):
     return form_filler.to_draft(form_filler.load_map("event"), data, source, {})
 
 
@@ -104,11 +104,13 @@ def test_a_category_outside_the_set_is_dropped(monkeypatch):
 
 def test_a_past_or_far_or_broken_date_is_dropped(monkeypatch):
     monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
-    assert _draft(_answer(event_date="2026-11-23"))["event_date"] is None  # yesterday
+    # Each source writes its date, so only the window can drop it.
+    assert _draft(_answer(event_date="2026-11-23"), "שוק ב-23.11")["event_date"] is None
+    today = _draft(_answer(event_date="2026-11-24"), "שוק היום, 24.11")
+    assert today["event_date"] == "2026-11-24"
     assert (
-        _draft(_answer(event_date="2026-11-24"))["event_date"] == "2026-11-24"
-    )  # today
-    assert _draft(_answer(event_date="2028-01-01"))["event_date"] is None
+        _draft(_answer(event_date="2028-01-01"), "שוק ב-1.1.2028")["event_date"] is None
+    )
     assert _draft(_answer(event_date="27.11"))["event_date"] is None
 
 
@@ -127,7 +129,7 @@ def test_a_city_must_be_on_the_list_and_in_the_text(monkeypatch):
 
 def test_a_price_or_a_count_the_post_does_not_write_is_dropped(monkeypatch):
     monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
-    draft = _draft(_answer(price=35, max_participants=0))
+    draft = _draft(_answer(price=35, max_participants=15))
     assert (draft["price"], draft["max_participants"]) == (None, None)
 
 
@@ -143,6 +145,59 @@ def test_free_is_a_price_of_zero_only_when_the_post_says_so(monkeypatch):
     monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
     assert _draft(_answer(price=0), "שוק איכרים, הכניסה בחינם")["price"] == 0
     assert _draft(_answer(price=0), "שוק איכרים ביום שישי")["price"] is None
+
+
+def test_a_date_or_a_time_the_post_does_not_write_is_dropped(monkeypatch):
+    """With today in the prompt, a post with no date must not come back as today."""
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
+    bare = "שוק איכרים בחצר המשק, זכרון יעקב."
+    draft = _draft(
+        _answer(event_date="2026-11-24", event_time="10:00", end_time=None), bare
+    )
+    assert (draft["event_date"], draft["event_time"]) == (None, None)
+
+
+def test_a_date_counts_by_its_day_its_weekday_or_tomorrow(monkeypatch):
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)  # a Tuesday
+    cases = [
+        ("שוק ב-27.11", "2026-11-27"),
+        ("שוק ביום שישי", "2026-11-27"),
+        ("שוק מחר בבוקר", "2026-11-25"),
+        ("שוק היום", "2026-11-24"),
+    ]
+    for source, day in cases:
+        assert _draft(_answer(event_date=day), source)["event_date"] == day, source
+    assert (
+        _draft(_answer(event_date="2026-11-28"), "שוק ביום שישי")["event_date"] is None
+    )
+
+
+def test_a_time_counts_by_its_hour(monkeypatch):
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
+    assert (
+        _draft(_answer(event_time="09:00"), "מתחילים בשעה 9")["event_time"] == "09:00"
+    )
+    assert _draft(_answer(event_time="09:30"), "פותחים ב-9:30")["event_time"] == "09:30"
+    assert _draft(_answer(event_time="10:00"), "פותחים ב-9:30")["event_time"] is None
+
+
+def test_a_unit_is_a_whole_word_and_a_price_reads_as_written(monkeypatch):
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
+    assert _draft(_answer(price=20), "20 שחקנים בטורניר")["price"] is None
+    assert _draft(_answer(price=1500), 'סדנה, 1,500 ש"ח לאדם')["price"] == 1500
+    assert _draft(_answer(price=40), "כניסה 40 ש''ח")["price"] == 40
+
+
+def test_free_with_a_price_beside_it_is_not_a_price_of_zero(monkeypatch):
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
+    assert _draft(_answer(price=0), "הכניסה חופשית? כניסה חופשית לכולם")["price"] == 0
+    assert _draft(_answer(price=0), 'חינם לילדים, 30 ש"ח למבוגרים')["price"] is None
+
+
+def test_a_city_is_named_as_its_own_word(monkeypatch):
+    monkeypatch.setattr(form_filler, "israel_today", lambda: TODAY)
+    assert _draft(_answer(city="יהוד"), "שוק באור יהודה")["city"] is None
+    assert _draft(_answer(city="חיפה"), "שוק בחיפה")["city"] == "חיפה"
 
 
 def test_the_prompt_carries_today_so_a_weekday_can_be_dated(monkeypatch):

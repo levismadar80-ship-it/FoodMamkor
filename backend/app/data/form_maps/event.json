@@ -19,7 +19,7 @@
     {"key": "city", "type": "city", "ai": true,
      "prompt": "the Israeli city or town, in Hebrew, as written; null if not given"},
     {"key": "price", "type": "int", "min": 0, "max": 100000, "ai": true,
-     "units": ["₪", "ש״ח", "ש\"ח", "שח", "שקלים", "שקל"], "zero_words": ["בחינם", "חינם", "ללא תשלום", "אין תשלום"],
+     "units": ["₪", "ש״ח", "ש\"ח", "ש''ח", "שח", "שקלים", "שקל", "NIS"], "zero_words": ["בחינם", "חינם", "ללא תשלום", "אין תשלום", "ללא עלות", "כניסה חופשית"],
      "prompt": "the price per participant in shekels; 0 only if the text says it is free; null if not given"},
     {"key": "max_participants", "type": "int", "min": 1, "max": 10000, "ai": true,
      "units": ["משתתפים", "משתתפות", "מקומות", "אנשים", "איש"],

@@ -8,35 +8,29 @@
  *           EventForm saves through POST /events); geocode — a drafted
  *           address clears lat/lng, so the pin of a saved point is never
  *           kept under an address that is no longer it.
- * Related:  lib/recipe-draft.js (same shape, MEH-3740) ·
+ * Related:  lib/form-draft.js (the shared field rule) ·
  *           backend/app/data/form_maps/event.json (the keys) ·
  *           lib/event-categories.js (the category wire values)
  * History:  MEH-3751 (creation)
  */
 
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { applyDraftFields, filledKeys } from "@/lib/form-draft";
 
-const TEXT_KEYS = ["title", "description", "location", "city", "event_date", "event_time", "end_time"];
-const NUMBER_KEYS = ["price", "max_participants"];
+const KEYS = {
+  text: ["title", "description", "location", "city", "event_date", "event_time", "end_time"],
+  number: ["price", "max_participants"],
+};
 const CATEGORIES = new Set(EVENT_CATEGORIES.map((c) => c.key));
 
 /**
- * The form keys a draft fills, in form order.
+ * The form keys a draft fills.
  * @param {Record<string, unknown>} draft
  * @returns {string[]}
  */
 export function eventDraftKeys(draft) {
-  const keys = [];
-  for (const key of TEXT_KEYS) {
-    const value = draft[key];
-    if (typeof value === "string" && value.trim()) keys.push(key);
-  }
-  if (typeof draft.category === "string" && CATEGORIES.has(draft.category)) keys.push("category");
-  for (const key of NUMBER_KEYS) {
-    const value = draft[key];
-    if (typeof value === "number" && Number.isInteger(value)) keys.push(key);
-  }
-  return keys;
+  const category = typeof draft.category === "string" && CATEGORIES.has(draft.category);
+  return [...filledKeys(draft, KEYS), ...(category ? ["category"] : [])];
 }
 
 /**
@@ -47,10 +41,8 @@ export function eventDraftKeys(draft) {
  */
 export function applyEventDraft(form, draft) {
   /** @type {Record<string, any>} */
-  const next = { ...form };
-  for (const key of eventDraftKeys(draft)) {
-    next[key] = NUMBER_KEYS.includes(key) ? String(draft[key]) : draft[key];
-  }
+  const next = applyDraftFields(form, draft, KEYS);
+  if (eventDraftKeys(draft).includes("category")) next.category = draft.category;
   if (next.location !== form.location || next.city !== form.city) {
     next.lat = null;
     next.lng = null;
