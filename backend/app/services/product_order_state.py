@@ -113,10 +113,6 @@ class InvalidTransition(Exception):
         self.forbidden = forbidden
 
 
-def can_transition(from_status: str, to_status: str, actor: str) -> bool:
-    return actor in TRANSITIONS.get(from_status, {}).get(to_status, frozenset())
-
-
 def _stamp(order: ProductOrder, to_status: str) -> None:
     """The timestamp columns that mirror a status, so a list query can sort and
     filter without joining the event log."""
