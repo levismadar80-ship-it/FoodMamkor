@@ -429,6 +429,7 @@ files = [
     "app/startup.py",
     "app/utils/clock.py",
     "app/utils/hebrew_search.py",
+    "app/utils/money.py",
     "app/utils/phone.py",
     "app/utils/pii.py",
     "app/utils/sql.py",

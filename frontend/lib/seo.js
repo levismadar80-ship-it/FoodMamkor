@@ -40,6 +40,7 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
 import { toE164Phone } from "./utils";
 import { variantsOf } from "@/lib/product-variants";  // MEH-3617
 export { SITE_URL };
+import { agorotToShekels } from "./money";
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
 // always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org
@@ -372,7 +373,7 @@ function buildOfferCatalog(producer, locale = "he") {
 function variantOffer(p, v) {
   const offer = productOffer({ ...p, name: `${p.name.trim()} · ${v.name}` });
   if (typeof v.price_agorot === "number") {
-    const price = String(v.price_agorot / 100);
+    const price = String(agorotToShekels(v.price_agorot));
     offer.priceSpecification = { "@type": "PriceSpecification", minPrice: price, maxPrice: price, priceCurrency: "ILS" };
   }
   if (v.in_stock === false) offer.availability = "https://schema.org/OutOfStock";

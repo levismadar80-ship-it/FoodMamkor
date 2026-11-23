@@ -22,7 +22,6 @@ does not grow (code-execution.md §16).
 """
 
 from datetime import UTC
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -53,6 +52,7 @@ from app.schemas.product_order_offer import (
 from app.services import product_variants  # MEH-3617
 from app.services.product_order_menu import offered_slots, takes_orders, windows
 from app.utils.clock import utc_now
+from app.utils.money import agorot_of
 
 me_router = APIRouter(tags=["product-orders"])
 public_router = APIRouter(tags=["product-orders"])
@@ -60,8 +60,6 @@ public_router = APIRouter(tags=["product-orders"])
 NOT_FOUND_DETAIL = "לא נמצא"
 PRODUCT_NOT_FOUND_DETAIL = "המוצר לא נמצא"
 ORDERABLE_NEEDS_PRICE_DETAIL = "כדי לאפשר הזמנה של המוצר צריך לקבוע לו מחיר"
-
-_AGOROT_PER_SHEKEL = 100
 
 
 def _own_producer_id(user: User) -> Any:
@@ -190,13 +188,9 @@ def put_product_ordering(
     return product
 
 
-def _agorot(shekels: Decimal) -> int:
-    return int((shekels * _AGOROT_PER_SHEKEL).to_integral_value())
-
-
 def _menu_product(product: Product) -> dict[str, Any]:
-    low = _agorot(product.price_min)  # type: ignore[arg-type]
-    high = _agorot(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
+    low = agorot_of(product.price_min)  # type: ignore[arg-type]
+    high = agorot_of(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
     weighed = product.price_unit in WEIGHED_PRICE_UNITS
     return {
         "id": product.id,

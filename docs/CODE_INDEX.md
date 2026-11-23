@@ -314,6 +314,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `startup.py` | — אין כותרת — |
 | `utils/clock.py` | Asia/Jerusalem-aware "now"/"today" helpers so availability and vacation logic compare against Israel local time, not the server's UTC clock (Railway runs UTC). |
 | `utils/hebrew_search.py` | Turn a raw Hebrew search string into per-token ILIKE patterns so a row matches when EVERY token hits at least one searchable field — instead of the whole … |
+| `utils/money.py` | Agorot ↔ shekels for order and rescue code: a shekel Decimal as whole agorot, and agorot as the short text an email shows. |
 | `utils/phone.py` | Canonicalize an Israeli mobile number to a single comparable form so a Meta webhook 'from' (international, no "+") can be matched against an unvalidated, … |
 | `utils/pii.py` | PII masking helpers for log/error output. |
 | `utils/sql.py` | SQL LIKE/ILIKE pattern hygiene — escape user input so '%'/'_' match literally instead of acting as wildcards. |
@@ -428,6 +429,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `marker-glyph.js` | Stringify a Phosphor icon component to a white, fill-weight SVG for the Leaflet divIcon marker fallback on /map (MEH-936). |
 | `menu-image.js` | Shrink a menu photo in the browser before it is sent (MEH-3430). A phone photo is 3–6 MB; … |
 | `middleware-exists.js` | Existence checks the middleware runs so a missing recipe or an unservable category × region page answers a REAL 404 instead of a streamed 200 (their … |
+| `money.js` | The one place that turns agorot (what the API stores) into shekels (what people read). Prices travel as whole agorot. |
 | `nav-links.js` | The one place that builds "navigate there" links (Waze + Google Maps) — from a map point, or from a text address when there is no point. … |
 | `nav-registry.js` | MEH-1703 chunk 1 — one declaration per navigation item, covering the four nav surfaces (desktop pill, desktop avatar dropdown, mobile bottom pill, mobile … |
 | `nextDelivery.js` | The date of a business's next delivery to a city — «המשלוח הבא: יום שלישי 24.11» (MEH-3485) — from the city's delivery days and the business's weekly order … |
