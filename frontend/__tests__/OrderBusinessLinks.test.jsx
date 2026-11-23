@@ -6,7 +6,7 @@
  * Rendered with the real he.json.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { SWRConfig } from "swr";
 import he from "../messages/he.json";
@@ -20,6 +20,7 @@ vi.mock("@/lib/contact-tracking", () => ({ trackChannelClick: vi.fn() }));
 import api from "@/lib/api";
 import { GetProducerProducersProducerIdGetResponse } from "@/lib/generated/api.zod";
 import OrderBusinessLinks from "@/app/[locale]/order/[id]/OrderBusinessLinks";
+import { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
 import { contractRow, uuidFor } from "./helpers/contract-row";
 
 const ID = uuidFor("bakery");
@@ -35,6 +36,14 @@ const show = (props) =>
     </SWRConfig>,
   );
 
+// Wait until the read was made AND its promise settled (SWR has then stored
+// the result), so an absent block means "hidden", not "not loaded yet".
+async function settled() {
+  await waitFor(() => expect(api.get).toHaveBeenCalled());
+  await act(async () => {
+    await vi.mocked(api.get).mock.results.at(-1)?.value?.catch?.(() => {});
+  });
+}
 
 describe("OrderBusinessLinks", () => {
   it("control: the fixture parses as a business page", () => {
@@ -87,8 +96,7 @@ describe("OrderBusinessLinks", () => {
   it("the business page cannot be read (404) → no business block, the nav links stay", async () => {
     vi.mocked(api.get).mockImplementation(async () => { throw Object.assign(new Error("404"), { response: { status: 404 } }); });
     show({ pickupAddress: "הנשיא 5, זכרון יעקב" });
-    // Let the failed read settle before the assertions and the unmount.
-    await new Promise((r) => setTimeout(r, 50));
+    await settled();
     expect(api.get).toHaveBeenCalledWith(`/producers/${ID}`, undefined);
     expect(screen.getByTestId("order-nav")).toBeTruthy();
     expect(screen.queryByTestId("order-business")).toBeNull();
@@ -97,9 +105,49 @@ describe("OrderBusinessLinks", () => {
   it("a body that does not parse is treated as no business (rule 19)", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: { id: ID } });
     show({});
-    // Long enough for the read to settle (the 200 case renders by then).
-    await new Promise((r) => setTimeout(r, 50));
+    await settled();
     expect(api.get).toHaveBeenCalledWith(`/producers/${ID}`, undefined);
     expect(screen.queryByTestId("order-business")).toBeNull();
+  });
+});
+
+describe("the order page passes the pickup address only for a confirmed pickup", () => {
+  const ORDER = {
+    id: "0a000000-0000-4000-8000-00000000000a", producer_id: ID, status: "confirmed", fulfilment: "pickup",
+    slot_start: "2026-11-26T15:00:00Z", slot_end: "2026-11-26T16:00:00Z",
+    items: [{ name: "חלה", qty: 1, unit_price_agorot: 2800, price_unit: "unit", price_is_estimate: false, contains_alcohol: false }],
+    estimated_total_agorot: 2800, final_total_agorot: null, delivery_fee_agorot: 0, delivery_city: null,
+    customer_name: "דנה", note: null, proposal: null, created_at: "2026-11-23T10:00:00Z", expires_at: null,
+    producer_name: "המאפייה של רותי", pickup_address: "הנשיא 5, זכרון יעקב", phone_masked: "••••67",
+    pickup_code: null, can_cancel: true,
+  };
+  const page = (over) => {
+    vi.mocked(api.get).mockResolvedValue({ data: business() });
+    return render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+          <OrderStatusView order={{ ...ORDER, ...over }} onChange={() => {}} refOf={() => ({ token: "t".repeat(43) })} />
+        </NextIntlClientProvider>
+      </SWRConfig>,
+    );
+  };
+
+  it("confirmed pickup: the business block for this order's business, and nav to its address", async () => {
+    page({});
+    expect(await screen.findByTestId("order-business")).toBeTruthy();
+    expect(api.get).toHaveBeenCalledWith(`/producers/${ID}`, undefined);
+    expect(screen.getByTestId("order-nav")).toBeTruthy();
+  });
+
+  it("still pending: the business block, but no nav (the place is not confirmed)", async () => {
+    page({ status: "pending" });
+    expect(await screen.findByTestId("order-business")).toBeTruthy();
+    expect(screen.queryByTestId("order-nav")).toBeNull();
+  });
+
+  it("a delivery: the business block, no nav", async () => {
+    page({ fulfilment: "delivery", delivery_city: "חיפה", pickup_address: null });
+    expect(await screen.findByTestId("order-business")).toBeTruthy();
+    expect(screen.queryByTestId("order-nav")).toBeNull();
   });
 });
