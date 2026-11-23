@@ -380,6 +380,11 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "6ac1cc219e406aea2cb38b2c794c6fcf9d347b17bd8eab081c898b9b772f8081"
+    },
+    "last30days": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "4169400c6597413574417711ca5fce8ef231618d53f7a2f09c7252991b22177b"
     }
   }
 }
