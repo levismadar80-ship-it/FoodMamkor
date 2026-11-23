@@ -426,8 +426,9 @@ def chat(
         # Fail-open friendly message — UI keeps working.
         return ChatResponse(reply=OFFLINE_REPLY)
     # MEH-3010: the chat's own site-wide daily cap; MEH-3498: the AI ceiling
-    # shared with the owner tools (ai_budget logs its own refusal). One unit
-    # per message: chat_intent_router's call rides on it. Same reply, no
+    # shared with the owner tools (ai_budget logs its own refusal). This is
+    # the unit for the reply call; the intent call spends a second one in
+    # _live_data_context, so a message costs up to two. Same reply, no
     # model call.
     if not _global_chat_allowed() or not ai_budget.allow("fast"):
         logger.warning("chat daily cap reached (chat %s)", GLOBAL_DAILY_LIMIT)
