@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { layoutSettled } from "../_layout-settled";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -224,7 +225,7 @@ test.describe("edit tab — unsaved-changes guard", () => {
     await heroField(page).fill("תיאור מעודכן");
     await expect(banner(page)).toBeVisible();
 
-    await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();
+    await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));
     await expect(banner(page)).toHaveCount(0);
     expect(puts.length, "exactly one PUT must have left the client").toBe(1);
 
@@ -333,7 +334,7 @@ test.describe("edit tab — description card", () => {
     await openAt(page, "bio");
     await heroField(page).fill("תיאור חדש");
     await cardBody(page, "bio").getByPlaceholder(/משפט אחד שמסכם/).fill("משפט תדמית חדש");
-    await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();
+    await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));
     await expect(banner(page)).toHaveCount(0);
 
     expect(puts.length).toBe(1);
