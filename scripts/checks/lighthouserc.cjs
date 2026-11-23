@@ -32,12 +32,12 @@
  *     Googlebot UA alike). Google renders JS and reads it; Lighthouse reads
  *     <head> only. That is why the SEO line is 0.85, not 0.9 — staging
  *     /events scores 0.86 once robots.txt is skipped.
- * MEH-3748 (23/11, v1.5.12/13 red): / weighed 1,424 KB. Two cuts, no visible
- * change: the home «הצגה במפה» link prefetched static /map in full (76 KB),
- * now on touch only; and the hero photo got a 1.75x step (w_1320, 132 KB
- * JPEG XL instead of w_1600's 171 KB) — Lighthouse's phone is DPR 1.75.
- * Expected ~1,308 KB against the 1,300 KB × 1024 line; the next post-deploy
- * run is the measurement.
+ * MEH-3748 (23/11, v1.5.12/13 red): / weighed 1,424,116 bytes. Two cuts, no visible
+ * change: the home «הצגה במפה» link prefetched static /map in full (76,656 B),
+ * now on touch only; and the hero photo got a 1.75x step (w_1320, 131,681 B
+ * JPEG XL instead of w_1600's 171,419 B) — Lighthouse's phone is DPR 1.75.
+ * Expected ~1,307,700 bytes against the 1,331,200-byte line (23 KB margin);
+ * the next post-deploy run is the measurement.
  * LCP 5–6 s is MEH-2233 (in progress) — when it lands, tighten the warn
  * lines here. Byte budgets sit ~10% above the heaviest page so normal growth
  * fits and a new heavy dependency does not.
@@ -75,6 +75,7 @@ const SEO_AUDITS_EXCEPT_CRAWLABLE = [
   "robots-txt",
   "hreflang",
   "canonical",
+  "image-alt",
 ];
 
 /** @returns {boolean|null} true/false = /events is / is not in the sitemap; null = unknown */
