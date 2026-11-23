@@ -23,7 +23,7 @@
 
 **טסטים**
 * `frontend/__tests__/MyOrdersPage.test.jsx` · `frontend/__tests__/MyOrdersNavGate.test.jsx` — «ההזמנות שלי» (0 / 1 / רבות, כבוי, שגיאה) והקישור בתפריט.
-* `tests/test_meh3263_order_route.py`, `tests/test_meh3262_order_windows.py`, `tests/test_meh3296_order_notifications.py`, `tests/test_meh3218_product_orders.py`, `tests/test_meh2936_product_unit.py` (bottle / box are counted, not weighed), `tests/test_meh3474_pack_unit.py` (pack, the same way), `tests/test_meh3216_business_id.py`
+* `tests/test_meh3263_order_route.py`, `tests/test_meh3262_order_windows.py`, `tests/test_meh3296_order_notifications.py`, `tests/test_meh3218_product_orders.py`, `tests/test_meh2936_product_unit.py` (bottle / box are counted, not weighed), `tests/test_meh3474_pack_unit.py` (pack, the same way), `tests/test_meh3216_business_id.py`, `tests/test_meh3768_delist_open_orders.py` (בית עסק שהוסתר: הזמנות שלא אושרו מתבטלות, MEH-3768)
 * `frontend/__tests__/OrderCustomers.test.jsx` · `tests/test_meh3561_order_customers.py` — «הלקוחות שלכם» (0 / 1 / רבים, פתוח / סגור, ה-CSV והגנת הנוסחה, שעון ישראל).
 * `frontend/__tests__/OrderOnboarding.test.jsx` (הכרטיס, רשימת הצעדים ושורת העמלה)
 * `frontend/__tests__/ProductOrdersDashboard.test.jsx`, `frontend/__tests__/OrderStatusPage.test.jsx`, `frontend/__tests__/OrderAddToCalendar.test.jsx`, `frontend/__tests__/OrderWriteReview.test.jsx`, `tests/test_meh3620_order_review_url.py`, `tests/test_meh3624_order_review_email.py`, `frontend/__tests__/OrderCart.test.js`, `frontend/__tests__/OrderCartRows.test.jsx`, `frontend/__tests__/OrderSheet.test.jsx`, `frontend/__tests__/OrderSheetVerifiedPhone.test.jsx`, `tests/test_meh3680_verified_buyer_order.py`
