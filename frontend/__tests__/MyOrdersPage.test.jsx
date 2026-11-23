@@ -92,13 +92,15 @@ describe("MyOrdersClient", () => {
     expect(await screen.findByText(copy.empty)).toBeInTheDocument();
   });
 
-  it("1 running order: one «פעילות» row with its tag, opening its status page; no «קודמות»", async () => {
-    serve({ orders: [order(1, "confirmed", "מאפיית השכונה", "2026-11-18T09:00:00+00:00", iso(NOW + DAY))] });
+  it("1 running order: one «פעילות» row with its tag and its pickup day, opening its status page; no «קודמות»", async () => {
+    // Pickup day, not the day it was sent: the «פעילות» rows are ordered by it,
+    // and the bag and group-buy rows beside it print theirs.
+    serve({ orders: [order(1, "confirmed", "מאפיית השכונה", "2026-11-18T09:00:00+00:00", "2026-12-03T10:00:00+00:00")] });
     mount();
     await screen.findByTestId("my-orders-active");
     const [row] = rowsIn("my-orders-active");
     expect(row).toHaveTextContent(copy.kind.order);
-    expect(row).toHaveTextContent("מאפיית השכונה · 18.11.2026 · " + copy.status.confirmed);
+    expect(row).toHaveTextContent("מאפיית השכונה · 03.12.2026 · " + copy.status.confirmed);
     expect(row).toHaveAttribute("href", `/order/${id(1)}`);
     expect(screen.getByText(copy.section_active)).toBeInTheDocument();
     expect(screen.queryByTestId("my-orders-past")).toBeNull();

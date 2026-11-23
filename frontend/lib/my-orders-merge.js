@@ -42,16 +42,14 @@ function dayMs(day) {
 
 /** @param {any} o @returns {MyOrderRow} */
 function orderRow(o) {
-  // Created, not the slot: a declined order's slot never happened, and the
-  // MEH-3525 list printed the day it was sent.
-  const at = new Date(o.created_at);
   const active = !ORDER_CLOSED.has(o.status);
+  // A running order prints and sorts by its pickup slot, like the bag and
+  // group-buy rows beside it. A closed one by the day it was sent: a declined
+  // order's slot never happened (the MEH-3525 list printed that day).
+  const at = new Date(active && o.slot_start ? o.slot_start : o.created_at);
   return {
     kind: "order", id: o.id, href: `/order/${o.id}`, business: o.producer_name,
-    status: o.status, when: at,
-    // Running orders by their pickup slot, nearest first.
-    sortAt: active && o.slot_start ? new Date(o.slot_start).getTime() : at.getTime(),
-    active,
+    status: o.status, when: at, sortAt: at.getTime(), active,
   };
 }
 
