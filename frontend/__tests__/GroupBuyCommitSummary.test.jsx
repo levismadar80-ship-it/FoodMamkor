@@ -2,7 +2,7 @@
 // pays, and how to leave: the «לא יודעת למה נרשמתי, לא יודעת איך לבטל» report
 // (Sapir 23/11). Renders the panel the detail page uses.
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -24,8 +24,9 @@ const GB = {
   pickup_starts_at: null, pickup_ends_at: null,
   user_committed: true, user_commit: { quantity: 1 },
 };
+const onCancel = vi.fn();
 const panel = (over = {}, joinable = true) =>
-  render(<GroupBuyMemberPanel gb={{ ...GB, ...over }} joinable={joinable} full={false} cancelling={false} onCancel={() => {}} onChanged={() => {}} />);
+  render(<GroupBuyMemberPanel gb={{ ...GB, ...over }} joinable={joinable} full={false} cancelling={false} onCancel={onCancel} onChanged={() => {}} />);
 const text = (id) => screen.queryByTestId(id)?.textContent ?? null;
 
 describe("member card: what happens next (MEH-3734)", () => {
@@ -39,9 +40,14 @@ describe("member card: what happens next (MEH-3734)", () => {
     expect(text("group-buy-member-next")).toMatch(/^member_next_funded_pickup /);
   });
 
-  it("funded with no pickup time: contact the business (the existing funded line)", () => {
+  it("funded with no pickup time: no line (the page header already says to contact the business)", () => {
     panel({ status: "funded" });
-    expect(text("group-buy-member-next")).toBe("funded_subtitle טחנת אבן");
+    expect(text("group-buy-member-next")).toBeNull();
+  });
+
+  it("a delivery-only group never shows a pickup time, even if one was saved", () => {
+    panel({ status: "funded", delivery_note: "משלוח עד הבית", pickup_starts_at: "2099-01-02T08:00:00", pickup_ends_at: "2099-01-02T10:00:00" });
+    expect(text("group-buy-member-next")).toBeNull();
   });
 
   it("says nothing is paid now, with the page's existing pay line", () => {
@@ -53,11 +59,12 @@ describe("member card: what happens next (MEH-3734)", () => {
     panel();
     const cancel = screen.getByTestId("group-buy-member-cancel");
     expect(cancel.tagName).toBe("BUTTON");
-    expect(cancel.className).toMatch(/border/); // an outlined button, not grey text
+    fireEvent.click(cancel);
+    expect(onCancel).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("group-buy-my-groups").getAttribute("href")).toBe("/my-group-buys");
   });
 
-  it("past the deadline: no leave button and no «next» line, the link stays", () => {
+  it("not joinable (deadline passed or group cancelled): no leave button and no «next» line, the link stays", () => {
     panel({}, false);
     expect(screen.queryByTestId("group-buy-member-cancel")).toBeNull();
     expect(text("group-buy-member-next")).toBeNull();

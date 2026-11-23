@@ -36,13 +36,15 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
   const max = Math.min(QTY_MAX, room);
   const changed = Number(qty) !== current;
   // MEH-3734: what happens next, in one line under the confirmation.
-  const pickupWhen = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  // A delivery-only group shows no pickup time, as on the page (MEH-3597).
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const pickupWhen = deliveryOnly ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  // Funded without a pickup time: the page header already says «צרו קשר עם…»,
+  // so the card adds nothing rather than repeat it (review, MEH-3734).
   const next = !joinable
     ? null
     : gb.status === "funded"
-      ? pickupWhen
-        ? t("member_next_funded_pickup", { when: pickupWhen })
-        : t("funded_subtitle", { name: gb.producer_name || "" })
+      ? pickupWhen && t("member_next_funded_pickup", { when: pickupWhen })
       : t("member_next_open", { date: cancelUntil || "" });
 
   const save = async () => {
