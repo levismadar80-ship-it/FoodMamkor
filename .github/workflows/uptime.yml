@@ -140,7 +140,7 @@ jobs:
               # first failure: create closed, marked pending; the next tick decides
               n=$(gh issue create --title "$title" --label uptime --body "first-failure-pending" | grep -oE '[0-9]+$')
               gh issue close "$n" --comment "first failure at $now — waiting for the next tick before alerting ($RUN_URL)"
-            fi
+            fi 
           else
             if [ -n "$open" ]; then
               gh issue close "$open" --comment "recovered at $now — $RUN_URL"
