@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -193,7 +194,7 @@ test.describe("offer card — the custom type", () => {
     await typeSelect(page).selectOption("custom");
     await headline(page).fill("קופון 10% על ההזמנה הבאה");
     await expires(page).fill("2026-12-31");
-    await save(page).click();
+    await clickSaveAfterEdit(page, save(page));
     await expect.poll(() => writes.length, { message: "the PUT never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({
       active_offer: { offer_type: "custom", threshold_value: null, threshold_unit: null, headline: "קופון 10% על ההזמנה הבאה", expires_at: "2026-12-31" },
