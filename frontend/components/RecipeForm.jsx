@@ -256,7 +256,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* text-end keeps the digit alignment of the old baseInput inside
             these dir="ltr" fields (end resolves to the same side in LTR). */}
         <div>

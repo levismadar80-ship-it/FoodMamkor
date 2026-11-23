@@ -94,7 +94,10 @@ def _fields_block(fmap: dict[str, Any], choices: Choices) -> str:
     for f in _ai_fields(fmap):
         lines.append(f"- {f['key']}: {f['prompt']}")
         for i, (_, label) in enumerate(choices.get(f["key"], []), start=1):
-            lines.append(f"    {i}: {label}")
+            # The owner's own names, one line each: a newline or a bracket in
+            # a name cannot forge another list line or close the text's tag.
+            clean = re.sub(r"[\s<>]+", " ", label).strip()
+            lines.append(f"    {i}: {clean}")
     return "\n".join(lines)
 
 
@@ -113,14 +116,52 @@ def _lines(value: object, field: dict[str, Any]) -> str | None:
     return "\n".join(kept)[: int(field["max"])] or None
 
 
-def _int(value: object, field: dict[str, Any], numbers: set[int]) -> int | None:
-    """A number in range that the text writes (or writes in hours: «שעה» = 1)."""
+# Hour words that write a duration with no digit: «אופים שעה», «חצי שעה».
+_HOUR_WORDS = {"חצי שעה": 30, "שעה וחצי": 90, "שעתיים": 120, "שעה": 60}
+
+
+def _stated(value: int, field: dict[str, Any], source: str) -> bool:
+    """`value` is written in the text as this field's kind of number.
+
+    A field with `units` needs the number beside one of them («35 דקות»,
+    «ל-6 מנות», «₪20»), so «2 ביצים» does not back servings=2; a field with
+    `hours` also takes «2 שעות» as 120 and the hour words above. A field
+    without units takes the number anywhere in the text.
+    """
+    units = field.get("units")
+    if not units:
+        return value in {int(n) for n in _NUMBER.findall(source)}
+    unit = "|".join(re.escape(u) for u in units)
+    if _number_by(value, unit, source):
+        return True
+    if not field.get("hours"):
+        return False
+    if value % 60 == 0 and _number_by(value // 60, "שעה|שעות", source):
+        return True
+    text = source
+    for words, minutes in _HOUR_WORDS.items():  # longest first, so «חצי שעה» wins
+        if words in text:
+            if minutes == value:
+                return True
+            text = text.replace(words, " ")
+    return False
+
+
+def _number_by(value: int, unit: str, source: str) -> bool:
+    n = rf"(?<![\d.]){value}(?![\d.])"
+    return bool(
+        re.search(rf"{n}\s*[-־]?\s*(?:{unit})", source)
+        or re.search(rf"(?:{unit})\s*{n}", source)
+    )
+
+
+def _int(value: object, field: dict[str, Any], source: str) -> int | None:
+    """A number in the field's range that the text states for it."""
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     if not int(field.get("min", 0)) <= value <= int(field["max"]):
         return None
-    backed = value in numbers or (value % 60 == 0 and value // 60 in numbers)
-    return value if backed else None
+    return value if _stated(value, field, source) else None
 
 
 def _choices(
@@ -139,12 +180,11 @@ def to_draft(
     fmap: dict[str, Any], data: dict[str, Any], source: str, choices: Choices
 ) -> Draft:
     """Model output → a draft whose every value the form can take as is."""
-    numbers = {int(n) for n in _NUMBER.findall(source)}
     draft: Draft = {}
     for f in _ai_fields(fmap):
         raw, kind = data.get(f["key"]), f["type"]
         if kind == "int":
-            draft[f["key"]] = _int(raw, f, numbers)
+            draft[f["key"]] = _int(raw, f, source)
         elif kind == "lines":
             draft[f["key"]] = _lines(raw, f)
         elif kind == "choices":

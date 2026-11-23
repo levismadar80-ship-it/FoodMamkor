@@ -20,7 +20,7 @@
 
 import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
-import { NotePencil } from "@phosphor-icons/react";
+import { CaretDown, NotePencil } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
@@ -30,6 +30,11 @@ import { FillMyFormProducersMeAiFillFormPostResponse as FormFillOut } from "@/li
 
 const TEXT_MIN = 20;
 const TEXT_MAX = 6000;
+
+/** @param {Record<string, unknown>} draft @returns {boolean} the text gave at least one field */
+export function draftHasContent(draft) {
+  return Object.values(draft).some((v) => (Array.isArray(v) ? v.length > 0 : v !== null && v !== ""));
+}
 
 /**
  * @param {{ form: string, title: string, intro: string,
@@ -51,6 +56,12 @@ export default function FormFillBox({ form, title, intro, onDraft }) {
       // Rule 19: parse before use.
       const parsed = FormFillOut.safeParse(res.data);
       if (!parsed.success) throw new Error("shape");
+      // Nothing found: say so and keep the text, so she can add to it
+      // (the approved page-fill line, REUSES PageFillPanel's «empty»).
+      if (!draftHasContent(parsed.data.draft)) {
+        setError(t("empty"));
+        return;
+      }
       onDraft(parsed.data.draft);
       setText("");
       setOpen(false);
@@ -74,9 +85,10 @@ export default function FormFillBox({ form, title, intro, onDraft }) {
               aria-controls={panelId}
               onClick={() => setOpen((v) => !v)}
               data-testid={`form-fill-${form}-toggle`}
-              className="min-h-touch text-start underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+              className="min-h-touch inline-flex items-center gap-1 text-start underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
             >
               {title}
+              <CaretDown size={16} aria-hidden="true" className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
           </h3>
           <p className="text-sm text-fg-muted">{intro}</p>

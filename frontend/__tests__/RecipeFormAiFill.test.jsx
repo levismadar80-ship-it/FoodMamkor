@@ -153,10 +153,16 @@ describe("«יש לכם מתכון כתוב?» — the fill box (MEH-3740)", () 
     expect(screen.getByLabelText(/^רכיבים/)).toHaveValue("שלי");
   });
 
-  it("a draft with no field changes nothing", async () => {
+  it("a draft with no field changes nothing, says so, and keeps the text open", async () => {
     await renderForm();
     fireEvent.change(screen.getByLabelText(/^שם המתכון/), { target: { value: "שלי" } });
-    await fillFrom(EMPTY_DRAFT);
+    apiMock.state.fill = { form: "recipe", draft: EMPTY_DRAFT };
+    fireEvent.click(toggle());
+    fireEvent.change(screen.getByTestId("form-fill-recipe-text"), { target: { value: TEXT } });
+    fireEvent.click(screen.getByTestId("form-fill-recipe-read"));
+    expect(await within(box()).findByText(PF.empty)).toBeInTheDocument();
+    expect(screen.getByTestId("form-fill-recipe-text")).toBeVisible();
+    expect(screen.getByTestId("form-fill-recipe-text")).toHaveValue(TEXT);
     expect(screen.getByLabelText(/^שם המתכון/)).toHaveValue("שלי");
   });
 
