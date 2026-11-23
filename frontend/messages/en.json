@@ -1636,6 +1636,7 @@
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
       "full_profile": "Full profile",
+      "business_page": "Business page",
       "fulfillment": {
         "delivery": "Delivery",
         "pickup": "Self-pickup",

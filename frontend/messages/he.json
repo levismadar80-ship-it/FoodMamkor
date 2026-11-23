@@ -1636,6 +1636,7 @@
       "distance_prefix": "ל",
       "wa_message": "היי! הגעתי דרך מהמקור — {name}",
       "full_profile": "פרופיל מלא",
+      "business_page": "לדף בית העסק",
       "fulfillment": {
         "delivery": "משלוח",
         "pickup": "איסוף עצמי",
