@@ -9,7 +9,7 @@
  * approved business only.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
 import ToolsPage from "@/app/[locale]/producer/dashboard/tools/page";
 import SharePage from "@/app/[locale]/producer/dashboard/share/page";
@@ -24,9 +24,11 @@ vi.mock("next-intl", () => {
   t.rich = (key) => key;
   return { useLocale: () => "he", useTranslations: () => t };
 });
+// One stable router, so a test can see where the share page sent the owner.
+const { ROUTER } = vi.hoisted(() => ({ ROUTER: { push: vi.fn(), replace: vi.fn() } }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ROUTER,
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
@@ -75,6 +77,9 @@ vi.mock("@/lib/api", () => ({
 
 beforeEach(() => {
   stateRef.current = { status: "approved", complete: true, kind: "producer", profileFails: false };
+  AUTH.user = { id: 1, name: "דנה", role: "producer" };
+  ROUTER.push.mockClear();
+  ROUTER.replace.mockClear();
 });
 
 describe("home — the link renders from the profile's slug (MEH-2880)", () => {
@@ -161,5 +166,31 @@ describe("review of #4263 — the gates on the slug's new source", () => {
     render(<SharePage />);
     expect(await screen.findByTestId("share-page-error")).toBeInTheDocument();
     expect(screen.queryByTestId("share-page-content")).toBeNull();
+  });
+});
+
+describe("share page — redirects and recovery (MEH-3749 review)", () => {
+  it("an organizer is sent back to «כלים»", async () => {
+    stateRef.current = { ...stateRef.current, kind: "organizer" };
+    render(<SharePage />);
+    await waitFor(() => expect(ROUTER.replace).toHaveBeenCalledWith("/producer/dashboard/tools"));
+    expect(screen.queryByTestId("share-page-content")).toBeNull();
+  });
+
+  it("a visitor who is not a business owner is sent to /login", async () => {
+    AUTH.user = { id: 2, name: "רוני", role: "consumer" };
+    render(<SharePage />);
+    await waitFor(() => expect(ROUTER.push).toHaveBeenCalledWith("/login"));
+    expect(screen.queryByTestId("share-page-content")).toBeNull();
+  });
+
+  it("«נסו שוב» after a failed load fetches again and shows the page", async () => {
+    stateRef.current = { ...stateRef.current, profileFails: true };
+    render(<SharePage />);
+    const error = await screen.findByTestId("share-page-error");
+    stateRef.current = { ...stateRef.current, profileFails: false };
+    fireEvent.click(error.querySelector("button"));
+    expect(await screen.findByTestId("share-page-content")).toBeInTheDocument();
+    expect(screen.queryByTestId("share-page-error")).toBeNull();
   });
 });

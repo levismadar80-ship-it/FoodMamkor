@@ -737,7 +737,7 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
           שיתוף» are one-time / occasional jobs, so they live in «כלים» →
-          «שיתוף» (tools/page.js#share), not on the daily home. Home keeps the
+          «שיתוף» (share/page.js, MEH-3749), not on the daily home. Home keeps the
           one short «הלינק שלי» card above. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
