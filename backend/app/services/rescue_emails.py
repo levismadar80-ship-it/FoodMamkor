@@ -25,7 +25,6 @@ from app.config import settings
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
 from app.services.email_layout import frame
-from app.utils.money import shekels_text
 
 
 def israel_hhmm(value: datetime) -> str:
@@ -33,6 +32,12 @@ def israel_hhmm(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
     return value.astimezone(ISRAEL_TZ).strftime("%H:%M")
+
+
+def shekels(agorot: int) -> str:
+    """1500 → "15", 1250 → "12.50" — no trailing ".00" on a round price."""
+    whole, rest = divmod(int(agorot), 100)
+    return str(whole) if rest == 0 else f"{whole}.{rest:02d}"
 
 
 @dataclass(frozen=True)
@@ -61,7 +66,7 @@ def send_reservation_email(
     name = " ".join(m.producer_name.split())
     subject = f"שמרנו לכם סל ב{name}"
     where = f", {m.address}" if m.address else ""
-    price = shekels_text(m.total_agorot)
+    price = shekels(m.total_agorot)
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
     cancel_text = (

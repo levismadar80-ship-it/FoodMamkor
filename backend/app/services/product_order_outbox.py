@@ -48,7 +48,6 @@ from app.services.review_invite import review_invite_url
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.utils.clock import ISRAEL_TZ, utc_now
 from app.utils.phone import canonical_il_msisdn
-from app.utils.money import shekels_text
 
 log = logging.getLogger(__name__)
 
@@ -181,6 +180,11 @@ def _hhmm(at: object) -> str:
     return _local(at).strftime("%H:%M")
 
 
+def _shekels(agorot: int) -> str:
+    whole, rest = divmod(int(agorot), 100)
+    return f"{whole}" if rest == 0 else f"{whole}.{rest:02d}"
+
+
 def _to_pay(order: ProductOrder) -> int:
     goods = order.final_total_agorot
     if goods is None:
@@ -247,7 +251,7 @@ def _business_text(
         template: wt.WhatsAppTemplate = wt.ProductOrderNewV1(
             customer_name=customer,
             count=str(count),
-            total=shekels_text(_to_pay(order)),
+            total=_shekels(_to_pay(order)),
             fulfilment=_FULFILMENT[str(order.fulfilment)],
             day=_day(order.slot_start),
             starts=_hhmm(order.slot_start),
@@ -256,7 +260,7 @@ def _business_text(
         )
         body = (
             f"הזמנה חדשה ממהמקור: {customer}, {count} פריטים, "
-            f"{shekels_text(_to_pay(order))} ₪, {_FULFILMENT[str(order.fulfilment)]} "
+            f"{_shekels(_to_pay(order))} ₪, {_FULFILMENT[str(order.fulfilment)]} "
             f"ב{_day(order.slot_start)} {_hhmm(order.slot_start)}–{_hhmm(order.slot_end)}. "
             f"לאישור: {link}"
         )
@@ -300,7 +304,7 @@ def _buyer_template(
             day=_day(order.slot_start),
             starts=_hhmm(order.slot_start),
             ends=_hhmm(order.slot_end),
-            total=shekels_text(_to_pay(order)),
+            total=_shekels(_to_pay(order)),
             link=link,
         )
     if kind == "change_proposed":

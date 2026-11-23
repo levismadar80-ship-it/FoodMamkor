@@ -21,8 +21,7 @@ from app.config import settings
 from app.models.models import RescueOffer, RescueOrder
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
-from app.services.rescue_emails import israel_hhmm
-from app.utils.money import shekels_text
+from app.services.rescue_emails import israel_hhmm, shekels
 
 
 @dataclass(frozen=True)
@@ -51,7 +50,7 @@ def send_business_reservation_email(
         "שלום,\n\n"
         f"{_qty_line(m.qty)} עכשיו מסלי ההפתעה של היום.\n"
         f"קוד האיסוף: {m.pickup_code}. בקופה אומרים את הקוד ומשלמים "
-        f"{shekels_text(m.total_agorot)} ₪.\n"
+        f"{shekels(m.total_agorot)} ₪.\n"
         f"איסוף היום {m.pickup_from}–{m.pickup_until}.\n\n"
         "את כל השריונים של היום אפשר לראות בלוח הבקרה:\n"
         f"{settings.frontend_url}/producer/dashboard/rescue\n\n"

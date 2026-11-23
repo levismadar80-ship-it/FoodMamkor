@@ -26,6 +26,7 @@ import hashlib
 import hmac
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -67,7 +68,6 @@ from app.services.product_order_state import (
 )
 from app.utils.clock import utc_now
 from app.utils.phone import canonical_il_msisdn
-from app.utils.money import agorot_of
 
 # Sapir's decisions of 14/11: three open orders to one phone across the site;
 # two no-shows in ninety days close ordering to that phone; a request the
@@ -87,6 +87,7 @@ REPLAY_WINDOW = timedelta(minutes=10)
 # and a business minimum have (100,000 ₪), far below the int32 column.
 MAX_ORDER_TOTAL_AGOROT = MAX_MIN_ORDER_AGOROT
 
+_AGOROT_PER_SHEKEL = 100
 
 NOT_FOUND_DETAIL = "לא נמצא"
 PHONE_BLOCKED_DETAIL = "אי אפשר לשלוח הזמנה מהמספר הזה כרגע"
@@ -194,6 +195,10 @@ def _check_business_room(db: Session, producer_id: Any) -> None:
         raise _conflict(BUSINESS_FULL_DETAIL)
 
 
+def _agorot(shekels: Decimal) -> int:
+    return int((shekels * _AGOROT_PER_SHEKEL).to_integral_value())
+
+
 def order_lines(
     db: Session, body: OrderCreateIn | OrderQuoteIn, alcohol_licensed: bool
 ) -> list[ProductOrderItem]:
@@ -242,8 +247,8 @@ def order_lines(
                 detail=DUPLICATE_PRODUCT_DETAIL,
             )
         seen.add(resolved)
-        low = agorot_of(product.price_min)  # type: ignore[arg-type]
-        high = agorot_of(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
+        low = _agorot(product.price_min)  # type: ignore[arg-type]
+        high = _agorot(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
         price, is_range = product_variants.unit_price(low, high, variant)
         lines.append(
             ProductOrderItem(

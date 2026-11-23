@@ -68,6 +68,7 @@ js:toHHMM 2
 js:toMinutes 2
 js:toRad 2
 js:writeCache 4
+py:_agorot 2
 py:_answer 2
 py:_apply_delivery_cities 2
 py:_as_utc 2
