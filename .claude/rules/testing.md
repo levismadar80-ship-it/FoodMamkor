@@ -132,7 +132,11 @@ MEH-3486 · MEH-3488, added since):
   the handler never runs, while the click "succeeds". Before clicking into a
   deep-linked or just-re-rendered card, gate on `layoutSettled`
   (`e2e/flows/_layout-settled.ts`). The symptom is a write or request that
-  "never left the browser", first attempt only.
+  "never left the browser", first attempt only. A save click on
+  `/producer/dashboard/edit` goes through `clickSaveAfterEdit`
+  (`e2e/flows/_save-after-edit.ts`, MEH-3685): the unsaved banner mounts a
+  render after the edit and shifts every card, so `layoutSettled` alone can
+  run before it.
 
 - **Hit-test before a click into a layered screen, and prove a pick landed
   (MEH-3486 · MEH-3488).** A click on an element under a sheet or a pill times
