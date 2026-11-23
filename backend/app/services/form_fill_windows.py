@@ -28,14 +28,17 @@ from app.schemas.product_order_offer import OrderWindowIn, OrderWindowsIn
 # 0 = Sunday … 6 = Saturday, as producers.order_window and OrderWindowIn.
 DAYS = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
 # A part of the day the prompt turns into these hours; the text must say it.
+# Longest first: «אחר הצהריים» is matched, then blanked, before «צהריים».
 PARTS_OF_DAY: dict[str, tuple[str, str]] = {
     "אחר הצהריים": ("14:00", "18:00"),
     "אחה״צ": ("14:00", "18:00"),
     'אחה"צ': ("14:00", "18:00"),
-    "בוקר": ("08:00", "12:00"),
     "צהריים": ("12:00", "16:00"),
+    "בוקר": ("08:00", "12:00"),
     "ערב": ("17:00", "21:00"),
 }
+# «עד חמישי»: the order deadline, not a hand-over day (MEH-3752 review).
+_DEADLINE = re.compile(r"(?<![א-ת])עד\s+(?:יום\s+)?$")
 _TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 _FULFILMENT = ("pickup", "delivery")
 
@@ -68,14 +71,35 @@ def day_named(weekday: int, source: str) -> bool:
     return bool(re.search(_day_pattern(weekday), source))
 
 
-def _part_of_day_by(weekday: int, words: str, source: str) -> bool:
-    """«בשישי בבוקר»: the part of the day in the same phrase as its day, so
+def _hand_over_days(weekday: int, source: str) -> list[re.Match[str]]:
+    """The places the text names this day as a hand-over day: «בשישי», not
+    «עד חמישי», which is when orders close."""
+    return [
+        m
+        for m in re.finditer(_day_pattern(weekday), source)
+        if not _DEADLINE.search(source[: m.start()])
+    ]
+
+
+def _parts_in(phrase: str) -> set[str]:
+    """The parts of the day the phrase names as whole words («בבוקר»,
+    «והערב»), not inside another word («במערב»)."""
+    found = set()
+    for words in PARTS_OF_DAY:
+        pattern = rf"(?<![א-ת])(?:ו?[בהל]|ו)?{re.escape(words)}(?![א-ת])"
+        if re.search(pattern, phrase):
+            found.add(words)
+            phrase = re.sub(pattern, " ", phrase)
+    return found
+
+
+def _parts_by(weekday: int, source: str) -> set[str]:
+    """«בשישי בבוקר»: the parts of the day in the same phrase as its day, so
     «עד חמישי בערב, איסוף בשישי בבוקר» gives Friday no evening."""
-    for m in re.finditer(_day_pattern(weekday), source):
-        phrase = re.split(r"[,.;\n]", source[m.end() :], maxsplit=1)[0]
-        if words in phrase:
-            return True
-    return False
+    found: set[str] = set()
+    for m in _hand_over_days(weekday, source):
+        found |= _parts_in(re.split(r"[,.;\n]", source[m.end() :], maxsplit=1)[0])
+    return found
 
 
 def hour_stated(hhmm: str, source: str) -> bool:
@@ -93,8 +117,7 @@ def _hours_stated(weekday: int, start: str, end: str, source: str) -> bool:
     if hour_stated(start, source) and hour_stated(end, source):
         return True
     return any(
-        (start, end) == hours and _part_of_day_by(weekday, words, source)
-        for words, hours in PARTS_OF_DAY.items()
+        PARTS_OF_DAY[words] == (start, end) for words in _parts_by(weekday, source)
     )
 
 
@@ -124,7 +147,8 @@ def _one(raw: object, source: str) -> dict[str, Any] | None:
     if shape is None:
         return None
     weekday, start, end, fulfilment = shape
-    if not (day_named(weekday, source) and _hours_stated(weekday, start, end, source)):
+    named = bool(_hand_over_days(weekday, source))
+    if not (named and _hours_stated(weekday, start, end, source)):
         return None
     try:  # the same check as a manual save: ends after it starts
         OrderWindowIn(

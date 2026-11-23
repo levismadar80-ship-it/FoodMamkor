@@ -18,7 +18,7 @@
  *           «פתוח להזמנה באתר»)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 
@@ -102,11 +102,16 @@ function useDraftedProducts(draft, products, replace, failedText) {
   const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [busy, setBusy] = useState(false);
   const [applied, setApplied] = useState(/** @type {any} */ (null));
+  // How many drafts brought products here: the card stays open after the
+  // save (no snap shut under her hand) and opens again on the next draft.
+  const [opens, setOpens] = useState(0);
   if (draft && products && draft !== applied) {
     setApplied(draft);
     const closed = new Set(products.filter((p) => !p.is_orderable).map((p) => String(p.id)));
-    setPending(draftProductIds(draft).filter((id) => closed.has(id)));
+    const next = draftProductIds(draft).filter((id) => closed.has(id));
+    setPending(next);
     setErrors({});
+    if (next.length) setOpens((n) => n + 1);
   }
   const drop = (/** @type {string} */ id) => setPending((old) => old.filter((x) => x !== id));
   const saveAll = async () => {
@@ -126,7 +131,7 @@ function useDraftedProducts(draft, products, replace, failedText) {
     setPending(Object.keys(failed));
     setBusy(false);
   };
-  return { pending, errors, busy, drop, saveAll };
+  return { pending, errors, busy, drop, saveAll, opens };
 }
 
 /**
@@ -169,11 +174,16 @@ export default function OrderProductsCard({ setUp = false, initial = null, onCha
   const replace = (/** @type {any} */ saved) =>
     setProducts((old) => (old ?? []).map((p) => (p.id === saved.id ? saved : p)));
   const drafted = useDraftedProducts(draft, products, replace, t("actions.failed"));
+  const details = useRef(/** @type {HTMLDetailsElement | null} */ (null));
+  // A new draft reopens a card she folded since the last one.
+  useEffect(() => {
+    if (drafted.opens && details.current) details.current.open = true;
+  }, [drafted.opens]);
   if (failed) return <InlineMessage tone="error">{t("load_error")}</InlineMessage>;
   if (!products || products.length === 0) return null;
   const folded = startFolded === null ? setUp && products.some((p) => p.is_orderable) : startFolded;
   return (
-    <details open={!folded || drafted.pending.length > 0} className="group rounded-lg border border-border bg-surface p-4 space-y-3" id="order-products" data-testid="order-products">
+    <details ref={details} open={!folded || drafted.opens > 0} className="group rounded-lg border border-border bg-surface p-4 space-y-3" id="order-products" data-testid="order-products">
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
         <h2 className="font-bold text-lg text-text">{t("products.title")}</h2>
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />

@@ -176,6 +176,42 @@ def test_a_window_needs_its_hours_written():
     assert _draft(_answer(windows=[nine]), hours)["windows"] == [nine]
 
 
+def test_the_order_deadline_day_is_not_a_hand_over_day():
+    """«עד חמישי בערב» closes orders; it opens no Thursday evening window."""
+    thursday_evening = {
+        **FRIDAY_MORNING,
+        "weekday": 4,
+        "start_time": "17:00",
+        "end_time": "21:00",
+    }
+    assert _draft(_answer(windows=[thursday_evening]))["windows"] == []
+    assert (
+        _draft(_answer(windows=[thursday_evening]), "עד יום חמישי בערב")["windows"]
+        == []
+    )
+    assert _draft(_answer(windows=[thursday_evening]), "איסוף בחמישי בערב")[
+        "windows"
+    ] == [thursday_evening]
+
+
+def test_a_part_of_the_day_is_a_whole_word():
+    noon = {**FRIDAY_MORNING, "start_time": "12:00", "end_time": "16:00"}
+    afternoon = {**FRIDAY_MORNING, "start_time": "14:00", "end_time": "18:00"}
+    evening = {**FRIDAY_MORNING, "start_time": "17:00", "end_time": "21:00"}
+    source = "איסוף בשישי אחר הצהריים"
+    assert _draft(_answer(windows=[noon]), source)["windows"] == []
+    assert _draft(_answer(windows=[afternoon]), source)["windows"] == [afternoon]
+    assert _draft(_answer(windows=[evening]), "איסוף בשישי במערב העיר")["windows"] == []
+
+
+def test_a_clock_time_is_not_a_slot_length():
+    """«בשעה 9» is when, not «כל מועד שעה»."""
+    assert (
+        _draft(_answer(slot_minutes=60), "איסוף בשישי בשעה 9")["slot_minutes"] is None
+    )
+    assert _draft(_answer(slot_minutes=60), "כל מועד שעה")["slot_minutes"] == 60
+
+
 def test_a_window_that_ends_before_it_starts_is_dropped():
     backwards = {**FRIDAY_MORNING, "start_time": "12:00", "end_time": "08:00"}
     assert _draft(_answer(windows=[backwards]), "שישי 8-12")["windows"] == []

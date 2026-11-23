@@ -181,10 +181,12 @@ def _hours_stated(value: int, source: str) -> bool:
         return True
     text = source
     for words, minutes in _HOUR_WORDS.items():  # longest first, so «חצי שעה» wins
-        if words in text:
+        # A whole word, «שעה» or «לשעה», not «בשעה 9», which is a clock time.
+        pattern = rf"(?<![א-ת])[וכל]?{re.escape(words)}(?![א-ת])"
+        if re.search(pattern, text):
             if minutes == value:
                 return True
-            text = text.replace(words, " ")
+            text = re.sub(pattern, " ", text)
     return False
 
 

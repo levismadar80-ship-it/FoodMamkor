@@ -183,15 +183,24 @@ describe("«ספרו לנו איך אתם מקבלים הזמנות» (MEH-3752)
     expect(screen.getByTestId(`orderable-${P1}`)).toHaveAttribute("aria-checked", "false");
     expect(apiMock.put).not.toHaveBeenCalled();
 
-    apiMock.put.mockImplementation((url, body) =>
-      Promise.resolve({ data: url.endsWith("/ordering") ? { ...body, id: P2 } : { windows: body.windows } }),
-    );
+    apiMock.put.mockImplementation((url, body) => {
+      if (url.endsWith("/ordering")) return Promise.resolve({ data: { ...product({ id: P2 }), ...body } });
+      if (url === "/producers/me/order-settings") return Promise.resolve({ data: settings(body) });
+      return Promise.resolve({ data: { windows: body.windows } });
+    });
     fireEvent.click(screen.getByTestId("order-products-save"));
     await waitFor(() =>
       expect(apiMock.put).toHaveBeenCalledWith(`/producers/me/products/${P2}/ordering`, expect.objectContaining({ is_orderable: true })),
     );
     fireEvent.click(screen.getByTestId("order-windows-save"));
     await waitFor(() => expect(apiMock.put).toHaveBeenCalledWith("/producers/me/order-windows", { windows: [FRI] }));
+    fireEvent.click(screen.getByTestId("orders-settings-save"));
+    await waitFor(() =>
+      expect(apiMock.put).toHaveBeenCalledWith(
+        "/producers/me/order-settings",
+        expect.objectContaining({ auto_confirm_slot_cap: 20, min_order_agorot: 8000, slot_minutes: 120 }),
+      ),
+    );
     expect(apiMock.put.mock.calls.map(([url]) => url)).not.toContain(`/producers/me/products/${P1}/ordering`);
   });
 
@@ -212,6 +221,26 @@ describe("«ספרו לנו איך אתם מקבלים הזמנות» (MEH-3752)
     expect(screen.getByTestId("order-settings").open).toBe(false);
     await fillFrom({ ...EMPTY, slot_cap: 20 });
     await waitFor(() => expect(screen.getByTestId("order-settings").open).toBe(true));
+  });
+
+  it("the products card stays open after its save, and a new draft reopens it", async () => {
+    const P3 = "33333333-3333-4333-8333-333333333333";
+    apiMock.state.products = [product({ is_orderable: true }), product({ id: P2, name: "עוגה" }), product({ id: P3, name: "פשטידה" })];
+    mockReads({ windows: [SAVED_WINDOW], current: settings({ enabled: true, business_id_number: "512345678" }) });
+    await renderPage();
+    const card = /** @type {HTMLDetailsElement} */ (await screen.findByTestId("order-products"));
+    expect(card.open).toBe(false);
+    await fillFrom({ ...EMPTY, product_ids: [P2] });
+    await waitFor(() => expect(card.open).toBe(true));
+    apiMock.put.mockImplementation((url, body) => Promise.resolve({ data: { ...product({ id: url.split("/")[4] }), ...body } }));
+    fireEvent.click(screen.getByTestId("order-products-save"));
+    await waitFor(() => expect(screen.queryByTestId("order-products-save")).not.toBeInTheDocument());
+    expect(card.open).toBe(true);
+    card.open = false;
+    apiMock.post.mockClear();
+    await fillFrom({ ...EMPTY, product_ids: [P3] });
+    await waitFor(() => expect(screen.getByTestId(`orderable-${P3}`)).toHaveAttribute("aria-checked", "true"));
+    expect(card.open).toBe(true);
   });
 
   it("never touches «לקבל הזמנות באתר», auto-confirm or the business ID", async () => {
