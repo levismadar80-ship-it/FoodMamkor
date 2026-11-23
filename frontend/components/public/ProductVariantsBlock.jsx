@@ -21,7 +21,6 @@ import { lineKey, needsChoice, variantsOf } from "@/lib/product-variants";
 import { formatPrice } from "@/lib/utils";
 import { agorotToShekels } from "@/lib/money";
 
-
 /**
  * @param {{
  *   product: { id: string, name: string, price_min?: number | string | null, variants?: { id: string, name: string, price_agorot?: number | null, in_stock: boolean }[] | null },

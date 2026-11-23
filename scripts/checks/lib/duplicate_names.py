@@ -33,7 +33,7 @@ FRAMEWORK = {
     "downgrade", "main", "Icon", "Image", "OpengraphImage",
 }
 JS_DEF = re.compile(
-    r"^(?:export\s+)?(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)"
+    r"^(?:export\s+(?:default\s+)?)?(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)"
     r"|^(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?"
     r"(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)",
     re.M,
@@ -101,6 +101,8 @@ def self_test() -> int:
     ok &= "toMinutes" in names_in("a.js", "function toMinutes(t) {}\n")
     ok &= "hhmm" in names_in("a.js", "export const hhmm = (d) => d;\n")
     ok &= "x" in names_in("a.js", "const x = async v => v;\n")
+    ok &= "Card" in names_in("a.js", "export default function Card() {}\n")
+    ok &= "f" in names_in("a.js", "const f = ({ a, b }) => a;\n")
     ok &= "AGOROT" not in names_in("a.js", "const AGOROT = 100;\n")
     ok &= "generateMetadata" not in names_in("a.js", "export async function generateMetadata() {}\n")
     ok &= "shekels_text" in names_in("a.py", "def shekels_text(a):\n    pass\n")

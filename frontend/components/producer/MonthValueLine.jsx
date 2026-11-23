@@ -26,7 +26,6 @@ import api from "@/lib/api";
 import { MyBillingSummaryProducersMeBillingSummaryGetResponse as SummarySchema } from "@/lib/generated/api.zod";
 import { formatAgorot } from "@/lib/money";
 
-
 /**
  * The message key and its values. Sapir's table: 0 / 1 / many, and no
  * «בשווי» part when the value is 0 (free sign-ups only).

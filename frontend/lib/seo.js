@@ -39,8 +39,8 @@ import { parseNaiveUtc } from "./dates";
 import { siteOgImageUrl } from "@/lib/og-site-image";
 import { toE164Phone } from "./utils";
 import { variantsOf } from "@/lib/product-variants";  // MEH-3617
-export { SITE_URL };
 import { agorotToShekels } from "./money";
+export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
 // always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org

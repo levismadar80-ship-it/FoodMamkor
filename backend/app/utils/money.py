@@ -5,12 +5,13 @@ Purpose:  Agorot ↔ shekels for order and rescue code: a shekel Decimal as
 Does NOT: the billing ledger's conversion (None → 0, clamped at 0, half-up):
           that stays `shekels_to_agorot` in app/services/billing_ledger.py,
           which is under mutation testing and is different on purpose.
+Related:  app/pricing.py AGOROT_PER_SHEKEL (the one constant).
 History:  MEH-3715 (creation; folded `_agorot` ×2 and `shekels`/`_shekels`).
 """
 
 from decimal import Decimal
 
-AGOROT_PER_SHEKEL = 100
+from app.pricing import AGOROT_PER_SHEKEL
 
 
 def agorot_of(shekels: Decimal) -> int:

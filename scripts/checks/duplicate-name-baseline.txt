@@ -1,17 +1,29 @@
 # MEH-3715: module-level function names defined in 2+ files today.
 # Only shrinks: lower or delete a line when you fold a copy into one
 # helper. Regenerate: bash scripts/checks/duplicate-name-guard.sh --update-baseline
+js:AboutPage 2
+js:AdminLayout 2
+js:Badge 2
 js:CancelDialog 2
+js:ConfirmClient 2
+js:DateTile 2
+js:EmptyState 2
+js:EventsPage 2
 js:Field 6
+js:HoursText 2
 js:Lines 2
 js:MailLink 2
+js:MapPage 2
 js:Preview 2
 js:PreviewEmpty 2
+js:ProducerDashboardLayout 2
 js:ProducerJsonLd 2
+js:RegisterProducerPage 2
 js:Row 2
 js:Rows 2
 js:Section 4
 js:Shell 4
+js:UnsubscribeClient 3
 js:addDaysIso 2
 js:amountOf 2
 js:cancelOrder 2
