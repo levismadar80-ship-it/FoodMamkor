@@ -1071,7 +1071,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "hypothesis", specifier = ">=6.170.15" },
+    { name = "hypothesis", specifier = ">=6.170.16" },
     { name = "mutmut", specifier = ">=3.8.1" },
     { name = "mypy", specifier = "==2.4.1" },
     { name = "pip-audit", specifier = ">=2.10.1" },
