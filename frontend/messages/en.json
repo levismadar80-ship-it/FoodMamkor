@@ -7111,7 +7111,8 @@
       "until": "until {time}",
       "soon": "within the hour",
       "left_short": "{count, plural, one {1 left} other {# left}}",
-      "pickup_tomorrow": "Pickup tomorrow {from}–{until}"
+      "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
+      "cancel_at_tomorrow": "tomorrow at {time}"
     },
     "section": {
       "title": "Rescue bag",

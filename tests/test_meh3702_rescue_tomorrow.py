@@ -11,6 +11,9 @@ Each guard was shown red against a broken build (PR body):
   - the +1 publish cap removed          -> test_a_bag_two_days_ahead_is_refused
   - the reserve window opened past +1   -> test_a_bag_two_days_ahead_cannot_be_reserved
   - the created_at filter removed       -> test_a_same_day_reservation_gets_no_reminder
+  - the pickup-day check removed        -> test_a_bag_for_tomorrow_with_todays_hours_is_refused
+  - the ended-window check removed      -> test_a_bag_whose_window_is_over_is_refused
+  - the once-a-day guard removed        -> test_a_second_run_the_same_day_sends_nothing
 """
 
 # ruff: noqa: F811 — fixtures reused from test_rescue.py are injected by name.
@@ -103,6 +106,34 @@ class TestPublish:
         )
         assert r.status_code == 422
         assert r.json()["detail"] == "אפשר לפרסם סל רק להיום או למחר"
+
+    def test_a_bag_for_tomorrow_with_todays_hours_is_refused(
+        self, client, db, shop, rescue_on
+    ):
+        """Edge case: tomorrow's date, today's window (an owner's device on
+        another clock). It would sit under «מחר» with a window long over."""
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(shop["location"], date=(_today() + DAY).isoformat()),
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 422
+        assert r.json()["detail"] == "שעות האיסוף צריכות להיות ביום של הסל"
+
+    def test_a_bag_whose_window_is_over_is_refused(self, client, db, shop, rescue_on):
+        now = utc_now()
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(
+                shop["location"],
+                pickup_start=(now - timedelta(hours=3)).isoformat(),
+                pickup_end=(now - timedelta(minutes=1)).isoformat(),
+                cancel_until=(now - timedelta(hours=4)).isoformat(),
+            ),
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 422
+        assert r.json()["detail"] == "שעת סיום האיסוף כבר עברה"
 
 
 class TestReserveTomorrow:
@@ -259,6 +290,18 @@ class TestMorningReminder:
         assert rows[0].subject == "היום אוספים את הסל במאפיית ההצלה"
         assert "4321" in rows[0].body
         assert "איסוף היום " in rows[0].body
+
+    def test_a_second_run_the_same_day_sends_nothing(self, db, shop, rescue_on):
+        """A second replica or a manual re-run must not send it twice."""
+        offer = _seed_offer(db, shop["location"])
+        buyer = make_user(db, email="twice@example.com")
+        db.commit()
+        _order(db, offer, buyer, created_at=_yesterday_evening())
+
+        assert queue_morning_reminders(db, today=_today(), now=utc_now())["queued"] == 1
+        again = queue_morning_reminders(db, today=_today(), now=utc_now())
+        assert again["queued"] == 0
+        assert len(self._rows(db)) == 1
 
     def test_a_same_day_reservation_gets_no_reminder(self, db, shop, rescue_on):
         """Reserved after 00:00 Israel: the code email reached her today."""

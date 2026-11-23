@@ -7,6 +7,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { israelToday } from "@/lib/israel-date";
+import { israelWallClockToIso } from "@/lib/dates";
 import AllergenPicker from "@/components/AllergenPicker"; // MEH-3610
 import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
@@ -18,6 +19,7 @@ import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
 import Input from "@/components/ui/Input";
 
+
 /**
  * Module:   RescueTab
  * Purpose:  The counter tool — today's codes, «אשר מסירה», «לא הגיע», the
@@ -28,6 +30,8 @@ import Input from "@/components/ui/Input";
  *           · POST /rescue/orders/{id}/no-show · PUT /producers/me/rescue/typical-items
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
+
+const DAY_MS = 86_400_000; // MEH-3702: one calendar day, for the publish date
 const MAX_QTY = 20;
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
@@ -297,14 +301,10 @@ export default function RescueTab() {
       setNotice("publish", t("no_location"));
       return;
     }
-    const day = new Date();
-    day.setDate(day.getDate() + dayOffset);
-    const iso = (hhmm) => {
-      const [h, m] = hhmm.split(":").map(Number);
-      const d = new Date(day);
-      d.setHours(h, m, 0, 0);
-      return d.toISOString();
-    };
+    // MEH-3702: the day and the hours on the Israel clock, not the device's —
+    // a device on another zone sent the hours off by its own offset.
+    const day = israelToday(new Date(Date.parse(`${israelToday()}T12:00:00Z`) + dayOffset * DAY_MS));
+    const iso = (hhmm) => israelWallClockToIso(`${day}T${hhmm}`);
     // MEH-2722: the business picks how long before pickup free cancellation
     // ends (Sapir 6/11); half an hour is the default and the old fixed value.
     const cancel = new Date(
@@ -313,7 +313,7 @@ export default function RescueTab() {
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
-        date: israelToday(day), // Israel calendar day, not UTC (MEH-2678)
+        date: day, // Israel calendar day, not UTC (MEH-2678)
         qty_total: Number(form.qty_total),
         price_agorot: Number(form.price) * 100,
         pickup_start: iso(form.from),

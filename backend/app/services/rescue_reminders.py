@@ -23,8 +23,10 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, time, timezone
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session, selectinload
 
+from app.models.email_outbox import EmailOutbox
 from app.models.models import ProducerLocation, RescueOffer, RescueOrder
 from app.services.email_outbox import enqueue_email
 from app.services.rescue_emails import (
@@ -98,6 +100,24 @@ def queue_morning_reminders(
     A buyer without an email, a bag whose business has no row, and a test
     business or buyer are not queued.
     """
+    # MEH-3702: one run per Israel day. Nothing stamps an order as reminded,
+    # so a second replica or a manual re-run would send every email twice.
+    # The lock serialises two runs; the outbox row (its kind and created_at
+    # outlive the content clear) tells the second that the day is done.
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"),
+        {"k": REMINDER_KIND},
+    )
+    if (
+        db.query(EmailOutbox.id)
+        .filter(
+            EmailOutbox.kind == REMINDER_KIND,
+            EmailOutbox.created_at >= _day_start_utc(today),
+        )
+        .first()
+    ):
+        db.commit()
+        return {"due": 0, "queued": 0, "already_ran": 1}
     due = _due_orders(db, today, now)
     queued = 0
     for order in due:

@@ -48,7 +48,7 @@ from app.schemas.rescue import (
     RescueTypicalItemsIn,
 )
 from app.services import billing_ledger  # MEH-3179
-from app.services.rescue_emails import israel_hhmm
+from app.services.rescue_emails import israel_date, israel_hhmm
 from app.services.rescue_no_show import NO_SHOW_BLOCK_AT, active_no_show_counts
 from app.services.rescue_reads import (
     RESERVE_CLOSES_BEFORE_END,
@@ -160,6 +160,36 @@ def order_or_404(db: Session, order_id: UUID) -> RescueOrder:
     return order
 
 
+def _check_offer_day(body: RescueOfferCreate, today: date) -> None:
+    """The bag's day and window against the Israel clock (MEH-3702); 422s."""
+    if body.date < today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="אי אפשר לפרסם סל לתאריך שעבר",
+        )
+    # MEH-3702: no further ahead than buyers can reserve, or the bag would sit
+    # unlisted until its day comes into the window.
+    if body.date > reserve_days(today)[1]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="אפשר לפרסם סל רק להיום או למחר",
+        )
+    # MEH-3702 edge case: a bag for tomorrow with today's hours (an API call,
+    # or an owner's device on another clock) would sit under «מחר» with a
+    # window that is already over by then, and the morning reminder would
+    # miss it. A late-night window that runs into the next day stays allowed.
+    if body.pickup_end <= utc_now():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="שעת סיום האיסוף כבר עברה",
+        )
+    if israel_date(body.pickup_start) < body.date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="שעות האיסוף צריכות להיות ביום של הסל",
+        )
+
+
 def publish_offer(
     db: Session,
     *,
@@ -210,18 +240,7 @@ def publish_offer(
             detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
         )
 
-    if body.date < today:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="אי אפשר לפרסם סל לתאריך שעבר",
-        )
-    # MEH-3702: no further ahead than buyers can reserve, or the bag would sit
-    # unlisted until its day comes into the window.
-    if body.date > reserve_days(today)[1]:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="אפשר לפרסם סל רק להיום או למחר",
-        )
+    _check_offer_day(body, today)
 
     # One active bag per point per day: `qty_left` is per OFFER, so a second
     # row for the same evening would show the same business twice with two

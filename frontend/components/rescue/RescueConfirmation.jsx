@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
 
-import { bagDay, israelTime, shekels } from "@/lib/rescue";
+import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
 
 /**
  * Module:   RescueConfirmation
@@ -30,7 +30,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   if (!order) return null;
 
   const price = shekels(order.price_agorot);
-  const cancelUntil = israelTime(order.cancel_until);
+  const cancelUntil = rescueCancelText(order.cancel_until, t); // MEH-3702
   const from = israelTime(order.pickup_start);
   const until = israelTime(order.pickup_end);
   const started = order.pickup_start ? new Date(order.pickup_start) <= new Date() : false;

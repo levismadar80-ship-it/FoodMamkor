@@ -127,6 +127,22 @@ export function israelTime(iso) {
 }
 
 /**
+ * The free-cancel deadline as the screen says it: «18:30» when it is today,
+ * «מחר ב-18:30» when it falls on the next Israel day (MEH-3702 — a bag for
+ * tomorrow usually has its deadline tomorrow, and a bare time reads as today).
+ *
+ * @param {string|null|undefined} iso the `cancel_until` instant
+ * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @returns {string|null}
+ */
+export function rescueCancelText(iso, t) {
+  const time = israelTime(iso);
+  if (!time || !iso) return time;
+  const day = bagDay(israelToday(new Date(iso)));
+  return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
+}
+
+/**
  * Thrown when the server answered but the payload did not match the schema.
  *
  * It exists so a schema drift cannot masquerade as "no bags today". Returning

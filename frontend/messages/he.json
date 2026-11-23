@@ -7107,7 +7107,8 @@
       "until": "עד {time}",
       "soon": "עוד שעה",
       "left_short": "{count, plural, one {נשאר 1} two {נשארו 2} other {נשארו #}}",
-      "pickup_tomorrow": "איסוף מחר {from}–{until}"
+      "pickup_tomorrow": "איסוף מחר {from}–{until}",
+      "cancel_at_tomorrow": "מחר ב-{time}"
     },
     "section": {
       "title": "סל הפתעה",

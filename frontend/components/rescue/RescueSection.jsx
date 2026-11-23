@@ -8,7 +8,7 @@ import { Clock, MapPin } from "@phosphor-icons/react";
 
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
-import { bagDay, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
+import { bagDay, rescueCancelText, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
 import useRescueReservation from "@/lib/useRescueReservation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
@@ -107,7 +107,7 @@ export default function RescueSection({ producer }) {
   // business's own LOW estimate (worthAgorot), so never a made-up discount.
   const worthA = worthAgorot(offer);
   const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
-  const cancelUntil = israelTime(offer?.cancel_until);
+  const cancelUntil = rescueCancelText(offer?.cancel_until, t); // MEH-3702
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);

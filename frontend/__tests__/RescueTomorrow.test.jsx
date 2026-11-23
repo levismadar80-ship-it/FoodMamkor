@@ -12,6 +12,7 @@
  *   - bagDay always "today"            -> every «מחר» case below
  *   - the home block's filter removed  -> "the home block shows today's bags only"
  *   - tomorrow counted at the counter  -> "the counters and the code box are today's"
+ *   - the deadline without its day     -> "says «מחר ב-» when the deadline…"
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -168,6 +169,19 @@ describe("the confirmation", () => {
     expect(screen.getByTestId("rescue-confirmation-window").textContent.startsWith("איסוף מחר ")).toBe(true);
     rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-window").textContent.startsWith("איסוף מחר")).toBe(false);
+  });
+});
+
+describe("the free-cancel deadline", () => {
+  it("says «מחר ב-» when the deadline is on the next Israel day, the bare time when today", () => {
+    const at = (day) => `${day}T09:00:00Z`; // 11:00/12:00 in Israel, same date
+    const { rerender } = render(
+      <RescueConfirmation order={order({ date: TOMORROW, cancel_until: at(TOMORROW) })} onCancel={() => {}} />,
+    );
+    const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
+    expect(document.body.textContent).toContain(tomorrowText);
+    rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
+    expect(document.body.textContent).not.toContain(tomorrowText);
   });
 });
 

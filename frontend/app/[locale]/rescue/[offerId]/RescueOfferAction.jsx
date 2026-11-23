@@ -14,7 +14,7 @@ import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
 import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
-import { bagDay, israelTime, shekels, worthAgorot } from "@/lib/rescue";
+import { bagDay, rescueCancelText, israelTime, shekels, worthAgorot } from "@/lib/rescue";
 import StruckPrice from "@/components/ui/StruckPrice";
 
 const STATE_KEY = {
@@ -86,7 +86,7 @@ export default function RescueOfferAction({ offer, reservation }) {
 
   const price = shekels(offer.price_agorot);
   const until = israelTime(offer.pickup_end);
-  const cancelUntil = israelTime(offer.cancel_until);
+  const cancelUntil = rescueCancelText(offer.cancel_until, t); // MEH-3702
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
   const button = (label, testId) => (
     <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid={testId} variant="primary" size="lg" className="w-full">
