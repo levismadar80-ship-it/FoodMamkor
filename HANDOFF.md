@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-22 — הרשמת לקוחה בלי לעזוב את הדף (PR #5123, #5158, #5159, #5144)
+
+**שורה אחת:** ארבעה PR-ים ב-staging. הלקוחה נכנסת עם Google בתוך החלונית ונשארת בדף, גם ב«רוצה לשמור?» וגם בהצטרפות לקבוצת רכישה.
+
+**מה צריך לדעת לפני עבודה:**
+- **כפתור Google:** כל slot של GSI עובר דרך `useGsiRedrawOnResize` ונושא `data-gsi-slot`. slot חדש בלי המאפיין ייכשל בבדיקות הטיפוגרפיה של `43-site-sanity`.
+- **ב-PR רגיל הכפתור לא נבדק באמת:** GSI מצייר רק על origin מורשה, ולכן רק staging מוכיח את התיקון.
+- **פתוח (אחרי ההשקה):** כפתור Google משלנו (MEH-3690: ‏RED, ‏auth, ‏env חדש, קופי), וניסוי One Tap (MEH-3695) אחרי 3–4 שבועות של מדידה.
+
 ## 2026-11-21 — סוד העקיפה של Vercel: עוגייה בלבד, ושומר שחוסם כותרת בדפדפן (PR #5085, #5100)
 
 **שורה אחת:** ‏#5085 ו-#5100 בתוך רכבת השחרור 2 (#5063), יחד עם #5057. בדפדפן אין יותר את `x-vercel-protection-bypass`: הסוד נשלח פעם אחת בבקשת API, ו-Vercel מחזיר עוגיית `_vercel_jwt` לאתר הזה בלבד.
