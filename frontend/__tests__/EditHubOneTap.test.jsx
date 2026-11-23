@@ -32,7 +32,9 @@ const BASE = {
 
 function mount(profile) {
   api.get.mockImplementation((url) =>
-    Promise.resolve({ data: url === "/producers/me" ? profile : [] }),
+    Promise.resolve({
+      data: url === "/producers/me" ? profile : url.includes("/locations") ? profile.locations || [] : [],
+    }),
   );
   render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
@@ -62,6 +64,24 @@ describe("hub tile opens a card (MEH-3762)", () => {
     expect(expanded("categories")).toBe("false");
   });
 
+  it("organizer: the profile group has no categories card, so it never opens", async () => {
+    mount({ ...BASE, kind: "organizer", images: [{ url: "https://res.cloudinary.com/x/a.jpg" }] });
+    fireEvent.click(await screen.findByTestId("hub-card-profile"));
+    await waitFor(() => expect(expanded("bio")).toBe("true"));
+    expect(screen.queryByTestId("accordion-categories")).toBeNull();
+  });
+
+  it("every card in the group filled: nothing opens", async () => {
+    mount({
+      ...BASE,
+      locations: [{ id: 1, kind: "branch", is_primary: true, lat: 32.08, lng: 34.78, opening_hours: "א-ה 09:00-17:00" }],
+    });
+    fireEvent.click(await screen.findByTestId("hub-card-location"));
+    await waitFor(() => expect(routerStub.push).toHaveBeenCalled());
+    expect(expanded("locations")).toBe("false");
+    expect(expanded("delivery")).toBe("false");
+  });
+
   it("several cards, the first filled: the first MISSING one opens", async () => {
     mount({ ...BASE, images: [{ url: "https://res.cloudinary.com/x/a.jpg" }] });
     fireEvent.click(await screen.findByTestId("hub-card-profile"));
@@ -74,7 +94,7 @@ describe("autoOpenKeyFor (MEH-3762)", () => {
   it("every card filled in a several-card group: nothing opens", () => {
     expect(autoOpenKeyFor("contact", ["contact", "questions"], { contact: true, questions: true })).toBeNull();
   });
-  it("license or kashrut missing maps to the one trust card", () => {
+  it("the one-card trust group opens even when both of its members are filled", () => {
     expect(autoOpenKeyFor("trust", ["license", "kashrut"], { license: true, kashrut: true })).toBe("trust");
   });
   it("the second card missing opens the second", () => {

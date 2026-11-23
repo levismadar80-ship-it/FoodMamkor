@@ -778,8 +778,13 @@ function EditPageInner() {
                 previews={tile.previews}
                 // MEH-3762: one tap to a form — the group's first missing
                 // card (or its only card) opens as the group opens.
+                // Routed through the pending-anchor relay too, so the group-change
+                // effect scrolls the opened card into view (the hub's scroll
+                // offset would otherwise leave a 3rd/4th card below the fold).
                 onClick={() => {
-                  setOpenKey(autoOpenKeyFor(g, membersOf(g), cardFilled));
+                  const key = autoOpenKeyFor(g, membersOf(g), cardFilled);
+                  setOpenKey(key);
+                  if (key && KEY_TO_GROUP[key] === g) pendingAnchorRef.current = key;
                   enterGroup(g);
                 }}
               />
