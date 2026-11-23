@@ -9,6 +9,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
   vi.restoreAllMocks();
+  // z.config writes a global that outlives vi.resetModules(); clear it so the
+  // jitless setting does not leak into a later test in this worker.
+  delete globalThis.__zod_globalConfig;
 });
 
 describe("lib/zod-csp", () => {
