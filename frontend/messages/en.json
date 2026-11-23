@@ -3315,6 +3315,25 @@
         "fri": "Fri",
         "sat": "Sat"
       }
+    },
+    "form": {
+      "fill": {
+        "title": "Have a post about the event?",
+        "intro": "Paste the post or the message as it is, and we will make a draft from it. Nothing is saved without your approval."
+      },
+      "help": {
+        "title": "The event's name, as it will appear in the events list.",
+        "description": "What happens at the event, who it suits and what to bring.",
+        "category": "The kind of event. People find it by this in the filter.",
+        "event_date": "The day the event takes place.",
+        "event_time": "The start time.",
+        "end_time": "When the event ends, if known.",
+        "location": "The address or the name of the place, so it is easy to get there.",
+        "city": "The city where the event takes place.",
+        "price": "The price per participant. If the event is free, leave 0.",
+        "max_participants": "How many people can take part. When the places run out, sign-up closes.",
+        "image_url": "A photo from a past event or of the place."
+      }
     }
   },
   "experiences": {

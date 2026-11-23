@@ -386,6 +386,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `event-categories.js` | Single source of truth for the /events (4) and /experiences (7) category sets — previously duplicated across 5 call-sites in 4 files (EventsClient, the … |
 | `event-category-gate.js` | Decide which category chips /events and /experiences show — only categories that have at least one result in the current city, so no chip leads to «לא נמצאו … |
 | `event-date-filter.js` | MEH-3118 — the three date shortcuts on /events and /experiences («היום», «מחר», «סוף השבוע»), as Eventbrite and Meetup offer them. … |
+| `event-draft.js` | Put a «יש לכם מודעה על האירוע?» draft (MEH-3751) into the event form's state: a field the draft fills replaces the form's value, a field it leaves empty keeps … |
 | `event-entry.js` | toEventEntry — normalizes an event OR experience API row into the one shape EventEntryRow renders. … |
 | `event-ics.js` | Turn one event into an iCalendar (RFC 5545) file the visitor can open in Google / Apple / Outlook calendar — the «הוספה ליומן» button on the event page. |
 | `event-when.js` | How close an event's date is to today in Israel — the «היום» / «מחר» / «השבוע» chip beside the date, and whether the event is already over (MEH-2548). |
