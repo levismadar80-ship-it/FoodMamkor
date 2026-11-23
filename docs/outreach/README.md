@@ -13,6 +13,7 @@
 | [`call-script.md`](./call-script.md) | סקריפט שיחה ראשונה — 5 שלבים, שורת פתיחה מילולית + רמז הקשבה + גשר לשלב הבא | MEH-413 «סקריפט שיחה — 5 שלבים» |
 | [`objection-handlers.md`](./objection-handlers.md) | 10 התנגדויות ב-4 קטגוריות: מה היא באמת שואלת · התשובה · גיבוי בשורה אחת. בסוף — טבלת log למילוי אחרי כל שיחה | MEH-413 «10 ההתנגדויות» + SYNC 22/07 |
 | [`whatsapp-templates.md`](./whatsapp-templates.md) | 4 תבניות: פנייה קרה · פנייה קרה לחקלאית מקבוצת פייסבוק · מעקב רך (3 ימים) · בקשה אחרונה (שבוע). כל אחת עם שורת החובה הנעולה | MEH-413 AC + `docs/compliance/outreach-disclosure-line.md` |
+| [`../../.agents/skills/mehamakor-daily-outreach/SKILL.md`](../../.agents/skills/mehamakor-daily-outreach/SKILL.md) | **הנוסחים שבשימוש בפועל** (1–6, אושרו 18/11) ותהליך הפנייה היומי, בסקיל שכל סשן טוען. **שונה מהתבניות כאן בשורת החובה:** נוסח 1 בלי שורה, נוסח 2 עם «פרסומת · מהמקור» ו-`contact@mehamakor.co.il`. איזה נוסח מנצח זו הכרעה של ספיר; עד אז אין לאחד אותם בשקט | MEH-3747 |
 | `../../scripts/oneoff/pull_health_ministry_registry.py` | סקריפט חד-פעמי למשיכת מאגר בעלי רישיון היצרן של משרד הבריאות ל-CSV לידים ב-Wave 1. **נכתב ולא הורץ** — `data.gov.il` חוסם גישה אוטומטית; ספיר מריצה מקומית עם `--confirm` | MEH-2135 |
 
 ## כללים שחלים על כל מה שכאן
