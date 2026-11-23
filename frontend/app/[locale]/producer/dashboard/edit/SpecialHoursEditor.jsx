@@ -181,8 +181,12 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       onSave(payload);
       setSaved(true);
       // MEH-3770: orders she already accepted on a date she just closed.
+      // Only dates newly closed in this save, from today on: a note edit does
+      // not re-warn about a date she closed (and saw the warning for) before.
+      const isClosed = (entry) => Array.isArray(entry?.ranges) && entry.ranges.length === 0;
+      const wasClosed = serializeSpecialHours(seedRows) || {};
       const closedDates = Object.entries(current || {})
-        .filter(([, entry]) => Array.isArray(entry?.ranges) && entry.ranges.length === 0)
+        .filter(([day, entry]) => isClosed(entry) && day >= today && !isClosed(wasClosed[day]))
         .map(([day]) => day);
       if (closedDates.length > 0) warnClosedDayOrders({ dates: closedDates }, { t: tClosed, locale });
     } catch (error) {

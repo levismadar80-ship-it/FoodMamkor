@@ -1,6 +1,6 @@
 // MEH-3770: the warning after a vacation or a closed date overlaps orders the
 // business already accepted.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn() } }));
 vi.mock("@/lib/product-orders", async (importOriginal) => ({
@@ -12,20 +12,29 @@ import { loadAcceptedOrders } from "@/lib/product-orders";
 import { showToast } from "@/lib/toast";
 import { LISTED, ORDERS_HREF, onClosedDays, warnClosedDayOrders } from "@/lib/closed-day-orders";
 
-// 22:30 UTC on 9/12 is already 10/12 in Israel (UTC+2 in December).
 const order = (id, slot, name = `לקוח ${id}`) => ({ id, slot_start: slot, customer_name: name });
 const t = (key, values) => (key === "warning" ? `${values.count}|${values.list}` : key);
 
+// The clock is pinned: "already passed" is time-derived (testing.md, MEH-2290).
+beforeAll(() => vi.useFakeTimers({ now: new Date("2026-12-10T09:00:00Z") }));
+afterAll(() => vi.useRealTimers());
+
 describe("onClosedDays", () => {
   const orders = [
-    order(1, "2026-12-09T22:30:00Z"), // Israel 10/12
+    order(1, "2026-12-10T10:30:00Z"),
     order(2, "2026-12-11T08:00:00Z"),
     order(3, "2026-12-20T08:00:00Z"),
   ];
 
   it("matches a single closed date by the Israel day, not the UTC day", () => {
-    expect(onClosedDays(orders, { dates: ["2026-12-10"] }).map((o) => o.id)).toEqual([1]);
-    expect(onClosedDays(orders, { dates: ["2026-12-09"] })).toEqual([]);
+    const late = [order(7, "2026-12-10T22:30:00Z")]; // UTC 10/12, Israel 11/12
+    expect(onClosedDays(late, { dates: ["2026-12-11"] }).map((o) => o.id)).toEqual([7]);
+    expect(onClosedDays(late, { dates: ["2026-12-10"] })).toEqual([]);
+  });
+
+  it("skips an order on the closed day whose time already passed", () => {
+    const today = [order(8, "2026-12-10T06:00:00Z"), order(9, "2026-12-10T12:00:00Z")];
+    expect(onClosedDays(today, { dates: ["2026-12-10"] }).map((o) => o.id)).toEqual([9]);
   });
 
   it("takes both ends of a vacation as closed", () => {
@@ -57,7 +66,7 @@ describe("warnClosedDayOrders", () => {
   });
 
   it("1 order: names it and links to the orders tab", async () => {
-    loadAcceptedOrders.mockResolvedValue([order(1, "2026-12-10T08:00:00Z", "דנה")]);
+    loadAcceptedOrders.mockResolvedValue([order(1, "2026-12-10T12:00:00Z", "דנה")]);
     expect(await warnClosedDayOrders({ dates: ["2026-12-10"] }, { t, locale: "he" })).toBe(1);
     const [text, opts] = showToast.info.mock.calls[0];
     expect(text.startsWith("1|דנה, ")).toBe(true);
@@ -65,7 +74,7 @@ describe("warnClosedDayOrders", () => {
   });
 
   it("many orders: counts all, lists only the first few", async () => {
-    const many = [1, 2, 3, 4, 5].map((i) => order(i, "2026-12-10T08:00:00Z"));
+    const many = [1, 2, 3, 4, 5].map((i) => order(i, "2026-12-10T12:00:00Z"));
     loadAcceptedOrders.mockResolvedValue(many);
     expect(await warnClosedDayOrders({ dates: ["2026-12-10"] }, { t, locale: "he" })).toBe(5);
     const [text] = showToast.info.mock.calls[0];

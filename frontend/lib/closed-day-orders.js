@@ -31,16 +31,19 @@ export const ORDERS_HREF = "/producer/dashboard/orders";
  */
 
 /**
- * The orders whose slot falls on a closed day, by the Israel date.
+ * The orders still ahead whose slot falls on a closed day, by the Israel date.
  * @param {any[]} orders
  * @param {Closed} closed
  * @returns {any[]}
  */
 export function onClosedDays(orders, closed) {
   const dates = new Set(closed.dates || []);
+  const now = Date.now();
   return orders.filter((order) => {
     const day = order?.slot_start ? israelDay(order.slot_start) : null;
     if (!day) return false;
+    if (Date.parse(order.slot_start) < now) return false; // already passed today
+
     if (dates.has(day)) return true;
     if (!closed.from || day < closed.from) return false;
     return Boolean(closed.openEnded) || (closed.until ? day <= closed.until : false);

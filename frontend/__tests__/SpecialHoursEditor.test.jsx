@@ -269,8 +269,28 @@ describe("SpecialHoursEditor — the state matrix", () => {
       special_hours: { "2026-09-21": { ranges: [], note: "כיפור" } },
     });
     expect(screen.getByTestId("special-hours-save-success")).toBeTruthy();
-    // MEH-3770: the saved closed date is checked against accepted orders.
-    expect(warnClosedDayOrders).toHaveBeenCalledWith({ dates: ["2026-09-21"] }, expect.objectContaining({ locale: "he" }));
+    // MEH-3770: 21/09 was already closed before this save — a note edit does not re-warn.
+    expect(warnClosedDayOrders).not.toHaveBeenCalled();
+  });
+
+  it("MEH-3770: a newly closed date is checked against accepted orders, the old one is not", async () => {
+    renderEditor(ONE);
+    fireEvent.click(screen.getByTestId("special-hours-add-date"));
+    fireEvent.change(screen.getByTestId("special-hours-date-1"), { target: { value: "2026-09-30" } });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("special-hours-save"));
+    });
+    expect(api.put).toHaveBeenCalled();
+    expect(warnClosedDayOrders).toHaveBeenCalledWith({ dates: ["2026-09-30"] }, expect.objectContaining({ locale: "he" }));
+  });
+
+  it("MEH-3770: an open day turned closed counts as newly closed", async () => {
+    renderEditor({ "2026-09-11": { ranges: [{ open: "09:00", close: "13:00" }] } });
+    fireEvent.click(screen.getByTestId("special-hours-closed-0"));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("special-hours-save"));
+    });
+    expect(warnClosedDayOrders).toHaveBeenCalledWith({ dates: ["2026-09-11"] }, expect.anything());
   });
 
   it("removing the last row saves an explicit null (clear)", async () => {
