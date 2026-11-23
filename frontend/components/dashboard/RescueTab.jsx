@@ -10,7 +10,7 @@ import { israelToday } from "@/lib/israel-date";
 import AllergenPicker from "@/components/AllergenPicker"; // MEH-3610
 import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
-import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
+import { bagDay, israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { useOptionalAuth } from "@/lib/auth-context";
@@ -168,24 +168,74 @@ export default function RescueTab() {
       .catch(() => {});
   }, [load]);
 
+  // MEH-3702: the counter tool is today's; tomorrow's orders get their own list.
+  const todayOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date) === "today"), [orders]);
+  const tomorrowOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date) === "tomorrow"), [orders]);
   // Three counters, derived from one list so they cannot disagree with it.
   const counters = useMemo(() => {
-    const rows = orders || [];
+    const rows = todayOrders;
     return {
       reserved: rows.filter((o) => o.status === "reserved").length,
       handed: rows.filter((o) => o.status === "handed").length,
       no_show: rows.filter((o) => o.status === "no_show").length,
     };
-  }, [orders]);
+  }, [todayOrders]);
   // Orders still waiting at the counter first, cancelled ones last; the
   // server order is kept inside each group.
-  const sortedOrders = useMemo(
-    () =>
-      [...(orders || [])].sort(
-        (a, b) => (ORDER_RANK[a.status] ?? 9) - (ORDER_RANK[b.status] ?? 9),
-      ),
-    [orders],
-  );
+  const byRank = (rows) => [...rows].sort((a, b) => (ORDER_RANK[a.status] ?? 9) - (ORDER_RANK[b.status] ?? 9));
+  const sortedOrders = useMemo(() => byRank(todayOrders), [todayOrders]);
+  const sortedTomorrow = useMemo(() => byRank(tomorrowOrders), [tomorrowOrders]);
+
+  // One order row. MEH-3702: tomorrow's rows only say their status — a bag
+  // is handed over, or marked «לא הגיע», on its own day.
+  function orderRow(o, tomorrow = false) {
+    // «לא הגיע» is only legal after the window closed — the server
+    // refuses it earlier, so the button must not offer it earlier.
+    const windowClosed = new Date(o.pickup_end).getTime() <= now;
+    return (
+      <li
+        key={o.id}
+        data-testid="rescue-order-row"
+        // A fixed grid, so code and quantity line up whatever the
+        // status cell holds (two buttons, a time, or one word).
+        className="grid grid-cols-[3.5rem_4rem_1fr] items-center gap-2 border border-border rounded-md px-3 py-2"
+      >
+        <span dir="ltr" className="font-headline-md font-black tracking-[0.2em]" data-testid="rescue-order-code">
+          {o.pickup_code}
+        </span>
+        <span className="font-body-sm text-sm text-fg-muted">{t("qty", { qty: o.qty })}</span>
+        {o.status === "handed" ? (
+          <span className="justify-self-end font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
+            {t("handed_at", { time: israelTime(o.handed_at) || "" })}
+          </span>
+        ) : o.status === "reserved" && !tomorrow ? (
+          <span className="justify-self-end flex gap-2">
+            <button
+              type="button"
+              disabled={busyId === o.id}
+              onClick={() => act(o, "handed")}
+              data-testid="rescue-order-hand"
+              className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-full font-body-sm text-sm disabled:opacity-50"
+            >
+              {t("hand_over")}
+            </button>
+            <button
+              type="button"
+              disabled={!windowClosed || busyId === o.id}
+              title={windowClosed ? undefined : t("no_show_too_early")}
+              onClick={() => act(o, "no-show")}
+              data-testid="rescue-order-noshow"
+              className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+            >
+              {t("no_show")}
+            </button>
+          </span>
+        ) : (
+          <span className="justify-self-end font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
+        )}
+      </li>
+    );
+  }
 
   async function act(order, what, at = "orders") {
     setBusyId(order.id);
@@ -201,7 +251,7 @@ export default function RescueTab() {
   }
 
   function handByCode() {
-    const match = (orders || []).find(
+    const match = todayOrders.find(
       (o) => o.pickup_code === code.trim() && o.status === "reserved",
     );
     if (!match) {
@@ -300,9 +350,11 @@ export default function RescueTab() {
   const now = Date.now();
   // Bags that can still be cancelled: active, window not over (the server
   // refuses after pickup_end — every bag is collected or a no-show by then).
-  const cancellable = offers.filter(
-    (o) => o.status === "active" && new Date(o.pickup_end).getTime() > now,
-  );
+  const cancellable = offers
+    .filter((o) => o.status === "active" && new Date(o.pickup_end).getTime() > now)
+    // MEH-3702: today's first, so «הסלים של מחר» heads one run of rows.
+    .sort((a, b) => Number(bagDay(a.date) === "tomorrow") - Number(bagDay(b.date) === "tomorrow"));
+  const tomorrowBags = offers.some((o) => o.status === "active" && bagDay(o.date) === "tomorrow");
   const openOn = (offerId) =>
     (orders || []).filter((o) => o.offer_id === offerId && o.status === "reserved").length;
   // MEH-2702: the group for the town of the point bags are published from,
@@ -317,7 +369,10 @@ export default function RescueTab() {
   const donatedTotal = leftoverRows.reduce((n, o) => n + Number(o.qty_donated || 0), 0);
   // Today's bags whose window is still open: the box will appear after it,
   // so the business is told where to look instead of finding it by chance.
-  const upcoming = offers.some((o) => o.status === "active" && new Date(o.pickup_end).getTime() > now);
+  // MEH-3702: today's only — tomorrow's bag says nothing about today's leftovers.
+  const upcoming = offers.some(
+    (o) => o.status === "active" && bagDay(o.date) === "today" && new Date(o.pickup_end).getTime() > now,
+  );
   const chosenQty = donateQty === null ? leftoverTotal : Math.min(donateQty, leftoverTotal);
   // No recipient in the link: the business picks the contact or group in
   // WhatsApp itself, so nothing about who receives it is stored here.
@@ -430,69 +485,43 @@ export default function RescueTab() {
       <section data-notice-scope="orders">
         <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title")}</h3>
         {orders === null && <p className="font-body-sm text-sm text-fg-muted">{t("loading")}</p>}
-        {orders?.length === 0 && (
+        {orders !== null && todayOrders.length === 0 && (
           <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-empty">
             {t("orders_empty")}
           </p>
         )}
         <ul className="space-y-2">
-          {sortedOrders.map((o) => {
-            // «לא הגיע» is only legal after the window closed — the server
-            // refuses it earlier, so the button must not offer it earlier.
-            const windowClosed = new Date(o.pickup_end).getTime() <= now;
-            return (
-              <li
-                key={o.id}
-                data-testid="rescue-order-row"
-                // A fixed grid, so code and quantity line up whatever the
-                // status cell holds (two buttons, a time, or one word).
-                className="grid grid-cols-[3.5rem_4rem_1fr] items-center gap-2 border border-border rounded-md px-3 py-2"
-              >
-                <span dir="ltr" className="font-headline-md font-black tracking-[0.2em]" data-testid="rescue-order-code">
-                  {o.pickup_code}
-                </span>
-                <span className="font-body-sm text-sm text-fg-muted">{t("qty", { qty: o.qty })}</span>
-                {o.status === "handed" ? (
-                  <span className="justify-self-end font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
-                    {t("handed_at", { time: israelTime(o.handed_at) || "" })}
-                  </span>
-                ) : o.status === "reserved" ? (
-                  <span className="justify-self-end flex gap-2">
-                    <button
-                      type="button"
-                      disabled={busyId === o.id}
-                      onClick={() => act(o, "handed")}
-                      data-testid="rescue-order-hand"
-                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-full font-body-sm text-sm disabled:opacity-50"
-                    >
-                      {t("hand_over")}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!windowClosed || busyId === o.id}
-                      title={windowClosed ? undefined : t("no_show_too_early")}
-                      onClick={() => act(o, "no-show")}
-                      data-testid="rescue-order-noshow"
-                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
-                    >
-                      {t("no_show")}
-                    </button>
-                  </span>
-                ) : (
-                  <span className="justify-self-end font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
-                )}
-              </li>
-            );
-          })}
+          {sortedOrders.map((o) => orderRow(o))}
         </ul>
         {noticeAt(AT.orders)}
       </section>
 
+      {/* MEH-3702: tomorrow's reservations, once there is a bag for tomorrow. */}
+      {(tomorrowOrders.length > 0 || tomorrowBags) && (
+        <section data-testid="rescue-orders-tomorrow">
+          <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title_tomorrow")}</h3>
+          {tomorrowOrders.length === 0 && (
+            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-tomorrow-empty">
+              {t("orders_empty_tomorrow")}
+            </p>
+          )}
+          <ul className="space-y-2">{sortedTomorrow.map((o) => orderRow(o, true))}</ul>
+        </section>
+      )}
+
       {cancellable.length > 0 && (
         <section className="space-y-3" data-notice-scope="cancel" data-testid="rescue-offer-cancel-box">
-          {cancellable.map((o) => {
+          {cancellable.map((o, i) => {
             const open = openOn(o.id);
-            return askingOffer === o.id ? (
+            // MEH-3702: tomorrow's bags come after today's, under their own line.
+            const firstTomorrow =
+              bagDay(o.date) === "tomorrow" && (i === 0 || bagDay(cancellable[i - 1].date) !== "tomorrow");
+            const dayLine = firstTomorrow ? (
+              <p key={`day-${o.id}`} className="font-body-sm text-sm font-bold text-text" data-testid="rescue-offers-tomorrow-title">
+                {t("offers_title_tomorrow")}
+              </p>
+            ) : null;
+            const item = askingOffer === o.id ? (
               <div
                 key={o.id}
                 role="group"
@@ -501,7 +530,7 @@ export default function RescueTab() {
                 className="border border-border rounded-md px-4 py-3 space-y-3 bg-surface-card"
               >
                 <p id={`rescue-offer-cancel-title-${o.id}`} className="font-body-sm text-base font-bold text-text">
-                  {t("cancel_offer_title")}
+                  {t(bagDay(o.date) === "tomorrow" ? "cancel_offer_title_tomorrow" : "cancel_offer_title")}
                 </p>
                 <p className="font-body-sm text-sm text-text">
                   {open === 0
@@ -546,6 +575,7 @@ export default function RescueTab() {
                 {t("cancel_offer")}
               </Button>
             );
+            return dayLine ? [dayLine, item] : item;
           })}
           {noticeAt(AT.cancel)}
         </section>

@@ -18,7 +18,7 @@ History:  MEH-2715 (creation)
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from html import escape as html_escape
 
 from app.config import settings
@@ -32,6 +32,23 @@ def israel_hhmm(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
     return value.astimezone(ISRAEL_TZ).strftime("%H:%M")
+
+
+def israel_date(value: datetime) -> date:
+    """A naive-UTC column value's calendar day on the Israel clock."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(ISRAEL_TZ).date()
+
+
+def day_word(day: date, today: date) -> str:
+    """MEH-3702: «היום» / «מחר» for a pickup day; "" for any other day (a
+    caller that can reach one shows no word rather than a wrong one)."""
+    if day == today:
+        return "היום"
+    if day == today + timedelta(days=1):
+        return "מחר"
+    return ""
 
 
 def shekels(agorot: int) -> str:
@@ -56,21 +73,39 @@ class ReservationEmail:
     cancel_until: str | None
     # MEH-3593: the business's «הוראות איסוף»; None = no line.
     pickup_note: str | None = None
+    # MEH-3702: «היום» or «מחר» — the pickup day as the buyer reads it on the
+    # day the email is written. `cancel_day` is the same word for the cutoff,
+    # empty when the cutoff falls on the day of writing.
+    pickup_day: str = "היום"
+    cancel_day: str = ""
 
 
 def send_reservation_email(
     to: str, m: ReservationEmail, test_cause: bool = False
 ) -> None:
+    subject, body, html_body = render_reservation_email(m)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
+
+
+def render_reservation_email(
+    m: ReservationEmail, subject: str | None = None
+) -> tuple[str, str, str]:
+    """Subject, text and HTML of the code email. `subject` is replaced by the
+    morning reminder (MEH-3702), which repeats the same card under its own
+    title; the confirmation passes nothing."""
     # A name with a line break would break the Subject header; collapse all
     # whitespace runs to one space (the body keeps the same, cleaned name).
     name = " ".join(m.producer_name.split())
-    subject = f"שמרנו לכם סל ב{name}"
+    subject = subject or f"שמרנו לכם סל ב{name}"
+    cancel_at = (
+        f"{m.cancel_day} ב-{m.cancel_until}" if m.cancel_day else (m.cancel_until or "")
+    )
     where = f", {m.address}" if m.address else ""
     price = shekels(m.total_agorot)
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
     cancel_text = (
-        f"לא תוכלו להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
+        f"לא תוכלו להגיע? אפשר לבטל בחינם עד {cancel_at}, "
         f"וככה הסל יגיע למישהו אחר.\n\n"
         f"לבטל את השריון: {page_url}\n\n"
         if m.cancel_until
@@ -80,7 +115,7 @@ def send_reservation_email(
     body = (
         f"{subject}\n\n"
         f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
-        f"איסוף היום {m.pickup_from}–{m.pickup_until}{where}.\n"
+        f"איסוף {m.pickup_day} {m.pickup_from}–{m.pickup_until}{where}.\n"
         f"{note_text}"
         f"{cancel_text}"
         f"צוות מהמקור 🌱"
@@ -96,7 +131,7 @@ def send_reservation_email(
         address_html += f"<br>\n                הוראות איסוף: {e(m.pickup_note)}"
     cancel_html = (
         f"""\
-          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">לא תוכלו להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
+          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">לא תוכלו להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(cancel_at)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
           <tr><td style="padding:16px 22px 24px;text-align:center;">
             <a href="{e(page_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לבטל את השריון</a>
           </td></tr>
@@ -118,14 +153,14 @@ def send_reservation_email(
           <tr><td style="padding:16px 22px 4px;">
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e5dfd3;border-radius:10px;">
               <tr><td style="padding:12px 14px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">
-                🕗&nbsp; איסוף היום {e(m.pickup_from)}–{e(m.pickup_until)}{address_html}
+                🕗&nbsp; איסוף {e(m.pickup_day)} {e(m.pickup_from)}–{e(m.pickup_until)}{address_html}
               </td></tr>
             </table>
           </td></tr>
 {cancel_html}
 """,
     )
-    send_email(to, subject, body, html=html_body, test_cause=test_cause)
+    return subject, body, html_body
 
 
 def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> None:
@@ -169,14 +204,16 @@ def _send_bag_cancelled(to: str, name: str, line1: str, test_cause: bool) -> Non
 
 
 def send_business_cancel_email(
-    to: str, producer_name: str, test_cause: bool = False
+    to: str, producer_name: str, test_cause: bool = False, tomorrow: bool = False
 ) -> None:
     """MEH-2738 — the business cancelled today's bag, so the buyer's
     reservation went with it. Copy approved word for word by Sapir on 6/11
     (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
     name = " ".join(producer_name.split())
+    # MEH-3702: tomorrow's bag says «מחר» (copy approved 24/11).
+    day = "מחר" if tomorrow else "היום"
     line1 = (
-        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
+        f"בית העסק {name} ביטל את סל ההפתעה של {day}, ולכן גם השריון שלכם בוטל. "
         "אין צורך להגיע ואין מה לשלם."
     )
     _send_bag_cancelled(to, name, line1, test_cause=test_cause)

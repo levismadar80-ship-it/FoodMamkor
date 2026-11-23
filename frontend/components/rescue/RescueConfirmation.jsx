@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
 
-import { israelTime, shekels } from "@/lib/rescue";
+import { bagDay, israelTime, shekels } from "@/lib/rescue";
 
 /**
  * Module:   RescueConfirmation
@@ -75,7 +75,8 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {from && until && (
         <p className="font-body-sm text-sm text-text mt-1" data-testid="rescue-confirmation-window">
-          {t("row.pickup", { from, until })}
+          {/* MEH-3702: a bag for tomorrow says so; today's keeps the bare window. */}
+          {t(bagDay(order.date) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })}
         </p>
       )}
 

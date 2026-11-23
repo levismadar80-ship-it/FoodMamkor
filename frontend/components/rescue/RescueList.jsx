@@ -10,7 +10,7 @@ import BagRow from "@/components/rescue/BagRow";
 import HubAlertHint from "@/components/HubAlertHint";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
-import { fetchOffers } from "@/lib/rescue";
+import { bagDay, fetchOffers } from "@/lib/rescue";
 
 /**
  * Module:   RescueList
@@ -21,7 +21,8 @@ import { fetchOffers } from "@/lib/rescue";
  * Related:  components/rescue/BagRow.jsx, lib/rescue.js (fetchOffers parses
  *           with the generated Zod schema before this sees a row)
  * History:  MEH-2648 (creation); MEH-3117 (alert hint in the empty state);
- *           MEH-3626 (empty state + loading skeleton shaped like /group-buys)
+ *           MEH-3626 (empty state + loading skeleton shaped like /group-buys);
+ *           MEH-3702 (tomorrow's bags under «מחר», after today's)
  */
 export default function RescueList({ initialCity = "", limit = null, heading = null }) {
   const t = useTranslations("rescue");
@@ -62,6 +63,17 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
   }, [load, initialCity]);
 
   const shown = limit && offers ? offers.slice(0, limit) : offers;
+  // MEH-3702: today's bags, then tomorrow's. The day headings appear only once
+  // a tomorrow bag is listed, so a list of today's bags looks as it did.
+  const today = (shown || []).filter((o) => bagDay(o.date) === "today");
+  const tomorrow = (shown || []).filter((o) => bagDay(o.date) === "tomorrow");
+  const groups = tomorrow.length
+    ? [
+        { key: "today", rows: today },
+        { key: "tomorrow", rows: tomorrow },
+      ].filter((g) => g.rows.length > 0)
+    : [{ key: null, rows: today }];
+  const rowTag = heading ? "h3" : "h2";
 
   return (
     <section data-testid="rescue-list" className="space-y-4">
@@ -121,13 +133,22 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
 
       {shown && shown.length > 0 && (
         <>
-          <ul className="border-t border-border" data-testid="rescue-list-rows">
-            {shown.map((offer) => (
-              <li key={offer.id}>
-                <BagRow offer={offer} headingTag={heading ? "h3" : "h2"} />
-              </li>
-            ))}
-          </ul>
+          {groups.map((group) => (
+            <div key={group.key || "all"} data-testid={group.key ? `rescue-list-group-${group.key}` : undefined}>
+              {group.key && (
+                <p className="font-headline-md text-base font-black text-text mb-2" data-testid="rescue-list-day">
+                  {t(group.key === "tomorrow" ? "list.group_tomorrow" : "list.group_today")}
+                </p>
+              )}
+              <ul className="border-t border-border" data-testid="rescue-list-rows">
+                {group.rows.map((offer) => (
+                  <li key={offer.id}>
+                    <BagRow offer={offer} headingTag={rowTag} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
           {/* The count line distinguishes "one bag" from "nine" without a
               second list render — the 0/1/many axis of the 5-state matrix. */}
           <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-list-count">

@@ -8111,12 +8111,14 @@ export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PU
 
 
 /**
- * Today's bags across this business's pickup points, with what was left.
+ * Today's and tomorrow's bags across this business's pickup points, with
+ * what was left.
  *
- * Today only, by the Israel clock, like the orders list beside it.
+ * The same two days, by the Israel clock, as the orders list beside it.
  * @summary List My Offers
  */
 export const ListMyOffersProducersMeRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
   "id": /*#__PURE__*/ zod.uuid(),
   "leftover": /*#__PURE__*/ zod.int(),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8138,6 +8140,7 @@ export const ListMyOffersProducersMeRescueOffersGetResponse = /*#__PURE__*/ zod.
  * @summary Set Donated
  */
 export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
   "id": /*#__PURE__*/ zod.uuid(),
   "leftover": /*#__PURE__*/ zod.int(),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8150,9 +8153,10 @@ export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__P
 
 
 /**
- * Today's reservations across this business's pickup points.
+ * Today's and tomorrow's reservations across this business's pickup
+ * points, today's first (MEH-3702).
  *
- * Today only, by the Israel clock: the dashboard is a counter tool, and a
+ * Today and tomorrow, by the Israel clock: the dashboard is a counter tool, and a
  * bag from last week is not something anyone hands over. Cancelled rows are
  * included — a business that sees four codes and three people should be able
  * to tell which one cancelled rather than wonder.
@@ -8163,6 +8167,7 @@ export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__P
 export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
@@ -9128,7 +9133,7 @@ export const ReportReviewReportsReviewPostResponse = /*#__PURE__*/ zod.void()
 
 
 /**
- * Today's bags that still have stock. Public — no auth.
+ * Today's and tomorrow's bags that still have stock (MEH-3702). Public.
  *
  * Sold-out and cancelled offers are omitted rather than greyed out: the list
  * is "what you can still get tonight", and chunk 4 has no empty-stock state.
@@ -9163,7 +9168,7 @@ export const ListOffersRescueOffersGetResponse = /*#__PURE__*/ zod.array(ListOff
 
 
 /**
- * Publish today's bags at one pickup point.
+ * Publish a bag for today or tomorrow at one pickup point (MEH-3702).
  *
  * NOT VALIDATED, and it is worth knowing why: the spec asks that
  * `pickup_end` be at least 15 minutes before the business closes. There is
@@ -9192,7 +9197,7 @@ export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
- * One of today's bags, for its own page (MEH-3586). Public — no auth.
+ * One of today's or tomorrow's bags, for its own page (MEH-3586). Public.
  *
  * A sold-out, cancelled or closed bag still answers, with `state` saying
  * why; another day's bag, a test or unapproved business, or a town outside
@@ -9278,6 +9283,7 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
   "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
@@ -9292,9 +9298,10 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
- * The caller's own live reservations on today's bags (MEH-2680).
+ * The caller's own live reservations on today's and tomorrow's bags
+ * (MEH-2680, MEH-3702).
  *
- * Only the caller's rows, only today's offers (Israel date), only
+ * Only the caller's rows, only today's and tomorrow's offers (Israel date), only
  * `reserved` / `handed` — a no-show or a buyer's own cancel has no code
  * left to say and nothing to review. Carries the same fields as the
  * reservation response, so the confirmation renders from either without a
@@ -9318,6 +9325,7 @@ export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ z
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "cancelled_by_business": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),

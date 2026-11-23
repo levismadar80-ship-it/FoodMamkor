@@ -110,7 +110,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/registrations.py` | MEH-2763 — on-site sign-ups for events and experiences («איך נרשמים?» = טופס הרשמה באתר). |
 | `routers/report_info.py` | "מצאתן טעות בפרטים?" — let a visitor report wrong info on a producer page. v1 emails the admin; no DB row, no auth (MEH-1443). |
 | `routers/reports.py` | — אין כותרת — |
-| `routers/rescue.py` | The rescue-bags pilot API — a business publishes today's bags, a buyer reserves one and gets a 4-digit code, the business marks it handed or not-collected, … |
+| `routers/rescue.py` | The rescue-bags pilot API — a business publishes today's or tomorrow's bags (MEH-3702), a buyer reserves one and gets a 4-digit code, the business marks it … |
 | `routers/rescue_pilot.py` | Tell the business, before the publish form, which of its pickup points are in a town the rescue-bags pilot is open in (MEH-2921 c). |
 | `routers/review_reply_suggest.py` | «הצעת תשובה» (MEH-3480): Claude drafts a short reply from the business to one review; the owner edits it in the reply box and only her own «שמירה» sends it. |
 | `routers/reviews.py` | Producer reviews (1-5 stars + optional body, 10-500 chars). |
@@ -285,6 +285,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/rescue_emails.py` | One email per reservation with the pickup code, what is paid at the counter, the pickup window and address, and the free-cancel cutoff. … |
 | `services/rescue_no_show.py` | MEH-3226 (D4 of the 14/11 grill retro) — the buyer hears about every no-show the business marks, so a block never arrives as a surprise: the first mail says … |
 | `services/rescue_reads.py` | What the surprise-bag (rescue) screens read: today's public list, the buyer's own reservations, the business's orders and bags of the day, the business's … |
+| `services/rescue_reminders.py` | MEH-3702 — on the morning of the pickup day, remind every buyer who reserved a bag on an EARLIER day: the code, the window, the free cancel. … |
 | `services/rescue_writes.py` | The state changes behind the rescue-bag write routes: cancel a whole offer, reserve, hand over, no-show, buyer cancel, review, clear a no-show block, record … |
 | `services/resend_client.py` | One place that configures the Resend SDK: the API key, and a 10 s HTTP timeout instead of the SDK's 30 s default. … |
 | `services/resend_verify_cap.py` | A per-ACCOUNT cap on POST /auth/resend-verify, on top of the route's per-IP limit, so rotating IPs cannot flood one inbox (MEH-2906). |

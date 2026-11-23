@@ -12,6 +12,8 @@
  */
 
 import api from "@/lib/api";
+import { eventWhen } from "@/lib/event-when";
+import { israelToday } from "@/lib/israel-date";
 import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
@@ -58,6 +60,22 @@ export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
   const key = typeof city === "string" ? city.trim() : "";
   // Own keys only: a town named "constructor" must not resolve to Object.prototype.
   return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
+}
+
+/**
+ * MEH-3702: a bag is for today or for tomorrow on the Israel clock (the API
+ * lists no other day). "tomorrow" only when the date is exactly the next
+ * Israel day; anything else, including a missing date, reads as "today", so
+ * a row from an older API never gains a wrong «מחר». REUSES:
+ * lib/event-when.js `eventWhen` (the same Israel-day arithmetic).
+ *
+ * @param {string|null|undefined} date `YYYY-MM-DD`
+ * @param {string} [today] `YYYY-MM-DD`, injectable for tests
+ * @returns {"today"|"tomorrow"}
+ */
+export function bagDay(date, today = israelToday()) {
+  if (typeof date !== "string" || !today) return "today";
+  return eventWhen(date, today) === "tomorrow" ? "tomorrow" : "today";
 }
 
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */

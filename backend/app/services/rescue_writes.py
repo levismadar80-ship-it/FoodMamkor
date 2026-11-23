@@ -54,6 +54,7 @@ from app.services.rescue_reads import (
     RESERVE_CLOSES_BEFORE_END,
     leftover_bags,
     owner_offer_row,
+    reserve_days,
 )
 from app.utils.clock import utc_now
 
@@ -214,6 +215,13 @@ def publish_offer(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="אי אפשר לפרסם סל לתאריך שעבר",
         )
+    # MEH-3702: no further ahead than buyers can reserve, or the bag would sit
+    # unlisted until its day comes into the window.
+    if body.date > reserve_days(today)[1]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="אפשר לפרסם סל רק להיום או למחר",
+        )
 
     # One active bag per point per day: `qty_left` is per OFFER, so a second
     # row for the same evening would show the same business twice with two
@@ -313,9 +321,11 @@ def reserve(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"
         )
-    if offer.date != today:
+    first, last = reserve_days(today)
+    if not first <= offer.date <= last:  # MEH-3702: today and tomorrow
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו של היום"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="אפשר לשריין רק סלים של היום ושל מחר",
         )
     if offer.pickup_end <= utc_now() + RESERVE_CLOSES_BEFORE_END:
         raise HTTPException(
@@ -365,6 +375,7 @@ def created_order_payload(order: RescueOrder, offer: RescueOffer) -> dict[str, o
         "cancelled_at": order.cancelled_at,
         "created_at": order.created_at,
         "price_agorot": offer.price_agorot,
+        "date": offer.date,
         "cancel_until": offer.cancel_until,
         "pickup_start": offer.pickup_start,
         "pickup_end": offer.pickup_end,

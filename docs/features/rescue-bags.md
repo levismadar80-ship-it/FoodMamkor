@@ -2,6 +2,8 @@
 
 **מה הן עושות.** בית עסק מציע שקית עודפים במחיר מוזל לחלון איסוף. לקוחה מזמינה, מקבלת קוד, ואוספת. יש תקציר יומי, סימון «נאספה» ו«לא הגיעה», ותג חיסכון.
 
+**היום ומחר (MEH-3702).** בית עסק מפרסם סל להיום או למחר, ולקוחה משריינת אותו מאותו רגע. החלון אחד, `reserve_days` ב-`backend/app/services/rescue_reads.py`, והפרסום, הרשימה, דף הסל, השריון והרשימות של בית העסק קוראים כולם ממנו. מי ששריינה ביום קודם מקבלת ביום האיסוף ב-08:00 מייל תזכורת עם הקוד, החלון והביטול (`backend/app/services/rescue_reminders.py`, דרך תור המיילים). מי ששריינה ביום האיסוף עצמו לא מקבלת תזכורת.
+
 **Flags — זה הפיצ'ר היחיד באתר שמאחורי flag.**
 * חזית: `NEXT_PUBLIC_RESCUE_BAGS_ENABLED`, נקרא דרך `frontend/lib/rescue.js` ‏(`rescueBagsEnabled()`).
 * שרת: `rescue_bags_enabled` ב-`backend/app/config.py`.
@@ -23,6 +25,7 @@
 * `frontend/components/offer-detail/AllergenSection.jsx` + `frontend/components/offer-detail/PickupLine.jsx` — בלוק האלרגנים ושורת שעת האיסוף בדף הסל, אותם רכיבים כמו בדף קבוצת הרכישה (MEH-3610).
 * `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי הפיילוט ב-`/admin/analytics` (`GET /admin/rescue/metrics`, MEH-3524); כשהפיילוט כבוי לא מוצג כלום.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
+* `backend/app/services/rescue_reminders.py` — תזכורת הבוקר של יום האיסוף, 08:00 שעון ישראל, פעם ביום (MEH-3702).
 
 **טסטים**
 * `tests/test_rescue.py` · `tests/test_rescue_pilot.py` · `tests/test_rescue_migration.py`
@@ -31,6 +34,7 @@
 * `tests/test_meh3593_pickup_note.py` — «הוראות איסוף» על נקודת האיסוף: שמירה, ניקוי, PUT בלי השדה לא מוחק, עסק אחר לא כותב, הדף והמייל (MEH-3593).
 * `tests/test_meh2679_rescue_utc_times.py` · `tests/test_meh2808_rescue_bag_window.py` — חלון האיסוף.
 * `frontend/__tests__/AdminRescueMetrics.test.jsx` — מספרי הפיילוט באדמין.
+* `tests/test_meh3702_rescue_tomorrow.py` — סל של מחר: פרסום, שריון, רשימות, המייל «מחר», ותזכורת הבוקר (MEH-3702).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
 
 **מזהי רישום שזה מכסה.** `rescue_bags`.
