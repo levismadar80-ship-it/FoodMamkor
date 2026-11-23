@@ -634,7 +634,8 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee"
+    "kph": "Coffee",
+    "byshvl-lpy-hzmnh": "Cooked to order"
   },
   "seo": {
     "home": {
@@ -3791,7 +3792,8 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans"
+        "kph": "Coffee beans",
+        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
       },
       "section_results": "Results",
       "section_popular": "Popular",
