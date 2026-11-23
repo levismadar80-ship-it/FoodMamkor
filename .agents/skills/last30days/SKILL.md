@@ -21,7 +21,7 @@ A light local version of the idea behind mvanhorn/last30days-skill: no scripts, 
    - News: `<topic> news <current month year>`
    - Hebrew / Israel: the topic in Hebrew, plus `ynet`, `mako`, `גלובס`, `כלכליסט`, `וואלה` angles where relevant
    - If the topic is a product or tool: `<topic> review`, `<topic> vs`
-3. **Open the 4–8 most promising results** with WebFetch to confirm the date and read what was actually said. A search snippet alone is not evidence of a date.
+3. **Open the 4–8 most promising results** with WebFetch to confirm the date and read what was actually said. A search snippet alone is not evidence of a date. Where WebFetch is blocked for a host (in the Mehamakor repo a hook allows only a few hosts), use the date the search result shows and mark that item "date from search result, page not opened"; never widen the allowlist to get around it.
 4. **Weigh by real signal**, in this order: visible engagement (upvotes, likes, comments, shares), number of independent sources saying the same thing, recency. Say when engagement numbers were not visible.
 5. **Before writing, check**: every claim has a source inside the window; at least two platforms were covered or the gap is stated.
 
