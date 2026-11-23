@@ -319,6 +319,10 @@ def _live_data_context(
     latest = next(
         (m["content"] for m in reversed(api_messages) if m["role"] == "user"), ""
     )
+    # MEH-3498: the intent call is a second Haiku call, so it spends its own
+    # unit; above the ceiling chat answers without live data.
+    if not ai_budget.allow("fast"):
+        return None
     categories = chat_db_tools.list_category_slugs()
     decision = chat_intent_router.classify(client, latest, categories)
     if decision.route != chat_intent_router.ROUTE_DB or not decision.tool:

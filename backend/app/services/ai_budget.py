@@ -42,9 +42,28 @@ DAILY_LIMITS: dict[str, int] = {"fast": 3000, "menu": 200}
 ALERT_SHARE = 0.8
 NAMESPACE = "ai_budget"
 
+# (tier, day, threshold) already alerted in this process. hit() and
+# get_window_stats() are two steps, so two threads can both read past a
+# threshold; alerting on `used >= threshold` once per key closes that gap.
+_alerted: set[tuple[str, str, int]] = set()
+
 
 def _alert_at(limit: int) -> int:
     return math.ceil(limit * ALERT_SHARE)
+
+
+def _maybe_alert(tier: str, day: str, used: int, limit: int) -> None:
+    """One ERROR at 80% and one at the limit, per tier per day per process."""
+    for threshold in (_alert_at(limit), limit):
+        mark = (tier, day, threshold)
+        if used >= threshold and mark not in _alerted:
+            _alerted.add(mark)
+            # error, not warning: sentry-sdk's default LoggingIntegration
+            # makes an event from ERROR only, and the admin's alerts live in
+            # Sentry (MEH-3705).
+            logger.error(
+                "[ai-budget] %s tier at %d of %d calls today", tier, threshold, limit
+            )
 
 
 def allow(tier: Tier) -> bool:
@@ -55,27 +74,21 @@ def allow(tier: Tier) -> bool:
     cannot be read: the per-IP and per-business limits still hold, and a
     broken counter must not switch every AI tool off (the trade-off chat's
     cap makes, chat.py `_global_chat_allowed`).
+
+    The count lives in the limiter's storage: in memory today (rate_limit.py
+    sets no storage_uri, one uvicorn process), so a deploy or restart starts
+    the day's count again, and a second replica would double the ceiling.
+    It bounds a runaway day; it is not an exact bill.
     """
     limit = DAILY_LIMITS[tier]
     item = parse_limit(f"{limit}/day")
-    key = f"{tier}:{israel_today().isoformat()}"
+    day = israel_today().isoformat()
+    key = f"{tier}:{day}"
     try:
         allowed = bool(limiter._limiter.hit(item, NAMESPACE, key))
         if allowed:
             _, remaining = limiter._limiter.get_window_stats(item, NAMESPACE, key)
-            used = limit - int(remaining)
-            # Once at 80% and once at the last allowed call: the count only
-            # grows, so each value is reached by one call a day.
-            if used in (_alert_at(limit), limit):
-                # error, not warning: sentry-sdk's default LoggingIntegration
-                # makes an event from ERROR only, and the admin's alerts live
-                # in Sentry (MEH-3705).
-                logger.error(
-                    "[ai-budget] %s tier at %d of %d calls today",
-                    tier,
-                    used,
-                    limit,
-                )
+            _maybe_alert(tier, day, limit - int(remaining), limit)
     except Exception as e:  # noqa: BLE001 — the ceiling is best-effort, logged
         logger.warning("[ai-budget] counter unavailable: %s", e)
         return True

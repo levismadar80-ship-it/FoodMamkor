@@ -127,7 +127,11 @@ inventory.
    `backend/app/services/ai_budget.py`): 3,000 fast-model calls and 200
    Opus calls per Israel day, shared by the chat and every owner AI tool.
    Above it those tools answer as if the key were missing, moderation keeps
-   running, and an ERROR goes to Sentry at 80% and at the ceiling.
+   running, and an ERROR goes to Sentry at 80% and at the ceiling. The count
+   is in the limiter's memory (one process): a deploy or restart starts the
+   day again, and a second replica would double the ceiling. Sentry groups
+   the ERROR into one issue, so whether the admin is told every day depends
+   on the project's alert rule, not on this code.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,
    which is when they are needed.
 7. **Cloudinary credits.** Past the plan's allowance the account is disabled
