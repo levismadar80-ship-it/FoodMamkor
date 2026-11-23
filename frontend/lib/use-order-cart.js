@@ -96,6 +96,9 @@ export function useOrderCart(producer) {
   }, [producerId, takesOrders, generation]);
 
   // MEH-3764: «להזמין שוב» to a business that stopped taking site orders.
+  // The button opens /producer/{id}, which reads the business fresh in the
+  // browser, so a cached `takes_site_orders` (the /[slug] page's 60 s) is not
+  // what decides this toast.
   useEffect(() => {
     if (!producerId || takesOrders) return;
     if (takeOrderAgain(producerId)) showToast.info(t("not_taking"));

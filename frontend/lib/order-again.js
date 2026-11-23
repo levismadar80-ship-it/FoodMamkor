@@ -40,10 +40,21 @@ const FINISHED_STATUSES = Object.freeze(["handed", "cancelled", "declined", "exp
  */
 export function orderAgainLines(items) {
   return (items ?? []).map((line) => ({
-    key: line.product_id ? lineKey(line.product_id, line.variant_id ?? null) : null,
+    key: stillExists(line) ? lineKey(/** @type {string} */ (line.product_id), line.variant_id ?? null) : null,
     qty: Math.min(MAX_QTY_PER_ITEM, Math.max(1, Math.floor(line.qty) || 1)),
     name: orderLineName(line),
   }));
+}
+
+/**
+ * A line still points at what was ordered: its product exists, and if it was
+ * ordered in a size or flavour, that variant too. A variant deleted since
+ * leaves variant_id null but variant_name set — re-adding the bare product
+ * would put something else in the cart (fresh review).
+ * @param {OrderLine} line
+ */
+function stillExists(line) {
+  return Boolean(line.product_id) && !(line.variant_name && !line.variant_id);
 }
 
 /**
@@ -52,7 +63,7 @@ export function orderAgainLines(items) {
  * @param {{ status: string, items?: OrderLine[] }} order
  */
 export function canOrderAgain(order) {
-  return FINISHED_STATUSES.includes(order.status) && (order.items ?? []).some((line) => Boolean(line.product_id));
+  return FINISHED_STATUSES.includes(order.status) && (order.items ?? []).some(stillExists);
 }
 
 /**

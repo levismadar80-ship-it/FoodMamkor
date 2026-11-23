@@ -139,6 +139,12 @@ describe("the hand-off (sessionStorage)", () => {
     expect(takeOrderAgain(SHOP)).toBeNull();
   });
 
+  it("a line whose variant was deleted is not re-added as the bare product", () => {
+    const variantGone = { ...cheeseLine, variant_id: null };
+    expect(orderAgainLines([variantGone])).toEqual([{ key: null, qty: 1, name: "גבינה · גדול" }]);
+    expect(canOrderAgain(order({ items: [variantGone] }))).toBe(false);
+  });
+
   it("a quantity past the cap is cut to it", () => {
     expect(orderAgainLines([{ ...breadLine, qty: 500 }])[0].qty).toBe(99);
   });
@@ -164,6 +170,19 @@ describe("the merge against the live menu", () => {
     const res = applyOrderAgain({}, lines, [cheese]);
     expect(res.picks).toEqual({ [`${CHEESE}~${BIG}`]: 1 });
     expect(res.skipped).toEqual(["חלה", "עוגה"]);
+  });
+
+  it("never past 30 lines: what does not fit is named, not dropped silently", () => {
+    const full = Object.fromEntries(Array.from({ length: 29 }, (_, i) => [`x${i}`, 1]));
+    const res = applyOrderAgain(full, orderAgainLines([breadLine, cheeseLine]), [bread, cheese]);
+    expect(Object.keys(res.picks)).toHaveLength(30);
+    expect(res.added).toBe(1);
+    expect(res.skipped).toEqual(["גבינה · גדול"]);
+  });
+
+  it("never past 99 of one line, even from a hand-edited stash", () => {
+    const res = applyOrderAgain({}, [{ key: BREAD, qty: 500, name: "חלה" }], [bread]);
+    expect(res.picks[BREAD]).toBe(99);
   });
 
   it("keeps what is already in the cart, at the higher quantity", () => {
@@ -204,6 +223,27 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
     renderHook(() => useOrderCart({ id: SHOP, takes_site_orders: false }), { wrapper });
     await waitFor(() => expect(toast.info).toHaveBeenCalledWith("בית העסק לא מקבל כרגע הזמנות באתר"));
     expect(menuRead).not.toHaveBeenCalled();
+  });
+
+  it("a stash for another business is left alone and shows nothing here", async () => {
+    menuRead.mockResolvedValue({ products: [bread] });
+    stashOrderAgain("another-business", [breadLine]);
+    const { result } = renderHook(() => useOrderCart(takes), { wrapper });
+    await waitFor(() => expect(menuRead).toHaveBeenCalled());
+    await act(async () => {});
+    expect(result.current.count).toBe(0);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(takeOrderAgain("another-business")).not.toBeNull();
+  });
+
+  it("the menu read failed: the stash waits for a read that works", async () => {
+    menuRead.mockResolvedValue(null);
+    stashOrderAgain(SHOP, [breadLine]);
+    renderHook(() => useOrderCart(takes), { wrapper });
+    await waitFor(() => expect(menuRead).toHaveBeenCalled());
+    await act(async () => {});
+    expect(toast.info).not.toHaveBeenCalled();
+    expect(takeOrderAgain(SHOP)).not.toBeNull();
   });
 
   it("no stash: an ordinary visit shows no toast", async () => {
