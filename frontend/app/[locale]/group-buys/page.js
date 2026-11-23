@@ -1,5 +1,6 @@
 // @ts-check
 import { getTranslations } from "next-intl/server";
+import HubFaq from "@/components/HubFaq";
 import GroupBuysClient from "./GroupBuysClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
@@ -41,6 +42,9 @@ export async function generateMetadata({ params }) {
 // read on the server, so the first HTML holds the cards. Before, the list
 // waited for the JS bundle and a client request: the LCP landed at ~6.2s on a
 // phone (staging 20/11, slow 4G + CPU x4). null = the client fetches, as before.
+
+// MEH-3737: the questions shown, in order (messages group_buys.faq.items).
+const GROUP_BUY_FAQ = ["what", "pay", "miss", "cancel", "pickup", "mine"];
 export default async function GroupBuysPage() {
   // MEH-3076: the rescue tab's supply, read here so the hub tab row is decided
   // before the first paint. The pilot off = known empty (0), not unknown.
@@ -50,5 +54,11 @@ export default async function GroupBuysPage() {
     serverFirstJson("/group-buys/counts", (j) => !!j && typeof j === "object" && !Array.isArray(j)),
     rescueBagsEnabled() ? getHubCount("rescue") : Promise.resolve(0),
   ]);
-  return <GroupBuysClient initialItems={initialItems} initialCounts={initialCounts} serverSupply={{ rescue: rescueCount }} />;
+  return (
+    <>
+      <GroupBuysClient initialItems={initialItems} initialCounts={initialCounts} serverSupply={{ rescue: rescueCount }} />
+      {/* MEH-3737: common questions under the list, with FAQPage JSON-LD. */}
+      <HubFaq namespace="group_buys.faq" keys={GROUP_BUY_FAQ} anchor="faq" path="/group-buys" />
+    </>
+  );
 }

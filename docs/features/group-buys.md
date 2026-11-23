@@ -37,5 +37,6 @@
 * `tests/test_meh3691_no_self_buying.py` · `frontend/__tests__/GroupBuyOwnerNoJoin.test.jsx` — החשבון של בית העסק לא מצטרף לקבוצה של עצמו ולא נרשם לרשימת ההמתנה שלה: שני המסלולים עונים 403, והדף לא מציג לו טופס הצטרפות או רשימת המתנה. בית עסק אחר מצטרף כמו כל לקוח (MEH-3691).
 * `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` · `frontend/__tests__/GroupBuyGuestLogin.test.jsx` — הצטרפות אחרי Google בחלונית, פעם אחת ובכמות שנבחרה; סגירת החלונית לא שולחת כלום; «היכנסו» נושא את הדרך חזרה (MEH-3679, MEH-2982).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
+* `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית הרשימה (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 
 **מזהי רישום שזה מכסה.** `group_buys`.
