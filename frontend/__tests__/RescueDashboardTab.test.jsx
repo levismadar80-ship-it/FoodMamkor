@@ -143,7 +143,7 @@ describe("«לא הגיע» and the pickup window", () => {
     mockOrders([order({ pickup_end: new Date(Date.now() - 60_000).toISOString() })]);
     render(<RescueTab />);
     fireEvent.click(await screen.findByTestId("rescue-order-noshow"));
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no_show"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no-show"));
   });
 });
 
@@ -650,7 +650,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
 
   it("the verified-email refusal (an object detail) shows its sentence instead of crashing", async () => {
     post.mockRejectedValue({
-      response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } } },
+      response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } } },
     });
     render(<RescueTab />);
     await pointsLoaded();

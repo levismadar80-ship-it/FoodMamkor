@@ -35,11 +35,11 @@ const { default: RecipeForm } = await import("@/components/RecipeForm");
 const { default: RecipesPage } = await import("@/app/[locale]/producer/dashboard/recipes/page");
 
 const EMAIL_403 = Object.assign(new Error("403"), {
-  response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } } },
+  response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } } },
 });
 const gateMentions = () =>
   [...document.querySelectorAll("body *")].filter((el) =>
-    [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.includes("יש לאמת את כתובת האימייל תחילה")),
+    [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.includes("יש לאמת את כתובת המייל תחילה")),
   );
 const notices = () => screen.queryAllByText(GATE);
 const wrap = (node) =>

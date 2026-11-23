@@ -9,7 +9,9 @@
 #                       screenshots are no longer committed)
 #             rule 38 — UI change → a `Self-check:` line (or `## Self-check`) in the body
 #             rule 22 — Hebrew added to he.json → a `Copy approved:` line in the body
-#             rule 40 — frontend/ or backend/app change → the `run-e2e` label
+#             rule 40 — frontend/ or backend/app change → the `run-e2e` label,
+#                       unless every such file is a unit test (MEH-3694:
+#                       frontend/__tests__/** or *.test.* outside frontend/e2e/)
 #             rule 5a — frontend/ or backend/app change → a `Reviewer:` line
 #                       (the fresh reviewer subagent ran and what it found)
 #             ADR-016 — RED change (backend/alembic/versions/, backend/app/auth.py,
@@ -89,6 +91,18 @@ changed_files() {  # 0 ok, 1 no base, 2 git failed
     || git diff --name-only --diff-filter=d "${r/.../ }" 2>/dev/null || return 2
 }
 
+# all_changed_files — every path the PR touches, deleted ones and both sides of a
+# rename included (MEH-3694 rule-5a finding). Only rule 40's unit-test exemption
+# reads it: a PR that deletes or renames away a shipped frontend file while
+# editing a test must still need run-e2e. Same exit codes as changed_files.
+all_changed_files() {
+  [ -n "${PR_EVIDENCE_ALL_FILES+x}" ] && { printf '%s\n' "$PR_EVIDENCE_ALL_FILES"; return 0; }
+  [ -n "${PR_EVIDENCE_FILES+x}" ] && { printf '%s\n' "$PR_EVIDENCE_FILES"; return 0; }
+  local r; r="$(base_range)" || return 1
+  git diff --name-only --no-renames "$r" 2>/dev/null \
+    || git diff --name-only --no-renames "${r/.../ }" 2>/dev/null || return 2
+}
+
 he_added() {
   [ -n "${PR_EVIDENCE_HE_ADDED+x}" ] && { printf '%s\n' "$PR_EVIDENCE_HE_ADDED" | moved_out; return 0; }
   local r d; r="$(base_range)" || return 1
@@ -114,8 +128,18 @@ has_hebrew() { python3 -c 'import re,sys; sys.exit(0 if re.search("[א-ת]", sys
 
 is_ui_file() {
   case "$1" in frontend/app/*|frontend/components/*) ;; *) return 1 ;; esac
-  case "$1" in *__tests__*|*.test.*|*.spec.*) return 1 ;; esac
+  # .md: a note for authors, never rendered — not a UI change (#5069)
+  case "$1" in *__tests__*|*.test.*|*.spec.*|*.md) return 1 ;; esac
   return 0
+}
+
+# is_unit_test_file PATH — a frontend unit test (vitest). The E2E suite does not
+# run it and it ships nothing, so it alone does not need the `run-e2e` label
+# (MEH-3694, Sapir 22/11). frontend/e2e/** is the E2E suite itself and still does.
+is_unit_test_file() {
+  case "$1" in frontend/e2e/*) return 1 ;; esac
+  case "$1" in frontend/__tests__/*|frontend/*.test.js|frontend/*.test.jsx|frontend/*.test.ts|frontend/*.test.tsx|frontend/*.test.mjs) return 0 ;; esac
+  return 1
 }
 
 # answered LABEL BODY — a line `LABEL: <something>` or a heading `## LABEL`.
@@ -142,7 +166,7 @@ reviewed() {
 }
 
 check() {
-  local body labels files rc he ui="" code="" router="" red="" missing=()
+  local body labels files rc he ui="" code="" e2e_code="" all="" router="" red="" missing=()
   body="$(pr_body)"; rc=$?
   if [ "$rc" -eq 1 ]; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
   [ "$rc" -eq 3 ] && missing+=("this is a pull_request event but its payload could not be read")
@@ -164,6 +188,14 @@ check() {
       case "$f" in backend/app/routers/*|backend/app/auth.py) router="$f" ;; esac
       case "$f" in backend/alembic/versions/*|backend/app/auth.py|backend/app/routers/upload.py) red="$f" ;; esac
     done <<<"$files"
+    all="$(all_changed_files)"; rc=$?
+    if [ "$rc" -ne 0 ]; then
+      missing+=("could not list every changed path (deletions and renames) against the base branch")
+    else
+      while IFS= read -r f; do
+        case "$f" in frontend/*|backend/app/*) is_unit_test_file "$f" || e2e_code="$f" ;; esac
+      done <<<"$all"
+    fi
     he="$(he_added)"; rc=$?
     [ "$rc" -eq 2 ] && missing+=("could not read the $HE_FILE diff")
     if [ -n "$ui" ]; then
@@ -174,7 +206,9 @@ check() {
       answered "Copy approved" "$body" || missing+=("rule 22: Hebrew added to $HE_FILE but no 'Copy approved:' line (where Sapir approved it)")
     fi
     if [ -n "$code" ]; then
-      grep -qxF "run-e2e" <<<"$labels" || missing+=("rule 40: $code changed but the PR has no run-e2e label")
+      if [ -n "$e2e_code" ]; then
+        grep -qxF "run-e2e" <<<"$labels" || missing+=("rule 40: $e2e_code changed but the PR has no run-e2e label")
+      fi
       reviewed "$body" || missing+=("rule 5a: $code changed but no 'Reviewer:' line (the fresh reviewer subagent: model + what it found)")
     fi
     if [ -n "$red" ] && reviewed "$body" \
@@ -197,10 +231,10 @@ check() {
 
 self_test() {
   local status=0
-  run_case() {  # name expect body labels files he_added
+  run_case() {  # name expect body labels files he_added [all_files incl. deleted/renamed]
     local got rc
     GITHUB_HEAD_REF= GITHUB_BASE_REF= GITHUB_EVENT_NAME= PR_EVIDENCE_TODAY="${CASE_TODAY:-$BLOCK_FROM}" PR_EVIDENCE_BODY="$3" PR_EVIDENCE_LABELS="$4" \
-      PR_EVIDENCE_FILES="$5" PR_EVIDENCE_HE_ADDED="$6" check >/dev/null 2>&1; rc=$?
+      PR_EVIDENCE_FILES="$5" PR_EVIDENCE_ALL_FILES="${7:-$5}" PR_EVIDENCE_HE_ADDED="$6" check >/dev/null 2>&1; rc=$?
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$2" ]; then echo "  [ok] $1 → $got"; else echo "  [XX] $1 → $got, expected $2"; status=1; fi
   }
@@ -212,6 +246,8 @@ self_test() {
   echo "pr-evidence-guard --self-test"
   run_case "docs-only PR, empty body"           PASS ""      ""        "docs/README.md" ""
   run_case "UI change with everything"          PASS "$good" "run-e2e" "$ui" ""
+  run_case "Markdown under components only"     PASS "Reviewer: x" "run-e2e" "frontend/components/CLAUDE.md" ""
+  run_case "Markdown + a real component"        FAIL $'Self-check: ok\nReviewer: x' "run-e2e" $'frontend/components/CLAUDE.md\nfrontend/components/Header.jsx' ""
   run_case "UI change, no Screenshots line"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" ""
   run_case "Screenshots: with no link"          FAIL $'Self-check: ok\nReviewer: x\nScreenshots: attached' "run-e2e" "$ui" ""
   run_case "committed screenshots, no link"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" $'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a-375.webp\nqa-artifacts/MEH-1/a-1440.webp' ""
@@ -222,6 +258,13 @@ self_test() {
   run_case "Self-check as a heading"            PASS $'## Self-check\n1. green\nReviewer: x\n'"$shots" "run-e2e" "$ui" ""
   run_case "UI change, no run-e2e label"        FAIL "$good" "bug"     "$ui" ""
   run_case "test-only frontend change, label"   PASS "Reviewer: x" "run-e2e" "frontend/__tests__/A.test.js" ""
+  run_case "one unit test, no label (MEH-3694)" PASS "Reviewer: x" ""        "frontend/__tests__/A.test.js" ""
+  run_case "many unit tests, no label"          PASS "Reviewer: x" ""        $'frontend/__tests__/A.test.js\nfrontend/lib/b.test.ts\ndocs/x.md' ""
+  run_case "unit test, no Reviewer line"        FAIL ""            ""        "frontend/__tests__/A.test.js" ""
+  run_case "unit test + lib file, no label"     FAIL "Reviewer: x" ""        $'frontend/__tests__/A.test.js\nfrontend/lib/a.js' ""
+  run_case "e2e spec only, no label"            FAIL "Reviewer: x" ""        "frontend/e2e/flows/a.spec.ts" ""
+  run_case "e2e *.test.ts, no label"            FAIL "Reviewer: x" ""        "frontend/e2e/x.test.ts" ""
+  run_case "unit test + deleted lib file, no label" FAIL "Reviewer: x" ""      "frontend/__tests__/A.test.js" "" $'frontend/__tests__/A.test.js\nfrontend/lib/gone.js'
   run_case "backend change, no label"           FAIL ""      ""        "backend/app/main.py" ""
   run_case "backend change, label + reviewer"   PASS "Reviewer: Sonnet, none" "run-e2e" "backend/app/main.py" ""
   run_case "backend change, no Reviewer line"   FAIL ""      "run-e2e" "backend/app/main.py" ""

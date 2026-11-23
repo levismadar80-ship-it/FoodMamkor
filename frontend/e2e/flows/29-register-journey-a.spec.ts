@@ -88,7 +88,7 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *                                  placeholder at all; they use persistent
  *                                  labels (ui/Input). Asserted as such.
  *   A3  validation ............... COVERED, except:
- *        · "אימייל כבר קיים"        SUPERSEDED by MEH-328 (anti-enumeration).
+ *        · "מייל כבר קיים"        SUPERSEDED by MEH-328 (anti-enumeration).
  *                                  Already struck through on the card.
  *   A4  submit ................... COVERED as stub (POST /auth/register), and:
  *        · "redirect ל-/ או /settings" + "Toast ברוכה הבאה"
@@ -132,8 +132,8 @@ const mark = (type: "covered-by-stub" | "superseded" | "not-applicable", descrip
 
 // messages/he.json → auth.register.consumer.*  (locked copy — see header)
 const HEADING = "הצטרפו לקהילה";
-const EMAIL_INVALID = "האימייל לא תקין";
-const INBOX_TITLE = "בדקו את תיבת האימייל שלכם";
+const EMAIL_INVALID = "המייל לא תקין";
+const INBOX_TITLE = "בדקו את תיבת המייל שלכם";
 
 // lib/validators.js:25 — mirrored, not imported (the "@/" alias does not
 // resolve inside Playwright's spec transpile).
@@ -177,7 +177,7 @@ async function stubRegisterAck(page: Page, registerGate?: Promise<void>) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ detail: "אם האימייל פנוי, נשלחה אליכם הודעת אימות." }),
+      body: JSON.stringify({ detail: "אם המייל פנוי, נשלחה אליכם הודעת אימות." }),
     });
   });
 }
@@ -294,7 +294,7 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
   }) => {
     mark(
       "superseded",
-      'A3 "אימייל כבר קיים → המייל כבר רשום": removed by MEH-328 anti-enumeration; already struck through on the card',
+      'A3 "מייל כבר קיים → המייל כבר רשום": removed by MEH-328 anti-enumeration; already struck through on the card',
     );
     // MEH-2623: the button used to stay disabled until every rule passed — a
     // grey button with no reason, and Chrome autofill lost the first tap. Now

@@ -161,6 +161,80 @@ def _refetch_apple_jwks_for_kid_miss() -> list[Any] | None:
         return None
 
 
+# MEH-3725 review: the report carries the exception CLASS only. A captured
+# exception would ship frame locals (sentry-sdk include_local_variables is on
+# by default), and the id_token is a local here — a bearer credential for our
+# own /auth/google and /auth/apple, with the user's email inside. Throttled
+# per (provider, class) per process, like the health probes.
+_VERIFIER_REPORT_WINDOW_SECONDS = 600
+_last_verifier_report_at: dict[tuple[str, str], float] = {}
+
+
+def _report_unexpected_verifier_error(provider: str, exc: BaseException) -> None:
+    """A token the provider rejects is the user's problem and stays a warning.
+    Anything else — the library failed to import, its API changed (a
+    TypeError after a major bump), the provider's keys could not be fetched
+    or came back garbled — fails EVERY sign-in with the same "invalid token"
+    answer, so it goes to Sentry. Same blind spot as the anthropic 2.x bump
+    (#5154): a caught exception and a mocked test suite. Never raises."""
+    key = (provider, type(exc).__name__)
+    now = time.monotonic()
+    last = _last_verifier_report_at.get(key)
+    if last is not None and now - last < _VERIFIER_REPORT_WINDOW_SECONDS:
+        return
+    _last_verifier_report_at[key] = now
+    try:
+        import sentry_sdk  # noqa: PLC0415
+
+        scope_factory = getattr(sentry_sdk, "new_scope", None) or getattr(
+            sentry_sdk, "push_scope", None
+        )
+        if scope_factory is None:  # pragma: no cover
+            return
+        with scope_factory() as scope:
+            scope.set_tag("oauth_provider", provider)
+            scope.set_tag("oauth_error_class", type(exc).__name__)
+            scope.fingerprint = ["oauth-verifier", provider, type(exc).__name__]
+            sentry_sdk.capture_message(
+                f"{provider} sign-in verifier failed unexpectedly: {type(exc).__name__}",
+                level="error",
+            )
+    except Exception:  # pragma: no cover — reporting must never break sign-in
+        logger.debug("[%s AUTH] Sentry report failed", provider.upper())
+
+
+def _is_provider_response_garbled(exc: BaseException) -> bool:
+    """A provider key/cert response that is not JSON. json.JSONDecodeError
+    (and requests' subclass) is a ValueError, but no crafted TOKEN raises it:
+    google-auth wraps token parsing in MalformedError, PyJWT in DecodeError.
+    Only a broken certs/JWKS body reaches it — and that breaks every sign-in."""
+    import json  # noqa: PLC0415
+
+    return isinstance(exc, json.JSONDecodeError)
+
+
+def _is_expected_apple_error(exc: BaseException) -> bool:
+    """A rejected or malformed Apple token: PyJWT's own errors, a header with
+    no ``kid`` (KeyError), or a bad value. Everything else is unexpected."""
+    if _is_provider_response_garbled(exc):
+        return False
+    try:
+        import jwt as pyjwt  # noqa: PLC0415
+
+        if isinstance(exc, pyjwt.PyJWTError):
+            return True
+    except Exception:  # noqa: BLE001 — PyJWT missing is itself unexpected
+        return False
+    return isinstance(exc, (KeyError, ValueError))
+
+
+def _is_expected_google_error(exc: BaseException) -> bool:
+    """google-auth raises ValueError (MalformedError, InvalidValue, …) for a
+    token it rejects. TransportError — Google's certs could not be fetched —
+    is NOT a ValueError and is unexpected; a garbled certs body is too."""
+    return isinstance(exc, ValueError) and not _is_provider_response_garbled(exc)
+
+
 def verify_apple_token(id_token: str) -> dict[str, Any] | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
@@ -210,7 +284,11 @@ def verify_apple_token(id_token: str) -> dict[str, Any] | None:
         )
         return payload
     except Exception as e:
-        logger.warning(f"[APPLE AUTH] Verification failed: {e}")
+        logger.warning(
+            "[APPLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e
+        )
+        if not _is_expected_apple_error(e):
+            _report_unexpected_verifier_error("apple", e)
         return None
 
 
@@ -229,5 +307,9 @@ def verify_google_token(id_token: str) -> dict[str, Any] | None:
         )
         return cast(dict[str, Any], info)
     except Exception as e:
-        logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
+        logger.warning(
+            "[GOOGLE AUTH] Verification failed: %s: %.120s", type(e).__name__, e
+        )
+        if not _is_expected_google_error(e):
+            _report_unexpected_verifier_error("google", e)
         return None

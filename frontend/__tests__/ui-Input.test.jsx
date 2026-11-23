@@ -5,8 +5,8 @@ import Input from "@/components/ui/Input";
 // ui/Input is a labelled field primitive with helper/error slots (MEH-602).
 describe("ui/Input", () => {
   it("renders a labelled input wired via htmlFor/id", () => {
-    render(<Input label="אימייל" />);
-    const input = screen.getByLabelText("אימייל");
+    render(<Input label="מייל" />);
+    const input = screen.getByLabelText("מייל");
     expect(input).toBeInTheDocument();
     expect(input.tagName).toBe("INPUT");
   });
@@ -56,8 +56,8 @@ describe("ui/Input", () => {
   });
 
   it("honours an explicit id over the generated one", () => {
-    render(<Input id="email-field" label="אימייל" />);
-    expect(screen.getByLabelText("אימייל")).toHaveAttribute("id", "email-field");
+    render(<Input id="email-field" label="מייל" />);
+    expect(screen.getByLabelText("מייל")).toHaveAttribute("id", "email-field");
   });
 
   // MEH-1128 D1 regression lock: the default rendering path (no startAdornment,

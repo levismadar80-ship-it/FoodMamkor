@@ -45,6 +45,7 @@ import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
 import RatingCompact from "@/components/ui/RatingCompact";
 import { hasCardRating } from "@/lib/rating-gate";
+import { producerPath } from "@/lib/producer-path";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
 // DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
@@ -336,7 +337,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
     setImgError(false);
   }, [imgSrc]);
 
-  const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
+  const baseHref = producerPath(producer);
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
   const firstCategory = producer.categories?.[0];

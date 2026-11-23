@@ -51,10 +51,10 @@ KNOWN_DYNAMIC_EXPANSIONS: dict[tuple[str, str], list[tuple[str, str]]] = {
         ("POST", "/admin/recipes/{_}/reject"),
     ],
     # frontend/components/dashboard/RescueTab.jsx:61 (MEH-2644) — `what` is
-    # "handed" or "no_show" (the two owner actions on a reserved order).
+    # "handed" or "no-show" (the two owner actions on a reserved order).
     ("POST", "/rescue/orders/{_}/{_}"): [
         ("POST", "/rescue/orders/{_}/handed"),
-        ("POST", "/rescue/orders/{_}/no_show"),
+        ("POST", "/rescue/orders/{_}/no-show"),
     ],
     # frontend/lib/product-orders.js:229 (MEH-3316) — `action` is one of the
     # seven literals in its JSDoc type, set by OrderActions.jsx:43-61 and

@@ -25,7 +25,7 @@ import Input from "@/components/ui/Input";
  * Does NOT: take money or show who the buyer is. Handing a bag over needs
  *           four digits; the API deliberately returns no buyer identity.
  * Related:  backend GET /producers/me/rescue/orders · POST /rescue/orders/{id}/handed
- *           · POST /rescue/orders/{id}/no_show · PUT /producers/me/rescue/typical-items
+ *           · POST /rescue/orders/{id}/no-show · PUT /producers/me/rescue/typical-items
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 const MAX_QTY = 20;
@@ -471,7 +471,7 @@ export default function RescueTab() {
                       type="button"
                       disabled={!windowClosed || busyId === o.id}
                       title={windowClosed ? undefined : t("no_show_too_early")}
-                      onClick={() => act(o, "no_show")}
+                      onClick={() => act(o, "no-show")}
                       data-testid="rescue-order-noshow"
                       className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >

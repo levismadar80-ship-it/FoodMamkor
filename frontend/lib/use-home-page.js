@@ -39,6 +39,7 @@ import { consumeHistoryReturn } from "@/lib/route-memory";
 import { findRegionForCity } from "@/data/regions";
 import { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
 import { CategoriesResponseSchema, StatsSchema, RandomProducerSchema } from "@/lib/api-responses";
+import { producerPath } from "@/lib/producer-path";
 
 const PAGE_SIZE = 8;
 
@@ -944,7 +945,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       const parsed = RandomProducerSchema.safeParse(r.data);
       if (!parsed.success) return;
       const { slug, id } = parsed.data;
-      router.push(slug ? `/${slug}` : `/producer/${id}`);
+      router.push(producerPath({ slug, id }));
     } catch {
       // no-op — best-effort surprise
     }

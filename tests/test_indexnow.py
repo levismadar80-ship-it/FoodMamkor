@@ -31,6 +31,7 @@ from conftest import auth_header, make_producer, make_user
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SITEMAP_JS = REPO_ROOT / "frontend" / "app" / "sitemap.js"
+PRODUCER_PATH_JS = REPO_ROOT / "frontend" / "lib" / "producer-path.js"
 SITE = "https://mehamakor.co.il"
 TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/x.jpg"
 
@@ -196,8 +197,12 @@ class TestUrlShapesMatchSitemap:
         """Anchored to the real file: if sitemap.js changes a path shape, this
         reds and the builders above must follow it."""
         src = SITEMAP_JS.read_text(encoding="utf-8")
+        # MEH-3707: the business path is built once, in lib/producer-path.js.
+        assert "const path = producerPath(p);" in src
+        path_src = PRODUCER_PATH_JS.read_text(encoding="utf-8")
+        for template in ("`/${producer.slug}`", "`/producer/${producer.id}`"):
+            assert template in path_src, template
         for template in (
-            "p.slug ? `/${p.slug}` : `/producer/${p.id}`",
             "`/${p.slug}/recipes/${recipe.id}`",
             "`/events/${e.id}`",
             "`/organizers/${o.slug}`",

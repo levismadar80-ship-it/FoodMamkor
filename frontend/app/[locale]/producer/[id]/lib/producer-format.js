@@ -9,6 +9,7 @@
  */
 
 import { formatDate } from "@/lib/format-date";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * MEH-2406: the one target for a business page's category links — the
@@ -22,7 +23,7 @@ export function categoryListingHref(categoryId) {
 
 export function buildShareUrl(producer) {
   if (typeof window === "undefined") return "";
-  const path = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
+  const path = producerPath(producer);
   return `${window.location.origin}${path}`;
 }
 

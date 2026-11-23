@@ -2,9 +2,8 @@
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { useEffect, useState, useRef } from "react";
-import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
-import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { useTranslations } from "next-intl";
@@ -22,6 +21,7 @@ import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
+import SupportContactSheet from "@/components/SupportContactSheet";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { useFirstMoment } from "@/hooks/useFirstMoment";
@@ -32,7 +32,7 @@ import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
-import { SITE_URL, env } from "@/lib/env";
+import { SITE_URL } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
@@ -131,60 +131,6 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
       >
         {retryLabel}
       </button>
-    </div>
-  );
-}
-
-// MEH-1355: support contact surface migrated from the removed /settings
-// business tab (SupportModal). Reachable from the rejected + inactive status
-// banners below — wa.me + mailto, same two-channel layout as the original.
-function StatusSupportModal({ onClose }) {
-  const t = useTranslations("dashboard.producer.status.support");
-  const dialogRef = useRef(null);
-  useDialogFocus(dialogRef, true);
-  useDialogEscape(true, onClose);
-  return (
-    <div
-      ref={dialogRef}
-      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("section_aria")}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
-        <p className="text-sm text-fg-muted">{t("body")}</p>
-        <a
-          href={getWhatsAppChatHref(env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000")}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <WhatsappLogo size={24} weight="fill" className="text-[#25D366] shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
-            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
-          </div>
-        </a>
-        <a
-          href="mailto:contact@mehamakor.co.il"
-          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <EnvelopeSimple size={24} className="text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
-          </div>
-        </a>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-2.5 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
-        >
-          {t("close_cta")}
-        </button>
-      </div>
     </div>
   );
 }
@@ -525,7 +471,7 @@ export default function ProducerDashboardPage() {
           her welcome; the slot opens once she has submitted. */}
       {slotOpen && !(producer.status === "draft" && !isOrganizer) &&
         (welcome.show ? (
-          <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
+          <OwnerWelcomeCard onClose={welcome.dismiss} onSupport={() => setSupportOpen(true)} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
         ) : (
@@ -969,7 +915,7 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-1355: shared support modal for the rejected + inactive banners
           (and, MEH-3106, the help row above). */}
-      {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
+      {supportOpen && <SupportContactSheet onClose={() => setSupportOpen(false)} />}
     </div>
   );
 }

@@ -14,8 +14,8 @@ duplicate	12	אינסטגרם
 duplicate	14	בטעינה…
 duplicate	14	נשמר
 duplicate	14	שמירה
-duplicate	15	אימייל
 duplicate	15	טלפון
+duplicate	17	מייל
 duplicate	2	(חובה)
 duplicate	2	+ פרסום מתכון חדש
 duplicate	2	2–3 תמונות של העסק או המוצרים
@@ -41,14 +41,14 @@ duplicate	2	איפוס סיסמה
 duplicate	2	אירועים קרובים
 duplicate	2	אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף
 duplicate	2	אישור הרשמה
-duplicate	2	אם האימייל פנוי, נשלחה אליכם הודעת אימות. כדאי לבדוק את תיבת הדואר (גם בספאם).
+duplicate	2	אם המייל פנוי, נשלחה אליכם הודעת אימות. כדאי לבדוק את תיבת הדואר (גם בספאם).
 duplicate	2	אני רוצה להצטרף!
 duplicate	2	אנליטיקס
 duplicate	2	אשראי
 duplicate	2	באימות…
 duplicate	2	בבדיקה…
 duplicate	2	בדוק
-duplicate	2	בדקו את תיבת האימייל שלכם
+duplicate	2	בדקו את תיבת המייל שלכם
 duplicate	2	בחיפוש…
 duplicate	2	בחירה
 duplicate	2	בחירת מוצר
@@ -69,7 +69,6 @@ duplicate	2	דברו איתנו
 duplicate	2	דברו איתנו ←
 duplicate	2	דיווח על עסק
 duplicate	2	דרוש תיקון
-duplicate	2	האימייל לא תקין
 duplicate	2	האירועים שלי
 duplicate	2	האירועים שלכם
 duplicate	2	הבא ←
@@ -92,6 +91,8 @@ duplicate	2	הלקוח לא הגיע
 duplicate	2	המחיר לא יכול להיות שלילי
 duplicate	2	המחיר נפתח!
 duplicate	2	המחירים כוללים מע״מ, אם יחול.
+duplicate	2	המייל לא תקין
+duplicate	2	המייל שלך
 duplicate	2	המיקום זוהה: {location}
 duplicate	2	הנחה באיסוף עצמי
 duplicate	2	הסר ממועדפים
@@ -124,6 +125,7 @@ duplicate	2	השמירה לא הצליחה — בדקו את החיבור ונס
 duplicate	2	התג הוסר
 duplicate	2	התחברו
 duplicate	2	התקשרו
+duplicate	2	זמינות ב׳–ה׳ 9:00–17:00
 duplicate	2	חובה לבחור עיר
 duplicate	2	חובה לבחור תאריך
 duplicate	2	חוויות וסדנאות אוכל אצל בתי עסק מקומיים
@@ -223,7 +225,6 @@ duplicate	2	מחקי
 duplicate	2	מידע על מצב חופשה
 duplicate	2	מיון בתי עסק
 duplicate	2	מיון:
-duplicate	2	מייל
 duplicate	2	מיקום על המפה
 duplicate	2	ממתינות
 duplicate	2	ממתינים
@@ -488,7 +489,6 @@ duplicate	6	אשרי
 duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
-duplicate	6	וואטסאפ
 duplicate	6	חזרה לכלים
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
@@ -497,6 +497,7 @@ duplicate	6	תאריך
 duplicate	7	איסוף עצמי
 duplicate	7	אירועים
 duplicate	7	הועתק
+duplicate	7	וואטסאפ
 duplicate	7	מאומת
 duplicate	7	מוצרים
 duplicate	7	סגרו

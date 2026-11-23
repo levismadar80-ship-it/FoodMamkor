@@ -118,7 +118,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 נרשמים דרך טופס קצר בעמוד /register/producer, וההרשמה חינם. אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
 
 **איך נרשמים כלקוחות**
-- לקוחות נרשמים חינם בעמוד /register (אימייל + סיסמה, או Google/Apple).
+- לקוחות נרשמים חינם בעמוד /register (מייל + סיסמה, או Google/Apple).
 
 **איך מוצאים בתי עסק קרובים**
 יש שתי דרכים קלות:
@@ -188,23 +188,14 @@ def _get_client() -> Any:
         # Imports kept lazy so missing packages can't crash module load
         # (the rest of the backend stays up even if anthropic is broken).
         import anthropic
-        import httpx
 
-        # Construct an explicit httpx.Client() and pass it via the
-        # Anthropic SDK's `http_client` kwarg. This bypasses the SDK's
-        # internal call to `httpx.Client(proxies=...)`, which is broken
-        # against httpx 0.28+ — that release dropped the `proxies=` kwarg
-        # in favor of `proxy=` (singular), and the anthropic 0.39 SDK
-        # didn't update its internal call. Symptom of the unfixed code:
-        #     TypeError: Client.__init__() got an unexpected keyword
-        #                argument 'proxies'
-        # Caught by PR #29's debug instrumentation, fixed in PR #31.
-        # The explicit `httpx.Client()` works against any httpx version
-        # because we're constructing it ourselves with no kwargs, so we
-        # don't have to chase the SDK-vs-transitive-dep version dance.
+        # Always pass the SDK's own client (docs/LOCKED_DECISIONS.md).
+        # anthropic 1.0+ runs on httpx2 and raises TypeError at construction
+        # on a plain httpx.Client — the fail-open path would hide that as a
+        # silent "offline" chat. DefaultHttpxClient is the SDK's re-export.
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
         return _client
     except Exception as e:  # pragma: no cover — defensive
