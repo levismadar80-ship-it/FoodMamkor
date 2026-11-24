@@ -215,7 +215,9 @@ def _seed_group_buy(db, producer) -> None:
     # appears once — UNIQUE (group_buy_id, user_id) makes a repeat a hard error.
     committer_emails = [DEMO_CONSUMER_EMAIL, DEMO_REVIEWS[0]["email"]]
     # MEH-3735: fixed codes per seat, so the dashboard's pickup list shows a code.
-    for seat, (email, quantity) in enumerate(zip(committer_emails, DEMO_GROUP_BUY_COMMIT_QUANTITIES)):
+    for seat, (email, quantity) in enumerate(
+        zip(committer_emails, DEMO_GROUP_BUY_COMMIT_QUANTITIES)
+    ):
         committer = db.query(User).filter(User.email == email).first()
         if committer is None:
             # Loud rather than silent: a missing committer leaves the group buy

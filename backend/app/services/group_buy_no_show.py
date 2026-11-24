@@ -59,8 +59,7 @@ _STATE_DETAIL = {
 }
 
 REFUSED_DETAIL = (
-    "כרגע אי אפשר להצטרף: היו שתי אי-הגעות ב-30 הימים האחרונים. "
-    "אם זו טעות, כתבו לנו."
+    "כרגע אי אפשר להצטרף: היו שתי אי-הגעות ב-30 הימים האחרונים. אם זו טעות, כתבו לנו."
 )
 
 
@@ -140,7 +139,9 @@ def group_buy_active_no_shows_of(db: Session, user_id: Any) -> int:
 
 def refuse_if_blocked(db: Session, user: User) -> None:
     if group_buy_active_no_shows_of(db, user.id) >= NO_SHOW_BLOCK_AT:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=REFUSED_DETAIL)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=REFUSED_DETAIL
+        )
 
 
 def require_owner(user: User, gb: GroupBuy) -> None:
@@ -196,7 +197,10 @@ def release_group_buy_block(db: Session, user_id: UUID) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="המשתמשת לא נמצאה")
     target.group_buy_block_cleared_at = utc_now()  # type: ignore[assignment]
     db.commit()
-    return {"user_id": target.id, "active_no_shows": group_buy_active_no_shows_of(db, target.id)}
+    return {
+        "user_id": target.id,
+        "active_no_shows": group_buy_active_no_shows_of(db, target.id),
+    }
 
 
 def send_group_buy_no_show_email(
@@ -206,9 +210,7 @@ def send_group_buy_no_show_email(
     Copy: MEH-3735 table, rows 7-11."""
     name = " ".join((business or "").split())
     contact = f"{settings.frontend_url}/contact"
-    lines = [
-        f"בית העסק {name} סימן שההזמנה שלכם בקבוצת הרכישה «{title}» לא נאספה."
-    ]
+    lines = [f"בית העסק {name} סימן שההזמנה שלכם בקבוצת הרכישה «{title}» לא נאספה."]
     if active >= NO_SHOW_BLOCK_AT:
         lines.append(
             "זו אי-ההגעה השנייה ב-30 הימים האחרונים, ולכן כרגע אי אפשר להצטרף "

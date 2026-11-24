@@ -82,6 +82,7 @@ EXEMPT: dict[str, str] = {
     "admin_checklist_items.label": "admin UI text",
     "producer_recipes.moderation_notes": "moderation note about a recipe",
     "rescue_orders.pickup_code": "4-digit code for a finished pickup, not personal",
+    "group_buy_commits.pickup_code": "4-digit code, unique only inside its group, not personal (MEH-3735)",
     "product_orders.pickup_code": "pickup code for a past order, not personal",
     "product_orders.proposal_note": "the business's own text",
     "product_orders.idempotency_key": "random key, no personal data",

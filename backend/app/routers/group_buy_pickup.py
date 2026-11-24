@@ -111,9 +111,7 @@ def mark_group_buy_no_show(  # noqa: PLR0913 — FastAPI-injected
     return commit
 
 
-@admin_router.post(
-    "/users/{user_id}/clear-block", response_model=GroupBuyBlockStateOut
-)
+@admin_router.post("/users/{user_id}/clear-block", response_model=GroupBuyBlockStateOut)
 @limiter.limit("30/minute")
 def clear_group_buy_block(
     request: Request,

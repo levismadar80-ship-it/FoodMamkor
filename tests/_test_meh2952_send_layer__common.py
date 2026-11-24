@@ -1043,6 +1043,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test or user.is_test",
     ),
+    # MEH-3735: the buyer's mail on each group-buy no-show.
+    ("services/group_buy_no_show.py", "send_group_buy_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
         CON,
