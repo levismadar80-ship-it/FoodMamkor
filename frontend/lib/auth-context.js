@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, startTransition, useContext, useEffect, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "./api";
@@ -76,14 +76,23 @@ export function AuthProvider({ children }) {
   // user (derived client-side from user.created_at). Observability only.
   useLaunchCohortTag(user);
 
+  // MEH-3828: every update here lands while the page may still be hydrating
+  // (a dynamic chunk not yet loaded). An urgent context update that reaches a
+  // Suspense boundary still waiting to hydrate makes React drop its server HTML
+  // and show the fallback — the route loader (app/[locale]/loading.js) — then
+  // mount the page again: a full-page flash and ≈ 1.0 CLS about 5 s in on a
+  // slow phone. A transition lets hydration finish first (react.dev/errors/421).
+  // DO NOT set auth state here outside startTransition — MEH-3828.
   const loadSession = () => {
     const token = localStorage.getItem("token");
     if (token) {
       api
         .get("/auth/me")
         .then((res) => {
-          setUser(res.data);
-          setAuthUnreachable(false);
+          startTransition(() => {
+            setUser(res.data);
+            setAuthUnreachable(false);
+          });
           // MEH-1485: seed localStorage user_city from the profile city so
           // the personalization stores stop diverging (no-op when
           // localStorage already holds a recent explicit choice).
@@ -103,12 +112,12 @@ export function AuthProvider({ children }) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
           } else {
-            setAuthUnreachable(true);
+            startTransition(() => setAuthUnreachable(true));
           }
         })
-        .finally(() => setLoading(false));
+        .finally(() => startTransition(() => setLoading(false)));
     } else {
-      setLoading(false);
+      startTransition(() => setLoading(false));
     }
   };
 
