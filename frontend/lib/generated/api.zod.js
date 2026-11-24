@@ -7173,6 +7173,51 @@ export const RequestNameChangeProducersMeNameChangeRequestsPostResponse = /*#__P
 
 
 /**
+ * MEH-3746: the caller's own order menu, exactly as a buyer would get it,
+ * BEFORE ordering is switched on — the public route 404s until then, so the
+ * owner could not see what her settings do. No `takes_orders()` gate here:
+ * only her own business is read (no id is taken from the request), and a
+ * business that never saved settings gets the defaults, unsaved. Read only:
+ * the preview cannot place an order (MEH-3691 refuses an owner's order).
+ * @summary Get My Order Menu Preview
+ */
+export const getMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponseProductsItemVariantsDefault = [];
+
+export const GetMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponse = /*#__PURE__*/ zod.object({
+  "business_id_number": /*#__PURE__*/ zod.string(),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_max_agorot": /*#__PURE__*/ zod.int(),
+  "price_min_agorot": /*#__PURE__*/ zod.int(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean()
+}).check(/*#__PURE__*/ zod.describe('MEH-3617: one size or flavour, with the price the order route stores.'))), getMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponseProductsItemVariantsDefault)
+})),
+  "slots": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "alcohol_ok": /*#__PURE__*/ zod.boolean(),
+  "end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true})
+}))
+})
+
+
+/**
  * The business's ordering settings; the defaults (off) if never saved.
  * @summary Get My Order Settings
  */

@@ -182,7 +182,9 @@ class OrderMenuOut(BaseModel):
     cancel_cutoff_hours: int
     lead_time_hours: int
     # MEH-3216: the seller's «מספר עוסק או ח״פ», for the order form's seller
-    # line (distance-selling disclosure). Always set: takes_orders() needs it.
+    # line (distance-selling disclosure). Always set for a buyer:
+    # takes_orders() needs it. MEH-3746: the owner's preview, readable before
+    # that, sends "" while she has not filled it in.
     business_id_number: str
     products: list[OrderMenuProductOut]
     slots: list[OrderMenuSlotOut]

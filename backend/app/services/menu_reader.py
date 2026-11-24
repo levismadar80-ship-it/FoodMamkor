@@ -28,6 +28,7 @@ from typing import Any
 from app.config import AI_MENU_MODEL, settings
 from app.schemas.menu_import import MenuRow
 from app.schemas.schemas import strip_emoji_from_name
+from app.services import ai_budget
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +196,7 @@ def read_menu(files: list[tuple[str, bytes]]) -> list[MenuRow] | None:
     None means "could not read" (no key, API error, refusal, cut-off answer);
     an empty list means the model read the files and found no products."""
     client = _get_client()
-    if client is None:
+    if client is None or not ai_budget.allow("menu"):  # MEH-3498
         return None
     content: list[dict[str, Any]] = [_block(m, d) for m, d in files]
     content.append({"type": "text", "text": _PROMPT})

@@ -25,9 +25,9 @@ import {
   GetOrderMenuProducersProducerIdOrderMenuGetResponse,
   ListBusinessOrdersProducersMeProductOrdersGetResponse,
 } from "@/lib/generated/api.zod";
+import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
 
 const TZ = "Asia/Jerusalem";
-const AGOROT_PER_SHEKEL = 100;
 // The server's page cap (product_order_business.py MAX_PAGE). A bigger limit
 // answers 422 and the whole tab fails to load.
 export const PAGE_LIMIT = 50;
@@ -85,7 +85,7 @@ export function groupOrders(orders, now = new Date()) {
 /** Whole shekels when round, else two decimals. */
 export function shekelsText(agorot) {
   if (typeof agorot !== "number" || !Number.isFinite(agorot)) return "";
-  const value = agorot / AGOROT_PER_SHEKEL;
+  const value = agorotToShekels(agorot);
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
@@ -164,7 +164,7 @@ export function agorotFromInput(text) {
   if (clean === "") return null;
   const value = Number(clean);
   if (!Number.isFinite(value) || value < 0) return Number.NaN;
-  return Math.round(value * AGOROT_PER_SHEKEL);
+  return shekelsToAgorot(value);
 }
 
 /**

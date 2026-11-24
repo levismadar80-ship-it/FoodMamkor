@@ -108,7 +108,8 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 #
 # MEH-3332 (18/11): "unmonitored" below means by SENTRY. The seven are now
 # watched for free instead: every run that returns is recorded, and
-# services/job_staleness.py emails the admin when one stops running.
+# services/job_staleness.py reports one that stops running (Sentry ops_alert,
+# email when Sentry is off, MEH-3705).
 #
 # The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
@@ -207,7 +208,7 @@ def heartbeat(
                 job()
                 status = "ok"
                 # MEH-3332: the free monitor. Sentry's $0 plan holds one cron
-                # monitor; job_staleness emails the admin about the others.
+                # monitor; job_staleness reports the others (MEH-3705: Sentry first).
                 from app.services.job_staleness import record_ok
 
                 record_ok(slug)
