@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   resolvedQuestions
+ * Module:   resolved-questions
  * Purpose:  Resolve WHICH ready-made questions a producer's public page shows
  *           right now, and how each one is served (answered in-page vs opens a
  *           channel). The dashboard's questions card renders this so an owner
@@ -13,7 +13,7 @@
  *           WhatsAppQuestionChips.jsx. It also does not read the DOM: this is
  *           derivation from the same producer payload the page receives.
  * Related:  frontend/components/WhatsAppQuestionChips.jsx (the public renderer
- *           this mirrors), frontend/lib/quickAnswers.js:41,103,
+ *           this mirrors), frontend/lib/quick-answers.js:41,103,
  *           frontend/lib/contact-method.js (isWhatsAppPrimary, MEH-2154).
  * History:  MEH-2155 (creation) · MEH-2385 (category stock set + recipe row
  *           dropped from the public block; only her custom questions remain
@@ -51,7 +51,7 @@
  * filter does not work, which the dashboard must reflect rather than correct.
  */
 import { normalizePhone } from "@/lib/utils";
-import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
 import { paymentAnswer } from "@/lib/payment-info";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 

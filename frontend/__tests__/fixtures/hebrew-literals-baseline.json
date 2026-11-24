@@ -25,7 +25,7 @@
   "lib/producer-completeness.js": 1,
   "lib/producer-description-placeholders.js": 4,
   "lib/rescue.js": 1,
-  "lib/resolvedQuestions.js": 2,
+  "lib/resolved-questions.js": 2,
   "lib/schemas.js": 7,
   "lib/utils.js": 1
 }

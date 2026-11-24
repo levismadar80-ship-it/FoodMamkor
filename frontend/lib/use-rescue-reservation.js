@@ -10,7 +10,7 @@ import { cancelErrorKey, cancelOrder, fetchMyOrders, rescueBagsEnabled, reserveB
 export const UNVERIFIED_KEY = "errors.unverified";
 
 /**
- * Module:   useRescueReservation
+ * Module:   use-rescue-reservation
  * Purpose:  The buyer's side of one business's surprise bag — reserve, read
  *           the reservation back after a reload, cancel, and settle a 409 by
  *           asking the server what happened. One copy, used by the bag block

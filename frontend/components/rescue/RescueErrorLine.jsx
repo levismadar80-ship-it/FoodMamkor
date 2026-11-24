@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 
 import InlineMessage from "@/components/ui/InlineMessage";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
-import { UNVERIFIED_KEY } from "@/lib/useRescueReservation";
+import { UNVERIFIED_KEY } from "@/lib/use-rescue-reservation";
 
 /**
  * Module:   RescueErrorLine

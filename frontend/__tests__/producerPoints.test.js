@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapPinPoints, producerPoints, producerInBounds, primaryPoint } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints, producerInBounds, primaryPoint } from "@/lib/producer-points";
 
 // producerPoints also returns `location` (the source row, needed by the marker
 // layer). These helpers assert the coordinate triple without restating it.

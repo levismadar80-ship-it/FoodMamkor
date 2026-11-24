@@ -13,7 +13,7 @@
  * here; the "another date" case is the control that must pass in BOTH worlds.
  */
 import { describe, it, expect } from "vitest";
-import { getOrderWindowStatus, getUpcomingSpecialDates } from "@/lib/orderWindow";
+import { getOrderWindowStatus, getUpcomingSpecialDates } from "@/lib/order-window-status";
 
 const SUNDAY = (hhmmZ) => new Date(`2026-09-06T${hhmmZ}:00Z`);
 
