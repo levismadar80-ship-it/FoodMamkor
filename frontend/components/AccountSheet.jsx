@@ -5,7 +5,7 @@
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X, Receipt, UsersThree } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X, Receipt } from "@phosphor-icons/react";
 import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -227,14 +227,6 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               <Link href={row("myOrders").item.href} onClick={onClose} className={rowCls}>
                 <Receipt size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("myOrders").surface.labelKey)}
-              </Link>
-            </li>
-          )}
-          {row("myGroupBuys") && (
-            <li className={liCls}>
-              <Link href={row("myGroupBuys").item.href} onClick={onClose} className={rowCls}>
-                <UsersThree size={20} weight="regular" className={iconCls} aria-hidden="true" />
-                {t(row("myGroupBuys").surface.labelKey)}
               </Link>
             </li>
           )}

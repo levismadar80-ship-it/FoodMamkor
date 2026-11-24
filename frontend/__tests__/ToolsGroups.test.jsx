@@ -76,12 +76,30 @@ beforeEach(() => {
 });
 
 describe("«כלים» grouped by task (MEH-3669)", () => {
-  // MEH-3749: «שיתוף» is a tile in the content group now, not a section.
-  it("shows the groups in order: offer → reviews → content", async () => {
+  // MEH-3749: «שיתוף» became a tile. MEH-3787: it has its own group,
+  // «להביא לקוחות», between reviews and content.
+  it("shows the groups in order: offer → reviews → reach → content", async () => {
     render(<ToolsPage />);
     await screen.findByTestId("tools-grid");
     const h2 = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.content_heading`]);
+    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.reach_heading`, `${G}.content_heading`]);
+  });
+
+  // MEH-3787: the reach group holds only «שיתוף»; with the tile gated off
+  // there is no heading left behind.
+  it("«להביא לקוחות» holds the share tile, and content holds only recipes", async () => {
+    render(<ToolsPage />);
+    const reach = await screen.findByTestId("tools-group-reach");
+    expect(hrefs(reach)).toEqual(["/producer/dashboard/share"]);
+    expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual(["/producer/dashboard/recipes"]);
+  });
+
+  it("a pending business has no «להביא לקוחות» group and no heading for it", async () => {
+    state.status = "pending";
+    render(<ToolsPage />);
+    await screen.findByTestId("tools-group-content");
+    expect(screen.queryByTestId("tools-group-reach")).toBeNull();
+    expect(screen.queryByText(`${G}.reach_heading`)).toBeNull();
   });
 
   it("«אירועים» is closed by default and holds no tool link (many × closed)", async () => {
@@ -130,11 +148,8 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(hrefs(section)).toEqual(["/producer/dashboard/reviews"]);
     expect(within(section).getByTestId("request-review-stub")).toBeInTheDocument();
     // MEH-3723: the Google profile tile moved to the edit tab; recipes stay.
-    // MEH-3749: the «שיתוף» tile joins them, for an approved business.
-    expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual([
-      "/producer/dashboard/recipes",
-      "/producer/dashboard/share",
-    ]);
+    // MEH-3787: «שיתוף» left this group for «להביא לקוחות».
+    expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual(["/producer/dashboard/recipes"]);
     expect(screen.queryByTestId("tools-google-profile-tile")).toBeNull();
   });
 
@@ -212,6 +227,7 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
       "/producer/dashboard/events", "/producer/dashboard/experiences", "/producer/dashboard/group-buys",
       "/producer/dashboard/rescue", "/producer/dashboard/reviews", "/producer/dashboard/recipes",
       "/producer/dashboard/share",
+      "/producer/dashboard/offer", // MEH-3785
     ]));
     for (const spoke of spokes) {
       NAV.pathname = spoke;

@@ -16,6 +16,7 @@
  * Related:  components/ReviewsSection.jsx (ReviewReply, StarRow, the name
  *           format) · dashboard/tools/page.js (the «ביקורות» tile).
  * History:  MEH-3107 (creation). MEH-3536 (reads move onto lib/use-api.js).
+ *           MEH-3786 (the request-a-review card at the top, approved only).
  */
 
 import { useEffect } from "react";
@@ -37,6 +38,7 @@ import {
 } from "@/components/ReviewsSection";
 import { avatarInitial } from "@/components/ui/Avatar";
 import ReviewReportMenu from "@/components/ReviewReportMenu";
+import RequestReviewCard from "@/components/producer/RequestReviewCard";
 
 // Both are untyped JSX components whose inferred props mark every prop
 // required; the dashboard uses their optional subset.
@@ -151,6 +153,15 @@ export default function ProducerDashboardReviewsPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <BackLink href="/producer/dashboard/tools" label={tRecipes("back")} />
       <h1 className="font-headline-lg text-3xl font-bold text-text mt-1 mb-2">{t("quick_links.reviews.title")}</h1>
+
+      {/* MEH-3786: the owner who came to read reviews can ask for one here,
+          not only from «כלים». Approved only: the link endpoint 403s for any
+          other status (RequestReviewCard's header). */}
+      {me.data?.status === "approved" && (
+        <div data-testid="owner-reviews-request" className="mb-4">
+          <RequestReviewCard />
+        </div>
+      )}
 
       {failed ? (
         <div data-testid="owner-reviews-error" className="bg-surface border border-border rounded-lg p-4 flex items-center justify-between gap-3">

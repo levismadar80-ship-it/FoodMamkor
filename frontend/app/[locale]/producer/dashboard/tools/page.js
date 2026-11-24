@@ -25,7 +25,9 @@
  *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
  *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3723 (that tile moved
  *           to the edit tab); MEH-3749 (the «שיתוף» section became a tile; its
- *           page is share/page.js).
+ *           page is share/page.js); MEH-3785 (the «הטבה» tile in «להציע
+ *           ללקוחות», its page moved out of עריכה); MEH-3787 (the «שיתוף»
+ *           tile got its own group, «להביא לקוחות»).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -35,7 +37,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, ShareNetwork } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, ShareNetwork, Tag } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
@@ -66,6 +68,7 @@ export default function ProducerDashboardToolsPage() {
   const tNav = useTranslations("nav");
   // MEH-3669: «קבוצת רכישה» already lives here; reuse it (messages-hygiene-guard).
   const tType = useTranslations("home.whats_on.type");
+  const tOffer = useTranslations("producer.offer");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-1777: a rejected fetch used to leave `data` null forever, and
@@ -137,6 +140,7 @@ export default function ProducerDashboardToolsPage() {
   // the tile, before the owner opens them. The tile stays a link so the
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
+  const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
   const rescueOn = rescueBagsEnabled();
   // MEH-3753: the server refuses group buys and bags to every status but
   // approved (group_buys.py, rescue_writes.py), so every one of them gets a
@@ -193,6 +197,18 @@ export default function ProducerDashboardToolsPage() {
               ]}
               footer={lockedLine}
             />
+            {/* MEH-3785: «הטבה» lived in עריכה › מוצרים ומחירים while every
+                other thing offered to customers is here (Shopify keeps
+                discounts apart from products). No lock line: the offer saves
+                on PUT /producers/me, open before approval like every edit
+                card. Never an organizer — she had no products group either. */}
+            {!isOrganizer && (
+              <Link href="/producer/dashboard/offer" data-testid="tools-offer-tile" className={CARD}>
+                <Tag size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{tOffer("card_title")}</p>
+                <p className="text-sm text-fg-muted">{tFeat("offer.label")}</p>
+              </Link>
+            )}
           </div>
         </section>
         {/* MEH-2784 / MEH-1428: an unapproved business has no public page yet
@@ -212,6 +228,25 @@ export default function ProducerDashboardToolsPage() {
             <RequestReviewCard />
           </section>
         )}
+        {/* MEH-3787: «שיתוף» is how a business brings customers in, not
+            content, so it gets a group of its own (Sapir 24/11), as Shopify
+            keeps Marketing apart from Content. The gate is the tile's: with
+            no tile there is no heading. */}
+        {approved && profile && profile.kind !== "organizer" && (
+          <section data-testid="tools-group-reach" className="mt-8">
+            <h2 className={H2}>{t("quick_links.groups.reach_heading")}</h2>
+            <div className={GRID}>
+              {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of
+                  their own (Sapir 23/11); this tile is its one entry. The line
+                  is two existing tool names, so no new copy. */}
+              <Link href="/producer/dashboard/share" data-testid="tools-share-tile" className={CARD}>
+                <ShareNetwork size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{tShare("quiet_label")}</p>
+                <p className="text-sm text-fg-muted">{`${tFeat("qr_code.tile_title")} · ${tFeat("share_cards.tile_title")}`}</p>
+              </Link>
+            </div>
+          </section>
+        )}
         {/* MEH-590: producer recipes. MEH-3723: «הפרופיל בגוגל» moved to the
             edit tab's hub (GoogleProfileHubTile), next to the business details
             it checks. */}
@@ -223,17 +258,6 @@ export default function ProducerDashboardToolsPage() {
               <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
               <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
             </Link>
-            {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of their
-                own (Sapir 23/11); this tile is its one entry. Same gates the
-                section had: approved business, never an organizer. The line is
-                two existing tool names, so no new copy. */}
-            {approved && profile && profile.kind !== "organizer" && (
-              <Link href="/producer/dashboard/share" data-testid="tools-share-tile" className={CARD}>
-                <ShareNetwork size={24} className="text-primary mb-2" aria-hidden="true" />
-                <p className="font-headline-md text-lg font-bold mb-1">{tShare("quiet_label")}</p>
-                <p className="text-sm text-fg-muted">{`${tFeat("qr_code.tile_title")} · ${tFeat("share_cards.tile_title")}`}</p>
-              </Link>
-            )}
           </div>
         </section>
       </div>

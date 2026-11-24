@@ -9,7 +9,7 @@
  * Does NOT: edit opening_hours (store hours) — that is HoursEditor.jsx, a
  *           different column and a different meaning. It also does not derive
  *           "open now"; the public page owns that (MEH-1546).
- * Related:  frontend/lib/order-window.js (serializer + close>open mirror),
+ * Related:  frontend/lib/order-window-editor.js (serializer + close>open mirror),
  *           edit/HoursEditor.jsx (the row/save/dirty pattern this follows),
  *           backend/app/routers/producer_me.py (PUT /producers/me).
  * History:  MEH-1544 — chunk 2/3 of חלון הזמנות.
@@ -27,7 +27,7 @@ import {
   orderDayIssues,
   nextOrderRange,
   canAddOrderRange,
-} from "@/lib/order-window";
+} from "@/lib/order-window-editor";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";

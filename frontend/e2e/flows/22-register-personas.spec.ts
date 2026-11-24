@@ -217,8 +217,11 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       await expect(overview).toBeVisible({ timeout: 20_000 });
       // The checklist state: an approved business exposes data-state-approved.
       await expect(overview).toHaveAttribute("data-state-approved", "true");
-      // …and the one-tap public link is present (slug assigned on approval).
-      await expect(page.getByTestId("view-public-link")).toBeVisible();
+      // …and the one-tap public link is present: the tab bar's «צפייה בעמוד»
+      // eye, the business's one link to her page (MEH-3783).
+      const view = page.getByTestId("dashboard-view-page");
+      await expect(view).toBeVisible();
+      await expect(view).toHaveAttribute("href", new RegExp(`/producer/${producerId}$`));
     } finally {
       if (producerId) {
         await adminCtx.delete(`/api/admin/producers/${producerId}`).catch(() => {
@@ -234,7 +237,7 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 // P2 — OAuth producer: a 409 surfaces a toast (GSI-stub, mirrors flows/10)
 // ===========================================================================
 test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
-  const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
+  const DETAIL_MSG = "כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
 
   test("a 409 from the OAuth Step-0 endpoint shows the backend detail as a toast", async ({
     page,

@@ -158,31 +158,26 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     );
   });
 
-  // MEH-2142: this used to assert that #hours opened the business-level
-  // opening-hours card. That card was REMOVED — store hours are a per-location
-  // fact now — so the anchor was dropped from ANCHOR_TO_KEY with it.
-  //
-  // Replaced rather than deleted, because "the card is gone" and "the deep-link
-  // machinery broke" look identical from a missing test. A stale #hours (an old
-  // email, a bookmark, a screenshot) must be INERT: no crash, no card opened,
-  // and — since the hash resolves to no key — no group switch either.
-  it("a stale #hours deep link is inert: no card opens, nothing throws", async () => {
+  // MEH-3790: #hours opens the one «שעות» card again (MEH-2142 had removed the
+  // business-level hours card, and this test then asserted the hash was inert).
+  // #order-window and #special-hours are sections of that card now: each opens
+  // it and scrolls to its own section, so an old link lands where it pointed.
+  it.each([
+    ["hours", "hours"],
+    ["order-window", "order-window"],
+    ["special-hours", "special-hours"],
+  ])("a #%s deep link opens the «שעות» card and scrolls to #%s", async (hash, target) => {
     const scrollSpy = vi.fn();
     window.HTMLElement.prototype.scrollIntoView = scrollSpy;
     window.requestAnimationFrame = (cb) => cb();
     params.group = "location";
-    window.location.hash = "#hours";
+    window.location.hash = `#${hash}`;
     mount();
-
-    // The group itself still renders — the page is not broken by the stale hash.
     await waitFor(() =>
-      expect(screen.getByTestId("group-location")).toBeInTheDocument(),
+      expect(screen.getByTestId("accordion-hours")).toHaveAttribute("aria-expanded", "true"),
     );
-    // The card it used to open no longer exists at all.
-    expect(screen.queryByTestId("accordion-hours")).not.toBeInTheDocument();
-    // applyHash returns early on an unregistered anchor, so nothing is scrolled
-    // to and no group redirect fires.
-    expect(scrollSpy).not.toHaveBeenCalled();
+    await waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    expect(scrollSpy.mock.contexts.map((el) => el.id)).toContain(target);
     expect(routerStub.replace).not.toHaveBeenCalled();
   });
 
@@ -248,8 +243,9 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   it.each([
     ["profile", ["images", "categories", "bio", "owner-story", "business-name"]],
     // MEH-2729: one «תגים» card in place of dietary-scope + grass-fed.
-    ["products", ["products", "pricing", "offer", "tags"]],
-    ["location", ["locations", "delivery", "order-window", "special-hours"]],
+    // MEH-3785: the offer moved to its own page under «כלים».
+    ["products", ["products", "pricing", "tags"]],
+    ["location", ["locations", "delivery", "hours"]], // MEH-3790: one «שעות» card
     ["contact", ["contact-channels", "questions", "payment-info"]], // MEH-3035
     ["trust", ["trust"]],
   ])("the %s group holds exactly %j", async (g, cards) => {
@@ -263,7 +259,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
 
   // The three anchors MEH-2433 moved or registered: each must route to the
   // products group, not to its old home (location / trust) or nowhere.
-  it.each(["offer", "tags", "dietary-scope", "grass-fed"])(
+  it.each(["tags", "dietary-scope", "grass-fed"])(
     "MEH-2433: a #%s deep link opens the products group",
     async (anchor) => {
       window.location.hash = `#${anchor}`;

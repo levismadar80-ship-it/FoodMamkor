@@ -333,6 +333,26 @@ class RescueMyOrderOut(RescueOrderCreatedOut):
     cancelled_by_business: bool
 
 
+class RescueHistoryOut(BaseModel):
+    """One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).
+
+    No `pickup_code`: the list row links to the bag's page, which shows the
+    code on the day. `producer_name` is what the row prints.
+    """
+
+    id: UUID
+    offer_id: UUID
+    qty: int
+    status: RescueOrderStatus
+    created_at: UtcDatetimeOut
+    date: date_type
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    producer_id: UUID
+    producer_name: str
+    cancelled_by_business: bool
+
+
 class RescueNoShowStateOut(BaseModel):
     """What the admin reset returns, so the operator can see the effect.
 

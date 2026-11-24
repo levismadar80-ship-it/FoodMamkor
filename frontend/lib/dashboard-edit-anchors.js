@@ -9,7 +9,8 @@
  *           "{done}/{total}" and not every registered card is a step.
  * Related:  app/[locale]/producer/dashboard/edit/page.js (sole consumer),
  *           __tests__/DashboardEditAnchorRegistry.test.js (the guard)
- * History:  MEH-2262 (extracted from page.js so the registry can be asserted)
+ * History:  MEH-2262 (extracted from page.js so the registry can be asserted);
+ *           MEH-3790 (the «שעות» card; orderWindow + specialHours open it)
  *
  * THE INVARIANT, because it is not visible from any single map:
  *   the resolver reads the hash through ANCHOR_TO_KEY, looks the key up in
@@ -48,11 +49,10 @@ export const ANCHOR_TO_KEY = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  // MEH-2142: `hours` is gone from all four registries below. The
-  // business-level opening-hours card was removed — store hours are a
-  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
-  // (an old email, a bookmark) therefore falls through to the default group
-  // rather than resolving to a card that no longer exists.
+  // MEH-3790: `hours` is back — the one «שעות» card (HoursCard.jsx), holding
+  // each location's opening hours, the order window and special hours. MEH-2142
+  // had removed it when store hours moved into the location form.
+  hours: "hours",
   "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
@@ -64,11 +64,10 @@ export const ANCHOR_TO_KEY = {
   "profile-categories": "categories",
   "profile-images": "images",
   "profile-products": "products",
-  // MEH-2262: `offer` (MEH-1823) and `special-hours` (MEH-2264) were each
-  // registered in KEY_TO_ANCHOR and KEY_TO_GROUP but not here, so their deep
-  // links resolved no key at all and the hub stayed on screen. Same silent
-  // gap as `businessName` in KEY_TO_GROUP, one map over.
-  offer: "offer",
+  // MEH-2262: `special-hours` (MEH-2264) was registered in KEY_TO_ANCHOR and
+  // KEY_TO_GROUP but not here, so its deep link resolved no key at all and the
+  // hub stayed on screen. (`offer` had the same gap; MEH-3785 moved the offer
+  // out of the edit page to /producer/dashboard/offer.)
   "special-hours": "specialHours",
   // MEH-2433: dietary scope + grass-fed were sub-sections of the trust card
   // with no deep link of their own; in the five-group hub each is its own
@@ -114,14 +113,15 @@ export const KEY_TO_ANCHOR = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
+  hours: "hours",
+  // MEH-3790: a section of the «שעות» card now; the section carries this id,
+  // so the link scrolls to it inside the open card (OPEN_KEY_FOR).
   orderWindow: "order-window",
   // MEH-2264: sits directly under the order window it overrides.
   specialHours: "special-hours",
-  // MEH-1823: registered here so #offer deep-links resolve like every other
-  // card. These three maps are a guarded registry — a card added to the JSX
-  // without an entry renders but is unreachable by anchor, which is the
-  // silent-gap class .claude/rules/testing.md documents for path registries.
-  offer: "offer",
+  // These three maps are a guarded registry — a card added to the JSX without
+  // an entry renders but is unreachable by anchor, which is the silent-gap
+  // class .claude/rules/testing.md documents for path registries.
   tags: "tags",
   organizerCity: "organizer-city",
   paymentInfo: "payment-info",
@@ -156,19 +156,14 @@ export const KEY_TO_GROUP = {
   // registered here so a #locations deep link resolves to the right group.
   locations: "location",
   delivery: "location",
+  // MEH-3790: opt-in like orderWindow, so not a GROUP_MEMBERS entry either.
+  hours: "location",
   orderWindow: "location",
   // MEH-2264: same group as the order window it overrides; NOT a
   // GROUP_MEMBERS entry, for exactly orderWindow's reason above.
   specialHours: "location",
-  // MEH-1823: the offer used to live in the location group, read against the
-  // delivery terms. MEH-2433 moved it to the products group: an owner looks
-  // for a discount next to her prices, not next to her delivery radius.
-  // Deliberately NOT added to GROUP_MEMBERS below,
-  // for the same reason orderWindow isn't: membership drives the hub's
-  // "{done}/{total}", and an opt-in field would show every existing business
-  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
-  // for — the GBP-staleness risk that note already cites.
-  offer: "products",
+  // MEH-3785: the offer left the edit page (MEH-1823 location → MEH-2433
+  // products → its own page under «כלים»).
   contact: "contact",
   questions: "contact",
   // MEH-2475: organizer-only card in the contact group (the only group she
@@ -182,6 +177,11 @@ export const KEY_TO_GROUP = {
 // The accordion open-state key a card key maps to. The trust group renders ONE
 // accordion card (anchorId "trust") composing the license + kashrut bodies, so
 // both card keys open that single card; scroll still targets the inner
-// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged).
-export const OPEN_KEY_FOR = (key) =>
-  key === "license" || key === "kashrut" ? "trust" : key;
+// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged). MEH-3790: the
+// order window and special hours are sections of the one «שעות» card, the
+// same shape.
+export const OPEN_KEY_FOR = (key) => {
+  if (key === "license" || key === "kashrut") return "trust";
+  if (key === "orderWindow" || key === "specialHours") return "hours";
+  return key;
+};

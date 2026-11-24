@@ -70,7 +70,7 @@ export const BUSINESS_FEATURES = [
   { id: "page_fill", group: "page", status: "live", codeRef: ["frontend/components/PageFillPanel.jsx", "frontend/lib/page-fill.js"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx", "frontend/components/MenuImport.jsx"] },
   { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/PricingCard.jsx"] },
-  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
+  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
   { id: "vacation_mode", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx"] },
   { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producer-points.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
   { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/PickupScheduleField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx"] },
@@ -112,7 +112,8 @@ export const BUSINESS_FEATURES = [
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },
 
   // ── return ──────────────────────────────────────────────────────────────
-  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx"] },
+  // MEH-3785: the offer has its own page under «כלים» (it was a card in עריכה › מוצרים ומחירים).
+  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx", "frontend/app/[locale]/producer/dashboard/offer/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/offer" } },
   { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
   { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
   // MEH-2885: experiences (hosted visits) — he copy approved word for word by Sapir 10/11.
