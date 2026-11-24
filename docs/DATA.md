@@ -1149,8 +1149,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > list above and the admin list are unchanged. No schema change.
 >
 > MEH-3691: `POST /group-buys/{id}/commit` (and `…/waitlist`) answers `403 אי אפשר להצטרף לקבוצת
-> הרכישה של בית העסק שלך` when the caller's `producer_id` is the group's, and
-> `POST /product-orders` answers `403 אי אפשר להזמין מבית העסק שלך` when the
+> הרכישה של בית עסק בבעלות החשבון הזה` when the caller's `producer_id` is the group's, and
+> `POST /product-orders` answers `403 אי אפשר להזמין מבית עסק בבעלות החשבון הזה` when the
 > logged-in buyer's `producer_id` is the order's business (checked before the
 > phone code). A business buys from other businesses like any customer.
 >
@@ -1287,7 +1287,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
 
-> **MEH-3591 — the joiner hears back (2026-11-21):** a `POST /group-buys/{id}/commit` that leaves the group below `min_participants` emails the joiner «מהמקור — הצטרפת לקבוצה "{title}"»: her quantity, «N מתוך min», the deadline as an Israel date and the group link. Counts only, no contact details (MEH-1651). A join that funds the group, or joins a funded one, gets the funded email instead, never both. No schema change.
+> **MEH-3591 — the joiner hears back (2026-11-21):** a `POST /group-buys/{id}/commit` that leaves the group below `min_participants` emails the joiner «מהמקור — ההצטרפות לקבוצה "{title}"»: her quantity, «N מתוך min», the deadline as an Israel date and the group link. Counts only, no contact details (MEH-1651). A join that funds the group, or joins a funded one, gets the funded email instead, never both. No schema change.
 
 > **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
 
