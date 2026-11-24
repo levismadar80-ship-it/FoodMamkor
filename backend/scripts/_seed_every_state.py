@@ -261,8 +261,9 @@ def _seed_group_buys(db: Any, demo: Producer, buyers: list[User]) -> None:
         db.add(gb)
         db.flush()
         if status in ("funded", "fulfilled"):
-            for buyer in buyers[:2]:
-                db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
+            # MEH-3735: a fixed code per seat, unique inside this group.
+            for seat, buyer in enumerate(buyers[:2]):
+                db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1, pickup_code=f"{2001 + seat:04d}"))
 
 
 def _seed_recipes(db: Any, demo: Producer) -> None:

@@ -7,6 +7,7 @@ History:  MEH-3735 (creation)
 """
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -22,11 +23,16 @@ class GroupBuyPickupOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+MarkState = Literal["open", "not_funded", "delivery", "no_window", "wait", "closed"]
+
+
 class GroupBuyPickupsOut(BaseModel):
-    # True once the pickup window (or the deadline) has passed on a group
-    # that reached its goal: the buttons show, the routes accept.
+    # True only in state "open": the window ended inside the last 14 days on
+    # a group that reached its goal and has a pickup. The buttons show.
     can_mark: bool
-    pickup_ended_at: datetime
+    # Why not, otherwise — the dashboard shows the matching line.
+    mark_state: MarkState
+    pickup_ended_at: datetime | None = None
     pickups: list[GroupBuyPickupOut]
 
 

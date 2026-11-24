@@ -56,7 +56,8 @@ def list_pickups(
     )
     return {
         "can_mark": no_show.can_mark(gb),
-        "pickup_ended_at": no_show.pickup_ended_at(gb),
+        "mark_state": no_show.mark_state(gb),
+        "pickup_ended_at": gb.pickup_ends_at,
         "pickups": rows,
     }
 
@@ -66,7 +67,7 @@ def list_pickups(
     response_model=GroupBuyPickupOut,
 )
 @limiter.limit("60/minute")
-def mark_handed(
+def mark_group_buy_handed(
     request: Request,
     group_buy_id: UUID,
     commit_id: UUID,
@@ -87,7 +88,7 @@ def mark_handed(
     response_model=GroupBuyPickupOut,
 )
 @limiter.limit("60/minute")
-def mark_no_show(  # noqa: PLR0913 — FastAPI-injected
+def mark_group_buy_no_show(  # noqa: PLR0913 — FastAPI-injected
     request: Request,
     group_buy_id: UUID,
     commit_id: UUID,
@@ -104,7 +105,7 @@ def mark_no_show(  # noqa: PLR0913 — FastAPI-injected
         outcome="no_show",
     )
     try:  # the mark is committed; a mail-side failure must not 500 it
-        no_show.queue_no_show_email(db, background_tasks, commit)
+        no_show.queue_group_buy_no_show_email(db, background_tasks, commit)
     except Exception as exc:  # noqa: BLE001 — fail-open, as rescue's
         capture_background_exception(exc, task="group_buy_no_show_email")
     return commit
@@ -121,4 +122,4 @@ def clear_group_buy_block(
     db: Session = Depends(get_db),
 ) -> Any:
     """Release a group-buy no-show block. The marks stay; they stop counting."""
-    return no_show.clear_block(db, user_id)
+    return no_show.release_group_buy_block(db, user_id)

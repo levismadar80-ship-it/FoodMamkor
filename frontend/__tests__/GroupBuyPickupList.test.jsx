@@ -16,7 +16,7 @@ const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(() => Promise.reso
 vi.mock("@/lib/api", () => ({ default: apiMock }));
 
 const GB = { id: uuidFor("gb") };
-const ENDED = "2026-11-20T10:00:00Z";
+const ENDED = "2026-11-20T10:00:00"; // the server sends naive UTC
 const row = (n, over = {}) => ({
   id: uuidFor(`c${n}`),
   pickup_code: `000${n}`,
@@ -25,7 +25,9 @@ const row = (n, over = {}) => ({
   no_show_at: null,
   ...over,
 });
-const payload = (pickups, canMark = true) => ({ data: { can_mark: canMark, pickup_ended_at: ENDED, pickups } });
+const payload = (pickups, canMark = true, state = canMark ? "open" : "wait") => ({
+  data: { can_mark: canMark, mark_state: state, pickup_ended_at: ENDED, pickups },
+});
 
 const openList = () => fireEvent.click(screen.getByRole("button", { name: "group_buys.dashboard.pickups.title" }));
 
@@ -65,6 +67,27 @@ describe("GroupBuyPickupList", () => {
     openList();
     expect(await screen.findByTestId("group-buy-pickups-wait")).toBeTruthy();
     expect(screen.queryByTestId("group-buy-pickup-handed")).toBeNull();
+  });
+
+  it.each([
+    ["no_window", "group_buys.dashboard.pickups.no_window"],
+    ["closed", "group_buys.dashboard.pickups.closed"],
+  ])("state %s: shows its own line and no buttons", async (state, line) => {
+    apiMock.get.mockResolvedValue(payload([row(1)], false, state));
+    render(<GroupBuyPickupList gb={GB} />);
+    openList();
+    expect(await screen.findByText(line)).toBeTruthy();
+    expect(screen.queryByTestId("group-buy-pickup-no-show")).toBeNull();
+  });
+
+  it("a refused mark shows the server's reason and reloads the list", async () => {
+    apiMock.get.mockResolvedValue(payload([row(1)]));
+    apiMock.post.mockRejectedValueOnce({ response: { data: { detail: "ההזמנה הזאת כבר סומנה" } } });
+    render(<GroupBuyPickupList gb={GB} />);
+    openList();
+    fireEvent.click(await screen.findByTestId("group-buy-pickup-handed"));
+    expect(await screen.findByText("ההזמנה הזאת כבר סומנה")).toBeTruthy();
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
   });
 
   it("a marked row shows its outcome instead of the buttons", async () => {

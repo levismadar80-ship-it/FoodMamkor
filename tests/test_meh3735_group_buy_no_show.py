@@ -253,3 +253,156 @@ class TestMailAndBlock:
         assert row["group_buy_blocked"] is True
         assert row["group_buy_active_no_shows"] == 2
         assert row["rescue_blocked"] is False
+
+
+class TestWhenMarkingIsOpen:
+    """Review of #5265: the mark gate is the pickup window only, for 14 days."""
+
+    def _state(self, client, owner, gb):
+        r = client.get(f"/producers/me/group-buys/{gb.id}/pickups", headers=auth_header(owner))
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    def test_a_fulfilled_group_can_be_marked(self, client, db, mails):
+        producer, owner = _producer_user(db, email="w1-owner@example.com")
+        gb = _ended_group(db, producer, status="fulfilled")
+        c = _commit(db, gb, make_user(db, email="w1-buyer@example.com"), "1001")
+        assert self._state(client, owner, gb)["mark_state"] == "open"
+        assert _no_show(client, owner, gb, c).status_code == 200
+
+    def test_without_a_pickup_window_nothing_is_marked_even_after_the_deadline(self, client, db, mails):
+        producer, owner = _producer_user(db, email="w2-owner@example.com")
+        gb = _make_group_buy(db, producer, status="funded", min_participants=1)
+        gb.deadline = utc_now() - timedelta(days=2)
+        db.commit()
+        c = _commit(db, gb, make_user(db, email="w2-buyer@example.com"), "1002")
+        body = self._state(client, owner, gb)
+        assert (body["mark_state"], body["can_mark"]) == ("no_window", False)
+        r = _no_show(client, owner, gb, c)
+        assert r.status_code == 409 and "קבעו זמן איסוף" in r.json()["detail"]
+        assert mails == []
+
+    def test_fourteen_days_after_the_pickup_marking_is_closed(self, client, db, mails):
+        producer, owner = _producer_user(db, email="w3-owner@example.com")
+        gb = _ended_group(db, producer)
+        gb.pickup_starts_at = utc_now() - timedelta(days=15, hours=2)
+        gb.pickup_ends_at = utc_now() - timedelta(days=15)
+        db.commit()
+        c = _commit(db, gb, make_user(db, email="w3-buyer@example.com"), "1003")
+        assert self._state(client, owner, gb)["mark_state"] == "closed"
+        assert _no_show(client, owner, gb, c).status_code == 409
+        assert mails == []
+
+    def test_thirteen_days_after_the_pickup_marking_is_still_open(self, client, db, mails):
+        producer, owner = _producer_user(db, email="w4-owner@example.com")
+        gb = _ended_group(db, producer)
+        gb.pickup_starts_at = utc_now() - timedelta(days=13, hours=2)
+        gb.pickup_ends_at = utc_now() - timedelta(days=13)
+        db.commit()
+        c = _commit(db, gb, make_user(db, email="w4-buyer@example.com"), "1004")
+        assert _no_show(client, owner, gb, c).status_code == 200
+
+    def test_a_delivery_only_group_has_no_pickup_to_mark(self, client, db, mails):
+        producer, owner = _producer_user(db, email="w5-owner@example.com")
+        gb = _ended_group(db, producer)
+        gb.delivery_note = "משלוח עד הבית"
+        db.commit()
+        c = _commit(db, gb, make_user(db, email="w5-buyer@example.com"), "1005")
+        assert self._state(client, owner, gb)["mark_state"] == "delivery"
+        assert _no_show(client, owner, gb, c).status_code == 409
+        assert mails == []
+
+    def test_moving_the_pickup_end_into_the_past_is_refused(self, client, db):
+        producer, owner = _producer_user(db, email="w6-owner@example.com")
+        gb = _make_group_buy(db, producer, status="funded", min_participants=1)
+        gb.deadline = utc_now() - timedelta(days=3)
+        gb.pickup_starts_at = utc_now() + timedelta(days=1)
+        gb.pickup_ends_at = utc_now() + timedelta(days=1, hours=2)
+        db.commit()
+        start = utc_now() - timedelta(days=2)
+        r = client.patch(
+            f"/group-buys/{gb.id}/settings",
+            json={"pickup_starts_at": start.isoformat() + "Z", "pickup_ends_at": (start + timedelta(hours=2)).isoformat() + "Z"},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 400, r.text
+        assert r.json()["detail"] == "אי אפשר לקבוע זמן איסוף שכבר עבר."
+        db.refresh(gb)
+        assert gb.pickup_ends_at > utc_now()
+
+
+class TestCountingEdges:
+    def test_a_second_no_show_on_the_same_code_is_refused_and_mails_once(self, client, db, mails):
+        producer, owner = _producer_user(db, email="e1-owner@example.com")
+        gb = _ended_group(db, producer)
+        c = _commit(db, gb, make_user(db, email="e1-buyer@example.com"), "2001")
+        assert _no_show(client, owner, gb, c).status_code == 200
+        assert _no_show(client, owner, gb, c).status_code == 409
+        assert len(mails) == 1
+
+    def test_no_shows_in_a_group_later_cancelled_do_not_count(self, client, db, mails):
+        producer, _ = _producer_user(db, email="e2-owner@example.com")
+        buyer = make_user(db, email="e2-buyer@example.com")
+        for code in ("2002", "2003"):
+            gb = _ended_group(db, producer)
+            c = _commit(db, gb, buyer, code)
+            c.no_show_at = utc_now() - timedelta(hours=1)
+            gb.status = "cancelled"
+        db.commit()
+        g = _make_group_buy(db, producer, min_participants=5)
+        r = client.post(f"/group-buys/{g.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+        assert r.status_code == 201, r.text
+
+    def test_after_a_release_two_new_no_shows_block_again(self, client, db, mails):
+        producer, _ = _producer_user(db, email="e3-owner@example.com")
+        buyer = make_user(db, email="e3-buyer@example.com")
+        buyer.group_buy_block_cleared_at = utc_now() - timedelta(days=2)
+        for code in ("2004", "2005"):
+            gb = _ended_group(db, producer)
+            c = _commit(db, gb, buyer, code)
+            c.no_show_at = utc_now() - timedelta(hours=1)
+        db.commit()
+        g = _make_group_buy(db, producer, min_participants=5)
+        r = client.post(f"/group-buys/{g.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+        assert r.status_code == 403
+        assert r.json()["detail"] == REFUSED
+
+    def test_no_shows_from_before_the_release_do_not_count(self, client, db, mails):
+        producer, _ = _producer_user(db, email="e4-owner@example.com")
+        buyer = make_user(db, email="e4-buyer@example.com")
+        for code in ("2006", "2007"):
+            gb = _ended_group(db, producer)
+            c = _commit(db, gb, buyer, code)
+            c.no_show_at = utc_now() - timedelta(days=3)
+        buyer.group_buy_block_cleared_at = utc_now() - timedelta(days=1)
+        db.commit()
+        g = _make_group_buy(db, producer, min_participants=5)
+        r = client.post(f"/group-buys/{g.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+        assert r.status_code == 201, r.text
+
+
+class TestCodesAndMail:
+    def test_a_code_already_taken_in_the_group_is_never_handed_out(self, monkeypatch):
+        from app.services import group_buy_no_show as svc
+
+        draws = iter([42, 42, 7])
+        monkeypatch.setattr(svc.secrets, "randbelow", lambda _n: next(draws))
+        assert svc.new_code({"0042"}) == "0007"
+
+    def test_every_join_in_a_group_gets_its_own_code(self, client, db):
+        producer, _ = _producer_user(db, email="k1-owner@example.com")
+        gb = _make_group_buy(db, producer, min_participants=30)
+        for i in range(12):
+            buyer = make_user(db, email=f"k1-buyer{i}@example.com")
+            r = client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+            assert r.status_code == 201, r.text
+        codes = [c for (c,) in db.query(GroupBuyCommit.pickup_code).filter(GroupBuyCommit.group_buy_id == gb.id)]
+        assert len(codes) == 12 and len(set(codes)) == 12
+
+    def test_the_business_name_and_title_are_escaped_in_the_mail(self, mails):
+        from app.services.group_buy_no_show import send_group_buy_no_show_email
+
+        send_group_buy_no_show_email("x@example.com", "<b>חנות</b>", "<script>x</script>", active=1)
+        html = mails[0]["html"]
+        assert "<script>" not in html and "&lt;script&gt;" in html
+        assert "<b>חנות</b>" not in html

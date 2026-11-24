@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.models import GroupBuy, GroupBuyCommit, User
 from app.services.email import send_email
+from app.services.group_buy_pickup_text import is_delivery_only
 from app.services.registration_emails import _shell
 from app.services.rescue_no_show import NO_SHOW_BLOCK_AT, NO_SHOW_WINDOW_DAYS
 from app.utils.clock import utc_now
@@ -39,6 +40,23 @@ from app.utils.clock import utc_now
 CODE_ATTEMPTS = 8
 # A group that reached its goal is the only one with anything to pick up.
 MARKABLE_STATUSES = ("funded", "fulfilled")
+# MEH-3735 review: a mark is a fresh memory of the counter, not an audit of
+# last spring. Past this many days after the pickup ends, nothing is marked.
+MARK_WINDOW_DAYS = 14
+
+NOT_FUNDED_DETAIL = "הקבוצה לא הגיעה ליעד"
+DELIVERY_ONLY_DETAIL = "בקבוצה עם משלוח בלבד אין איסוף לסמן."
+NO_WINDOW_DETAIL = "כדי לסמן «לא הגיע», קבעו זמן איסוף לקבוצה."
+WAIT_DETAIL = "אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר"
+CLOSED_DETAIL = "עברו 14 יום מסוף האיסוף, ולכן אי אפשר לסמן יותר."
+# One 409 per state that refuses a mark; "open" is the only one that allows.
+_STATE_DETAIL = {
+    "not_funded": NOT_FUNDED_DETAIL,
+    "delivery": DELIVERY_ONLY_DETAIL,
+    "no_window": NO_WINDOW_DETAIL,
+    "wait": WAIT_DETAIL,
+    "closed": CLOSED_DETAIL,
+}
 
 REFUSED_DETAIL = (
     "כרגע אי אפשר להצטרף: היו שתי אי-הגעות ב-30 הימים האחרונים. "
@@ -65,16 +83,31 @@ def codes_in_use(db: Session, group_buy_id: UUID) -> set[str]:
     return {str(c) for (c,) in rows if c}
 
 
-def pickup_ended_at(gb: GroupBuy) -> datetime:
-    """The pickup window's end, or the deadline when the group has no window."""
-    return gb.pickup_ends_at or gb.deadline  # type: ignore[return-value]
+def mark_state(gb: GroupBuy) -> str:
+    """Whether the business may mark this group now, and if not, why.
+    # DO NOT fall back to the deadline when there is no window — the deadline
+    # is when joining closes, not when anyone was due at the counter (review).
+    """
+    if gb.status not in MARKABLE_STATUSES:
+        return "not_funded"
+    if is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note):  # type: ignore[arg-type]
+        return "delivery"
+    ends: datetime | None = gb.pickup_ends_at  # type: ignore[assignment]
+    if ends is None:
+        return "no_window"
+    now = utc_now()
+    if ends > now:
+        return "wait"
+    if now - ends > timedelta(days=MARK_WINDOW_DAYS):
+        return "closed"
+    return "open"
 
 
 def can_mark(gb: GroupBuy) -> bool:
-    return gb.status in MARKABLE_STATUSES and pickup_ended_at(gb) <= utc_now()
+    return mark_state(gb) == "open"
 
 
-def active_no_show_counts(db: Session, user_ids: list[Any]) -> dict[Any, int]:
+def group_buy_active_no_show_counts(db: Session, user_ids: list[Any]) -> dict[Any, int]:
     """No-shows still counting against each user: marked inside the window and
     after her last admin release. Users with none are absent."""
     if not user_ids:
@@ -83,7 +116,10 @@ def active_no_show_counts(db: Session, user_ids: list[Any]) -> dict[Any, int]:
     rows = (
         db.query(GroupBuyCommit.user_id, func.count(GroupBuyCommit.id))
         .join(User, GroupBuyCommit.user_id == User.id)
+        .join(GroupBuy, GroupBuyCommit.group_buy_id == GroupBuy.id)
         .filter(
+            # A group the business later cancelled leaves nothing owed.
+            GroupBuy.status != "cancelled",
             GroupBuyCommit.user_id.in_(user_ids),
             GroupBuyCommit.no_show_at.isnot(None),
             GroupBuyCommit.no_show_at >= cutoff,
@@ -98,12 +134,12 @@ def active_no_show_counts(db: Session, user_ids: list[Any]) -> dict[Any, int]:
     return {uid: int(n) for uid, n in rows}
 
 
-def active_no_shows(db: Session, user_id: Any) -> int:
-    return active_no_show_counts(db, [user_id]).get(user_id, 0)
+def group_buy_active_no_shows_of(db: Session, user_id: Any) -> int:
+    return group_buy_active_no_show_counts(db, [user_id]).get(user_id, 0)
 
 
 def refuse_if_blocked(db: Session, user: User) -> None:
-    if active_no_shows(db, user.id) >= NO_SHOW_BLOCK_AT:
+    if group_buy_active_no_shows_of(db, user.id) >= NO_SHOW_BLOCK_AT:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=REFUSED_DETAIL)
 
 
@@ -139,12 +175,9 @@ def mark(
     )
     if not commit:
         raise HTTPException(status_code=404, detail="לא נמצאה הצטרפות")
-    if gb.status not in MARKABLE_STATUSES:
-        raise HTTPException(status_code=409, detail="הקבוצה לא הגיעה ליעד")
-    if pickup_ended_at(gb) > utc_now():
-        raise HTTPException(
-            status_code=409, detail="אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר"
-        )
+    state = mark_state(gb)
+    if state != "open":
+        raise HTTPException(status_code=409, detail=_STATE_DETAIL[state])
     if commit.handed_at is not None or commit.no_show_at is not None:
         raise HTTPException(status_code=409, detail="ההזמנה הזאת כבר סומנה")
     now = utc_now()
@@ -157,16 +190,16 @@ def mark(
     return commit
 
 
-def clear_block(db: Session, user_id: UUID) -> dict[str, Any]:
+def release_group_buy_block(db: Session, user_id: UUID) -> dict[str, Any]:
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="המשתמשת לא נמצאה")
     target.group_buy_block_cleared_at = utc_now()  # type: ignore[assignment]
     db.commit()
-    return {"user_id": target.id, "active_no_shows": active_no_shows(db, target.id)}
+    return {"user_id": target.id, "active_no_shows": group_buy_active_no_shows_of(db, target.id)}
 
 
-def send_no_show_email(
+def send_group_buy_no_show_email(
     to: str, business: str, title: str, *, active: int, test_cause: bool = False
 ) -> None:
     """One mail per no-show; `active` = no-shows counting after this one.
@@ -203,7 +236,7 @@ def send_no_show_email(
     )
 
 
-def queue_no_show_email(
+def queue_group_buy_no_show_email(
     db: Session, background_tasks: BackgroundTasks, commit: GroupBuyCommit
 ) -> None:
     """Read plain values now, send after the response. Fail-open is the
@@ -214,10 +247,10 @@ def queue_no_show_email(
         return
     business = gb.producer
     background_tasks.add_task(
-        send_no_show_email,
+        send_group_buy_no_show_email,
         str(buyer.email),
         str(business.name or "") if business else "",
         str(gb.title or ""),
-        active=active_no_shows(db, buyer.id),
+        active=group_buy_active_no_shows_of(db, buyer.id),
         test_cause=bool((business and business.is_test) or buyer.is_test),
     )

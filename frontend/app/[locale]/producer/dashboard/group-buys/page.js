@@ -778,7 +778,8 @@ export default function ProducerGroupBuysPage() {
                   <GroupBuyOwnerSettings gb={gb} onSaved={load} />
                 )}
                 {/* MEH-3735: codes and «נמסר» / «לא הגיע» once the goal was reached. */}
-                {(gb.status === "funded" || gb.status === "fulfilled") && <GroupBuyPickupList gb={gb} />}
+                {(gb.status === "funded" || gb.status === "fulfilled") &&
+                  !(Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note) && <GroupBuyPickupList gb={gb} />}
                 {actions.length > 0 && (
                   <div
                     data-testid="group-buy-actions"

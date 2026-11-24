@@ -1442,7 +1442,9 @@
       },
       "pickups": {
         "title": "Pickup codes",
-        "after_pickup": "You can mark «Didn't come» once the pickup time is over."
+        "after_pickup": "You can mark «Didn't come» once the pickup time is over.",
+        "no_window": "To mark a no-show, set a pickup time for the group.",
+        "closed": "More than 14 days have passed since the pickup ended, so marking is closed."
       }
     },
     "availability": {

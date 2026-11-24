@@ -21,6 +21,10 @@ import api from "@/lib/api";
 import { GroupBuyPickupsSchema } from "@/lib/api-responses";
 import { detailToMessage } from "@/lib/errors";
 
+// Why the buttons are not shown, per the server's mark_state ("open" shows them).
+/** @type {Record<string, string>} */
+const HINT_BY_STATE = { wait: "after_pickup", no_window: "no_window", closed: "closed" };
+
 /** @param {{ gb: { id: string } }} props */
 export default function GroupBuyPickupList({ gb }) {
   const t = useTranslations("group_buys.dashboard.pickups");
@@ -32,8 +36,8 @@ export default function GroupBuyPickupList({ gb }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setError("");
+  const load = useCallback(async (keepError = false) => {
+    if (!keepError) setError("");
     try {
       const r = await api.get(`/producers/me/group-buys/${gb.id}/pickups`);
       const parsed = GroupBuyPickupsSchema.safeParse(r.data);
@@ -47,7 +51,7 @@ export default function GroupBuyPickupList({ gb }) {
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && !data) load();
+    if (next && !data) load(false);
   };
 
   const markAs = async (/** @type {string} */ commitId, /** @type {"handed" | "no-show"} */ kind) => {
@@ -60,6 +64,8 @@ export default function GroupBuyPickupList({ gb }) {
       await load();
     } catch (error_) {
       setError(detailToMessage(error_.response?.data?.detail) || tSettings("failed"));
+      // Another tab may have marked it already: show what the server holds.
+      await load(true);
     } finally {
       setBusy("");
     }
@@ -79,8 +85,8 @@ export default function GroupBuyPickupList({ gb }) {
       {open && (
         <div className="mt-2 space-y-2">
           {error && <InlineMessage>{error}</InlineMessage>}
-          {data && !data.can_mark && (
-            <p className="text-xs text-fg-muted" data-testid="group-buy-pickups-wait">{t("after_pickup")}</p>
+          {data && HINT_BY_STATE[data.mark_state] && (
+            <p className="text-xs text-fg-muted" data-testid="group-buy-pickups-wait">{t(HINT_BY_STATE[data.mark_state])}</p>
           )}
           {data && data.pickups.length > 0 && (
             <ul className="divide-y divide-border">

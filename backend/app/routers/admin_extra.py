@@ -50,7 +50,7 @@ from app.services.booking_cancellations import (  # MEH-2871, MEH-3375
 )
 from app.services.category_slug import resolve_unique_slug
 from app.services.group_buy_no_show import (  # MEH-3735
-    active_no_show_counts as group_buy_no_show_counts,
+    group_buy_active_no_show_counts as group_buy_no_show_counts,
 )
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,

@@ -223,6 +223,8 @@ def _naive_utc(v: datetime | None) -> datetime | None:
 
 
 PICKUP_BEFORE_DEADLINE = "האיסוף צריך להתחיל אחרי המועד האחרון להצטרפות"
+# MEH-3735: a window that already ended would open «לא הגיע» at once.
+PICKUP_ALREADY_ENDED = "אי אפשר לקבוע זמן איסוף שכבר עבר."
 
 
 def _known_allergens(value: list[str] | None) -> list[str] | None:
