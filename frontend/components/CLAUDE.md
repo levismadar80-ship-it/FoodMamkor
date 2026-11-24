@@ -21,6 +21,11 @@ export nobody imports there fails the Knip dead-code ratchet.
 The last column is the guard that pins the owner or its look; some cover only
 part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
+A raw `<button>`, `<select>`, `<textarea>`, checkbox, radio, `<h1>`–`<h3>` or `<a>`
+outside `ui/` is an ESLint warning (`design-system/no-html-*`, local plugin
+`eslint-rules/design-system.mjs`, MEH-3829), and so is a field named only by its
+placeholder or read-only / always-disabled. With the jsx-a11y recommended set,
+their totals are gated by `npm run lint:ratchet`: they may only go down.
 
 | Need | Owner | Guard |
 |---|---|---|
