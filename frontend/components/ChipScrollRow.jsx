@@ -13,6 +13,20 @@ import { COLOR } from "@/lib/color-tokens";
 // the conventional equivalence.
 const WHEEL_LINE_PX = 16;
 
+// MEH-3780: some engines (old crawlers, Sentry JAVASCRIPT-NEXTJS-14 on
+// /producers) give elements no scrollTo / scrollBy. Optional chaining guards
+// the element, not the method — fall back to scrollLeft instead of throwing.
+/** @param {HTMLElement} el @param {number} left */
+function scrollRowTo(el, left) {
+  if (typeof el.scrollTo === "function") el.scrollTo({ left, behavior: "instant" });
+  else el.scrollLeft = left;
+}
+/** @param {HTMLElement} el @param {number} delta */
+function scrollRowBy(el, delta) {
+  if (typeof el.scrollBy === "function") el.scrollBy({ left: delta });
+  else el.scrollLeft += delta;
+}
+
 // MEH-1465: fallback --cat-ring for a SELECTED category chip whose descriptor
 // carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
 // DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
@@ -274,7 +288,7 @@ export default function ChipScrollRow({
     // touch can land inside that frame on a slow device.
     const pinStart = () => {
       if (userMovedRowRef.current) return;
-      scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+      if (scrollRef.current) scrollRowTo(scrollRef.current, 0);
     };
     // Synchronous pin keeps the pre-MEH-2823 mount behaviour (no one-frame
     // flash); the rAF pin runs after WebKit's post-layout re-snap.
@@ -333,7 +347,7 @@ export default function ChipScrollRow({
       const towardEnd = dy > 0;
       if (towardEnd ? scrolled >= maxScroll - 1 : scrolled <= 1) return;
       e.preventDefault();
-      el.scrollBy({ left: -dy });
+      scrollRowBy(el, -dy);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);

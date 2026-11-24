@@ -185,6 +185,10 @@ class BuyerRefIn(BaseModel):
 
 
 class OrderLineOut(BaseModel):
+    # MEH-3764: what «להזמין שוב» puts back in the cart. Null once the product
+    # (or variant) was deleted — the line is then shown but cannot be re-added.
+    product_id: UUID | None = None
+    variant_id: UUID | None = None
     name: str
     variant_name: str | None = None  # MEH-3617: «{name} · {variant_name}»
     qty: int

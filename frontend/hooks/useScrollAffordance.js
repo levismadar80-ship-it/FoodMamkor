@@ -149,10 +149,11 @@ export default function useScrollAffordance({ trailingFillerPx = 0 } = {}) {
     // a negative delta; LTR is the mirror. Read live (not from state) so
     // a click can never use a stale direction.
     const towardEndSign = isRtlContext(el) ? -1 : 1;
-    el.scrollBy({
-      left: (towardEnd ? towardEndSign : -towardEndSign) * delta,
-      behavior: "smooth",
-    });
+    const left = (towardEnd ? towardEndSign : -towardEndSign) * delta;
+    // MEH-3780: an engine without Element.scrollBy (Sentry
+    // JAVASCRIPT-NEXTJS-14) moves by scrollLeft instead of throwing.
+    if (typeof el.scrollBy === "function") el.scrollBy({ left, behavior: "smooth" });
+    else el.scrollLeft += left;
   }
 
   return {
