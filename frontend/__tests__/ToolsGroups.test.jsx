@@ -210,6 +210,7 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(spokes).toEqual(expect.arrayContaining([
       "/producer/dashboard/events", "/producer/dashboard/experiences", "/producer/dashboard/group-buys",
       "/producer/dashboard/rescue", "/producer/dashboard/reviews", "/producer/dashboard/recipes",
+      "/producer/dashboard/offer", // MEH-3785
     ]));
     for (const spoke of spokes) {
       NAV.pathname = spoke;

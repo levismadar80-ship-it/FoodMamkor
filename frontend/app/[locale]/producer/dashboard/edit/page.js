@@ -75,7 +75,7 @@ import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
@@ -230,9 +230,6 @@ function EditPageInner() {
   const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
-  // MEH-1823: the offer feature owns one namespace shared by the dashboard
-  // card and the public badge, so the four type labels have a single source.
-  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
   // MEH-1773: point-of-decision explainer for the order-window card. The
@@ -914,7 +911,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, tags (the offer left for «כלים», MEH-3785)
               (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
@@ -981,28 +978,10 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1823 — the owner's single typed offer. MEH-2433 moved it from
-            the location group (after delivery) to here, beside her prices:
-            that is where an owner looks for a discount. Summary shows the live
-            offer sentence, or "no active offer" — the empty state is a real
-            state here, not a placeholder. */}
-        <EditAccordionCard
-          anchorId="offer"
-          title={tOffer("card_title")}
-          summary={
-            profile.active_offer
-              ? tOffer(`types.${profile.active_offer.offer_type}`)
-              : tOffer("type_none")
-          }
-          open={openKey === "offer"}
-          onToggle={() => toggleKey("offer")}
-        >
-          <OffersCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-3785: «הטבה» moved to its own page, /producer/dashboard/offer,
+            reached from «כלים» › «להציע ללקוחות» (Shopify keeps discounts apart
+            from products). */}
+
 
         {/* MEH-2729 — ONE «תגים» card for what the business declares about
             itself: «תזונה» (MEH-1508 — whole-catalog vegan / vegetarian +
