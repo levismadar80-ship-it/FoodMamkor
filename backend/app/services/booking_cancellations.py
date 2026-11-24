@@ -22,7 +22,8 @@ Related:  services/group_buy_delist.py::cancel_live_group_buys (MEH-2498,
           own bag cancel) · routers/registrations.py (the confirmation email
           these mirror).
 History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants);
-          MEH-3375 (count_open_bookings, the pre-block count)
+          MEH-3375 (count_open_bookings, the pre-block count); MEH-3768 (the
+          business's unaccepted on-site orders are cancelled on delist)
 """
 
 from __future__ import annotations
@@ -54,6 +55,10 @@ from app.services.registration_emails import (
     send_registrant_delisted,
     send_registrant_method_changed,
     send_registrant_moved,
+)
+from app.services.product_order_actions import (  # MEH-3768
+    count_unaccepted_orders,
+    release_unaccepted_orders,
 )
 from app.services.rescue_emails import send_delisted_cancel_email
 from app.utils.clock import israel_today, utc_now
@@ -246,7 +251,8 @@ def count_open_bookings(db: Session, producer: Producer) -> int:
                 )
                 .count()
             )
-    return bags + signups + count_live_commits(db, producer)
+    orders = count_unaccepted_orders(db, producer.id)  # MEH-3768
+    return bags + signups + count_live_commits(db, producer) + orders
 
 
 def _cancel_live_bags(
@@ -332,13 +338,15 @@ def owner_emails(db: Session, producer: Producer) -> list[str]:
     )
 
 
-def send_owner_delisted(
+def send_owner_delisted(  # noqa: PLR0913 — one flag per line of the email (MEH-3768)
     to: str,
     producer_name: str,
     *,
     deleted: bool,
     cancelled_any: bool,
     test_cause: bool = False,
+    orders_cancelled: bool = False,
+    orders_kept: bool = False,
 ) -> None:
     """The site hid (suspend) or removed (admin delete) the owner's page.
     Copy approved by Sapir 14/11. No reason is given, as in every other
@@ -360,18 +368,28 @@ def send_owner_delisted(
             "שריונים לסלי הצלה, הרשמות לאירועים וקבוצות רכישה פתוחות בוטלו, "
             "והלקוחות קיבלו על כך מייל."
         )
+    # MEH-3768 (copy: Sapir let Claude choose, 24/11).
+    if orders_cancelled:
+        lines.append("הזמנות שעוד לא אישרתם בוטלו, והלקוחות קיבלו על כך הודעה.")
+    if orders_kept:
+        lines.append(
+            "הזמנות שכבר אישרתם נשארות בתוקף. צריך למסור אותן ללקוחות כרגיל, "
+            "דרך לוח הבקרה."
+        )
     lines.append(f"לשאלות אפשר לכתוב לנו: {contact}")
     body = "שלום,\n\n" + "\n".join(lines) + "\n\nבברכה,\nצוות מהמקור"
     send_email(to, subject, body, test_cause=test_cause)
 
 
-def queue_owner_delisted(
+def queue_owner_delisted(  # noqa: PLR0913 — the email's flags, passed through (MEH-3768)
     background_tasks: BackgroundTasks,
     emails: list[str],
     producer: Producer,
     *,
     deleted: bool,
     cancelled_any: bool,
+    orders_cancelled: bool = False,
+    orders_kept: bool = False,
 ) -> None:
     for email in emails:
         background_tasks.add_task(
@@ -381,6 +399,8 @@ def queue_owner_delisted(
             deleted=deleted,
             cancelled_any=cancelled_any,
             test_cause=bool(producer.is_test),
+            orders_cancelled=orders_cancelled,
+            orders_kept=orders_kept,
         )
 
 
@@ -397,14 +417,17 @@ def delist_business(
     owners = owner_emails(db, producer) if owner_notice else []
     count = cancel_live_group_buys(db, producer, background_tasks)
     count += cancel_business_bookings(db, producer, background_tasks)
+    orders, kept = release_unaccepted_orders(db, producer.id)  # MEH-3768
     queue_owner_delisted(
         background_tasks,
         owners,
         producer,
         deleted=owner_notice == "deleted",
         cancelled_any=count > 0,
+        orders_cancelled=orders > 0,
+        orders_kept=kept,
     )
-    return count
+    return count + orders
 
 
 def hide_business(

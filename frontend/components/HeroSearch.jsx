@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 // MEH-3076: the category name follows the locale (category_names.<slug>).
 import { categoryLabel } from "@/lib/category-label";
 import api from "@/lib/api";
-import { highlightMatch } from "@/lib/highlightMatch";
+import { highlightMatch } from "@/lib/highlight-match";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { avatarInitial } from "@/components/ui/Avatar";
 import SearchCorrectionNote from "@/components/SearchCorrectionNote";

@@ -11,9 +11,10 @@
 * `frontend/app/[locale]/map/components/MapPane.jsx` — הלוח, הפקדים, המקרא.
 * `frontend/lib/category-registry.js` · `frontend/lib/category-taxonomy.js` — צבע הסיכה לפי אחת מ-6 הקבוצות והאייקון לפי הקטגוריה עצמה; המקרא מציג את 6 הקבוצות בשפת הקוראת ומסנן קבוצה שלמה (MEH-3076).
 * `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` — כרטיס העסק הנבחר בנייד, כולל סגירה ב-Escape.
+* `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, כשהסיכה היא נקודת איסוף או דוכן (MEH-3756): ימי איסוף, הוראות איסוף, Waze ו-Google לנקודה מדויקת, וכפתור «לדף בית העסק». טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
 * `frontend/components/MapBottomSheet.jsx` — הגיליון התחתון.
 * `frontend/app/[locale]/map/state/useProducersFeed.js` — הזנת הנתונים, עם אימות Zod.
-* `frontend/lib/producerPoints.js` — מאיפה מגיעה נקודה לכל בית עסק.
+* `frontend/lib/producer-points.js` — מאיפה מגיעה נקודה לכל בית עסק.
 * `frontend/components/MiniMap.jsx` — המפה הקטנה בעמוד בית העסק (ובאירוע / חוויה / הרשמה), והמסך המלא שלה.
 * `frontend/lib/use-visual-viewport-box.js` — מצמיד את המסך המלא של המפה הקטנה לחלון הנראה, כדי שכפתור הסגירה לא ייצא מהמסך בדף מוגדל באייפון (MEH-3509).
 

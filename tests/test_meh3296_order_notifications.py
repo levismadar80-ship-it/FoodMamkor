@@ -570,3 +570,19 @@ def test_a_row_that_crashes_is_marked_and_the_batch_goes_on(db, monkeypatch):
     assert outcome_of(db, bad) == ("failed", "error", 0)
     assert outcome_of(db, good)[0] == "sent"
     assert len(wire.wa) == 1
+
+
+def test_a_new_order_closed_before_it_went_out_tells_the_business_nothing(
+    db, monkeypatch
+):
+    # MEH-3768: a business taken off the site cancels its pending orders; the
+    # «new order» email still owed for one of them must not go out.
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    closed = owe_now(db, due_order(db, shop, "cancelled"), "new_order", "email")
+    # Control: an auto-confirmed order still gets its email.
+    confirmed = owe_now(db, due_order(db, shop, "confirmed"), "new_order", "email")
+    outbox.dispatch_due(db)
+    assert outcome_of(db, closed)[0] == "skipped"
+    assert outcome_of(db, confirmed)[0] == "sent"
+    assert len(wire.mail) == 1

@@ -9,7 +9,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/services/page_freshness.py` — מי מקבלת מייל, הטוקן, השליחה והאישור.
-* `backend/app/services/page_freshness_digest.py` — המייל השבועי לאדמין (יום ראשון, לפי שעון ישראל).
+* `backend/app/services/page_freshness_digest.py` — הרשימה השבועית של עמודים שלא נבדקו (יום ראשון, לפי שעון ישראל): נשלחת ל-Sentry עם התגית `ops_alert` ובדיקת הבוקר של Claude קוראת אותה; מייל לאדמין רק כש-Sentry כבוי (MEH-3705).
 * `backend/app/startup.py` — רץ במתזמן היומי, אחרי התזכורות.
 * `frontend/app/[locale]/admin/producers/AdminProducersToolbar.jsx` — כפתור הסינון.
 

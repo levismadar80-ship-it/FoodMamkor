@@ -25,10 +25,10 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
 
 // Mirrors MAX_VARIANTS_PER_PRODUCT (backend/app/limits.py); the server holds it.
 export const MAX_VARIANTS = 10;
-const AGOROT = 100;
 const ICON_BTN = "w-11 h-11 flex items-center justify-center rounded-full text-fg-muted hover:bg-primary/[0.06] focus-ring disabled:opacity-50";
 
 /** @typedef {{ key: string, id: string | null, name: string, price: string, in_stock: boolean }} Row */
@@ -39,7 +39,7 @@ export function rowsFrom(variants) {
     key: v.id,
     id: v.id,
     name: v.name,
-    price: typeof v.price_agorot !== "number" ? "" : String(v.price_agorot / AGOROT),
+    price: typeof v.price_agorot !== "number" ? "" : String(agorotToShekels(v.price_agorot)),
     in_stock: v.in_stock,
   }));
 }
@@ -79,7 +79,7 @@ export function bodyFrom(rows) {
       .map((r) => ({
         ...(r.id ? { id: r.id } : {}),
         name: r.name.trim(),
-        price_agorot: r.price.trim() === "" ? null : Math.round(shekelsOf(r.price) * AGOROT),
+        price_agorot: r.price.trim() === "" ? null : shekelsToAgorot(shekelsOf(r.price)),
         in_stock: r.in_stock,
       })),
   };

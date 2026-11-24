@@ -1,0 +1,9 @@
+# vulture ≥ 60% 'unused function' in backend/app/services + backend/app/utils, known on 22/11/2026 (MEH-3714), line numbers stripped. Only shrinks.
+# Each was checked by grep: called from seed_data.py / tests, imported by a router, or a test hook. A NEW line is a function nobody calls.
+backend/app/services/category_slug.py: unused function 'bulk_slugs' (60% confidence)
+backend/app/services/registration_emails.py: unused function 'send_owner_new_registration' (60% confidence)
+backend/app/services/registration_emails.py: unused function 'send_visitor_confirmation' (60% confidence)
+backend/app/services/registration_emails.py: unused function 'send_waitlist_confirmation' (60% confidence)
+backend/app/services/review_reports.py: unused function 'reset_for_tests' (60% confidence)
+backend/app/utils/clock.py: unused function '_week_index' (60% confidence)
+backend/app/utils/weekdays.py: unused function 'mask_of' (60% confidence)

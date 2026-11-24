@@ -47,6 +47,15 @@ const REAL = [
   "cloud.com",
 ];
 
+// Exact-match lookups. A Set, not Array.includes: membership is the whole
+// domain, never a substring (CodeQL js/incomplete-url-substring-sanitization
+// read the array form as a URL check, alerts #37/#38).
+const KNOWN_SET = new Set(KNOWN);
+const REAL_SET = new Set(REAL);
+
+/** @param {string} domain */
+const isListed = (domain) => KNOWN_SET.has(domain) || REAL_SET.has(domain);
+
 // Endings that are never right, and what they meant.
 const BAD_ENDINGS = [
   [".con", ".com"],
@@ -121,7 +130,7 @@ export function suggestEmail(email) {
   const local = value.slice(0, at);
   let domain = value.slice(at + 1).toLowerCase();
   if (!domain.includes(".") && !domain.endsWith("coil")) return null;
-  if (KNOWN.includes(domain) || REAL.includes(domain)) return null;
+  if (isListed(domain)) return null;
   for (const [bad, good] of BAD_ENDINGS) {
     if (domain.endsWith(bad)) {
       domain = domain.slice(0, -bad.length) + good;
@@ -132,7 +141,7 @@ export function suggestEmail(email) {
   // all a mistake for gmail.com.
   const name = split(domain)[0];
   if (name[0] === "g" && distance(name, "gmail") <= 1) domain = "gmail.com";
-  const fixed = KNOWN.includes(domain) || REAL.includes(domain) ? domain : nearestKnown(domain) ?? domain;
+  const fixed = isListed(domain) ? domain : nearestKnown(domain) ?? domain;
   const suggestion = `${local}@${fixed}`;
   return suggestion.toLowerCase() === value.toLowerCase() ? null : suggestion;
 }

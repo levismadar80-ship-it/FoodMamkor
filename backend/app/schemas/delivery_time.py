@@ -6,7 +6,7 @@ Purpose:  One rule for «מגיע תוך 3–5 ימי עסקים» wherever it i
           bounds, and the shorter end not after the longer one. Either end
           may be stated alone («עד 5 ימי עסקים» is a max with no min).
 Touches:  nothing — pure validation.
-Does NOT: render (frontend/lib/deliveryTime.js) or copy a zone's value onto
+Does NOT: render (frontend/lib/delivery-time.js) or copy a zone's value onto
           its cities (services/delivery_zones.py).
 Related:  app/schemas/order_cutoff.py (the sibling rule for a cutoff).
 History:  MEH-3511 (creation).

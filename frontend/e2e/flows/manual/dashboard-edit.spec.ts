@@ -276,7 +276,7 @@ test.describe("edit tab — accordion + URL anchors", () => {
   });
 
   // MT:MEH-1116:1 — closed on load, each header carrying a one-line summary.
-  test("with no hash every card in the group is closed and still summarised", async ({ page }) => {
+  test("with no hash only the first missing card opens, and every card is summarised", async ({ page }) => {
     await stubEdit(page);
     await page.goto("/producer/dashboard/edit");
     await expect(
@@ -286,14 +286,17 @@ test.describe("edit tab — accordion + URL anchors", () => {
 
     // The hub is the landing state now, so "all cards closed" is trivially
     // true there. Enter a group and assert it where it can actually fail.
+    // MEH-3762: a tile tap opens the group's first MISSING card — FILLED has
+    // images, categories and a description but no owner story — so exactly
+    // that one is open and every other card stays closed.
     await enterGroup(page, "profile");
     // Scoped to the VISIBLE group: all 14 cards are always mounted, so an
     // unscoped count would silently include three groups nobody is looking at.
     const cards = page.getByTestId("group-profile").locator('[data-testid^="accordion-"]');
     await expect(cards.first()).toBeVisible();
-    await expect(
-      page.getByTestId("group-profile").locator('[data-testid^="accordion-"][aria-expanded="true"]'),
-    ).toHaveCount(0);
+    const open = page.getByTestId("group-profile").locator('[data-testid^="accordion-"][aria-expanded="true"]');
+    await expect(open).toHaveCount(1);
+    await expect(open).toHaveAttribute("data-testid", "accordion-owner-story");
 
     // The row's SECOND half, which the first version of this test silently did
     // not cover: every header carries a one-line status summary. Asserted per

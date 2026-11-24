@@ -20,7 +20,7 @@ import { chipsFromQuery, mapFiltersFromQuery, writeMapFilters } from "@/lib/filt
 import { cityParams } from "@/lib/map-city-params";
 import { haversineKm } from "@/lib/distance";
 import { weightedRating } from "@/lib/rating-gate";
-import { producerInBounds, producerPoints } from "@/lib/producerPoints";
+import { producerInBounds, producerPoints } from "@/lib/producer-points";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's

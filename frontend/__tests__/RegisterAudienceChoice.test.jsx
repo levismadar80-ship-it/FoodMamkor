@@ -44,7 +44,7 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn().mockResolvedValue({}) } }));
-vi.mock("@/lib/passwordMessages", () => ({ firstFailureMessage: () => "" }));
+vi.mock("@/lib/password-messages", () => ({ firstFailureMessage: () => "" }));
 vi.mock("@/lib/validators", () => ({
   validateEmail: (value) =>
     typeof value === "string" && value.includes("@") && value.includes("."),

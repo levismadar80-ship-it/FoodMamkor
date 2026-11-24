@@ -762,7 +762,8 @@ def _outbox_jobs_run_elsewhere() -> list[tuple[str, Any]]:
     """MEH-3535: while the worker service owns the outbox ticks they are not on
     this scheduler, so the overdue-job check would never see them. Its
     `@heartbeat` writes the same `job_ok:<slug>` rows, so they are checked
-    here: a dead worker emails the admin like any stopped job."""
+    here: a dead worker raises an ops_alert in Sentry like any stopped job
+    (email to the admin when Sentry is off, MEH-3705)."""
     if not settings.outbox_external_worker:
         return []
     from app.routers.product_orders import product_orders_enabled
@@ -989,7 +990,8 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
 
 
 def _register_job_staleness_check(scheduler: Any) -> None:
-    """MEH-3332: every 30 minutes, email the admin about a registered
+    """MEH-3332: every 30 minutes, report to Sentry (ops_alert, MEH-3705;
+    email to the admin when Sentry is off) a registered
     @heartbeat job with no recent success. Reads the job list off the
     scheduler at each run, so a flag-gated job that is off is never checked.
     Not itself a @heartbeat job: a dead scheduler thread is what the one
