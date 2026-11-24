@@ -24,6 +24,7 @@ const ALLOWED = {
   "app/[locale]/producer/dashboard/edit/LocationsEditor.jsx": 1,
   "app/[locale]/producer/dashboard/group-buys/page.js": 1,
   "app/[locale]/producer/dashboard/insights/page.js": 1,
+  "app/[locale]/producer/dashboard/offer/page.js": 1, // MEH-3785: the page's full-page load error
   "app/[locale]/producer/dashboard/page.js": 4,
   // MEH-3749: the share section's full-page load error moved with it from
   // tools/page.js (2 → 1) to the share page — same node, same total.
