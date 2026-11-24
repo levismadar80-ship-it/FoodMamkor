@@ -40,17 +40,20 @@
 #     The Hebrew SYSTEM PROMPTS of the moderation models, same reason as the
 #     producer_risk.py line above: a model instruction, not copy anyone reads.
 #
-# ADDED BY MEH-3809 (24/11/2026) — the singular-address rule.
+# ADDED BY MEH-3808 (24/11/2026) — the singular-address rule.
 #
 #   singular-address · שלך · לך · אותך · …   (every file)
 #     Copy written before BRAND.md §9 (ADR-037) addressed the reader in the
 #     singular. §9 says neutral by default, a generic plural only on consumer
 #     surfaces when a pronoun cannot be avoided, never the singular. Rewording
-#     ~240 strings is new copy and needs Sapir's word-for-word approval
+#     ~250 strings is new copy and needs Sapir's word-for-word approval
 #     (workflow rule 22), so they are frozen here and reworded in batches from
 #     an approved table; each batch deletes its lines with --update-baseline.
 #     Admin copy and the outreach scripts to a named owner (he.json admin.*)
 #     may stay as they are: ADR-037 keeps admin copy and named people as is.
+#     backend/app/routers/chat.py SYSTEM_PROMPT lines («המשימה שלך: …») speak
+#     to the model, not the reader — same as the producer_risk.py note above;
+#     a reword batch leaves them alone.
 backend/app/routers/admin_extra.py	singular-address	 שלך
 backend/app/routers/admin_recipes.py	singular-address	 לך
 backend/app/routers/admin_recipes.py	singular-address	 לך
