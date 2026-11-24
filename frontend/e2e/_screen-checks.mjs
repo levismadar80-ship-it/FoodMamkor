@@ -82,6 +82,10 @@ export async function runLayoutChecks(page, viewportName) {
       });
     }
 
+    // MEH-3816: a loading message ("טוען…") is a state, not truncation. It is
+    // reported once, as a sign the screen was measured before it settled.
+    const LOADING_RE = /(טוען|טעינת|בטעינה|Loading)[^\n]{0,24}(\.\.\.|…)\s*$/;
+
     // CHECK 2 — text ending "..." that is NOT a CSS ellipsis. HIGH.
     // CSS text-overflow:ellipsis is intentional and acceptable; a literal
     // trailing "..."/"…" in content without ellipsis styling is suspect.
@@ -91,6 +95,7 @@ export async function runLayoutChecks(page, viewportName) {
       if (el.children.length > 0) return; // leaf text only
       const t = (el.textContent || "").trim();
       if (!/(\.\.\.|…)$/.test(t)) return;
+      if (isScreenReaderOnly(el) || LOADING_RE.test(t)) return; // MEH-3816
       const s = getComputedStyle(el);
       const cssEllipsis = s.textOverflow === "ellipsis" || s.webkitLineClamp !== "none";
       if (!cssEllipsis && isVisible(el)) {
@@ -106,7 +111,35 @@ export async function runLayoutChecks(page, viewportName) {
       });
     }
 
-    // CHECK 3 — tap target < 44×44px on interactive elements. HIGH.
+    // CHECK 3 — tap target below the floor. HIGH.
+    // MEH-3816: the floor is docs/DESIGN.md «Interactive sizing minimums»:
+    // 44×44 below md (768px), 32×32 from md up. Its documented exceptions are
+    // skipped: a link inside running text (WCAG 2.5.8 inline) and the Leaflet
+    // attribution. A hit area widened by an absolutely placed ::before/::after
+    // (the house pattern) counts at its widened size.
+    const FLOOR = W < 768 ? 44 : 32;
+    const px = (v) => (/^-?[\d.]+px$/.test(v) ? parseFloat(v) : null);
+    const hitSize = (el, r) => {
+      let w = r.width, h = r.height;
+      for (const pseudo of ["::before", "::after"]) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content === "none" || ps.position !== "absolute") continue;
+        const t = px(ps.top), b = px(ps.bottom), l = px(ps.left), rt = px(ps.right);
+        if (t !== null && b !== null) h = Math.max(h, r.height - t - b);
+        if (l !== null && rt !== null) w = Math.max(w, r.width - l - rt);
+        const pw = px(ps.width), ph = px(ps.height);
+        if (pw !== null) w = Math.max(w, pw);
+        if (ph !== null) h = Math.max(h, ph);
+      }
+      return { w, h };
+    };
+    const isInlineTextLink = (el) => {
+      if (el.tagName !== "A") return false;
+      const p = el.parentElement;
+      if (!p || !["P", "LI", "SPAN", "LABEL", "TD", "DD"].includes(p.tagName)) return false;
+      const own = (el.textContent || "").trim().length;
+      return (p.textContent || "").trim().length > own + 15;
+    };
     const small = [];
     let smallCount = 0;
     const interactive = document.querySelectorAll(
@@ -115,19 +148,21 @@ export async function runLayoutChecks(page, viewportName) {
     interactive.forEach((el) => {
       if (!isVisible(el)) return;
       if (isScreenReaderOnly(el)) return;
+      if (isInlineTextLink(el)) return;
+      if (el.closest(".leaflet-control-attribution")) return;
       const r = el.getBoundingClientRect();
-      // Ignore hidden inputs / off-screen.
-      if (r.width < 44 || r.height < 44) {
+      const { w, h } = hitSize(el, r);
+      if (w < FLOOR - 0.5 || h < FLOOR - 0.5) {
         smallCount++;
-        if (small.length < 6) small.push(`${desc(el)} (${Math.round(r.width)}×${Math.round(r.height)})`);
+        if (small.length < 6) small.push(`${desc(el)} (${Math.round(w)}×${Math.round(h)})`);
       }
     });
     if (smallCount > 0) {
       out.push({
         check: 3,
-        checkName: "Tap target < 44px",
+        checkName: `Tap target < ${FLOOR}px`,
         severity: "HIGH",
-        detail: `${smallCount} interactive element(s) below 44×44px. Samples: ${small.join(" | ")}`,
+        detail: `${smallCount} interactive element(s) below ${FLOOR}×${FLOOR}px. Samples: ${small.join(" | ")}`,
       });
     }
 
@@ -139,6 +174,10 @@ export async function runLayoutChecks(page, viewportName) {
       const clipsX = s.overflowX === "hidden" || s.overflow === "hidden";
       if (!clipsX) return;
       if (isLeaflet(el)) return; // intentional map-pane bleed, not a defect
+      // MEH-3816: a single-line CSS ellipsis (`truncate`) is a deliberate cut,
+      // and a box whose content has no text is decoration (a blurred shape).
+      if (s.textOverflow === "ellipsis") return;
+      if (!(el.innerText || "").trim()) return;
       // content meaningfully wider than the clipping box → horizontally cut.
       if (el.scrollWidth > el.clientWidth + 8 && el.clientWidth > 40 && isVisible(el)) {
         clipped.push(`${desc(el)} (content ${el.scrollWidth}px > box ${el.clientWidth}px)`);
@@ -219,6 +258,20 @@ export async function runLayoutChecks(page, viewportName) {
         });
       }
     });
+
+    // MEH-3816: measured while a loading message was still on screen.
+    const loadingText = Array.from(document.querySelectorAll("body *"))
+      .filter((el) => el.children.length === 0 && isVisible(el) && !isScreenReaderOnly(el))
+      .map((el) => (el.textContent || "").trim())
+      .find((t) => LOADING_RE.test(t));
+    if (loadingText) {
+      out.push({
+        check: 0,
+        checkName: "Still loading",
+        severity: "WARN",
+        detail: `"${loadingText.slice(0, 40)}" is on screen: wait for the loaded state and measure again`,
+      });
+    }
 
     return { docW, W, H, viewport: vp, out };
   }, viewportName);

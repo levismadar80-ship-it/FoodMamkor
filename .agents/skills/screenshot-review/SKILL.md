@@ -44,7 +44,8 @@ What it measures, and how to read it:
 |---|---|---|
 | `Horizontal overflow` | the page scrolls sideways | Always a finding at phone width. |
 | `Clipped by overflow:hidden` / `Modal exceeds viewport` / `Nav/tab bar cut off` / `Header/footer overlaps body` | something is cut or covered | A finding unless the clip is intended (Leaflet panes are already excluded). |
-| `Tap target < 44px` | a button or link smaller than 44×44 | Phone width only. A link inside a sentence is exempt (WCAG 2.5.8). A standalone button or link under 44 is a finding. |
+| `Tap target < 44px` / `< 32px` | a control smaller than the floor of docs/DESIGN.md «Interactive sizing minimums»: 44 on a phone, 32 from 768px up | A finding. Already skipped: a link inside running text, the Leaflet attribution, and a hit area widened by `::before`/`::after`. The three 34px sites DESIGN.md names (MEH-1687) are known: name them, don't re-report them. |
+| `Still loading` | a «טוען…» message was on screen | Not a finding: you measured too early. Wait for the loaded state and measure again. |
 | `Unintentional truncation` | text ends in a literal "..." | A finding unless the text really ends that way. |
 | `Broken image` / `Image without alt` | an image did not load, or has no alt | A finding. In the sandbox, check first that the host was reachable. |
 | `axe <rule>` | critical or serious accessibility problem | A finding. `color-contrast` on BottomNav inactive labels, the dairy map card and the image-missing placeholder is known and deferred (MEH-919, MEH-815): name it, don't re-report it. |

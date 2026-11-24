@@ -46,7 +46,7 @@ test.describe("screenChecks self-test (MEH-3816)", () => {
   test("a 30px button is flagged as a small tap target", async ({ page }) => {
     await load(page, doc(`${CLEAN}<button type="button" style="min-width:0;min-height:0;width:30px;height:30px">x</button>`));
     const r = await screenChecks(page, "tap");
-    expect(r.problems.join("\n")).toContain("Tap target < 44px");
+    expect(r.problems.join("\n")).toContain("Tap target <");
   });
 
   test("an image that fails to load is flagged as broken", async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe("screenChecks self-test (MEH-3816)", () => {
   });
 
   test("content cut by overflow:hidden is flagged as clipped", async ({ page }) => {
-    await load(page, doc(`${CLEAN}<div style="width:200px;overflow:hidden"><div style="width:600px;height:20px;background:#2e6853"></div></div>`));
+    await load(page, doc(`${CLEAN}<div style="width:200px;overflow:hidden"><div style="width:600px;white-space:nowrap">טקסט ארוך שנחתך בקצה הקופסה בלי שום סימן</div></div>`));
     const r = await screenChecks(page, "clip");
     expect(r.problems.join("\n")).toContain("Clipped by overflow:hidden");
   });
@@ -89,6 +89,36 @@ test.describe("screenChecks self-test (MEH-3816)", () => {
     await load(page, doc(`${CLEAN}<nav aria-label="ניווט" style="position:fixed;inset-inline:0;bottom:-40px;height:80px;background:#2e6853"></nav>`));
     const r = await screenChecks(page, "nav");
     expect(r.problems.join("\n")).toContain("Nav/tab bar cut off");
+  });
+
+  test("a loading message is reported as still loading, not as truncation", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<p>טעינת נתונים…</p>`));
+    const all = (await screenChecks(page, "loading")).problems.join("\n");
+    expect(all).toContain("Still loading");
+    expect(all).not.toContain("Unintentional truncation");
+  });
+
+  test("a link inside running text is exempt from the tap floor (DESIGN.md)", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<p>אפשר לקרוא עוד על כך <a href="#x">כאן</a> ובעמוד העזרה של האתר.</p>`));
+    const r = await screenChecks(page, "inline");
+    expect(r.problems).toEqual([]);
+  });
+
+  test("a hit area widened by ::before counts at its widened size", async ({ page }) => {
+    const css = `<style>.hit{position:relative;min-width:0;min-height:0;width:24px;height:24px}.hit::before{content:"";position:absolute;top:-10px;bottom:-10px;left:-10px;right:-10px}</style>`;
+    await load(page, doc(`${css}${CLEAN}<button type="button" class="hit">x</button>`));
+    const r = await screenChecks(page, "pseudo");
+    expect(r.problems).toEqual([]);
+  });
+
+  test("the tap floor is 44px on a phone and 32px on a desktop (DESIGN.md)", async ({ page }) => {
+    const btn = `<button type="button" style="min-width:0;min-height:0;width:36px;height:36px">x</button>`;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await load(page, doc(`${CLEAN}${btn}`));
+    expect((await screenChecks(page, "phone")).problems.join("\n")).toContain("Tap target < 44px");
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await load(page, doc(`${CLEAN}${btn}`));
+    expect((await screenChecks(page, "desktop")).problems).toEqual([]);
   });
 
   test("pale text on a light background is flagged by axe color-contrast", async ({ page }) => {
