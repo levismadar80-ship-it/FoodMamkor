@@ -176,7 +176,9 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         .first()
     )
     if joined:
-        raise HTTPException(status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת")
+        raise HTTPException(
+            status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת"
+        )
     waiting = (
         db.query(GroupBuyWaitlist.id)
         .filter(
