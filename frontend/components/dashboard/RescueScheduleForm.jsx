@@ -31,6 +31,12 @@ import WeekdayChips from "@/components/ui/WeekdayChips";
 
 // Tomorrow is the strip's; the list starts the day after.
 const FIRST_LISTED = 2;
+/**
+ * The form's state. Quantity and price hold the input's text while it is
+ * being typed (it may be empty); the save turns them into numbers.
+ * @typedef {{ weekdays: number, pickup_start: string, pickup_end: string, cancel_minutes: number, qty: number | string, price: number | string, paused: boolean }} Draft
+ */
+/** @type {Draft} */
 const DEFAULTS = { weekdays: 0, pickup_start: "18:00", pickup_end: "20:00", cancel_minutes: 30, qty: 4, price: 15, paused: false };
 
 /**
@@ -49,7 +55,7 @@ export function upcomingDays(mask, today) {
   return out;
 }
 
-/** @param {any} schedule */
+/** @param {any} schedule @returns {Draft} */
 function draftOf(schedule) {
   if (!schedule) return { ...DEFAULTS };
   return {
@@ -72,7 +78,7 @@ function PointRoutine({ row, today, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(/** @type {{ tone: "error" | "success", text: string } | null} */ (null));
   const id = row.producer_location_id;
-  const set = (/** @type {Partial<typeof DEFAULTS>} */ patch) => setDraft((d) => ({ ...d, ...patch }));
+  const set = (/** @type {Partial<Draft>} */ patch) => setDraft((d) => ({ ...d, ...patch }));
 
   async function run(/** @type {() => Promise<any>} */ call, /** @type {string} */ okKey) {
     setBusy(true);
