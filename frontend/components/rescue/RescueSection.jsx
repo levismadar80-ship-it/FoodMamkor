@@ -9,7 +9,7 @@ import { Clock, MapPin } from "@phosphor-icons/react";
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
 import { bagDay, rescueCancelText, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
-import useRescueReservation from "@/lib/useRescueReservation";
+import useRescueReservation from "@/lib/use-rescue-reservation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID, rescueOfferPath } from "@/lib/producer-path";
@@ -34,7 +34,7 @@ import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
  *           cancelled the bag) · MEH-3586 (reserve/cancel state moved to
- *           lib/useRescueReservation, shared with the bag page) · MEH-3585
+ *           lib/use-rescue-reservation, shared with the bag page) · MEH-3585
  *           (drawn by the shared ui/OfferCard, the group-buy card: same size,
  *           seeds for the bags left)
  */

@@ -1,5 +1,9 @@
 // @ts-check
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { routing } from "@/i18n/routing";
+import { isSlugShaped } from "@/lib/slug";
+import { isOwnerPreview } from "@/lib/owner-preview";
+import staticRoutes from "@/lib/static-routes.json";
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
 import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -84,11 +88,32 @@ function ProducerJsonLd({ producer, locale }) {
   );
 }
 
+// MEH-3708: where a business with a slug lives — /{slug} (he) or
+// /{locale}/{slug}, with the request's query kept (?product=, ?from=, ?rt=).
+function slugTarget(slug, locale, searchParams) {
+  const prefix = locale === routing.defaultLocale ? "" : `/${locale}`;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams || {})) {
+    for (const v of [].concat(value)) query.append(key, v);
+  }
+  const qs = query.toString();
+  return `${prefix}/${encodeURIComponent(slug)}${qs ? `?${qs}` : ""}`;
+}
+
 export default async function ProducerPage(props) {
   const params = await props.params;
   const producer = await getProducer(params.id);
   // generateMetadata already 404s this case; belt-and-braces for the body.
   if (!producer) notFound();
+  // MEH-3708: the real 308 is minted by middleware.js; this covers the
+  // requests it skips (a router prefetch, a fail-open lookup). ?preview=1
+  // stays here, as in the middleware.
+  const searchParams = (await props.searchParams) || {};
+  const servable = producer.slug && isSlugShaped(producer.slug) &&
+    !staticRoutes.routes.includes(producer.slug.toLowerCase());
+  if (servable && !isOwnerPreview(searchParams)) {
+    permanentRedirect(slugTarget(producer.slug, params.locale, searchParams));
+  }
 
   return (
     <>

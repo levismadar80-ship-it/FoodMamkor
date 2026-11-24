@@ -153,7 +153,8 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
   test("§2B — status filter narrows to a single status class across all visible rows", async ({
     page,
   }) => {
-    // All ten seeded producers are approved (verified via grep, 13/08), so
+    // Since the every-state seed (MEH-3761) staging also carries businesses
+    // in every other status, but the ten main demo businesses stay approved, so
     // filtering to "approved" is the one filter value guaranteed non-empty
     // without a fixture this repo doesn't have yet (see the file-level
     // DEFERRED note on §2C/§2E for why "pending" isn't used here instead).
@@ -179,6 +180,31 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     );
     await select.selectOption("approved");
     await filtered;
+
+    // MEH-3778: the response landing is not the filtered list rendering. On
+    // the mobile project the loop below read the OLD list after it — row 0
+    // carried the rejected class, then nth(25) vanished mid-loop — once the
+    // every-state seed (MEH-3761) put non-approved businesses at the top of
+    // staging's unfiltered list. Wait for a state only the filtered render
+    // produces: every row's badge carries the approved class. A filter that
+    // really returns other statuses never reaches it, so this times out red.
+    const badgeClasses = () =>
+      page
+        .locator(TABLE_ROWS)
+        .evaluateAll((rows) =>
+          rows.map((r) => r.querySelectorAll("td")[4]?.querySelector("span")?.className ?? ""),
+        );
+    await expect
+      .poll(
+        async () => {
+          const classes = await badgeClasses();
+          return (
+            classes.length > 0 && classes.every((c) => c.includes(PRODUCER_STATUS_COLORS.approved))
+          );
+        },
+        { message: "the table must settle on approved rows only", timeout: 15_000 },
+      )
+      .toBe(true);
 
     const count = await page.locator(TABLE_ROWS).count();
     expect(count, "the approved filter must return at least one row").toBeGreaterThan(0);

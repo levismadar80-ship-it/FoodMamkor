@@ -6,7 +6,7 @@
  *           dashboard renders, plus the client-side mirror of the backend's
  *           close>open rule.
  * Does NOT: derive "open now" — that is the public page's job (MEH-1546,
- *           lib/orderWindow status helper). Nothing here reads the clock.
+ *           lib/order-window-status status helper). Nothing here reads the clock.
  * Related:  frontend/lib/hours-serialize.js (same day-row model for the
  *           free-text opening_hours axis — deliberately NOT shared: that one
  *           serializes to a string, this one to a JSON object),

@@ -35,7 +35,7 @@ const STATE_KEY_TOMORROW = {
  *           how many are left, the reserve button and the free-cancel line —
  *           or, once reserved, the same confirmation and code the business
  *           page shows. On a phone a sticky bar repeats price and button.
- * Does NOT: hold reservation state (lib/useRescueReservation.js) or invent a
+ * Does NOT: hold reservation state (lib/use-rescue-reservation.js) or invent a
  *           discount: the worth is the business's own low estimate, shown
  *           only when it is above the price (worthAgorot).
  *           A reserved bag also gets «הוספה ליומן» for the pickup window
@@ -43,7 +43,7 @@ const STATE_KEY_TOMORROW = {
  * History:  MEH-3586 (creation) · MEH-3570 (not-a-party line under the button) · MEH-3636 (add to calendar)
  *           · MEH-3702 (tomorrow's bag: its states and the business-cancel notice)
  *
- * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/useRescueReservation").default> }} props
+ * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/use-rescue-reservation").default> }} props
  */
 export default function RescueOfferAction({ offer, reservation }) {
   const t = useTranslations("rescue");

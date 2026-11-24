@@ -160,5 +160,7 @@ def _alive(pid: int) -> bool:
     try:
         with open(f"/proc/{pid}/stat") as f:
             return f.read().split()[2] != "Z"  # a zombie has already exited
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
+        # The process can exit between open() and read(); the read then
+        # raises ESRCH (MEH-3772). Either way it is no longer alive.
         return False

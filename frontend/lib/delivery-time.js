@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   deliveryTime
+ * Module:   delivery-time
  * Purpose:  Which «מגיע תוך … ימי עסקים» line a delivery time reads as
  *           (MEH-3511): a range «3–5», an upper bound only «עד 5», or one
  *           number. Returns an i18n key + values; the caller translates.

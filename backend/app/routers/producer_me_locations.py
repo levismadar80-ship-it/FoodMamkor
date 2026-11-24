@@ -482,7 +482,7 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # the pin. `market_stand` is excluded along with `pickup` because the
         # repo already classifies both as the SECONDARY layer, hidden by the
         # /map toggle, in four identical call sites (MEH-1412:
-        # producerPoints.js:28, MiniMap.jsx:70, MapComponent.jsx:375,
+        # producer-points.js:28, MiniMap.jsx:70, MapComponent.jsx:375,
         # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
         # layer toggle is a third answer to a question that must have one.
         if loc.kind != "branch":

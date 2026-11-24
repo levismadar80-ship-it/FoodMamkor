@@ -17,7 +17,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { bagDay, fetchOffer, israelTime } from "@/lib/rescue";
 import { producerPath } from "@/lib/producer-path";
-import useRescueReservation from "@/lib/useRescueReservation";
+import useRescueReservation from "@/lib/use-rescue-reservation";
 
 import RescueOfferAction from "./RescueOfferAction";
 import RescueOfferDetails from "./RescueOfferDetails";
@@ -28,7 +28,7 @@ import RescueOfferDetails from "./RescueOfferDetails";
  *           out like the event page — cover, title and business row, a side
  *           card with price and the reserve button (under the title on a
  *           phone), and the details below.
- * Does NOT: decide what a reservation does — lib/useRescueReservation.js, the
+ * Does NOT: decide what a reservation does — lib/use-rescue-reservation.js, the
  *           same hook the business page's bag block uses.
  * Related:  ./RescueOfferAction.jsx, ./RescueOfferDetails.jsx,
  *           backend/app/routers/rescue.py get_offer

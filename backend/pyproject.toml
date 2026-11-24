@@ -359,6 +359,7 @@ files = [
     "app/services/oauth_verifiers.py",
     "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
+    "app/services/ops_alert.py",
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
     "app/services/page_freshness.py",
