@@ -527,9 +527,9 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-experiences-nav-gate.js` | MEH-1918 — decide whether the "חוויות" link appears in the nav. It appears only once the surface has real supply, so a reader who follows it never lands on a … |
 | `use-favorite-producers.js` | — אין כותרת — |
 | `use-focus-return.js` | — אין כותרת — |
+| `use-google-code-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
 | `use-google-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
 | `use-gsi-redraw-on-resize.js` | — אין כותרת — |
-| `use-gsi-reveal.js` | Keep Google's sign-in button invisible while Google draws it, and show it once, when it has settled — so it doesn't flicker. |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
@@ -843,6 +843,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/Dialog.jsx` | — אין כותרת — |
 | `ui/EmptyState.jsx` | — אין כותרת — |
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |
+| `ui/GoogleButton.jsx` | Our own «להמשיך עם Google» button (MEH-3690). Drawn by us, so it is on screen with the page or the modal — Google's rendered button arrived about a second … |
 | `ui/Heading.jsx` | Render h1-h4 with the project's font tokens so pages stop repeating inline 'font-headline-* text-* font-bold' triplets. Net-new atom. |
 | `ui/InlineMessage.jsx` | The one look for a form-level or page-level message that appears in place: a submit error, «נשמר», a load error in a row. … |
 | `ui/Input.jsx` | — אין כותרת — |

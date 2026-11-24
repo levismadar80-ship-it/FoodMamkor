@@ -16,7 +16,7 @@ from app.config import settings
 
 ROUTE = "/auth/google/code"
 CLIENT_ID = "ours.apps.googleusercontent.com"
-SECRET = "test-secret-not-real"
+SECRET = "example-client-secret"
 
 
 class _Resp:

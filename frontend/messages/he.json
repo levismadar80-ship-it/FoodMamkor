@@ -173,6 +173,7 @@
       "oauth_terms": "התחברות עם Google או Apple מהווה אישור שמלאו לך 18 והסכמה <tos>לתנאי השימוש</tos> ו<privacy>למדיניות הפרטיות</privacy>."
     },
     "oauth": {
+      "google_continue": "להמשיך עם Google",
       "google_error": "שגיאה בהתחברות עם Google",
       "apple_error": "שגיאה בהתחברות עם Apple",
       "apple_continue": "המשיכו עם Apple",

@@ -10,10 +10,11 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 let googleCallback;
 const loginWithGoogle = vi.fn(async () => {});
-vi.mock("@/lib/use-google-sign-in", () => ({
-  gsiLang: () => "he",
-  useGoogleSignIn: (_clientId, onCredential) => {
-    googleCallback = onCredential;
+// MEH-3690: the ID token now comes from our own button's code swap.
+vi.mock("@/lib/use-google-code-sign-in", () => ({
+  useGoogleCodeSignIn: (_clientId, { onIdToken }) => {
+    googleCallback = onIdToken;
+    return { start: () => {}, busy: false };
   },
 }));
 vi.mock("@/lib/auth-context", () => ({
@@ -31,7 +32,7 @@ describe("GoogleAuthButton → onSuccess(credential) (MEH-3675)", () => {
         <GoogleAuthButton onSuccess={onSuccess} />
       </NextIntlClientProvider>,
     );
-    await googleCallback({ credential: "google-id-token" });
+    await googleCallback("google-id-token");
     expect(loginWithGoogle).toHaveBeenCalledWith("google-id-token", { termsAccepted: false });
     expect(onSuccess).toHaveBeenCalledWith("google-id-token");
   });
@@ -44,7 +45,7 @@ describe("GoogleAuthButton → onSuccess(credential) (MEH-3675)", () => {
         <GoogleAuthButton onSuccess={onSuccess} onError={() => {}} />
       </NextIntlClientProvider>,
     );
-    await googleCallback({ credential: "google-id-token" });
+    await googleCallback("google-id-token");
     expect(onSuccess).not.toHaveBeenCalled();
   });
 });

@@ -43,6 +43,26 @@ function appendGsiScript() {
 }
 
 /**
+ * Resolve once the GSI library is ready, reusing the tag the preload or
+ * another consumer already added (MEH-3690: our own Google button). A tag that
+ * fails to load is removed and the promise rejects, so the next call retries.
+ *
+ * @returns {Promise<void>}
+ */
+export function loadGsiScript() {
+  if (window.google?.accounts) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    // DO NOT match on the exact src: any `hl` is the same GSI (MEH-2319).
+    const script = document.querySelector(`script[src^="${GSI_BASE}"]`) || appendGsiScript();
+    script.addEventListener("load", () => resolve(), { once: true });
+    script.addEventListener("error", () => {
+      script.remove();
+      reject(new Error("gsi_load_failed"));
+    }, { once: true });
+  });
+}
+
+/**
  * Load the GSI script ahead of need, once the page has finished loading and
  * the browser is idle — so a sign-in modal opened later draws Google's button
  * at once instead of after a ~1 s download (MEH-3744). Loads only: no

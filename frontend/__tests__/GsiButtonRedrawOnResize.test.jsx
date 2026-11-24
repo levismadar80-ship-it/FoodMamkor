@@ -7,7 +7,7 @@
  * shrinks to 320 and the button stays 361px. renderButton() takes a fixed
  * pixel width, so nothing redraws it.
  *
- * What is real here: GoogleAuthButton, ProducerOAuthButtons, the GSI hook
+ * What is real here: ProducerOAuthButtons, the GSI hook
  * (lib/use-google-sign-in.js) and the redraw hook. Only the GSI script itself
  * is replaced: window.google is installed before mount, so the hook takes its
  * "script already loaded" branch and calls renderButton synchronously. The fake
@@ -102,9 +102,8 @@ async function shrinkScreen() {
 
 async function freshButtons() {
   vi.resetModules();
-  const GoogleAuthButton = (await import("@/components/GoogleAuthButton")).default;
   const ProducerOAuthButtons = (await import("@/components/ProducerOAuthButtons")).default;
-  return { GoogleAuthButton, ProducerOAuthButtons };
+  return { ProducerOAuthButtons };
 }
 
 const originalOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth");
@@ -123,7 +122,9 @@ afterEach(() => {
 });
 
 describe("MEH-3687 — Google button follows the screen width", () => {
-  for (const name of ["GoogleAuthButton", "ProducerOAuthButtons"]) {
+  // MEH-3690: GoogleAuthButton draws our own button (no GSI width to follow);
+  // ProducerOAuthButtons still draws Google's until MEH-3690 chunk 3.
+  for (const name of ["ProducerOAuthButtons"]) {
     it(`${name}: drawn at 361, redraws at 288 when the screen narrows`, async () => {
       const Buttons = await freshButtons();
       const Button = Buttons[name];
@@ -150,16 +151,16 @@ describe("MEH-3687 — Google button follows the screen width", () => {
 
   it("no redraw before the first draw (GSI not loaded yet)", async () => {
     delete window.google;
-    const { GoogleAuthButton } = await freshButtons();
-    render(<GoogleAuthButton />);
+    const { ProducerOAuthButtons } = await freshButtons();
+    render(<ProducerOAuthButtons />);
     await shrinkScreen();
     expect(draws).toEqual([]);
   });
 
   it("no redraw while GSI is loaded but the slot holds no button", async () => {
     drawsAChild = false;
-    const { GoogleAuthButton } = await freshButtons();
-    render(<GoogleAuthButton />);
+    const { ProducerOAuthButtons } = await freshButtons();
+    render(<ProducerOAuthButtons />);
     expect(draws).toEqual([WIDE]);
     await shrinkScreen();
     expect(draws).toEqual([WIDE]);
@@ -168,8 +169,8 @@ describe("MEH-3687 — Google button follows the screen width", () => {
   it("unmount removes the resize listener it added", async () => {
     const add = vi.spyOn(window, "addEventListener");
     const remove = vi.spyOn(window, "removeEventListener");
-    const { GoogleAuthButton } = await freshButtons();
-    const { unmount } = render(<GoogleAuthButton />);
+    const { ProducerOAuthButtons } = await freshButtons();
+    const { unmount } = render(<ProducerOAuthButtons />);
     const added = add.mock.calls.filter(([type]) => type === "resize").map(([, fn]) => fn);
     expect(added.length).toBeGreaterThan(0);
     unmount();

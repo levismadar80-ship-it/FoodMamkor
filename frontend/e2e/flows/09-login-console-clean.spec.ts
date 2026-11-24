@@ -83,7 +83,8 @@ async function gsiButtonState(page: import("@playwright/test").Page) {
     // look for the artifacts it is documented to produce, then measure the box.
     const candidates = Array.from(
       document.querySelectorAll<HTMLElement>(
-        'iframe[src*="accounts.google.com"], div[role="button"], [aria-labelledby]',
+        // MEH-3690: /login and /register draw our own Google button.
+        'iframe[src*="accounts.google.com"], div[role="button"], [aria-labelledby], [data-testid="google-auth-button"]',
       ),
     );
     const live = candidates.filter((el) => {

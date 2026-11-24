@@ -11,7 +11,7 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ loginWithGoogle: vi.fn() }) }));
-vi.mock("@/lib/use-google-sign-in", () => ({ useGoogleSignIn: () => {}, gsiLang: () => "he" }));
+vi.mock("@/lib/use-google-code-sign-in", () => ({ useGoogleCodeSignIn: () => ({ start: () => {}, busy: false }) }));
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_GOOGLE_CLIENT_ID: "cid" } }));
 
 describe("MEH-3343 layout-shift reservations", () => {
@@ -33,9 +33,11 @@ describe("MEH-3343 layout-shift reservations", () => {
     expect(rule[1].replace(/\s+/g, "")).toContain("min-height:0;");
   });
 
-  it("the Google button slot reserves the 40px button before GSI paints it", async () => {
+  // MEH-3690: our own button is drawn with the page at its full 40px, so
+  // nothing arrives later to push the form down.
+  it("the Google button is 40px tall from the first render", async () => {
     const { default: GoogleAuthButton } = await import("@/components/GoogleAuthButton");
     render(<GoogleAuthButton />);
-    expect(screen.getByTestId("google-auth-slot").className.split(/\s+/)).toContain("min-h-10");
+    expect(screen.getByTestId("google-auth-button").className.split(/\s+/)).toContain("h-10");
   });
 });

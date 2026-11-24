@@ -46,6 +46,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
+| «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
