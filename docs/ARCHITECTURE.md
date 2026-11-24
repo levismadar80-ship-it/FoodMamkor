@@ -133,8 +133,8 @@ FEATURES.md; other files → code index) · `frontend/components/`,
 `frontend/lib/`, `frontend/hooks/` (code index) · `frontend/messages/` (copy,
 `docs/COPY_BANK.md`) · `frontend/i18n/` (locale routing) · `frontend/data/`
 (static data files) · `frontend/types/` (JSDoc types) · `frontend/public/`
-(static assets) · `frontend/scripts/` (build helpers) · `frontend/eslint-rules/`
-(the repo's own lint rules, wired in `frontend/eslint.config.mjs`) · `frontend/__tests__/`,
-`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/qa-artifacts/` (QA text
+(static assets) · `frontend/scripts/` (build helpers) · `frontend/__tests__/`,
+`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/eslint-rules/` (house lint
+rules, `frontend/components/CLAUDE.md`) · `frontend/qa-artifacts/` (QA text
 evidence, never images) · `frontend/.ds-sync-css/` (Tailwind input for the
 design-system sync).
