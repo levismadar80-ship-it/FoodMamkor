@@ -173,6 +173,7 @@
       "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
+      "google_continue": "Continue with Google",
       "google_error": "Google sign-in failed",
       "apple_error": "Apple sign-in failed",
       "apple_continue": "Continue with Apple",

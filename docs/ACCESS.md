@@ -126,7 +126,7 @@ is a secret; these are names and where they are read.
 
 | Service | Read at | Variable / file (names only) |
 |---|---|---|
-| Google Sign-In | `frontend/lib/use-google-sign-in.js`, `backend/app/services/oauth_verifiers.py` | `GOOGLE_CLIENT_ID` · `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
+| Google Sign-In | `frontend/lib/use-google-code-sign-in.js`, `frontend/lib/use-google-sign-in.js`, `backend/app/services/google_code_exchange.py`, `backend/app/services/oauth_verifiers.py` | `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` · `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
 | Apple Sign-In | `frontend/lib/env.client.js`, same verifier module | `APPLE_CLIENT_ID` · `NEXT_PUBLIC_APPLE_CLIENT_ID` · `NEXT_PUBLIC_APPLE_REDIRECT_URI` |
 | Microsoft Clarity | `frontend/app/[locale]/layout.js` | `NEXT_PUBLIC_CLARITY_PROJECT_ID` |
 | Web Push (VAPID) | `backend/app/config.py:147-153`, `backend/app/services/push.py` | `VAPID_PRIVATE_KEY` · `VAPID_PUBLIC_KEY` · `VAPID_SUBJECT` |

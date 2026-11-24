@@ -52,6 +52,7 @@ This page links to those and does not repeat their numbers.
 | Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`, sent to Sentry as `ops_alert` instead when Sentry is active, MEH-3705), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
+| Backend | Google OAuth token endpoint | swaps the one-time code from our own Google button for an ID token (`POST /auth/google/code`, MEH-3690); needs `GOOGLE_CLIENT_SECRET` | Google sign-in fails with a message (502, or 503 without the secret); email and Apple sign-in are unaffected |
 | Backend | Google Places | a business's Google rating | the rating line disappears |
 | Backend | Google Places | the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): search, link check, live comparison; only the place_id is stored; 10/hour per route | the tool says «לא זמין» (503); nothing else depends on it |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |

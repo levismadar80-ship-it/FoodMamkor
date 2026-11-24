@@ -245,6 +245,10 @@ frontend/components/StoryCardCanvas.jsx:hex:#ffffff
 frontend/components/SupportContactSheet.jsx:arb:#25d366
 frontend/components/admin/AdminRowMenu.jsx:bg-gray-100
 frontend/components/admin/AdminRowMenu.jsx:bg-gray-50
+frontend/components/ui/GoogleButton.jsx:hex:#34a853
+frontend/components/ui/GoogleButton.jsx:hex:#4285f4
+frontend/components/ui/GoogleButton.jsx:hex:#ea4335
+frontend/components/ui/GoogleButton.jsx:hex:#fbbc05
 frontend/lib/brand-seeds.js:hex:#1f4a3a
 frontend/lib/brand-seeds.js:hex:#2e6853
 frontend/lib/brand-seeds.js:hex:#5a8f73
