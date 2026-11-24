@@ -62,11 +62,14 @@ function LocationHoursRow({ loc, showName, onDirty, onSaved }) {
   const nameId = `hours-location-name-${loc.id}`;
 
   // A re-read of the list (after this row's save, or another edit) brings the
-  // stored value; take it, unless the owner is mid-edit.
-  useEffect(() => {
+  // stored value; take it, unless the owner is mid-edit. Adjusted during
+  // render (React's "storing information from previous renders"), not in an
+  // effect, so the eslint set-state-in-effect ratchet stays flat.
+  const [seenStored, setSeenStored] = useState(stored);
+  if (stored !== seenStored) {
+    setSeenStored(stored);
     if (!dirty) setValue(stored);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new stored value re-seeds
-  }, [stored]);
+  }
 
   useEffect(() => {
     onDirty(loc.id, dirty);
