@@ -107,8 +107,7 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
   // refactor that drops one is unambiguous in the failure output.
   it.each([
     ["business-name", "businessName", "profile"],
-    // MEH-2433: the offer moved to the products group (five-group edit hub).
-    ["offer", "offer", "products"],
+    // MEH-3785: the offer left the edit page for «כלים» (pinned below).
     // MEH-2729: one «תגים» card replaced the two (old anchors are aliases,
     // pinned in the test below).
     ["tags", "tags", "products"],
