@@ -9,6 +9,11 @@ import { test, expect } from "./_cloudinary-stub";
  * Root cause: GoogleAuthButton and ProducerOAuthButtons each called
  * google.accounts.id.initialize() independently. Fixed by useGoogleSignIn hook.
  *
+ * MEH-3690: both now draw our own button with a code client of its own, and
+ * nothing calls initialize() at all. The checks below still hold (no producer
+ * call, no double-init warning, a live button after navigation); the hook
+ * they name is deleted.
+ *
  * ── MEH-1778 — this file used to pass on an empty universe ──────────────────
  *
  * MEH-1776 Phase 0 found the GSI assertions here were green for two reasons
@@ -41,7 +46,7 @@ import { test, expect } from "./_cloudinary-stub";
 const DOUBLE_INIT = /initialize\(\).*multiple times|multiple times.*initialize/i;
 
 /** True when the GSI script actually loaded — i.e. a client id was present at
- *  build time and useGoogleSignIn got past its guard. Skipping on this is the
+ *  build time and our Google button loaded it. Skipping on this is the
  *  whole point: without it, every assertion below is vacuous. */
 async function gsiLoaded(page: import("@playwright/test").Page) {
   return page.evaluate(() =>

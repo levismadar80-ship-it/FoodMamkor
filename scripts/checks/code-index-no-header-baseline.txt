@@ -246,7 +246,6 @@ frontend/lib/server-first-json.js
 frontend/lib/use-catalog-snapshot.js
 frontend/lib/use-favorite-producers.js
 frontend/lib/use-focus-return.js
-frontend/lib/use-gsi-redraw-on-resize.js
 frontend/lib/use-home-page.js
 frontend/lib/use-test-business-ids.js
 frontend/lib/use-user-city.js

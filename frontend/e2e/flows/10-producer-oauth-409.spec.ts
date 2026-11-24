@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { googleCodeClientReady, sendGoogleCode, stubCodeSwap, stubGoogleCodeClient } from "./_google-code-stub";
 
 /**
  * Regression guard for the silent-409 bug on /register/producer OAuth:
@@ -20,25 +21,11 @@ test.describe("Producer OAuth 409 surfaces toast", () => {
   test("409 response shows error toast with backend detail then redirects to /login", async ({
     page,
   }) => {
-    // Mock window.google.accounts.id BEFORE the page loads so the GSI
-    // initialize() call inside useGoogleSignIn captures our stub callback
-    // instead of waiting for the real Google script.
-    await page.addInitScript(() => {
-      let captured: ((res: { credential: string }) => void) | null = null;
-      (window as unknown as { __getProducerGoogleCallback: () => typeof captured }).__getProducerGoogleCallback =
-        () => captured;
-      (window as unknown as { google: unknown }).google = {
-        accounts: {
-          id: {
-            initialize: ({ callback }: { callback: typeof captured }) => {
-              captured = callback;
-            },
-            renderButton: () => {},
-            cancel: () => {},
-          },
-        },
-      };
-    });
+    // MEH-3690: stand in for Google's popup (our own button's code client),
+    // and answer the code swap with a fixed ID token. Neither is the subject:
+    // the spec asserts what the page does with the producer endpoint's 409.
+    await stubGoogleCodeClient(page);
+    await stubCodeSwap(page, "fake_id_token_for_test");
 
     // Mock the producer OAuth endpoint with the realistic 409 payload.
     await page.route("**/auth/register/producer/oauth", (route) =>
@@ -53,25 +40,14 @@ test.describe("Producer OAuth 409 surfaces toast", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // If NEXT_PUBLIC_GOOGLE_CLIENT_ID is unset at build time the component
-    // renders null and useGoogleSignIn never runs — skip rather than fail.
-    const callbackReady = await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback?: () => unknown;
-      }).__getProducerGoogleCallback;
-      return typeof getter === "function" && typeof getter() === "function";
-    });
+    // renders no Google button — skip rather than fail.
     test.skip(
-      !callbackReady,
+      !(await googleCodeClientReady(page)),
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent"
     );
 
-    // Fire the captured GSI callback as if Google returned a credential.
-    await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback: () => (res: { credential: string }) => void;
-      }).__getProducerGoogleCallback;
-      getter()({ credential: "fake_id_token_for_test" });
-    });
+    // As if Google's popup returned a code after consent.
+    await sendGoogleCode(page, "fake_code_for_test");
 
     // Toast text should appear (Toaster is global, so it renders on either
     // /register/producer or /login depending on redirect timing).

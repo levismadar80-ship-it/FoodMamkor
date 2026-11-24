@@ -529,7 +529,6 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-focus-return.js` | — אין כותרת — |
 | `use-google-code-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
 | `use-google-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
-| `use-gsi-redraw-on-resize.js` | — אין כותרת — |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
