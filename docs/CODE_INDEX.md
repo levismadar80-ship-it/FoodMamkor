@@ -231,6 +231,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/newsletter_sync.py` | Mirror newsletter subscribers into Resend Contacts (MEH-2611). |
 | `services/oauth_verifiers.py` | OAuth provider verification + Google avatar re-host. |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
+| `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
 | `services/outbound_guard.py` | Outside production, no message reaches a real person. Every channel that can reach a person asks this module first, so the protection comes from the … |
 | `services/outreach_lead_registration.py` | Mark an outreach lead «registered» when its owner signs up through the lead's prefill link (MEH-3026 F11) — until now the pipeline status never moved, so the … |
 | `services/owner_attention.py` | The «מה מחכה לך» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her events / … |
@@ -239,7 +240,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/owner_products.py` | The owner's own product rows: the lookup that keeps a draft (the admin import's until approved) and another business's product out, and the rules a product … |
 | `services/page_filler.py` | Read what an owner wrote about her business and return a DRAFT of the page fields (MEH-3483). Nothing is saved here. |
 | `services/page_freshness.py` | The monthly "is everything on your page still correct?" email to a live business's owner, and the signed link whose «כן, הכול נכון» stamps … |
-| `services/page_freshness_digest.py` | Once a week (Sunday, Israel clock) email the admin the live pages whose owner has not confirmed them for 60+ days, so they reach her without her having to … |
+| `services/page_freshness_digest.py` | Once a week (Sunday, Israel clock) report to Sentry (ops_alert, MEH-3705; email to the admin when Sentry is off) the live pages whose owner has not confirmed … |
 | `services/password_policy.py` | MEH-305 — Password policy validation service. |
 | `services/pending_nudge.py` | Daily-scheduler entry point for the nudge emails sent to a business that registered but has not reached the review queue. … |
 | `services/phone_reverify.py` | A business that changes its WhatsApp number loses its phone verification, and any code sent to the old number stops working. |
