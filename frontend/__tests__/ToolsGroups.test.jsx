@@ -145,6 +145,37 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(hrefs(screen.getByTestId("tools-group-content"))).toContain("/producer/dashboard/google-profile");
   });
 
+  // MEH-3753: a draft is refused group buys and bags like a pending business,
+  // so it gets the line too — a draft owner used to tap in with no warning.
+  it("a draft business also sees the locked line", async () => {
+    state.status = "draft";
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
+  });
+
+  // Each unapproved status gets the line that is true for it: a draft or a
+  // pending business waits for approval; a rejected one has to fix and
+  // resubmit; a paused one is closed until it is active again.
+  it.each([
+    ["draft", "dashboard.producer.quick_links.locked_until_approved"],
+    ["pending", "dashboard.producer.quick_links.locked_until_approved"],
+    ["rejected", "dashboard.producer.quick_links.locked_rejected"],
+    ["inactive", "dashboard.producer.quick_links.locked_inactive"],
+  ])("a %s business sees %s", async (status, key) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toHaveTextContent(key);
+  });
+
+  it.each([["approved"], [undefined]])("no locked line when the status is %s", async (status) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).queryByTestId("tool-locked-line")).toBeNull();
+  });
+
   it("a closed group shows «חדש» when one of its tools is new", async () => {
     state.newTools = new Set(["/producer/dashboard/experiences"]);
     render(<ToolsPage />);

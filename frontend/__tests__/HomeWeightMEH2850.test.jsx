@@ -2,7 +2,8 @@
  * MEH-2850 (Sapir 08/11: shrink the home page under the 1.30MB Lighthouse
  * budget, nothing visible may change).
  *  A) The hero photo: on /he below 640px an image-set gives every device at
- *     least the pixels it displays (1x w_828 · 2x w_1600 · 3x w_1920); 640px
+ *     least the pixels it displays (1x w_828 · 1.75x w_1320 · 2x w_1600 ·
+ *     3x w_1920 — the 1.75x step is MEH-3748); 640px
  *     and up, and /en everywhere (taller band), keep the w_1920 url. Same
  *     Cloudinary transform (c_fill,g_auto,ar_16:9).
  *  B) Heebo-latin is no longer preloaded; every other face keeps next/font's
@@ -38,13 +39,13 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
     expect(HERO_IMAGE).toContain(`/upload/${TRANSFORM},w_1920/home/hero-produce.jpg`);
   });
 
-  it("the phone set: 1x w_828, 2x w_1600, 3x w_1920 — same image, same crop", () => {
+  it("the phone set: 1x w_828, 1.75x w_1320 (MEH-3748), 2x w_1600, 3x w_1920 — same image, same crop", () => {
     // Prefixed: inside a custom property an unsupported value computes to none.
     expect(HERO_IMAGE_SET_PHONE.startsWith("-webkit-image-set(")).toBe(true);
-    const pairs = [...HERO_IMAGE_SET_PHONE.matchAll(/url\("([^"]+)"\)\s+(\d)x/g)].map((m) => [m[2], m[1]]);
-    expect(pairs.map(([x]) => x)).toEqual(["1", "2", "3"]);
+    const pairs = [...HERO_IMAGE_SET_PHONE.matchAll(/url\("([^"]+)"\)\s+([\d.]+)x/g)].map((m) => [m[2], m[1]]);
+    expect(pairs.map(([x]) => x)).toEqual(["1", "1.75", "2", "3"]);
     const width = Object.fromEntries(pairs.map(([x, u]) => [x, Number(/,w_(\d+)\//.exec(u)[1])]));
-    expect(width).toEqual({ 1: 828, 2: 1600, 3: 1920 });
+    expect(width).toEqual({ 1: 828, "1.75": 1320, 2: 1600, 3: 1920 });
     for (const [, u] of pairs) expect(u).toContain(`/upload/${TRANSFORM},w_`);
     for (const [, u] of pairs) expect(u).toMatch(/\/home\/hero-produce\.jpg$/);
     // Why these widths: on /he below 640px the photo is shown ≤746 CSS px

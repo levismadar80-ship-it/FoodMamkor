@@ -62,13 +62,13 @@ import { israelNowParts } from "@/lib/order-window-status";
 import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 import StruckPrice from "@/components/ui/StruckPrice";
+import { agorotToShekels } from "@/lib/money";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
 // MEH-2962: cards per row. A phone scrolls sideways through all of them; from
 // lg the row is a 3-up grid and shows the first three.
 export const WHATS_ON_MAX_CARDS = 6;
-const AGOROT_PER_SHEKEL = 100;
 
 // REUSES: lib/rescue.js:39 rescueBagsEnabled() — read inline, exactly as
 // lib/use-hub-nav-gate.js:29-32 does and for the same reason: importing
@@ -334,7 +334,7 @@ const SOURCES = Object.freeze([
         plate: null,
         city: row.producer.city || null,
         seedId: row.producer.id ?? row.id,
-        price: positive(row.price_agorot) ? row.price_agorot / AGOROT_PER_SHEKEL : null,
+        price: positive(row.price_agorot) ? agorotToShekels(row.price_agorot) : null,
       };
     },
   },

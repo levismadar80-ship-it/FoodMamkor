@@ -69,6 +69,8 @@
 import { appendFileSync } from "node:fs";
 import { test as base, expect, type Page, type Locator, type Route } from "@playwright/test";
 import { guardUnstubbedMe } from "./_unstubbed-me-guard";
+// REUSES: lib/cloudinary.js — host match, not substring (CodeQL alert #32).
+import { isCloudinaryUrl } from "../../lib/cloudinary";
 
 const STUB_ENABLED = process.env.E2E_CLOUDINARY_STUB !== "0";
 const COUNT_FILE = process.env.E2E_CLOUDINARY_COUNT || "";
@@ -114,7 +116,7 @@ export const test = base.extend({
     });
     await page.route("**/_next/image**", async (route) => {
       const target = new URL(route.request().url()).searchParams.get("url") || "";
-      if (!target.includes("res.cloudinary.com")) {
+      if (!isCloudinaryUrl(target)) {
         // Unsplash and any other remotePattern host — untouched, always real.
         await route.continue();
         return;

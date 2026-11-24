@@ -5,6 +5,8 @@
 // @sentry/nextjs only injects through webpack; Next 16 builds with Turbopack,
 // so the file was never loaded and the browser sent Sentry nothing.
 // Runs only when NEXT_PUBLIC_SENTRY_DSN is set so local dev and CI stay quiet.
+// MEH-3733: first, before anything that could parse — turns off Zod's eval probe.
+import "./lib/zod-csp";
 import * as Sentry from "@sentry/nextjs";
 import { scrubClaimTokens } from "./lib/claim-token";
 import { clientTracesSampleRate } from "./lib/sentry-sampling";

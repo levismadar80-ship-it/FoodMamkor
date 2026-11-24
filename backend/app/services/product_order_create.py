@@ -26,7 +26,6 @@ import hashlib
 import hmac
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -67,6 +66,7 @@ from app.services.product_order_state import (
     record_created,
 )
 from app.utils.clock import utc_now
+from app.utils.money import agorot_from_shekels as _agorot
 from app.utils.phone import canonical_il_msisdn
 
 # Sapir's decisions of 14/11: three open orders to one phone across the site;
@@ -86,8 +86,6 @@ REPLAY_WINDOW = timedelta(minutes=10)
 # The largest goods total one order may carry: the same ceiling a final total
 # and a business minimum have (100,000 ₪), far below the int32 column.
 MAX_ORDER_TOTAL_AGOROT = MAX_MIN_ORDER_AGOROT
-
-_AGOROT_PER_SHEKEL = 100
 
 NOT_FOUND_DETAIL = "לא נמצא"
 PHONE_BLOCKED_DETAIL = "אי אפשר לשלוח הזמנה מהמספר הזה כרגע"
@@ -193,10 +191,6 @@ def _check_business_room(db: Session, producer_id: Any) -> None:
     )
     if int(open_orders or 0) >= MAX_OPEN_ORDERS_PER_BUSINESS:
         raise _conflict(BUSINESS_FULL_DETAIL)
-
-
-def _agorot(shekels: Decimal) -> int:
-    return int((shekels * _AGOROT_PER_SHEKEL).to_integral_value())
 
 
 def order_lines(

@@ -301,9 +301,3 @@ def _organizer_missing_items(
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
     return missing
-
-
-def is_ready_for_review(producer: Producer) -> bool:
-    """Convenience predicate. Kept as a one-liner over the list so there is
-    exactly one definition of ready and no second condition to drift."""
-    return not submission_missing_items(producer)

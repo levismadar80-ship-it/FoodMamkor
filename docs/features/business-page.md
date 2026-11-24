@@ -3,7 +3,7 @@
 **מה הוא עושה.** המסך הציבורי של בית עסק: גלריה וסיפור, מוצרים, שעות פתיחה, אזורי משלוח, ערוץ יצירת קשר, תגים, ביקורות, ומה שבית העסק מפעיל (קבוצת רכישה, אירוע, מתכון, שקית). זה המסך שכל שאר האתר מוביל אליו.
 
 **Routes**
-* `frontend/app/[locale]/producer/[id]/` — הדף לפי מזהה.
+* `frontend/app/[locale]/producer/[id]/` — הדף לפי מזהה. לבית עסק שיש לו slug, הכתובת הזאת היא הפניה קבועה (308) לכתובת שלו, `/{slug}` או `/en/{slug}`, עם ה-query (MEH-3708). ה-308 נוצר ב-`frontend/middleware.js`, והדף עצמו מפנה גם הוא למקרים שה-middleware מדלג עליהם. עם `?preview=1` הדף נשאר בכתובת המזהה, והטסטים שמחליפים את נתוני הדף משתמשים בזה.
 * `frontend/app/[locale]/[slug]/` — אותו דף לפי slug; זו הכתובת הקנונית כשיש slug.
 * `frontend/app/[locale]/p/[slug]/` — קישור קצר.
 * `frontend/app/[locale]/business-gone/` — בית עסק שהוסר.
@@ -49,6 +49,7 @@
 * `frontend/__tests__/QuestionChipsSection.test.jsx` · `frontend/__tests__/quickAnswers.test.js` — «שאלות נפוצות» כסעיף בגוף הדף, בלי שאלת משלוח כשיש סעיף משלוח, ובלי «איך מזמינים?» (MEH-3460). תשובה אחת פתוחה, שתיים סגורות (MEH-3666).
 * `frontend/__tests__/ProducerSectionsProducts.test.jsx` — הכותרת «המוצר המוביל» רק כשיש לידו מוצר נוסף (MEH-3666).
 * `frontend/__tests__/SlugPageTestBusinessNoindex.test.jsx` · `tests/test_meh2952_is_test_exclusion.py` — עסק בדיקה (`is_test`) נפתח בכתובת הישירה עם `noindex` ובלי JSON-LD, ועסק רגיל נשאר בר-אינדוקס (MEH-2952 חלק 3).
+* `frontend/__tests__/ProducerIdRedirect.test.js` — ‏`/producer/<id>` של עסק עם slug: ‏308 ל-`/{slug}` ול-`/en/{slug}`, ה-query נשמר, slug בעברית מקודד, בלי slug הדף נשאר, עסק חסר נשאר 404 (MEH-3708).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

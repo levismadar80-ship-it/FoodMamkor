@@ -579,6 +579,60 @@
       "notes": "Authored internally (MEH-3730) as a light local replacement for mvanhorn/last30days-skill, which was rejected: 795 files, a Python engine calling many hosts, two paid API keys. This one is prose only: a single SKILL.md, no scripts, no executables, no tools/ path, no env vars or credentials. Its only network use is the session's own WebSearch / WebFetch tools under the operator's permissions; the skill adds method, not capability. Audited 2026-11-23: read end to end, no exec/network/secret/prompt-injection patterns beyond the prose mention of WebSearch/WebFetch.",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": []
+    },
+    "hebrew-human-comments": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
+    "hebrew-spoken-script": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
+    "mehamakor-business-page": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
+    "mehamakor-daily-outreach": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
+    "mehamakor-instagram-posts": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
+    "mehamakor-voice-reel": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-11-23",
+      "audit_verdict": "approved",
+      "notes": "Mehamakor operations skill (outreach / social), authored for Sapir in the claude.ai project and ported verbatim from the account copy of 2026-11-20 (MEH-3747) so that any account or Claude Code session can load it. Prose only: one SKILL.md, no scripts, no executables, no env vars or credentials. It directs the session's own tools (Google Sheets connector, Claude in Chrome, WebSearch) under the operator's permissions and adds no capability. Audited 2026-11-23: red-flag grep for exec/network/secret/prompt-injection patterns came back empty; no phone numbers or private emails (only contact@mehamakor.co.il and the outreach sheet id).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
     }
   }
 }

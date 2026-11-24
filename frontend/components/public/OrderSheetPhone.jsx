@@ -23,6 +23,7 @@ import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { detailToMessage } from "@/lib/errors";
 import { askPhoneCode } from "@/lib/order-sheet";
+import { usePreviewMode } from "@/lib/preview-mode";
 import { validateIsraeliPhone } from "@/lib/validators";
 
 /**
@@ -40,6 +41,8 @@ export default function OrderSheetPhone({ producerId, phone, code, verified = fa
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(/** @type {string | null} */ (null));
   const valid = validateIsraeliPhone(phone);
+  // MEH-3746: the owner's preview sends no WhatsApp code.
+  const preview = usePreviewMode();
 
   const ask = async () => {
     setBusy(true);
@@ -75,7 +78,7 @@ export default function OrderSheetPhone({ producerId, phone, code, verified = fa
         />
         {/* MEH-3680: one tree either way, so the field keeps focus when
             `verified` flips while she types. */}
-        {!verified && <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
+        {!verified && <Button type="button" variant="outlined" disabled={preview || !valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
           {t(sentTo ? "send_code_again" : "send_code")}
         </Button>}
       </div>

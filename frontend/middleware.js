@@ -5,7 +5,9 @@ import { isOwnerPreview } from "./lib/owner-preview";
 import { routing } from "./i18n/routing";
 import { isSlugShaped, decodeSlugParam } from "./lib/slug";
 import { DIET_PAGE_MIN, getDietPage, isDietPageBacked } from "./lib/diet-pages";
-import { movedSlugOf, recipeExists, regionCellExists } from "./lib/middleware-exists"; // MEH-2977 siblings
+import {
+  PERMANENT_REDIRECT, movedSlugOf, producerIdTarget, producerSlugUrl, recipeExists, regionCellExists,
+} from "./lib/middleware-exists"; // MEH-2977 siblings
 import staticRoutes from "./lib/static-routes.json";
 
 /**
@@ -348,7 +350,8 @@ export default async function middleware(request) {
   } else if (segs.length === 2 && segs[0] === "producer" && segs[1] &&
     !PRODUCER_STATIC_CHILDREN.has(segs[1]) && !isPrefetch(request)) {
     // MEH-3024: /producer/<id> — see the MEH-1632 → MEH-3024 note above.
-    exists = await entityExists(`${API_URL}/producers/${encodeURIComponent(decodeSlugParam(segs[1]))}`);
+    // MEH-3708: the same lookup also returns the business's slug.
+    exists = await producerIdTarget(API_URL, decodeSlugParam(segs[1]), report);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
   } else if (segs.length === 3 && segs[0] === "producers" && !isPrefetch(request)) {
@@ -358,6 +361,18 @@ export default async function middleware(request) {
     !STATIC_ROUTES.has(decodeSlugParam(segs[0]).toLowerCase()) && isSlugShaped(decodeSlugParam(segs[0]))) {
     // MEH-2977 sibling: /<business-slug>/recipes/<id>.
     exists = await recipeExists(API_URL, decodeSlugParam(segs[0]), decodeSlugParam(segs[2]), report);
+  }
+  if (exists && typeof exists === "object" && "slug" in exists) {
+    // MEH-3708: a business with a slug lives at /{slug}; its id URL is a
+    // permanent 308 there (lib/middleware-exists.js producerSlugUrl).
+    const to = producerSlugUrl(request.nextUrl, locale, exists.slug, STATIC_ROUTES);
+    if (to) {
+      const res = NextResponse.redirect(to, PERMANENT_REDIRECT);
+      // Bounded, like the MEH-3336 301 below: a slug can change.
+      res.headers.set("Cache-Control", "public, max-age=3600");
+      return res;
+    }
+    exists = true;
   }
   if (exists && typeof exists === "object" && exists.moved) {
     // MEH-3336: a renamed business — a permanent 301 to its current URL, so a

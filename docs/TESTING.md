@@ -458,6 +458,11 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
   = אדום. זמני טעינה (ציון ביצועים, LCP, TBT) = אזהרה בלבד, כי מכונות CI
   משתנות. המספרים הם ratchet מ-06/11 ולא היעד — הטבלה בראש
   `lighthouserc.cjs`. כשה-LCP של MEH-2233 משתפר, להדק שם.
+- **‏/events ו-noindex (MEH-3748):** כשה-hub ריק העמוד noindex בכוונה
+  (MEH-2369), ואז ציון ה-SEO נופל ל-0.69. ה-config קורא את `sitemap.xml`:
+  ‏/events לא שם = noindex צפוי, ו-/events נבדק audit אחרי audit בלי
+  is-crawlable. ‏/events ב-sitemap, או sitemap שלא נקרא = קו ה-0.85 המלא,
+  כך ש-noindex לא מכוון עדיין אדום.
 - **לא בדיקה חוסמת** — רצה אחרי מיזוג. אדום = מייל רגיל מ-GitHub Actions.
 - הסקריפטים ב-`scripts/checks/` הם `.py`/`.cjs`, ו-`run-all.sh` מריץ רק `*.sh`,
   כך שהם לא הופכים לרגל של Repo guards.
