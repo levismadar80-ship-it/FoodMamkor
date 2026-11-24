@@ -49,6 +49,10 @@ class Settings(BaseSettings):
 
     # Google OAuth
     google_client_id: str = ""
+    # MEH-3690: our own Google button sends an authorization code; the server
+    # swaps it at Google's token endpoint, which needs the client secret.
+    # Unset → POST /auth/google/code answers 503 and signs nobody in.
+    google_client_secret: str = ""
 
     # Apple Sign In
     apple_client_id: str = ""

@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { googleCodeClientReady, sendGoogleCode, stubCodeSwap, stubGoogleCodeClient } from "./_google-code-stub";
 import { pickCity } from "./_pick-city";
 import { authedContext, fixtureExists } from "../auth-fixture";
 
@@ -234,32 +235,17 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 });
 
 // ===========================================================================
-// P2 — OAuth producer: a 409 surfaces a toast (GSI-stub, mirrors flows/10)
+// P2 — OAuth producer: a 409 surfaces a toast (Google stub, mirrors flows/10)
 // ===========================================================================
 test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
-  const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
+  const DETAIL_MSG = "כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
 
   test("a 409 from the OAuth Step-0 endpoint shows the backend detail as a toast", async ({
     page,
   }) => {
-    // Stub window.google.accounts.id so useGoogleSignIn captures our callback
-    // instead of loading the real GSI script (mirrors flows/10:26-41).
-    await page.addInitScript(() => {
-      let captured: ((res: { credential: string }) => void) | null = null;
-      (window as unknown as { __getProducerGoogleCallback: () => typeof captured }).__getProducerGoogleCallback =
-        () => captured;
-      (window as unknown as { google: unknown }).google = {
-        accounts: {
-          id: {
-            initialize: ({ callback }: { callback: typeof captured }) => {
-              captured = callback;
-            },
-            renderButton: () => {},
-            cancel: () => {},
-          },
-        },
-      };
-    });
+    // MEH-3690: stand in for Google's popup and the code swap (mirrors flows/10).
+    await stubGoogleCodeClient(page);
+    await stubCodeSwap(page, "fake_id_token_for_test");
 
     await page.route("**/auth/register/producer/oauth", (route) =>
       route.fulfill({
@@ -273,23 +259,12 @@ test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // Skip when the Google button is absent (NEXT_PUBLIC_GOOGLE_CLIENT_ID unset).
-    const callbackReady = await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback?: () => unknown;
-      }).__getProducerGoogleCallback;
-      return typeof getter === "function" && typeof getter() === "function";
-    });
     test.skip(
-      !callbackReady,
+      !(await googleCodeClientReady(page)),
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent",
     );
 
-    await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback: () => (res: { credential: string }) => void;
-      }).__getProducerGoogleCallback;
-      getter()({ credential: "fake_id_token_for_test" });
-    });
+    await sendGoogleCode(page, "fake_code_for_test");
 
     await expect(page.getByText(DETAIL_MSG)).toBeVisible({ timeout: 3000 });
     await page.waitForURL(/\/login(\?|$)/, { timeout: 5000 });

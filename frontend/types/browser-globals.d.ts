@@ -25,9 +25,18 @@ interface GoogleAccountsId {
   cancel(): void;
 }
 
+/** GIS code client (MEH-3690): our own button opens Google's popup with it. */
+interface GoogleCodeClient {
+  requestCode(): void;
+}
+
+interface GoogleAccountsOauth2 {
+  initCodeClient(config: Record<string, unknown>): GoogleCodeClient;
+}
+
 interface Window {
   AppleID?: { auth: AppleIDAuth };
-  google?: { accounts: { id: GoogleAccountsId } };
+  google?: { accounts: { id: GoogleAccountsId; oauth2?: GoogleAccountsOauth2 } };
   /** Initial map centre, exposed for e2e/05-map-navigation.spec.ts. */
   __MAP_CENTER__?: unknown;
 }

@@ -236,7 +236,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await openLocations(page);
     await startAdding(page, "חיפה");
     await saveBtn(page).click();
-    await expect(formError(page)).toHaveText(`יש לך כבר 'החנות' בחיפה. ${ACTION}`);
+    await expect(formError(page)).toHaveText(`כבר יש 'החנות' בחיפה. ${ACTION}`);
   });
 
   // MT:MEH-1421:5 (b) — no label on the existing one: its kind stands in.
@@ -245,7 +245,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await openLocations(page);
     await startAdding(page, "חיפה");
     await saveBtn(page).click();
-    await expect(formError(page)).toHaveText(`יש לך כבר סניף בחיפה. ${ACTION}`);
+    await expect(formError(page)).toHaveText(`כבר יש סניף בחיפה. ${ACTION}`);
   });
 
   // MT:MEH-1421:5 (c) — several already there: a count, no invented examples.
@@ -254,7 +254,7 @@ test.describe("locations editor — the same-town label rule", () => {
     await openLocations(page);
     await startAdding(page, "חיפה");
     await saveBtn(page).click();
-    await expect(formError(page)).toHaveText(`יש לך כבר 2 מיקומים בחיפה. ${ACTION}`);
+    await expect(formError(page)).toHaveText(`כבר יש 2 מיקומים בחיפה. ${ACTION}`);
   });
 
   // MT:MEH-1421:6 — the three-letter floor is part of the first message, not a later surprise.

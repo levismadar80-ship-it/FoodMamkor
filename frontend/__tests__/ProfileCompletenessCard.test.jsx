@@ -172,6 +172,12 @@ describe("ProfileCompletenessCard — improve mode (after submission)", () => {
     expect(screen.getByTestId("completeness-open-hours")).toBeInTheDocument();
   });
 
+  // MEH-3790: hours have one card again («שעות»), so the step links to it.
+  it("missing hours → the step opens the «שעות» card", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "" }} />);
+    expect(screen.getByTestId("completeness-open-cta-hours").getAttribute("href")).toBe(`${EDIT}#hours`);
+  });
+
   it.each([["null", null], ["empty", ""], ["whitespace", "   "]])(
     "owner_photo_url %s → owner-photo row open, links to the owner-story card",
     (_l, value) => {
