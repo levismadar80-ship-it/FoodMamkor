@@ -205,8 +205,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
-  // MEH-3525: the account menu asks whether on-site ordering is on.
-  await page.route("**/users/me/product-orders", (r) => json(r, []));
+  // MEH-3698: the account menu asks one read whether «ההזמנות שלי» has anything.
+  await page.route("**/users/me/orders/any", (r) => json(r, { any: false }));
   // Public, and incidental: the admin nav badge counter. Answered so the 404 catch-all stays a clean instrument.
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).

@@ -161,14 +161,17 @@ export function sameWeeklyHours(a, b) {
   if (!a || !b) return false;
   const key = (map, day) =>
     (map[day] ?? [])
-      .map((r) => `${toMinutes(r.open)}-${toMinutes(r.close)}`)
+      .map((r) => `${clockToMinutes(r.open)}-${clockToMinutes(r.close)}`)
       .sort()
       .join(",");
   return DAY_ABBR.every((_, day) => key(a, day) === key(b, day));
 }
 
-// Convert "HH:MM" string to minutes since midnight.
-export function toMinutes(hhmm) {
+// Convert "HH:MM" string to minutes since midnight. Not the same function as
+// lib/order-window-status.js `toMinutes`: this one takes "24:00" (a valid
+// close, «until midnight», see parseHours) and does no validation, because its
+// input already passed parseHours or the hours editor. MEH-3784.
+export function clockToMinutes(hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
 }
@@ -193,10 +196,10 @@ export function computeStatus(map, now = new Date()) {
   // are emitted in source order; sort defensively so a hand-edited string with
   // them out of order still yields the earliest upcoming opening.
   const todayRanges = [...(map[dayIdx] ?? [])].sort(
-    (a, b) => toMinutes(a.open) - toMinutes(b.open),
+    (a, b) => clockToMinutes(a.open) - clockToMinutes(b.open),
   );
   const current = todayRanges.find(
-    (r) => nowMin >= toMinutes(r.open) && nowMin < toMinutes(r.close),
+    (r) => nowMin >= clockToMinutes(r.open) && nowMin < clockToMinutes(r.close),
   );
   if (current) {
     return { isOpen: true, openTime: current.open, closeTime: current.close };
@@ -204,7 +207,7 @@ export function computeStatus(map, now = new Date()) {
 
   // Still closed — but the next opening may be LATER TODAY, after a break.
   // Reporting tomorrow here would be wrong for every split-hours business.
-  const laterToday = todayRanges.find((r) => nowMin < toMinutes(r.open));
+  const laterToday = todayRanges.find((r) => nowMin < clockToMinutes(r.open));
   if (laterToday) {
     return {
       isOpen: false,
@@ -219,7 +222,7 @@ export function computeStatus(map, now = new Date()) {
     const nextIdx = (dayIdx + d) % 7;
     const ranges = map[nextIdx];
     if (ranges?.length) {
-      const first = [...ranges].sort((a, b) => toMinutes(a.open) - toMinutes(b.open))[0];
+      const first = [...ranges].sort((a, b) => clockToMinutes(a.open) - clockToMinutes(b.open))[0];
       return {
         isOpen: false,
         nextDayKey: DAY_KEYS[nextIdx],

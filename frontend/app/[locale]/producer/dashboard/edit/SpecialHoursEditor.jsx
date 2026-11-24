@@ -27,7 +27,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
 import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
-import { nextOrderRange } from "@/lib/order-window";
+import { nextOrderRange } from "@/lib/order-window-editor";
 import {
   MAX_SPECIAL_DATES,
   MAX_SPECIAL_NOTE_LENGTH,

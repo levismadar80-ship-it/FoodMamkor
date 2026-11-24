@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   order-window
+ * Module:   order-window-editor
  * Purpose:  Convert between the backend `producers.order_window` JSONB shape
  *           ({"sunday": {open, close}, …}) and the 7-row editor model the
  *           dashboard renders, plus the client-side mirror of the backend's

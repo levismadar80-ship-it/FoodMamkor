@@ -43,7 +43,7 @@ export function priceLabel(product) {
 
 /**
  * The first products in the owner's own order, at most WEEK_ITEMS_MAX.
- * @param {PostProduct[]} products already in owner order (lib/product-order.js)
+ * @param {PostProduct[]} products already in owner order (lib/product-display-order.js)
  * @returns {PostProduct[]}
  */
 export function weekItems(products) {
