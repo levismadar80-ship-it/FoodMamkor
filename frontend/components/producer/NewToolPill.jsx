@@ -3,7 +3,7 @@
 
 /**
  * Module:   NewToolPill
- * Purpose:  The «חדש» pill on a «כלים» tile whose tool arrived in a release
+ * Purpose:  The «חדש» pill on a «כלים» tile (or an «עריכה» hub tile, MEH-3723) whose tool arrived in a release
  *           of the last 14 days (MEH-3200 part 2, copy approved 14/11). The
  *           list of new tools lives in lib/whats-new.js (`tools` on a release).
  * Does NOT: draw the tab dot (DashboardLayoutClient.jsx, same hook).

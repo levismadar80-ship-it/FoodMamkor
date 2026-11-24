@@ -234,6 +234,12 @@ export async function loadOrders() {
   return lists.flat();
 }
 
+/** MEH-3770: every order the business already accepted (confirmed, ready). */
+export async function loadAcceptedOrders() {
+  const lists = await Promise.all(["confirmed", "ready"].map((status) => allOf(status)));
+  return lists.flat();
+}
+
 /** How many orders wait for an answer (the tab's counter). */
 export async function pendingCount() {
   const { data } = await api.get("/producers/me/product-orders", {

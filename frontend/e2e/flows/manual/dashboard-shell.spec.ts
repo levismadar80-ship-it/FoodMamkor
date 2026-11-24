@@ -73,7 +73,9 @@ import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
  *      "הצגת העסק באתר" as one of them. Measured: FIVE cards, and that one is
  *      not among them — MEH-1357 removed it in favour of the persistent
  *      "צפייה בדף" link in the shell nav. MEH-3669 then grouped the tab: closed,
- *      the grid links three tools; opening «אירועים» adds two. Both counts are
+ *      the grid links three tools; opening «אירועים» adds two. MEH-3723 took
+ *      the Google tile out and MEH-3749 put the «שיתוף» tile in (four, then
+ *      six). Both counts are
  *      asserted at their measured values.
  * D3 · MT:MEH-1134:2 asserts that an approved+complete business shows the
  *      completeness card BELOW availability. MEH-1397 deleted that slot
@@ -718,7 +720,8 @@ test.describe("dashboard shell — tools tab", () => {
   // MEASURED count. MEH-3669: «אירועים» (events + experiences) is a card that
   // opens in place; «הזדמנויות» with surprise bags off (the CI default) holds
   // one tool, so it is a plain link to group buys. MEH-3641 added «הפרופיל
-  // שלכם בגוגל» to the content group.
+  // שלכם בגוגל» to the content group; MEH-3723 moved it to «עריכה», after «קשר».
+  // MEH-3749: the «שיתוף» tile (its own page) joins the content group.
   test("closed, the grid links four tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
     page,
   }) => {
@@ -736,8 +739,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/recipes",
       // MEH-3107: the reviews tile opens the dashboard's own reviews page.
       "/producer/dashboard/reviews",
-      // MEH-3641: the owner's Google profile tool.
-      "/producer/dashboard/google-profile",
+      // MEH-3749: the share page (QR card + share kit).
+      "/producer/dashboard/share",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
@@ -749,6 +752,8 @@ test.describe("dashboard shell — tools tab", () => {
     // MEH-1357 the הצגת-העסק one (duplicate of the shell's צפייה בדף link).
     await expect(grid.locator('a[href$="/producer/dashboard/edit"]')).toHaveCount(0);
     await expect(grid.locator(`a[href$="/producer/${PRODUCER_ID}"]`)).toHaveCount(0);
+    // MEH-3723: the Google profile lives in «עריכה» now, not in «כלים».
+    await expect(grid.locator('a[href$="/producer/dashboard/google-profile"]')).toHaveCount(0);
   });
 
   // MT:MEH-1102:2 — each card (a group card or a single tile) carries its
@@ -762,7 +767,7 @@ test.describe("dashboard shell — tools tab", () => {
       grid.getByTestId("tool-group-opportunities"),
       grid.locator('a[href$="/producer/dashboard/reviews"]'),
       grid.locator('a[href$="/producer/dashboard/recipes"]'),
-      grid.getByTestId("tools-google-profile-tile"),
+      grid.getByTestId("tools-share-tile"),
     ];
     for (const [i, card] of cards.entries()) {
       await expect(card.locator("svg.mb-2"), `card ${i} has no title icon`).toHaveCount(1);

@@ -8,7 +8,7 @@ Purpose:  One rule for «מזמינים עד יום X בשעה HH:MM» wherever 
 Touches:  nothing — pure validation.
 Does NOT: read or apply the business-wide order_window (schemas.py
           _validate_order_day owns that shape; the client falls back to it
-          when a row has no cutoff — frontend/lib/nextDelivery.js).
+          when a row has no cutoff — frontend/lib/next-delivery.js).
 Related:  app/schemas/schemas.py _HHMM_REGEX (same pattern), DELIVERY_DAYS.
 History:  MEH-3512 (creation).
 """

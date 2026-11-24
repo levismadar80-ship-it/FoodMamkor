@@ -15,14 +15,14 @@ import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
-import { hasDeliverySection } from "@/lib/quickAnswers"; // MEH-3460
+import { hasDeliverySection } from "@/lib/quick-answers"; // MEH-3460
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import BusinessChatPrompt from "./BusinessChatPrompt";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { resolveStoreHours } from "@/lib/hours";
-import { primaryPoint } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producer-points";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   quickAnswers
+ * Module:   quick-answers
  * Purpose:  Pure answer descriptors for the producer contact card's "Quick
  *           Answers" (MEH-1302) — turn the producer's already-public delivery
  *           and contact data into a small structured descriptor the
