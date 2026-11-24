@@ -6,6 +6,8 @@
 
 **Approved:** Sapir, in the thread on 24/11.
 
+**Applied:** 24/11, commit 97bf5e47ce through the web editor; the committed file matched the sha256 below.
+
 **Expected file sha256 after applying:** `e7262fd0d7da272fc09c53186d6bdb6071fe8ca457d3f896e6d80acc5d44b0a5`
 
 ```diff
