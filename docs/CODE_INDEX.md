@@ -77,6 +77,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/google_rating.py` | Serve the quiet public "Google rating" trust line for a producer — live star rating + review count fetched per-request from Google, only for producers an … |
 | `routers/group_buy_capacity.py` | The MEH-3592 group-buy routes: a participant changes her quantity, a visitor joins or leaves the waitlist of a full group, and the business changes its caps … |
 | `routers/group_buy_mine.py` | «הקבוצות שלי» (MEH-3609): the signed-in person's own group buys, so she can get back to one without the email link. |
+| `routers/group_buy_pickup.py` | MEH-3735 — the business's pickup list for a group buy (codes and quantities only) and its «נמסר» / «לא הגיע» marks; … |
 | `routers/group_buys.py` | MEH-52: Group buy endpoints — commit counter + price unlock. |
 | `routers/health.py` | Health endpoints — MEH-483. |
 | `routers/holiday_mode.py` | — אין כותרת — |
@@ -133,6 +134,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/google_profile.py` | Response shapes for the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641). |
 | `schemas/group_buy_counts.py` | The public per-status count behind the /group-buys status tabs, so a tab with nothing in it is not drawn (MEH-3128). |
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
+| `schemas/group_buy_pickup.py` | MEH-3735 — what the business sees at pickup: codes and quantities, and the mark it wrote. Never a name, email or user id (MEH-1651). |
 | `schemas/group_buys_requests.py` | Group buys, category requests and business name-change requests. |
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
@@ -210,6 +212,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/group_buy_delist.py` | When an admin takes a business off the site, cancel its live group buys and tell their participants (MEH-2498). |
 | `services/group_buy_expiry.py` | Close every open group buy whose deadline passed below its minimum, and tell each participant it is not going ahead (MEH-3287). |
 | `services/group_buy_goal_flap.py` | A funded group buy can drop below its minimum when someone leaves, and then cross it again. … |
+| `services/group_buy_no_show.py` | MEH-3735 — «לא הגיע» for group buys, the rescue mechanism's sibling. Each participant has a pickup code; … |
 | `services/group_buy_notifications.py` | Tell both sides that a group buy reached its goal — the business that it is funded and by how many participants, each participant that they should reach out … |
 | `services/group_buy_pickup_place.py` | The branch a group buy is picked up from (MEH-3610): check that a chosen branch is the business's own, and render it as public as the business made it. |
 | `services/group_buy_pickup_reminder.py` | The reminder before pickup (MEH-3610): once per funded group buy, the evening before its pickup window, each participant gets the time, the place and the notes. |
@@ -781,6 +784,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `group-buy/GroupBuyLineTotal.jsx` | MEH-3592: under the quantity field — what is left (a units cap) and what the order comes to («3 ק"ג × 13₪ = 39₪»). … |
 | `group-buy/GroupBuyMemberPanel.jsx` | MEH-3592: what a participant sees on the join card — her confirmation, a quantity she can change until the deadline (Kickstarter: a pledge can change until … |
 | `group-buy/GroupBuyOwnerSettings.jsx` | MEH-3592: on the owner's group-buy card — change the caps (never below what already joined, the server refuses that) and stop / reopen joins. … |
+| `group-buy/GroupBuyPickupList.jsx` | MEH-3735 — on the owner's card of a group buy that reached its goal: each participant's pickup code and quantity, and after the pickup ended a «נמסר» / «לא … |
 | `group-buy/GroupBuyPickupWindowFields.jsx` | MEH-3597: the pickup window on the create form — a day + start time, and an end time that day. … |
 | `group-buy/GroupBuySafetyFields.jsx` | Two things a participant needs to collect safely (MEH-3610): the branch she picks up from, and the allergens the business declares — the same two a rescue bag … |
 | `group-buy/GroupBuyWaitlistPanel.jsx` | MEH-3592: a full group buy offers a waitlist instead of a dead end (Eventbrite: a released ticket emails the first in line). … |

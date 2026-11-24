@@ -413,9 +413,28 @@ class GroupBuyCommit(Base):
     quantity = Column(Integer, default=1, nullable=False)
     phone = Column(String(30), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
+    # MEH-3735: four digits she shows at pickup, as a rescue bag's code. The
+    # business sees codes, never names (MEH-1651). Nullable only for the
+    # expand step; the revision gives every existing row one.
+    pickup_code = Column(String(4), nullable=True)
+    # MEH-3735: at most one of these is set, by the business after pickup
+    # (services/group_buy_no_show.py). Both NULL = not marked yet.
+    handed_at = Column(DateTime, nullable=True)
+    no_show_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
+        UniqueConstraint(
+            "group_buy_id", "pickup_code", name="uq_group_buy_commits_code"
+        ),
+        CheckConstraint(
+            "pickup_code IS NULL OR pickup_code ~ '^[0-9]{4}$'",
+            name="group_buy_commits_pickup_code_check",
+        ),
+        CheckConstraint(
+            "handed_at IS NULL OR no_show_at IS NULL",
+            name="group_buy_commits_one_outcome_check",
+        ),
     )
 
     group_buy = relationship("GroupBuy", back_populates="commits")

@@ -4822,6 +4822,25 @@
         "title": "GrantVerifiedIn",
         "type": "object"
       },
+      "GroupBuyBlockStateOut": {
+        "properties": {
+          "active_no_shows": {
+            "title": "Active No Shows",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "active_no_shows"
+        ],
+        "title": "GroupBuyBlockStateOut",
+        "type": "object"
+      },
       "GroupBuyCommitOut": {
         "properties": {
           "created_at": {
@@ -4838,6 +4857,17 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
           },
           "quantity": {
             "title": "Quantity",
@@ -5672,6 +5702,87 @@
           "id"
         ],
         "title": "GroupBuyPickupLocationOut",
+        "type": "object"
+      },
+      "GroupBuyPickupOut": {
+        "properties": {
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "no_show_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show At"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "quantity"
+        ],
+        "title": "GroupBuyPickupOut",
+        "type": "object"
+      },
+      "GroupBuyPickupsOut": {
+        "properties": {
+          "can_mark": {
+            "title": "Can Mark",
+            "type": "boolean"
+          },
+          "pickup_ended_at": {
+            "format": "date-time",
+            "title": "Pickup Ended At",
+            "type": "string"
+          },
+          "pickups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupBuyPickupOut"
+            },
+            "title": "Pickups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "can_mark",
+          "pickup_ended_at",
+          "pickups"
+        ],
+        "title": "GroupBuyPickupsOut",
         "type": "object"
       },
       "GroupBuyQuantityUpdate": {
@@ -21814,6 +21925,16 @@
             "title": "Favorites Count",
             "type": "integer"
           },
+          "group_buy_active_no_shows": {
+            "default": 0,
+            "title": "Group Buy Active No Shows",
+            "type": "integer"
+          },
+          "group_buy_blocked": {
+            "default": false,
+            "title": "Group Buy Blocked",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -23119,6 +23240,55 @@
           }
         ],
         "summary": "Admin List Group Buys",
+        "tags": [
+          "admin-group-buys"
+        ]
+      }
+    },
+    "/admin/group-buys/users/{user_id}/clear-block": {
+      "post": {
+        "description": "Release a group-buy no-show block. The marks stay; they stop counting.",
+        "operationId": "clear_group_buy_block_admin_group_buys_users__user_id__clear_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyBlockStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear Group Buy Block",
         "tags": [
           "admin-group-buys"
         ]
@@ -30722,6 +30892,123 @@
         ]
       }
     },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/handed": {
+      "post": {
+        "operationId": "mark_handed_group_buys__group_buy_id__commits__commit_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Handed",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/no-show": {
+      "post": {
+        "description": "Only after the pickup ended, once per commit; mails the participant.",
+        "operationId": "mark_no_show_group_buys__group_buy_id__commits__commit_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark No Show",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
     "/group-buys/{group_buy_id}/settings": {
       "patch": {
         "operationId": "update_group_buy_settings_group_buys__group_buy_id__settings_patch",
@@ -32699,6 +32986,55 @@
           }
         ],
         "summary": "List My Group Buys",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/producers/me/group-buys/{group_buy_id}/pickups": {
+      "get": {
+        "description": "Codes and quantities of one of the business's group buys.",
+        "operationId": "list_pickups_producers_me_group_buys__group_buy_id__pickups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Pickups",
         "tags": [
           "group-buys"
         ]

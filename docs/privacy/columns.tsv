@@ -801,3 +801,7 @@ users.terms_accepted_at	identity	a user account
 users.terms_version	identity	a user account
 users.token_version	technical	sign-in and security data of the account
 users.whatsapp_consent_at	identity	a user account
+group_buy_commits.pickup_code	orders	a user joining a group buy; the only thing the business sees of her (MEH-3735)
+group_buy_commits.handed_at	orders	when the business marked a group-buy order collected
+group_buy_commits.no_show_at	orders	when the business marked a group-buy order not collected
+users.group_buy_block_cleared_at	orders	when a group-buy no-show block was lifted

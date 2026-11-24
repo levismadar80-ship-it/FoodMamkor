@@ -1001,7 +1001,7 @@ admin_audit_log                (id PK, actor_id, action, target_type nullable, t
 admin_checklist_items          (id PK, position, label, hint nullable, active, updated_at)  -- models/admin_ops.py
 admin_passkeys                 (id PK, user_id FK→users CASCADE, credential_id, public_key, sign_count, aaguid nullable, backup_eligible, backup_state, transports nullable, name nullable, created_at, last_used_at nullable)  -- models/admin_passkeys.py
 admin_recovery_codes           (id PK, user_id FK→users CASCADE, code_hash, used_at nullable, created_at)  -- models/admin_passkeys.py
-group_buy_commits              (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, phone nullable, created_at)  -- models/events.py
+group_buy_commits              (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, phone nullable, created_at, pickup_code char4 nullable UNIQUE per group, handed_at, no_show_at — at most one; MEH-3735)  -- models/events.py
 group_buy_waitlist             (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, offered_at nullable, created_at; UNIQUE(group_buy_id, user_id))  -- models/events.py (MEH-3592)
 inbound_messages               (id PK, from_phone, body, received_at, meta_message_id nullable, bot_replied, bot_replied_at nullable, bot_template_sent nullable, human_replied)  -- models/admin_ops.py
 outbound_messages              (id PK, to_phone, kind, meta_message_id nullable, status, error_code nullable, error_message nullable, created_at, updated_at nullable)  -- models/admin_ops.py
@@ -1257,6 +1257,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `min_participants` to `open`, as leaving does
 > (`group_buy_delist.withdraw_user_commits`). Before this all three deletes
 > 500'd: `Producer.group_buys`, `Producer.name_change_requests` and
+> **MEH-3735 — «לא הגיע» in group buys.** `GET /producers/me/group-buys/{id}/pickups` (owner or admin) → `{can_mark, pickup_ended_at, pickups: [{id, pickup_code, quantity, handed_at, no_show_at}]}` — codes, never a person. `POST /group-buys/{id}/commits/{commit_id}/handed` and `POST /group-buys/{id}/commits/{commit_id}/no-show` (owner or admin; group funded or fulfilled; after `pickup_ends_at`, or the deadline without a window; once — else 409). A no-show mails the participant. Two no-shows inside 30 days → `POST /group-buys/{id}/commit` answers `403 כרגע אי אפשר להצטרף…`. `POST /admin/group-buys/users/{user_id}/clear-block` writes `users.group_buy_block_cleared_at`. `GET /group-buys/{id}` returns `user_commit.pickup_code` to the participant; `GET /admin/users` adds `group_buy_active_no_shows` / `group_buy_blocked`. Separate from the rescue count.
+>
 > `User.group_buy_commits` lacked `passive_deletes` on a NOT NULL FK. A mapper
 > scan in `tests/test_meh2503_delete_with_group_buys.py` guards the class. No
 > schema change.

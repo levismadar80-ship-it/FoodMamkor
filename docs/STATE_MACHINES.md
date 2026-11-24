@@ -159,7 +159,8 @@ and every transition re-reads the row under a lock.
 open → funded → fulfilled, and open / funded → cancelled. Fulfilled and
 cancelled are terminal. Owner and admin share one transition table
 (`routers/group_buys.py` `OWNER_TRANSITIONS`). A commit is a row: it exists or
-it does not.
+it does not, and after pickup the business may mark it `handed_at` or
+`no_show_at` (timestamps, not a status column; MEH-3735).
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
@@ -169,6 +170,7 @@ it does not.
 | waitlist row: waiting → offered | automatic, when a place frees (leave, smaller quantity, raised cap, reopened joins) | `services/group_buy_capacity.py::offer_freed_place` | `offered_at` stamped; offered again after 24 h if the place went to someone else; the row is deleted when she joins or leaves the list |
 | open → funded → open | automatic, on join / leave / account deletion | `routers/group_buys.py`, `services/group_buy_delist.py` | minimum reached / lost |
 | → fulfilled, → cancelled | owner / admin | `routers/group_buys.py` | transition table; cancel mails the participants |
+| commit: unmarked → handed · no_show (MEH-3735) | owner / admin | `routers/group_buy_pickup.py` → `services/group_buy_no_show.py::mark` | group row lock; group funded or fulfilled; after `pickup_ends_at` (or the deadline when there is no window); once per commit (`group_buy_commits_one_outcome_check`). A no-show mails her; two inside 30 days refuse her next join (403) until an admin writes `users.group_buy_block_cleared_at`. Separate from the rescue count |
 
 An **open** group buy that passes its deadline below its minimum is not closed
 by anything today; only the open tab filters by deadline. Open PR #4625 adds

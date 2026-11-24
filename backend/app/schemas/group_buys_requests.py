@@ -29,6 +29,8 @@ class GroupBuyCommitOut(BaseModel):
     group_buy_id: UUID
     user_id: UUID
     quantity: int
+    # MEH-3735: her own pickup code, shown on the page she joined from.
+    pickup_code: str | None = None
     # MEH-1651: `phone` removed. The column is no longer written (Expand-
     # Contract — the DROP is post-launch, Sapir-only), so exposing it here
     # would strand a permanently-NULL field in the API contract.

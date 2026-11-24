@@ -205,6 +205,7 @@ duplicate	2	מה חדש במהמקור
 duplicate	2	מה כדאי להכין
 duplicate	2	מה לא לעשות
 duplicate	2	מה מחכה לטיפול
+duplicate	2	מה קורה אם לא אספתי?
 duplicate	2	מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.
 duplicate	2	מהמקור / Mehamakor.
 duplicate	2	מובילת קהילה

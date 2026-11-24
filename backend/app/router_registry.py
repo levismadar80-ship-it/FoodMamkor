@@ -29,6 +29,7 @@ from app.routers import (
     group_buys,
     group_buy_capacity,
     group_buy_mine,
+    group_buy_pickup,
     health,
     holiday_mode,
     marketing,
@@ -167,6 +168,9 @@ def _register_flagged_features(app: FastAPI) -> None:
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
     # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
+    # MEH-3735: pickup codes, «נמסר» / «לא הגיע», the admin block release.
+    app.include_router(group_buy_pickup.router)
+    app.include_router(group_buy_pickup.admin_router)
 
 
 def register_routers(app: FastAPI) -> None:

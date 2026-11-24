@@ -101,6 +101,14 @@ export default function AdminUsersPage() {
       load();
     });
 
+  // MEH-3735: the same release for the group-buy count (group_buy_pickup.py).
+  const clearGroupBuyBlock = (id) =>
+    run(`group-buy:${id}`, async () => {
+      await api.post(`/admin/group-buys/users/${id}/clear-block`);
+      showToast.success(t("users.rescue.cleared"));
+      load();
+    });
+
   const toggleExpand = async (u) => {
     if (expanded === u.id) {
       setExpanded(null);
@@ -243,6 +251,15 @@ export default function AdminUsersPage() {
                           </span>
                         )}
 
+                        {u.group_buy_blocked && (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full bg-danger-100 text-danger-700"
+                            data-testid="admin-user-group-buy-blocked"
+                          >
+                            {t("users.group_buy.blocked_badge", { count: u.group_buy_active_no_shows })}
+                          </span>
+                        )}
+
                         {/* Promote/demote moved to the actions-cell overflow menu (MEH-1023). */}
 
                         {/* Tooltip for protected super-admin row */}
@@ -287,6 +304,13 @@ export default function AdminUsersPage() {
                                   key: "clear-rescue-block",
                                   label: t("users.actions.clear_rescue_block"),
                                   onSelect: () => clearRescueBlock(u.id),
+                                }]
+                              : []),
+                            ...(u.group_buy_blocked
+                              ? [{
+                                  key: "clear-group-buy-block",
+                                  label: t("users.actions.clear_group_buy_block"),
+                                  onSelect: () => clearGroupBuyBlock(u.id),
                                 }]
                               : []),
                             // MEH-3376: an account with a linked business is
