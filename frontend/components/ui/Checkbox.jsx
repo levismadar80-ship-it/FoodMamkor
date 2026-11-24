@@ -16,6 +16,9 @@
  *           a tri-state or a custom-drawn box, so neither is worth the bundle.
  * Related:  ui/Switch.jsx (toggle), eslint-rules/design-system.mjs
  *           (`no-html-checkbox`, which counts the raw ones left).
+ * Visual:   the signup page's consent row is in the register VRT baseline
+ *           (e2e/visual/parity.spec.ts); a change to the row's size or box
+ *           shows there first.
  * History:  MEH-3830 (creation).
  *
  * className    : on the <label> row — text size and colour, alignment, width.
