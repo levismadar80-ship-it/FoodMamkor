@@ -1,6 +1,6 @@
 # ADR-037: Reader address is gender-neutral on every surface (supersedes ADR-024 §1 feminine half)
 
-**Status:** Accepted
+**Status:** Accepted — **Amended 2026-11-24** (no singular address in new copy, see [Amendment](#amendment--2026-11-24--no-singular-address-in-new-copy-meh-3808))
 **Date:** 2026-11-04
 **Deciders:** Sapir Levi
 **Source:** MEH-2661 / PR #3981
@@ -16,7 +16,7 @@ Every string addressed to the reader, whether a consumer or a business owner, is
 3. Impersonal phrasing: «פעם היה צריך לדעת…».
 4. The masculine plural as the unmarked form where a pronoun is needed: «ברוכים הבאים», «אליכם».
 
-`שלך` and `לך` stay, because they are unmarked in writing. `אלייך` (double yod) is marked feminine and is not used.
+~~`שלך` and `לך` stay, because they are unmarked in writing.~~ **Amended 24/11/2026, see below:** the singular `שלך` / `לך` are not used in new copy either. `אלייך` (double yod) is marked feminine and is not used.
 
 **Still feminine, by design:**
 - Sapir's own first-person and founder voice: «אנחנו מכירות», «אני כותבת».
@@ -41,3 +41,14 @@ Every string addressed to the reader, whether a consumer or a business owner, is
 - Keep ADR-024 as-is (feminine narrative): rejected. It produced the «עם חברות» bug class, and the surface boundary proved unenforceable.
 - Slash forms (לקוח/ה): rejected, still forbidden by ADR-014 (typography, magazine voice).
 - Full feminine: rejected for the same reasons as in ADR-024.
+
+## Amendment — 2026-11-24 — no singular address in new copy (MEH-3808)
+
+Sapir asked on 24/11 whether the site should address the reader in the singular or the plural, asked for research into what other sites do, and then delegated the rule («תקבע את זה שתדע לעשות את זה תמיד בלי שתשאל אותי»).
+
+The answer follows the Context above: large Hebrew products address the reader in the plural or impersonally, and BRAND.md §9 already makes business surfaces fully neutral. `שלך` and `לך` are unmarked for gender, but they are singular, and they mix with the plural imperatives this ADR prefers («בחרו את המוצרים שלך»), which is exactly the mix §9's self-check forbids.
+
+**Decision:** new copy does not use the singular second person (`שלך`, `משלך`, `לך`, `אותך`, `בשבילך`, `אצלך`, `עליך`, `ממך`, `איתך`, `אליך`, `בך`). Use the tools listed above, in the same order: «המוצרים של העסק», «אפשר לשמור», and «שלכם» / «לכם» when a pronoun cannot be avoided on a consumer surface. Admin copy and messages to a named person are unchanged (the «Still feminine, by design» list).
+
+**Enforcement:** `scripts/checks/brand-lexicon-guard.sh`, rule `singular-address`. The strings written before this amendment are frozen in `scripts/checks/brand-lexicon-baseline.txt` and reworded in batches from a table Sapir approves (workflow rule 22).
+

@@ -122,10 +122,31 @@ RULES=(
   # `owner_story.contact_label` shipped with them.
   $'slash-gender\t/(ה|ת|תה|ית|ות|י)([[:space:]]|[[:punct:]]|$)|איש/אשת\t-\t'
   # «אלייך» — the double-yod pronoun is marked feminine; ADR-037 replaces it
-  # with «אליכם» on every reader surface. (`שלך` / `לך` are unmarked and stay.)
+  # with «אליכם» on every reader surface.
   # Admin copy may keep it (ADR-037: Sapir is the reader); a JSON line carries
   # no namespace, so such a line is baselined with its reason, not exempted here.
   $'feminine-address\tאלייך\t-\t'
+  # Singular «you» pronoun suffixes: «שלך», «משלך», «לך», «אותך», «בשבילך», «אצלך»,
+  # «עליך», «ממך», «איתך», «אליך», «בך», with an optional «ו» prefix (MEH-3808).
+  # BRAND.md §9 (ADR-037, Sapir 24/11/2026): neutral wording by default
+  # («המוצרים של העסק», «בחרו»), a generic plural («שלכם») on consumer
+  # surfaces only when a pronoun cannot be avoided, never the singular. Until
+  # 24/11 this comment said «שלך» / «לך» "are unmarked and stay"; §9 rules
+  # them out, so new copy with them is red and the old copy is baselined
+  # below until it is reworded (a separate card, the copy is Sapir's).
+  #
+  # The word must START after the start of the line, a space, `"`, `(` or `-`:
+  # «מלך», «הלך», «הולך», «שולך» contain «לך» but are other words. The
+  # boundary is ASCII on purpose — a Hebrew-letter class or «» would be
+  # multi-byte, and mawk (bytes) and gawk C.UTF-8 (characters) would then
+  # start the match at different points and the baseline key would depend on
+  # the awk (the forward-arrow note below has the measurement). The cost is a
+  # blind spot: «שלך» right after «, ׳ or a Hebrew prefix letter other than ו
+  # («כשלך» is not Hebrew, «בשבילך» is listed) is not seen.
+  # Final kaf «ך» only ever ends a word, so no end boundary is needed.
+  # Verbs in the singular past («פרסמת», «שמרת») are NOT checked: «ת» ends too
+  # many unrelated words («משמרת», «מקבלת») for a pattern to tell them apart.
+  $'singular-address\t(^|[[:space:]"(-])(ו)?(שלך|משלך|לך|אותך|בשבילך|אצלך|עליך|ממך|איתך|אליך|בך)\t-\t'
   # «אימייל» — the site says «מייל» (Sapir delegated the call 21/11, decided on
   # what Israeli services write: btl.gov.il «כתובת המייל», iec.co.il «חשבונית
   # במייל»; MEH-3665). Every prefix form («האימייל», «לאימייל») contains it.
@@ -396,13 +417,25 @@ write_baseline() {
 #   licensed-term · מורשים     (backend/app/services/experience_moderation.py)
 #     The Hebrew SYSTEM PROMPTS of the moderation models, same reason as the
 #     producer_risk.py line above: a model instruction, not copy anyone reads.
+#
+# ADDED BY MEH-3808 (24/11/2026) — the singular-address rule.
+#
+#   singular-address · שלך · לך · אותך · …   (every file)
+#     Copy written before BRAND.md §9 (ADR-037) addressed the reader in the
+#     singular. §9 says neutral by default, a generic plural only on consumer
+#     surfaces when a pronoun cannot be avoided, never the singular. Rewording
+#     ~240 strings is new copy and needs Sapir's word-for-word approval
+#     (workflow rule 22), so they are frozen here and reworded in batches from
+#     an approved table; each batch deletes its lines with --update-baseline.
+#     Admin copy and the outreach scripts to a named owner (he.json admin.*)
+#     may stay as they are: ADR-037 keeps admin copy and named people as is.
 HEAD
     scan "$1" | keys_of
   } > "$2"
 }
 
 self_test() {
-  local tmp pass=0 total=23 got
+  local tmp pass=0 total=27 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
@@ -459,6 +492,15 @@ export const A = () => <input placeholder="ספר/י מה הבעיה" />;
 export const B = () => <label>שם איש/אשת הקשר</label>;
 export const C = () => <p>אישור בדרך אלייך</p>;
 SL
+  # Cases 24-27 (MEH-3808). Case 24 is the text of he.json
+  # `recipes.dashboard.empty_description` before MEH-3807 reworded it; case 26
+  # is three real words that CONTAIN «לך» and are not the pronoun.
+  cat > "$tmp/frontend/components/You.jsx" <<'YOU'
+export const A = () => <p>מתכון מקדם את המוצרים שלך. שתפו איך משתמשים בהם בבית.</p>;
+export const B = () => <p>"ולך יש לוח בקרה משלך"</p>;
+export const C = () => <p>הלך המלך הולך</p>;
+export const D = () => <p>המוצרים של העסק, ובחרו מה מתאים לכם</p>;
+YOU
   # Anchored to backend/app/services/onboarding_followup.py:80-97 — an email
   # body assigned from a triple-quoted string, beside real docstrings.
   cat > "$tmp/backend/app/services/mail2.py" <<'PY2'
@@ -550,6 +592,19 @@ PY2
   _has $'frontend/components/Arrow.jsx\temail-term\tאימייל' \
     && { pass=$((pass+1)); echo "  ok 23  «אימייל» is caught (the site writes «מייל»)"; } \
     || echo "  FAIL 23  «אימייל» was NOT caught"
+  _has $'frontend/components/You.jsx\tsingular-address\t שלך' \
+    && { pass=$((pass+1)); echo "  ok 24  the singular «שלך» is caught (BRAND.md §9)"; } \
+    || echo "  FAIL 24  «שלך» was NOT caught"
+  _has $'frontend/components/You.jsx\tsingular-address\t"ולך' \
+    && _has $'frontend/components/You.jsx\tsingular-address\t משלך' \
+    && { pass=$((pass+1)); echo "  ok 25  «ולך» after a quote and «משלך» are caught"; } \
+    || echo "  FAIL 25  «ולך» or «משלך» was NOT caught"
+  [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /You\.jsx$/ && $2 == 3' | grep -c .)" -eq 0 ] \
+    && { pass=$((pass+1)); echo "  ok 26  «הלך», «המלך», «הולך» are other words, not hits"; } \
+    || echo "  FAIL 26  a word that only contains «לך» was flagged"
+  [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /You\.jsx$/ && $2 == 4' | grep -c .)" -eq 0 ] \
+    && { pass=$((pass+1)); echo "  ok 27  neutral wording and the plural «לכם» are not hits"; } \
+    || echo "  FAIL 27  neutral or plural wording was flagged"
   # The parsed-0 control must itself FAIL, not pass quietly.
   if run "$tmp/frontend" /dev/null "control" >/dev/null 2>&1; then
     echo "  FAIL 7  parsed-0 control PASSED — a wrong cwd would read as green"
