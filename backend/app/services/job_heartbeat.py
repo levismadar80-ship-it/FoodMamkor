@@ -77,6 +77,11 @@ GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
 # day, 08:00 on the Israel clock. Once a day: see services/rescue_reminders.py.
 RESCUE_REMINDER_CRON = "0 8 * * *"
 RESCUE_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3703: publish the weekly-routine bags that came into reach. Hourly, five
+# past, so a restart loses at most an hour and midnight's new «מחר» is up by
+# 00:05. Safe to rerun: a day that has any offer is left alone.
+RESCUE_SCHEDULE_CRON = "5 * * * *"
+RESCUE_SCHEDULE_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -151,6 +156,9 @@ UNMONITORED_SLUGS = frozenset(
         # MEH-3702: the rescue bag morning reminder. No Sentry monitor (plan
         # limit, MEH-3332).
         "rescue-morning-reminder-daily",
+        # MEH-3703: the weekly-routine publisher. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "rescue-schedule-publish-hourly",
     }
 )
 

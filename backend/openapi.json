@@ -20662,6 +20662,232 @@
         "title": "RescueReviewOut",
         "type": "object"
       },
+      "RescueScheduleIn": {
+        "description": "What the business sets once. Hours are the Israel wall clock.",
+        "properties": {
+          "cancel_minutes": {
+            "default": 60,
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Cancel Minutes",
+            "type": "integer"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "pickup_end": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          },
+          "weekdays": {
+            "maximum": 127.0,
+            "minimum": 1.0,
+            "title": "Weekdays",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekdays",
+          "pickup_start",
+          "pickup_end",
+          "qty",
+          "price_agorot"
+        ],
+        "title": "RescueScheduleIn",
+        "type": "object"
+      },
+      "RescueScheduleRow": {
+        "description": "One pickup point on the settings page: its routine, or none.",
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "exact": {
+            "title": "Exact",
+            "type": "boolean"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueScheduleStored"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "producer_location_id",
+          "exact"
+        ],
+        "title": "RescueScheduleRow",
+        "type": "object"
+      },
+      "RescueScheduleStored": {
+        "description": "The column's JSON: the routine plus the days the business skipped.",
+        "properties": {
+          "cancel_minutes": {
+            "default": 60,
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Cancel Minutes",
+            "type": "integer"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "pickup_end": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          },
+          "skip_dates": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Skip Dates",
+            "type": "array"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          },
+          "weekdays": {
+            "maximum": 127.0,
+            "minimum": 1.0,
+            "title": "Weekdays",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekdays",
+          "pickup_start",
+          "pickup_end",
+          "qty",
+          "price_agorot"
+        ],
+        "title": "RescueScheduleStored",
+        "type": "object"
+      },
       "RescueTypicalItemsIn": {
         "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
         "properties": {
@@ -34799,6 +35025,228 @@
         ]
       }
     },
+    "/producers/me/rescue/locations/{location_id}/schedule": {
+      "delete": {
+        "description": "Stop the routine. Bags already published stay, as a pause leaves them.",
+        "operationId": "delete_my_schedule_producers_me_rescue_locations__location_id__schedule_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete My Schedule",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Set or change the routine, then publish any day already in reach.",
+        "operationId": "save_my_schedule_producers_me_rescue_locations__location_id__schedule_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueScheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Save My Schedule",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/locations/{location_id}/schedule/skips/{day}": {
+      "delete": {
+        "description": "Take a skip back. A day whose bag was already cancelled stays without\none: a cancel told its buyers, and a bag that reappears would confuse them.",
+        "operationId": "unskip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Unskip My Day",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up keeps it: the dashboard then cancels that\nbag through POST /rescue/offers/{id}/cancel, the same «ביטול» that emails\nits buyers. Skip first, cancel second, so the next run cannot put the bag\nback between the two.",
+        "operationId": "skip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Skip My Day",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/producers/me/rescue/offers": {
       "get": {
         "description": "Today's and tomorrow's bags across this business's pickup points, with\nwhat was left.\n\nThe same two days, by the Israel clock, as the orders list beside it.",
@@ -34942,6 +35390,37 @@
           }
         ],
         "summary": "My Pilot Locations",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/schedules": {
+      "get": {
+        "description": "Every pickup point of this business, with its routine or none.",
+        "operationId": "list_my_schedules_producers_me_rescue_schedules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueScheduleRow"
+                  },
+                  "title": "Response List My Schedules Producers Me Rescue Schedules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Schedules",
         "tags": [
           "rescue"
         ]

@@ -25,7 +25,7 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import SmallInteger  # MEH-3511: delivery_areas day counts
 
@@ -353,6 +353,11 @@ class ProducerLocation(Base):
     # the address, not on a bag or an order, so every pickup here reads one
     # text. NULL = none; the schema stores "" as NULL.
     pickup_note = Column(Text, nullable=True)
+    # MEH-3703: the weekly surprise-bag routine at this point — weekdays,
+    # window, qty, price, paused, skipped dates. Its shape is
+    # schemas/rescue.py RescueSchedule; services/rescue_schedule.py publishes
+    # from it. NULL = no routine. A column, not a table (revision docstring).
+    rescue_schedule = Column(JSONB, nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )

@@ -38,6 +38,7 @@ History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643);
           MEH-3117 (new_rescue favorite alert on create_offer)
 """
 
+from datetime import date
 from typing import Any
 import logging
 from uuid import UUID
@@ -65,6 +66,7 @@ from app.data.cities import canonical_city
 from app.database import get_db
 from app.models.models import (
     Producer,
+    ProducerLocation,
     RescueOffer,
     RescueOrder,
     RescueReview,
@@ -91,7 +93,17 @@ from app.schemas.rescue import (
     RescueTypicalItemsIn,
     RescueTypicalItemsOut,
 )
+from app.schemas.rescue_schedule import (  # MEH-3703
+    RescueScheduleIn,
+    RescueScheduleRow,
+)
 from app.sentry import capture_background_exception
+from app.services.rescue_schedule import (  # MEH-3703
+    publish_due,
+    save_routine,
+    set_skip,
+)
+from app.services.rescue_schedule import stored as stored_routine
 from app.services.rescue_business_emails import queue_business_reservation_email
 from app.services.rescue_emails import (
     ReservationEmail,
@@ -831,3 +843,182 @@ def set_typical_items(
         producer_id=current_user.producer_id,  # type: ignore[arg-type]
         body=body,
     )
+
+
+# ── MEH-3703: the weekly routine ────────────────────────────────────────────
+# One routine per pickup point (producer_locations.rescue_schedule). Saving it
+# publishes the days already in reach at once; the hourly job does the rest.
+# A skip of a day that is already published cancels that bag through the same
+# path as the dashboard's «ביטול», so every buyer gets the same email.
+
+
+def _my_location(db: Session, user: User, location_id: UUID) -> ProducerLocation:
+    """The caller's own pickup point (or any, for an admin); 404 otherwise, so
+    another business's point is indistinguishable from a missing one."""
+    location = db.query(ProducerLocation).filter(ProducerLocation.id == location_id).first()
+    if location is None or (
+        user.role != "admin" and location.producer_id != user.producer_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="נקודת האיסוף לא נמצאה"
+        )
+    return location
+
+
+def _schedule_row(location: ProducerLocation) -> RescueScheduleRow:
+    return RescueScheduleRow(
+        producer_location_id=location.id,
+        label=location.label,
+        address=location.address,
+        city=location.city,
+        exact=location.location_precision == "exact",
+        schedule=stored_routine(location),
+    )
+
+
+@me_router.get(
+    "/producers/me/rescue/schedules",
+    response_model=list[RescueScheduleRow],
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("60/minute")
+def list_my_schedules(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> list[RescueScheduleRow]:
+    """Every pickup point of this business, with its routine or none."""
+    if not current_user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
+        )
+    points = (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == current_user.producer_id)
+        .order_by(ProducerLocation.is_primary.desc(), ProducerLocation.created_at)
+        .all()
+    )
+    return [_schedule_row(p) for p in points]
+
+
+@me_router.put(
+    "/producers/me/rescue/locations/{location_id}/schedule",
+    response_model=RescueScheduleRow,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def save_my_schedule(
+    request: Request,
+    location_id: UUID,
+    body: RescueScheduleIn,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> RescueScheduleRow:
+    """Set or change the routine, then publish any day already in reach."""
+    location = _my_location(db, current_user, location_id)
+    if location.location_precision != "exact":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם סל",
+        )
+    if not city_in_pilot(location.city):  # type: ignore[arg-type]
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
+        )
+    save_routine(location, body, israel_today())
+    db.commit()
+    publish_due(
+        db,
+        today=israel_today(),
+        now=utc_now(),
+        in_pilot=city_in_pilot,
+        location_id=location.id,  # type: ignore[arg-type]
+    )
+    db.refresh(location)
+    return _schedule_row(location)
+
+
+@me_router.delete(
+    "/producers/me/rescue/locations/{location_id}/schedule",
+    response_model=RescueScheduleRow,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def delete_my_schedule(
+    request: Request,
+    location_id: UUID,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> RescueScheduleRow:
+    """Stop the routine. Bags already published stay, as a pause leaves them."""
+    location = _my_location(db, current_user, location_id)
+    location.rescue_schedule = None  # type: ignore[assignment]
+    db.commit()
+    db.refresh(location)
+    return _schedule_row(location)
+
+
+@me_router.put(
+    "/producers/me/rescue/locations/{location_id}/schedule/skips/{day}",
+    response_model=RescueScheduleRow,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def skip_my_day(
+    request: Request,
+    location_id: UUID,
+    day: date,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> RescueScheduleRow:
+    """Skip one day, so the routine does not publish it.
+
+    A day whose bag is already up keeps it: the dashboard then cancels that
+    bag through POST /rescue/offers/{id}/cancel, the same «ביטול» that emails
+    its buyers. Skip first, cancel second, so the next run cannot put the bag
+    back between the two."""
+    location = _my_location(db, current_user, location_id)
+    try:
+        set_skip(location, day, skip=True, today=israel_today())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    db.commit()
+    db.refresh(location)
+    return _schedule_row(location)
+
+
+@me_router.delete(
+    "/producers/me/rescue/locations/{location_id}/schedule/skips/{day}",
+    response_model=RescueScheduleRow,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def unskip_my_day(
+    request: Request,
+    location_id: UUID,
+    day: date,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> RescueScheduleRow:
+    """Take a skip back. A day whose bag was already cancelled stays without
+    one: a cancel told its buyers, and a bag that reappears would confuse them."""
+    location = _my_location(db, current_user, location_id)
+    try:
+        set_skip(location, day, skip=False, today=israel_today())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    db.commit()
+    publish_due(
+        db,
+        today=israel_today(),
+        now=utc_now(),
+        in_pilot=city_in_pilot,
+        location_id=location.id,  # type: ignore[arg-type]
+    )
+    db.refresh(location)
+    return _schedule_row(location)
