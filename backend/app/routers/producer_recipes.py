@@ -116,7 +116,7 @@ def _validate_product_ids(
         # 422, not 403 — the body shape is wrong, not the auth.
         raise HTTPException(
             status_code=422,
-            detail="כל המוצרים המקושרים חייבים להיות שייכים לעסק שלך",
+            detail="כל המוצרים המקושרים חייבים להיות שייכים לעסק",
         )
     return products
 

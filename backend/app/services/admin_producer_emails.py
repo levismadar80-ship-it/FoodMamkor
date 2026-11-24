@@ -55,7 +55,7 @@ _APPROVED_COMMUNITY_BLOCK = (
 # MEH-2151: LOCKED copy, approved by Sapir 21/08/2026, shipped verbatim.
 # Labels only — the URL is appended on its own line beneath each, mirroring
 # the community block's `label:\n{url}` shape so all three read alike.
-_APPROVED_VIEW_PAGE_LABEL = "ככה העמוד שלך נראה ללקוחות:"
+_APPROVED_VIEW_PAGE_LABEL = "ככה עמוד העסק נראה ללקוחות:"
 _APPROVED_DASHBOARD_LABEL = "לעדכון פרטים, תמונות ומוצרים — לוח הבקרה:"
 _APPROVED_HTML_BUTTON_LABEL = "לצפייה בעמוד העסק"
 _APPROVED_HTML_DASHBOARD_LABEL = "לוח הבקרה — עדכון פרטים ומוצרים"
@@ -144,8 +144,8 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     view_page = f"\n{_APPROVED_VIEW_PAGE_LABEL}\n{page_url}\n" if page_url else ""
     dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
-        f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
-        f"העמוד שלך כבר מופיע באתר.\n"
+        f'היי,\n\nהעסק "{name}" אושר במהמקור! '
+        f"עמוד העסק כבר מופיע באתר.\n"
         f"{view_page}"
         f"{dashboard}"
         f"{community}"
@@ -248,8 +248,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         "היי,",
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
-        f'העסק שלך "{safe_name}" אושר במהמקור! '
-        "העמוד שלך כבר מופיע באתר.</p>\n"
+        f'העסק "{safe_name}" אושר במהמקור! '
+        "עמוד העסק כבר מופיע באתר.</p>\n"
         f"{button}\n"
         '<p style="margin:0 0 24px;direction:rtl;">'
         f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'

@@ -237,7 +237,7 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 // P2 — OAuth producer: a 409 surfaces a toast (GSI-stub, mirrors flows/10)
 // ===========================================================================
 test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
-  const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
+  const DETAIL_MSG = "כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
 
   test("a 409 from the OAuth Step-0 endpoint shows the backend detail as a toast", async ({
     page,

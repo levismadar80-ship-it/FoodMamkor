@@ -15,6 +15,7 @@ import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
 import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { bagDay, rescueCancelText, israelTime, shekels, worthAgorot } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 import StruckPrice from "@/components/ui/StruckPrice";
 
 const STATE_KEY = {
@@ -46,9 +47,10 @@ const STATE_KEY_TOMORROW = {
  * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/use-rescue-reservation").default> }} props
  */
 export default function RescueOfferAction({ offer, reservation }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   const { order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed, cancelled, businessCancelled, businessCancelledDay, reserve, cancel } = reservation;
-  const tomorrow = bagDay(offer.date) === "tomorrow";
+  const tomorrow = bagDay(offer.date, day) === "tomorrow";
   // REUSES: components/RegistrationOverlays.jsx useInView — the phone bar
   // comes up only once the card's own button has scrolled away (the event
   // page rule), so the two buttons are never on screen together.

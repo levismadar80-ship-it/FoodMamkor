@@ -18,7 +18,7 @@ from uuid import uuid4
 from _test_group_buys_api__common import _contact_details_in  # noqa: F401
 from _test_group_buys_api__common import _make_group_buy  # noqa: F401
 from _test_group_buys_api__common import _producer_user  # noqa: F401
-JOIN_SUBJECT_PREFIX = "מהמקור — הצטרפת לקבוצה"
+JOIN_SUBJECT_PREFIX = "מהמקור — ההצטרפות לקבוצה"
 
 
 class TestFundedNotificationDispatch:
@@ -569,7 +569,7 @@ class TestCancelNotification:
         assert sent["subject"] == 'מהמקור — הקבוצה "רכש קמח מלא" בוטלה'
         assert sent["body"] == (
             "שלום,\n\n"
-            'הקבוצה שהצטרפת אליה, "רכש קמח מלא", בוטלה על ידי מאפיית הגליל.\n'
+            'הקבוצה שהצטרפתם אליה, "רכש קמח מלא", בוטלה על ידי מאפיית הגליל.\n'
             "לשאלות צרו קשר עם מאפיית הגליל.\n\n"
             "בברכה,\nצוות מהמקור"
         )
