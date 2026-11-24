@@ -568,6 +568,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `useFirstMoment.js` | The «רגע ראשון» due on the dashboard home right now, if any (MEH-3200 part 2). Wraps lib/first-moments.js with storage. |
 | `useScrollAffordance.js` | — אין כותרת — |
 | `useTabsKeyboard.js` | The W3C APG Tabs keyboard layer, in one place, for every tablist on the site. Returns the 'onKeyDown' a 'role="tablist"' element wears. |
+| `useUnsavedGuard.js` | Warns before an owner leaves a dashboard form with unsaved edits: the browser's own prompt on refresh / tab close, and a confirm on any in-app link that … |
 | `useWhatsNew.js` | Two small client-only state holders for the dashboard home (MEH-3200): the newest «מה חדש» release the owner has not seen, and whether the one-time welcome … |
 
 ### אתר — `frontend/components`
