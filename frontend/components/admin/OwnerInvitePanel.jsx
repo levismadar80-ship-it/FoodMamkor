@@ -13,6 +13,7 @@ import { copyOrThrow } from "@/lib/clipboard";
 import { getWhatsAppHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import OwnerDetachControl from "@/components/admin/OwnerDetachControl";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Module:   OwnerInvitePanel
@@ -402,16 +403,15 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
             value={form.note}
             onChange={(v) => setForm((f) => ({ ...f, note: v }))}
           />
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="owner-invite-consent"
-              checked={form.consent}
-              onChange={(e) => setForm((f) => ({ ...f, consent: e.target.checked }))}
-              className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-            />
+          <Checkbox
+            className="flex items-start gap-2 text-sm"
+            boxClassName="mt-0.5"
+            data-testid="owner-invite-consent"
+            checked={form.consent}
+            onChange={(e) => setForm((f) => ({ ...f, consent: e.target.checked }))}
+          >
             <span className="leading-relaxed text-text">{t("consent")}</span>
-          </label>
+          </Checkbox>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button type="submit" data-testid="owner-invite-submit" disabled={!canSubmit} variant="primary" size="sm">
               {busy ? t("sending") : t("send")}

@@ -40,6 +40,7 @@ import {
   nextRange,
   serializeHours,
 } from "@/lib/hours-serialize";
+import Checkbox from "@/components/ui/Checkbox";
 
 // Shared by every time input: ≥44px tall (min-h-touch), numerals in reading
 // order. REUSES: HoursEditor.jsx (6f8d70e8^) input class, plus the touch floor.
@@ -157,16 +158,14 @@ export default function LocationHoursField({
           const issueReason = issueByDay.get(i);
           return (
             <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1" data-testid={`location-hours-day-${i}`}>
-              <label className="flex min-h-touch w-24 shrink-0 cursor-pointer items-center gap-2 text-sm text-text">
-                <input
-                  type="checkbox"
-                  checked={day.open}
-                  onChange={(e) => patchDay(i, { open: e.target.checked })}
-                  className="h-4 w-4 accent-primary"
-                  data-testid={`location-hours-open-${i}`}
-                />
+              <Checkbox
+                className="flex w-24 shrink-0 items-center gap-2 text-sm text-text"
+                checked={day.open}
+                onChange={(e) => patchDay(i, { open: e.target.checked })}
+                data-testid={`location-hours-open-${i}`}
+              >
                 <span>{tDays(key)}</span>
-              </label>
+              </Checkbox>
 
               {day.open ? (
                 <div className="flex flex-col gap-1.5">

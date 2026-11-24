@@ -23,6 +23,7 @@ import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import OrderCutoffPicker from "../OrderCutoffPicker";
 import DeliveryTimeFields from "./DeliveryTimeFields";
+import Checkbox from "@/components/ui/Checkbox";
 
 // Mirrors backend MAX_DELIVERY_MONEY / MAX_DELIVERY_ZONES (app/limits.py).
 const MAX_DELIVERY_MONEY = 1_000_000;
@@ -231,15 +232,14 @@ function CheckGroup({ legend, items, checked, onToggle, testid }) {
       <ul className="flex flex-wrap gap-x-4 gap-y-1">
         {items.map((item) => (
           <li key={item}>
-            <label className="inline-flex items-center gap-1.5 text-sm min-h-11">
-              <input
-                type="checkbox"
-                checked={checked.includes(item)}
-                onChange={() => onToggle(item)}
-                data-testid={`${testid}-${item}`}
-              />
+            <Checkbox
+              className="inline-flex items-center gap-1.5 text-sm min-h-11"
+              checked={checked.includes(item)}
+              onChange={() => onToggle(item)}
+              data-testid={`${testid}-${item}`}
+            >
               {item}
-            </label>
+            </Checkbox>
           </li>
         ))}
       </ul>

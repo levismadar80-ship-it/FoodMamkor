@@ -13,6 +13,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AdminReviewReply from "@/components/admin/AdminReviewReply";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -277,16 +278,14 @@ export default function AdminReviewsPage() {
           <option value="4">★ 4</option>
           <option value="5">★ 5</option>
         </select>
-        <label className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={flaggedOnly}
-            onChange={(e) => setFlaggedOnly(e.target.checked)}
-            data-testid="review-ai-flag-filter"
-            className="accent-primary"
-          />
+        <Checkbox
+          className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap"
+          checked={flaggedOnly}
+          onChange={(e) => setFlaggedOnly(e.target.checked)}
+          data-testid="review-ai-flag-filter"
+        >
           {t("reviews.ai_flagged_only")}
-        </label>
+        </Checkbox>
       </div>
 
       <div className="bg-surface border border-border rounded-md overflow-hidden">

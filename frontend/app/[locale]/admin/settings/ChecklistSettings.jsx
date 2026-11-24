@@ -32,6 +32,7 @@ import { ArrowDown, ArrowUp, Plus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 
 const ICON = 16;
 
@@ -239,15 +240,13 @@ export default function ChecklistSettings() {
                   onChange={(e) => update(index, { hint: e.target.value })}
                   maxLength={300}
                 />
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={item.active}
-                    onChange={(e) => update(index, { active: e.target.checked })}
-                    className="h-4 w-4 accent-primary"
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-xs"
+                  checked={item.active}
+                  onChange={(e) => update(index, { active: e.target.checked })}
+                >
                   <span>{item.active ? t("active") : t("inactive")}</span>
-                </label>
+                </Checkbox>
               </div>
             </div>
           </li>

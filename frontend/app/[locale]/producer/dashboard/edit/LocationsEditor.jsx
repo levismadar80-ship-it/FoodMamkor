@@ -58,6 +58,7 @@ import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/Skeleton";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -1010,17 +1011,16 @@ function LocationForm({
               catch. Shown from the second location onward, where it decides
               something. */}
           {siblings.length > 0 ? (
-            <label className="flex items-center gap-2 self-end text-sm text-text">
-              <input
-                type="checkbox"
-                checked={!!form.is_primary}
-                onChange={(e) =>
+            <Checkbox
+              className="flex items-center gap-2 self-end text-sm text-text"
+              checked={!!form.is_primary}
+              onChange={(e) =>
                   setForm((f) => ({ ...f, is_primary: e.target.checked }))
                 }
-                data-testid="location-primary"
-              />
+              data-testid="location-primary"
+            >
               {tForm("primary_label")}
-            </label>
+            </Checkbox>
           ) : null}
         </div>
       </details>

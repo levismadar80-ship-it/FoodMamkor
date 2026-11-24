@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 
 /** Below this many cities a per-row select is quicker than a bulk step. */
 const MIN_CITIES_FOR_BULK = 2;
@@ -43,16 +44,15 @@ export default function DeliveryBulkDay({ cities, onApply }) {
       <ul className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
         {cities.map((c) => (
           <li key={c}>
-            <label className="inline-flex items-center gap-1.5 text-sm min-h-11">
-              <input
-                type="checkbox"
-                checked={live.includes(c)}
-                onChange={() => toggle(c)}
-                aria-label={t("bulk_city_aria", { city: c })}
-                data-testid={`delivery-bulk-city-${c}`}
-              />
+            <Checkbox
+              className="inline-flex items-center gap-1.5 text-sm min-h-11"
+              checked={live.includes(c)}
+              onChange={() => toggle(c)}
+              aria-label={t("bulk_city_aria", { city: c })}
+              data-testid={`delivery-bulk-city-${c}`}
+            >
               {c}
-            </label>
+            </Checkbox>
           </li>
         ))}
       </ul>
