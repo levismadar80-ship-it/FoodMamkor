@@ -28,14 +28,10 @@ def host_test_cause(host: Any) -> bool:
 
 
 def _send_email(
-    to_email: str,
-    subject: str,
-    body: str,
-    test_cause: bool = False,
-    kind: str | None = None,
+    to_email: str, subject: str, body: str, test_cause: bool = False, **opts: Any
 ) -> None:
-    # MEH-3839: `kind` is the tag Resend reports back with each delivery event.
-    send_email(to_email, subject, body, test_cause=test_cause, kind=kind)
+    # MEH-3839: `kind=` passes through in opts.
+    send_email(to_email, subject, body, test_cause=test_cause, **opts)
 
 
 # --- Templates ---

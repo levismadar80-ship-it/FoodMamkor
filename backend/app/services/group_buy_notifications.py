@@ -34,6 +34,7 @@ tests/test_group_buys_api.py — extend it alongside any new template here.
 """
 
 from __future__ import annotations
+from typing import Any
 
 import logging
 from datetime import datetime, timezone
@@ -46,14 +47,10 @@ logger = logging.getLogger(__name__)
 
 
 def _send_email(
-    to_email: str,
-    subject: str,
-    body: str,
-    test_cause: bool = False,
-    kind: str | None = None,
+    to_email: str, subject: str, body: str, test_cause: bool = False, **opts: Any
 ) -> None:
-    # MEH-3839: `kind` is the tag Resend reports back with each delivery event.
-    send_email(to_email, subject, body, test_cause=test_cause, kind=kind)
+    # MEH-3839: `kind=` passes through in opts.
+    send_email(to_email, subject, body, test_cause=test_cause, **opts)
 
 
 def _group_buy_url(group_buy_id: str) -> str:
