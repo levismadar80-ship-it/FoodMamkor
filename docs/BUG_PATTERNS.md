@@ -286,3 +286,24 @@ that fills the screen with something that eats every touch (a map, a canvas,
 an image viewer) uses the hook.
 
 **Regression spec:** `frontend/__tests__/MiniMap.test.jsx` «MEH-3509».
+
+## A root provider's update during hydration throws the page back to the loader (MEH-3828)
+
+**Symptom:** on a slow phone the whole page turns into the route loader
+(`app/[locale]/loading.js`) about 5 s after load, then mounts again. The
+footer jumps by about a screen (≈ 1.0 CLS) and data the page read is read
+twice. No console error.
+
+**Root cause:** a context provider above the page (here `AuthProvider`) sets
+state from its mount effect as an urgent update. When it reaches a Suspense
+boundary still waiting to hydrate (a `next/dynamic` chunk not loaded yet),
+React drops that boundary's server HTML and shows its fallback
+(https://react.dev/errors/421; React 18 logs it only in development).
+
+**Fix:** set that state inside `startTransition`, so hydration finishes first.
+The cost: consumers see the old value until the page has hydrated.
+
+**Siblings:** a new provider in `app/[locale]/layout.js` that sets state on
+mount does the same.
+
+**Regression spec:** `frontend/__tests__/AuthHydrationNoFallback.test.jsx`.
