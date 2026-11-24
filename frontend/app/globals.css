@@ -494,6 +494,15 @@ body.sheet-open .cookie-banner {
 html[data-cookie-answered] .cookie-banner[data-prehydration] {
   display: none;
 }
+/* MEH-3820: /map's phone shell reserves the banner's strip from the first
+   paint while the visitor has not answered (the banner is in the server HTML,
+   and its own inline script publishes --cookie-banner-h before paint). Before,
+   the reserve waited for hydration and the map shrank ~5 s in on a slow phone
+   (0.118 CLS). Same length as MapClient.jsx MOBILE_BANNER_RESERVE. */
+html:not([data-cookie-answered]) [data-map-banner-reserve] {
+  --map-pane-reserve: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px));
+  padding-bottom: var(--map-pane-reserve);
+}
 html[data-has-token] [data-auth-pending] {
   visibility: hidden;
 }
