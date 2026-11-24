@@ -98,14 +98,11 @@ describe("allergens behind a closed disclosure (owner)", () => {
     else expect(count.textContent).toContain(`סומנו ${n}`);
   });
 
-  it("opened, the chips work and save as before", async () => {
+  it("the chips inside the fold work and save as before", async () => {
     mockDay({ allergens: ["milk"] });
     wrap(<RescueTab />);
     await loaded();
     const box = screen.getByTestId("rescue-allergens-disclosure");
-    fireEvent.click(screen.getByTestId("rescue-allergens-summary"));
-    box.open = true;
-    expect(box.hasAttribute("open")).toBe(true);
     fireEvent.click(within(box).getByTestId("rescue-allergen-sesame"));
     fireEvent.click(screen.getByTestId("rescue-items-save"));
     await waitFor(() => expect(put.mock.calls.at(-1)[1].allergens).toEqual(["milk", "sesame"]));
@@ -118,6 +115,38 @@ describe("the publish card's place", () => {
     wrap(<RescueTab />);
     await loaded();
     expect(before(screen.getByTestId("rescue-publish-today"), screen.getByTestId("rescue-counters"))).toBe(true);
+  });
+
+  it("stays in its place when the offers read fails — a failure is not «nothing out»", async () => {
+    mockDay();
+    const base = get.getMockImplementation();
+    get.mockImplementation((url) => (url === "/producers/me/rescue/offers" ? Promise.reject(new Error("500")) : base(url)));
+    wrap(<RescueTab />);
+    await loaded();
+    expect(before(screen.getByTestId("rescue-counters"), screen.getByTestId("rescue-publish-today"))).toBe(true);
+  });
+
+  it("does not jump after the first publish: the form stays where it was", async () => {
+    let out = [];
+    mockDay();
+    const base = get.getMockImplementation();
+    get.mockImplementation((url) => (url === "/producers/me/rescue/offers" ? Promise.resolve({ data: out }) : base(url)));
+    wrap(<RescueTab />);
+    await loaded();
+    const button = screen.getByTestId("rescue-publish-today");
+    out = [liveBag()];
+    fireEvent.click(button);
+    await screen.findByTestId("rescue-offer-cancel");
+    // Same node (no remount), still above the counters.
+    expect(screen.getByTestId("rescue-publish-today")).toBe(button);
+    expect(before(button, screen.getByTestId("rescue-counters"))).toBe(true);
+  });
+
+  it("many bags out: below the orders", async () => {
+    mockDay({ offers: [liveBag({ id: "a" }), liveBag({ id: "b" }), liveBag({ id: "c" })] });
+    wrap(<RescueTab />);
+    await loaded();
+    expect(before(screen.getByTestId("rescue-counters"), screen.getByTestId("rescue-publish-today"))).toBe(true);
   });
 
   it("stays below the orders once a bag is out", async () => {
@@ -137,6 +166,16 @@ describe("«שווי הסל»", () => {
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     await waitFor(() => expect(post).toHaveBeenCalled());
     expect(post.mock.calls[0][1].value_min_agorot).toBe(4500);
+  });
+
+  it("is left out when not above the price — buyers would never see it", async () => {
+    mockDay();
+    wrap(<RescueTab />);
+    await loaded();
+    fireEvent.change(screen.getByTestId("rescue-publish-worth"), { target: { value: "15" } });
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect("value_min_agorot" in post.mock.calls[0][1]).toBe(false);
   });
 
   it("is left out when empty — no struck price is invented", async () => {

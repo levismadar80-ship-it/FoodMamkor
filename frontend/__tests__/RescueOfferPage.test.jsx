@@ -267,6 +267,14 @@ describe("RescueOfferPage — what is inside and allergens", () => {
     await renderWith(offer());
     expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared_short"));
   });
+  // MEH-3823: the bag page wires the fixed «ask at pickup» line, declared or not.
+  it.each([
+    ["declared", ["gluten"]],
+    ["not declared", null],
+  ])("the «ask at pickup» line is on the bag page (%s)", async (_n, allergens) => {
+    await renderWith(offer({ allergens }));
+    expect(screen.getByTestId("rescue-offer-allergens-ask").textContent).toBe(lookup("rescue.section.allergens_ask"));
+  });
   it("declared allergens are listed by their product-sheet names", async () => {
     await renderWith(offer({ allergens: ["gluten"] }));
     expect(screen.getByTestId("rescue-offer-allergens-declared").textContent).toContain(

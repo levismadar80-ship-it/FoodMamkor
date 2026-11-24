@@ -118,6 +118,12 @@ export default function RescueTab() {
   // MEH-2703: today's bags with what was not collected. Reloaded with the
   // orders, so marking «לא הגיע» updates the leftover count at once.
   const [offers, setOffers] = useState([]);
+  // MEH-3823: where the publish card sits is decided once, on the first load
+  // that read both lists: first (true) when nothing is out today or
+  // tomorrow, in its usual place (false) otherwise. A failed read counts as
+  // «something may be out» (false). Deciding once keeps the form from
+  // jumping — and remounting — when a publish fills the list.
+  const [setupFirst, setSetupFirst] = useState(/** @type {boolean | null} */ (null));
   const [businessName, setBusinessName] = useState("");
   // MEH-2784: the business status, from the /producers/me read below. null
   // until it answers; the publish form waits for it, so a pending business
@@ -132,18 +138,23 @@ export default function RescueTab() {
   const [cancellingOffer, setCancellingOffer] = useState(null);
 
   const load = useCallback(async () => {
+    let orderRows = null;
+    let offerRows = null;
     try {
       const res = await api.get("/producers/me/rescue/orders");
-      setOrders(Array.isArray(res.data) ? res.data : []);
+      orderRows = Array.isArray(res.data) ? res.data : [];
     } catch {
-      setOrders([]);
+      orderRows = null;
     }
     try {
       const res = await api.get("/producers/me/rescue/offers");
-      setOffers(Array.isArray(res.data) ? res.data : []);
+      offerRows = Array.isArray(res.data) ? res.data : [];
     } catch {
-      setOffers([]);
+      offerRows = null;
     }
+    setOrders(orderRows ?? []);
+    setOffers(offerRows ?? []);
+    setSetupFirst((prev) => prev ?? (orderRows !== null && offerRows !== null && orderRows.length === 0 && offerRows.length === 0));
   }, []);
 
   useEffect(() => {
@@ -327,7 +338,9 @@ export default function RescueTab() {
         pickup_start: iso(form.from),
         pickup_end: iso(form.to),
         cancel_until: cancel,
-        ...(Number(form.worth) > 0 ? { value_min_agorot: Math.round(Number(form.worth) * 100) } : {}),
+        // Buyers see a worth only above the price (worthAgorot), so one at
+        // or below it is not sent at all.
+        ...(Number(form.worth) > Number(form.price) ? { value_min_agorot: Math.round(Number(form.worth) * 100) } : {}),
       });
       setNotice("publish", t("published"), false);
       await load();
@@ -441,8 +454,6 @@ export default function RescueTab() {
   // front, and gets no form. Pending reads «we are reviewing»; any other
   // non-approved status (draft, rejected, suspended) gets the server's line.
   const gated = producerStatus !== null && producerStatus !== "approved" && producerStatus !== "unknown";
-  // Waits for both lists, so the order does not jump once they arrive.
-  const publishFirst = orders !== null && offers.length === 0 && orders.length === 0;
   // MEH-2935 + MEH-3823: «what is in the bag» then the publish form, one
   // block. It comes first for a business with nothing out today or tomorrow
   // (a new business, or a quiet day): publishing is then the only thing to
@@ -569,19 +580,22 @@ export default function RescueTab() {
                 className="w-full mt-1"
               />
             </label>
-            <label className="font-body-sm text-sm col-span-2">
-              {t("field.worth")}
-              <Input inline size="xs"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={form.worth}
-                onChange={(e) => setForm({ ...form, worth: e.target.value })}
-                data-testid="rescue-publish-worth"
-                className="w-full mt-1"
-              />
-              <span className="block text-xs text-fg-muted mt-1">{t("field.worth_help")}</span>
-            </label>
+            <div className="font-body-sm text-sm col-span-2">
+              <label>
+                {t("field.worth")}
+                <Input inline size="xs"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={form.worth}
+                  onChange={(e) => setForm({ ...form, worth: e.target.value })}
+                  aria-describedby="rescue-publish-worth-help"
+                  data-testid="rescue-publish-worth"
+                  className="w-full mt-1"
+                />
+              </label>
+              <p id="rescue-publish-worth-help" className="text-xs text-fg-muted mt-1">{t("field.worth_help")}</p>
+            </div>
             {/* MEH-3823: hour and minute selects, not <input type="time">,
                 which shows AM/PM on an iPhone set to English. min-w-0 keeps
                 the row inside its column on iOS (MEH-2730). */}
@@ -658,7 +672,7 @@ export default function RescueTab() {
             {t("not_approved")}
           </p>
         ))}
-      {publishFirst && setupBlock}
+      {setupFirst === true && setupBlock}
       <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
         {["reserved", "handed", "no_show"].map((k) => (
           <div key={k} className="border border-border rounded-md px-3 py-3 text-center">
@@ -813,7 +827,7 @@ export default function RescueTab() {
         </section>
       )}
 
-      {orders !== null && !publishFirst && setupBlock}
+      {setupFirst === false && setupBlock}
 
       {/* MEH-2703: only once the window closed and something was not
           collected; before that a bag may still be reserved or picked up. */}

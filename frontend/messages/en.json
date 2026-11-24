@@ -7249,12 +7249,12 @@
       "title": "Your bag is reserved",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
-      "terms": "Free cancellation until {cancel_until} · after two bags not collected, reserving pauses",
+      "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
       "step_reserved": "Reserved",
       "step_collect": "To collect",
       "step_done": "Handed over",
       "cancel": "Cancel the reservation",
-      "terms_no_cancel": "No cancellation · after two bags not collected, reserving pauses",
+      "terms_no_cancel": "No cancellation · after two bags not collected, new reservations are paused",
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
@@ -7281,7 +7281,7 @@
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "unverified": "Please verify your email address first.",
-      "blocked": "Two bags were not collected, so reserving is paused. To reserve again, <contact>write to us</contact>",
+      "blocked": "Two bags were not collected, so new reservations are paused for now. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -7336,11 +7336,11 @@
         "cancel_hour": "An hour before pickup",
         "cancel_two_hours": "Two hours before pickup",
         "worth": "Bag worth (₪)",
-        "worth_help": "What the bag would cost at full price. Optional. Buyers see it struck through beside the price.",
-        "from_hour": "Pickup from, hour",
-        "from_minute": "Pickup from, minutes",
-        "to_hour": "Until, hour",
-        "to_minute": "Until, minutes"
+        "worth_help": "What the bag would cost at full price. Optional. When it is above the price, buyers see it struck through beside the price.",
+        "from_hour": "Pickup start, hour",
+        "from_minute": "Pickup start, minutes",
+        "to_hour": "Pickup end, hour",
+        "to_minute": "Pickup end, minutes"
       },
       "items_title": "What's usually in the bag",
       "items_help": "Separate with commas. This is what customers see before they reserve a bag.",
@@ -7413,7 +7413,7 @@
       "cancel_title": "Cancelling",
       "cancel_body": "Free cancellation until {time}. After that the reservation stands.",
       "cancel_passed": "The free-cancellation time has passed, so a reservation made now stands.",
-      "no_show": "After two bags not collected, reserving pauses. Can't make it? Cancel, so the bag goes to someone else.",
+      "no_show": "After two bags not collected, new reservations are paused. Can't make it? Cancel, so the bag goes to someone else.",
       "business_link": "Go to {name}",
       "state_sold_out": "This bag is sold out for today.",
       "state_cancelled": "The business cancelled today's bag.",
@@ -7450,7 +7450,7 @@
         },
         "no_show": {
           "q": "What if I don't pick it up?",
-          "a": "The business marks the bag as not collected. Two no-shows within 30 days block reserving new bags."
+          "a": "The business marks the bag as not collected. After two bags not collected within 30 days, new reservations are paused."
         },
         "mine": {
           "q": "Where do I see my reservation?",
