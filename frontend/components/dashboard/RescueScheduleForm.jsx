@@ -47,7 +47,7 @@ export function upcomingDays(mask, today) {
   for (let n = FIRST_LISTED; n <= SKIP_DAYS_AHEAD; n += 1) {
     const d = new Date(base + n * DAY_MS);
     const weekday = d.getUTCDay();
-    if (mask & (1 << weekday)) out.push({ day: d.toISOString().slice(0, 10), weekday });
+    if (mask & (1 << weekday)) out.push({ day: israelToday(d), weekday }); // noon UTC: the same Israel day
   }
   return out;
 }
@@ -91,11 +91,10 @@ function PointRoutine({ row, today, onSaved }) {
     }
   }
 
-  const base = `/producers/me/rescue/locations/${id}/schedule`;
   const save = () =>
     run(
       () =>
-        api.put(base, {
+        api.put(`/producers/me/rescue/locations/${id}/schedule`, {
           weekdays: draft.weekdays,
           pickup_start: draft.pickup_start,
           pickup_end: draft.pickup_end,
@@ -108,12 +107,18 @@ function PointRoutine({ row, today, onSaved }) {
     );
   const remove = () =>
     run(async () => {
-      const res = await api.delete(base);
+      const res = await api.delete(`/producers/me/rescue/locations/${id}/schedule`);
       setDraft({ ...DEFAULTS });
       return res;
     }, "removed");
   const toggleSkip = (/** @type {string} */ day, /** @type {boolean} */ skipped) =>
-    run(() => (skipped ? api.delete(`${base}/skips/${day}`) : api.put(`${base}/skips/${day}`)), "");
+    run(
+      () =>
+        skipped
+          ? api.delete(`/producers/me/rescue/locations/${id}/schedule/skips/${day}`)
+          : api.put(`/producers/me/rescue/locations/${id}/schedule/skips/${day}`),
+      "",
+    );
 
   const place = row.label || row.address || "";
   const daysId = `rescue-schedule-days-${id}`;
@@ -228,6 +233,7 @@ function PointRoutine({ row, today, onSaved }) {
 /** @param {{ today?: string }} props */
 export default function RescueScheduleForm({ today }) {
   const t = useTranslations("rescue.schedule");
+  const ta = useTranslations("a11y");
   const [rows, setRows] = useState(/** @type {any[] | null} */ (null));
   const [failed, setFailed] = useState(false);
   const day = today || israelToday();
@@ -246,7 +252,7 @@ export default function RescueScheduleForm({ today }) {
   useEffect(load, [load]);
 
   if (failed) return <InlineMessage tone="error">{t("failed")}</InlineMessage>;
-  if (!rows) return <p className="font-body-sm text-sm text-fg-muted" role="status">{t("loading")}</p>;
+  if (!rows) return <p className="font-body-sm text-sm text-fg-muted" role="status">{ta("loading")}</p>;
   if (rows.length === 0) {
     return (
       <div className="space-y-3" data-testid="rescue-schedule-no-points">

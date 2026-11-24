@@ -32,7 +32,8 @@ const DAY_MS = 86_400_000;
 /** Tomorrow on the Israel clock, and its mask bit (Sunday = 1). @param {string} today */
 export function tomorrowOf(today) {
   const next = new Date(Date.parse(`${today}T12:00:00Z`) + DAY_MS);
-  return { day: next.toISOString().slice(0, 10), bit: 1 << next.getUTCDay() };
+  // Noon UTC is the same calendar day in Israel, so israelToday reads it right.
+  return { day: israelToday(next), bit: 1 << next.getUTCDay() };
 }
 
 /**
@@ -85,13 +86,13 @@ export default function RescueScheduleStrip({ today, offers, orders, onChanged }
   async function skip(/** @type {any} */ row) {
     setBusy(true);
     setError("");
-    const base = `/producers/me/rescue/locations/${row.producer_location_id}/schedule/skips/${day}`;
+    const loc = row.producer_location_id;
     try {
       if (row.skipped) {
-        await api.delete(base);
+        await api.delete(`/producers/me/rescue/locations/${loc}/schedule/skips/${day}`);
       } else {
         // Skip first, then cancel: the next run cannot put the bag back between.
-        await api.put(base);
+        await api.put(`/producers/me/rescue/locations/${loc}/schedule/skips/${day}`);
         const bag = liveBag(row);
         if (bag) await api.post(`/rescue/offers/${bag.id}/cancel`);
       }
@@ -111,13 +112,16 @@ export default function RescueScheduleStrip({ today, offers, orders, onChanged }
         const s = row.schedule;
         const place = row.label || row.address || "";
         const values = { place, qty: s.qty, price: formatAgorot(s.price_agorot), from: s.pickup_start, to: s.pickup_end };
-        const key = row.skipped ? "strip_skipped" : "strip_on";
+        // Whole keys, never built from parts, so the unused-key scan can read them.
+        const key = row.skipped
+          ? many && place ? "strip_skipped_at" : "strip_skipped"
+          : many && place ? "strip_on_at" : "strip_on";
         const needsAsk = !row.skipped && reservedOn(liveBag(row));
         return (
           <div key={row.producer_location_id} className="border border-border rounded-md px-4 py-3 bg-surface-card space-y-2" data-testid="rescue-schedule-row">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-body-sm text-sm text-text" data-testid="rescue-schedule-line">
-                {t(many && place ? `${key}_at` : key, values)}
+                {t(key, values)}
               </p>
               {asking !== row.producer_location_id && (
                 <Button

@@ -7430,10 +7430,7 @@
       }
     },
     "schedule": {
-      "title": "Weekly surprise-bag schedule",
       "lead": "Pick the days and hours once, and the bag goes up on its own the day before. On a day with nothing left, skip it.",
-      "back": "Back to surprise bags",
-      "loading": "Loading…",
       "failed": "We couldn't load the schedule. Try again in a moment.",
       "no_points": "To set a schedule you need a pickup point with an exact address.",
       "no_points_cta": "Add an address",
@@ -7457,7 +7454,7 @@
       "unskip_tomorrow": "Undo skip",
       "skip_has_orders": "Tomorrow already has reservations. Skipping cancels the bag and emails the buyers.",
       "skip_yes": "Skip and cancel",
-      "skip_no": "Not now",
+      "skip_no": "Keep the bag",
       "setup_link": "Publish like this every week",
       "edit_link": "Weekly schedule"
     }
