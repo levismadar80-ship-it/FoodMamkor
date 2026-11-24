@@ -30,6 +30,7 @@ from app.routers import (
     group_buy_capacity,
     group_buy_mine,
     group_buy_pickup,
+    my_orders_any,
     health,
     holiday_mode,
     marketing,
@@ -174,6 +175,8 @@ def _register_flagged_features(app: FastAPI) -> None:
     # MEH-3735: pickup codes, «נמסר» / «לא הגיע», the admin block release.
     app.include_router(group_buy_pickup.router)
     app.include_router(group_buy_pickup.admin_router)
+    # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
+    app.include_router(my_orders_any.router)
 
 
 def register_routers(app: FastAPI) -> None:

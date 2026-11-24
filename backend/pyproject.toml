@@ -336,10 +336,12 @@ files = [
     "app/services/group_buy_capacity.py",
     "app/services/group_buy_pickup_text.py",
     "app/routers/group_buy_mine.py",
+    "app/routers/my_orders_any.py",
     "app/schemas/group_buy_mine.py",
     "app/routers/group_buy_pickup.py",
     "app/schemas/group_buy_pickup.py",
     "app/services/group_buy_no_show.py",
+    "app/schemas/my_orders_any.py",
     "app/services/group_buy_pickup_place.py",
     "app/services/group_buy_pickup_reminder.py",
     "app/services/group_buy_delist.py",
@@ -444,6 +446,11 @@ files = [
     "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
     "app/routers/rescue_pilot.py",
+    "app/services/ai_budget.py",
+    "app/services/form_filler.py",
+    "app/services/form_fill_windows.py",
+    "app/routers/form_fill.py",
+    "app/schemas/form_fill.py",
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

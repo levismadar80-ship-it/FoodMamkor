@@ -217,8 +217,11 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       await expect(overview).toBeVisible({ timeout: 20_000 });
       // The checklist state: an approved business exposes data-state-approved.
       await expect(overview).toHaveAttribute("data-state-approved", "true");
-      // …and the one-tap public link is present (slug assigned on approval).
-      await expect(page.getByTestId("view-public-link")).toBeVisible();
+      // …and the one-tap public link is present: the tab bar's «צפייה בעמוד»
+      // eye, the business's one link to her page (MEH-3783).
+      const view = page.getByTestId("dashboard-view-page");
+      await expect(view).toBeVisible();
+      await expect(view).toHaveAttribute("href", new RegExp(`/producer/${producerId}$`));
     } finally {
       if (producerId) {
         await adminCtx.delete(`/api/admin/producers/${producerId}`).catch(() => {
