@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-24 — נתוני דמו לכל מצב ב-staging (PR #5219, #5249)
+
+**שורה אחת:** staging אופס ונזרע מחדש עם עסק דמו או שורה לכל מצב באתר (כיסוי 90/90). בדיקת ה-E2E שנשברה בגלל זה תוקנה ב-#5249.
+
+**מה צריך לדעת לפני עבודה:**
+- **staging כבר לא «הכל מאושר».** יש בו עסקים בטיוטה, ממתינים, נדחים ומושהים (`demo-state-*`), ומשתמשים `state-*@example.com` שאף אחד לא מתחבר איתם. בדיקה שמניחה שכל העסקים מאושרים, או שקוראת את הרשימה הראשונה שעל המסך, תיכשל עכשיו.
+- **סטטוס חדש או ערך חדש בעמודת סטטוס:** מוסיפים לו שורה ב-`backend/scripts/_seed_every_state.py` ובטבלה ב-`docs/SEED_COVERAGE.md`, ומריצים `backend/scripts/check_seed_coverage.py`.
+- **הביקורות המסומנות** יושבות על העסק המושהה (`demo-state-paused`), כדי שהדירוג של `ruach-hasadeh` לא ישתנה.
+- **זריעה מחדש של staging:** הפקודות ב-`docs/DEPLOYMENT.md` «Staging QA auth fixtures». בקונסולה של Railway מריצים עם `.venv/bin/python`.
+
 ## 2026-11-24 — תצוגת חלון ההזמנה לבעלת העסק (PR #5221, #5222, #5233)
 
 **שורה אחת:** שלושת ה-PR-ים נכנסו ל-staging ברכבת 3 (#5244). בעלת עסק רואה את חלון ההזמנה כמו לקוחה עוד לפני שהיא מפעילה הזמנות, ורואה מה עוד חסר.
