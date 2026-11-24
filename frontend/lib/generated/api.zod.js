@@ -3733,6 +3733,15 @@ export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.union([/*#__PU
 
 
 /**
+ * Swap a Google authorization code for a verified Google ID token.
+ * @summary Google Code
+ */
+export const GoogleCodeAuthGoogleCodePostResponse = /*#__PURE__*/ zod.object({
+  "id_token": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.'))
+
+
+/**
  * @summary Login
  */
 export const loginAuthLoginPostResponseOneTokenTypeDefault = `bearer`;
@@ -9227,6 +9236,7 @@ export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "price_agorot": /*#__PURE__*/ zod.int(),
   "producer": /*#__PURE__*/ zod.object({
+  "avg_rating": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -9235,7 +9245,7 @@ export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
   "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
-}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4\'s row has no\nplace to put them and serializing them would publish more than the screen\nneeds.')),
+}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock or the contact details — serializing them would publish more than\nthe screen needs. The public rating is here since MEH-3704, because the\nlist sorts by it; it is the same number the business page already shows.')),
   "qty_left": /*#__PURE__*/ zod.int(),
   "qty_total": /*#__PURE__*/ zod.int(),
   "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),
@@ -9373,6 +9383,28 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
   "user_id": /*#__PURE__*/ zod.uuid()
 }).check(/*#__PURE__*/ zod.describe('What a successful reservation returns. Same shape as RescueOrderOut\nplus the two numbers the confirmation screen shows without a second\nrequest — the price to pay at the counter and when the free cancel ends.'))
+
+
+/**
+ * MEH-3698: the caller's own reservations from every day, newest first,
+ * with the business name — the bags in the one «ההזמנות שלי» list. Only the
+ * caller's rows; capped at `HISTORY_MAX_ROWS`.
+ * @summary List My Reservation History
+ */
+export const ListMyReservationHistoryRescueOrdersHistoryGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_by_business": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
+}).check(/*#__PURE__*/ zod.describe('One of the caller\'s reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag\'s page, which shows the\ncode on the day. `producer_name` is what the row prints.'))
+export const ListMyReservationHistoryRescueOrdersHistoryGetResponse = /*#__PURE__*/ zod.array(ListMyReservationHistoryRescueOrdersHistoryGetResponseItem)
 
 
 /**
@@ -9998,6 +10030,15 @@ export const ListOwnGroupBuysUsersMeGroupBuysGetResponse = /*#__PURE__*/ zod.obj
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('A group buy the caller joined, and her own quantity in it.')))
 })
+
+
+/**
+ * True when the caller has an order, a group buy or a bag to list.
+ * @summary Has Any Orders
+ */
+export const HasAnyOrdersUsersMeOrdersAnyGetResponse = /*#__PURE__*/ zod.object({
+  "any": /*#__PURE__*/ zod.boolean()
+}).check(/*#__PURE__*/ zod.describe('`any`: at least one row in one of the three lists /my-orders shows.'))
 
 
 /**

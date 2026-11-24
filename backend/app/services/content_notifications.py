@@ -39,7 +39,7 @@ def notify_recipe_approved(
     subject = f'מהמקור — המתכון "{_one_line(title)}" אושר ופורסם'
     body = (
         f"שלום,\n\n"
-        f'המתכון "{title}" אושר ומופיע עכשיו בדף בית העסק שלך במהמקור.\n\n'
+        f'המתכון "{title}" אושר ומופיע עכשיו בדף בית העסק במהמקור.\n\n'
         f"לצפייה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -137,10 +137,10 @@ def notify_owner_new_review(
 def notify_reviewer_reply(
     to_email: str, producer_name: str, path: str, test_cause: bool = False
 ) -> None:
-    subject = f"מהמקור — {_one_line(producer_name)} הגיבו לביקורת שלך"
+    subject = f"מהמקור — {_one_line(producer_name)} הגיבו לביקורת"
     body = (
         f"שלום,\n\n"
-        f'"{producer_name}" הגיבו לביקורת שכתבת במהמקור.\n\n'
+        f'"{producer_name}" הגיבו לביקורת שכתבתם במהמקור.\n\n'
         f"לקריאת התגובה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )

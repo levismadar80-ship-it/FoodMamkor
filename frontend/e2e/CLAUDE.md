@@ -106,6 +106,7 @@ it just silently opts out of the stub and bills real bandwidth.
 
 - **Split specs (MEH-3540).** `flows/manual/home-NN.spec.ts` and `map-NN.spec.ts` share fixtures and helpers through `flows/manual/_home-shared.ts` / `_map-shared.ts` (not a spec — `testMatch` needs `.spec.ts`). A new home or map test goes in the part whose describes it sits beside; a new fixture goes in the shared file, exported. Each part repeats the top-level `beforeAll` fixture check.
 - `flows/_unstubbed-me-guard.ts` — installed by the `_cloudinary-stub` fixture, so every importing spec has it. A call to `/api/producers/me` or `/api/producers/me/**` that carries a fake (non-JWT) token and that no `page.route` of the spec answered fails the test at once, naming the method, URL and spec (MEH-2957). Before it, such a call reached the real backend, drew a 401, and api.js ended the session, so the test failed later on an unrelated locator. A real login (a JWT, storageState or API login) passes through untouched. A spec route registered later always wins, so adding the stub is the whole fix. `page.unrouteAll()` removes the guard too (five calls in four dashboard specs, which re-add only their order-settings stub), so after it call `guardUnstubbedMe(page, testInfo.file)` again if the rest of the test should stay guarded.
+- `_verify-finding.mjs` (this root, not `flows/`) is for probes, not specs. `verifyFinding` gives a verdict from a bug control, a clean control and 3 runs with screenshots; `waitForStable` reads a value once per frame until it stops changing; `clickInView` refuses a click that would scroll the page first. A bug measured by a probe is reported only through it (testing.md, MEH-3814). The probe that imports it lives outside every test glob (rule 42); only this library and its unit test are in the tree.
 - `flows/_settled-field.ts` — `settledField(page, testId)` waits until exactly one React-owned copy of a field exists before it is filled (MEH-2323).
 - `flows/_layout-settled.ts` — `layoutSettled(locator)` waits until the element's box, the scroll offset and the page height are unchanged for 10 frames. Use it before a click into anything that may still be moving (a deep link that is still resolving, a card that just re-rendered): Playwright checks the click's hit target on mousedown only, so a shift between mousedown and mouseup loses the click with no error (MEH-3449).
 - `flows/_save-after-edit.ts` — `clickSaveAfterEdit(page, save)` clicks a card's save on `/producer/dashboard/edit` only after the button is enabled, the `unsaved-banner` has mounted and the button is still for 10 frames. The banner mounts one render after an edit (the card reports dirty from an effect) and pushes every card down, which can lose a save click that lands across that render (MEH-3685; the mechanism was found in MEH-3449). `__tests__/E2EClickPreconditionGuard.test.js` fails on a bare `save(…).click()` / `saveBtn(…).click()` in a spec that opens the edit page; `dashboard-locations.spec.ts` is exempt because LocationsEditor reports no dirty state.
@@ -160,10 +161,12 @@ the E2E job looked "mostly green with 6 known reds" while providing **zero**
 authenticated coverage. Fixed under MEH-999 (26/07)._
 
 ## Gotchas
-- **Google Sign-In singleton** (MEH-274): `google.accounts.id.initialize()`
-  must run exactly once per page load. The fix lives in
-  `frontend/lib/use-google-sign-in.js`; double-init breaks login in
-  Playwright headless mode silently.
+- **Google sign-in in a spec** (MEH-3690): our own button opens Google's
+  popup through the GIS code client, which no runner can click through.
+  Stub it with `flows/_google-code-stub.ts` (`stubGoogleCodeClient` before
+  `goto`, then `sendGoogleCode`); `stubCodeSwap` answers the code swap when
+  the spec's subject is what comes after it. The old `google.accounts.id`
+  singleton (MEH-274) is gone with Google's rendered button.
 - **`.test` TLD trap** (MEH-353): test fixtures must use `@example.com`,
   not `@e2e.test` — Pydantic email-validator rejects `.test` (RFC 6761).
 - **CI rate-limit budget**: shared GitHub Actions runner IPs burn the

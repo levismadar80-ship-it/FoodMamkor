@@ -57,6 +57,13 @@ Frontend ESLint is warn mode, held by `npm run lint:ratchet`; backend Ruff
 PL rules are errors with `per-file-ignores` naming their refactor ticket
 (MEH-444).
 
+The same ratchet (`scripts/checks/eslint-ratchet.mjs`, GATED list) also holds
+the design-system rules (MEH-3829): a raw `<button>`, `<select>`, `<textarea>`,
+checkbox, radio, `<h1>`–`<h3>` or `<a>` outside `components/ui/`
+(`design-system/no-html-*`, local plugin `frontend/eslint-rules/design-system.mjs`),
+a field named only by its placeholder, a read-only or always-disabled field,
+and the whole `jsx-a11y` recommended set. Their totals may only go down.
+
 ---
 
 ## Execution order per task

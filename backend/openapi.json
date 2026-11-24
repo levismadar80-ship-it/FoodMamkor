@@ -4641,6 +4641,36 @@
         "title": "GoogleAuthResponse",
         "type": "object"
       },
+      "GoogleCodeRequest": {
+        "description": "MEH-3690: the one-time code from Google's popup (GIS code client).",
+        "properties": {
+          "code": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "GoogleCodeRequest",
+        "type": "object"
+      },
+      "GoogleCodeResponse": {
+        "description": "MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.",
+        "properties": {
+          "id_token": {
+            "title": "Id Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleCodeResponse",
+        "type": "object"
+      },
       "GooglePlaceIdIn": {
         "properties": {
           "google_place_id": {
@@ -6920,6 +6950,20 @@
           "group_buys"
         ],
         "title": "MyGroupBuysOut",
+        "type": "object"
+      },
+      "MyOrdersAnyOut": {
+        "description": "`any`: at least one row in one of the three lists /my-orders shows.",
+        "properties": {
+          "any": {
+            "title": "Any",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "any"
+        ],
+        "title": "MyOrdersAnyOut",
         "type": "object"
       },
       "MyProductOrderingOut": {
@@ -19234,6 +19278,83 @@
         "title": "RescueDonatedIn",
         "type": "object"
       },
+      "RescueHistoryOut": {
+        "description": "One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag's page, which shows the\ncode on the day. `producer_name` is what the row prints.",
+        "properties": {
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "status",
+          "created_at",
+          "date",
+          "pickup_start",
+          "pickup_end",
+          "producer_id",
+          "producer_name",
+          "cancelled_by_business"
+        ],
+        "title": "RescueHistoryOut",
+        "type": "object"
+      },
       "RescueMetricsOut": {
         "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
         "properties": {
@@ -20427,8 +20548,19 @@
         "type": "object"
       },
       "RescueProducerSummary": {
-        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
+        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock or the contact details — serializing them would publish more than\nthe screen needs. The public rating is here since MEH-3704, because the\nlist sorts by it; it is the same number the business page already shows.",
         "properties": {
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
           "city": {
             "anyOf": [
               {
@@ -28147,6 +28279,57 @@
           }
         },
         "summary": "Google Auth",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/google/code": {
+      "post": {
+        "description": "Swap a Google authorization code for a verified Google ID token.",
+        "operationId": "google_code_auth_google_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Google refused the code or the token failed verification"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "Google's token endpoint could not be reached"
+          },
+          "503": {
+            "description": "Google sign-in is not configured on this server"
+          }
+        },
+        "summary": "Google Code",
         "tags": [
           "auth"
         ]
@@ -36803,6 +36986,37 @@
         ]
       }
     },
+    "/rescue/orders/history": {
+      "get": {
+        "description": "MEH-3698: the caller's own reservations from every day, newest first,\nwith the business name — the bags in the one «ההזמנות שלי» list. Only the\ncaller's rows; capped at `HISTORY_MAX_ROWS`.",
+        "operationId": "list_my_reservation_history_rescue_orders_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueHistoryOut"
+                  },
+                  "title": "Response List My Reservation History Rescue Orders History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Reservation History",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/rescue/orders/mine": {
       "get": {
         "description": "The caller's own live reservations on today's and tomorrow's bags\n(MEH-2680, MEH-3702).\n\nOnly the caller's rows, only today's and tomorrow's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
@@ -37922,6 +38136,33 @@
         "summary": "List Own Group Buys",
         "tags": [
           "group-buys"
+        ]
+      }
+    },
+    "/users/me/orders/any": {
+      "get": {
+        "description": "True when the caller has an order, a group buy or a bag to list.",
+        "operationId": "has_any_orders_users_me_orders_any_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOrdersAnyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Has Any Orders",
+        "tags": [
+          "users"
         ]
       }
     },

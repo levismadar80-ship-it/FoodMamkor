@@ -219,9 +219,9 @@ class RescueProducerSummary(BaseModel):
 
     Deliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a
     town and a pickup point, and nothing on this list should carry the badge
-    block, the rating aggregate or the contact details — chunk 4's row has no
-    place to put them and serializing them would publish more than the screen
-    needs.
+    block or the contact details — serializing them would publish more than
+    the screen needs. The public rating is here since MEH-3704, because the
+    list sorts by it; it is the same number the business page already shows.
     """
 
     id: UUID
@@ -236,6 +236,9 @@ class RescueProducerSummary(BaseModel):
     # offer at all, so there is no case where this leaks a fuzzy address.
     location_city: str | None = None
     location_address: str | None = None
+    # MEH-3704: the list's «דירוג» sort. None = no reviews yet. Optional, so
+    # a row written before this field (a stub, a cached payload) still parses.
+    avg_rating: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -274,7 +277,7 @@ class RescueProducerDetail(RescueProducerSummary):
     the pilot metrics (RescueReview's docstring).
     """
 
-    avg_rating: float | None = None
+    # avg_rating comes from RescueProducerSummary (MEH-3704).
     reviews_count: int = 0
     # The business's own one-line description, so the page says who it is.
     short_description: str | None = None
@@ -327,6 +330,26 @@ class RescueMyOrderOut(RescueOrderCreatedOut):
     # MEH-2738: the business cancelled the bag, so this reservation went with
     # it. Only a cancelled row can carry True; the page says so in words.
     # Required (no default) so the generated zod adds no default export.
+    cancelled_by_business: bool
+
+
+class RescueHistoryOut(BaseModel):
+    """One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).
+
+    No `pickup_code`: the list row links to the bag's page, which shows the
+    code on the day. `producer_name` is what the row prints.
+    """
+
+    id: UUID
+    offer_id: UUID
+    qty: int
+    status: RescueOrderStatus
+    created_at: UtcDatetimeOut
+    date: date_type
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    producer_id: UUID
+    producer_name: str
     cancelled_by_business: bool
 
 

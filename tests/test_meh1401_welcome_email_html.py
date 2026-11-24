@@ -75,7 +75,7 @@ def test_welcome_producer_variant(capture):
     send_welcome_email("biz@example.com", "דנה כהן", "producer")
     html = capture["html"]
     assert html is not None and 'dir="rtl"' in html
-    assert "העסק שלך ממתין כרגע לאישור הצוות" in html
+    assert "העסק ממתין כרגע לאישור הצוות" in html
     # Producer CTA → dashboard.
     assert "ללוח הבקרה" in html
     assert f'href="{FRONTEND}/producer/dashboard"' in html
