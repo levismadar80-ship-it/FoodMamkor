@@ -43,6 +43,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | Checkbox with its label — the whole row is the 44px hit area (32px from md) | `ui/Checkbox.jsx` | ESLint `design-system/no-html-checkbox` (ratchet) |
 | Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
+| 44×44 hit area on a small control without moving the layout (`::before`) | `.tap-area` in `app/globals.css` | `TapArea44` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
 | Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
