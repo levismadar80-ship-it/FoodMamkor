@@ -133,10 +133,21 @@ class TestPublish:
         self, client, db, shop, rescue_on
     ):
         """Edge case: tomorrow's date, today's window (an owner's device on
-        another clock). It would sit under «מחר» with a window long over."""
+        another clock). It would sit under «מחר» with a window long over.
+
+        The window starts an hour ago, so its start is on today's Israel date
+        at every hour. The default window (now + 1 h) falls on tomorrow from
+        23:00 Israel and made this test red then (MEH-3704 CI, 21:05 UTC)."""
+        now = utc_now()
         r = client.post(
             "/rescue/offers",
-            json=_offer_payload(shop["location"], date=(_today() + DAY).isoformat()),
+            json=_offer_payload(
+                shop["location"],
+                date=(_today() + DAY).isoformat(),
+                pickup_start=(now - timedelta(hours=1)).isoformat(),
+                pickup_end=(now + timedelta(hours=1)).isoformat(),
+                cancel_until=(now - timedelta(hours=2)).isoformat(),
+            ),
             headers=auth_header(shop["owner"]),
         )
         assert r.status_code == 422
