@@ -194,7 +194,9 @@ def form_to_draft(
     return draft
 
 
-def _ask_model(fmap: dict[str, Any], text: str, choices: Choices) -> dict[str, Any] | None:
+def _ask_model(
+    fmap: dict[str, Any], text: str, choices: Choices
+) -> dict[str, Any] | None:
     client = _get_client()
     if client is None or not ai_budget.allow("fast"):  # MEH-3498
         return None
