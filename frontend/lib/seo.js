@@ -29,7 +29,7 @@ import { createTranslator } from "next-intl";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
-import { primaryPoint } from "./producerPoints.js";
+import { primaryPoint } from "./producer-points.js";
 import { instagramUrl } from "./social-links";
 // MEH-3160: the Israel calendar date has one owner (israel-clock-guard).
 import { israelToday } from "./israel-date";

@@ -225,6 +225,6 @@ def test_summary_extraction_self_check():
     assert _py_header(REPO / "backend/app/services/rescue_digest.py").startswith(
         "At pickup_start, send one WhatsApp message"
     )
-    assert _js_header(REPO / "frontend/lib/highlightMatch.js").startswith("highlightMatch(text, query)")
+    assert _js_header(REPO / "frontend/lib/highlight-match.js").startswith("highlightMatch(text, query)")
     assert _summary(["Module: x", "Purpose:  does A", "  and B.", "Touches: db"]) == "does A and B."
     assert _summary([]) == ""

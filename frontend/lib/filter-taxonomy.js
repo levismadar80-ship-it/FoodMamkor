@@ -120,7 +120,7 @@ export const FILTER_AXES = {
     surfaces: ["home", "producers", "map"],
   },
   // MEH-2598: the third service axis, the filter twin of the map card's
-  // «קנייה במקום» tag (lib/fulfillmentTags.js). Backend `?on_site=true` →
+  // «קנייה במקום» tag (lib/fulfillment-tags.js). Backend `?on_site=true` →
   // producer_listing._on_site_condition: a physical store with stated opening
   // hours. The subtext names that, because "קנייה במקום" alone does not say
   // the hours are what qualify a business.

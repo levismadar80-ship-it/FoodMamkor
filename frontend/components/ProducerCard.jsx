@@ -13,10 +13,10 @@ import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { highlightMatch } from "@/lib/highlightMatch";
-import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { highlightMatch } from "@/lib/highlight-match";
+import { getOrderWindowStatus } from "@/lib/order-window-status";
 import { formatPrice } from "@/lib/utils";
-import { resolveDeliveryFee } from "@/lib/deliveryFee";
+import { resolveDeliveryFee } from "@/lib/delivery-fee";
 // MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
 // the canonical Israel-local "HH:MM" formatter and the card interpolates it
 // into the very same `orders_open` string the page renders — a second copy here
@@ -26,7 +26,7 @@ import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { israelTime } from "@/app/[locale]/producer/[id]/lib/order-status";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
-import { producerPoints } from "@/lib/producerPoints";
+import { producerPoints } from "@/lib/producer-points";
 import { allBadges, badgeCount } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";

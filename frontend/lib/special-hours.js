@@ -7,7 +7,7 @@
  *           mirror of the backend's rules (ranges via the order-window mirror,
  *           note ≤ 200, no past dates, no duplicate dates).
  * Does NOT: derive "open now" or which override is in force — that is the
- *           public page's lib/orderWindow.js (`getOrderWindowStatus`,
+ *           public page's lib/order-window-status.js (`getOrderWindowStatus`,
  *           `getUpcomingSpecialDates`). Nothing here renders.
  * Related:  frontend/lib/order-window.js (range helpers REUSED verbatim, so
  *           a valid range means the same thing on both editors),

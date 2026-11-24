@@ -4,7 +4,7 @@
  * Purpose:  Pure mapper + formatters behind the producer page's SINGLE status
  *           element — resolves which of the five precedence branches wins and
  *           formats the Israel-local day/time the copy interpolates.
- * Does NOT: derive the order window itself (that is lib/orderWindow.js) and
+ * Does NOT: derive the order window itself (that is lib/order-window-status.js) and
  *           does not render — ProducerHeader.jsx owns the markup.
  * Related:  components/ProducerHeader.jsx (sole consumer),
  *           lib/producer-format.js (sibling pure helper for this page).
@@ -12,12 +12,12 @@
  *           testable: importing the component pulls next-intl → next/navigation
  *           into vitest, which does not resolve under this config.
  *           MEH-2383 — `israelTime` / `israelDayKey` derive from
- *           lib/orderWindow.js `israelNowParts` instead of carrying a second
+ *           lib/order-window-status.js `israelNowParts` instead of carrying a second
  *           private Asia/Jerusalem formatter (israel-clock-guard.sh).
  */
 
 import { DAY_KEYS } from "@/lib/hours";
-import { israelNowParts } from "@/lib/orderWindow";
+import { israelNowParts } from "@/lib/order-window-status";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -35,7 +35,7 @@ export function israelTime(date) {
  * Israel-local weekday key (sun…sat) for a Date — indexes opening_hours.weekdays.
  * Returns null if the ICU abbreviation matches nothing, so a caller can fall
  * back instead of interpolating `weekdays.undefined` into a message lookup.
- * Mirrors the `if (dayIndex < 0) return null` guard in orderWindow.js.
+ * Mirrors the `if (dayIndex < 0) return null` guard in order-window-status.js.
  */
 export function israelDayKey(date) {
   const { dayIndex } = israelNowParts(date);
@@ -71,7 +71,7 @@ export function resolveHeaderStatus({ isVacation, orderStatus }) {
   }
   if (orderStatus?.state === "closed") {
     // A window object whose every day is unusable (close <= open on all of
-    // them) yields nextChange=null — orderWindow.js's last return. The backend
+    // them) yields nextChange=null — order-window-status.js's last return. The backend
     // validator blocks that shape on write, but a hand-edited or legacy row
     // could carry it, and the "reopening {day} at {time}" copy would then
     // format null as the epoch (rendering a bogus Thursday 02:00). With no

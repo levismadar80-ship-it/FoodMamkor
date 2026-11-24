@@ -179,7 +179,7 @@ frontend/components/ui/Tooltip.jsx	react-hooks/preserve-manual-memoization	1
 frontend/lib/auth-context.js	react-hooks/set-state-in-effect	1
 frontend/lib/chip-copy.js	eqeqeq	1
 frontend/lib/dashboard-status-classes.js	no-restricted-syntax	3
-frontend/lib/deliveryFee.js	eqeqeq	1
+frontend/lib/delivery-fee.js	eqeqeq	1
 frontend/lib/distance.js	eqeqeq	4
 frontend/lib/favorites-cache.js	eqeqeq	2
 frontend/lib/featured-producer.js	eqeqeq	4

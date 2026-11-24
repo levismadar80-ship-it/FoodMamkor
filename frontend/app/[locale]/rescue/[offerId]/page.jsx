@@ -16,7 +16,7 @@ import RescueOfferPage from "./RescueOfferPage";
  *           point at a bag that is gone by the time anyone clicks it.
  *           Fetches the bag in the browser, because what the page shows after
  *           reserving depends on who is signed in.
- * Related:  backend/app/routers/rescue.py get_offer, lib/useRescueReservation.js
+ * Related:  backend/app/routers/rescue.py get_offer, lib/use-rescue-reservation.js
  * History:  MEH-3586 (creation)
  */
 export async function generateMetadata({ params }) {

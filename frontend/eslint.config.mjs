@@ -145,6 +145,15 @@ export default [
     },
   },
   {
+    // MEH-3716: lib/ file names are kebab-case (14 camelCase files renamed).
+    // An error, not a warning: a new camelCase name fails lint at once.
+    files: ["lib/**/*.{js,jsx,mjs}"],
+    ignores: ["lib/generated/**"],
+    rules: {
+      "unicorn/filename-case": ["error", { case: "kebabCase" }],
+    },
+  },
+  {
     files: ["app/**/page.js", "app/**/page.jsx"],
     rules: {
       "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],
