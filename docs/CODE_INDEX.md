@@ -542,6 +542,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `webauthn.js` | The browser half of an admin passkey (MEH-3305): turn the server's JSON options into what 'navigator.credentials' takes, and the credential it returns back … |
 | `whats-new.js` | The «מה חדש» release list for business owners (MEH-3200): which versions have news for businesses, how many lines each has, and whether the owner has already … |
 | `wizard-step-numbers.js` | Turn a wizard's STEP enum into the numbers a user actually SEES. A step that is conditionally absent makes the enum value and the visible position diverge, … |
+| `zod-csp.js` | Turn off Zod's eval probe in the browser, so the CSP stops reporting «Blocked unsafe eval()» on every page that parses an API response. |
 
 ### אתר — `frontend/hooks`
 
