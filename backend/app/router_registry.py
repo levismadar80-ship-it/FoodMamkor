@@ -52,6 +52,7 @@ from app.routers import (
     product_describe,
     menu_import,
     page_fill,
+    form_fill,
     product_order_business,
     product_order_buyer,
     product_order_offer,
@@ -90,6 +91,8 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(review_reply_suggest.router)
     # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
     app.include_router(page_fill.router)
+    # MEH-3740: «יש לכם מתכון כתוב?» — one draft route for every dashboard form
+    app.include_router(form_fill.router)
     # MEH-3641: «הפרופיל שלכם בגוגל» — /producers/me/google-profile
     app.include_router(producer_google_profile.router)
 

@@ -184,7 +184,7 @@ test.describe("my events", () => {
     await expect(page.getByLabel(/^תיאור/)).toHaveValue("בואו לראות איך נאפה הלחם, עם טעימות לכל המשפחה.");
     await expect(page.getByLabel(/^תאריך/)).toHaveValue(A().event_date as string);
     await expect(page.getByLabel(/^שעה/)).toHaveValue("18:00");
-    await expect(page.getByLabel("מיקום ספציפי")).toHaveValue("בחווה שלנו");
+    await expect(page.getByLabel("מיקום ספציפי", { exact: true })).toHaveValue("בחווה שלנו");
     await expect(page.getByLabel(/^עיר/)).toHaveValue("חיפה");
     // The category field shows the Hebrew label, not the key (events.categories.market).
     await expect(page.getByLabel(/^קטגוריה/)).toHaveValue("שוק");
