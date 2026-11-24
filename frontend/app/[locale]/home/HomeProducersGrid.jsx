@@ -244,6 +244,13 @@ export function HomeProducersGrid({
   // since the row scrolls sideways on a phone and would clip it. State, not a
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
+  // MEH-3821: the skeleton is for the first load only. A filter change (city,
+  // day, category) keeps the current results on screen, dimmed, until the new
+  // set arrives — as Nielsen Norman's faceted-search guidance does. Swapping
+  // them for 8 skeleton cards collapsed the grid and shot the mini-map up and
+  // back down (≈ 0.4 CLS on a phone, after the tap's 500 ms grace).
+  const [paintedOnce, setPaintedOnce] = useState(!producersLoading);
+  if (!producersLoading && !paintedOnce) setPaintedOnce(true);
   // MEH-2537: focus under the sticky «סינון» — lib/keep-focused-chip-clear.js.
   return (
     // MEH-2712: pb-8 so the gap to the mini-map below is 56px on phones, not
@@ -466,10 +473,14 @@ export function HomeProducersGrid({
         onClear={onClearLocation}
       />
 
-      {producersLoading ? (
+      {producersLoading && !paintedOnce ? (
         <SkeletonProducerGrid count={8} />
       ) : (
-        <>
+        <div
+          data-testid="home-producers-results"
+          aria-busy={producersLoading || undefined}
+          className={`transition-opacity duration-base ${producersLoading ? "opacity-60" : ""}`}
+        >
           {/* MEH-1282 (GAP A): persistent inline notice when "קרוב אליי" found
               nothing nearby and fell back to the full list. The MEH-1269 toast
               was too transient — its final state read as "nothing happened".
@@ -711,7 +722,7 @@ export function HomeProducersGrid({
               </Link>
             </p>
           )}
-        </>
+        </div>
       )}
     </section>
   );

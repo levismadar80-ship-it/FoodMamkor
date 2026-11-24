@@ -435,6 +435,21 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   };
 
+  // MEH-1487 region fallback read, shared by loadProducers and the effect
+  // below. Resolves { city, regionName, producers } (an empty list when the
+  // region has none or the read failed), or null when the city has no region.
+  const fetchRegionFallback = (city) => {
+    const region = findRegionForCity(city);
+    if (!region) return Promise.resolve(null);
+    return api
+      .get("/producers", { params: { delivery_cities: region.cities } })
+      .then((r) => {
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        return { city, regionName: region.name, producers: parsed.success ? parsed.data : [] };
+      })
+      .catch(() => ({ city, regionName: region.name, producers: [] }));
+  };
+
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
     api
@@ -444,7 +459,19 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
         // MEH-779). On parse failure show an empty grid rather than
         // crashing on a malformed row.
         const parsed = ProducersResponseSchema.safeParse(r.data);
-        setProducers(parsed.success ? parsed.data : []);
+        const rows = parsed.success ? parsed.data : [];
+        // MEH-3821: an empty city result waits for its region fallback and
+        // lands with it. Committing the empty grid first showed the one-line
+        // "no delivery" note, then the fallback grid a moment later — the
+        // section collapsed and grew back and moved the mini-map (≈ 0.4 CLS).
+        if (rows.length === 0 && params.delivery_city) {
+          return fetchRegionFallback(params.delivery_city).then((fallback) => ({ rows, fallback }));
+        }
+        return { rows, fallback: undefined };
+      })
+      .then(({ rows, fallback }) => {
+        if (fallback !== undefined) setRegionFallback(fallback);
+        setProducers(rows);
         // Only reset visibleCount when the user actually changed filters
         // (i.e. was given `params`). The initial load and the back-from-
         // producer load should keep the restored visibleCount.
@@ -468,30 +495,17 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       setRegionFallback(null);
       return;
     }
-    const region = findRegionForCity(city);
-    if (!region) {
-      setRegionFallback(null);
-      return;
-    }
+    // MEH-3821: loadProducers already brought this city's fallback with the
+    // empty result — don't read it again.
+    if (regionFallback?.city === city) return;
     let cancelled = false;
-    api
-      .get("/producers", { params: { delivery_cities: region.cities } })
-      .then((r) => {
-        const parsed = ProducersResponseSchema.safeParse(r.data);
-        const list = parsed.success ? parsed.data : [];
-        if (!cancelled) {
-          setRegionFallback(
-            list.length ? { regionName: region.name, producers: list } : null,
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRegionFallback(null);
-      });
+    fetchRegionFallback(city).then((fallback) => {
+      if (!cancelled) setRegionFallback(fallback);
+    });
     return () => {
       cancelled = true;
     };
-  }, [producers, producersLoading, filters.delivery_city]);
+  }, [producers, producersLoading, filters.delivery_city]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-1080: handleCategoryCardClick removed — homepage category cards are
   // real <Link>s to /producers?category=<id> (HomeCategoryGrid.jsx); no
