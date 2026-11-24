@@ -443,6 +443,11 @@ files = [
     "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
     "app/routers/rescue_pilot.py",
+    "app/services/ai_budget.py",
+    "app/services/form_filler.py",
+    "app/services/form_fill_windows.py",
+    "app/routers/form_fill.py",
+    "app/schemas/form_fill.py",
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:
