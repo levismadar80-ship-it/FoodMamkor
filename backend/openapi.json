@@ -35209,7 +35209,7 @@
         ]
       },
       "put": {
-        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up loses it in the same transaction, through\ncancel_whole_offer, the dashboard's «ביטול», so its buyers get the same\nemail. If someone reserved that bag, the first call answers 409 and the\ndashboard asks; the second sends `cancel_reserved=true`. The bag is read\nunder its row lock, so a reservation cannot slip in between.",
+        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up loses it in the same transaction, through\ncancel_whole_offer, the dashboard's «ביטול», so its buyers get the same\nemail. If someone reserved that bag, the first call answers 409 and the\ndashboard asks; the second sends `cancel_reserved=true`. The bag is read\nunder its row lock, so a reservation cannot slip in between. Only a day\non the routine's weekdays is touched.",
         "operationId": "skip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__put",
         "parameters": [
           {

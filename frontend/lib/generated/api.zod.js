@@ -8344,7 +8344,8 @@ export const UnskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDele
  * cancel_whole_offer, the dashboard's «ביטול», so its buyers get the same
  * email. If someone reserved that bag, the first call answers 409 and the
  * dashboard asks; the second sends `cancel_reserved=true`. The bag is read
- * under its row lock, so a reservation cannot slip in between.
+ * under its row lock, so a reservation cannot slip in between. Only a day
+ * on the routine's weekdays is touched.
  * @summary Skip My Day
  */
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponsePublishingDefault = false;
