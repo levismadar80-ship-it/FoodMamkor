@@ -21,7 +21,7 @@
  * fresh, a client-side navigation keeps it. That is exactly the boundary we
  * want — a reload is a new visit, a back-navigation is not.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const leftPaths = new Set();
@@ -107,4 +107,33 @@ export function consumeHistoryReturn() {
   }
   documentEntryConsumed = true;
   return false;
+}
+
+/**
+ * For a route loading fallback (every app/[locale] loading.js): put the window at
+ * the top when the fallback mounts after a link click.
+ *
+ * Why: the App Router scrolls to the new page only when the PAGE commits, not
+ * when its loading fallback shows. So after scrolling a list and tapping a
+ * card, the fallback (one screen tall, MEH-2754) rendered at the OLD scroll
+ * position — 900 px down on a 1.9-screen document — and the reader saw only the
+ * header and the site footer until the page arrived (staging, 24/11: 0.4 s on
+ * the business page, 0.8 s on an event page). The big sites (Airbnb, Wolt,
+ * Etsy) open the coming page at its top straight away.
+ *
+ * It does NOT scroll:
+ *  - on a back/forward step to this path — the browser (and the homepage's
+ *    MEH-2714 restore) owns that position;
+ *  - on the document's first route before any client navigation (a reload or
+ *    a direct visit), where the browser restores the reload position itself.
+ * A layout effect, so the jump happens before the fallback is painted.
+ */
+export function useScrollTopOnArrival() {
+  useLayoutEffect(() => {
+    const here = window.location.pathname;
+    if (popPath !== null && popPath === here) return;
+    if (here === entryPath && leftPaths.size === 0) return;
+    if (window.scrollY === 0) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
 }
