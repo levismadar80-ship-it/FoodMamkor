@@ -26,8 +26,7 @@ mehamakor/
 ├── .agents/skills/             canonical skill content (symlinked into .claude/)
 ├── .github/workflows/          CI gates + Vercel/Railway redeploy triggers
 ├── scripts/                    repo-level helpers (smoke_test, etc.)
-├── tests/                      top-level fixtures / screenshots
-└── logo/                       brand assets
+└── tests/                      top-level fixtures / screenshots
 ```
 
 ---
