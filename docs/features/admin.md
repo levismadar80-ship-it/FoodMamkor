@@ -46,6 +46,7 @@
 * `tests/test_meh2952_test_business_toggle.py` — **השומר** של המתג: 401/403, הסתרה והחזרה, IndexNow, ודגל ה-seed כבוי כברירת מחדל; `frontend/__tests__/AdminTestBusinessToggle.test.jsx` — המתג והתגית. `tests/test_meh2952_is_test_guards.py` מתיר כתיבה רק משני הקבצים.
 * `frontend/__tests__/AdminVerifiedPanel.test.jsx` · `frontend/__tests__/AdminAlcoholPanel.test.jsx` · `frontend/__tests__/AdminReportsPage.test.jsx` · `frontend/__tests__/AdminLicenceExpiry.test.jsx` · `frontend/__tests__/AdminRescueMetrics.test.jsx` — התג, האלכוהול, סגירת הדיווחים בהשהיה, הרישיונות שפגים ומספרי ההצלה (MEH-3524); הנתיב החדש נבדק ב-`tests/test_meh3218_product_orders.py`.
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
+* `frontend/__tests__/AdminSettingsShowsOnce.test.jsx` · `frontend/__tests__/AdminLoadsOnce.test.jsx` — **השומר** של טעינה בלי קפיצות (MEH-3818): ההגדרות, רשימת העסקים ורצועת הניווט בנייד מופיעות פעם אחת, אחרי הקריאות שקובעות את הגובה שלהן (או אחרי 2.5 שניות).
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`
 * `frontend/e2e/flows/manual/admin-producers-queue.spec.ts` · `admin-producers-decisions.spec.ts` · `admin-users-reviews-categories.spec.ts` · `admin-settings-licence-actions.spec.ts` (תחת `frontend/e2e/flows/manual/`)

@@ -127,6 +127,12 @@ function AdminShell({ children }) {
   const stats = dashboard?.stats ?? null;
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
   const countsError = loadError;
+  // MEH-3818: the counts have answered (or failed). Until then the phone strip
+  // holds its height with a placeholder and the home's logout button waits:
+  // the queue tabs used to appear in the middle of the strip and push the
+  // others aside, and the button sat under the home's short skeleton and
+  // dropped ~420px when the home filled in (0.09 layout shift on a slow phone).
+  const countsKnown = stats !== null || countsError;
 
   // MEH-1599: same 401/403 split as producer/dashboard/DashboardLayoutClient.jsx:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
@@ -309,7 +315,14 @@ function AdminShell({ children }) {
           tabs once the page scrolled (Sapir's iPhone screenshot, 29/10). */}
       <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-[var(--chrome-top,82px)] z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
-          {navHrefs.map((n) => {
+          {!countsKnown && (
+            // Same box as one tab, so the strip has its final height at once.
+            <span aria-hidden="true" className="invisible flex items-center gap-1.5 px-3 py-1.5 text-xs">
+              <Gauge size={14} />
+              {t("layout.nav.dashboard")}
+            </span>
+          )}
+          {countsKnown && navHrefs.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             // MEH-1701: the same badge the desktop sidebar shows — an admin
@@ -355,7 +368,7 @@ function AdminShell({ children }) {
             logout the 401 branch above sends her to /login. */}
         {/* MEH-2728: only on the panel's home, and muted — same reasoning
             as the owner dashboard (DashboardLayoutClient.jsx). */}
-        {pathname === "/admin" && (
+        {pathname === "/admin" && countsKnown && (
           <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
             <button
               type="button"
