@@ -134,7 +134,7 @@ function LocationHoursRow({ loc, showName, onDirty, onSaved }) {
 }
 
 /** @param {{ title: string, testId: string, id?: string, children: any }} props */
-function Section({ title, testId, id, children }) {
+function HoursSection({ title, testId, id, children }) {
   return (
     <section id={id} className="scroll-mt-24 space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0" data-testid={testId}>
       <h3 className="text-sm font-bold text-primary">{title}</h3>
@@ -195,7 +195,7 @@ export default function HoursCard({
   return (
     <EditAccordionCard anchorId="hours" title={tTitle("heading")} summary={summary} marker={undefined} preview={undefined} open={open} onToggle={onToggle}>
       <div className="space-y-4">
-        <Section title={tFields("hours")} testId="hours-section-opening">
+        <HoursSection title={tFields("hours")} testId="hours-section-opening">
           {locations.length === 0 ? (
             <div className="space-y-2" data-testid="hours-no-locations">
               <p className="text-sm text-fg-muted">{tLoc("empty_title")}</p>
@@ -218,19 +218,19 @@ export default function HoursCard({
               />
             ))
           )}
-        </Section>
+        </HoursSection>
 
-        <Section id="order-window" title={t("order_window.heading")} testId="hours-section-order-window">
+        <HoursSection id="order-window" title={t("order_window.heading")} testId="hours-section-order-window">
           {/* MEH-1773: names the weekly schedule apart from the dashboard's
               temporary pause switch. */}
           <WhatsThis content={tWhat("order_window")} className="mb-1" testId="whats-this-order-window" />
           <OrderWindowEditor profile={profile} onSave={onSave} reportDirty={/** @type {any} */ (reportDirty)} />
-        </Section>
+        </HoursSection>
 
-        <Section id="special-hours" title={t("special_hours.heading")} testId="hours-section-special">
+        <HoursSection id="special-hours" title={t("special_hours.heading")} testId="hours-section-special">
           <WhatsThis content={t("special_hours.subtitle")} className="mb-1" testId="whats-this-special-hours" />
           <SpecialHoursEditor profile={profile} onSave={onSave} reportDirty={/** @type {any} */ (reportDirty)} />
-        </Section>
+        </HoursSection>
       </div>
     </EditAccordionCard>
   );
