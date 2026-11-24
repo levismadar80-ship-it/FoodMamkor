@@ -203,10 +203,12 @@ describe("Dashboard 1D — empty-state + view-public (MEH-964)", () => {
     expect(screen.queryByTestId("overview-zero-state")).not.toBeInTheDocument();
   });
 
-  it("exposes a view-public link to /{slug}", async () => {
+  // MEH-3783: the tab bar's «צפייה בעמוד» eye is a business's one link to
+  // her page; the home no longer repeats it.
+  it("an approved business's home carries no second view-public link", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("view-public-link")).toHaveAttribute("href", "/demo-farm");
+    expect(screen.queryByTestId("view-public-link")).toBeNull();
   });
 });

@@ -76,11 +76,10 @@ beforeEach(() => {
 });
 
 describe("home — the link renders from the profile's slug (MEH-2880)", () => {
-  it("an approved, complete business sees «הלינק שלי» and the view-public link, with the real dashboard payload", async () => {
+  it("an approved, complete business sees «הלינק שלי», and no second view-public link (MEH-3783: the tab bar's eye is the one)", async () => {
     render(<ProducerDashboardPage />);
     expect(await screen.findByTestId("vanity-share")).toBeInTheDocument();
-    const view = await screen.findByTestId("view-public-link");
-    expect(view.getAttribute("href")).toBe("/arugot-noam");
+    expect(screen.queryByTestId("view-public-link")).toBeNull();
   });
 
   it("the QR card and «ערכת שיתוף» are not on home (moved to «כלים» → «שיתוף»)", async () => {
