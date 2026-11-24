@@ -250,7 +250,7 @@ describe("each cancel link names its bag", () => {
     const labels = screen.getAllByTestId("rescue-offer-cancel-label").map((n) => n.textContent);
     expect(labels).toHaveLength(2);
     expect(labels[0]).toContain("4 סלים");
-    expect(labels[1]).toContain("2 סלים");
+    expect(labels[1]).toContain("שני סלים");
     expect(labels[0]).not.toBe(labels[1]);
   });
 });

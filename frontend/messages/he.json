@@ -7374,9 +7374,9 @@
       "orders_empty_tomorrow": "אין עדיין הזמנות למחר.",
       "cancel_offer_title_tomorrow": "לבטל את הסל של מחר?",
       "allergens_toggle": "אלרגנים בסל · לא חובה",
-      "allergens_count": "{count, plural, one {סומן אחד} other {סומנו #}}",
+      "allergens_count": "{count, plural, one {סומן אחד} two {סומנו שניים} other {סומנו #}}",
       "offers_title_today": "הסלים של היום",
-      "cancel_offer_row": "איסוף {window} · {count, plural, one {סל אחד} other {# סלים}}",
+      "cancel_offer_row": "איסוף {window} · {count, plural, one {סל אחד} two {שני סלים} other {# סלים}}",
       "cancel_offer_aria": "לבטל את הסל, איסוף {window}"
     },
     "counter_card": {
