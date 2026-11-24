@@ -15,7 +15,7 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>,
 }));
-vi.mock("@/lib/contact-tracking", () => ({ trackChannelClick: vi.fn() }));
+vi.mock("@/lib/contact-tracking", () => ({ trackPrimaryCtaClick: vi.fn() }));
 
 import api from "@/lib/api";
 import { GetProducerProducersProducerIdGetResponse } from "@/lib/generated/api.zod";
@@ -62,7 +62,7 @@ describe("OrderBusinessLinks", () => {
   it("the contact button follows the business's channel: WhatsApp with the greeting", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: business({ phone: "052-1234567", primary_contact_method: "whatsapp" }) });
     show({});
-    const btn = await screen.findByTestId("order-contact");
+    const btn = await screen.findByTestId("primary-contact-button");
     expect(btn.textContent).toBe(he.contact_cta.whatsapp);
     expect(btn.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972521234567\?text=/);
   });
@@ -71,7 +71,7 @@ describe("OrderBusinessLinks", () => {
     vi.mocked(api.get).mockResolvedValue({ data: business({ phone: null }) });
     show({});
     await screen.findByTestId("order-business-link");
-    expect(screen.queryByTestId("order-contact")).toBeNull();
+    expect(screen.queryByTestId("primary-contact-button")).toBeNull();
   });
 
   it("a pickup address gets Waze and Google Maps links to that address", async () => {

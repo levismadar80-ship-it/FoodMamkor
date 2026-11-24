@@ -12,20 +12,18 @@
  *           (lib/nav-links.js). A business whose page cannot be read (a 404 for
  *           a hidden or seeded business, a bad body) shows nothing here; the
  *           rest of the order page is unchanged.
- * Related:  app/[locale]/producer/[id]/components/StickyContactBar.jsx (the
- *           same contact href + label on the business page),
+ * Related:  components/PrimaryContactButton.jsx (the business page's
+ *           contact button, rendered here as is),
  *           components/NavAppGlyphs.jsx AddressNavLinks.
  * History:  MEH-3755 (creation).
  */
 
-import { useTranslations } from "next-intl";
 import { Storefront } from "@phosphor-icons/react";
 
 import { Link } from "@/i18n/navigation";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
+import PrimaryContactButton from "@/components/PrimaryContactButton";
 import { OrderBusinessSchema } from "@/lib/api-responses";
-import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
-import { trackChannelClick } from "@/lib/contact-tracking";
 import { addressNavLinks } from "@/lib/nav-links";
 import { producerPath } from "@/lib/producer-path";
 import { useApi } from "@/lib/use-api";
@@ -35,28 +33,6 @@ const parseBusiness = (/** @type {unknown} */ data) => {
   const parsed = OrderBusinessSchema.safeParse(data);
   return parsed.success ? parsed.data : null;
 };
-
-// Same attributes the business page puts on an outbound contact link.
-const EXTERNAL = { target: "_blank", rel: "noopener noreferrer" };
-
-/** @param {{ producer: any }} props */
-function ContactButton({ producer }) {
-  const tr = useTranslations();
-  const href = getPrimaryContactHref(producer, tr("contact_cta.wa_greeting", { name: producer.name || "" }));
-  if (!href) return null;
-  const method = getPrimaryMethod(producer);
-  return (
-    <a
-      href={href}
-      {...(isPrimaryExternal(producer) ? EXTERNAL : {})}
-      onClick={() => trackChannelClick(producer.id, method)}
-      className="inline-flex items-center justify-center min-h-touch px-4 rounded-full bg-primary/10 text-sm font-semibold text-primary hover:bg-primary/20 focus-ring"
-      data-testid="order-contact"
-    >
-      {getPrimaryContactLabel(producer, tr)}
-    </a>
-  );
-}
 
 /** @param {{ producerId: string, pickupAddress?: string | null }} props */
 export default function OrderBusinessLinks({ producerId, pickupAddress = null }) {
@@ -79,7 +55,8 @@ export default function OrderBusinessLinks({ producerId, pickupAddress = null })
         ) : (
           <span className="font-semibold text-text">{producer.name}</span>
         )}
-        <ContactButton producer={producer} />
+        {/* MEH-3459: the contact button is the business page's own, not a copy. */}
+        <PrimaryContactButton producer={producer} />
       </div>
       {nav}
     </div>
