@@ -147,7 +147,7 @@ and every transition re-reads the row under a lock.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
-| → reserved | buyer with a verified email | `routers/rescue.py` `create_order` | offer locked; business live; offer active, today, inside the window; per-buyer cap; stock |
+| → reserved | buyer with a verified email | `routers/rescue.py` `create_order` | offer locked; business live; offer active, today or tomorrow (MEH-3702), inside the window; per-buyer cap; stock |
 | reserved → handed | the business / admin | `routers/rescue.py` | lock + re-read; ledger row counted |
 | reserved → no_show | the business | `routers/rescue.py` | after the pickup window ends |
 | reserved → cancelled | buyer | `routers/rescue.py` | before `cancel_until`; stock returned |

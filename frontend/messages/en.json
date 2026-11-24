@@ -7161,7 +7161,9 @@
       "pickup_label": "Pickup",
       "until": "until {time}",
       "soon": "within the hour",
-      "left_short": "{count, plural, one {1 left} other {# left}}"
+      "left_short": "{count, plural, one {1 left} other {# left}}",
+      "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
+      "cancel_at_tomorrow": "tomorrow at {time}"
     },
     "section": {
       "title": "Rescue bag",
@@ -7175,7 +7177,8 @@
       "cancelled": "Your reservation is cancelled, and the bag is back on the list.",
       "allergens_declared": "Contains: {list} · as declared by the business",
       "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
-      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come."
+      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come.",
+      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -7298,7 +7301,11 @@
       "cancel_offer_yes": "Yes, cancel",
       "cancel_offer_no": "No",
       "not_in_pilot": "Surprise bags are not open in {city} yet. Once they open there, you can publish from here.",
-      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today."
+      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today.",
+      "offers_title_tomorrow": "Tomorrow's bags",
+      "orders_title_tomorrow": "Tomorrow's reservations",
+      "orders_empty_tomorrow": "No reservations for tomorrow yet.",
+      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -7342,7 +7349,10 @@
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
-      "calendar_title": "Surprise bag pickup: {business_name}"
+      "calendar_title": "Surprise bag pickup: {business_name}",
+      "pickup_title_tomorrow": "Pickup tomorrow",
+      "state_sold_out_tomorrow": "This bag is sold out for tomorrow.",
+      "state_cancelled_tomorrow": "The business cancelled tomorrow's bag."
     },
     "faq": {
       "items": {

@@ -8,7 +8,7 @@ import { Clock, MapPin } from "@phosphor-icons/react";
 
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
-import { fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
+import { bagDay, rescueCancelText, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
 import useRescueReservation from "@/lib/use-rescue-reservation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
@@ -72,7 +72,10 @@ export default function RescueSection({ producer }) {
       const ticket = ++latest.current;
       return fetchOffers({ city: producer?.city || undefined })
         .then((rows) => {
-          if (ticket === latest.current) setOffer(rows.find((row) => row.producer?.id === producer?.id) || null);
+          if (ticket !== latest.current) return;
+          // MEH-3702: today's bag first; tomorrow's when there is none today.
+          const own = rows.filter((row) => row.producer?.id === producer?.id);
+          setOffer(own.find((row) => bagDay(row.date) === "today") || own[0] || null);
         })
         .catch(() => {
           if (!keepOnError && ticket === latest.current) setOffer(null);
@@ -88,7 +91,7 @@ export default function RescueSection({ producer }) {
   // bag's own page.
   const {
     order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed,
-    cancelled, businessCancelled, reserve, cancel,
+    cancelled, businessCancelled, businessCancelledDay, reserve, cancel,
   } = useRescueReservation({ producerId: producer?.id, onCancelled: () => loadOffer(true) });
 
   if (!rescueBagsEnabled()) return null;
@@ -104,7 +107,7 @@ export default function RescueSection({ producer }) {
   // business's own LOW estimate (worthAgorot), so never a made-up discount.
   const worthA = worthAgorot(offer);
   const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
-  const cancelUntil = israelTime(offer?.cancel_until);
+  const cancelUntil = rescueCancelText(offer?.cancel_until, t); // MEH-3702
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);
@@ -146,7 +149,7 @@ export default function RescueSection({ producer }) {
           data-testid="rescue-business-cancelled"
           className="mt-3 font-body-sm text-sm text-text bg-surface-card border border-border rounded-md px-4 py-3"
         >
-          {t("section.business_cancelled")}
+          {t(businessCancelledDay === "tomorrow" ? "section.business_cancelled_tomorrow" : "section.business_cancelled")}
         </p>
       )}
 
@@ -221,7 +224,7 @@ export default function RescueSection({ producer }) {
                   <Clock aria-hidden="true" size={14} className="shrink-0" />
                   {/* MEH-3585: say the day — the public list is today's bags
                       only, and a bare window reads as «every day». */}
-                  {t("section.pickup_today", { from, until })}
+                  {t(bagDay(offer.date) === "tomorrow" ? "row.pickup_tomorrow" : "section.pickup_today", { from, until })}
                 </span>
               )
             }
