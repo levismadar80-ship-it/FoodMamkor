@@ -15,7 +15,9 @@
  * Placement: the top of the edit hub, above the group tiles (MEH-3483 study in
  *           the PR): one entry for the whole page, the same place the owner
  *           fills it by hand.
- * History:  MEH-3483 (creation)
+ *           MEH-3788: on the owner's edit hub it mounts only while the page is
+ *           still empty (edit/page.js decides); the admin page always shows it.
+ * History:  MEH-3483 (creation); MEH-3788 (owner side: empty page only)
  */
 
 import { useEffect, useState } from "react";
