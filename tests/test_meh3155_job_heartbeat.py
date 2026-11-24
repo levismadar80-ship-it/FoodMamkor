@@ -52,6 +52,7 @@ def _stub_services(monkeypatch):
         pending_nudge,
         registration_reminders,
         rescue_digest,
+        rescue_reminders,
         retention_purge,
         weekly_owner_summary,
     )
@@ -72,6 +73,10 @@ def _stub_services(monkeypatch):
         group_buy_pickup_reminder, "send_pickup_reminders", lambda db: 0
     )
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
+    # MEH-3702: the rescue morning reminder.
+    monkeypatch.setattr(
+        rescue_reminders, "queue_morning_reminders", lambda db, **kw: {}
+    )
     monkeypatch.setattr(
         registration_reminders, "send_registration_reminders", lambda db: 0
     )
@@ -132,6 +137,12 @@ JOBS = [
         "rescue-codes-digest",
         "interval",
         job_heartbeat.RESCUE_DIGEST_INTERVAL_MINUTES,
+    ),
+    (
+        "_run_rescue_morning_reminder_job",
+        "rescue-morning-reminder-daily",
+        "crontab",
+        job_heartbeat.RESCUE_REMINDER_CRON,
     ),
     (
         "_run_weekly_owner_summary_job",
@@ -287,11 +298,13 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     triggers = _registered(monkeypatch, flags_on=False)
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
+    assert "_run_rescue_morning_reminder_job" not in triggers  # MEH-3702
     assert "_run_weekly_owner_summary_job" not in triggers
     assert "_run_product_order_jobs" not in triggers  # MEH-3296
     flagged = {
         "_run_watchdog_job",
         "_run_rescue_digest_job",
+        "_run_rescue_morning_reminder_job",
         "_run_weekly_owner_summary_job",
         "_run_product_order_jobs",
     }
