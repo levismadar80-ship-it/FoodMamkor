@@ -245,6 +245,17 @@ function EditPageInner() {
   const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
+  // MEH-3788: «ספרו לנו על העסק» is for a page that is still empty (no
+  // description, or the registration placeholder); after that the writer
+  // inside «תיאור העסק» is the one entry. Latched: a save from the panel
+  // fills the description, and the panel stays until the next visit so the
+  // owner sees her save land instead of the panel vanishing under her.
+  const [showFill, setShowFill] = useState(false);
+  useEffect(() => {
+    if (!profile) return;
+    const desc = (profile.description || "").trim();
+    if (!desc || isDefaultDescription(desc)) setShowFill(true);
+  }, [profile]);
 
   // MEH-1116: accordion state — one card open at a time, all collapsed on load.
   const [openKey, setOpenKey] = useState(null);
@@ -764,8 +775,8 @@ function EditPageInner() {
           {tAcc("hub_title")}
         </h1>
         {/* Locations as the page shows them (an edit this session wins over the loaded profile). */}
-        <PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
-          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />
+        {showFill && (<PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
+          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />)}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);
