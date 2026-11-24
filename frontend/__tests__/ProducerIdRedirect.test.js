@@ -48,6 +48,7 @@ vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({ default: () => n
 
 import middleware from "@/middleware";
 import ProducerPage from "@/app/[locale]/producer/[id]/page";
+import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 
 const ID = "11111111-2222-4333-8444-555555555555";
 
@@ -191,6 +192,17 @@ describe("page: fallback when the middleware did not redirect (MEH-3708)", () =>
     expect(out).toBeTruthy();
     expect(permanentRedirect).not.toHaveBeenCalled();
     expect(notFound).not.toHaveBeenCalled();
+  });
+
+  // MEH-3819: keyed per business, so a client move between two id pages
+  // remounts ProducerDetail and its lists start empty, not with the last one's.
+  it("no slug → the business page is keyed by the id it renders", async () => {
+    fetchSsrEntity.mockResolvedValue({ id: ID, slug: null, name: "דבש" });
+    const out = await ProducerPage(pageProps("he"));
+    const kids = [out.props.children].flat(Infinity).filter(Boolean);
+    const detail = kids.find((k) => k?.type === ProducerDetail);
+    expect(detail).toBeTruthy();
+    expect(detail.key).toBe(ID);
   });
 
   it("a slug that names a site route (map) renders here, no redirect", async () => {
