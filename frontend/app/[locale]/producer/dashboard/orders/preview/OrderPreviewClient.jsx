@@ -12,18 +12,20 @@
  * Related:  dashboard/preview/PreviewClient.jsx (the same shell for a business
  *           not yet approved), components/public/OrderSheet.jsx
  * History:  MEH-3746 (creation); MEH-3763 a line under the banner when the
- *           form is missing a step (no product, no hours) or did not load.
+ *           form is missing a step (no product, no hours) or did not load;
+ *           MEH-3776 the banner is ui/PreviewBanner.
  */
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, Info, Warning } from "@phosphor-icons/react";
+import { Info, Warning } from "@phosphor-icons/react";
 
 import BackLink from "@/components/ui/BackLink";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { loadOwnerMenuPreview } from "@/lib/order-cart";
+import PreviewBanner from "@/components/ui/PreviewBanner";
 import { PreviewModeProvider } from "@/lib/preview-mode";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 
@@ -102,14 +104,9 @@ export default function OrderPreviewClient() {
       <div className="px-4 pt-4">
         <BackLink href="/producer/dashboard/orders" label={t("title")} />
       </div>
-      <p
-        role="status"
-        data-testid="order-preview-banner"
-        className="flex items-start gap-2 bg-green-50 border border-primary/30 rounded-md px-4 py-3 mx-4 mt-3 text-sm text-text text-start"
-      >
-        <Eye size={18} aria-hidden="true" className="shrink-0 mt-0.5 text-primary" />
-        <span>{t("preview_banner")}</span>
-      </p>
+      <PreviewBanner data-testid="order-preview-banner" className="mx-4 mt-3">
+        {t("preview_banner")}
+      </PreviewBanner>
       {step && step !== "loading" && <MissingStepLine step={step} />}
       <PreviewModeProvider ownerOrderMenu>
         <ProducerDetail fetchPath={`/producers/${producerId}`} />
