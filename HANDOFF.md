@@ -12,6 +12,7 @@
 - **מצב תצוגה מקדימה:** ‏`PreviewModeProvider` (`frontend/lib/preview-mode.js`) מסמן את העץ. ‏`ownerOrderMenu` הוא הסכמה מפורשת, ורק `OrderPreviewClient` מפעיל אותה. תצוגת הטיוטה נפתחת בלי התחברות, ולכן היא לא קוראת את התפריט של הבעלים.
 - **רכיב חדש שמשתמש ב-`useOrderCart`:** בתוך תצוגה מקדימה הוא לא שולח הזמנה ולא מבקש קוד. ‏`OrderSheet` ו-`OrderSheetPhone` כבר נוהגים כך.
 - **פס «תצוגה מקדימה»:** רכיב אחד, `frontend/components/ui/PreviewBanner.jsx` (#5246). מסך תצוגה חדש משתמש בו ולא מעתיק את ה-`<p>`.
+- **קישור חזרה אחד בתצוגת ההזמנה (טלפון):** רק «→ הזמנות»; `ProducerDetail` מקבל `hideHistoryBack` ורק `OrderPreviewClient` מעביר אותו (#5248).
 - **timeout של `ts-check-files.test.js`** (120 שניות) קורה כש-runner עמוס. אם הוא נכשל, מריצים מחדש את ה-job. התיקון ב-#5242.
 
 ## 2026-11-22 — הרשמת לקוחה בלי לעזוב את הדף (PR #5123, #5158, #5159, #5144)
