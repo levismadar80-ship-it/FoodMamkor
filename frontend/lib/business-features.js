@@ -82,7 +82,7 @@ export const BUSINESS_FEATURES = [
   { id: "onboarding_emails", group: "page", status: "live", codeRef: ["backend/app/services/pending_nudge.py"] },
 
   // ── found ───────────────────────────────────────────────────────────────
-  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/app/[locale]/producer/dashboard/page.js"] },
+  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/components/producer/VanityLinkCard.jsx"] },
   { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CategoriesCard.jsx"] },
   { id: "similar_businesses", group: "found", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
@@ -112,7 +112,8 @@ export const BUSINESS_FEATURES = [
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },
 
   // ── return ──────────────────────────────────────────────────────────────
-  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx"] },
+  // MEH-3785: the offer has its own page under «כלים» (it was a card in עריכה › מוצרים ומחירים).
+  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx", "frontend/app/[locale]/producer/dashboard/offer/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/offer" } },
   { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
   { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
   // MEH-2885: experiences (hosted visits) — he copy approved word for word by Sapir 10/11.

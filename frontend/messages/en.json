@@ -634,7 +634,8 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee"
+    "kph": "Coffee",
+    "byshvl-lpy-hzmnh": "Cooked to order"
   },
   "seo": {
     "home": {
@@ -1194,6 +1195,21 @@
       "errors": {
         "upload_image_failed": "Image upload failed",
         "rejected_default": "Content does not meet our criteria"
+      },
+      "help": {
+        "title": "The name shown at the top of the recipe and in site search.",
+        "description": "A sentence or two: what is special about the recipe and why to make it.",
+        "ingredients": "One ingredient per line, with the amount.",
+        "instructions": "One step per line, in order.",
+        "prep_time_min": "Minutes of hands-on work, without cooking or rising time.",
+        "cook_time_min": "Minutes in the oven or on the stove.",
+        "servings": "How many people the recipe serves, or how many pieces it makes.",
+        "image_url": "A photo of the finished dish. Daylight works best.",
+        "product_ids": "Your products used in the recipe. They appear under the recipe with a link to your page."
+      },
+      "fill": {
+        "title": "Have a written recipe?",
+        "intro": "Paste the recipe as it is, and we'll make a draft from it. Nothing is saved without your approval."
       }
     },
     "dashboard": {
@@ -1325,6 +1341,9 @@
       "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
       "pickup_place_label": "Pickup place",
       "cancel_until_short": "You can leave until {date}",
+      "member_next_open": "We'll email you when the group reaches its goal. If it doesn't by {date}, your commitment is cancelled and you owe nothing.",
+      "member_next_funded_pickup": "The group reached its goal. Pickup: {when}.",
+      "member_my_groups": "All my group buys",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
       "calendar_title": "Pickup: {title}"
@@ -3331,6 +3350,25 @@
         "fri": "Fri",
         "sat": "Sat"
       }
+    },
+    "form": {
+      "fill": {
+        "title": "Have a post about the event?",
+        "intro": "Paste the post or the message as it is, and we will make a draft from it. Nothing is saved without your approval."
+      },
+      "help": {
+        "title": "The event's name, as it will appear in the events list.",
+        "description": "What happens at the event, who it suits and what to bring.",
+        "category": "The kind of event. People find it by this in the filter.",
+        "event_date": "The day the event takes place.",
+        "event_time": "The start time.",
+        "end_time": "When the event ends, if known.",
+        "location": "The address or the name of the place, so it is easy to get there.",
+        "city": "The city where the event takes place.",
+        "price": "The price per participant. If the event is free, leave 0.",
+        "max_participants": "How many people can take part. When the places run out, sign-up closes.",
+        "image_url": "A photo from a past event or of the place."
+      }
     }
   },
   "experiences": {
@@ -3822,7 +3860,8 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans"
+        "kph": "Coffee beans",
+        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -5157,7 +5196,6 @@
       },
       "help_row": {
         "title": "Need help?",
-        "body": "Write to us and we'll get back to you within 3 business days.",
         "cta": "Contact the team"
       },
       "whats_new": {
@@ -5298,7 +5336,9 @@
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
         "menu_cta": "Upload a menu",
         "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
-        "allergens_cta": "Mark them"
+        "allergens_cta": "Mark them",
+        "rescue": "{count, plural, one {Surprise bags open today} other {# surprise-bag offers open today}}",
+        "rescue_cta": "Manage"
       },
       "status": {
         "pending": {
@@ -6222,6 +6262,19 @@
             "orders": "Orders",
             "last": "Last order"
           }
+        },
+        "fill": {
+          "title": "Tell us how you take orders",
+          "intro": "For example: “Order by Thursday evening, pick up Friday morning.” We'll draft your settings from it, and nothing is saved without your approval."
+        },
+        "help": {
+          "slot_cap": "How many orders you can prepare for the same slot.",
+          "cancel_cutoff_hours": "Up to how long before the slot customers can cancel on their own.",
+          "min_order": "The lowest amount an order can be.",
+          "slot_minutes": "How long each pickup or delivery window lasts.",
+          "lead_time_hours": "How many hours before the slot an order must be placed, so you have time to prepare.",
+          "windows": "The days and hours when orders can be picked up or delivered.",
+          "product_ids": "Which products customers can order from your page."
         },
         "preview_link": "How customers see it",
         "preview_banner": "Preview: this is how customers see the order. You can't send from here.",
@@ -7154,7 +7207,9 @@
       "pickup_label": "Pickup",
       "until": "until {time}",
       "soon": "within the hour",
-      "left_short": "{count, plural, one {1 left} other {# left}}"
+      "left_short": "{count, plural, one {1 left} other {# left}}",
+      "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
+      "cancel_at_tomorrow": "tomorrow at {time}"
     },
     "section": {
       "title": "Rescue bag",
@@ -7168,7 +7223,8 @@
       "cancelled": "Your reservation is cancelled, and the bag is back on the list.",
       "allergens_declared": "Contains: {list} · as declared by the business",
       "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
-      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come."
+      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come.",
+      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -7291,7 +7347,11 @@
       "cancel_offer_yes": "Yes, cancel",
       "cancel_offer_no": "No",
       "not_in_pilot": "Surprise bags are not open in {city} yet. Once they open there, you can publish from here.",
-      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today."
+      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today.",
+      "offers_title_tomorrow": "Tomorrow's bags",
+      "orders_title_tomorrow": "Tomorrow's reservations",
+      "orders_empty_tomorrow": "No reservations for tomorrow yet.",
+      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -7335,7 +7395,10 @@
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
-      "calendar_title": "Surprise bag pickup: {business_name}"
+      "calendar_title": "Surprise bag pickup: {business_name}",
+      "pickup_title_tomorrow": "Pickup tomorrow",
+      "state_sold_out_tomorrow": "This bag is sold out for tomorrow.",
+      "state_cancelled_tomorrow": "The business cancelled tomorrow's bag."
     },
     "faq": {
       "items": {
@@ -8073,6 +8136,13 @@
     "write_review": "Write a review",
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
+  },
+  "order_again": {
+    "button": "Order again",
+    "added_all": "We added the items from last time to your order",
+    "added_some": "We added what can be ordered now. Not available right now: {names}",
+    "none_available": "The items from last time are not available right now",
+    "not_taking": "This business is not taking orders on the site right now"
   },
   "product_variants": {
     "from": "From ",

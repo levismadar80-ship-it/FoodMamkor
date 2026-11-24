@@ -4,6 +4,14 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-24 — שורת הצ'יפים לא קורסת בלי `scrollTo` (PR #5251)
+
+**שורה אחת:** תוקנה השגיאה `scrollTo is not a function` מ-Sentry ‏(JAVASCRIPT-NEXTJS-14) בדף /producers. כשאין `scrollTo` או `scrollBy` על אלמנט, `ChipScrollRow.jsx` ו-`useScrollAffordance.js` קובעים את `scrollLeft` ישירות.
+
+**מה צריך לדעת לפני עבודה:**
+- **`el?.method()` לא מגן על הפונקציה, רק על האלמנט.** בקריאה ל-API גלילה על אלמנט, בודקים `typeof el.scrollTo === "function"`. דוגמה: `scrollRowTo` ב-`ChipScrollRow.jsx`.
+- **נשאר בלי שינוי:** ‏`?.scrollIntoView(...)` ב-`ChipScrollRow.jsx`. זה API ותיק בהרבה, ואין לו אירוע ב-Sentry.
+
 ## 2026-11-24 — נתוני דמו לכל מצב ב-staging (PR #5219, #5249)
 
 **שורה אחת:** staging אופס ונזרע מחדש עם עסק דמו או שורה לכל מצב באתר (כיסוי 90/90). בדיקת ה-E2E שנשברה בגלל זה תוקנה ב-#5249.

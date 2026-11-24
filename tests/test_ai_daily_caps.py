@@ -52,6 +52,7 @@ GENERATION = {
     # A business (or its admin) presses a button and pays for a generation.
     "app.services.bio_generator",
     "app.services.description_writer",
+    "app.services.form_filler",
     "app.services.group_suggester",
     "app.services.menu_reader",
     "app.services.page_filler",

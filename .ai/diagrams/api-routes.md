@@ -34,6 +34,7 @@ graph LR
     App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-groups/assign (MEH-3477) · /suggest (MEH-3478, AI; 10/day per business, MEH-3497)<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
     App --> ProductDescribe[product_describe.router<br/>/producers/me/product-description/suggest POST · /admin/producers/:id/product-description/suggest POST<br/>MEH-3479 Claude suggests a product description, nothing saved]
     App --> PageFill[page_fill.router<br/>/producers/me/page-fill/read POST · /admin/producers/:id/page-fill/read POST<br/>MEH-3483 Claude drafts the page fields from the owner's text, nothing saved]
+    App --> FormFill[form_fill.router<br/>/producers/me/ai-fill/:form POST<br/>MEH-3740 Claude drafts a dashboard form from the owner's text, one field map per form, nothing saved]
     App --> ReviewReplySuggest[review_reply_suggest.router<br/>/reviews/:id/reply/suggest POST<br/>MEH-3480 Claude drafts the owner's reply to a review, nothing saved]
     App --> Billing[billing.router<br/>/producers/me/billing/summary · /admin/billing/overview<br/>MEH-3181 read-only monthly count of bookings — nothing is charged]
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft; MEH-3410 alerts the admin]
@@ -132,7 +133,7 @@ graph TD
 ```mermaid
 graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
-    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
+    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week +<br/>attention «מה מחכה לך» (incl. live_rescue_offers, MEH-3767)]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>30d chart, top cities,<br/>share_visits (MEH-3331, referrer=share)]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
     Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]

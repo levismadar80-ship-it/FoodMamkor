@@ -12,7 +12,8 @@
  *           unchanged; this page only places them and gates them.
  * Related:  app/[locale]/producer/dashboard/tools/page.js (the «שיתוף» tile);
  *           qr-card/page.js (its back link returns here).
- * History:  MEH-2882 PR 1 (the section on the tools tab); MEH-3749 (moved here).
+ * History:  MEH-2882 PR 1 (the section on the tools tab); MEH-3749 (moved here);
+ *           MEH-3767 («הלינק שלי» moved here from the dashboard home, first).
  *
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
@@ -26,6 +27,8 @@ import BackLink from "@/components/ui/BackLink";
 import Button from "@/components/ui/Button";
 import BusinessQrCard from "@/components/producer/BusinessQrCard";
 import ShareKitSection from "@/components/producer/ShareKitSection";
+import VanityLinkCard from "@/components/producer/VanityLinkCard";
+import { LockSimple } from "@phosphor-icons/react";
 import { producerCompleteness } from "@/lib/producer-completeness";
 
 /**
@@ -57,6 +60,24 @@ function useShareData({ user, authLoading }) {
     setAttempt((count) => count + 1);
   };
   return { ...state, retry };
+}
+
+/**
+ * «הלינק שלי» (MEH-3767, from the home): the link once the page is complete,
+ * else why it is locked — sharing an incomplete page sends people to a thin
+ * listing (MEH-964 1D share-gate). The page is already approved here.
+ * @param {{ profile: any }} props
+ */
+function MyLink({ profile }) {
+  const t = useTranslations("dashboard.producer");
+  if (!profile.slug) return null;
+  if (producerCompleteness(profile).missing.length === 0) return <VanityLinkCard slug={profile.slug} />;
+  return (
+    <div data-testid="share-locked-hint" className="bg-surface border border-border rounded-lg p-5 flex items-center gap-3">
+      <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
+      <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
+    </div>
+  );
 }
 
 export default function ProducerDashboardSharePage() {
@@ -95,6 +116,7 @@ export default function ProducerDashboardSharePage() {
       )}
       {profile && status === "approved" && profile.kind !== "organizer" && (
         <div className="space-y-8" data-testid="share-page-content">
+          <MyLink profile={profile} />
           <BusinessQrCard
             producer={profile}
             isComplete={producerCompleteness(profile).missing.length === 0}

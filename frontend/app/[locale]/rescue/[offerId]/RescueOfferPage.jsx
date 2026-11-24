@@ -15,7 +15,7 @@ import ShareButton from "@/components/ShareButton";
 import RatingCompact from "@/components/ui/RatingCompact";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
-import { fetchOffer, israelTime } from "@/lib/rescue";
+import { bagDay, fetchOffer, israelTime } from "@/lib/rescue";
 import { producerPath } from "@/lib/producer-path";
 import useRescueReservation from "@/lib/use-rescue-reservation";
 
@@ -126,7 +126,7 @@ export default function RescueOfferPage({ offerId }) {
               first thing a buyer decides on, and on a phone the «where»
               section starts below the fold. */}
           <PickupLine
-            label={t("offer_page.pickup_title")}
+            label={t(bagDay(offer.date) === "tomorrow" ? "offer_page.pickup_title_tomorrow" : "offer_page.pickup_title")}
             text={`${israelTime(offer.pickup_start)}–${israelTime(offer.pickup_end)}`}
             testId="rescue-offer-pickup"
             className="mb-4"

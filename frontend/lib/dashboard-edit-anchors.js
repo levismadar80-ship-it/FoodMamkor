@@ -64,11 +64,10 @@ export const ANCHOR_TO_KEY = {
   "profile-categories": "categories",
   "profile-images": "images",
   "profile-products": "products",
-  // MEH-2262: `offer` (MEH-1823) and `special-hours` (MEH-2264) were each
-  // registered in KEY_TO_ANCHOR and KEY_TO_GROUP but not here, so their deep
-  // links resolved no key at all and the hub stayed on screen. Same silent
-  // gap as `businessName` in KEY_TO_GROUP, one map over.
-  offer: "offer",
+  // MEH-2262: `special-hours` (MEH-2264) was registered in KEY_TO_ANCHOR and
+  // KEY_TO_GROUP but not here, so its deep link resolved no key at all and the
+  // hub stayed on screen. (`offer` had the same gap; MEH-3785 moved the offer
+  // out of the edit page to /producer/dashboard/offer.)
   "special-hours": "specialHours",
   // MEH-2433: dietary scope + grass-fed were sub-sections of the trust card
   // with no deep link of their own; in the five-group hub each is its own
@@ -120,11 +119,9 @@ export const KEY_TO_ANCHOR = {
   orderWindow: "order-window",
   // MEH-2264: sits directly under the order window it overrides.
   specialHours: "special-hours",
-  // MEH-1823: registered here so #offer deep-links resolve like every other
-  // card. These three maps are a guarded registry — a card added to the JSX
-  // without an entry renders but is unreachable by anchor, which is the
-  // silent-gap class .claude/rules/testing.md documents for path registries.
-  offer: "offer",
+  // These three maps are a guarded registry — a card added to the JSX without
+  // an entry renders but is unreachable by anchor, which is the silent-gap
+  // class .claude/rules/testing.md documents for path registries.
   tags: "tags",
   organizerCity: "organizer-city",
   paymentInfo: "payment-info",
@@ -165,15 +162,8 @@ export const KEY_TO_GROUP = {
   // MEH-2264: same group as the order window it overrides; NOT a
   // GROUP_MEMBERS entry, for exactly orderWindow's reason above.
   specialHours: "location",
-  // MEH-1823: the offer used to live in the location group, read against the
-  // delivery terms. MEH-2433 moved it to the products group: an owner looks
-  // for a discount next to her prices, not next to her delivery radius.
-  // Deliberately NOT added to GROUP_MEMBERS below,
-  // for the same reason orderWindow isn't: membership drives the hub's
-  // "{done}/{total}", and an opt-in field would show every existing business
-  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
-  // for — the GBP-staleness risk that note already cites.
-  offer: "products",
+  // MEH-3785: the offer left the edit page (MEH-1823 location → MEH-2433
+  // products → its own page under «כלים»).
   contact: "contact",
   questions: "contact",
   // MEH-2475: organizer-only card in the contact group (the only group she
