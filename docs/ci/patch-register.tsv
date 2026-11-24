@@ -83,4 +83,4 @@ pr-checks-edited-trigger	applied	.github/workflows/pr-checks.yml	unlabeled, edit
 ai-health-probe	applied	.github/workflows/uptime.yml	AI_URL: https://mehamakor.co.il/api/health/ai	-	-
 meh-3750-tailwind-major-ignore	applied	.github/dependabot.yml	dependency-name: "tailwindcss"	2026-11-23	committed 23/11 via the web editor (Claude in Chrome); sha256 checked against the prepared file
 meh-3806-mypy-ai-fill	applied	backend/pyproject.toml	"app/services/form_filler.py",	2026-11-24	committed 24/11 via the web editor (Claude in Chrome), 97bf5e47ce, sha256 matched the prepared file
-meh-3526-expected-tables-68	applied	.github/workflows/pr-checks.yml	MEH-3526: producer_staff	2026-11-24	committed 24/11 via the web editor (Claude in Chrome) on feature/meh-3526-orders-staff
+meh-3526-expected-tables-68	pending	.github/workflows/pr-checks.yml	MEH-3526: producer_staff	2026-11-24	EXPECTED_TABLES 67 -> 68 on feature/meh-3526-orders-staff; prepared file sha256 29da71de2267d3effc37481aacdf44054f3a69901d7f7b14fd09632586a49321 (/mnt/project-files/meh-3526/pr-checks.yml); Claude in Chrome was not connected 24/11
