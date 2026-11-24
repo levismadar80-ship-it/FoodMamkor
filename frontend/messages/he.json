@@ -8072,6 +8072,13 @@
     "calendar_pickup": "איסוף הזמנה: {business_name}",
     "calendar_delivery": "משלוח הזמנה: {business_name}"
   },
+  "order_again": {
+    "button": "להזמין שוב",
+    "added_all": "הוספנו להזמנה את הפריטים מהפעם הקודמת",
+    "added_some": "הוספנו את מה שאפשר להזמין עכשיו. לא זמינים כרגע: {names}",
+    "none_available": "הפריטים מהפעם הקודמת לא זמינים כרגע",
+    "not_taking": "בית העסק לא מקבל כרגע הזמנות באתר"
+  },
   "product_variants": {
     "from": "מ-",
     "choose": "בחירה",
