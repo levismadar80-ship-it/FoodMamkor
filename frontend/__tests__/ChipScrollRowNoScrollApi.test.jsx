@@ -69,4 +69,29 @@ describe("ChipScrollRow — element without scrollTo / scrollBy (MEH-3780)", () 
     fireEvent.wheel(scroller, { deltaY: 50, deltaMode: 0 });
     expect(scroller.scrollLeft).toBe(-150);
   });
+
+  it("arrow click without scrollBy → scrollLeft pages toward the inline end", () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: query === "(hover: hover) and (pointer: fine)",
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const { container } = renderRow();
+    const scroller = container.querySelector("div.overflow-x-auto");
+    Object.defineProperty(scroller, "scrollWidth", { value: 1000, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    Object.defineProperty(scroller, "scrollLeft", {
+      value: -100,
+      configurable: true,
+      writable: true,
+    });
+    fireEvent.scroll(scroller);
+    const endArrow = container.querySelector("button.end-1");
+    expect(endArrow).not.toBeNull();
+    fireEvent.click(endArrow);
+    // The overflow flip re-pins the row to 0 first (the scrollTo fallback),
+    // then the click pages 80% of the 500px strip, negative toward the end.
+    expect(scroller.scrollLeft).toBe(-400);
+  });
 });
