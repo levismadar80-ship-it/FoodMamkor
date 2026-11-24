@@ -29,6 +29,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
 import { useRouter } from "@/i18n/navigation";
+import { trackEvent } from "@/lib/analytics";  // MEH-3794
 import { canOrderAgain, stashOrderAgain } from "@/lib/order-again";
 import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
@@ -88,6 +89,8 @@ function OrderAgain({ order, primary }) {
   const t = useTranslations("order_again");
   const router = useRouter();
   const go = () => {
+    // MEH-3794: status and line count only, never the order, business or account.
+    trackEvent("order_again_clicked", { status: order.status, lines: order.items.length });
     stashOrderAgain(order.producer_id, order.items);
     router.push(/** @type {string} */ (producerPath({ id: order.producer_id })));
   };

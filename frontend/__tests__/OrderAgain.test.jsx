@@ -11,8 +11,9 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-li
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
-const { push, toast, menuRead } = vi.hoisted(() => ({
+const { push, toast, menuRead, track } = vi.hoisted(() => ({
   push: vi.fn(),
+  track: vi.fn(),
   toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() },
   menuRead: vi.fn(),
 }));
@@ -20,6 +21,7 @@ vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ showToast: toast }));
+vi.mock("@/lib/analytics", () => ({ trackEvent: track }));
 vi.mock("@/lib/order-cart", async (actual) => ({ ...(await actual()), loadOrderMenu: (id) => menuRead(id) }));
 
 import { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
@@ -111,6 +113,14 @@ describe("the «להזמין שוב» button on the order page", () => {
       { key: `${CHEESE}~${BIG}`, qty: 1, name: "גבינה · גדול" },
       { key: null, qty: 1, name: "עוגה" },
     ]);
+  });
+
+  it("click: one order_again_clicked event with the status and line count, nothing that names the order or the business (MEH-3794)", () => {
+    show({ items: [breadLine, cheeseLine, goneLine] });
+    expect(track).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("order-again"));
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith("order_again_clicked", { status: "handed", lines: 3 });
   });
 
   it("with a review link the review stays the main button and «להזמין שוב» is outlined", () => {
