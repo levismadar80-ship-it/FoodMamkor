@@ -1030,7 +1030,8 @@ arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
 `flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
-patterns.
+patterns. A checkbox is `ui/Checkbox.jsx`, whose whole label row is the hit area
+(`min-h-touch md:min-h-8`, MEH-3830).
 
 **Documented exceptions.** These are deliberate and stay below a floor for a
 recorded reason — do not "fix" them:

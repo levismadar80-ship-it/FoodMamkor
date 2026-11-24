@@ -196,7 +196,7 @@ export default function PageFillPanel({ profile, readUrl, saveUrl, owner = true,
                 <li key={row.key} className="py-2 flex items-start gap-3" data-testid={`page-fill-row-${row.key}`}>
                   {canSave(row) && (
                     <Checkbox
-                      className="shrink-0 -my-2.5"
+                      className="shrink-0 self-start -my-2"
                       checked={checked.has(row.key)}
                       onChange={() => toggle(row.key)}
                       aria-label={t(`fields.${row.key}`)}

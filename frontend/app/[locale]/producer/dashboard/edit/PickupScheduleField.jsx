@@ -40,7 +40,7 @@ export default function PickupScheduleField({ days, cutoffDay, cutoffTime, onCha
           {DELIVERY_DAYS.map((day) => (
             <li key={day}>
               <Checkbox
-                className="inline-flex min-h-11 items-center gap-1.5 text-sm"
+                className="inline-flex items-center gap-1.5 text-sm"
                 checked={days.includes(day)}
                 onChange={() => toggle(day)}
                 data-testid={`pickup-day-${day}`}

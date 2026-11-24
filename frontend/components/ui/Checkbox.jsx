@@ -38,8 +38,10 @@
  * }} props
  */
 export default function Checkbox({ children, className = "", boxClassName = "", ...rest }) {
-  // The caller's display / alignment / gap win: two display utilities on one
-  // element resolve by stylesheet order, not by class order.
+  // The caller's unprefixed display / alignment / gap replace the defaults:
+  // two display utilities on one element resolve by stylesheet order, not by
+  // class order. A prefixed one (md:flex) needs nothing: it already comes
+  // later in the stylesheet and wins at its breakpoint.
   const display = /(^|\s)(inline-)?(flex|grid)(\s|$)/.test(className) ? "" : "inline-flex";
   const align = /(^|\s)items-/.test(className) ? "" : "items-center";
   const gap = /(^|\s)gap-/.test(className) ? "" : "gap-2";

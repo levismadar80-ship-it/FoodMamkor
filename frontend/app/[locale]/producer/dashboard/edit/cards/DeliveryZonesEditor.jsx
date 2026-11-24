@@ -233,7 +233,7 @@ function CheckGroup({ legend, items, checked, onToggle, testid }) {
         {items.map((item) => (
           <li key={item}>
             <Checkbox
-              className="inline-flex items-center gap-1.5 text-sm min-h-11"
+              className="inline-flex items-center gap-1.5 text-sm"
               checked={checked.includes(item)}
               onChange={() => onToggle(item)}
               data-testid={`${testid}-${item}`}

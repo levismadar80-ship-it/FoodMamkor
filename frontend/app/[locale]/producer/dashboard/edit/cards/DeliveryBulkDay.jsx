@@ -45,7 +45,7 @@ export default function DeliveryBulkDay({ cities, onApply }) {
         {cities.map((c) => (
           <li key={c}>
             <Checkbox
-              className="inline-flex items-center gap-1.5 text-sm min-h-11"
+              className="inline-flex items-center gap-1.5 text-sm"
               checked={live.includes(c)}
               onChange={() => toggle(c)}
               aria-label={t("bulk_city_aria", { city: c })}
