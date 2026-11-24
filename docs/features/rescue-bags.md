@@ -39,6 +39,7 @@
 * `tests/test_meh3593_pickup_note.py` — «הוראות איסוף» על נקודת האיסוף: שמירה, ניקוי, PUT בלי השדה לא מוחק, עסק אחר לא כותב, הדף והמייל (MEH-3593).
 * `tests/test_meh2679_rescue_utc_times.py` · `tests/test_meh2808_rescue_bag_window.py` — חלון האיסוף.
 * `frontend/__tests__/AdminRescueMetrics.test.jsx` — מספרי הפיילוט באדמין.
+* `tests/test_meh3698_rescue_history.py` — `GET /rescue/orders/history`: כל השריונים של הקונה מכל יום, עם שם בית העסק, לרשימה האחת «ההזמנות שלי» (MEH-3698). בלי קוד האיסוף.
 * `tests/test_meh3702_rescue_tomorrow.py` — סל של מחר: פרסום, שריון, רשימות, המייל «מחר», ותזכורת הבוקר (MEH-3702).
 * `tests/test_meh3703_rescue_schedule.py` · `frontend/__tests__/RescueSchedule.test.jsx` — הלוח הקבוע: ימים, דילוג, ביטול ביד שלא חוזר, מעבר שעון, בעלות, והשורה והדף (MEH-3703).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`

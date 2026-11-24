@@ -43,7 +43,7 @@ import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // ME
 import { shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
-import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
+import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-display-order";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -261,11 +261,11 @@ export default function ProducerSections({
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
-  // MEH-3021 / MEH-3055: the order is lib/product-order.js — the owner's
+  // MEH-3021 / MEH-3055: the order is lib/product-display-order.js — the owner's
   // order when she set one, else photos first; grouped products laid out
   // group by group. The signature product stays out of the grid.
   const productGroups = producer.product_groups || [];
-  /** @type {Array<import("@/lib/product-order").OrderedProduct & { name?: string, description?: string, price_min?: number | null, price_max?: number | null, price_range?: string | null }>} */
+  /** @type {Array<import("@/lib/product-display-order").OrderedProduct & { name?: string, description?: string, price_min?: number | null, price_max?: number | null, price_range?: string | null }>} */
   const gridUnsorted = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
