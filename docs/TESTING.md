@@ -60,6 +60,17 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
 5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
 
+### Slow-phone navigation — `flows/manual/nav-throttled.spec.ts` (MEH-3810)
+
+CI's network is fast, so the route loader is on screen for a frame and what goes
+wrong around it is never seen. This spec throttles Chromium (CDP: 400 ms RTT,
+1.6 Mbps, CPU x4) and, on home, /producers, /events, /experiences and
+/group-buys: scrolls to the last card, opens it, and checks in every animation
+frame that the footer is never in view under the loader; then Back must return
+to the same offset (±100 px; a list too short to scroll is annotated, not
+checked). Control: the loader must paint on at least one list, or the throttle
+did not take effect. Chromium only.
+
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
 
 `frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").
