@@ -33,6 +33,7 @@ import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 const ICON = 16;
 
@@ -201,24 +202,22 @@ export default function ChecklistSettings() {
           >
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 pt-1">
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  aria-label={t("move_up", { label: item.label || t("new_item") })}
+                  label={t("move_up", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowUp size={ICON} weight="bold" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   onClick={() => move(index, 1)}
                   disabled={index === items.length - 1}
-                  aria-label={t("move_down", { label: item.label || t("new_item") })}
+                  label={t("move_down", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowDown size={ICON} weight="bold" aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
 
               <div className="flex-1 space-y-2">

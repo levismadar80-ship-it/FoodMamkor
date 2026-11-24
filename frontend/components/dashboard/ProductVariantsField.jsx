@@ -27,6 +27,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // Mirrors MAX_VARIANTS_PER_PRODUCT (backend/app/limits.py); the server holds it.
 export const MAX_VARIANTS = 10;
@@ -167,15 +168,15 @@ function VariantRow({ row, index, last, edit, move, remove, t }) {
       >
         {t("in_stock")}
       </Checkbox>
-      <button type="button" className={ICON_BTN} disabled={index === 0} onClick={() => move(index, -1)} aria-label={t("move_up", { name: label })}>
+      <IconButton className={ICON_BTN} disabled={index === 0} onClick={() => move(index, -1)} label={t("move_up", { name: label })}>
         <ArrowUp size={18} aria-hidden="true" />
-      </button>
-      <button type="button" className={ICON_BTN} disabled={last} onClick={() => move(index, 1)} aria-label={t("move_down", { name: label })}>
+      </IconButton>
+      <IconButton className={ICON_BTN} disabled={last} onClick={() => move(index, 1)} label={t("move_down", { name: label })}>
         <ArrowDown size={18} aria-hidden="true" />
-      </button>
-      <button type="button" className={ICON_BTN} onClick={remove} aria-label={t("remove", { name: label })}>
+      </IconButton>
+      <IconButton className={ICON_BTN} onClick={remove} label={t("remove", { name: label })}>
         <Trash size={18} aria-hidden="true" />
-      </button>
+      </IconButton>
     </div>
   );
 }

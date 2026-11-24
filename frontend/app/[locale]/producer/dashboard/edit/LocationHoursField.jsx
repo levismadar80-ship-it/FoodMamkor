@@ -41,6 +41,7 @@ import {
   serializeHours,
 } from "@/lib/hours-serialize";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // Shared by every time input: ≥44px tall (min-h-touch), numerals in reading
 // order. REUSES: HoursEditor.jsx (6f8d70e8^) input class, plus the touch floor.
@@ -192,15 +193,14 @@ export default function LocationHoursField({
                           />
                         </div>
                         {day.ranges.length > 1 && (
-                          <button
-                            type="button"
+                          <IconButton
                             onClick={() => removeRange(i, rangeIdx)}
-                            aria-label={`${tDays(key)} — ${t("remove_range")}`}
+                            label={`${tDays(key)} — ${t("remove_range")}`}
                             data-testid={`location-hours-remove-${i}-${rangeIdx}`}
                             className="grid min-h-touch min-w-touch place-items-center text-fg-muted transition hover:text-text"
                           >
                             <X size={14} aria-hidden="true" />
-                          </button>
+                          </IconButton>
                         )}
                       </div>
                     );

@@ -48,6 +48,7 @@ import { formatPriceRange, priceLabelText } from "@/lib/utils";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import SectionHeading from "@/components/ui/SectionHeading";
 import BackLink from "@/components/ui/BackLink";
+import IconButton from "@/components/ui/IconButton";
 
 const LINK_FOCUS =
   "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -83,15 +84,14 @@ function ServingsStepper({ value, onChange, t }) {
     <div className="mb-2 flex items-center justify-between gap-3" data-testid="servings-stepper">
       <span className="text-base font-medium text-text">{t("servings_stepper_label")}</span>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
+        <IconButton
           className={btn}
-          aria-label={t("servings_less")}
+          label={t("servings_less")}
           aria-disabled={atMin}
           onClick={step(value - 1, atMin)}
         >
           <Minus size={18} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
         <span
           className="min-w-8 text-center text-lg font-bold text-text tabular-nums"
           aria-live="polite"
@@ -99,15 +99,14 @@ function ServingsStepper({ value, onChange, t }) {
         >
           {value}
         </span>
-        <button
-          type="button"
+        <IconButton
           className={btn}
-          aria-label={t("servings_more")}
+          label={t("servings_more")}
           aria-disabled={atMax}
           onClick={step(value + 1, atMax)}
         >
           <Plus size={18} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

@@ -40,6 +40,7 @@ import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
 import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * Module:   producer/dashboard/page (Overview / סקירה index)
@@ -754,14 +755,13 @@ export default function ProducerDashboardPage() {
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
               />
               {vacationUntil && (
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
                   className="text-fg-muted hover:text-danger-600 transition inline-flex"
-                  aria-label={t("availability.remove_vacation_date_aria")}
+                  label={t("availability.remove_vacation_date_aria")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
-                </button>
+                </IconButton>
               )}
               <Button
                 type="button"

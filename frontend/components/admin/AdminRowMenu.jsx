@@ -9,6 +9,7 @@ import {
   MENU_GAP_PX,
 } from "@/lib/panel-position";
 import { DotsThreeVertical } from "@phosphor-icons/react";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * Module:   AdminRowMenu
@@ -308,10 +309,9 @@ export default function AdminRowMenu({ items = [], ariaLabel, touch = false }) {
 
   return (
     <div ref={wrapRef} className="relative inline-block">
-      <button
+      <IconButton
         ref={triggerRef}
-        type="button"
-        aria-label={ariaLabel}
+        label={ariaLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -325,7 +325,7 @@ export default function AdminRowMenu({ items = [], ariaLabel, touch = false }) {
         }
       >
         <DotsThreeVertical size={touch ? 20 : 18} weight="bold" aria-hidden="true" />
-      </button>
+      </IconButton>
       {open && coords && createPortal(panel, document.body)}
     </div>
   );
