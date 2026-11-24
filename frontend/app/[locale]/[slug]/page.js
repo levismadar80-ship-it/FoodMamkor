@@ -58,12 +58,18 @@ async function getProducerBySlug(slug) {
 // on a phone deep-linked to #reviews, 24/11). Same 60 s cache as the producer.
 // Any failure returns null and the browser reads them as before
 // (useProducerActivities) — a missing list must never cost the page.
+// A short timeout and no retry: these lists are not worth a slow first byte.
+const ACTIVITIES_TIMEOUT_MS = 2500;
 async function getProducerActivities(producerId) {
   const id = encodeURIComponent(producerId);
   /** @param {string} path */
   const list = async (path) => {
-    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
-    if (!res.ok) throw new Error(`${path}: ${res.status}`);
+    const res = await serverFetch(
+      `${API_URL}${path}`,
+      { next: { revalidate: 60 } },
+      { timeoutMs: ACTIVITIES_TIMEOUT_MS, retries: 0 },
+    );
+    if (!res.ok) throw Object.assign(new Error(`${path}: ${res.status}`), { status: res.status });
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   };
@@ -75,8 +81,12 @@ async function getProducerActivities(producerId) {
     ]);
     return { events, experiences, groupBuys };
   } catch (err) {
-    // Not silent: reported, and the browser reads the lists itself.
-    Sentry.captureException(err, { level: "warning", extra: { producerId } });
+    // Not silent: reported, and the browser reads the lists itself. A 429 is
+    // the per-IP limit on the server's one egress address (SYSTEM_MAP «What
+    // gives first» 3) — expected under a crawl, so not reported per page.
+    if (err?.status !== 429) {
+      Sentry.captureException(err, { level: "warning", extra: { producerId } });
+    }
     return null;
   }
 }

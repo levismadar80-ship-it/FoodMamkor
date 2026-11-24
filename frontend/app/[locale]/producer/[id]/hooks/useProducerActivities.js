@@ -16,6 +16,10 @@ import { useEffect, useState } from "react";
 
 import api from "@/lib/api";
 
+// The page waits this long at most. A slower list arrives late (one shift,
+// as before MEH-3819) rather than holding the whole page on its loading line.
+export const ACTIVITIES_WAIT_MS = 2500;
+
 /**
  * A failed read is an empty list, as it was before: the section hides.
  *
@@ -39,15 +43,20 @@ export function useProducerActivities({ producerId, initial = null }) {
         .get(path)
         .then((r) => (Array.isArray(r.data) ? r.data : []))
         .catch(() => []);
+    const cap = setTimeout(() => {
+      if (!cancelled) setState((s) => (s.ready ? s : { ...s, ready: true }));
+    }, ACTIVITIES_WAIT_MS);
     Promise.all([
       list(`/events?producer_id=${id}`),
       list(`/experiences?producer_id=${id}`),
       list(`/group-buys?producer_id=${id}`),
     ]).then(([events, experiences, groupBuys]) => {
+      clearTimeout(cap);
       if (!cancelled) setState({ events, experiences, groupBuys, ready: true });
     });
     return () => {
       cancelled = true;
+      clearTimeout(cap);
     };
   }, [producerId, initial]);
 

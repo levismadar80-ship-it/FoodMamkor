@@ -18,7 +18,7 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 import api from "@/lib/api";
-import { useProducerActivities } from "@/app/[locale]/producer/[id]/hooks/useProducerActivities";
+import { useProducerActivities, ACTIVITIES_WAIT_MS } from "@/app/[locale]/producer/[id]/hooks/useProducerActivities";
 
 async function answer(path, outcome) {
   await act(async () => {
@@ -58,5 +58,27 @@ describe("useProducerActivities (MEH-3819)", () => {
     const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
     expect(result.current).toEqual({ ...initial, ready: true });
     expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it("a slow list does not hold the page: ready after the cap, the list lands later", async () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useProducerActivities({ producerId: "p-1" }));
+      await answer("/events", [{ id: "e1" }]);
+      await answer("/experiences", []);
+      await act(async () => {
+        vi.advanceTimersByTime(ACTIVITIES_WAIT_MS - 1);
+      });
+      expect(result.current.ready).toBe(false);
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.ready).toBe(true);
+      await answer("/group-buys", [{ id: "g1" }]);
+      expect(result.current.groupBuys).toEqual([{ id: "g1" }]);
+      expect(result.current.events).toEqual([{ id: "e1" }]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
