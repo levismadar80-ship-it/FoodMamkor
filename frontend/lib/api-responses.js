@@ -185,6 +185,9 @@ export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGro
 // The public group page reads the business's delivery fields and, under a "no"
 // verdict, its phone and name — all of ProducerDetailOut, so the whole of it.
 export const GroupBuyProducerDeliverySchema = GetProducerProducersProducerIdGetResponse;
+// MEH-3755: the buyer's order page reads the business's name, slug and contact
+// fields for its link and contact button.
+export const OrderBusinessSchema = GetProducerProducersProducerIdGetResponse;
 
 // --- sign-up --------------------------------------------------------------
 export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResponse;

@@ -928,6 +928,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/my-orders/MyOrdersClient.jsx` | «ההזמנות שלי»: the signed-in buyer's on-site orders, newest first. Each row opens the order's existing status page. |
 | `[locale]/newsletter/confirm/ConfirmClient.jsx` | — אין כותרת — |
 | `[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx` | — אין כותרת — |
+| `[locale]/order/[id]/OrderBusinessLinks.jsx` | MEH-3755 — on the buyer's order page: the business's name as a link to its page, its contact button (the channel it chose), and Waze / Google Maps for the … |
 | `[locale]/order/[id]/OrderStatusClient.jsx` | The buyer's status page for one on-site order: where it stands, when and where to collect it, the pickup code, what to pay, and the two things she can do — … |
 | `[locale]/owner-invite/OwnerInviteClient.jsx` | — אין כותרת — |
 | `[locale]/owner-invite/OwnerInviteConsents.jsx` | — אין כותרת — |
