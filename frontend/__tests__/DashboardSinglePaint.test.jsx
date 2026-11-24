@@ -53,6 +53,10 @@ const DASHBOARD = {
   whatsapp_clicks_week: 0,
 };
 const PROFILE = { id: 7, name: "חוות ערוגות נועם", slug: "arugot-noam", status: "approved", kind: "producer", images: [], categories: [] };
+// MEH-3783 made the in-page «צפייה בדף» link organizer-only (a business has the
+// tab bar's eye), so the first-paint check of what the profile brings uses an
+// organizer: her link to /organizers/{slug} comes from the profile's slug + kind.
+const ORGANIZER_PROFILE = { ...PROFILE, kind: "organizer" };
 
 /** Answer the oldest open call to `url`. */
 async function answer(url, outcome) {
@@ -75,7 +79,7 @@ describe("owner dashboard home paints once (MEH-3817)", () => {
     expect(screen.queryByTestId("producer-overview")).toBeNull();
     expect(screen.getByText("loading_data")).toBeTruthy();
 
-    await answer("/producers/me", PROFILE);
+    await answer("/producers/me", ORGANIZER_PROFILE);
     expect(screen.queryByTestId("producer-overview")).toBeNull();
 
     await answer("/producers/me/analytics", {});
@@ -85,7 +89,7 @@ describe("owner dashboard home paints once (MEH-3817)", () => {
     await answer("/producers/me/order-settings", Object.assign(new Error("404"), { response: { status: 404 } }));
     expect(screen.getByTestId("producer-overview")).toBeTruthy();
     // What the profile brings is there in the first paint, not added after it.
-    expect(screen.getByTestId("view-public-link").getAttribute("href")).toBe("/arugot-noam");
+    expect(screen.getByTestId("view-public-link").getAttribute("href")).toBe("/organizers/arugot-noam");
   });
 
   it("a failed read counts as answered: its error card is in the first paint", async () => {
