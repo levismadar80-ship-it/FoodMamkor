@@ -25,6 +25,7 @@ from app.config import settings
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
 from app.services.email_layout import frame
+from app.utils.money import shekels_text
 
 
 def israel_hhmm(value: datetime) -> str:
@@ -49,12 +50,6 @@ def day_word(day: date, today: date) -> str:
     if day == today + timedelta(days=1):
         return "מחר"
     return ""
-
-
-def shekels(agorot: int) -> str:
-    """1500 → "15", 1250 → "12.50" — no trailing ".00" on a round price."""
-    whole, rest = divmod(int(agorot), 100)
-    return str(whole) if rest == 0 else f"{whole}.{rest:02d}"
 
 
 @dataclass(frozen=True)
@@ -101,7 +96,7 @@ def render_reservation_email(
         f"{m.cancel_day} ב-{m.cancel_until}" if m.cancel_day else (m.cancel_until or "")
     )
     where = f", {m.address}" if m.address else ""
-    price = shekels(m.total_agorot)
+    price = shekels_text(m.total_agorot)
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
     cancel_text = (
