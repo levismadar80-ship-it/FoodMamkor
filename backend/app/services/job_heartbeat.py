@@ -62,6 +62,7 @@ BILLING_START_SIGNAL_CRON = "0 5 1-3 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 PRODUCT_ORDERS_INTERVAL_MINUTES = 2  # MEH-3296: order expiry + outbox tick
+EMAIL_OUTBOX_INTERVAL_MINUTES = 1  # MEH-3535: the durable email queue
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
@@ -69,6 +70,15 @@ WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
 # MEH-3312: the evening-before reminder, 17:00 on the Israel clock.
 REGISTRATION_REMINDER_CRON = "0 17 * * *"
 REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3610: the group-buy pickup reminder, the same evening hour.
+GROUP_BUY_PICKUP_REMINDER_CRON = "0 17 * * *"
+GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier
+# day, 08:00 on the Israel clock. Once a day: see services/rescue_reminders.py.
+RESCUE_REMINDER_CRON = "0 8 * * *"
+RESCUE_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3805: the evening-before reminder for a bag whose window ends by 08:00.
+RESCUE_EVENING_REMINDER_CRON = "0 20 * * *"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -104,7 +114,8 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 #
 # MEH-3332 (18/11): "unmonitored" below means by SENTRY. The seven are now
 # watched for free instead: every run that returns is recorded, and
-# services/job_staleness.py emails the admin when one stops running.
+# services/job_staleness.py reports one that stops running (Sentry ops_alert,
+# email when Sentry is off, MEH-3705).
 #
 # The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
@@ -134,6 +145,16 @@ UNMONITORED_SLUGS = frozenset(
         "billing-start-signal-monthly",
         # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
         "product-orders-tick",
+        # MEH-3535: the email queue tick. No Sentry monitor (plan limit).
+        "email-outbox-tick",
+        # MEH-3610: the pickup reminder before a funded group's pickup. No
+        # Sentry monitor (plan limit, MEH-3332).
+        "group-buy-pickup-reminder-daily",
+        # MEH-3702: the rescue bag morning reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "rescue-morning-reminder-daily",
+        # MEH-3805: its evening-before twin. Same plan limit (MEH-3332).
+        "rescue-evening-reminder-daily",
     }
 )
 
@@ -198,7 +219,7 @@ def heartbeat(
                 job()
                 status = "ok"
                 # MEH-3332: the free monitor. Sentry's $0 plan holds one cron
-                # monitor; job_staleness emails the admin about the others.
+                # monitor; job_staleness reports the others (MEH-3705: Sentry first).
                 from app.services.job_staleness import record_ok
 
                 record_ok(slug)

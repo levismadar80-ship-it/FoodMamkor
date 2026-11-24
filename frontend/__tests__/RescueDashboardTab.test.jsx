@@ -13,6 +13,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
+import { israelToday } from "@/lib/israel-date";
+import { israelWallClockToIso } from "@/lib/dates";
 
 function lookup(key) {
   return key.split(".").reduce((o, k) => (o == null ? o : o[k]), heMessages);
@@ -143,7 +145,7 @@ describe("«לא הגיע» and the pickup window", () => {
     mockOrders([order({ pickup_end: new Date(Date.now() - 60_000).toISOString() })]);
     render(<RescueTab />);
     fireEvent.click(await screen.findByTestId("rescue-order-noshow"));
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no_show"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/orders/o1/no-show"));
   });
 });
 
@@ -251,6 +253,20 @@ describe("publishing", () => {
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     await waitFor(() => expect(post).toHaveBeenCalled());
     expect(post.mock.calls[0][1].producer_location_id).toBe("loc1");
+  });
+
+  // MEH-3702: «18:00» is 18:00 in Israel whatever the device's zone (the
+  // runner is UTC, so the old setHours build sent 18:00 UTC = 20:00 Israel).
+  it("sends the hours and the day on the Israel clock", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const body = post.mock.calls[0][1];
+    const today = israelToday();
+    expect(body.date).toBe(today);
+    expect(body.pickup_start).toBe(israelWallClockToIso(`${today}T18:00`));
+    expect(body.pickup_end).toBe(israelWallClockToIso(`${today}T20:00`));
   });
 
   it("skips an approximate point (the server refuses it) and uses an exact one", async () => {
@@ -650,7 +666,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
 
   it("the verified-email refusal (an object detail) shows its sentence instead of crashing", async () => {
     post.mockRejectedValue({
-      response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } } },
+      response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } } },
     });
     render(<RescueTab />);
     await pointsLoaded();
@@ -906,5 +922,17 @@ describe("cancelling today's bag", () => {
     fireEvent.click(screen.getByTestId("rescue-offer-cancel-yes"));
     const box = await screen.findByTestId("rescue-offer-cancel-box");
     await waitFor(() => expect(box.textContent).toContain("זמן האיסוף חלף"));
+  });
+});
+
+// MEH-3593: the note moved to the pickup point; the rescue tab points there.
+describe("pickup instructions pointer (MEH-3593)", () => {
+  it("links to the locations editor and sends no note with the items", async () => {
+    render(<RescueTab />);
+    const pointer = await screen.findByTestId("rescue-pickup-note-pointer");
+    expect(pointer.querySelector("a").getAttribute("href")).toContain("/producer/dashboard/edit#locations");
+    fireEvent.click(await screen.findByTestId("rescue-items-save"));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls.at(-1)[1]).not.toHaveProperty("pickup_note");
   });
 });

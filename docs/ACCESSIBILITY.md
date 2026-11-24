@@ -20,7 +20,10 @@ buttons all do this.
 ### 2. Images: `alt` always present
 Meaningful images: `alt={descriptive}`. Decorative images: `alt=""`
 (explicit empty — never omit the attribute). Avatar-in-button → `alt=""`
-because the button carries the name.
+because the button carries the name. An initial *letter* in such a button is
+still text to axe (`label-content-name-mismatch` counts `aria-hidden` text
+nodes too), so it uses `<Avatar decorative>`, which draws the letter by CSS
+(MEH-3539).
 
 ### 3. No `onClick` on non-interactive elements
 Use `<button>` / `<a>`. If you must put a handler on a `div`/`span`, it needs
@@ -90,6 +93,10 @@ The net lives at `frontend/e2e/flows/12-axe-a11y.spec.ts`. It loads 6 routes
 run — the standing MODERATE backlog is tracked in the audit doc, not gated.
 The extended block (MEH-921) adds the public guest routes, and since 19/11 (MEH-3351) also the launch pages `/join` and `/join/pricing`. `/rescue` is not scanned: the E2E build runs with the rescue flag off, so the page is a 404 there.
 
+**Signed-in screens (MEH-3539).** Since 20/11 the net also scans 8 routes behind login, one block per role on that role's storageState from `frontend/e2e/global-setup.ts`: owner `/producer/dashboard`, `/producer/dashboard/edit`, `/settings`; admin `/admin`, `/admin/producers`, `/admin/reviews`; consumer `/favorites`, `/settings`. Same gate, same ignores. Each test fails if it lands on `/login` or has no JWT in `localStorage`, so a bounced session cannot pass by scanning the login page. A role's block is skipped only when `frontend/e2e/.auth/<role>.json` is missing **and** its `DEMO_OWNER_PASSWORD` / `DEMO_ADMIN_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset; with the password set and no fixture it fails.
+
+The first attempt (#4989) was reverted (#5002): on staging data `/admin/producers` has a second page, so «→ הקודם» rendered with `aria-label="עמוד קודם"` and axe flagged `label-content-name-mismatch` (serious, WCAG 2.5.3). The local backend has one page, so the scan passed there. `Pagination.jsx` prev/next now carry no `aria-label` and are named by their visible text (MEH-3549); `Pagination.test.jsx` checks the name on page 3 of 10. Icon-only buttons (`Lightbox.jsx` arrows, `aria-hidden` glyph) have no visible text, so 2.5.3 does not apply to them.
+
 ### Local (against a local dev server)
 
 ```bash
@@ -110,7 +117,8 @@ to scope to one viewport.
 
 The spec runs in `.github/workflows/e2e.yml` on the `deployment_status`
 trigger, same as the other flows, with `TEST_URL` set to the Vercel preview and
-the `x-vercel-protection-bypass` header injected by the config. No extra wiring
+Vercel's bypass cookie, which `global-setup.ts` writes to `e2e/.auth/bypass.json`
+for the config (MEH-3629). No extra wiring
 needed — a new `NN-*.spec.ts` under `e2e/flows/` is auto-discovered by
 `testMatch` in `playwright.config.ts`.
 

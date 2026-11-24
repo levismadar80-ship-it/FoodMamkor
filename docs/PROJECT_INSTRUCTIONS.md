@@ -61,7 +61,7 @@ LOCK (שינוי רק ב-ADR חדש)
 - Risk tiers (ADR-016): GREEN/YELLOW מקצה לקצה עד PR ירוק. RED (auth, schema,
   security, רכיבים מרכזיים, prod) — תוכנית ממוספרת ו-go לכל chunk.
 - Schema רק דרך Alembic. משתנה סביבה חדש — לשאול קודם.
-- DoD: CI gate + Deploy gate ירוקים; ל-UI צילומי 375/1440 ב-qa-artifacts שקראת
+- DoD: CI gate + Deploy gate ירוקים; ל-UI צילומי 375/1440 שקראת, בתיקיית הראיות ב-Drive עם קישור ב-PR (לא בריפו, MEH-3534)
   בעצמך (אין בדיקה ידנית שלי בנייד); CHANGELOG/HANDOFF ב-PR docs נפרד.
 - קופי חדש למשתמשות — מאושר מילה במילה על ידי לפני שנכנס לקוד.
 - פיצ'ר UI חדש — מחקר מיקום לפני קוד (workflow.md כלל 37); אני בוחרת מיקום.

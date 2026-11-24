@@ -114,7 +114,7 @@ describe("one green per page", () => {
   });
 });
 
-// MEH-2383 — the two formatters now derive from lib/orderWindow.js
+// MEH-2383 — the two formatters now derive from lib/order-window-status.js
 // `israelNowParts`. Characterisation: the values below are what the previous
 // private formatter returned on Node's ICU, and these pin them on both sides
 // of an Israel midnight, in both offsets. The one place the refactor is NOT

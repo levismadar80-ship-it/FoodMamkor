@@ -176,10 +176,10 @@ def test_product_rejected_is_422_and_unchanged(client, db):
 def test_message_copy():
     assert (
         mod.content_edit_message("משק", ["description", "images"], True)
-        == "📝 עסק מאושר עדכן תוכן: משק — תיאור · תמונות — טקסט סומן ע״י AI"
+        == "עסק מאושר עדכן תוכן: משק — תיאור · תמונות — טקסט סומן ע״י AI"
     )
     assert mod.content_edit_message("משק", ["products"], False) == (
-        "📝 עסק מאושר עדכן תוכן: משק — מוצרים"
+        "עסק מאושר עדכן תוכן: משק — מוצרים"
     )
 
 
@@ -309,8 +309,12 @@ def test_lowercase_status_is_parsed_and_call_is_bounded(monkeypatch):
 
 def test_test_cause_skips_every_send(monkeypatch):
     monkeypatch.setattr(mod.settings, "admin_email", "a@example.com")
-    monkeypatch.setattr(mod.settings, "admin_whatsapp_to", "+972500000000")
-    with patch.object(mod, "send_email") as mail, patch.object(mod, "send_text") as wa:
+    # MEH-3589: email only. create=True — a re-added send_text import in the
+    # module would be this name, so the assertion below can go red.
+    with (
+        patch.object(mod, "send_email") as mail,
+        patch.object(mod, "send_text", create=True) as wa,
+    ):
         mod.notify_admin_content_edit("משק", ["description"], True, test_cause=True)
     mail.assert_not_called()
     wa.assert_not_called()
@@ -325,7 +329,6 @@ def test_test_cause_skips_every_send(monkeypatch):
 )
 def test_email_subject(monkeypatch, flagged, subject):
     monkeypatch.setattr(mod.settings, "admin_email", "a@example.com")
-    monkeypatch.setattr(mod.settings, "admin_whatsapp_to", "")
     with patch.object(mod, "send_email") as mail:
         mod.notify_admin_content_edit("משק", ["description"], flagged)
     assert mail.call_args.args[1] == subject

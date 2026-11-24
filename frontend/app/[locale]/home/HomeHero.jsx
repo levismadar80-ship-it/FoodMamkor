@@ -38,8 +38,13 @@ const HERO_IMAGE = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: HE
 // prefixed form is the one every Chrome/Safari and Firefox 90+ accept.
 // Each width is explicit at its call (MEH-2010: every c_fill site is capped).
 const HERO_PHONE_1X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 828 });
+// MEH-3748: a 1.75x step between them. A 1.5x–1.75x phone needs ≤746 × 1.75
+// = 1306 device px, so w_1320 covers it by the same arithmetic as above, and
+// it no longer downloads w_1600 (~55 KB more). 2x and 3x phones are unchanged.
+// Lighthouse's mobile profile is one of those phones (DPR 1.75).
+const HERO_PHONE_175X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 1320 });
 const HERO_PHONE_2X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 1600 });
-export const HERO_IMAGE_SET_PHONE = `-webkit-image-set(url("${HERO_PHONE_1X}") 1x, url("${HERO_PHONE_2X}") 2x, url("${HERO_IMAGE}") 3x)`;
+export const HERO_IMAGE_SET_PHONE = `-webkit-image-set(url("${HERO_PHONE_1X}") 1x, url("${HERO_PHONE_175X}") 1.75x, url("${HERO_PHONE_2X}") 2x, url("${HERO_IMAGE}") 3x)`;
 export { HERO_IMAGE };
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
@@ -56,7 +61,7 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 // made it taller, which pushed the H1 from ~16% up the band to ~50% — into a
 // far thinner part of the same gradient. Measured worst case (scrim composited
 // over a blown-white photo highlight, the case globals.css:72 names) via
-// e2e/_qa-archive/qa-meh1690-contrast.mjs:
+// qa-meh1690-contrast.mjs [deleted probe, docs/media-archive.md]:
 //
 //   H1 top line, before → 10.37:1 @375 · 8.41:1 @1440
 //   H1 top line, after  →  3.36:1 @375 · 3.54:1 @1440   ← under the 4.5:1 floor

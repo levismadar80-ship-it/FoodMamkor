@@ -23,7 +23,8 @@ import { serverFetch } from "@/lib/server-fetch";
 import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { OG_SIZE, producerCard, markSrc } from "@/lib/og-producer-card";
 
-const FALLBACK = "/og-image.png";
+// MEH-3590: the JPEG — the 1.26 MB PNG is too heavy for WhatsApp (MEH-2827).
+const FALLBACK = "/og-image.jpg";
 const FALLBACK_CACHE = "public, max-age=300, s-maxage=300";
 
 /** 302 to the site image, briefly cached so a crawler retry does not hammer the backend. */
@@ -66,7 +67,8 @@ export async function GET(request, ctx) {
   const slug = decodeSlugParam(String(file || "").replace(/\.png$/i, ""));
   try {
     const producer = await getProducer(slug);
-    if (!producer?.name) return fallback(request);
+    // MEH-2952 chunk 3: a test business (noindex) gets no named card.
+    if (!producer?.name || producer.noindex) return fallback(request);
     const [frank, heebo, mark] = await loadAssets();
     const element = producerCard({
       name: producer.name,

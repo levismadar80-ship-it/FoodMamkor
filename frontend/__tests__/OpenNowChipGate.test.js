@@ -25,7 +25,7 @@ import { heChipCopy } from "./helpers/he-chip-copy";
 
 // Fixed instants, so no case depends on when the suite runs. Both are Sundays
 // chosen for the Asia/Jerusalem hour they land on — the guard reads the clock
-// through lib/orderWindow.js, which converts with Intl, so a UTC instant is
+// through lib/order-window-status.js, which converts with Intl, so a UTC instant is
 // unambiguous here regardless of the machine's own timezone.
 const SUNDAY_MIDDAY = new Date("2026-08-16T09:00:00Z"); // 12:00 in Jerusalem
 const SUNDAY_NIGHT = new Date("2026-08-16T22:30:00Z"); //  01:30 next day

@@ -47,11 +47,11 @@ vi.mock("next-intl", () => ({
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
     if (key === "producer.offer.card_delivery_sr") return "משלוח";
-    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק״ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // ('ק״מ' on the Hebrew card). The experience-card test set the precedent
   // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
@@ -494,7 +494,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     // MEH-2440: distance belongs to the place, so it rides in the city line.
     expect(screen.getByTestId("card-place")).toContainElement(distance);
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
     expect(distance.textContent).not.toContain("ממך");
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
@@ -521,7 +521,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
   });
 
   it("prefers short_description over top_product_name", () => {
@@ -1041,7 +1041,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק״ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {
@@ -1084,35 +1084,6 @@ describe("ProducerCard — no Friday pill (MEH-2759)", () => {
       <ProducerCard producer={{ ...fullProducer, availability_state: "available_today" }} fridayMode />,
     );
     expect(container.textContent).not.toMatch(/מגיעה היום|badges\.available_today/);
-  });
-});
-
-// MEH-3074: the signup wizard previews the card before a business exists — no
-// id, no photo, no rating. The real card must render that shape.
-describe("ProducerCard — signup preview shape (MEH-3074)", () => {
-  it("renders name, city and the one-line dek from previewProducer()", async () => {
-    const { previewProducer } = await import("@/components/RegisterCardPreview");
-    const producer = previewProducer(
-      {
-        producer_name: "הבית של רותי",
-        city: "זכרון יעקב",
-        short_description: "לחם מחמצת מקמח מקומי",
-        // picked in this order — catalogue order is the reverse
-        category_ids: [2, 1],
-        has_physical_location: true,
-        offers_delivery: false,
-      },
-      [{ id: 1, name: "ירקות" }, { id: 2, name: "מאפים" }],
-    );
-    const { container } = render(<ProducerCard producer={producer} />);
-    expect(container.textContent).toContain("הבית של רותי");
-    expect(container.textContent).toContain("זכרון יעקב");
-    expect(container.textContent).toContain("לחם מחמצת מקמח מקומי");
-    expect(container.querySelector("img")).toBeNull();
-    // The card shows categories[0]: it must be the first one PICKED.
-    expect(producer.categories.map((cat) => cat.id)).toEqual([2, 1]);
-    expect(container.textContent).toContain("מאפים");
-    expect(container.textContent).not.toContain("ירקות");
   });
 });
 

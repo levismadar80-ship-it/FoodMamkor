@@ -12,8 +12,8 @@
  *   1. Switch the license input between "required" and "optional toggle" UI.
  *   2. Show the helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן".
  *
- * Backend enforcement runs through ensure_license_for_categories regardless —
- * this lib is purely a UX nudge, never a security check.
+ * This lib is purely a UX nudge, never a security check. Since MEH-3026 a
+ * missing number blocks no owner or admin save; it only withholds «מאומת».
  */
 export const LICENSE_REQUIRED_CATEGORIES = [
   "לחמים ואפייה",
@@ -74,21 +74,6 @@ export function licenseRequiringCategoryNames(allCategories, selectedIds) {
 }
 
 /**
- * MEH-2928: «א», «ב» ו«ג» — the list form the licence hint interpolates.
- * The last-item join comes from messages (`license_names_last`), so the
- * conjunction is copy in he.json / en.json, not a literal here.
- *
- * @param {string[]} names
- * @param {(rest: string, last: string) => string} joinLast
- * @returns {string}
- */
-export function formatQuotedList(names, joinLast) {
-  const quoted = names.map((n) => `«${n}»`);
-  if (quoted.length <= 1) return quoted.join("");
-  return joinLast(quoted.slice(0, -1).join(", "), quoted[quoted.length - 1]);
-}
-
-/**
  * @param {string} value — current license input value
  * @returns {boolean} — true if non-empty AND doesn't match the regex (caller
  *   uses this to render the inline warning text). Empty/whitespace-only is
@@ -98,4 +83,19 @@ export function hasLicenseFormatWarning(value) {
   const trimmed = (value || "").trim();
   if (trimmed === "") return false;
   return !PRODUCER_LICENSE_REGEX.test(trimmed);
+}
+
+/**
+ * MEH-3026: the business is in a license-required category and has no number
+ * yet. Nothing is blocked by it (it joins and stays listed); it only has no
+ * «מאומת» badge. Drives the «מומלץ» chip on the trust card and the deep link
+ * from the «נשאר להשלים» banner straight to the licence section.
+ *
+ * @param {{ categories?: Array<{id: number, name: string, requires_license?: boolean}>, producer_license_number?: string | null } | null | undefined} profile
+ * @returns {boolean}
+ */
+export function licenseMissingForProfile(profile) {
+  const cats = profile?.categories || [];
+  if (!requiresProducerLicense(cats, cats.map((c) => c.id))) return false;
+  return !(profile?.producer_license_number || "").trim();
 }

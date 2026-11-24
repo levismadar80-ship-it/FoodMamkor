@@ -1,5 +1,8 @@
 """MEH-2164: the newsletter welcome card must be fluid, not a fixed 560px.
 
+MEH-3621 (21/11): the card is email_layout.frame()'s now, capped at
+`max-width:520px`; the assertions follow that cap. The defect is the same.
+
 Same defect as MEH-2151/PR #3072, in the second of six places the repo carries
 this markup: an HTML `width="560"` ATTRIBUTE sitting beside a CSS
 `max-width:560px`. They read as belt-and-braces and are not — the attribute
@@ -59,7 +62,7 @@ def _render() -> str:
 def _card_table_tag(html: str) -> str:
     """The card table — the one with the max-width cap; the wrapper has none."""
     tags = [
-        t for t in re.findall(r"<table[^>]*>", html, re.S) if "max-width:560px" in t
+        t for t in re.findall(r"<table[^>]*>", html, re.S) if "max-width:520px" in t
     ]
     assert len(tags) == 1, f"expected exactly 1 card table, found {len(tags)}"
     return tags[0]
@@ -72,7 +75,7 @@ def test_card_table_extractor_discriminates():
     the card actually says."""
     fake = (
         '<table width="100%" cellpadding="0"><tr><td>'
-        '<table width="560" style="max-width:560px" id="card"></table>'
+        '<table width="560" style="max-width:520px" id="card"></table>'
         "</td></tr></table>"
     )
     picked = _card_table_tag(fake)
@@ -85,11 +88,11 @@ def test_card_table_extractor_discriminates():
     # The anchor must be FALSE of the wrapper, or picking the wrapper would
     # satisfy every assertion below (it already carries width="100%").
     wrapper = '<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">'
-    assert "max-width:560px" not in wrapper, (
+    assert "max-width:520px" not in wrapper, (
         "the anchor is true of the outer wrapper too — it discriminates nothing"
     )
     real = _card_table_tag(_render())
-    assert "max-width:560px" in real, f"extractor missed the real card: {real}"
+    assert "max-width:520px" in real, f"extractor missed the real card: {real}"
 
 
 def test_newsletter_card_is_fluid_and_capped():
@@ -97,11 +100,11 @@ def test_newsletter_card_is_fluid_and_capped():
     card = _card_table_tag(html)
 
     assert 'width="100%"' in card, f"card table is not fluid: {card}"
-    assert "max-width:560px" in card, f"card table lost its cap: {card}"
+    assert "max-width:520px" in card, f"card table lost its cap: {card}"
     assert "margin:0 auto" in card, (
         f"card table is fluid but no longer centred at desktop width: {card}"
     )
-    assert 'width="560"' not in html, (
+    assert 'width="520"' not in html and 'width="560"' not in html, (
         'width="560" is present. The HTML width attribute overrides the CSS '
         "max-width beside it, so the card renders 560px wide on a 375px "
         "screen. This is the whole defect MEH-2164 fixed."
@@ -122,7 +125,7 @@ def test_copy_and_palette_untouched():
         "ברוכים הבאים למהמקור",
         # MEH-2611 replaced the weekly/Monday promise (nothing sends weekly)
         # with copy Sapir approved 30/10; this pins the new line instead.
-        "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",
+        "נכתוב כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",
         "בלי ספאם, ואפשר לבטל בכל רגע.",
         "לבטל הרשמה",
         "#F5F0E8",

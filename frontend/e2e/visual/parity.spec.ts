@@ -1057,7 +1057,10 @@ test.describe("Visual parity — MEH-991", () => {
     //      <ProducerDetail/> with no initialProducer (producer/[id]/page.js:73),
     //      so it CLIENT-fetches /api/producers/{id} (useProducerData.js:32-40),
     //      which the mock above fulfils with the fixture.
-    await page.goto(`/producer/${borrowedId}`);
+    //   3. MEH-3708: a business with a slug now 308s from /producer/{id} to
+    //      /{slug} (case 2's SSR-seeded page). ?preview=1 keeps the id page
+    //      (middleware.js, lib/owner-preview.js).
+    await page.goto(`/producer/${borrowedId}?preview=1`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
     // MEH-1765 — the tab row is the surface that escaped in MEH-1390 (4 tabs ->
@@ -1113,7 +1116,7 @@ test.describe("Visual parity — MEH-991", () => {
       test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await page.goto(`/producer/${borrowedId}`);
+    await page.goto(`/producer/${borrowedId}?preview=1`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-minimal.png", {
@@ -1139,7 +1142,7 @@ test.describe("Visual parity — MEH-991", () => {
       test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await page.goto(`/producer/${borrowedId}`);
+    await page.goto(`/producer/${borrowedId}?preview=1`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     // The visible ContactCard is the desktop sidebar instance (the inline card
     // is hidden at this width). Its sole row must carry digits, not a label.
@@ -1172,7 +1175,7 @@ test.describe("Visual parity — MEH-991", () => {
       test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await page.goto(`/producer/${borrowedId}`);
+    await page.goto(`/producer/${borrowedId}?preview=1`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     // Two channels => circles, so the phone is reached by its own channel
     // testid; the single-row testid only exists at exactly one channel.
@@ -1201,14 +1204,19 @@ test.describe("Visual parity — MEH-991", () => {
       test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await page.goto(`/producer/${borrowedId}`);
+    await page.goto(`/producer/${borrowedId}?preview=1`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     // MEH-3460 (20/11): «שאלות נפוצות» is its own section lower on the page,
     // not in the contact card. An ELEMENT shot of that section: a viewport shot
     // after scrollIntoViewIfNeeded landed at a different offset run to run (CI
     // 20/11: 0.23 then 0.31 of the frame differed on the retry), because the
     // sections above it settle at different heights.
-    await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
+    // MEH-3666: the fixture has one in-page answer (pickup only), and a lone
+    // answer starts open, so no click: a click would close it.
+    await expect(page.locator('[data-testid="quick-answer-toggle"]:visible').first()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     const answer = page.locator('[data-testid="quick-answer-content"]:visible').first();
     await answer.waitFor({ timeout: 5_000 });
     await settle(page);
@@ -1238,7 +1246,7 @@ test.describe("Visual parity — MEH-991", () => {
         test.skip(true, "No producer on staging to borrow an id from");
         return;
       }
-      await page.goto(`/producer/${borrowedId}`);
+      await page.goto(`/producer/${borrowedId}?preview=1`);
       const hours = page.locator('[data-testid="producer-hours"]');
       // The fixture reaches the page through the CLIENT re-fetch, so wait for
       // the section to show the fixture's set count, not merely to exist.
@@ -1312,6 +1320,11 @@ test.describe("Visual parity — MEH-991", () => {
   // («גיל 18 ומעלה, והסכמה»). The change sat inside the 2% tolerance, so the
   // old PNGs were deleted first to force a fresh write; both new ones (393x1787,
   // 1440x1781) were opened and read: they show the new line, layout unchanged.
+  // MEH-3690 (24/11): login + register regenerated after Google's iframe button
+  // was replaced by our own «להמשיך עם Google». Old PNGs deleted first (the
+  // desktop change sat inside the 2% tolerance). The new four were opened and
+  // read (login 393x1714 / 1440x1781, register 393x1791 / 1440x1781): our
+  // button with the full-colour G and the approved label, layout unchanged.
   test("register", async ({ page }) => {
     await preparePage(page);
     await page.goto("/register");

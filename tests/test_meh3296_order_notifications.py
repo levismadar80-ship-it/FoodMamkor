@@ -39,6 +39,18 @@ REVISION = (
     Path(__file__).resolve().parents[1]
     / "backend/alembic/versions/20261115_0900_a8d2c6f4e1b7_meh3296_order_notifications.py"
 )
+# MEH-3624: a later revision may widen the kind CHECK. The model's KINDS must
+# equal the NEWEST revision that defines KINDS (dated file names sort in order).
+KINDS_REVISION = max(
+    (
+        path
+        for path in (
+            Path(__file__).resolve().parents[1] / "backend/alembic/versions"
+        ).glob("2*.py")
+        if re.search(r"^KINDS = \(", path.read_text(encoding="utf-8"), re.M)
+    ),
+    key=lambda path: path.name,
+)
 
 # --- the calendar ------------------------------------------------------------
 
@@ -117,13 +129,12 @@ def test_a_start_inside_a_window_counts_from_its_end():
 
 
 def test_the_revision_literals_match_the_model():
-    source = REVISION.read_text(encoding="utf-8")
-
-    def literal(name):
+    def literal(name, path=REVISION):
+        source = path.read_text(encoding="utf-8")
         block = re.search(rf"^{name} = \((.*?)\)$", source, re.S | re.M).group(1)
         return tuple(re.findall(r'"([a-z_]+)"', block))
 
-    assert literal("KINDS") == PRODUCT_ORDER_NOTICE_KINDS
+    assert literal("KINDS", KINDS_REVISION) == PRODUCT_ORDER_NOTICE_KINDS
     assert literal("CHANNELS") == PRODUCT_ORDER_NOTICE_CHANNELS
     assert literal("STATUSES") == PRODUCT_ORDER_NOTICE_STATUSES
 
@@ -559,3 +570,19 @@ def test_a_row_that_crashes_is_marked_and_the_batch_goes_on(db, monkeypatch):
     assert outcome_of(db, bad) == ("failed", "error", 0)
     assert outcome_of(db, good)[0] == "sent"
     assert len(wire.wa) == 1
+
+
+def test_a_new_order_closed_before_it_went_out_tells_the_business_nothing(
+    db, monkeypatch
+):
+    # MEH-3768: a business taken off the site cancels its pending orders; the
+    # «new order» email still owed for one of them must not go out.
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    closed = owe_now(db, due_order(db, shop, "cancelled"), "new_order", "email")
+    # Control: an auto-confirmed order still gets its email.
+    confirmed = owe_now(db, due_order(db, shop, "confirmed"), "new_order", "email")
+    outbox.dispatch_due(db)
+    assert outcome_of(db, closed)[0] == "skipped"
+    assert outcome_of(db, confirmed)[0] == "sent"
+    assert len(wire.mail) == 1

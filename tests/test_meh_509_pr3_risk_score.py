@@ -59,7 +59,12 @@ def _install_anthropic_mock(
 
     fake_client = SimpleNamespace(messages=SimpleNamespace(create=messages_create))
 
-    fake_anthropic = SimpleNamespace(Anthropic=lambda **kwargs: fake_client)
+    # The real module exposes DefaultHttpxClient (anthropic 1.0+, httpx2);
+    # producer_risk passes it as http_client, so the fake must too.
+    fake_anthropic = SimpleNamespace(
+        Anthropic=lambda **kwargs: fake_client,
+        DefaultHttpxClient=lambda **kwargs: MagicMock(),
+    )
     fake_httpx = SimpleNamespace(Client=lambda **kwargs: MagicMock())
 
     monkeypatch.setitem(__import__("sys").modules, "anthropic", fake_anthropic)
@@ -526,62 +531,41 @@ def test_score_producer_unknown_id_no_op(db, monkeypatch):
     assert create.call_count == 0
 
 
-# ---- Admin GET endpoint ----------------------------------------------------
+# ---- Where the admin reads it ---------------------------------------------
+# MEH-3527: the admin sees the score on the producer list (RiskBadge in
+# AdminProducersTable.jsx reads ProducerAdminOut.risk_score). The separate
+# GET /admin/producers/{id}/risk-score route had no caller and was deleted.
 
 
-def test_admin_endpoint_returns_score_when_present(client, db):
-    admin = make_user(db, role="admin", email="meh509p3-get-present@example.com")
+def test_admin_list_carries_score_and_reasoning(client, db):
+    admin = make_user(db, role="admin", email="meh3527-list@example.com")
     producer = make_producer(db, name="חוות עם ציון")
     producer.risk_score = 23
     producer.risk_reasoning = "פרופיל מלא, ניסוח עברית טבעי"
     db.commit()
 
-    resp = client.get(
-        f"/admin/producers/{producer.id}/risk-score",
-        headers=auth_header(admin),
-    )
-    assert resp.status_code == 200
-    assert resp.json() == {"score": 23, "reasoning": "פרופיל מלא, ניסוח עברית טבעי"}
+    rows = client.get("/admin/producers", headers=auth_header(admin)).json()
+    row = next(r for r in rows if r["id"] == str(producer.id))
+    assert row["risk_score"] == 23
+    assert row["risk_reasoning"] == "פרופיל מלא, ניסוח עברית טבעי"
 
 
-def test_admin_endpoint_returns_null_when_not_scored(client, db):
-    admin = make_user(db, role="admin", email="meh509p3-get-null@example.com")
-    producer = make_producer(db, name="חוות לא מסומנת")
-    # risk_score + risk_reasoning stay default NULL.
+def test_public_detail_omits_score(client, db):
+    producer = make_producer(db, name="חוות ציבורית")
+    producer.risk_score = 80
+    producer.risk_reasoning = "חשוד"
     db.commit()
 
-    resp = client.get(
-        f"/admin/producers/{producer.id}/risk-score",
-        headers=auth_header(admin),
-    )
-    assert resp.status_code == 200
-    assert resp.json() == {"score": None, "reasoning": None}
+    body = client.get(f"/producers/{producer.id}").json()
+    assert "risk_score" not in body
+    assert "risk_reasoning" not in body
 
 
-def test_admin_endpoint_returns_404_for_unknown_producer(client, db):
-    admin = make_user(db, role="admin", email="meh509p3-get-404@example.com")
-    import uuid
-
-    resp = client.get(
-        f"/admin/producers/{uuid.uuid4()}/risk-score",
-        headers=auth_header(admin),
-    )
-    assert resp.status_code == 404
-
-
-def test_admin_endpoint_requires_admin_auth(client, db):
-    producer = make_producer(db, name="חוות הגישה")
-    db.commit()
-    resp = client.get(f"/admin/producers/{producer.id}/risk-score")
-    assert resp.status_code in (401, 403)
-
-
-def test_admin_endpoint_consumer_role_rejected(client, db):
-    consumer = make_user(db, role="consumer", email="meh509p3-consumer@example.com")
-    producer = make_producer(db, name="חוות צרכן")
+def test_risk_score_route_is_gone(client, db):
+    admin = make_user(db, role="admin", email="meh3527-gone@example.com")
+    producer = make_producer(db, name="חוות בלי נתיב")
     db.commit()
     resp = client.get(
-        f"/admin/producers/{producer.id}/risk-score",
-        headers=auth_header(consumer),
+        f"/admin/producers/{producer.id}/risk-score", headers=auth_header(admin)
     )
-    assert resp.status_code == 403
+    assert resp.status_code in (404, 405)

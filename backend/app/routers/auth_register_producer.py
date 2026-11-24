@@ -60,6 +60,7 @@ from app.services.producer_queries import (
 )
 from app.services.password_policy import validate_password
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
+from app.services.outreach_lead_registration import mark_lead_registered  # MEH-3026
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
 from app.services.farmer_declaration import farmer_declaration_stamp
@@ -181,7 +182,7 @@ async def register_producer(
     if method == "email" and not (data.contact_email or "").strip():
         raise HTTPException(
             status_code=422,
-            detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
+            detail="חובה להזין מייל ליצירת קשר עבור אמצעי הקשר הנבחר",
         )
 
     # MEH-759 (ADR-022 gate 2): the binding licensing declaration is
@@ -251,13 +252,13 @@ async def register_producer(
         if user.role == "admin":
             raise HTTPException(
                 status_code=403,
-                detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+                detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת מייל אחרת.",
             )
         # Check both: producer_id (current link) and is_producer (durable flag).
         # is_producer stays True even if an admin manually clears producer_id,
         # preventing silent re-registration without an explicit admin reset.
         if user.producer_id or user.is_producer:
-            raise HTTPException(status_code=409, detail="כבר יש לך עסק רשום בחשבון זה")
+            raise HTTPException(status_code=409, detail="כבר יש עסק רשום בחשבון זה")
 
         producer = Producer(
             name=data.producer_name,
@@ -379,6 +380,7 @@ async def register_producer(
         if data.terms_accepted:
             user.terms_accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             user.terms_version = TERMS_VERSION  # type: ignore[assignment]
+        mark_lead_registered(db, data.prefill_token)  # MEH-3026 F11
         db.commit()
         db.refresh(user)
         # MEH-3258: she now owns a business — her reviews on it and on
@@ -479,7 +481,7 @@ async def register_producer(
     if not data.email or not data.name or not data.password:
         raise HTTPException(
             status_code=422,
-            detail="אימייל, שם וסיסמה הם שדות חובה",
+            detail="מייל, שם וסיסמה הם שדות חובה",
         )
 
     # MEH-328: timing-equalised. Both branches run validate_password
@@ -594,6 +596,7 @@ async def register_producer(
             email_verify_expires=verify_expires,
         )
         db.add(user)
+        mark_lead_registered(db, data.prefill_token)  # MEH-3026 F11
         db.commit()
         db.refresh(user)
 
@@ -703,7 +706,7 @@ def register_producer_oauth(
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
             )
         user_info = _verify_google_token(data.id_token)
         sub_field = "google_id"
@@ -711,7 +714,7 @@ def register_producer_oauth(
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
+                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם מייל וסיסמה.",
             )
         user_info = _verify_apple_token(data.id_token)
         sub_field = "apple_id"
@@ -745,7 +748,7 @@ def register_producer_oauth(
             if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
+                    detail="מייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
         else:
             # MEH-375 (YF-4): re-host the Google avatar only on the
@@ -783,7 +786,7 @@ def register_producer_oauth(
     if user.role == "admin":
         raise HTTPException(
             status_code=403,
-            detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+            detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת מייל אחרת.",
         )
 
     # 3. If this account is already a producer, bail out — the producer
@@ -792,7 +795,7 @@ def register_producer_oauth(
     if user.producer_id or getattr(user, "is_producer", False):
         raise HTTPException(
             status_code=409,
-            detail="יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
+            detail="כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
         )
 
     # MEH-138 + MEH-375: backfill the Google avatar only when the

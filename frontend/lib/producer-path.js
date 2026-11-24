@@ -14,7 +14,7 @@
  * nowhere else; `__tests__/ProducerPathGuard.test.js` fails on a hand-written
  * `/producer/${…slug…}`.
  *
- * @param {{ slug?: string|null, id?: string|null }} producer
+ * @param {{ slug?: string|null, id?: string|number|null }} producer
  * @param {string} [hash] optional section anchor, without the `#`
  * @returns {string|null} null when neither key is present
  */
@@ -29,9 +29,17 @@ export function producerPath(producer, hash) {
   return hash ? `${base}#${hash}` : base;
 }
 
-/** The business page, scrolled to its surprise-bag section (RescueSection's id). */
+/** The id of the business page's surprise-bag section (RescueSection). */
 export const RESCUE_SECTION_ID = "section-rescue";
 
-export function rescueBagPath(producer) {
-  return producerPath(producer, RESCUE_SECTION_ID);
+/**
+ * A surprise bag's own page (MEH-3586). Lists and cards open the bag here,
+ * the way Too Good To Go opens a bag before its store; the business page
+ * still carries the bag block for someone already there.
+ *
+ * @param {{ id?: unknown, [key: string]: unknown } | null | undefined} offer
+ * @returns {string|null}
+ */
+export function rescueOfferPath(offer) {
+  return offer?.id ? `/rescue/${offer.id}` : null;
 }

@@ -41,9 +41,11 @@ from app.utils.clock import utc_now
 # `admin` may make any move a `business` may: the admin override of the house
 # ownership rule, applied to the state machine too. `system` is the scheduler
 # (auto-confirm, the 24-hour expiry) — it never acts for a person. MEH-3263:
-# it may also cancel any open order, for one reason: the buyer deleted her
+# it may also cancel any open order, for two reasons: the buyer deleted her
 # account (services/product_order_privacy.py), which must not wait for a
-# business to release a packed order.
+# business to release a packed order; and (MEH-3768) the business was taken
+# off the site, which closes the orders it never accepted
+# (services/product_order_actions.py::release_unaccepted_orders).
 _BUSINESS: Final = frozenset({"business", "admin"})
 _CUSTOMER: Final = frozenset({"customer"})
 _SYSTEM: Final = frozenset({"system"})
@@ -111,10 +113,6 @@ class InvalidTransition(Exception):
         super().__init__(detail)
         self.detail = detail
         self.forbidden = forbidden
-
-
-def can_transition(from_status: str, to_status: str, actor: str) -> bool:
-    return actor in TRANSITIONS.get(from_status, {}).get(to_status, frozenset())
 
 
 def _stamp(order: ProductOrder, to_status: str) -> None:

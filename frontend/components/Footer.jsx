@@ -3,7 +3,8 @@
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch"; // MEH-3628
 // MEH-2850: every Link element here carries prefetch={false} — the footer is
 // chrome on every page and links a dozen static pages; on a short page (or
 // once scrolled into view) each would be prefetched IN FULL. See Header.jsx.
@@ -64,12 +65,9 @@ import { currentIsraelYear } from "@/lib/established-year";
  */
 export default function Footer() {
   const t = useTranslations();
-  const router = useRouter();
-  // MEH-3059: prefetch on intent for a link whose target renders per request.
-  const intentPrefetch = (href) => {
-    const go = () => router.prefetch(href);
-    return { onPointerEnter: go, onTouchStart: go, onFocus: go };
-  };
+  // MEH-3059: prefetch on intent (the footer was first; /producers renders per
+  // request). MEH-3628: the helper is shared with BottomNav and Header.
+  const intentPrefetch = useIntentPrefetch();
   // MEH-2554: «כניסה לחשבון» is a guest link — a signed-in reader saw it too.
   const { user } = useAuth();
   // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
@@ -434,7 +432,7 @@ export default function Footer() {
                     (the extra hit area is vertical padding, not layout). */}
                 <Link prefetch={false}
                   href={link.href}
-                  className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+                  className="inline-flex items-center justify-center min-h-touch min-w-touch text-sm text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>
@@ -448,7 +446,7 @@ export default function Footer() {
                 type="button"
                 onClick={openCookieSettings}
                 data-testid="footer-cookie-settings"
-                className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+                className="inline-flex items-center justify-center min-h-touch min-w-touch text-sm text-green-100 hover:text-white transition"
               >
                 {t("nav.footer.cookie_settings")}
               </button>

@@ -45,6 +45,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { useNewTools } from "@/hooks/useWhatsNew";
+import { dashboardTabForHref } from "@/lib/business-features";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -67,6 +68,9 @@ const TABS = [
       "/producer/dashboard/recipes",
       "/producer/dashboard/rescue",
       "/producer/dashboard/reviews", // MEH-3107
+      "/producer/dashboard/google-profile", // MEH-3641
+      "/producer/dashboard/share", // MEH-3749
+      "/producer/dashboard/offer", // MEH-3785
     ],
   },
 ];
@@ -240,6 +244,9 @@ export default function ProducerDashboardLayout({ children }) {
   const isActive = (tab) => tabIsActive(tab, pathname);
   const tabs = tabsFor(user, orders.visible);
   const isOrganizer = user.producer_kind === "organizer";
+  // MEH-3723: the dot goes on the tab that holds the new tool (registry
+  // `dashboard.home`), not always «כלים». An organizer's tools are none of them.
+  const newToolTabs = new Set(isOrganizer ? [] : [...newTools].map(dashboardTabForHref));
 
   return (
     <div>
@@ -275,7 +282,7 @@ export default function ProducerDashboardLayout({ children }) {
                 <TabIcon tab={tab} active={active} count={tab.key === "orders" ? orders.pending : 0} />
                 <span className="inline-flex items-center gap-1">
                   {t(tab.key)}
-                  {tab.key === "tools" && newTools.size > 0 && (
+                  {newToolTabs.has(tab.key) && (
                     <span data-testid="new-tool-dot" className="w-2 h-2 rounded-full bg-primary inline-block shrink-0">
                       <span className="sr-only">{" "}{tNewTool("dot")}</span>
                     </span>
@@ -317,13 +324,13 @@ export default function ProducerDashboardLayout({ children }) {
               }
               aria-label={t("view_page")}
               data-testid="dashboard-view-page"
-              // MEH-2429: icon-only below sm (min 44px target, name via
-              // aria-label + title); the visible label returns at sm+.
-              title={t("view_page")}
-              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-touch px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+              // MEH-3745: below sm the label sits under the icon like the tabs
+              // beside it (MEH-2429 had dropped it; a bare eye was not read as
+              // "my page"). sm+ keeps the inline row.
+              className="sm:ms-auto shrink-0 inline-flex flex-col sm:flex-row whitespace-nowrap items-center justify-center gap-0.5 sm:gap-1.5 min-w-touch px-1 sm:px-3 py-2 sm:py-3 text-xs sm:text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
               <Eye size={20} aria-hidden="true" />
-              <span className="hidden sm:inline">{t("view_page")}</span>
+              <span data-testid="dashboard-view-page-label">{t("view_page")}</span>
             </Link>
           )}
         </div>

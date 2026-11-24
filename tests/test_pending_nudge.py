@@ -460,7 +460,7 @@ def test_producer_older_than_24h_is_due(db, sent_log):
 # these strings are Sapir-approved copy whose whole point is that they are what
 # they are. `[מספר]` is her placeholder token; a sent subject must never still
 # contain it.
-_SUBJECT_DAY_1 = "עוד צעד קטן — והעסק שלך עובר לבדיקה"
+_SUBJECT_DAY_1 = "עוד צעד קטן — והעסק עובר לבדיקה"
 _SUBJECT_DAY_3_TEMPLATE = "נשארו [מספר] צעדים — והעסק שלכם עולה לאתר"
 _SUBJECT_DAY_7_TEMPLATE = "המקום שלכם שמור — נשארו [מספר] צעדים"
 _COUNT_TOKEN = "[מספר]"
@@ -931,3 +931,33 @@ def test_organizer_missing_photo_gets_the_organizer_photo_line(db, sent_log):
     body = sent_log[0][2]
     assert pending_nudge._MISSING_ITEM_PHOTO_ORGANIZER in body
     assert pending_nudge._MISSING_ITEM_PHOTO not in body
+
+
+# --- MEH-3660: the owner's email confirmation has no nudge line --------------
+#
+# `email_verified` joined the submit gate with no Sapir-approved email line, so
+# it lands in the same bucket `category` is in: dropped from the body. When it
+# is the ONLY thing missing she is stamped and mailed nothing — never a body
+# with an empty items block. A known gap, reported in the PR; the line needs
+# her word (rule 22).
+
+
+def test_business_missing_only_email_confirmation_gets_no_blank_email(db, sent_log):
+    producer, user = _make_producer_user(
+        db,
+        status="pending",
+        images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        phone_verified=True,
+        with_product=True,
+        with_category=True,
+    )
+    user.email_verified = False
+    db.commit()
+    from app.services.submission_gate import submission_missing_items
+
+    assert submission_missing_items(producer) == ["email_verified"]
+
+    counts = pending_nudge.send_pending_nudges(db)
+
+    assert counts == {"sent": 0, "stamped_nothing_missing": 1}
+    assert sent_log == []

@@ -192,7 +192,8 @@ test.describe("consumer role is denied the admin panel", () => {
 // unauthenticated visitor still redirects to /login, but now carries
 // ?redirect= so she lands back on the page she asked for.
 test.describe("unauthenticated visitor is redirected with a return target", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
+  // Logged out, but still past Vercel protection on a remote target (MEH-3629).
+  test.use({ storageState: "e2e/.auth/bypass.json" });
 
   // Needs no fixture and no password, so this one runs on the DEFAULT
   // unauthenticated CI job too — the ?redirect= contract is covered on

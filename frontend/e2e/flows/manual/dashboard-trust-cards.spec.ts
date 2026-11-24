@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
 import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../lib/license-required-categories";
 
@@ -164,7 +165,7 @@ const saveBtn = (page: Page, anchor: string) => body(page, anchor).getByRole("bu
 test.describe("licence card", () => {
   const field = (page: Page) => body(page, "license").getByLabel("מספר רישיון ייצור (משרד הבריאות)");
   const WARNING = "מספר רישיון ייצור הוא 7-10 ספרות";
-  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון ייצור. מילוי המספר נדרש לאישור העסק.";
+  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון ייצור. אפשר להצטרף גם בלעדיו. כשתוסיפו את המספר, נוכל לבדוק אותו ולהוסיף לעסק תג «מאומת».";
 
   // MT:MEH-1258:1 — a valid number saves, confirms, and re-seeds after a reload.
   test("a 7-10 digit number saves, confirms, and comes back after a reload", async ({ page }) => {
@@ -174,7 +175,7 @@ test.describe("licence card", () => {
     expect(PRODUCER_LICENSE_REGEX.test("1234567"), "control: the fixture number must satisfy the code's own regex").toBe(true);
     await field(page).fill("1234567");
     await expect(body(page, "license").getByText(WARNING)).toHaveCount(0);
-    await saveBtn(page, "license").click();
+    await clickSaveAfterEdit(page, saveBtn(page, "license"));
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length, { message: "the PUT never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({ producer_license_number: "1234567" });
     await expect(page.getByTestId("license-save-success")).toHaveText("מספר הרישיון נשמר");
@@ -223,7 +224,7 @@ test.describe("licence card", () => {
     await stubEdit(page, { profile: { ...BASE, producer_license_number: "1234567" }, putAnswer: { status: 422, body: { detail: DETAIL } } });
     await openAt(page, "license");
     await field(page).fill("");
-    await saveBtn(page, "license").click();
+    await clickSaveAfterEdit(page, saveBtn(page, "license"));
     await expect(body(page, "license").getByRole("alert")).toHaveText(DETAIL);
     await expect(page.getByTestId("license-save-success")).toHaveCount(0);
   });

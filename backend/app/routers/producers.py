@@ -1,8 +1,7 @@
 from typing import Any
-from urllib.parse import urlparse
 from uuid import UUID
 
-import httpx
+import httpx  # noqa: F401 — tests patch producers_module.httpx.stream (MEH-3559)
 import structlog
 from fastapi import (
     APIRouter,
@@ -14,23 +13,19 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from app.auth import (
     get_current_user_lenient,
     get_current_user_optional,
     require_verified_email,
 )
-from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
     DeliveryWaitlistEntry,
-    KashrutBadgeRequest,
     Producer,
-    Report,
     User,
 )
 from app.rate_limit import limiter
@@ -39,13 +34,10 @@ from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
-    DELIVERY_DAYS,
     DeliveryWaitlistIn,
     DeliveryWaitlistOut,
     DeliveryWaitlistHostConfirmIn,
     DeliveryWaitlistUnsubscribeIn,
-    KashrutCertRef,
-    ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -53,7 +45,6 @@ from app.schemas.schemas import (
     ProducerViewIn,
     WhatsAppClickIn,
 )
-from app.services import retired_slugs  # MEH-2534
 from app.services import delivery_waitlist  # MEH-2618
 from app.services.analytics import (
     EventContext,
@@ -62,20 +53,30 @@ from app.services.analytics import (
 )
 from app.services.farmer_declaration import farmer_declaration_stamp  # MEH-3137
 from app.services.license_validation import ensure_license_for_categories
-from app.services.product_order_menu import attach_takes_site_orders
 from app.services.producer_listing import (
-    MAX_CITIES_PER_QUERY,
     build_producers_query,
-    catalog_default_availability_condition,
     is_business,
     is_business_row,
 )
 from app.services.producer_queries import (
-    attach_badge_fields,
-    attach_favorites_count,
-    attach_rescue_saving,
     create_producer_with_relations,
     get_producer_or_404,
+)
+from app.services.kashrut_cert_proxy import (  # MEH-3559
+    MAX_CERT_BYTES as _MAX_CERT_BYTES,  # noqa: F401 — read by tests
+    servable_kashrut_certs as _servable_kashrut_certs,  # noqa: F401 — re-exported
+    stream_kashrut_cert,
+)
+from app.services.producer_catalog import (  # MEH-3559
+    catalog_count,
+    random_catalog_producer,
+    validate_listing_filters,
+    validate_listing_sort,
+)
+from app.services.producer_detail import (  # MEH-3559
+    detail_payload,
+    producer_by_id_for_viewer,
+    producer_by_slug_or_raise,
 )
 from app.utils.clock import utc_now
 from app.utils.pii import round_coord
@@ -240,46 +241,12 @@ def list_producers(
 ) -> list[ProducerListOut] | list[Producer]:
     # MEH-3219 (B17): never use a visitor's exact point — ~1 km is enough.
     lat, lng = round_coord(lat), round_coord(lng)
-    # MEH-1483: validate the sort axis explicitly (the router's manual-422
-    # pattern, cf. record_contact_click). None/"newest" = default created_at
-    # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
-    # than silently falling back to newest.
-    if sort is not None and sort not in ("newest", "rating", "distance"):
-        raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
-    # MEH-1829: distance ordering has no origin without both coordinates — a
-    # 422 here, not a silent fall-back to newest, so the frontend's GPS gate
-    # and the API agree on what "sort by distance" requires.
-    if sort == "distance" and (lat is None or lng is None):
-        raise HTTPException(
-            status_code=422, detail="מיון לפי מרחק דורש מיקום — lat ו-lng חובה"
-        )
-    # MEH-2790: the region list is bounded. The largest region in
-    # frontend/data/regions.js is ~18 cities, so 40 is generous headroom while
-    # still bounding a hostile caller — the same number and the same reasoning
-    # as _MAX_DELIVERY_CITIES. A 422 rather than a silent truncation: a
-    # truncated region would under-count a landing page's >=5 gate and 404 a
-    # page that should exist, which is exactly the silent failure this feature
-    # must not have.
-    if cities is not None and len(cities) > MAX_CITIES_PER_QUERY:
-        raise HTTPException(
-            status_code=422,
-            detail=f"יותר מדי ערים בבקשה — עד {MAX_CITIES_PER_QUERY}",
-        )
-    # MEH-1645: whitelist the day param against the canonical vocabulary —
-    # same list DeliveryAreaCreate validates on the write path (MEH-1644).
-    # MEH-2036: the plural is validated with the SAME whitelist and the SAME
-    # Hebrew 422 — one bad member rejects the whole request rather than being
-    # silently dropped, so a hand-edited URL can never quietly return a result
-    # set that doesn't match what it asked for. (The FRONTEND drops unknown
-    # values on hydration instead; that asymmetry is intentional and matches
-    # MEH-1645 — the URL bar is untrusted input to the API but a recoverable
-    # typo in the browser.)
-    for value in [delivery_day, *(delivery_days or [])]:
-        if value is not None and value not in DELIVERY_DAYS:
-            raise HTTPException(
-                status_code=422,
-                detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
-            )
+    # MEH-3559: the manual 422s (sort, distance needs lat+lng, the cities
+    # cap, the day whitelist) live in services/producer_catalog.py.
+    validate_listing_sort(sort=sort, lat=lat, lng=lng)
+    validate_listing_filters(
+        cities=cities, delivery_day=delivery_day, delivery_days=delivery_days
+    )
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -339,55 +306,8 @@ def producers_count(request: Request, db: Session = Depends(get_db)) -> dict[str
     feed the same "X מתוך Y" counter (``ProducersClient.jsx:378``), and before
     this they disagreed by every producer on vacation.
     """
-    count = (
-        db.query(func.count(Producer.id))
-        .filter(
-            is_business(),  # MEH-2459
-            catalog_default_availability_condition(),
-        )
-        .scalar()
-        or 0
-    )
+    count = catalog_count(db)  # MEH-3559
     return {"count": count}
-
-
-@router.get("/producers/cities", response_model=list[ProducerCityOut])
-@limiter.limit("60/minute")
-def producers_cities(
-    request: Request, db: Session = Depends(get_db)
-) -> list[ProducerCityOut] | list[dict[str, object]]:
-    """MEH-970 — per-city approved-producer counts for the /map region control.
-
-    GROUP BY city over approved producers only. NULL / blank cities are
-    omitted so a chip never lands on an empty map (empty-region guard). Counts
-    are computed live from the DB — never hardcoded (over-claim guard MEH-519).
-    Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
-    The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
-
-    MEH-1986: the empty-region guard now also covers availability. It existed
-    for blank city names only, so a city whose every producer was on vacation
-    still published a chip — and the catalog behind that chip returns nothing.
-    A city drops out entirely once its last non-vacation producer does.
-    """
-    rows = (
-        db.query(Producer.city, func.count(Producer.id).label("count"))
-        .filter(
-            is_business(),  # MEH-2459
-            catalog_default_availability_condition(),
-            Producer.city.isnot(None),
-            func.trim(Producer.city) != "",
-        )
-        .group_by(Producer.city)
-        .all()
-    )
-    # MEH-2602: rows saved before writes were canonicalised may hold an alias
-    # («בנימינה»); fold them into the canonical name so one town is one chip.
-    totals: dict[str, int] = {}
-    for city, count in rows:
-        name = canonical_city(city) or city
-        totals[name] = totals.get(name, 0) + count
-    ordered = sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))
-    return [{"city": city, "count": count} for city, count in ordered]
 
 
 @router.get("/producers/random", response_model=ProducerRandomOut)
@@ -409,19 +329,7 @@ def random_producer(
     default-hide is not merely inconsistent but actively wrong — the button
     promises a business the visitor could have found by browsing.
     """
-    row = (
-        db.query(Producer.id, Producer.slug)
-        .filter(
-            is_business(),  # MEH-2459
-            catalog_default_availability_condition(),
-        )
-        .order_by(func.random())
-        .limit(1)
-        .first()
-    )
-    if row is None:
-        raise HTTPException(status_code=404, detail="אין בתי עסק זמינים")
-    return ProducerRandomOut(id=row.id, slug=row.slug)
+    return random_catalog_producer(db)  # MEH-3559
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
@@ -429,64 +337,10 @@ def random_producer(
 def get_producer_by_slug(
     slug: str, request: Request, db: Session = Depends(get_db)
 ) -> ProducerDetailOut:
-    producer = (
-        db.query(Producer)
-        .options(
-            # MEH-3385: one SELECT per collection. Three collection
-            # joinedloads multiplied categories × products × delivery areas
-            # into one result set. Order comes from each relationship's
-            # order_by (models.py: categories by position, products by position).
-            selectinload(Producer.categories),
-            selectinload(Producer.products),
-            selectinload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
-            selectinload(Producer.locations),
-            # MEH-1823: active_offer reads this collection — eager-load it here
-            # or the property fires one query per producer on every list page.
-            selectinload(Producer.offers),
-        )
-        .filter(Producer.slug == slug, is_business())  # MEH-2459
-        .first()
-    )
-    if not producer:
-        # MEH-2534: the URL of a deleted business answers 410, so the page can
-        # say it is no longer listed instead of "not found". The page itself
-        # streams 200 + noindex (like the MEH-1045 404 path); 410 is the API's
-        # status, not the HTML's. Everything else that misses stays 404.
-        if retired_slugs.is_gone(db, slug):
-            raise HTTPException(status_code=410, detail="בית העסק כבר לא במהמקור")
-        # MEH-3336: a renamed business. Still a 404 to every client that only
-        # asks "is it here" — the page edge (middleware.js) reads `slug` and
-        # answers the browser with a 301 to the current URL.
-        new_slug = retired_slugs.moved_to(db, slug)
-        if new_slug:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "code": "slug_moved",
-                    "message": "בית העסק עבר לכתובת חדשה",
-                    "slug": new_slug,
-                },
-            )
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    attach_badge_fields(producer)
-    attach_favorites_count(producer, db)
-    attach_rescue_saving([producer], db)
-    report_count = (
-        db.query(func.count(Report.id))
-        .filter(Report.producer_id == producer.id)
-        .scalar()
-        or 0
-    )
-    result = ProducerDetailOut.model_validate(producer)
-    result.report_count = report_count
-    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
-    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
-    result.kashrut_certs = [
-        KashrutCertRef(badge_code=c.badge_code)
-        for c in _servable_kashrut_certs(db, producer)
-    ]
-    return result
+    # MEH-3559: the lookup (410 deleted / 404 moved / 404) and the payload
+    # live in services/producer_detail.py.
+    producer = producer_by_slug_or_raise(db, slug)
+    return detail_payload(db, producer)
 
 
 @router.get("/producers/{producer_id}", response_model=ProducerDetailOut)
@@ -497,63 +351,11 @@ def get_producer(
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ) -> ProducerDetailOut:
-    producer = (
-        db.query(Producer)
-        .options(
-            # MEH-3385: one SELECT per collection. Three collection
-            # joinedloads multiplied categories × products × delivery areas
-            # into one result set. Order comes from each relationship's
-            # order_by (models.py: categories by position, products by position).
-            selectinload(Producer.categories),
-            selectinload(Producer.products),
-            selectinload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
-            selectinload(Producer.locations),
-            # MEH-1823: active_offer reads this collection — eager-load it here
-            # or the property fires one query per producer on every list page.
-            selectinload(Producer.offers),
-        )
-        .filter(Producer.id == producer_id)
-        .first()
-    )
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-
-    # MEH-254 — pending/rejected producers are not consented-to-public. Only
-    # the owner and admins may fetch them by UUID; everyone else sees 404 so
-    # the UUID can't be used to enumerate queue state.
-    # MEH-2459 — an organizer is never a public business either: same
-    # owner/admin carve-out, same 404 for everyone else (its public face is
-    # /organizers/{slug}, chunk 3).
-    # MEH-2952: and a seeded test row (is_test) — same carve-out; its page
-    # reopens with noindex in chunk 3.
-    if not is_business_row(producer):
-        is_admin = getattr(viewer, "role", None) == "admin"
-        is_owner = viewer is not None and viewer.producer_id == producer.id
-        if not (is_admin or is_owner):
-            raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-
-    # MEH-18 — compute badge fields from the already-loaded relationships.
-    attach_badge_fields(producer)
-    # MEH-106: social proof count.
-    attach_favorites_count(producer, db)
-    attach_rescue_saving([producer], db)  # MEH-2716
-
-    # Compute report_count from DB
-    report_count = (
-        db.query(func.count(Report.id))
-        .filter(Report.producer_id == producer_id)
-        .scalar()
-        or 0
-    )
-    result = ProducerDetailOut.model_validate(producer)
-    result.report_count = report_count
-    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
-    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
-    result.kashrut_certs = [
-        KashrutCertRef(badge_code=c.badge_code)
-        for c in _servable_kashrut_certs(db, producer)
-    ]
+    # MEH-3559: the lookup, the owner/admin carve-out for a non-public row
+    # (MEH-254 / MEH-2459 / MEH-2952) and the payload live in
+    # services/producer_detail.py.
+    producer = producer_by_id_for_viewer(db, producer_id, viewer)
+    result = detail_payload(db, producer)
 
     # MEH-2159: this GET no longer records a view. Counting inside a read
     # made the row depend on WHICH endpoint happened to be called rather
@@ -969,75 +771,10 @@ def list_categories(
     return db.query(Category).order_by(Category.id).all()
 
 
-# MEH-1672 (adversarial review): the only host the cert proxy will ever
-# fetch from. `cert_url` is producer-submitted (KashrutRequestCreate only
-# validates an https:// prefix), so the proxy is a server-side fetch of a
-# value the requester controls — an explicit host allowlist is the SSRF
-# defense, not a nice-to-have.
-_ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
-
-# MEH-1672 (adversarial review): the proxy streams and caps DURING download,
-# not after — httpx.get().content would buffer the whole body first
-# regardless of any check on the result. 8 MB gives headroom above the 5 MB
-# upload-time cap (upload.py:MAX_FILE_SIZE) for re-encoding, not a promise
-# that a 5 MB+ file is legitimate.
-_MAX_CERT_BYTES = 8 * 1024 * 1024
-
-# MEH-2128: the media types Cloudinary may report for a file that
-# `_sniff_image_type` (upload.py:47-61) accepts at upload time — jpeg / png /
-# webp / gif, plus HEIC and HEIF, whose ISO-BMFF brands that function folds
-# into the single label "heic" while Cloudinary still distinguishes the two on
-# delivery. A `startswith("image/")` gate served ANY image/*,
-# `image/svg+xml` included: an SVG proxied from our own origin renders as a
-# top-level document and executes embedded <script>, i.e. stored XSS on
-# mehamakor. What cannot enter through upload must not leave through the proxy,
-# so the serve-side set is a membership test against exactly that set — never
-# wider (no image/avif, no image/svg+xml).
-_ALLOWED_CERT_CONTENT_TYPES = frozenset(
-    {
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif",
-        "image/heic",
-        "image/heif",
-    }
-)
-
-
-# MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
-# Both call sites use it — the serializer that lists which badges have a cert,
-# and the proxy that streams the bytes — so a badge can never be advertised as
-# viewable while the proxy refuses it, or vice versa.
-def _servable_kashrut_certs(
-    db: Session, producer: Producer
-) -> list[KashrutBadgeRequest]:
-    """Approved requests with a cert, for an approved producer, not yet expired.
-
-    Expiry is checked against `producer.kashrut_expires_at` — the same field
-    KashrutBadgeStrip hides the whole strip on (MEH-1260). A legacy NULL
-    expiry stays visible, matching that component exactly.
-    """
-    # MEH-2465: `kind` too — an organizer row never serves a kashrut cert,
-    # whatever is stored against it (ADR-036).
-    if producer.status != "approved" or producer.kind != "producer":
-        return []
-    expires_at = producer.kashrut_expires_at
-    if expires_at is not None and expires_at <= utc_now():
-        return []
-    return (
-        db.query(KashrutBadgeRequest)
-        .filter(
-            KashrutBadgeRequest.producer_id == producer.id,
-            KashrutBadgeRequest.status == "approved",
-            KashrutBadgeRequest.cert_url.isnot(None),
-            KashrutBadgeRequest.cert_url != "",
-        )
-        # MEH-2518: a renewal leaves two approved rows for one code; newest
-        # first so the proxy's next(...) serves the current certificate.
-        .order_by(KashrutBadgeRequest.created_at.desc())
-        .all()
-    )
+# MEH-3559: the cert proxy's rules (host allowlist, size cap, content types,
+# servable_kashrut_certs) and its body live in services/kashrut_cert_proxy.py.
+# The private names stay importable here: producer_draft_preview.py and tests
+# read them from this module.
 
 
 @router.get("/producers/{producer_id}/kashrut-cert/{badge_code}", response_model=None)
@@ -1070,90 +807,4 @@ def get_kashrut_cert(
     Full-hardening (`type=authenticated` + asset migration) is a separate
     post-launch ticket; this closes the exposure we would otherwise create.
     """
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="לא נמצא")
-
-    match = next(
-        (
-            c
-            for c in _servable_kashrut_certs(db, producer)
-            if c.badge_code == badge_code
-        ),
-        None,
-    )
-    if match is None:
-        raise HTTPException(status_code=404, detail="לא נמצא")
-
-    # Adversarial review (MEH-1672): cert_url is written by the producer's own
-    # kashrut-request submission and only validated to start with https://,
-    # so an explicit host allowlist makes the SSRF defense here explicit
-    # rather than resting on operational trust of the upload flow. No
-    # redirect-follow either — a redirect off-host would defeat the check.
-    if urlparse(match.cert_url).hostname not in _ALLOWED_CERT_HOSTS:  # type: ignore[call-overload]
-        logger.warning(
-            "kashrut cert_url host not allowlisted", producer_id=str(producer_id)
-        )
-        raise HTTPException(status_code=404, detail="לא נמצא")
-
-    try:
-        with httpx.stream(
-            "GET",
-            match.cert_url,  # type: ignore[arg-type]
-            timeout=10.0,
-            follow_redirects=False,
-        ) as upstream:
-            if upstream.status_code != 200:
-                raise HTTPException(status_code=404, detail="לא נמצא")
-
-            # MEH-2128: normalise before comparing — an upstream may send
-            # `IMAGE/JPEG; charset=utf-8`, and a raw compare would reject a
-            # legitimate cert while a raw pass-through would echo the
-            # requester-influenced string straight into the response header.
-            content_type = (
-                upstream.headers.get("content-type", "application/octet-stream")
-                .split(";")[0]
-                .strip()
-                .lower()
-            )
-            # Only ever serve an image — the upload route sniffs magic bytes,
-            # but the column is plain text, so this is the second lock
-            # rather than the first. Membership, not a prefix: `image/svg+xml`
-            # passes `startswith("image/")` and executes script when opened
-            # as a top-level document from our own origin (MEH-2128).
-            if content_type not in _ALLOWED_CERT_CONTENT_TYPES:
-                raise HTTPException(status_code=404, detail="לא נמצא")
-
-            # Adversarial review: httpx.get().content buffers the WHOLE body
-            # into memory regardless of any post-hoc size check on the
-            # result — only streaming and capping DURING the read actually
-            # bounds memory. _MAX_CERT_BYTES sits above the 5 MB upload cap
-            # (upload.py:MAX_FILE_SIZE) with headroom for re-encoding.
-            body = bytearray()
-            for chunk in upstream.iter_bytes():
-                body.extend(chunk)
-                if len(body) > _MAX_CERT_BYTES:
-                    logger.warning(
-                        "kashrut cert exceeded size cap", producer_id=str(producer_id)
-                    )
-                    raise HTTPException(
-                        status_code=502, detail="לא ניתן לטעון את התעודה כרגע"
-                    )
-    except HTTPException:
-        raise
-    except Exception:
-        logger.warning("kashrut cert fetch failed", producer_id=str(producer_id))
-        raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
-
-    return Response(
-        content=bytes(body),
-        media_type=content_type,
-        headers={
-            # Adversarial review: max-age=300 contradicted this endpoint's
-            # own "revocation is immediate" claim — a browser could still
-            # serve a stale image for up to 5 minutes after an admin
-            # rejects a badge or it expires. no-store means every open of
-            # the modal re-checks _servable_kashrut_certs for real.
-            "Cache-Control": "no-store",
-        },
-    )
+    return stream_kashrut_cert(db, producer_id, badge_code)  # MEH-3559

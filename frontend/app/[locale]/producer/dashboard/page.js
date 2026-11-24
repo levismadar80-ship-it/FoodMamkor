@@ -2,17 +2,17 @@
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { useEffect, useState, useRef } from "react";
-import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
-import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { Eye, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
+import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
@@ -22,6 +22,7 @@ import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
+import SupportContactSheet from "@/components/SupportContactSheet";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { useFirstMoment } from "@/hooks/useFirstMoment";
@@ -32,72 +33,19 @@ import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
-import { SITE_URL, env } from "@/lib/env";
+import { SITE_URL } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
-import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
+import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
-
-function VanityLinkCard({ slug }) {
-  const t = useTranslations("dashboard.producer.vanity_link");
-  const url = `${SITE_URL}/p/${slug}`;
-  const [copied, setCopied] = useState(false);
-
-  // MEH-3064: a failed copy says so — this one used to do nothing at all
-  // (no catch: an unhandled rejection and a dead button).
-  const tFollowers = useTranslations("sweep_tail.followers");
-  const copy = () => {
-    copyOrThrow(url)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => showToast.error(tFollowers("share_error")));
-  };
-
-  // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
-  // stories matter most to food businesses and are reachable only there. The
-  // existing message rides as text, the link only as `url`. No sheet (most
-  // desktops) → the same copy as the button beside it.
-  const tShare = useTranslations("share");
-  // MEH-2884: the same helper the insights followers card uses.
-  const share = () =>
-    shareOrCopy({ url, text: t("wa_text_template", { url: "" }).trim(), copy });
-
-  return (
-    <div className="bg-surface border border-border rounded-lg p-5 mb-6">
-      <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2 mb-3">
-        <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={copy}
-          data-testid="vanity-copy"
-          className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
-        >
-          {copied ? t("copied") : t("copy_cta")}
-        </button>
-        <button
-          type="button"
-          onClick={share}
-          data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
-        >
-          {tShare("trigger")}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Module:   producer/dashboard/page (Overview / סקירה index)
  * Purpose:  The slim Overview index of the dashboard hub (MEH-964). Shows the
  *           at-a-glance surfaces: greeting, status banners, holiday hint,
- *           vanity link, availability toggle, completeness card, and the
+ *           availability toggle, completeness card, and the
  *           top-line 4-KPI strip (OverviewStatsHero; the conversion line
  *           and weekly badge were removed in MEH-2430).
  * Touches:  GET /producers/me/dashboard, /producers/me/analytics,
@@ -134,60 +82,6 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
   );
 }
 
-// MEH-1355: support contact surface migrated from the removed /settings
-// business tab (SupportModal). Reachable from the rejected + inactive status
-// banners below — wa.me + mailto, same two-channel layout as the original.
-function StatusSupportModal({ onClose }) {
-  const t = useTranslations("dashboard.producer.status.support");
-  const dialogRef = useRef(null);
-  useDialogFocus(dialogRef, true);
-  useDialogEscape(true, onClose);
-  return (
-    <div
-      ref={dialogRef}
-      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("section_aria")}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
-        <p className="text-sm text-fg-muted">{t("body")}</p>
-        <a
-          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <WhatsappLogo size={24} weight="fill" className="text-[#25D366] shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
-            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
-          </div>
-        </a>
-        <a
-          href="mailto:contact@mehamakor.co.il"
-          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <EnvelopeSimple size={24} className="text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
-          </div>
-        </a>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-2.5 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
-        >
-          {t("close_cta")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // MEH-2759 (MEH-2757 chunk 2): the four availability radios (and their
 // MEH-2199 arrow-key layer) became ONE «בהפסקה» switch. Owners set hours plus a
 // pause, like Google / Etsy / Wolt / Uber Eats; «פתוח להזמנות» as a status
@@ -196,6 +90,7 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const locale = useLocale();
   const tSignup = useTranslations("auth.register.producer.success");
   const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
@@ -293,6 +188,11 @@ export default function ProducerDashboardPage() {
       // error-path showToast.error below). Vacation carries the return date.
       if (state === "on_vacation") {
         showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
+        // MEH-3770: orders she already accepted on the days she is away.
+        warnClosedDayOrders(
+          { from: israelToday(), until: vacationUntil || null, openEnded: !vacationUntil },
+          { t: (key, values) => t(`closed_day_orders.${key}`, values), locale },
+        );
       } else {
         showToast.success(t("availability.saved"));
       }
@@ -491,11 +391,15 @@ export default function ProducerDashboardPage() {
           set inactive / rejected / back to pending, and both public routes
           404 anything not approved — a live link here would open a 404. (The
           layout's «צפייה בדף» eye → /producer/{id} still works for the owner.) */}
-      {slug && isApproved && (
+      {/* MEH-3783: a business has the tab bar's «צפייה בעמוד» eye on every
+          dashboard page (DashboardLayoutClient), so a second link here was
+          the same action twice (Shopify keeps one eye in the nav). The eye
+          is hidden for an organizer, so this stays her one way to her page. */}
+      {slug && isApproved && isOrganizer && (
         <LocaleLink
           // MEH-2460: an organizer's public page is /organizers/{slug}
           // (MEH-2461); /{slug} is the business route and 404s it.
-          href={isOrganizer ? `/organizers/${slug}` : `/${slug}`}
+          href={`/organizers/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"
@@ -520,9 +424,11 @@ export default function ProducerDashboardPage() {
       {/* Wait for /producers/me (created_at) and the analytics (the moment
           counts) so no card replaces another one already on screen. One card
           in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
-      {slotOpen &&
+      {/* MEH-3659: a business (not an organizer) in draft sees one card — the checklist below is
+          her welcome; the slot opens once she has submitted. */}
+      {slotOpen && !(producer.status === "draft" && !isOrganizer) &&
         (welcome.show ? (
-          <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
+          <OwnerWelcomeCard onClose={welcome.dismiss} onSupport={() => setSupportOpen(true)} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
         ) : (
@@ -562,12 +468,15 @@ export default function ProducerDashboardPage() {
           number changed is unverified until she enters the new code. The edit
           page shows the same box under the field; this one is the reminder. */}
       {producer.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
-        <PhoneVerifyCard
-          variant="reverify"
-          onVerified={() =>
-            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
-          }
-        />
+        // MEH-3659: the anchor the «לשפר את העמוד» WhatsApp row links to.
+        <div id="phone-verify">
+          <PhoneVerifyCard
+            variant="reverify"
+            onVerified={() =>
+              setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+            }
+          />
+        </div>
       )}
 
       {producer.status === "pending" && !profile?.requested_changes && (
@@ -671,6 +580,9 @@ export default function ProducerDashboardPage() {
       {completenessFirst && profile && !isOrganizer && (
         <ProfileCompletenessCard
           producer={profile}
+          onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
           footer={
             producer.status === "draft" ? (
               <DraftSubmitBanner
@@ -694,6 +606,61 @@ export default function ProducerDashboardPage() {
           onRetry={() => setProfileAttempt((n) => n + 1)}
           testid="dashboard-profile-error"
         />
+      )}
+
+      {/* MEH-3076 (Sapir 21/11, «מספרים למעלה»): the numbers come right after
+          «מה מחכה לך» and the status banners, before the holiday hint, the
+          status switch (rescue bags and «הלינק שלי» left the home, MEH-3767) — an owner opens the
+          dashboard to see what came in, and on a phone these sat a screen down. */}
+      {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
+          Deep analytics (windowed cards + charts) live in the insights tab
+          (dashboard/insights); these KPIs render only here (FLAG-1 — never
+          duplicated in insights/).
+          MEH-964 1D: when there's no activity yet (data-state-active=false),
+          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
+          sees an invitation, not four zeros. hasActivity per the 1A definition
+          (views||whatsapp, rating excluded). */}
+      {!analytics ? (
+        analyticsError ? (
+          // MEH-1261 F2: a failed analytics fetch used to leave the loading
+          // line up forever — surface it + retry instead.
+          <SectionFetchError
+            message={t("section_errors.analytics")}
+            retryLabel={t("section_errors.retry_cta")}
+            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
+            testid="dashboard-analytics-error"
+          />
+        ) : (
+          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        )
+      ) : hasActivity ? (
+        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
+      ) : !isApproved ? null : (
+        // MEH-3079: not while pending — its «שתפו» contradicted the
+        // share-locked line of «הלינק שלי» (new-business walkthrough 18/11).
+        // That card is on «שיתוף» since MEH-3767; the gate stays.
+        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
+        // — the activity pulse's own empty card is gone — and it carries the
+        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
+        // only once there is a public page to share (approved + slug).
+        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
+        // title-less copy — two identical anonymous cards on a fresh
+        // dashboard. Each now carries its own visible title + purpose-
+        // specific copy.
+        <div
+          data-testid="overview-zero-state"
+          className="bg-surface border border-border rounded-lg p-6 mb-8"
+        >
+          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
+          <div className="flex items-center gap-3">
+            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+          </div>
+          {/* Same gate as «הלינק שלי» on «שיתוף» (slug + complete + approved):
+              with the profile incomplete that card shows «share locked», and a
+              «שתפו» here would contradict it (MEH-2884 review, MEH-3767). */}
+          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
+        </div>
       )}
 
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
@@ -727,8 +694,8 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
           שיתוף» are one-time / occasional jobs, so they live in «כלים» →
-          «שיתוף» (tools/page.js#share), not on the daily home. Home keeps the
-          one short «הלינק שלי» card above. */}
+          «שיתוף» (share/page.js, MEH-3749), not on the daily home. «הלינק שלי»
+          joined them there in MEH-3767. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
@@ -814,52 +781,14 @@ export default function ProducerDashboardPage() {
       </div>
       )}
 
-      {/* MEH-2884 (placement audit item 7): rescue bags are a DAILY job when
-          the pilot is on, so home gets a short entry right after the
-          availability switch. The tool itself stays in «כלים»; same strings
-          and flag as its tile there (tools/page.js). Approved business
-          only: it is a daily entry for a live business; a pending one still
-          finds the tile in «כלים», with its «locked until approved» line.
-          Never an organizer. */}
-      {rescueBagsEnabled() && isApproved && !isOrganizer && (
-        <LocaleLink
-          href="/producer/dashboard/rescue"
-          data-testid="home-rescue-card"
-          className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
-        >
-          <ShoppingBag size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-          <span>
-            <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
-            <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
-          </span>
-        </LocaleLink>
-      )}
-
-      {/* MEH-2883 (placement audit 2026-11): «הלינק שלי» comes AFTER the
-          availability switch — the switch is the daily action of a live
-          business (MEH-1134's intent), sharing is now and then. */}
-      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
-          surfaces ONLY when the profile is complete AND approved — sharing an
-          unpublished/incomplete page sends visitors to a dead listing. When
-          locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
-          organizer (its public link above points to /organizers/{slug}). */}
-      {isOrganizer ? null : slug && isComplete && isApproved ? (
-        <VanityLinkCard slug={slug} />
-      ) : slug ? (
-        <div
-          data-testid="share-locked-hint"
-          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
-        >
-          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
-          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
-        </div>
-      ) : null}
-
+      {/* MEH-3767: the always-on rescue-bags card (MEH-2884) and «הלינק
+          שלי» (MEH-53) left the home. Live bags are a row of «מה מחכה לך»
+          (OwnerAttentionCard), the tool itself stays in «כלים»; the link sits
+          on «שיתוף» next to the QR card. */}
 
       {/* MEH-288: profile-completeness card — surfaces the existing
-          producerCompleteness() heuristic to the owner, above the analytics
-          stats. Guarded on `profile` (the full /producers/me record carries
+          producerCompleteness() heuristic to the owner (below the analytics
+          stats since MEH-3076). Guarded on `profile` (the full /producers/me record carries
           the fields the heuristic reads). MEH-1134: this slot served the
           approved+complete state; MEH-1397 removes it — once the business is
           approved AND complete the collapsed "העמוד מלא ✓" card is noise with
@@ -867,56 +796,6 @@ export default function ProducerDashboardPage() {
           21/07). The card now mounts ONLY in the completenessFirst slot above
           (pending OR incomplete), where the green collapse still gives value
           ("סיימת הכל, מחכים לאישור" while complete-but-pending). */}
-
-      {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
-          Deep analytics (windowed cards + charts) live in the insights tab
-          (dashboard/insights); these KPIs render only here (FLAG-1 — never
-          duplicated in insights/).
-          MEH-964 1D: when there's no activity yet (data-state-active=false),
-          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
-          sees an invitation, not four zeros. hasActivity per the 1A definition
-          (views||whatsapp, rating excluded). */}
-      {!analytics ? (
-        analyticsError ? (
-          // MEH-1261 F2: a failed analytics fetch used to leave the loading
-          // line up forever — surface it + retry instead.
-          <SectionFetchError
-            message={t("section_errors.analytics")}
-            retryLabel={t("section_errors.retry_cta")}
-            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
-            testid="dashboard-analytics-error"
-          />
-        ) : (
-          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
-        )
-      ) : hasActivity ? (
-        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
-      ) : !isApproved ? null : (
-        // MEH-3079: not while pending — its «שתפו» contradicted the
-        // share-locked line just above (new-business walkthrough 18/11).
-        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
-        // — the activity pulse's own empty card is gone — and it carries the
-        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
-        // only once there is a public page to share (approved + slug).
-        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
-        // title-less copy — two identical anonymous cards on a fresh
-        // dashboard. Each now carries its own visible title + purpose-
-        // specific copy.
-        <div
-          data-testid="overview-zero-state"
-          className="bg-surface border border-border rounded-lg p-6 mb-8"
-        >
-          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
-          <div className="flex items-center gap-3">
-            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
-            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
-          </div>
-          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
-              profile incomplete that slot shows «share locked», and a «שתפו»
-              here would contradict it (MEH-2884 review). */}
-          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
-        </div>
-      )}
 
       {/* MEH-2884 (audit item 5): the separate «פעילות אחרונה» card is gone —
           it showed the same 7-day views/WhatsApp numbers as the strip above,
@@ -935,14 +814,12 @@ export default function ProducerDashboardPage() {
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
       {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
+      {/* MEH-3767: one quiet line, not a card — it is a way out, not a task. */}
       <div
         data-testid="dashboard-help-row"
-        className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
+        className="border-t border-border pt-2 mb-6 flex items-center justify-between gap-3"
       >
-        <div className="min-w-0">
-          <p className="font-semibold text-text text-sm">{t("help_row.title")}</p>
-          <p className="text-sm text-fg-muted">{t("help_row.body")}</p>
-        </div>
+        <p className="text-sm text-fg-muted min-w-0">{t("help_row.title")}</p>
         <button
           type="button"
           data-testid="dashboard-help-cta"
@@ -955,7 +832,7 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-1355: shared support modal for the rejected + inactive banners
           (and, MEH-3106, the help row above). */}
-      {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
+      {supportOpen && <SupportContactSheet onClose={() => setSupportOpen(false)} />}
     </div>
   );
 }
@@ -1012,7 +889,7 @@ function WeekWhatsappNudge({ count }) {
     <div data-testid="week-whatsapp-nudge" className="bg-surface border border-border rounded-lg p-4 space-y-3">
       <p className="font-semibold text-text">{t("hero", { count })}</p>
       <a
-        href="https://wa.me/"
+        href={getWhatsAppChatHref()}
         target="_blank"
         rel="noopener noreferrer"
         data-testid="week-whatsapp-cta"

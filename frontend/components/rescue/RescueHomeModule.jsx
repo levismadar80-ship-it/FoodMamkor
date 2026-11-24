@@ -6,7 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import BagRow from "@/components/rescue/BagRow";
-import { fetchOffers, rescueBagsEnabled } from "@/lib/rescue";
+import { bagDay, fetchOffers, rescueBagsEnabled } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
@@ -27,6 +28,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 const HOME_ROWS = 3;
 
 export default function RescueHomeModule({ city = "" }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   const enabled = rescueBagsEnabled();
   // The answer is stored WITH the town it answers, and only shown while that
@@ -49,7 +51,9 @@ export default function RescueHomeModule({ city = "" }) {
     };
   }, [enabled, city]);
 
-  const offers = answer && answer.city === city ? answer.rows : null;
+  // MEH-3702: the block says «היום», so tomorrow's bags wait for /rescue.
+  const offers =
+    answer && answer.city === city ? answer.rows.filter((o) => bagDay(o.date, day) === "today") : null;
   if (!enabled || !city || !offers || offers.length === 0) return null;
 
   const total = offers.length;

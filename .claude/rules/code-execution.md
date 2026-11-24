@@ -23,17 +23,15 @@ Sources: Cursor · Devin · V0 · Manus · Windsurf (2026).
 7. **Lazy Edit (Cursor)** — changed lines + `// ... existing code ...`
    markers only. Never return a full file.
 8. **Atomic Edits (Cursor)** — 3 changes in one file = 1 edit call,
-   not 3. All-or-nothing. **When a refactor relocates an import + its
-   usage, batch them (MultiEdit) or remove the usage before the import** —
-   sequential edits otherwise leave a transient `no-undef` that the
-   per-edit `lint-feedback` hook scores as a (false) 3-strike block
-   (MEH-763 chunk 3, 2026-06-06).
+   not 3. All-or-nothing. When a refactor moves an import + its usage,
+   batch them, or the `lint-feedback` hook sees a transient `no-undef`.
 9. **Skeptic Mode (Devin)** — "Haven't verified X" > "X probably
    works". Declare uncertainty explicitly.
 10. **File:Line Evidence (Devin)** — every code claim needs
     `file:line`. No citation = guess, not fact.
 11. **Numbered Plan First (Manus)** — numbered steps before any code,
-    even "small" tasks. Wait for `go`.
+    even "small" tasks. Whether to wait for `go` is workflow rule 4 (a
+    queue card's description is already the approved plan).
 12. **Narrated Actions (Windsurf)** — one-line per action:
     "Reading X… Found Y… Fixing Z…" No black-box turns.
 13. **Real Imports Only (V0)** — verify file exists before writing
@@ -55,23 +53,27 @@ They surface concretely the same patterns these principles guard against:
 | `PLR0913 max-args=5`, `C901 max-complexity=10`, `PLR0911 max-returns=6` | Ruff (backend) | exec §8 — same intent at the Python layer |
 | `PLR0915 max-statements=50`, `PLR0912 max-branches=12` | Ruff (backend) | exec §7 — keeps Python functions small enough to lazy-edit |
 
-Frontend warnings are not errors today (MEH-443). Backend Ruff has no
-warn level — PL rules ship as errors covered by `per-file-ignores`
-referencing the refactor ticket that will eventually remove the ignore
-(MEH-444). Promote frontend to error and remove backend ignores after
-MEH-437 / MEH-438 / MEH-439 / MEH-440 ship + 30-day soak. Until then,
-treat new lint signals as feedback, not a build gate.
+Frontend ESLint is warn mode, held by `npm run lint:ratchet`; backend Ruff
+PL rules are errors with `per-file-ignores` naming their refactor ticket
+(MEH-444).
+
+The same ratchet (`scripts/checks/eslint-ratchet.mjs`, GATED list) also holds
+the design-system rules (MEH-3829): a raw `<button>`, `<select>`, `<textarea>`,
+checkbox, radio, `<h1>`–`<h3>` or `<a>` outside `components/ui/`
+(`design-system/no-html-*`, local plugin `frontend/eslint-rules/design-system.mjs`),
+a field named only by its placeholder, a read-only or always-disabled field,
+and the whole `jsx-a11y` recommended set. Their totals may only go down.
 
 ---
 
 ## Execution order per task
 
 - **Before:** read CLAUDE.md + HANDOFF → numbered plan → grep siblings
-  → wait for `go`
+  → `go` per workflow rule 4
 - **During:** lazy edit (1 call / file / turn) → narrate each action →
   real imports only
 - **After:** file:line evidence per claim → build + tests → preview
-  URL → HANDOFF update
+  URL. HANDOFF is updated in a separate docs-only PR (workflow rule 31).
 
 ---
 
@@ -108,6 +110,12 @@ Canonical exemplars, one per language style:
    untouched), about-decision (WCAG contrast vs brand-token).
 
 New files mirror whichever style matches the language.
+
+**The header feeds the code index (MEH-3604).** `docs/CODE_INDEX.md` shows each
+module's `Purpose:` line (or first sentence), and `tests/test_meh3604_code_index.py`
+fails on a new module with no header at the top of the file (a tool pragma such
+as `// eslint-disable` is not a header). Before writing a helper or component,
+search the index.
 
 ---
 
@@ -152,9 +160,7 @@ the provenance for free.
 grep -rE "# (MEH-[0-9]+|DO NOT|REUSES):" backend/ frontend/
 ```
 
-Forward-only — existing files retrofit only when otherwise edited. No
-hook enforcement here; if drift becomes a problem, open a follow-up for
-`.claude/hooks/check-sentinel-format.sh`.
+Forward-only — existing files retrofit only when otherwise edited.
 
 ---
 

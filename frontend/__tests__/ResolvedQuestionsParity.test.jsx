@@ -1,7 +1,7 @@
 /**
  * MEH-2155 — the dashboard's live list IS the public page's list.
  *
- * `lib/resolvedQuestions.js` is a SECOND derivation of the resolution rules,
+ * `lib/resolved-questions.js` is a SECOND derivation of the resolution rules,
  * beside `WhatsAppQuestionChips.jsx`'s own. MEH-2155's scope holds that
  * component to read-only (MEH-2154 owns it), so it was not refactored onto the
  * helper — which is the "two parallel mechanisms" smell `workflow.md` names,
@@ -43,7 +43,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub, Wallet: Stub };
 });
 
 vi.mock("@/lib/contact-tracking", () => ({
@@ -55,7 +55,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 
 const WA_SUFFIX = he.whatsapp.question_chips.wa_suffix;
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 
 const chips = he.whatsapp.question_chips;
 

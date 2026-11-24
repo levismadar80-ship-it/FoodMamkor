@@ -11,11 +11,12 @@ Touches:  DB read only — events, experiences, group_buys (through the same
           «is public» queries the site's lists use).
 Does NOT: decide which business (chat_business_context.find), call the model
           or phrase answers (routers/chat.py).
-Related:  frontend/lib/nextDelivery.js (the rule ported in `next_delivery`);
-          frontend/lib/orderWindow.js getSingleOrderCutoff;
+Related:  frontend/lib/next-delivery.js (the rule ported in `next_delivery`);
+          frontend/lib/order-window-status.js getSingleOrderCutoff;
           routers/experiences.py _public_listing_query;
           routers/group_buys.py _status_tab_query.
-History:  MEH-3510 (creation; reviews the page shows, no names)
+History:  MEH-3510 (creation; reviews the page shows, no names); MEH-3584
+          (contact_channel: the page button's channel)
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ from app.utils.clock import ISRAEL_TZ, israel_now, israel_today
 
 # frontend/lib/delivery-days.js DELIVERY_DAYS (Sunday = 0).
 DAYS_HE = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
-# frontend/lib/orderWindow.js ORDER_DAY_KEYS.
+# frontend/lib/order-window-status.js ORDER_DAY_KEYS.
 ORDER_DAY_KEYS = (
     "sunday",
     "monday",
@@ -62,7 +63,7 @@ def _minutes(hhmm: Any) -> int | None:
 
 
 def _ranges(entry: Any) -> list[dict[str, str]]:
-    """orderWindow.js normalizeDayEntries: list or legacy single dict, valid
+    """order-window-status.js normalizeDayEntries: list or legacy single dict, valid
     ranges only, sorted by open."""
     if not entry:
         return []
@@ -78,7 +79,7 @@ def _ranges(entry: Any) -> list[dict[str, str]]:
 
 
 def single_order_cutoff(order_window: Any) -> tuple[int, str] | None:
-    """orderWindow.js getSingleOrderCutoff: (dayIndex, close) when exactly one
+    """order-window-status.js getSingleOrderCutoff: (dayIndex, close) when exactly one
     order day is open; None when none or several (ambiguous)."""
     if not isinstance(order_window, dict) or not order_window:
         return None
@@ -100,7 +101,7 @@ def _day_index(now: datetime) -> int:
 def next_delivery(
     days: list[str], order_window: Any, on_vacation: bool, now: datetime | None = None
 ) -> dict[str, str] | None:
-    """nextDelivery.js nextDeliveryDate. One clear order cutoff → the first
+    """next-delivery.js nextDeliveryDate. One clear order cutoff → the first
     delivery day on or after it (can be today); otherwise the first delivery
     day from tomorrow. None on vacation or with no delivery day."""
     if on_vacation:
@@ -126,7 +127,7 @@ def next_delivery(
 
 
 def row_days(area: Any) -> list[str]:
-    """nextDelivery.js daysOfRow: delivery_days when set (MEH-3484), else the
+    """next-delivery.js daysOfRow: delivery_days when set (MEH-3484), else the
     single delivery_day."""
     many = [d for d in (getattr(area, "delivery_days", None) or []) if d]
     if many:
@@ -273,3 +274,55 @@ def reviews(producer: Any) -> list[dict[str, Any]] | None:
         for r in rows
     ]
     return out or None
+
+
+# ---------- MEH-3584: the contact button's channel ----------
+
+# REUSES: frontend/lib/contact-method.js getResolvedMethod — the declared
+# method if the business has the field it needs, else the first channel in
+# this order that has one. Same order as CONTACT_METHODS there; the pytest
+# tests/test_meh3584_chat_contact_channel.py reads that file and fails when
+# the two orders differ.
+CONTACT_CHANNELS: tuple[tuple[str, str], ...] = (
+    ("whatsapp", "phone"),
+    ("phone", "phone"),
+    ("website", "website"),
+    ("email", "contact_email"),
+    ("instagram", "instagram"),
+    ("facebook", "facebook"),
+    ("external_order", "external_order_form"),
+)
+_FIELD = dict(CONTACT_CHANNELS)
+
+
+_MOBILE = re.compile(r"972[5-9]\d{8}")
+
+
+def _text(producer: Any, channel: str) -> str:
+    return str(getattr(producer, _FIELD[channel], None) or "").strip()
+
+
+def _has(producer: Any, channel: str) -> bool:
+    """Whether the page can build this channel's link (contactHref is not
+    null): WhatsApp needs an Israeli mobile (lib/utils.js normalizePhone), a
+    call needs a digit (telHref), Instagram a handle after any «@»."""
+    value = _text(producer, channel)
+    if channel in ("whatsapp", "phone"):
+        digits = re.sub(r"\D", "", value)
+        if channel == "phone":
+            return bool(digits)
+        local = "972" + digits[1:] if digits.startswith("0") else digits
+        return bool(_MOBILE.fullmatch(local))
+    if channel == "instagram":
+        return bool(value.lstrip("@"))
+    return bool(value)
+
+
+def contact_channel(producer: Any) -> str | None:
+    """The channel name only — never the number, address or link itself."""
+    declared = getattr(producer, "primary_contact_method", None)
+    if declared not in _FIELD:
+        declared = "whatsapp"
+    if _has(producer, declared):
+        return str(declared)
+    return next((c for c, _ in CONTACT_CHANNELS if _has(producer, c)), None)

@@ -31,12 +31,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { ArrowRight, MapTrifold } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
-import { primaryPoint } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producer-points";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -160,6 +162,7 @@ function PreviewEmpty() {
 
 export default function HomepageMiniMap() {
   const t = useTranslations("map.homepage_mini");
+  const tRoot = useTranslations();
   const [shouldLoad, setShouldLoad] = useState(false);
   const [producers, setProducers] = useState(null); // null = not yet fetched
 
@@ -296,7 +299,7 @@ export default function HomepageMiniMap() {
                       <div className="font-medium">{producer.name}</div>
                       {producer.categories?.[0]?.name && (
                         <div className="text-xs text-fg-muted">
-                          {producer.categories[0].name}
+                          {categoryLabel(tRoot, producer.categories[0])}
                         </div>
                       )}
                     </div>

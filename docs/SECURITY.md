@@ -208,7 +208,7 @@ async def get_producer(id: str):
 
 ### ✅ 5. IDOR — SHIPPED across all delete/update endpoints
 
-**Status:** every delete/update endpoint in `home_products.py`,
+**Status:** every delete/update endpoint in
 `producer_me.py`, `favorites.py`, `reports.py`, `reviews.py`,
 `events.py`, and `experiences.py` now checks ownership against
 `current_user.id`, with an admin-override (`current_user.role == "admin"`)
@@ -419,6 +419,7 @@ module.exports = {
 ה-CSP הנאכף (`frontend/next.config.js`) עדיין מתיר `'unsafe-inline'` ו-`'unsafe-eval'`.
 שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
 ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
+מקור הדיווח «Blocked unsafe eval()» בשלב 1 היה בדיקה ש-Zod עושה עם `Function("")` (MEH-3706, `zod/v4/core/util.js:218`), ולא קוד שלנו. ‏MEH-3733 מכבה אותה (`z.config({ jitless: true })` ב-`frontend/lib/zod-csp.js`, שה-import הראשון שלו הוא ב-`frontend/instrumentation-client.js`). לכן «שבוע נקי» נספר מיום המיזוג של MEH-3733.
 שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את שני הסקריפטים ה-inline של MEH-2233: ‏`frontend/lib/prehydration-flags-inline.js` ב-`<head>` (בלי nonce עליו הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת) ו-`frontend/lib/guest-to-login-inline.js` של `/favorites` (בלי nonce עליו אורחת מגיעה ל-`/login` רק אחרי ה-hydration, כמו קודם). `CspReportOnly.test.js` שומר
 ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
 בלי `NEXT_PUBLIC_SENTRY_DSN` אין report-uri, ולכן הכותרת Report-Only לא נשלחת בכלל (MEH-3286): מדיניות שאין לה לאן לדווח לא מודדת כלום, ו-WebKit כותב עליה שגיאה בקונסול בכל דף.
@@ -515,6 +516,26 @@ response as the new access token.
   sites, logout deletion
 - `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
 
+### ✅ 8b-2. Google sign-in: the code swap (MEH-3690, November 2026)
+
+Our own Google button opens Google's popup (GIS code client) and gets a
+one-time code. `POST /auth/google/code` swaps it at
+`oauth2.googleapis.com/token` with `GOOGLE_CLIENT_SECRET` and returns the ID
+token; the browser then posts that token to `/auth/google` (or the
+registration / owner-invite / account-delete route) exactly as before.
+
+- **The token is verified twice:** in the swap
+  (`services/google_code_exchange.py`: issuer, audience = our client id,
+  expiry, plus `email_verified`) and again by the route that signs in.
+- **No state, no cookie:** the swap writes nothing and sets no cookie. It
+  returns the token in the JSON body only, which CORS keeps from other sites,
+  so Google's suggested `X-Requested-With` check would add nothing here.
+- **Nothing sensitive is logged:** only Google's `error` code on a refusal,
+  never the code, the secret, the access token or the ID token. Google's
+  access and refresh tokens are dropped.
+- **10/minute per IP** (`@limiter.limit`), the same as `/auth/google`.
+- Without the secret the route answers 503 with a Hebrew message.
+
 ### ✅ 8c. Dependency audits + Dependabot (MEH-330 → MEH-336, April–May 2026)
 
 Supply-chain CVE gate — pip-audit (backend) + npm audit (frontend) run
@@ -552,6 +573,26 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 - Backend: 8 vulns across 5 packages (`pip`, `pyjwt`, `python-multipart`,
   `requests`, `starlette`) → **0 vulns** (cleared via MEH-337 + transitive
   bumps; pip-audit reports `No known vulnerabilities found`).
+
+**npm `overrides` for transitive CVEs (MEH-3574, 2026-11-21):** the
+`overrides` block in `frontend/package.json` forces patched versions that
+`npm update` / `npm audit fix` could not reach (both crash on an npm 10
+arborist bug, `reading 'edgesOut'`): `vite` ^8.3.8 (bundled launch-editor
+command injection), `brace-expansion` 1.x ≥ 1.1.22 and 5.x ≥ 5.0.13 (ReDoS /
+stack exhaustion), and `zod` → the app's own zod 4 inside
+`@google/design.md` (zod 3 has no fixed release; design.md 0.4.0 still
+declares `zod ^3`). Verified: `npm run design:export` output byte-identical,
+`design:lint` 0 errors. Drop an entry once the parent package ships the fix
+on its own.
+
+**Second batch (MEH-3575, same day):** `dompurify` ^3.4.18 (the only one in
+the shipped bundle; IN_PLACE XSS advisories), `fflate@0.4` ^0.4.9,
+`postcss-selector-parser@6` ^6.1.6, `typescript-eslint` ^8.73.0, and
+`minimatch` ^11.0.9 inside `eslint-plugin-sonarjs` (`npm audit fix` proposed a
+sonarjs downgrade instead). `vitest` / `@vitest/coverage-v8` bumped to ^4.1.12
+directly. The vitest bump only resolves under npm 11 (`npx -y npm@11
+install`); the lockfile it writes installs cleanly with npm 10 `npm ci`.
+Result: `npm audit` 0 vulnerabilities.
 
 **Accepted-risk CVEs (post-baseline):**
 
@@ -924,6 +965,16 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17b-0. The owner links her own Google profile (MEH-3641)
+
+An owner can set `producers.google_place_id` herself (`PUT /producers/me/google-profile`), and that id is what switches on the public Google-rating line. The risk is borrowing a stranger's rating.
+
+- **The gate.** The server fetches the profile live and accepts it only when the Google name or the Google phone matches the business (`services/google_profile.is_her_profile`). A name matches when it is equal after normalising, or when the shorter name's whole words, at least two, appear in order in the longer one; one word («קפה») never matches a longer name. A phone matches on its national digits, mobile or landline.
+- **One profile, one business.** A place_id already linked to another business → 409.
+- **The admin hears about it.** A link change on an approved business sends the sensitive-edit email («הפרופיל בגוגל»). A pending business is seen at approval.
+- **Accepted residual risk.** An owner who renames her business to match a stranger's two-word Google name can pass the name test; the admin email on an approved business and the approval review on a pending one are the backstop.
+- **Nothing else is stored** (Google ToS §3.2.3(b)); every route is `require_producer`, scoped to `user.producer_id`, 10/hour per IP.
+
 ## 17b-1. A restored backup carries no real people (MEH-3406)
 
 A production dump restored anywhere else (staging, a DR drill, a laptop) is one more copy of the database to protect (Privacy Protection Law, amendment 13). So `scripts/restore_from_backup.py` runs `scripts/anonymize_restored_db.sql` right after `pg_restore`, in one transaction, and then fails closed (exit 4) if any real email, phone, push endpoint or inbound WhatsApp message survived.
@@ -966,6 +1017,12 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **Per-account cap (MEH-3425):** besides the route's 10/hour per IP, 5 WRONG passwords an hour per account lock the change for that account (429), even for the right password; a right password spends nothing. Counter in `backend/app/services/email_change_guard.py`, fail-open like `resend_verify_cap.py`. The user row is locked (`SELECT … FOR UPDATE`) before the check, so parallel guesses are counted one at a time (measured: 10 parallel wrong guesses → 5×403, 5×429). An absent password spends nothing. Limits: the window is fixed, not moving (up to 10 guesses around a window edge), and the counter is in process memory, so a deploy resets it.
 - **Other devices signed out (MEH-3425):** a real change bumps `token_version`, as `/auth/logout-all-devices` does; the caller's device gets fresh refresh + fingerprint cookies and recovers via `/auth/refresh`.
 - **No password on the account (MEH-3425):** a non-OAuth account with no `password_hash` gets its own 403, which points to «שכחתי סיסמה», instead of «הסיסמה הנוכחית שגויה».
+
+## 17e. Password changed notice (MEH-3591)
+
+A successful `PATCH /users/me/password` or `POST /auth/reset-password` queues one email to the account address after the commit (`services/auth_emails.py::send_password_changed_notice`): no password, no token, no name, with links to `/forgot-password` and `/contact`. A refused request (wrong current password, bad or expired token, policy failure) raises before the task is queued. Spam is bounded by the routes themselves: a reset needs a single-use token, a change needs a session and the current password (5/hour).
+
+The group-buy join confirmation (same PR) goes only to a **verified** address: without that, join/leave in a loop on an account registered with someone else's unverified address would mail that address from our domain.
 
 ## 18. Skills supply chain (MEH-397)
 
@@ -1303,7 +1360,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 ### Pattern applied
 
 - **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
-  - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
+  - `RegisterAck = {"detail": "אם המייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."}`
   - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / **google**-collision / **apple**-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test). **Quad, not triple, since MEH-1624** — the apple branch (`auth.py:338`, and `auth_register_producer.py:643` on the producer endpoint since MEH-3293) was absent from the set, so a divergence unique to Apple would have shipped green. The two test *names* still say `three_branches`: MEH-1624 was a tests-only PR and renaming was left out of it. Read them as the byte-identity tests, not as a branch count.
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
@@ -1375,7 +1432,17 @@ Stage 2b of on-site ordering adds the first routes where a **guest** writes data
 
 - **Unauthenticated code sender:** `POST /product-orders/phone-code` messages a phone through WhatsApp. Bounds: only for a business that takes orders now; 5/hour per IP; 3 codes an hour per phone and 500 a day site-wide, both counted in `product_order_phone_codes` (not in memory). At the site-wide ceiling the route answers 503 and logs an error: it fails closed. **Accepted cost:** an attacker with several IPs can spend the ceiling and close ordering for the day, and can spend a victim phone's 3 codes an hour. Delay, not exposure. The route does not say whether a phone is blocked for no-shows.
 - **The code:** six digits, 10 minutes, newest only, single use. Stored as `HMAC-SHA256(server secret, phone:code)`. A wrong try is committed before the 422, so five wrong tries end the code even when every request fails.
+- **No code for the account's own verified phone (MEH-3680):** a logged-in buyer (Bearer token, the full `get_current_user` checks) whose `phone_verified` is true and whose account phone equals the order phone in canonical form orders without a code. A phone change through `PATCH /users/me` clears `phone_verified_at`, so an old verification never covers a new number. The codeless path keeps the old bound: from the 4th order to one phone within an hour a code is asked again (`_codeless_orders_left`), so an order-then-cancel loop is bounded as it was by the 3 codes an hour. **Accepted risk:** a verification has no maximum age and `users.phone` is not unique, so the former holder of a recycled number keeps a codeless path to it until she changes her phone. The new holder would get the order's WhatsApp messages and could be blocked by two no-shows. Same exposure as any account with a stale verified phone; a maximum age on `phone_verified_at` is the fix if this shows up.
 - **Guest status token:** `base64url(HMAC(server secret, "product-order-status:" + idempotency key))`; only its sha256 is stored. It travels in the POST **body**, never in a URL. The buyer view masks the phone, omits the street address, shows the pickup code only while it can be used, sends `Cache-Control: no-store`, and stops answering 30 days after the order closed.
 - **10-minute replay window:** a repeat of `POST /product-orders` with the same idempotency key, phone and business within 10 minutes returns the same order and token **without a new code** (a lost answer must not cost the buyer her order). For those 10 minutes the key is a credential. It is a client-made UUID that appears in no response, view or log. **The frontend must never put it in a URL or an analytics event.**
 - **What a business may do alone:** confirm at or below the total the buyer saw, and only before the slot starts. Anything else needs the buyer's acceptance. Two no-shows in 90 days block a phone, so a no-show can be reported only after the slot of an order that was confirmed in time.
 - **Ownership:** a business reaches only its own orders (404 otherwise); there is no admin path yet (stage 6).
+
+### Owner invite on an existing account: a fresh Google sign-in replaces the email code (MEH-3675)
+
+- **What the code proves:** on `POST /auth/owner-invite/accept-existing` the emailed code shows that whoever is at the screen can reach the account right now. An old session alone never accepts.
+- **The Google path:** the body may carry `google_id_token` instead of `code`. It counts only when `verify_google_token` passes (signature, `aud`, `iss`, `exp`; None when Google sign-in is unconfigured), `email_verified is True`, `sub` equals the account's linked `google_id` (never the email, same rule as `/auth/google`), and `iat` is at most 5 minutes old (30 s future skew). Any missing or odd claim fails closed with the same 422 as a missing code (`backend/app/services/owner_invite_google.py`).
+- **Precedent:** OIDC `max_age` / `auth_time` re-authentication, GitHub sudo mode.
+- **What it does not change:** admin and has-business refusals come first; a refused token spends none of the code's attempts and does not consume a live code; the lock order (producer, then user) and the `token_version` bump on accept are unchanged.
+- **Client side:** the credential lives only in page state, dropped on sign-out or an account change (`useFreshGoogleCredential.js`); never stored or logged.
+- Tests: `tests/test_meh3675_owner_invite_google_fresh.py`, `frontend/__tests__/OwnerInviteExistingGoogle.test.jsx`.

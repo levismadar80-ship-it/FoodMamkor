@@ -433,7 +433,7 @@ body:has([data-meets-footer]) footer[data-site-footer] {
    documented exception as the map controls in .claude/rules/rtl.md.
 
    Upstream: Leaflet #7201 (open since 2020, present in 1.9.4). Guarded by
-   frontend/e2e/_qa-archive/qa-meh1682-tooltip-rtl.mjs, which measures the rendered
+   qa-meh1682-tooltip-rtl.mjs [deleted probe, docs/media-archive.md], which measures the rendered
    geometry rather than trusting this comment. */
 .leaflet-tooltip {
   left: 0; /* rtl-ok: positioning origin, see the measured table above */
@@ -960,4 +960,26 @@ html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
 @keyframes brand-loader-seed {
   0%, 100% { opacity: 0.22; }
   35%, 65% { opacity: 0.94; }
+}
+
+/* ── MEH-3827 — .tap-area: a 44×44 hit area without moving the layout ──
+   A small control (an «i» button, a badge chip, a back link, a crumb) keeps
+   its drawn size; an invisible ::before grows the part a finger can hit to at
+   least 44×44 (DESIGN.md «Interactive sizing minimums», WCAG 2.5.5). Each
+   inset is min(0px, (100% − 44px) / 2): negative while the box is under 44px,
+   0 once it is bigger, so a large control is not widened. Logical insets
+   only, so it needs no RTL mirror. Hit areas of neighbours may overlap; the later one
+   in the DOM wins, the same trade the house `before:-inset-[6px]` heart makes.
+   Does not work inside an `overflow` scroller that would clip the pseudo
+   (the admin phone strip uses `min-h-touch` for that reason). */
+@layer utilities {
+  .tap-area {
+    position: relative;
+  }
+  .tap-area::before {
+    content: "";
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
 }

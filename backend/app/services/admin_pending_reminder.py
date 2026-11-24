@@ -8,7 +8,7 @@ Touches:  reads producers + users; sends one email via
 Does NOT: decide aging (that is app.utils.clock.business_days_waiting, the same
           function the admin queue badge uses); hold the scheduler (that is
           app.startup); WhatsApp (no reminder template — email only).
-Related:  backend/app/routers/admin.py:_attach_aging (same anchor COALESCE),
+Related:  backend/app/services/admin_producer_reads.py:attach_aging (same anchor COALESCE),
           backend/app/services/pending_nudge.py (the owner-side sibling).
 History:  MEH-3147 (creation, 14/11/2026 — copy approved by Sapir that day).
 """
@@ -46,7 +46,7 @@ def find_overdue(db: Session, *, now: datetime | None = None) -> list[WaitingBus
     """Pending, non-test businesses waiting >= REMINDER_THRESHOLD_DAYS.
 
     Oldest first. The anchor is `resubmitted_at or submitted_for_review_at or
-    created_at`, exactly as `_attach_aging` computes the admin badge, so the
+    created_at`, exactly as `admin_producer_reads.attach_aging` computes the admin badge, so the
     email and the queue never disagree about a number.
     """
     test_owner = exists().where(User.producer_id == Producer.id, User.is_test.is_(True))

@@ -13,11 +13,13 @@
  *
  * Goal (per Linear MEH-559): ramp 1->50 VUs over ~5 min across 5
  * critical endpoints; surface SLA-breaching endpoints before public
- * launch. One-time pre-launch baseline. NOT in CI.
+ * launch. Not a CI gate; run on demand from Actions → «Load test (manual)»
+ * (.github/workflows/load-test.yml, MEH-3564) or locally as below.
  *
  * SLA targets: p95 < 2000ms, error rate < 1% per endpoint.
  *
  * Scenarios:
+ *   (the four ramps run in sequence, 1->2->4->5; /chat runs alongside #1)
  *   1. producers_list           — GET  /producers                       (ramp 1->50)
  *   2. producer_detail_slug     — GET  /producers/by-slug/{slug}        (ramp 1->50)
  *   3. chat                     — POST /chat                            (constant 10 RPS, 60s)
@@ -67,20 +69,25 @@
  *   export PRODUCER_ID=$(curl -s "$BASE_URL/producers?page_size=1" | jq -r '.[0].id // .producers[0].id')
  *   k6 run scripts/load-test.js
  *
- * Total wall-clock runtime: ~10 min (8 min ramp scenarios + 60s chat).
+ * Total wall-clock runtime: ~22 min (four 5-min ramps in sequence;
+ * /chat's 60s overlaps the first). Peak 87 VUs, under the cloud cap of 100 (MEH-3564).
  *
  * Expected result shape with slowapi rate limits active on staging:
  *   - First ~3 seconds: clean p(95) latency baseline for all endpoints
  *   - After ~3 seconds: ~95% HTTP 429 (rate-limited) on /producers/*
  *     because slowapi caps GET /producers at 120/min per IP (see
- *     backend/app/routers/producers.py rate_limit). The error-rate
- *     thresholds below (rate < 0.95) accept this 429-dominated shape.
+ *     backend/app/routers/producers.py rate_limit). Since MEH-3564 a 429
+ *     is an expected status (not counted in http_req_failed), it is
+ *     counted in `rate_limited`, and the error gates are the real < 1%.
  *     For a true capacity-ceiling test, disable slowapi in staging
  *     env for the test window — tracked as a post-launch follow-up.
+ *     That run must drop the `rate_limited ... count>0` thresholds,
+ *     which require the limiter to fire.
  */
 
 import http from 'k6/http';
 import { check, group } from 'k6';
+import { Counter } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'https://foodmamkor-staging.up.railway.app';
 const VERCEL_BYPASS_TOKEN = __ENV.VERCEL_BYPASS_TOKEN || '';
@@ -96,19 +103,67 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 5 min
-// hold at 50, 1 min ramp-down to 0. ~8 min per scenario; scenarios
-// run in parallel so wall-clock is the same.
+// MEH-3564: what counts as a failed request. By default k6 counts every
+// status >= 400 in http_req_failed, so the 429s slowapi is meant to send
+// (and favorites' 401) read as failures and the error-rate gate measured the
+// rate limiter, not the server (98% "failed" on 21/11, run 44909071841, with
+// every check green). Each call now names the statuses that are a coherent
+// answer; anything else (5xx, a timeout, a 422 from a wrong payload) is a
+// failure, and the gate below is the real SLA: under 1%.
+// A 404 on a business page is expected only with the placeholder slug / UUID
+// (no PRODUCER_SLUG / PRODUCER_ID given). The workflow always passes a real
+// producer, so there a 404 is a regression and counts as a failure.
+// /chat never answers 503: without ANTHROPIC_API_KEY or over the daily cap it
+// returns 200 with the offline reply (backend/app/routers/chat.py, `chat()`).
+const USING_PLACEHOLDER = !__ENV.PRODUCER_SLUG || !__ENV.PRODUCER_ID;
+const ok = {
+  list: http.expectedStatuses(200, 429),
+  detail: USING_PLACEHOLDER
+    ? http.expectedStatuses(200, 404, 429)
+    : http.expectedStatuses(200, 429),
+  chat: http.expectedStatuses(200, 429),
+  favorites: http.expectedStatuses(401),
+};
+// Expected is not invisible: every 429 is counted here, per endpoint, and
+// the thresholds require that the limiter actually fired. A run where slowapi
+// never answered 429 at 50 VUs means the limit is gone, not that all is well.
+// (Same pattern as Zuplo's k6 rate-limit example: expected, counted, asserted.)
+const rateLimited = new Counter('rate_limited');
+// And the server still served real answers: 429s are fast, so a run where
+// almost nothing but 429 came back would pass the latency gate on rejections
+// alone. `served` counts the 200s per endpoint; thresholds require some.
+const served = new Counter('served');
+function countLimit(res) {
+  if (res.status === 429) rateLimited.add(1);
+  if (res.status === 200) served.add(1);
+}
+
+// Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 2 min
+// hold at 50, 1 min ramp-down to 0. 5 min per scenario.
+//
+// MEH-3564: the four ramps run ONE AFTER ANOTHER (startTime below), not in
+// parallel. Grafana Cloud k6's free tier allows at most 100 VUs per test;
+// four parallel 50-VU ramps planned 200 and the cloud refused the run
+// ("(400/validation_error) ... exceeds the maximum allowed for your project
+// (100 VUs)", run 44906062820, 21/11). In sequence the peak is one ramp
+// (50) plus /chat; k6 plans 87. It also measures each endpoint alone, instead
+// of four endpoints sharing one IP's slowapi budget. The hold went 5m -> 2m
+// so the whole run (~22 min) fits the workflow's 30-minute timeout.
+// Check before changing: `k6 inspect --execution-requirements
+// scripts/load-test.js` must print "maxVUs": 100 or less at the top level.
 const rampStages = [
   { duration: '2m', target: 50 },
-  { duration: '5m', target: 50 },
+  { duration: '2m', target: 50 },
   { duration: '1m', target: 0 },
 ];
+// 5 min per ramp + 30 s graceful ramp-down, then the next one starts.
+const SLOT = ['0s', '5m30s', '11m', '16m30s'];
 
 export const options = {
   scenarios: {
     producers_list: {
       executor: 'ramping-vus',
+      startTime: SLOT[0],
       startVUs: 1,
       stages: rampStages,
       exec: 'producersList',
@@ -116,6 +171,7 @@ export const options = {
     },
     producer_detail_slug: {
       executor: 'ramping-vus',
+      startTime: SLOT[1],
       startVUs: 1,
       stages: rampStages,
       exec: 'producerDetailSlug',
@@ -136,6 +192,7 @@ export const options = {
     },
     producer_detail_uuid: {
       executor: 'ramping-vus',
+      startTime: SLOT[2],
       startVUs: 1,
       stages: rampStages,
       exec: 'producerDetailUuid',
@@ -143,44 +200,53 @@ export const options = {
     },
     favorites_unauth: {
       executor: 'ramping-vus',
+      startTime: SLOT[3],
       startVUs: 1,
       stages: rampStages,
       exec: 'favoritesUnauth',
       tags: { endpoint: 'favorites_unauth' },
     },
   },
-  // SLA gates per endpoint. p(95) latency gates stay at <2s (those
-  // measure real server responses, not rate-limit rejections). Error
-  // rate gates RELAXED to <0.95 on /producers/* because slowapi caps
-  // GET /producers at 120/min per IP and a 50-VU ramp from one IP
-  // generates ~3000 req/min — expect ~95% HTTP 429 after the first
-  // 3 seconds. The first-3s latency is the real baseline signal.
-  // True capacity-ceiling testing requires disabling slowapi in
-  // staging for the test window (post-launch follow-up ticket).
-  // /chat and favorites_unauth have no error-rate gate (intended
-  // 429/401 respectively).
+  // SLA gates per endpoint: p(95) < 2s and real errors < 1%. slowapi caps
+  // GET /producers at 120/min per IP and a 50-VU ramp from one IP generates
+  // ~3000 req/min, so most responses after the first seconds are 429. Those
+  // 429s (and favorites' 401) are expected statuses (`ok` above), counted in
+  // `rate_limited`; `served` proves 200s still came back. p95 mixes served
+  // answers and fast 429s; the first-3s latency is the clean server signal.
   thresholds: {
     'http_req_duration{endpoint:producers_list}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producers_list}': ['rate<0.95'],
+    'http_req_failed{endpoint:producers_list}': ['rate<0.01'],
 
     'http_req_duration{endpoint:producer_detail_slug}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producer_detail_slug}': ['rate<0.95'],
+    'http_req_failed{endpoint:producer_detail_slug}': ['rate<0.01'],
 
     'http_req_duration{endpoint:chat}': ['p(95)<2000'],
-    // No error-rate gate on /chat — see comment above.
+    'http_req_failed{endpoint:chat}': ['rate<0.01'],
 
     'http_req_duration{endpoint:producer_detail_uuid}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producer_detail_uuid}': ['rate<0.95'],
+    'http_req_failed{endpoint:producer_detail_uuid}': ['rate<0.01'],
 
     'http_req_duration{endpoint:favorites_unauth}': ['p(95)<2000'],
-    // No error-rate gate on favorites_unauth — every request is
-    // expected to return 401, which k6 classifies as "failed".
+    'http_req_failed{endpoint:favorites_unauth}': ['rate<0.01'],
+
+    // The limiter fired (see `rateLimited` above).
+    'rate_limited{endpoint:producers_list}': ['count>0'],
+    'rate_limited{endpoint:producer_detail_slug}': ['count>0'],
+    'rate_limited{endpoint:producer_detail_uuid}': ['count>0'],
+    'rate_limited{endpoint:chat}': ['count>0'],
+
+    // The server served real answers too (see `served` above).
+    'served{endpoint:producers_list}': ['count>0'],
+    'served{endpoint:producer_detail_slug}': ['count>0'],
+    'served{endpoint:producer_detail_uuid}': ['count>0'],
+    'served{endpoint:chat}': ['count>0'],
   },
 };
 
 export function producersList() {
   group('GET /producers', () => {
-    const res = http.get(`${BASE_URL}/producers`, { headers });
+    const res = http.get(`${BASE_URL}/producers`, { headers, responseCallback: ok.list });
+    countLimit(res);
     // 200 (success) or 429 (slowapi rate limit at 120/min — expected
     // after ~3s of ramp at 50 VUs from one IP). Both shapes count as
     // "the server responded coherently"; only network errors or 5xx
@@ -194,7 +260,11 @@ export function producersList() {
 
 export function producerDetailSlug() {
   group('GET /producers/by-slug/{slug}', () => {
-    const res = http.get(`${BASE_URL}/producers/by-slug/${PRODUCER_SLUG}`, { headers });
+    const res = http.get(`${BASE_URL}/producers/by-slug/${PRODUCER_SLUG}`, {
+      headers,
+      responseCallback: ok.detail,
+    });
+    countLimit(res);
     // 200, 404 (default seed slug doesn't exist), or 429 (slowapi
     // rate-limited) are all coherent server responses. We measure
     // latency, not data shape.
@@ -207,23 +277,29 @@ export function producerDetailSlug() {
 
 export function chat() {
   group('POST /chat', () => {
+    // MEH-3564: ChatRequest is `messages: [{role, content}]`
+    // (backend/app/schemas/site.py:272). The old `{message, history}` body
+    // got 422 on all 600 calls (run 44909071841), so /chat was never measured.
     const payload = JSON.stringify({
-      message: 'How do I register as a producer?',
-      history: [],
+      messages: [{ role: 'user', content: 'How do I register as a producer?' }],
     });
-    const res = http.post(`${BASE_URL}/chat`, payload, { headers });
-    // 200 (success), 429 (rate-limited — expected), or 503 (fail-open
-    // when ANTHROPIC_API_KEY is unset on staging) are all valid.
+    const res = http.post(`${BASE_URL}/chat`, payload, { headers, responseCallback: ok.chat });
+    countLimit(res);
+    // 200 (an answer, or the offline reply when the key is unset or the
+    // daily cap is hit) or 429 (rate-limited — expected).
     check(res, {
-      'status 200/429/503': (r) =>
-        r.status === 200 || r.status === 429 || r.status === 503,
+      'status 200 or 429': (r) => r.status === 200 || r.status === 429,
     });
   });
 }
 
 export function producerDetailUuid() {
   group('GET /producers/{producer_id}', () => {
-    const res = http.get(`${BASE_URL}/producers/${PRODUCER_ID}`, { headers });
+    const res = http.get(`${BASE_URL}/producers/${PRODUCER_ID}`, {
+      headers,
+      responseCallback: ok.detail,
+    });
+    countLimit(res);
     // 200, 404 (default zero UUID), or 429 (slowapi rate-limited).
     check(res, {
       'status 200/404/429': (r) =>
@@ -237,7 +313,7 @@ export function favoritesUnauth() {
     const res = http.post(
       `${BASE_URL}/users/me/favorites/${PRODUCER_ID}`,
       null,
-      { headers },
+      { headers, responseCallback: ok.favorites },
     );
     // Expect 401 because we deliberately send no Authorization header
     // (spec: "no real user accounts in load test"). This measures the

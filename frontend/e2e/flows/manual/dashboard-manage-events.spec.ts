@@ -157,10 +157,12 @@ test.describe("my events", () => {
   const A = () => eventRow({});
   const B = () => eventRow({ id: EV_B, title: "סדנת מחמצת", category: "tasting", is_active: false });
 
-  // MT:MEH-1405:1 — reachable from the tools card; cancelled events stay listed, tagged.
+  // MT:MEH-1405:1 — reachable from the tools card («אירועים», MEH-3669); cancelled events stay listed, tagged.
   test("the tools card leads to «האירועים שלי», and the list shows active and cancelled events with their tags", async ({ page }) => {
     await stubManage(page, [A(), B()], []);
     await page.goto("/producer/dashboard/tools");
+    // MEH-3669: «האירועים שלי» sits inside the «אירועים» card, which opens in place.
+    await page.getByTestId("tool-group-events").getByRole("button").click();
     await page.getByRole("link", { name: /האירועים שלי/ }).click();
     await expect(page).toHaveURL(/\/producer\/dashboard\/events$/);
     await expect(page.getByRole("heading", { level: 1, name: "האירועים שלי" })).toBeVisible();
@@ -182,7 +184,7 @@ test.describe("my events", () => {
     await expect(page.getByLabel(/^תיאור/)).toHaveValue("בואו לראות איך נאפה הלחם, עם טעימות לכל המשפחה.");
     await expect(page.getByLabel(/^תאריך/)).toHaveValue(A().event_date as string);
     await expect(page.getByLabel(/^שעה/)).toHaveValue("18:00");
-    await expect(page.getByLabel("מיקום ספציפי")).toHaveValue("בחווה שלנו");
+    await expect(page.getByLabel("מיקום ספציפי", { exact: true })).toHaveValue("בחווה שלנו");
     await expect(page.getByLabel(/^עיר/)).toHaveValue("חיפה");
     // The category field shows the Hebrew label, not the key (events.categories.market).
     await expect(page.getByLabel(/^קטגוריה/)).toHaveValue("שוק");

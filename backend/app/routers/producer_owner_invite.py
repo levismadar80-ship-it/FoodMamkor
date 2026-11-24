@@ -171,7 +171,7 @@ _LINK_INVALID = "הקישור כבר לא בתוקף. אפשר להשיב למי
 _ALREADY_OWNED = "לעסק הזה כבר יש בעלים."
 _BAD_CODE = "הקוד לא תואם. אפשר לנסות שוב או לבקש קוד חדש."
 _NO_CODE = "צריך לבקש קוד אימות ולהזין אותו."
-_EMAIL_TAKEN = "האימייל הזה כבר רשום במהמקור, ואי אפשר להזמין אותו."
+_EMAIL_TAKEN = "המייל הזה כבר רשום במהמקור, ואי אפשר להזמין אותו."
 _NOT_APPROVED = "אפשר להזמין בעלים רק לעסק מאושר או מוסתר."
 _NO_INVITE = "אין הזמנה פתוחה לעסק הזה."
 _ALREADY_ACCEPTED = "ההזמנה כבר התקבלה."
@@ -194,7 +194,7 @@ def _invite_url(token: str) -> str:
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
-    """Same predicate as producer_claim._has_owner and admin._attach_has_owner:
+    """Same predicate as producer_claim._has_owner and admin_producer_reads.attach_has_owner:
     at least one account points at this business."""
     return db.query(User.id).filter(User.producer_id == producer_id).first() is not None
 
@@ -764,7 +764,7 @@ def _accept_plan(db: Session, producer: Producer) -> tuple[bool, list[str]]:
     what is missing. Returns `(publishes, held_gaps)`.
 
     The invite was only SENT for a complete page (MEH-3246), but an admin edit
-    can remove the photo or the licence number before the owner clicks. She
+    can remove the photo before the owner clicks. She
     cannot fix that from the accept page, so a 422 would strand her: she is
     linked as the owner and the page stays hidden, and the admin is told what
     is missing. `held_gaps` is empty unless a HIDDEN page is being held — an

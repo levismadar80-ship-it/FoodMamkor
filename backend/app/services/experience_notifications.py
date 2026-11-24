@@ -49,7 +49,7 @@ def notify_admin_new_submission(
         return
     subject = f"מהמקור — חוויה חדשה ממתינה לאישור: {title}"
     flag_line = (
-        "⚠️ Claude סימן כ-FLAGGED — כדאי להסתכל מהר."
+        "Claude סימן כ-FLAGGED — כדאי להסתכל מהר."
         if moderation_status == "FLAGGED"
         else ""
     )
@@ -69,10 +69,10 @@ def notify_admin_new_submission(
 def notify_host_approved(
     host_email: str, title: str, experience_id: str, test_cause: bool = False
 ) -> None:
-    subject = f'מהמקור — החוויה "{title}" אושרה! 🌿'
+    subject = f'מהמקור — החוויה "{title}" אושרה!'
     body = (
         f"שלום,\n\n"
-        f'שמחים לבשר שהחוויה שהגשת, "{title}", אושרה ופורסמה במהמקור.\n'
+        f'שמחים לבשר שהחוויה "{title}" אושרה ופורסמה במהמקור.\n'
         f"החוויה זמינה עכשיו לציבור הרחב.\n\n"
         f"לצפייה: {settings.frontend_url}/experiences/{experience_id}\n\n"
         f"בברכה,\nצוות מהמקור"
@@ -91,7 +91,7 @@ def notify_host_changes_requested(
     subject = f'מהמקור — נדרשים שינויים בחוויה "{title}"'
     body = (
         f"שלום,\n\n"
-        f'צוות מהמקור עבר על החוויה שלך, "{title}", ומבקש כמה התאמות '
+        f'צוות מהמקור עבר על החוויה "{title}" ומבקש כמה התאמות '
         f"לפני שנוכל לפרסם אותה.\n\n"
         f"הערות מהצוות:\n{feedback}\n\n"
         f"אחרי עדכון הפרטים, החוויה תחזור אוטומטית לתור האישור.\n"

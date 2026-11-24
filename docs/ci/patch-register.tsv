@@ -69,3 +69,17 @@ staging-health	applied	.github/workflows/staging-health.yml	name: Staging health
 uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
 vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
 webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-
+meh-3535-expected-tables-65	applied	.github/workflows/pr-checks.yml	MEH-3535: email_outbox	2026-11-20	committed 21/11 via the web editor (Claude in Chrome), 99592bf, sha256 matched the prepared file
+meh-3153-webkit-core	applied	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-20	applied by Claude in Chrome in 0b55272ae (sha256 4c36ed67…, verified byte for byte)
+meh-3153-webkit-deps	applied	.github/workflows/e2e.yml	MEH-3153 webkit deps: runs on a cache hit too	2026-11-21	applied by Claude in Chrome in bc3d7f455 (sha256 ad68750b…, verified byte for byte)
+meh-3555-uptime-journey	applied	.github/workflows/uptime.yml	smoke_production.py --quick	2026-11-21	uptime tick also walks the user journey
+load-test	applied	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	-	manual k6 load test, cloud or runner; stack ID added 21/11 (MEH-3564)
+meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66 once MEH-3535 (email_outbox) took 65 on staging
+meh-3617-expected-tables-66	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
+meh-3592-expected-tables	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
+release-train-3-expected-tables-67	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2cf40e0ef, sha256 matched the prepared file
+meh-3694-path-filters	applied	.github/workflows/pr-checks.yml	MEH-3694 (Sapir 22/11): only THIS file.	2026-11-22	tests-only and unrelated workflow-only PRs skip heavy jobs; committed 22/11 via the web editor (Claude in Chrome), 7ea7921a2 · 075085948 · e8b8365f1, sha256 matched all three prepared files
+pr-checks-edited-trigger	applied	.github/workflows/pr-checks.yml	unlabeled, edited]	2026-11-22	committed 22/11 via the web editor (Claude in Chrome), 7e80274567, sha256 matched the prepared file
+ai-health-probe	applied	.github/workflows/uptime.yml	AI_URL: https://mehamakor.co.il/api/health/ai	-	-
+meh-3750-tailwind-major-ignore	applied	.github/dependabot.yml	dependency-name: "tailwindcss"	2026-11-23	committed 23/11 via the web editor (Claude in Chrome); sha256 checked against the prepared file
+meh-3806-mypy-ai-fill	applied	backend/pyproject.toml	"app/services/form_filler.py",	2026-11-24	committed 24/11 via the web editor (Claude in Chrome), 97bf5e47ce, sha256 matched the prepared file

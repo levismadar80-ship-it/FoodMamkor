@@ -53,6 +53,9 @@ const DETAIL_ONLY = [
   // MEH-3055: detail-only — the producer page's group chips; the snapshot
   // lists it on ProducerDetailOut and not on ProducerListOut.
   "product_groups",
+  // MEH-3611: detail-only — the business logo shows on the producer page
+  // (cover corner) and the bag page, not on list cards.
+  "logo_url",
   // MEH-3339: detail-only — the second phone + its label, shown as one text
   // line in the contact card; on ProducerDetailOut, not ProducerListOut.
   "secondary_phone",
@@ -60,6 +63,9 @@ const DETAIL_ONLY = [
   // MEH-3216 stage 5b: detail-only — whether the page offers «הוספה»; set by
   // the two detail routes, never on a list row.
   "takes_site_orders",
+  // MEH-2952 chunk 3: detail-only — the page's robots / JSON-LD switch, on
+  // ProducerDetailOut (a model property, no column), never on a list row.
+  "noindex",
 ];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);

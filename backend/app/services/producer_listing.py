@@ -66,11 +66,11 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     disagreement, and it ships looking finished.
 
     Every reader that answers "how many businesses does the catalog show"
-    composes THIS function, so the five can no longer drift apart:
+    composes THIS function, so they can no longer drift apart
+    (``GET /producers/cities`` was a fifth until MEH-3527 deleted it — no caller):
 
       - ``build_producers_query``            (the listing + X-Total-Count)
       - ``GET /producers/count``             (routers/producers.py)
-      - ``GET /producers/cities``            (routers/producers.py)
       - ``GET /producers/random``            (routers/producers.py)
       - ``GET /stats``.producers_count       (routers/marketing.py)
 
@@ -147,7 +147,8 @@ def is_business(*, include_test: bool = False) -> ColumnElement[bool]:
     row is absent from every one of the surfaces above at once.
     ``include_test=True`` keeps test rows, and only the files allowlisted in
     ``tests/test_meh2952_is_test_guards.py`` may pass it (by-slug, the
-    business's own dashboard, admin screens; none yet in chunk 1).
+    business's own dashboard, admin screens). Since chunk 3 the one caller is
+    by-slug in ``routers/producers.py``; its answer then carries ``noindex``.
     """
     live = and_(Producer.status == "approved", Producer.kind == "producer")
     if include_test:
@@ -572,7 +573,7 @@ def _pickup_condition(cities: list[str] | None = None) -> ColumnElement[bool]:
     the owner write path because the column duplicates
     ProducerLocation.kind='pickup', so only admin.py and producer_import.py
     write it, while every consumer surface reads the ROWS — the map layer
-    (frontend/lib/producerPoints.js), DeliveryBlock, and the pinnable predicate
+    (frontend/lib/producer-points.js), DeliveryBlock, and the pinnable predicate
     at :197-202. Filtering the column would hide a business whose owner added a
     pickup point in LocationsEditor, which is the only pickup editor that
     exists. Sapir measured zero businesses holding the column with no matching
@@ -738,7 +739,7 @@ def _kosher_condition(kosher: bool) -> ColumnElement[bool]:
 
 
 # MEH-1881: the Israel weekday names `order_window` is keyed by. Index-aligned
-# with schemas._ORDER_WINDOW_DAYS and with lib/orderWindow.js ORDER_DAY_KEYS, so
+# with schemas._ORDER_WINDOW_DAYS and with lib/order-window-status.js ORDER_DAY_KEYS, so
 # index 0 means Sunday on every axis in the codebase.
 _ORDER_DAY_KEYS = (
     "sunday",

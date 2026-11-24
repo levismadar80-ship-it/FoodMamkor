@@ -4,7 +4,7 @@ import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, buildTitleNoBrand, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1119: isSlugShaped (+ its RESERVED / SLUG_SHAPE / SCANNER_PREFIXES) moved
 // to lib/slug.js — a non-Page `export` in a page.js file breaks the Next Page
 // type contract under `next build --webpack`. The test imports it from there.
@@ -67,7 +67,8 @@ export async function generateMetadata(props) {
   if (!isSlugShaped(slug)) notFound();
   const producer = await getProducerBySlug(slug);
   const path = `/${params.slug}`; // the URL as requested (still encoded)
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
 
   if (!producer || producer === GONE) {
     // MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.
@@ -97,6 +98,10 @@ export async function generateMetadata(props) {
       locale: OG_LOCALE[locale],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
+    // MEH-2952 chunk 3: a seeded test business answers by-slug with
+    // `noindex: true` — its direct URL is for the golden-path run only.
+    ...(producer.noindex ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
@@ -120,7 +125,8 @@ export default async function ProducerSlugPage(props) {
 
   return (
     <>
-      <ProducerJsonLd producer={producer} locale={params.locale} />
+      {/* MEH-2952 chunk 3: no structured data for a test business. */}
+      {producer.noindex ? null : <ProducerJsonLd producer={producer} locale={params.locale} />}
       {/*
         MEH-1151: `key={params.slug}` forces a full remount on slug→slug
         navigation within this same [slug] route segment. Without it, React

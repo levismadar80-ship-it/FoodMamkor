@@ -13,20 +13,18 @@ import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import { useAuth } from "@/lib/auth-context";
-import {
-  ensureFavoritesLoaded,
-  isFavorited as isFavoritedCache,
-  subscribeFavorites,
-} from "@/lib/favorites-cache";
+import { watchFavorited } from "@/lib/watch-favorited";
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
-import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { getOrderWindowStatus } from "@/lib/order-window-status";
 import { useUserLocation } from "@/lib/user-location";
 import { formatDistance, haversineKm } from "@/lib/distance";
-import { primaryPoint, producerPoints } from "@/lib/producerPoints";
+import { primaryPoint, producerPoints } from "@/lib/producer-points";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { parseHasLocation } from "./ProducerSections";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
 // order_window feeds THAT branch rather than adding a second line — see
 // lib/order-status.js for the precedence and the contradiction it avoids.
@@ -131,17 +129,7 @@ export default function ProducerHeader({
       setFavorited(false);
       return undefined;
     }
-    let alive = true;
-    ensureFavoritesLoaded().then(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    const unsub = subscribeFavorites(() => {
-      if (alive) setFavorited(isFavoritedCache(producer.id));
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return watchFavorited(producer.id, setFavorited);
   }, [user, producer.id]);
 
   // Un-favoriting while the panel is open must not leave `alertsOpen` armed —
@@ -282,7 +270,7 @@ export default function ProducerHeader({
           data-testid="producer-header-category-name"
           className="underline decoration-text/35 decoration-[1.5px] underline-offset-[5px] group-hover:decoration-primary group-focus-visible:decoration-primary"
         >
-          {primaryCategory.name}
+          {categoryLabel(t, primaryCategory)}
         </span>
       </Link>,
     );
@@ -537,7 +525,7 @@ export default function ProducerHeader({
               title={producer.name}
               description={producer.description}
               city={producer.city}
-              category={primaryCategory?.name}
+              category={primaryCategory ? categoryLabel(t, primaryCategory) : undefined}
             />
           </>
         )}

@@ -18,6 +18,7 @@ from app.services.job_heartbeat import (
     FOLLOWUP_CRON,
     GROUP_BUY_EXPIRY_CRON,
     PRODUCT_ORDERS_INTERVAL_MINUTES,
+    EMAIL_OUTBOX_INTERVAL_MINUTES,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
@@ -25,6 +26,11 @@ from app.services.job_heartbeat import (
     WEEKLY_OWNER_SUMMARY_TZ,
     REGISTRATION_REMINDER_CRON,
     REGISTRATION_REMINDER_TZ,
+    GROUP_BUY_PICKUP_REMINDER_CRON,
+    GROUP_BUY_PICKUP_REMINDER_TZ,
+    RESCUE_EVENING_REMINDER_CRON,
+    RESCUE_REMINDER_CRON,
+    RESCUE_REMINDER_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -296,6 +302,7 @@ def _run_followup_job() -> None:
     from app.services.pending_nudge import send_pending_nudges
     from app.services.page_freshness import send_freshness_emails
     from app.services.page_freshness_digest import send_stale_digest
+    from app.services.signup_fill_digest import check_signup_fill
 
     db = SessionLocal()
     try:
@@ -354,6 +361,14 @@ def _run_followup_job() -> None:
             db.rollback()
             capture_background_exception(exc, task="page_freshness_digest")
             log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
+        # MEH-3699, Sunday only: the share of new businesses with a referral
+        # source and a location; a zero share is a Sentry warning, not an email.
+        try:
+            check_signup_fill(db)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="signup_fill_digest")
+            log.error("[SIGNUP-FILL] digest crashed", exc_info=True)
     finally:
         db.close()
 
@@ -538,6 +553,81 @@ def _run_group_buy_expiry_job() -> None:
         db.close()
 
 
+# MEH-3610: the evening reminder before a group buy's pickup.
+@heartbeat(
+    "group-buy-pickup-reminder-daily",
+    cron_monitor_config(
+        GROUP_BUY_PICKUP_REMINDER_CRON, timezone=GROUP_BUY_PICKUP_REMINDER_TZ
+    ),
+)
+def _run_group_buy_pickup_reminder_job() -> None:
+    """MEH-3610: mail each participant of a funded group before its pickup.
+    Fresh session per run; any exception is swallowed so the scheduler thread
+    never dies. The stamp makes a rerun send nothing twice."""
+    from app.database import SessionLocal
+    from app.services.group_buy_pickup_reminder import send_pickup_reminders
+
+    db = SessionLocal()
+    try:
+        count = send_pickup_reminders(db)
+        log.info("[GROUP-BUY-PICKUP] daily run complete reminded=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="group_buy_pickup_reminder")
+        log.error("[GROUP-BUY-PICKUP] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier day.
+@heartbeat(
+    "rescue-morning-reminder-daily",
+    cron_monitor_config(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_morning_reminder_job() -> None:
+    """MEH-3702: queue today's reminder emails. Fresh session per run; any
+    exception is swallowed so the scheduler thread never dies. Nothing stamps
+    an order as reminded, so this runs once a day and never on an interval."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_morning_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_morning_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] daily run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_morning_reminder")
+        log.error("[RESCUE-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3805: the evening-before reminder for a bag whose window ends by 08:00.
+@heartbeat(
+    "rescue-evening-reminder-daily",
+    cron_monitor_config(RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_evening_reminder_job() -> None:
+    """MEH-3805: queue tomorrow's early-window reminders. Same guards as the
+    morning job: fresh session, exceptions swallowed, once a day."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_evening_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_evening_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] evening run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_evening_reminder")
+        log.error("[RESCUE-REMINDER] evening run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
@@ -699,6 +789,63 @@ def _run_product_order_jobs() -> None:
             db.close()
 
 
+@heartbeat("email-outbox-tick", interval_monitor_config(EMAIL_OUTBOX_INTERVAL_MINUTES))
+def _run_email_outbox_job() -> None:
+    """MEH-3535: send the queued emails that are due (services/email_outbox).
+
+    Same shape as _run_product_order_jobs: fresh session, exception swallowed
+    so the scheduler thread (or the worker loop) never dies. The service
+    commits per row, so a crash costs at most the row it was on.
+    """
+    from app.database import SessionLocal
+    from app.services.email_outbox import STOP, dispatch_due
+
+    db = SessionLocal()
+    try:
+        dispatch_due(db, should_stop=STOP.is_set)
+    except Exception as exc:
+        capture_background_exception(exc, task="email_outbox")
+        log.error("[EMAIL-OUTBOX] dispatch crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+def _outbox_jobs_run_elsewhere() -> list[tuple[str, Any]]:
+    """MEH-3535: while the worker service owns the outbox ticks they are not on
+    this scheduler, so the overdue-job check would never see them. Its
+    `@heartbeat` writes the same `job_ok:<slug>` rows, so they are checked
+    here: a dead worker raises an ops_alert in Sentry like any stopped job
+    (email to the admin when Sentry is off, MEH-3705)."""
+    if not settings.outbox_external_worker:
+        return []
+    from app.routers.product_orders import product_orders_enabled
+
+    funcs: list[Any] = [_run_email_outbox_job]
+    if product_orders_enabled():
+        funcs.append(_run_product_order_jobs)
+    return [(f.heartbeat_slug, f.heartbeat_config) for f in funcs]
+
+
+def _register_outbox_jobs(scheduler: Any) -> None:
+    """MEH-3535: the two outbox ticks run here unless the separate worker
+    service owns them (OUTBOX_EXTERNAL_WORKER, app/worker.py)."""
+    if settings.outbox_external_worker:
+        log.info("[OUTBOX] OUTBOX_EXTERNAL_WORKER=true — the worker service runs them")
+        return
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_email_outbox_job,
+        IntervalTrigger(minutes=EMAIL_OUTBOX_INTERVAL_MINUTES),
+        id="meh_3535_email_outbox",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+    _register_product_order_job(scheduler)
+
+
 def _register_product_order_job(scheduler: Any) -> None:
     """MEH-3296: adds the on-site order tick, only while ordering is on, so a
     dark feature runs no job at all. Same guards as the rescue digest."""
@@ -838,6 +985,18 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-3610: the group-buy pickup reminder, 17:00 Israel like MEH-3312's.
+    followup_scheduler.add_job(
+        _run_group_buy_pickup_reminder_job,
+        CronTrigger.from_crontab(
+            GROUP_BUY_PICKUP_REMINDER_CRON, timezone=GROUP_BUY_PICKUP_REMINDER_TZ
+        ),
+        id="meh_3610_group_buy_pickup_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
     # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
     # AND the digest gate are both on — the digest cannot work before Meta
     # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
@@ -846,6 +1005,32 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # watchdog's guards, for the same reason it has them: max_instances=1 +
     # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
     # a brief pause runs it late instead of skipping a window.
+    # MEH-3702: the rescue morning reminder, 08:00 Israel, pilot-gated. A
+    # 3h grace runs it late after a deploy pause; a later restart skips the
+    # day (no stamp, so never a second run on the same day).
+    if settings.rescue_bags_enabled:
+        followup_scheduler.add_job(
+            _run_rescue_morning_reminder_job,
+            CronTrigger.from_crontab(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+            id="meh_3702_rescue_morning_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
+        # MEH-3805: the evening twin, 20:00 Israel. Same 3h grace: a run as
+        # late as 23:00 still lands before any early window starts.
+        followup_scheduler.add_job(
+            _run_rescue_evening_reminder_job,
+            CronTrigger.from_crontab(
+                RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ
+            ),
+            id="meh_3805_rescue_evening_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
     from app.services.rescue_digest import digest_enabled as _digest_enabled
 
     if settings.rescue_bags_enabled and _digest_enabled():
@@ -873,12 +1058,18 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
-    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED).
-    _register_product_order_job(followup_scheduler)
+    # MEH-3630: weekly wipe + re-seed of the staging DB, staging only.
+    from app.services import staging_reset_job
+
+    staging_reset_job.register(followup_scheduler)
+    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED), and
+    # MEH-3535: the email queue — both here unless the worker service owns them.
+    _register_outbox_jobs(followup_scheduler)
 
 
 def _register_job_staleness_check(scheduler: Any) -> None:
-    """MEH-3332: every 30 minutes, email the admin about a registered
+    """MEH-3332: every 30 minutes, report to Sentry (ops_alert, MEH-3705;
+    email to the admin when Sentry is off) a registered
     @heartbeat job with no recent success. Reads the job list off the
     scheduler at each run, so a flag-gated job that is off is never checked.
     Not itself a @heartbeat job: a dead scheduler thread is what the one
@@ -898,7 +1089,7 @@ def _register_job_staleness_check(scheduler: Any) -> None:
                 (j.func.heartbeat_slug, j.func.heartbeat_config)
                 for j in scheduler.get_jobs()
                 if hasattr(j.func, "heartbeat_slug")
-            ]
+            ] + _outbox_jobs_run_elsewhere()
             check_jobs(jobs, booted_at=booted_at)
         except Exception as exc:
             capture_background_exception(exc, task="job_staleness_check")
@@ -939,7 +1130,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ]
     if _missing:
         log.warning(
-            "⚠️ Optional env vars not set — some features disabled: %s",
+            "Optional env vars not set — some features disabled: %s",
             ", ".join(_missing),
         )
 
@@ -989,6 +1180,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # (The staging weekly reset takes an advisory lock anyway — MEH-3630.)
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
 

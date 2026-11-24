@@ -8,9 +8,11 @@
 * `frontend/app/[locale]/admin/` ועוד שלוש-עשרה תת-לשוניות, בהן `frontend/app/[locale]/admin/producers/`, `frontend/app/[locale]/admin/recipes/`, `frontend/app/[locale]/admin/reviews/`, `frontend/app/[locale]/admin/reports/`, `frontend/app/[locale]/admin/kashrut/`, `frontend/app/[locale]/admin/outreach/`, `frontend/app/[locale]/admin/settings/`, `frontend/app/[locale]/admin/analytics/`, `frontend/app/[locale]/admin/billing/`.
 * `frontend/app/[locale]/admin/producers/new/` · `frontend/app/[locale]/admin/producers/[id]/edit/`
 * `frontend/app/[locale]/admin/audit-log/` — מסך יומן הפעולות (MEH-3306), לקריאה בלבד.
+* `frontend/app/[locale]/admin/copy/` — «טקסטים באתר» (MEH-3672), לקריאה בלבד: כל טקסט ב-`frontend/messages/he.json` לפי קבוצה, עם המסכים שקוראים אותה. הרשימה נבנית ב-`frontend/scripts/build-copy-screens.mjs` אל lib/copy-screens.json בכל `npm install`, `npm run dev` ו-`npm run build`; הקובץ לא נשמר בריפו (MEH-3693).
 
 **קבצים מרכזיים**
 * `backend/app/routers/admin.py`
+* `backend/app/services/admin_producer_reads.py` — מה שמסכי בתי העסק של האדמין קוראים: הרשימה וסדר התור, בית עסק בודד, רשימת הרישיונות שפגים בקרוב ומוני `/admin/stats`. ה-routes נשארים ב-`backend/app/routers/admin.py` (MEH-3562).
 * `backend/app/services/admin_audit.py` — יומן הפעולות (MEH-3306): שורה לכל שינוי מוצלח של חשבון אדמין, נכתבת מתוך `backend/app/auth.py`. קריאה: `GET /admin/audit-log` ב-`backend/app/routers/admin_extra.py`.
 * `backend/app/services/admin_dashboard.py` + `backend/app/services/admin_settings.py` — המספרים של דף הבית של האדמין (`GET /admin/dashboard`), דף האנליטיקה (`GET /admin/analytics`), ומתגי ההגדרות ומצב החופשה (`/admin/settings`). ה-handlers ב-`backend/app/routers/admin_extra.py` רק קוראים להם (MEH-3538).
 * `frontend/components/admin/AdminRowMenu.jsx`
@@ -34,6 +36,7 @@
 
 **טסטים**
 * `tests/test_admin_approval_transitions.py` · `tests/test_admin_queue_sla_aging.py` · `tests/test_admin_producer_delete_cascade.py` · `tests/test_admin_error_no_leak.py`
+* `frontend/__tests__/CopyScreensFresh.test.js` — **השומר** של «טקסטים באתר»: הרשימה השמורה שווה לבנייה טרייה מהקוד; `frontend/__tests__/AdminCopyScreen.test.jsx` — המסך (0 / 1 / רבים × סגור / פתוח, סינון לפי מסך).
 * `tests/test_meh3306_admin_audit_log.py` — **השומר** של יומן הפעולות; `frontend/__tests__/AdminAuditLogPage.test.jsx` — המסך (0 / 1 / עמוד מלא + דפדוף).
 * `tests/test_meh3375_block_impact.py` — **השומר** של אישור החסימה: הספירה שווה למה שהחסימה מבטלת; `frontend/__tests__/BlockUserConfirm.test.jsx` — החלון (בלי עסק / 0 / 1 / רבים / קריאה שנכשלה).
 * `tests/test_admin_product_image.py` — **השומר** של תמונת המוצר מהאדמין (403 לכל מי שאינה אדמין, אותן בדיקות קובץ, יומן); `frontend/__tests__/AdminProductImage.test.jsx` — הכפתור (0 / 1 / רבים × עם תמונה / בלי).

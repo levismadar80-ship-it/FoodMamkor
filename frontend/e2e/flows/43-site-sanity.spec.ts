@@ -96,6 +96,8 @@ async function sweep(page: Page): Promise<Sweep> {
       if (!HEB.test(own)) continue;
       out.hebrewCount += 1;
       if (cs.fontStyle !== "normal") out.italic.push(label);
+      // MEH-3690: no skip for the Google sign-in button any more (MEH-3688
+      // had one): it is our own markup now, in our font, and checked like the rest.
       if (parseFloat(cs.letterSpacing) > 0) out.tracking.push(`${label} ${cs.letterSpacing}`);
       const key = `${cs.fontFamily}|${cs.fontWeight}|${cs.fontStyle}`;
       // Typed symbols («←», «★») have no glyph in any brand face and fall to a

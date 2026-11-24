@@ -28,7 +28,7 @@ def test_an_unverified_buyer_gets_the_verified_email_403(client, db, shop, rescu
     assert r.status_code == 403
     assert r.json()["detail"] == {
         "code": "email_unverified",
-        "message": "יש לאמת את כתובת האימייל תחילה",
+        "message": "יש לאמת את כתובת המייל תחילה",
     }
     db.expire_all()
     assert db.query(RescueOrder).count() == 0

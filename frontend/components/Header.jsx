@@ -7,6 +7,7 @@ import Image from "next/image";
 // Hebrew /producers).
 import { loginLinkFor } from "@/lib/safe-redirect";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch"; // MEH-3628
 // MEH-2850: every Link element in the site chrome carries prefetch={false}. The
 // chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
 // /privacy, /login, /register) are static, so Next prefetches them IN FULL —
@@ -53,7 +54,7 @@ const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
   "favorites",
-  "myOrders",
+  "myOrders", // MEH-3698: group buys and bags are in it too
   "settings",
   "admin",
 ];
@@ -138,6 +139,7 @@ export default function Header() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const intent = useIntentPrefetch(); // MEH-3628
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
@@ -476,7 +478,7 @@ export default function Header() {
               and the link gap is gap-6 below lg so 768 at 100% stays one row.
               lg+ geometry (gap-9) is unchanged. */}
           <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
-            <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={t("nav.footer.brand_aria")}>
+            <Link prefetch={false} href="/" {...intent("/")} onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={t("nav.footer.brand_aria")}>
               {/* MEH-3412: the link carries the localized name (he «מהמקור — דף הבית»,
                   en «Mehamakor — Home page», same key as the Footer), so the
                   image is decorative — alt="" keeps the name from being read
@@ -606,9 +608,12 @@ export default function Header() {
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active, onClick }) {
+  // MEH-3628: load the page from the first touch / hover (Sapir 21/11).
+  const intent = useIntentPrefetch();
   return (
     <Link prefetch={false}
       href={href}
+      {...(active ? {} : intent(href))}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[

@@ -1,10 +1,9 @@
 // @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope, Phone } from "@phosphor-icons/react/ssr";
-import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
-import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
-import SectionHeading from "@/components/ui/SectionHeading";
+import LegalPage from "@/components/legal/LegalPage";
+import { buildLegalPageMetadata } from "@/lib/legal-page-metadata";
 
 // MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
 // PR #736 (getTranslations in generateMetadata + namespace-scoped t())
@@ -12,23 +11,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "accessibility" });
-  return {
-    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
-    title: t("meta_title"),
-    description: t("meta_description"),
-    // MEH-740: per-page openGraph + self og:url (was inheriting layout root).
-    openGraph: {
-      title: buildEntityTitle(t("meta_title"), locale),
-      description: t("meta_description"),
-      type: "website",
-      url: urlForLocalePath("/accessibility", locale),
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
-    },
-    alternates: buildAlternates("/accessibility", locale),
-  };
+  return buildLegalPageMetadata(locale, { namespace: "accessibility", path: "/accessibility" });
 }
 
 const FEATURE_KEYS = [
@@ -144,32 +127,16 @@ export default async function AccessibilityPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "accessibility" });
   return (
-    <section className="min-h-screen" data-testid="accessibility-page">
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
-          {t("heading")}
-        </h1>
-        {/* MEH-1059 (תקנה 35): statement update date + last-check date. */}
-        <p className="text-fg-muted mb-1">{t("statement_date")}</p>
-        <p className="text-fg-muted mb-12">{t("date_label")}</p>
-
-        <div className="space-y-4">
-          {SECTIONS.map((section) => (
-            <section
-              key={section.id}
-              id={section.id}
-              className="bg-surface rounded-lg p-7 border border-border shadow-sm"
-            >
-              <SectionHeading size="content" className="mb-3">
-                {t(`sections.${section.id}.title`)}
-              </SectionHeading>
-              <div className="text-text/85 leading-relaxed">
-                {section.renderBody(t)}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
-    </section>
+    <LegalPage
+      testId="accessibility-page"
+      heading={t("heading")}
+      // MEH-1059 (תקנה 35): statement update date + last-check date.
+      dateLines={[t("statement_date"), t("date_label")]}
+      sections={SECTIONS.map((x) => ({
+        id: x.id,
+        title: t(`sections.${x.id}.title`),
+        body: x.renderBody(t),
+      }))}
+    />
   );
 }

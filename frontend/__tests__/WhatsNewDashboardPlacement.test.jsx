@@ -65,11 +65,14 @@ vi.mock("@/components/ReviewCardCanvas", () => ({
   default: () => <div data-testid="review-card-canvas-stub" />,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
   // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
   Check: (p) => <span {...p} />,
+  // MEH-3745: a completeness link row ends with a caret.
+  CaretLeft: (p) => <span {...p} />,
   ArrowRight: (p) => <span {...p} />,
   // MEH-964 1C: ActivityPulse references WhatsappLogo + Eye in its rows array
   // on every render (the count gate only hides them from the DOM).
@@ -157,7 +160,7 @@ describe("dashboard home — «מה חדש» and welcome placement (MEH-3200)", 
     profileState.value = profile({ created_at: new Date().toISOString() });
     render(<ProducerDashboardPage />);
     expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
-    expect(await screen.findByRole("progressbar")).toBeInTheDocument();
+    expect(await screen.findByTestId("completeness-counter")).toBeInTheDocument();
     expect(screen.queryByTestId("owner-welcome-cta")).toBeNull();
     expect(screen.getByTestId("owner-welcome-close")).toBeInTheDocument();
   });

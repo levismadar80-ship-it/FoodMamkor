@@ -29,7 +29,7 @@ import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
  *           endpoints are INTERCEPTED (see the MEH-1968 block below): the
  *           client-side `GET /api/producers` and `GET /api/categories`. The
  *           clock is FIXED per test via `page.clock.setFixedTime` — the
- *           order-window rows are time-derived (lib/orderWindow.js), and a
+ *           order-window rows are time-derived (lib/order-window-status.js), and a
  *           spec that reads the wall clock is green for two reasons.
  * Data:     Phase 0 (04/09): `app/[locale]/producers/page.jsx` SSR-fetches the
  *           first page but is FAIL-OPEN — `fetchPage` catches and returns
@@ -132,7 +132,7 @@ const scope = (page: Page) => page.locator("#main-content");
 // order-window fixture below is written against THIS instant — a window is
 // "open now" or "closed now" by construction, never by the runner's wall clock.
 const FIXED_NOW = new Date("2026-09-02T00:00:00.000Z");
-const FIXED_DAY_KEY = "wednesday"; // lib/orderWindow.js ORDER_DAY_KEYS[3]
+const FIXED_DAY_KEY = "wednesday"; // lib/order-window-status.js ORDER_DAY_KEYS[3]
 
 // ── copy ────────────────────────────────────────────────────────────────────
 const P_HE = he.producers;
@@ -189,9 +189,10 @@ function icu(msg: string, count: number): string {
 }
 
 // ── fixtures ────────────────────────────────────────────────────────────────
-// Registry names (lib/category-registry.js): «בשר» carries CATEGORY_STYLES
-// color #c04040 + a glyph; «חלב וגבינות» textColor #3b72ad; «ביצים» has a glyph
-// in CATEGORY_ICONS but NO CATEGORY_STYLES row — the MEH-1452 row-3 case.
+// Registry names (lib/category-registry.js): «בשר» carries the meat group colour
+// #c04040 + a glyph; «חלב וגבינות» and «ביצים» the dairy group tint #3b72ad
+// (MEH-3076: every listed category has a style row now, so the MEH-1452 row-3
+// "no style row" case is covered only by unit tests with an unlisted name).
 // MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
 // matched by name or by the stable slug — so the fixture carries slugs, as
 // CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
@@ -650,8 +651,9 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
   //   (ChipScrollRow.jsx `isCategorySelected`; __tests__/ChipScrollRow.test.jsx
   //   :225). Asserted as the page renders today, against the registry colour.
   // MT:MEH-1452:3 — a category with no CATEGORY_STYLES row: ring AND the
-  //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531;
-  //   it used to keep currentColor before the ✓ replaced the glyph).
+  //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531).
+  //   MEH-3076: no listed category lacks a row any more, so «ביצים» below
+  //   asserts its group (dairy) colour; the fallback case lives in unit tests.
   // MT:MEH-1452:4 — «הכל» has no glyph.
   test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» presses the «חלב וביצים» group in its colour; «הכל» has no glyph", async ({
     page,

@@ -23,7 +23,9 @@
  *           place + confirmation map up front, the four detail fields behind
  *           "פרטים נוספים", GBP pattern);
  *           MEH-3512 (pickup days + own order cutoff for a pickup point or a
- *           market stand — PickupScheduleField, shown before the disclosure).
+ *           market stand — PickupScheduleField, shown before the disclosure);
+ *           MEH-3790 (`hoursElsewhere`: on the owner's page the hours field
+ *           moves to the one «שעות» card, HoursCard.jsx).
  */
 "use client";
 
@@ -80,6 +82,9 @@ const KINDS = ["branch", "pickup", "market_stand"];
 // stack; `lib/errors.js:sameCityLabelParams` is what actually matches the wire
 // value, and this name is only used to label the state locally.
 const SAME_CITY_CODE = "location_same_city_needs_label";
+// MEH-3593: same bound as PICKUP_NOTE_MAX in backend/app/schemas/catalog.py.
+const PICKUP_NOTE_MAX = 200;
+
 const EMPTY_FORM = {
   kind: "branch",
   label: "",
@@ -94,6 +99,8 @@ const EMPTY_FORM = {
   lng: "",
   opening_hours: "",
   phone: "",
+  // MEH-3593: «הוראות איסוף» for this point.
+  pickup_note: "",
   location_precision: "exact",
   is_primary: false,
   // MEH-3512
@@ -117,6 +124,8 @@ function buildPayload(form) {
     lng: num(form.lng),
     opening_hours: str(form.opening_hours),
     phone: str(form.phone),
+    // MEH-3593: null clears it (the server stores "" as NULL too).
+    pickup_note: str(form.pickup_note),
     location_precision: form.location_precision,
     is_primary: !!form.is_primary,
     // MEH-3512: a branch has no pickup schedule — sent empty so switching a
@@ -145,6 +154,7 @@ function toEditForm(loc) {
     lng: loc.lng != null ? String(loc.lng) : "",
     opening_hours: loc.opening_hours || "",
     phone: loc.phone || "",
+    pickup_note: loc.pickup_note || "",
     location_precision: loc.location_precision || "exact",
     is_primary: !!loc.is_primary,
     pickup_days: loc.pickup_days || [],
@@ -158,7 +168,18 @@ function toEditForm(loc) {
 const OWNER_BASE = "/producers/me/locations";
 
 /** @param {{ basePath?: string }} props */
-export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChange } = {}) {
+// MEH-3790: `hoursElsewhere` — the owner's edit page shows opening hours in
+// its one «שעות» card (HoursCard.jsx), so the location form drops its hours
+// field AND stops sending `opening_hours`. The PUT is a partial update
+// (`exclude_unset`), so a form opened before an hours save cannot write the
+// old value back. `refreshKey` lets that card make this list re-read after it
+// saves. The admin page passes neither and keeps the field.
+export default function LocationsEditor({
+  basePath = OWNER_BASE,
+  onLocationsChange,
+  hoursElsewhere = false,
+  refreshKey = 0,
+} = {}) {
   const t = useTranslations("settings.locations");
   const tKind = useTranslations("settings.locations.kind");
   const [locations, setLocations] = useState(null);
@@ -255,7 +276,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
       .get(basePath)
       .then((r) => setLocations(r.data))
       .catch(() => setLoadError(true));
-  }, [reloadKey, basePath]);
+  }, [reloadKey, basePath, refreshKey]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -272,10 +293,12 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
   // from a toast to the in-form slot, and returning the string keeps this
   // helper from knowing about either.
   const validate = useCallback((form) => {
-    const parsed = LocationInputSchema.safeParse(buildPayload(form));
+    const payload = buildPayload(form);
+    if (hoursElsewhere) delete payload.opening_hours;
+    const parsed = LocationInputSchema.safeParse(payload);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     return { data: parsed.data };
-  }, []);
+  }, [hoursElsewhere]);
 
   const handleCreate = useCallback(
     async (form) => {
@@ -409,6 +432,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
                 // the client hint and the server rule agreeing.
                 siblings={locations.filter((l) => l.id !== loc.id)}
                 initial={toEditForm(loc)}
+                showHours={!hoursElsewhere}
                 saving={saving}
                 error={saveError}
                 errorCode={saveErrorCode}
@@ -444,6 +468,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
           heading={t("add_heading")}
           siblings={locations}
           initial={EMPTY_FORM}
+          showHours={!hoursElsewhere}
           saving={saving}
           error={saveError}
           errorCode={saveErrorCode}
@@ -547,6 +572,7 @@ function LocationForm({
   onSubmit,
   onCancel,
   siblings = [],
+  showHours = true,
 }) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
@@ -625,7 +651,9 @@ function LocationForm({
       Boolean(
         (initial.label || "").trim() ||
           (initial.phone || "").trim() ||
-          (initial.opening_hours || "").trim(),
+          (initial.pickup_note || "").trim() ||
+          // MEH-3790: hours are not in this form on the owner page.
+          (showHours && (initial.opening_hours || "").trim()),
       ) || (initial.location_precision || "exact") !== "exact",
   );
   const labelRef = useRef(null);
@@ -955,16 +983,28 @@ function LocationForm({
               placeholder={tForm("phone_placeholder")}
             />
           </Field>
+          {/* MEH-3593: how to collect here, read by every pickup surface. */}
+          <Field label={tForm("pickup_note_label")} hint={tForm("pickup_note_hint")}>
+            <TextInput
+              value={form.pickup_note}
+              onChange={set("pickup_note")}
+              placeholder={tForm("pickup_note_placeholder")}
+              testid="location-pickup-note"
+              maxLength={PICKUP_NOTE_MAX}
+            />
+          </Field>
           {/* MEH-2805: day-row picker instead of free text — the stored string
               is canonical from the first save, and an unreadable legacy value
               is shown verbatim and left untouched until the owner edits it. */}
-          <LocationHoursField
-            value={form.opening_hours}
-            onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
-            onValidityChange={setHoursValid}
-            isPrimary={!!form.is_primary}
-            kind={form.kind}
-          />
+          {showHours && (
+            <LocationHoursField
+              value={form.opening_hours}
+              onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
+              onValidityChange={setHoursValid}
+              isPrimary={!!form.is_primary}
+              kind={form.kind}
+            />
+          )}
           <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
             <select
               value={form.location_precision}
@@ -1171,7 +1211,7 @@ function Field({ label, hint, children }) {
 // required rather than stylistic. Every existing call site passes no ref and is
 // unaffected.
 const TextInput = forwardRef(function TextInput(
-  { value, onChange, type = "text", inputMode, testid, placeholder },
+  { value, onChange, type = "text", inputMode, testid, placeholder, maxLength },
   ref,
 ) {
   return (
@@ -1182,6 +1222,7 @@ const TextInput = forwardRef(function TextInput(
       value={value}
       onChange={onChange}
       placeholder={placeholder}
+      maxLength={maxLength}
       data-testid={testid}
       className="w-full"
     />

@@ -12,10 +12,14 @@
  */
 
 import api from "@/lib/api";
+import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
+import { eventWhen } from "@/lib/event-when";
+import { israelToday } from "@/lib/israel-date";
 import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
   CreateReviewRescueOrdersOrderIdReviewPostResponse,
+  GetOfferRescueOffersOfferIdGetResponse,
   ListMyReservationsRescueOrdersMineGetResponse,
   ListOffersRescueOffersGetResponse,
 } from "@/lib/generated/api.zod";
@@ -59,10 +63,40 @@ export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
   return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
 }
 
+/**
+ * MEH-3702: a bag is for today or for tomorrow on the Israel clock (the API
+ * lists no other day). "tomorrow" only when the date is exactly the next
+ * Israel day; anything else, including a missing date, reads as "today", so
+ * a row from an older API never gains a wrong «מחר». REUSES:
+ * lib/event-when.js `eventWhen` (the same Israel-day arithmetic).
+ *
+ * @param {string|null|undefined} date `YYYY-MM-DD`
+ * @param {string} [today] `YYYY-MM-DD`, injectable for tests
+ * @returns {"today"|"tomorrow"}
+ */
+export function bagDay(date, today = israelToday()) {
+  if (typeof date !== "string" || !today) return "today";
+  return eventWhen(date, today) === "tomorrow" ? "tomorrow" : "today";
+}
+
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */
 export function walkingMinutes(distanceKm) {
   if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) return null;
   return Math.max(1, Math.round(((distanceKm * 1.3) / 5) * 60));
+}
+
+/**
+ * The struck-through "worth": the business's own LOW estimate, and only when
+ * it is above the price — never a made-up discount. MEH-3586: one copy for
+ * BagRow, RescueSection and the bag page (each carried its own).
+ *
+ * @param {{ value_min_agorot?: number|null, price_agorot?: number }|null|undefined} offer
+ * @returns {number|null}
+ */
+export function worthAgorot(offer) {
+  const v = offer?.value_min_agorot;
+  if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
+  return v > offer.price_agorot ? v : null;
 }
 
 /** Agorot → whole shekels. Prices in the pilot are whole-shekel by construction. */
@@ -75,7 +109,7 @@ export function shekels(agorot) {
  * HH:MM in Asia/Jerusalem.
  *
  * NOT `toLocaleTimeString` with no zone: the browser's zone is the visitor's,
- * and a pickup window is a fact about a shop in Israel. `lib/orderWindow.js`
+ * and a pickup window is a fact about a shop in Israel. `lib/order-window-status.js`
  * owns the same primitive for store hours (israel-clock-guard, MEH-1988) —
  * this formats an instant rather than deriving "open now", so it reads the
  * zone directly instead of reaching into that module's day logic.
@@ -91,6 +125,22 @@ export function israelTime(iso) {
     // guard-ok: formats one instant as HH:MM; derives no "today" or "open now".
     timeZone: "Asia/Jerusalem",
   }).format(d);
+}
+
+/**
+ * The free-cancel deadline as the screen says it: «18:30» when it is today,
+ * «מחר ב-18:30» when it falls on the next Israel day (MEH-3702 — a bag for
+ * tomorrow usually has its deadline tomorrow, and a bare time reads as today).
+ *
+ * @param {string|null|undefined} iso the `cancel_until` instant
+ * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @returns {string|null}
+ */
+export function rescueCancelText(iso, t) {
+  const time = israelTime(iso);
+  if (!time || !iso) return time;
+  const day = bagDay(israelToday(new Date(iso)));
+  return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
 }
 
 /**
@@ -142,9 +192,33 @@ export async function fetchOffers({ city, lat, lng } = {}) {
   return parsed.data;
 }
 
+/**
+ * One of today's bags, for its own page (MEH-3586). `null` = not found (a
+ * missing id, another day's bag, or the pilot off — the backend answers 404
+ * for all three, and 422 for an id that is not a UUID). Anything else throws,
+ * so the page shows «couldn't load» rather than «no such bag».
+ *
+ * @param {string} offerId
+ */
+export async function fetchOffer(offerId) {
+  let res;
+  try {
+    res = await api.get(`/rescue/offers/${encodeURIComponent(offerId)}`);
+  } catch (err) {
+    const status = err?.response?.status;
+    if (status === HTTP_NOT_FOUND || status === HTTP_UNPROCESSABLE) return null;
+    throw err;
+  }
+  const parsed = GetOfferRescueOffersOfferIdGetResponse.safeParse(res.data);
+  if (!parsed.success) throw new RescueShapeError(parsed.error.issues);
+  return parsed.data;
+}
+
 /** Reserve. Throws the axios error so the caller can map status → copy. */
 export async function reserveBag({ offerId, qty = 1 }) {
   const res = await api.post("/rescue/orders", { offer_id: offerId, qty });
+  // MEH-3698: reserved, so «ההזמנות שלי» has something — whatever the parse says.
+  clearMyOrdersNavGate();
   const parsed = CreateOrderRescueOrdersPostResponse.safeParse(res.data);
   if (!parsed.success) throw new Error("rescue:unparsable-order");
   return parsed.data;

@@ -17,16 +17,28 @@ Related:  app/routers/registrations.py, app/services/rescue_emails.py (same
           HTML shell), app/services/email.py
           MEH-2952: each sender takes `test_cause` (the business/host the
           sign-up is for is a test row) and send_email then sends nothing.
-History:  MEH-2763 (creation)
+History:  MEH-2763 (creation); MEH-3535 (the sign-up emails are composed by
+          compose_* and queued in the sign-up's transaction by the router;
+          send_* stay for the callers that still send directly)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from html import escape as html_escape
+from typing import NamedTuple
 
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import frame
+
+
+class Mail(NamedTuple):
+    """MEH-3535: one composed email, so a caller can queue it
+    (services/email_outbox.enqueue_email) instead of sending it."""
+
+    subject: str
+    body: str
+    html: str
 
 
 def _one_line(value: str) -> str:
@@ -35,29 +47,8 @@ def _one_line(value: str) -> str:
 
 
 def _shell(heading: str, rows_html: str, button_html: str = "") -> str:
-    """The rescue_emails.py card, without its code box."""
-    return f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
-  <tr><td align="center">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
-      <tr><td style="text-align:right;padding:0 4px 14px;">{email_logo_html()}</td></tr>
-      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{heading}</td></tr>
-          <tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.8;">{rows_html}</td></tr>
-          {button_html}
-        </table>
-      </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור</td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>"""
+    """MEH-3587: the shared frame now lives in email_layout (one frame, not two)."""
+    return frame(heading, rows_html, button_html)
 
 
 def _button(url: str, label: str) -> str:
@@ -83,9 +74,7 @@ class VisitorEmail:
     cancel_url: str
 
 
-def send_visitor_confirmation(
-    to: str, m: VisitorEmail, test_cause: bool = False
-) -> None:
+def compose_visitor_confirmation(m: VisitorEmail) -> Mail:
     title = _one_line(m.title)
     subject = f'ההרשמה ל-"{title}" נקלטה'
     when = m.date_text + (f", {m.time_text}" if m.time_text else "")
@@ -110,7 +99,14 @@ def send_visitor_confirmation(
         f'<br>\n<a href="{e(m.item_url)}" style="color:#2e6853;">{e(title)}</a>'
     )
     html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
-    send_email(to, subject, body, html=html, test_cause=test_cause)
+    return Mail(subject, body, html)
+
+
+def send_visitor_confirmation(
+    to: str, m: VisitorEmail, test_cause: bool = False
+) -> None:
+    mail = compose_visitor_confirmation(m)
+    send_email(to, mail.subject, mail.body, html=mail.html, test_cause=test_cause)
 
 
 @dataclass(frozen=True)
@@ -125,12 +121,10 @@ class OwnerNewEmail:
     session_text: str = ""  # MEH-3441: «המועד: 04.12.2026, 10:00», when booked by date
 
 
-def send_owner_new_registration(
-    to: str, m: OwnerNewEmail, test_cause: bool = False
-) -> None:
+def compose_owner_new_registration(m: OwnerNewEmail) -> Mail:
     title = _one_line(m.title)
     subject = f'הרשמה חדשה ל-"{title}"'
-    lines = [("שם", m.name), ("טלפון", m.phone), ("אימייל", m.email)]
+    lines = [("שם", m.name), ("טלפון", m.phone), ("מייל", m.email)]
     if m.party_size > 1:
         lines.append(("כמה אנשים", str(m.party_size)))
     if m.session_text:
@@ -149,7 +143,14 @@ def send_owner_new_registration(
     if spots:
         rows_html += f"<br>\n<b>{e(spots)}</b>"
     html = _shell(e(subject), rows_html, _button(m.manage_url, title))
-    send_email(to, subject, body, html=html, test_cause=test_cause)
+    return Mail(subject, body, html)
+
+
+def send_owner_new_registration(
+    to: str, m: OwnerNewEmail, test_cause: bool = False
+) -> None:
+    mail = compose_owner_new_registration(m)
+    send_email(to, mail.subject, mail.body, html=mail.html, test_cause=test_cause)
 
 
 @dataclass(frozen=True)
@@ -307,16 +308,12 @@ def _rows(m: VisitorEmail | RegistrantEmail) -> list[tuple[str, str]]:
     return [(k, v) for k, v in rows if v]
 
 
-def send_waitlist_confirmation(
-    to: str, m: VisitorEmail, test_cause: bool = False
-) -> None:
+def compose_waitlist_confirmation(m: VisitorEmail) -> Mail:
     """She joined the waitlist of a full item. The link takes her off it."""
     title = _one_line(m.title)
     subject = f'נכנסתם לרשימת ההמתנה ל-"{title}"'
     rows = _rows(m)
-    note = (
-        "כרגע אין מקומות. אם יתפנה מקום, נשלח אימייל לראשונים ברשימה עם קישור להרשמה."
-    )
+    note = "כרגע אין מקומות. אם יתפנה מקום, נשלח מייל לראשונים ברשימה עם קישור להרשמה."
     body = (
         f"{subject}\n\n"
         + "\n".join(f"{k}: {v}" for k, v in rows)
@@ -327,7 +324,14 @@ def send_waitlist_confirmation(
     rows_html = "<br>\n".join(f"<b>{e(k)}:</b> {e(v)}" for k, v in rows)
     rows_html += f"<br><br>\n{e(note)}"
     html = _shell(e(subject), rows_html, _button(m.cancel_url, "יציאה מרשימת ההמתנה"))
-    send_email(to, subject, body, html=html, test_cause=test_cause)
+    return Mail(subject, body, html)
+
+
+def send_waitlist_confirmation(
+    to: str, m: VisitorEmail, test_cause: bool = False
+) -> None:
+    mail = compose_waitlist_confirmation(m)
+    send_email(to, mail.subject, mail.body, html=mail.html, test_cause=test_cause)
 
 
 def send_waitlist_offer(

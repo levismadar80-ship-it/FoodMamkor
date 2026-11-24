@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
+import { groupOf } from "@/lib/category-taxonomy";
 import {
   CATEGORY_CHIPS,
   SERVICE_CHIP_KEYS,
@@ -19,7 +20,7 @@ import { chipsFromQuery, mapFiltersFromQuery, writeMapFilters } from "@/lib/filt
 import { cityParams } from "@/lib/map-city-params";
 import { haversineKm } from "@/lib/distance";
 import { weightedRating } from "@/lib/rating-gate";
-import { producerInBounds, producerPoints } from "@/lib/producerPoints";
+import { producerInBounds, producerPoints } from "@/lib/producer-points";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -90,7 +91,9 @@ export function sortProducers(list, sortBy, userLoc) {
  *   - `committedBounds` is the bounds the LIST is filtered by — set
  *     either by chip changes (cleared) or by the "search this area"
  *     button (set, via useMapSync.handleSearchThisArea)
- *   - `activeCategoryNames === null` means "all enabled" (legend default)
+ *   - `activeCategoryNames === null` means "all enabled" (legend default).
+ *     MEH-3076: it holds GROUP keys (meat, produce, …), one per legend row —
+ *     the name is kept so MapPane's props did not churn.
  *
  * Cross-hook dependencies are passed in:
  *   - `loadProducers` from useProducersFeed
@@ -428,12 +431,15 @@ export function useMapFilters({
     setMapMoved(false);
   };
 
-  // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
+  // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle one legend row.
+  // MEH-3076: a row is a GROUP (`name` is its key); before, rows were 8
+  // category names, 2 of them stale, so a vegetable or soap business matched
+  // no row and vanished whenever any row was switched off.
   const toggleCategory = (name) => {
     setActiveCategoryNames((prev) => {
       if (prev === null) {
         // start from "all active" and deselect this one
-        return CATEGORY_LEGEND.map((c) => c.name).filter((n) => n !== name);
+        return CATEGORY_LEGEND.map((c) => c.key).filter((n) => n !== name);
       }
       if (prev.includes(name)) {
         const next = prev.filter((n) => n !== name);
@@ -451,8 +457,8 @@ export function useMapFilters({
     if (activeCategoryNames === null) return allProducers;
     const set = new Set(activeCategoryNames);
     return allProducers.filter((p) => {
-      const cat = p.categories?.[0]?.name;
-      return cat && set.has(cat);
+      const group = groupOf(p.categories?.[0]);
+      return group && set.has(group);
     });
   }, [allProducers, activeCategoryNames]);
 
@@ -490,8 +496,9 @@ export function useMapFilters({
         );
     const counts = {};
     for (const p of inView) {
-      const cat = p.categories?.[0]?.name;
-      if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
+      // MEH-3076: counted per legend row, i.e. per group.
+      const group = groupOf(p.categories?.[0]);
+      if (group) counts[group] = (counts[group] ?? 0) + 1;
     }
     return counts;
   }, [allProducers, committedBounds, showAllPickupPoints]);

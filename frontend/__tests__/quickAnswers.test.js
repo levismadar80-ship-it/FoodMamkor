@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import he from "../messages/he.json";
-import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
 
 // MEH-1302 — Quick Answers. Two layers under test:
 //   1. pure answer logic (buildDeliveryAnswer / hasDeliverySection) — every branch
@@ -165,10 +165,11 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
       <WhatsAppQuestionChips producer={{ phone: PHONE, city: "תל אביב", delivery_nationwide: true }} />,
     );
     const toggle = screen.getByRole("button", { name: /אפשר משלוח ל/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(toggle);
+    // MEH-3666: the only answer-first question on the page starts open.
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("כן! משלוחים לכל הארץ")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
   // Sapir 19/11 (screenshot, prod): «משלוחים ל: … + עוד 44» answered with a

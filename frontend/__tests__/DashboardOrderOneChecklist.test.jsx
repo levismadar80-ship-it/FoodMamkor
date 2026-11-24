@@ -1,7 +1,8 @@
 /**
  * MEH-2883 (MEH-2882 PR 2) — placement on the dashboard home:
  * - approved + complete: the «מצב נוכחי» switch comes right after the
- *   greeting, BEFORE «הלינק שלי» and the numbers (daily before now-and-then);
+ *   greeting, before the now-and-then rows (MEH-3767: «הלינק שלי» moved to
+ *   «שיתוף»; the help line is the last row the switch must precede);
  * - a business in draft sees ONE setup checklist: the completeness card, with
  *   the submit actions at its foot — not the draft banner stacked above it;
  * - an organizer in draft keeps its own draft banner (ADR-036).
@@ -78,12 +79,14 @@ beforeEach(() => {
 });
 
 describe("approved + complete: the switch first (MEH-2883)", () => {
-  it("«מצב נוכחי» renders before «הלינק שלי»", async () => {
+  it("«מצב נוכחי» renders before the help line, and «הלינק שלי» is not on home", async () => {
     render(<ProducerDashboardPage />);
-    const share = await screen.findByTestId("vanity-share");
+    await screen.findByTestId("availability-pause-switch");
+    const help = screen.getByTestId("dashboard-help-row");
     const heading = document.getElementById("availability-heading");
     expect(heading, "availability card").not.toBeNull();
-    expect(before(heading, share), "switch before the link").toBe(true);
+    expect(before(heading, help), "switch before the help line").toBe(true);
+    expect(screen.queryByTestId("vanity-share")).toBeNull();
   });
 });
 
@@ -92,37 +95,27 @@ describe("draft: one checklist (MEH-2883)", () => {
     stateRef.current = { status: "draft", kind: "producer", complete: false };
   });
 
-  it("a business sees the completeness card with the submit actions inside it, and no separate draft banner", async () => {
+  // MEH-3659: the submit button appears inside the card only when every
+  // gate row is done; until then there is no button and no hint.
+  it("incomplete: the card is the draft checklist, with no submit button and no separate draft banner", async () => {
     render(<ProducerDashboardPage />);
     const card = await screen.findByTestId("profile-completeness-card");
+    expect(card.dataset.mode).toBe("draft");
     expect(screen.queryByTestId("draft-submit-banner")).toBeNull();
-    const actions = screen.getByTestId("draft-submit-actions");
-    expect(card.contains(actions), "actions live inside the one card").toBe(true);
-    expect(screen.getAllByTestId("draft-submit-cta")).toHaveLength(1);
-    // The draft banner's own list is not repeated inside the card.
+    expect(screen.queryByTestId("draft-submit-actions")).toBeNull();
+    expect(screen.queryByTestId("draft-submit-cta")).toBeNull();
     expect(screen.queryByTestId("draft-missing-list")).toBeNull();
   });
 
-  it("incomplete + phone unverified: the phone check is inside the card, and the one CTA is disabled with its hint", async () => {
-    render(<ProducerDashboardPage />);
-    const card = await screen.findByTestId("profile-completeness-card");
-    const phone = screen.getByTestId("draft-phone-verify");
-    expect(card.contains(phone), "phone check inside the card").toBe(true);
-    const cta = screen.getByTestId("draft-submit-cta");
-    expect(cta).toBeDisabled();
-    expect(cta.getAttribute("aria-describedby")).toBe("draft-cta-hint");
-    expect(document.getElementById("draft-cta-hint"), "disabled-CTA hint").not.toBeNull();
-  });
-
-  it("complete and ready: the green card still carries the actions, and the CTA is enabled", async () => {
+  it("complete and ready: «הכול מוכן» carries the one enabled CTA inside the card", async () => {
     stateRef.current = { status: "draft", kind: "producer", complete: true, ready: true };
     render(<ProducerDashboardPage />);
     const card = await screen.findByTestId("profile-completeness-card");
     const actions = screen.getByTestId("draft-submit-actions");
-    expect(card.contains(actions), "actions inside the complete card").toBe(true);
+    expect(card.contains(actions), "actions inside the card").toBe(true);
+    expect(screen.getAllByTestId("draft-submit-cta")).toHaveLength(1);
     expect(screen.getByTestId("draft-submit-cta")).toBeEnabled();
     expect(screen.queryByTestId("draft-phone-verify")).toBeNull();
-    // One live region: the actions sit inside the card's own status region.
     expect(actions.getAttribute("role"), "no nested role=status").toBeNull();
   });
 

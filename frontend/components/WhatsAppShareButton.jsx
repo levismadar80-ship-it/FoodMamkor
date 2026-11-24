@@ -3,6 +3,8 @@
 
 import { useTranslations } from "next-intl";
 import { ShareNetwork } from "@phosphor-icons/react";
+import { getWhatsAppHref } from "@/lib/utils";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * WhatsApp share button for producer pages — the viral loop.
@@ -16,12 +18,12 @@ export default function WhatsAppShareButton({ producer, url }) {
   const shareUrl =
     url ||
     (typeof window !== "undefined"
-      ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
+      ? `${window.location.origin}${producerPath(producer)}`
       : "");
 
   const text = t("default_message", { name: producer.name, url: shareUrl });
 
-  const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const href = getWhatsAppHref("", text);
 
   return (
     <a

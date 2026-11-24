@@ -16,7 +16,7 @@
  * Related:  backend/app/services/submission_gate.py (the authority — the code
  *           strings below are its contract, returned in
  *           `detail.params.missing`), components/producer/DraftSubmitBanner.jsx
- *           (the only consumer), lib/producerPoints.js (the location rule this
+ *           (the only consumer), lib/producer-points.js (the location rule this
  *           reuses rather than re-derives).
  * History:  MEH-2100 (creation).
  *
@@ -29,7 +29,7 @@
  * either side reds rather than silently splitting the two.
  */
 
-import { producerPoints } from "./producerPoints.js";
+import { producerPoints } from "./producer-points.js";
 import { isDefaultDescription } from "./producer-completeness.js";
 
 // The machine-readable codes. These MUST match
@@ -41,6 +41,10 @@ export const MISSING_PRODUCT = "product";
 export const MISSING_CATEGORY = "category";
 export const MISSING_LOCATION = "location";
 export const MISSING_PHONE_VERIFIED = "phone_verified";
+// MEH-3660: the owner's email is confirmed — businesses only. GET
+// /producers/me fills `owner_email_verified` (submission_gate
+// .attach_owner_email_verified); absent → missing, fail-closed.
+export const MISSING_EMAIL_VERIFIED = "email_verified";
 
 // Canonical order — the order the owner reads her remaining items in. Mirrors
 // SUBMISSION_REQUIREMENTS in the backend module.
@@ -50,6 +54,7 @@ export const SUBMISSION_REQUIREMENTS = [
   MISSING_CATEGORY,
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
+  MISSING_EMAIL_VERIFIED,
 ];
 
 // MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
@@ -164,6 +169,8 @@ export function submissionMissingItems(producer) {
   // removed in MEH-2124; a status-based read would have reported every draft
   // as verified.
   if (!producer.phone_verified) missing.push(MISSING_PHONE_VERIFIED);
+
+  if (producer.owner_email_verified !== true) missing.push(MISSING_EMAIL_VERIFIED);
 
   return missing;
 }

@@ -10,14 +10,23 @@ tests/test_email_logo.py renders each template and also scans backend/app
 for any `<html` template that does not call it, so a new HTML email without
 the logo fails CI.
 
-Uses settings.frontend_url — the same base the templates already use for
-their links — so no new setting or env var.
+Image host (MEH-3583): ALWAYS the public production origin, never
+settings.frontend_url. Staging (both staging.mehamakor.online and
+staging.mehamakor.co.il) sits behind Vercel Deployment Protection, so
+`/email-logo.png` there answers 302 → vercel.com/login and every mail client's
+image proxy (Gmail, Apple Mail, Outlook) shows a broken image. Links in the
+emails still follow frontend_url (a staging mail links to staging); only the
+static image comes from production, the same rule MEH-3414 applies to WhatsApp.
+The file has been on main since MEH-2834, so production serves it.
+tests/test_email_logo.py renders every template with a staging frontend_url and
+fails on an image that is not on this origin, not https, or not PNG/JPEG/GIF.
 """
 
 from html import escape as html_escape
 
-from app.config import settings
-
+# Public, unauthenticated, no redirect. Not an env var on purpose: every
+# environment must load the image from the one host a mail client can reach.
+EMAIL_ASSET_ORIGIN = "https://mehamakor.co.il"
 EMAIL_LOGO_PATH = "/email-logo.png"
 EMAIL_LOGO_ALT = "מהמקור"
 # frontend/public/email-logo.png is 240×60 → 120×30 on screen (MEH-2875: was
@@ -26,7 +35,7 @@ EMAIL_LOGO_HEIGHT = 30
 
 
 def email_logo_url() -> str:
-    return f"{settings.frontend_url.rstrip('/')}{EMAIL_LOGO_PATH}"
+    return f"{EMAIL_ASSET_ORIGIN}{EMAIL_LOGO_PATH}"
 
 
 def email_logo_html() -> str:
@@ -38,4 +47,32 @@ def email_logo_html() -> str:
         f'<img src="{html_escape(email_logo_url())}" width="120" height="{EMAIL_LOGO_HEIGHT}" '
         f'alt="{EMAIL_LOGO_ALT}" style="display:block;border:0;margin:0 0 24px auto;'
         'color:#2e6853;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">'
+    )
+
+
+# MEH-3594 (Sapir, 21/11): the team sign-off carries the flower mark beside
+# it. The square app icon (frontend/public/icon-192.png), on the same public
+# origin as the logo, shown at 22×22.
+EMAIL_ICON_PATH = "/icon-192.png"
+EMAIL_ICON_SIZE = 22
+EMAIL_SIGNOFF = "צוות מהמקור"
+
+
+def email_icon_url() -> str:
+    return f"{EMAIL_ASSET_ORIGIN}{EMAIL_ICON_PATH}"
+
+
+def email_signoff_html() -> str:
+    """«צוות מהמקור» with the flower mark before it (RTL: to its right).
+
+    Inline content, so it sits inside whatever <p>/<td> the template already
+    styles. alt="·" and not the name: the words beside it already say who
+    signs, so a blocked image must not print «מהמקור» twice; every email
+    <img> carries a non-empty alt (tests/test_email_logo.py), and the server
+    sends no emoji (no-emoji-backend-guard.sh, MEH-3668)."""
+    return (
+        f'<img src="{html_escape(email_icon_url())}" width="{EMAIL_ICON_SIZE}" '
+        f'height="{EMAIL_ICON_SIZE}" alt="·" style="display:inline-block;'
+        'vertical-align:middle;border:0;border-radius:5px;margin:0 0 0 6px;">'
+        f'<span style="vertical-align:middle;">{EMAIL_SIGNOFF}</span>'
     )

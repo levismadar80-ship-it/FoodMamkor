@@ -71,7 +71,15 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 #   v2 ("2026-06-v2") — MEH-759 Chunk C (ADR-022 gate 2): continuous-
 #     commitment wording ("פועל כדין… ההצהרה תישאר נכונה כל עוד העסק
 #     מופיע במהמקור…") + conditional farmer line. New wording = new version.
-DECLARATION_VERSION: str = "2026-06-v2"
+#   v3 ("2026-11-v3") — MEH-3026: businesses may join without a licence, so
+#     the business no longer states its licences "exist and are valid"; it
+#     takes responsibility for them, and is told Mehamakor checks licences
+#     only for «מאומת» ("אנחנו אחראים לבדוק אילו רישיונות… ידוע לנו שמהמקור
+#     לא בודקת רישיונות…"). Rows signed on v2 keep v2.
+#   v4 ("2026-11-v4") — MEH-3721 (Sapir 22/11, shorter signup step): the same
+#     three elements in fewer words ("…בודקת רישיונות רק לבתי עסק עם תג
+#     «מאומת»…"). Rows signed on v3 keep v3.
+DECLARATION_VERSION: str = "2026-11-v4"
 
 # MEH-1995: the version string stamped into users.terms_version when a user
 # ticks the terms checkbox at registration. Same reasoning as
@@ -91,7 +99,10 @@ DECLARATION_VERSION: str = "2026-06-v2"
 #   v2 ("2026-09-v2") — MEH-2080: the checkbox now also carries the 18+
 #      self-declaration («אני מעל גיל 18 ומסכימה …»), and acceptance became
 #      mandatory on both email registration paths (422 when absent).
-TERMS_VERSION: str = "2026-09-v2"
+#   v3 ("2026-11-v3") — MEH-3026: section 2 no longer says the business holds
+#      every required licence; it says the business is responsible for finding
+#      out what it needs, and that a business without «מאומת» was not checked.
+TERMS_VERSION: str = "2026-11-v3"
 
 # MEH-759 Chunk C (ADR-022 gate 2): the agricultural categories that add the
 # conditional GROWER line to the licensing declaration («תוצרת שגידלתי בחלקתי

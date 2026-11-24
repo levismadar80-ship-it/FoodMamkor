@@ -21,6 +21,11 @@ export nobody imports there fails the Knip dead-code ratchet.
 The last column is the guard that pins the owner or its look; some cover only
 part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
+A raw `<button>`, `<select>`, `<textarea>`, checkbox, radio, `<h1>`–`<h3>` or `<a>`
+outside `ui/` is an ESLint warning (`design-system/no-html-*`, local plugin
+`eslint-rules/design-system.mjs`, MEH-3829), and so is a field named only by its
+placeholder or read-only / always-disabled. With the jsx-a11y recommended set,
+their totals are gated by `npm run lint:ratchet`: they may only go down.
 
 | Need | Owner | Guard |
 |---|---|---|
@@ -31,24 +36,34 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Field look + label shell behind those three (don't use directly in a page) | `ui/field.jsx` | — |
 | Centred modal (focus trap: `hooks/useDialogFocus.js`) | `ui/Dialog.jsx` | `DialogContractGuard` |
 | Error / «נשמר» message inside a page or form | `ui/InlineMessage.jsx` | `InlineMessageGuard` |
+| Green «this is a preview» strip with the eye, above a page shown as someone else sees it | `ui/PreviewBanner.jsx` | — |
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
-| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`) | `ui/Avatar.jsx` | `AvatarGuard` |
+| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
+| 44×44 hit area on a small control without moving the layout (`::before`) | `.tap-area` in `app/globals.css` | `TapArea44` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
+| Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
+| Time-limited offer card (group buy, surprise bag): title + where, price + struck price, gold saving, beige status band | `ui/OfferCard.jsx` | `OfferCardOneOwnerGuard` |
+| Progress in the logo's seeds (group-buy joins, bags left today); `label={null}` when the count is written beside it | `ui/SeedProgressMark.jsx` | — |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
+| A form field's label with a «?» that opens its explanation inline under it (dashboard forms, MEH-3740) | `FieldHelpLabel.jsx` | — |
+| «fill this form from text» box over a dashboard form (one engine, `form` = the field map) | `FormFillBox.jsx` | — |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
+| «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
+| «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
 | A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
+| «שאלות נפוצות» under a hub list, with FAQPage JSON-LD | `HubFaq.jsx` (questions per list: `lib/hub-faq.js`) | `HubFaq` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |
@@ -57,6 +72,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
 | Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 | AI suggestion button + editable preview that hands text to a field (product description, review reply) | `AiTextSuggest.jsx` | — |
+| Offer page blocks, one look for a group buy and a rescue bag: pickup time under the title · «איפה ומתי» with the map · allergens · how it works (MEH-3597, MEH-3610) | `offer-detail/PickupLine.jsx` · `offer-detail/WhereSection.jsx` · `offer-detail/AllergenSection.jsx` · `offer-detail/HowSteps.jsx` | `GroupBuyBagParity` |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new
@@ -66,6 +82,29 @@ copies, but check the look against the page you are matching.
 Copying 8+ lines from another file fails `scripts/checks/clone-ratchet.sh` (MEH-3464). A
 genuinely new primitive goes in `ui/` with the `Module / Purpose / Does NOT`
 header, a row here, and a guard when a hand-written copy would be easy to write.
+
+**Rule of two (MEH-3612).** When a second feature needs to show a concept another
+feature already shows (allergens, a pickup time, a price with the regular price
+struck through), move that display to `ui/` with a row here **in the same PR**,
+and make both features use it. Don't copy it and don't write it again in your own
+words. `clone-ratchet` catches only near-verbatim copies, so a rewrite in different
+words passes it. Industry practice is to extract on the third use; here a feature's
+display is usually written inside its own file, where nobody searching `ui/` finds
+it, so two uses is the trigger. Known copies to fold the next time one of them is
+touched (21/11):
+- Allergens: `public/ProductFacts.jsx:38` (reads `lib/allergens.js`) and
+  `rescue/RescueSection.jsx:395` (its own `allergen_${code}` lookup).
+- Price with the regular price struck through: `rescue/BagRow.jsx:125`,
+  `HomeWhatsOn.jsx:533`, and the group-buy pages
+  (`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:293`,
+  `app/[locale]/group-buys/GroupBuysClient.jsx:105`).
+- Pickup time line: `rescue/BagRow.jsx:80` and `rescue/RescueSection.jsx:347`.
+
+**Say what you checked.** A PR that adds a file under `frontend/components`,
+`frontend/lib`, `frontend/hooks` or `backend/app/services` carries
+`Reuse: <what it reused or extended>` or `Reuse: none fit — <what was searched>`
+(this table, `docs/CODE_INDEX.md`). `scripts/checks/reuse-line-guard.sh` warns
+when the line is missing.
 
 ## Conventions specific to this dir
 - **Imports**: `useAuth` from `@/lib/auth-context`, `api` from `@/lib/api`.

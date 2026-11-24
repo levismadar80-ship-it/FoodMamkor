@@ -38,7 +38,7 @@ vi.mock("next/image", () => ({
   default: ({ src, alt, onError }) => <img src={src} alt={alt} data-testid="gb-img" onError={onError} />,
 }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "20 בנובמבר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "20 בנובמבר 2099", formatDate: () => "20 בנובמבר 2099" }));
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
@@ -205,7 +205,8 @@ describe("group-buy page — the join card", () => {
     await renderPage({ ...GB, commits_count: 3 });
     const box = screen.getByTestId("group-buy-progress");
     expect(box.textContent).not.toContain("עוד 0");
-    expect(box.textContent).toContain("3 מתוך 3 הצטרפו");
+    expect(box.textContent).toContain("3 הצטרפו"); // MEH-3588: the count alone at the goal
+    expect(box.textContent).not.toContain("3 מתוך 3");
   });
 
   describe("«שתפו» fallbacks", () => {

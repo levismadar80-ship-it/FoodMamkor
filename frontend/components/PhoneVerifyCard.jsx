@@ -64,7 +64,7 @@ function forgetOtpSent(key = SENT_AT_KEY) {
 }
 
 /**
- * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" | "user", title?: string, description?: string }} props
+ * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" | "user" | "inline", title?: string, description?: string }} props
  * `reverify` (grill B8): a live business whose number changed. Its own title,
  * no "before review" description, and the server's own success sentence
  * (the submit-flow toast talks about sending for review).
@@ -75,6 +75,9 @@ function forgetOtpSent(key = SENT_AT_KEY) {
 export default function PhoneVerifyCard({ onVerified, variant = "submit", title, description }) {
   const reverify = variant === "reverify";
   const userFlow = variant === "user";
+  // MEH-3659: inside the draft checklist's WhatsApp row, which already names
+  // the step — no box, no second title, no explainer; just the controls.
+  const inline = variant === "inline";
   const base = userFlow ? "/users/me/verify-phone" : "/producers/me/verify-phone";
   const sentKey = userFlow ? USER_SENT_AT_KEY : SENT_AT_KEY;
   const t = useTranslations("phone_verify");
@@ -170,20 +173,26 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
     ? t("resend_in", { seconds: cooldown })
     : sending
       ? t("sending")
-      : t("send_cta");
+      : codeSent
+        // MEH-3567: once a code has gone out, the idle button says so — it
+        // used to fall back to «שלחו קוד אימות» as if nothing had been sent.
+        ? t("resend_cta")
+        : t("send_cta");
 
   return (
     <div
       data-testid={reverify ? "phone-reverify-card" : userFlow ? "user-phone-verify-card" : undefined}
-      className="mt-3 bg-surface border border-primary/20 rounded-md p-4"
+      className={inline ? "" : "mt-3 bg-surface border border-primary/20 rounded-md p-4"}
     >
-      <p className={`font-semibold text-text flex items-center gap-1.5 ${reverify ? "mb-3" : "mb-1"}`}>
-        <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
-        {userFlow ? title : reverify ? t("reverify_title") : t("title")}
-      </p>
+      {!inline && (
+        <p className={`font-semibold text-text flex items-center gap-1.5 ${reverify ? "mb-3" : "mb-1"}`}>
+          <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
+          {userFlow ? title : reverify ? t("reverify_title") : t("title")}
+        </p>
+      )}
       {/* MEH-2926: «נשלח קוד» only once a code has actually gone out. Before
           the tap the line says what the tap will do. */}
-      {!reverify && !(codeSent && !userFlow) && (
+      {!reverify && !inline && !(codeSent && !userFlow) && (
         <p className="text-xs text-fg-muted mb-3">{userFlow ? description : t("description")}</p>
       )}
       {codeSent && !userFlow && (

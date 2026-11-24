@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { googleCodeClientReady, sendGoogleCode, stubCodeSwap, stubGoogleCodeClient } from "./_google-code-stub";
 import { pickCity } from "./_pick-city";
 import { authedContext, fixtureExists } from "../auth-fixture";
 
@@ -117,7 +118,6 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 
       // ── 1) Drive the REAL 5-frame wizard (existing testids only) ──
       await page.goto("/register/producer");
-      await page.getByTestId("register-preflight-start").click();
 
       // ACCOUNT
       await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -134,30 +134,17 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
       await page.getByTestId("register-details-next").click();
 
-      // CATEGORY — pick the live category; fill the license iff the field is
-      // shown (a license-required category gates advance inline, MEH-952).
+      // CATEGORY — pick the live category (no licence field at signup, Sapir 22/11).
       await expect(page.getByTestId("register-frame-category")).toBeVisible();
       await page.getByTestId(`category-chip-${categoryId}`).click();
-      const licenseInput = page.getByTestId("register-category-license");
-      if (await licenseInput.isVisible().catch(() => false)) {
-        await licenseInput.fill("000000000");
-      }
-      await page.getByTestId("register-category-next").click();
-
-      // STORY — tagline + all declarations (ToS + binding), then submit
-      await expect(page.getByTestId("register-frame-story")).toBeVisible();
-      await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
-      // MEH-1471: the attribution dropdown. MEH-2183 made it OPTIONAL — leaving
-      // it empty no longer blocks submit — but this persona keeps picking a key
-      // so it still exercises the populated path end to end.
-      await page.getByTestId("register-referral-source").selectOption("instagram");
+      // MEH-3656: CATEGORY is the submitting frame — declarations, then submit.
       for (const cb of await page
-        .getByTestId("register-frame-story")
+        .getByTestId("register-frame-category")
         .getByRole("checkbox")
         .all()) {
         await cb.check();
       }
-      await page.getByTestId("register-story-submit").click();
+      await page.getByTestId("register-category-submit").click();
 
       // CONFIRM — non-upgrade inbox-check state (RegisterAck, no token)
       await expect(page.getByTestId("register-frame-confirm")).toBeVisible({
@@ -231,8 +218,11 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       await expect(overview).toBeVisible({ timeout: 20_000 });
       // The checklist state: an approved business exposes data-state-approved.
       await expect(overview).toHaveAttribute("data-state-approved", "true");
-      // …and the one-tap public link is present (slug assigned on approval).
-      await expect(page.getByTestId("view-public-link")).toBeVisible();
+      // …and the one-tap public link is present: the tab bar's «צפייה בעמוד»
+      // eye, the business's one link to her page (MEH-3783).
+      const view = page.getByTestId("dashboard-view-page");
+      await expect(view).toBeVisible();
+      await expect(view).toHaveAttribute("href", new RegExp(`/producer/${producerId}$`));
     } finally {
       if (producerId) {
         await adminCtx.delete(`/api/admin/producers/${producerId}`).catch(() => {
@@ -245,32 +235,17 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 });
 
 // ===========================================================================
-// P2 — OAuth producer: a 409 surfaces a toast (GSI-stub, mirrors flows/10)
+// P2 — OAuth producer: a 409 surfaces a toast (Google stub, mirrors flows/10)
 // ===========================================================================
 test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
-  const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
+  const DETAIL_MSG = "כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
 
   test("a 409 from the OAuth Step-0 endpoint shows the backend detail as a toast", async ({
     page,
   }) => {
-    // Stub window.google.accounts.id so useGoogleSignIn captures our callback
-    // instead of loading the real GSI script (mirrors flows/10:26-41).
-    await page.addInitScript(() => {
-      let captured: ((res: { credential: string }) => void) | null = null;
-      (window as unknown as { __getProducerGoogleCallback: () => typeof captured }).__getProducerGoogleCallback =
-        () => captured;
-      (window as unknown as { google: unknown }).google = {
-        accounts: {
-          id: {
-            initialize: ({ callback }: { callback: typeof captured }) => {
-              captured = callback;
-            },
-            renderButton: () => {},
-            cancel: () => {},
-          },
-        },
-      };
-    });
+    // MEH-3690: stand in for Google's popup and the code swap (mirrors flows/10).
+    await stubGoogleCodeClient(page);
+    await stubCodeSwap(page, "fake_id_token_for_test");
 
     await page.route("**/auth/register/producer/oauth", (route) =>
       route.fulfill({
@@ -284,23 +259,12 @@ test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // Skip when the Google button is absent (NEXT_PUBLIC_GOOGLE_CLIENT_ID unset).
-    const callbackReady = await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback?: () => unknown;
-      }).__getProducerGoogleCallback;
-      return typeof getter === "function" && typeof getter() === "function";
-    });
     test.skip(
-      !callbackReady,
+      !(await googleCodeClientReady(page)),
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent",
     );
 
-    await page.evaluate(() => {
-      const getter = (window as unknown as {
-        __getProducerGoogleCallback: () => (res: { credential: string }) => void;
-      }).__getProducerGoogleCallback;
-      getter()({ credential: "fake_id_token_for_test" });
-    });
+    await sendGoogleCode(page, "fake_code_for_test");
 
     await expect(page.getByText(DETAIL_MSG)).toBeVisible({ timeout: 3000 });
     await page.waitForURL(/\/login(\?|$)/, { timeout: 5000 });
@@ -323,7 +287,6 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
 
   async function fillAccountAndAdvance(page: import("@playwright/test").Page, email: string) {
     await page.goto("/register/producer");
-    await page.getByTestId("register-preflight-start").click();
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
     await page.getByTestId("register-account-name").fill("בודקת פרסונה");
     await page.getByTestId("register-account-email").fill(email);
@@ -333,18 +296,19 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     await page.getByTestId("register-details-name").fill(BUSINESS_NAME);
   }
 
-  test("refresh mid-wizard: draft persists in localStorage and the pre-flight entry returns", async ({
+  test("refresh mid-wizard: draft persists in localStorage and the draft is offered again", async ({
     page,
   }) => {
     const email = uniqueEmail(5);
     await fillAccountAndAdvance(page, email);
 
     // ACTUAL behaviour (RegisterProducerClient): every field write mirrors the
-    // form to localStorage[DRAFT_KEY]; showPreflight resets to true on mount.
+    // form to localStorage[DRAFT_KEY]; a fresh mount opens on ACCOUNT and
+    // offers the draft via the banner (MEH-3656: no pre-flight screen).
     await page.reload();
 
-    // The wizard resets to its pre-flight entry (no auto-resume mid-step).
-    await expect(page.getByTestId("register-preflight-start")).toBeVisible();
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await expect(page.getByTestId("register-draft-banner")).toBeVisible();
     // …but the draft survived the reload with the entered email.
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
     expect(draft, "draft must persist across a mid-wizard reload").toBeTruthy();
@@ -363,8 +327,9 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     await page.goBack();
     await page.waitForLoadState("domcontentloaded");
 
-    // Pre-flight entry is shown again (fresh mount) and the draft is still there.
-    await expect(page.getByTestId("register-preflight-start")).toBeVisible();
+    // The wizard entry is shown again (fresh mount) and the draft is still there.
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await expect(page.getByTestId("register-draft-banner")).toBeVisible();
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
     expect(draft as string).toContain(BUSINESS_NAME);
     expect(draft as string, "and it does not carry the person").not.toContain(email);

@@ -17,10 +17,11 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.phone": "התקשרו",
       "producer.detail.contact_card.aria.instagram": "אינסטגרם",
       "producer.detail.contact_card.aria.website": "אתר",
-      "producer.detail.contact_card.aria.email": "אימייל",
+      "producer.detail.contact_card.aria.email": "מייל",
       "producer.detail.contact_card.aria.facebook": "פייסבוק",
       "producer.detail.contact_card.aria.external_order": "טופס הזמנות",
-      "producer.detail.contact_card.aria.whatsapp_group": "עדכונים",
+      "producer.detail.contact_card.aria.whatsapp_channel": "ערוץ וואטסאפ",
+      "producer.detail.contact_card.aria.whatsapp_group_chat": "קבוצת וואטסאפ",
       "whatsapp.question_chips.ask_us": "שאלו אותנו",
       "whatsapp.question_chips.delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       // MEH-1233 B2: ל attaches directly to the city, no maqaf ("לזכרון", not "ל-זכרון").
@@ -56,7 +57,8 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Stub,
     Receipt: Stub,
     WhatsappLogo: Stub,
-    Bell: Stub, // MEH-2626: the «עדכונים» channel icon (module-scope in CHANNELS)
+    Megaphone: Stub, // MEH-3585: the WhatsApp channel / group icons (module-scope in CHANNELS)
+    UsersThree: Stub,
     // MEH-1168 P1 / MEH-1302: stubs from when WhatsAppQuestionChips was a
     // child of the card (it left in MEH-3460); harmless, kept for any reuse.
     ChatCircle: Stub,
@@ -117,7 +119,7 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     expect(screen.getByLabelText("התקשרו")).toBeInTheDocument();
     expect(screen.getByLabelText("אינסטגרם")).toBeInTheDocument();
     expect(screen.getByLabelText("אתר")).toBeInTheDocument();
-    expect(screen.getByLabelText("אימייל")).toBeInTheDocument();
+    expect(screen.getByLabelText("מייל")).toBeInTheDocument();
   });
 
   it("excludes the primary-method channel from the icon row (website primary)", () => {

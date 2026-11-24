@@ -1,12 +1,12 @@
 // @ts-check
 "use client";
 
-import { useState } from "react";
+import { cloneElement, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
-import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
-import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
+import { ownerQuestionLabels } from "@/lib/resolved-questions";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
@@ -110,8 +110,9 @@ const QUESTION_PILL =
   "inline-flex items-center gap-1.5 min-h-touch px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary";
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
-function Disclosure({ question, children }) {
-  const [open, setOpen] = useState(false);
+function Disclosure({ question, children, defaultOpen = false }) {
+  // MEH-3666: the page's only in-page answer starts open (see the caller).
+  const [open, setOpen] = useState(defaultOpen);
   return (
     // MEH-2592 C: an open question takes the whole row so its answer has room.
     <li className={open ? "basis-full" : ""}>
@@ -293,7 +294,7 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
   // the category stock set no longer renders. One derivation, shared with the
-  // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
+  // dashboard preview (lib/resolved-questions.js), so the two cannot drift.
   const waQuestions = ownerQuestionLabels(producer, {
     // An owner's own «[עיר]» placeholder keeps its pre-2602 reading (the
     // business city) unless the visitor has told us hers.
@@ -343,6 +344,15 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   // Nothing to show at all → no block (MEH-3460: no escalation row either).
   if (items.length === 0) return null;
+
+  // MEH-3666 (Sapir 21/11): when the section holds exactly one in-page answer,
+  // it is shown open; a closed pill would hide the page's only answer behind a
+  // tap. WhatsApp questions beside it stay links. Two or more answers stay
+  // closed (MEH-3460). Read once on mount (useState), like any disclosure.
+  const answerAt = items.flatMap((item, i) => (item.type === Disclosure ? [i] : []));
+  if (answerAt.length === 1) {
+    items[answerAt[0]] = cloneElement(items[answerAt[0]], { defaultOpen: true });
+  }
 
   return <QuestionList items={items} t={t} />;
 }

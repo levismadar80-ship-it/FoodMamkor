@@ -14,11 +14,14 @@ import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, ClockCounterClockwise } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import api from "@/lib/api";
-import { highlightMatch } from "@/lib/highlightMatch";
+import { highlightMatch } from "@/lib/highlight-match";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { avatarInitial } from "@/components/ui/Avatar";
 import SearchCorrectionNote from "@/components/SearchCorrectionNote";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
@@ -119,6 +122,7 @@ export default function HeroSearch({
   className = "",
 }) {
   const t = useTranslations("search.hero");
+  const tRoot = useTranslations();
   const router = useRouter();
   // MEH-1078: per-instance ids (useId is SSR-stable) so a transient double-
   // mount of HeroSearch can't collide id="hero-search-input" (duplicate-id-
@@ -306,7 +310,7 @@ export default function HeroSearch({
   const navigate = (row) => {
     setIsOpen(false);
     if (row.kind === "producer") {
-      const path = row.data.slug ? `/${row.data.slug}` : `/producer/${row.data.id}`;
+      const path = producerPath(row.data);
       router.push(path);
     } else if (row.kind === "category") {
       submitRaw(row.data.name);
@@ -506,7 +510,11 @@ export default function HeroSearch({
                     onSelect={() => navigate({ kind: "category", data: c })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    {highlightMatch(c.name, trimmed, { inverted: true })}
+                    {/* MEH-3076: on /en the English name (the match is on the Hebrew
+                        name, so there is nothing to highlight in it). */}
+                    {categoryLabel(tRoot, c) === c.name
+                      ? highlightMatch(c.name, trimmed, { inverted: true })
+                      : categoryLabel(tRoot, c)}
                   </Row>
                 );
               })}

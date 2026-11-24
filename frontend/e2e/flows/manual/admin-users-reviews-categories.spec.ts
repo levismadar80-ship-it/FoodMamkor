@@ -205,8 +205,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
-  // MEH-3525: the account menu asks whether on-site ordering is on.
-  await page.route("**/users/me/product-orders", (r) => json(r, []));
+  // MEH-3698: the account menu asks one read whether «ההזמנות שלי» has anything.
+  await page.route("**/users/me/orders/any", (r) => json(r, { any: false }));
   // Public, and incidental: the admin nav badge counter. Answered so the 404 catch-all stays a clean instrument.
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
@@ -307,7 +307,13 @@ async function settleScroll(page: Page): Promise<void> {
  *  scrolls the row into view AFTER the menu opened. */
 async function openKebab(row: Locator): Promise<Locator> {
   const btn = kebab(row);
-  await btn.scrollIntoViewIfNeeded();
+  // MEH-3827 — centre it, not "if needed". Scrolling UP to a row, "if needed"
+  // parks the ⋮ at the viewport's top edge, under the sticky header + admin
+  // phone strip (44px links since MEH-3827). Playwright's click then finds the
+  // strip at the click point and scrolls again; that scroll lands after the
+  // open and closes the menu (measured on the preview: ⋮ at y=121, scrollY
+  // 701 → 155 after the pointerdown, aria-expanded stays "false").
+  await btn.evaluate((el: HTMLElement) => el.scrollIntoView({ block: "center" }));
   await settleScroll(btn.page());
   await btn.click();
   await expect(btn).toHaveAttribute("aria-expanded", "true");
@@ -408,7 +414,7 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 1 מתוך 3")).toBeVisible();
     await page.getByRole("button", { name: "הבא" }).click();
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
-    await page.getByPlaceholder("חיפוש לפי אימייל או שם…").fill("משתמשת 4");
+    await page.getByPlaceholder("חיפוש לפי מייל או שם…").fill("משתמשת 4");
     await page.keyboard.press("Enter");
     await expect.poll(() => listCalls.at(-1)?.search).toBe("משתמשת 4");
     await expect(page.getByText("עמוד 1 מתוך 1")).toBeVisible();

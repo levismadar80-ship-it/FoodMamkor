@@ -45,7 +45,7 @@ import { useTranslations } from "next-intl";
 import { Eye, EyeSlash, Check, Circle } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
-import { failureMessage } from "@/lib/passwordMessages";
+import { failureMessage } from "@/lib/password-messages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import ButtonSpinner from "@/components/ButtonSpinner";
 

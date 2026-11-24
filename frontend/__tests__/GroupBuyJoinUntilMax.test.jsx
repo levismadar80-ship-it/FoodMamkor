@@ -15,7 +15,7 @@ vi.mock("next-intl", () => ({ useLocale: () => "he", useTranslations: () => (key
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 
 const FUTURE = "2099-01-01T00:00:00";
 const PAST = "2000-01-01T00:00:00";
@@ -78,9 +78,12 @@ describe("the count past the minimum (MEH-3289)", () => {
     expect(screen.queryByText("progress_label")).toBeNull();
   });
 
-  it("at the minimum it still reads N of min", async () => {
+  // MEH-3588 (Sapir 21/11): «2 מתוך 2» read as «full» — at the minimum the
+  // count stands alone too, with «the group reached its goal» above it.
+  it("at the minimum it reads the count alone, not N of min", async () => {
     await show({ status: "funded", commits_count: 2 });
-    expect(screen.queryByText("progress_joined")).toBeNull();
+    expect(screen.getAllByText("progress_joined").length).toBeGreaterThan(0);
+    expect(screen.queryByText("progress_label")).toBeNull();
   });
 });
 

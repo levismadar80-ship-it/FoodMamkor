@@ -1,6 +1,6 @@
 # k6 load testing — pre-launch baseline (MEH-559)
 
-> One-time pre-launch baseline for the **Railway staging backend** at `https://foodmamkor-staging.up.railway.app` (NOT the Vercel frontend `staging.mehamakor.online` — that resolves to Next.js page handlers, not the FastAPI API; see Methodology). Script: `scripts/load-test.js`. Runbook + results below. NOT in CI (Linear MEH-559). Companion to MEH-557 verdict ("k6 SHIP — minimal").
+> One-time pre-launch baseline for the **Railway staging backend** at `https://foodmamkor-staging.up.railway.app` (NOT the Vercel frontend `staging.mehamakor.online` — that resolves to Next.js page handlers, not the FastAPI API; see Methodology). Script: `scripts/load-test.js`. Runbook + results below. Not a CI gate (Linear MEH-559); since MEH-3564 it runs on demand from Actions → «Load test (manual)». Companion to MEH-557 verdict ("k6 SHIP — minimal").
 
 ## TL;DR
 
@@ -22,7 +22,7 @@
 
 **Run shape:** 35,515 iterations over 8m30s, 94 interrupted iterations, 69.6 req/s sustained throughput, 200 max VUs at peak (k6's `preAllocatedVUs` total across the 5 scenarios), 11 MB data received total.
 
-SLA targets: **p95 < 2000ms** per endpoint. **Error-rate gates RELAXED to < 95%** on `/producers/*` because slowapi rate-limits dominate the steady-state response shape — see Methodology § "Rate-limit-aware measurement strategy". `/chat` and `favorites_unauth` have no error-rate gate (intended 429 / 401 respectively).
+SLA targets: **p95 < 2000ms** and **real errors < 1%** per endpoint. _(Until 21/11 the error gates were relaxed to < 95% and `/chat` / `favorites_unauth` had none; the May table above was measured under that script. Since MEH-3564 a 429 or favorites' 401 is an expected status, so every endpoint has the < 1% gate — see Methodology § "Thresholds".)_
 
 **Critical signal:** the **First-3s p95** column. That is the unrate-limited latency baseline — what real users see in normal traffic. The overall p95 includes the rate-limited tail and is not a fair launch-night proxy.
 
@@ -41,11 +41,11 @@ SLA targets: **p95 < 2000ms** per endpoint. **Error-rate gates RELAXED to < 95%*
 
 ## Methodology
 
-**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 5 minutes, ramp down to 0 over 1 minute (~8 minutes per scenario, in parallel). The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
+**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 2 minutes, ramp down to 0 over 1 minute (5 minutes per scenario). Since 21/11 (MEH-3564) the four run one after another, not in parallel: Grafana Cloud k6's free tier allows 100 VUs per test and the parallel profile planned 200. The 5-minute hold became 2 minutes so the sequence fits the workflow's 30-minute timeout. The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
 
 **Why constant-rate for `/chat`.** Every `/chat` call hits Anthropic Haiku and costs real money (~$0.001 per call). A 1->50 VU ramp would spray ~thousands of calls and blow the Anthropic budget guard. Constant 10 RPS for 60s caps the spend at <$1 and exercises the rate-limiter (`@limiter.limit("10/minute")` in `backend/app/routers/chat.py:189`) without runaway. Most attempts beyond the first ~10/minute will return HTTP 429 by design — that is the expected observation.
 
-**Thresholds.** Per-endpoint p95 latency gate at 2000ms. Per-endpoint failure-rate gate **relaxed to < 95%** on the three `/producers/*` endpoints (see "Rate-limit-aware measurement strategy" below). `/chat` skips the failure-rate gate because 429 is the intended shape; `favorites_unauth` skips it because every request is expected to return 401 (k6 classifies that as "failed"). All endpoints keep the p95 latency gate — rate-limit rejection, auth rejection, and successful response should all be fast.
+**Thresholds (MEH-3564, 21/11).** Per endpoint: p95 latency < 2000ms and `http_req_failed` < 1%. Each request names its expected statuses with `http.expectedStatuses` (k6's documented way): 200 and 429 everywhere, 401 for favorites, 404 on the business pages only when no real producer is passed. Anything else — a 5xx, a timeout, a 422 — is a failure. Expected is not invisible: the `rate_limited` counter must be > 0 on the four rate-limited endpoints (the limiter fired) and the `served` counter (200s) must be > 0 on the same four (the server still answered). This is the pattern Grafana's threshold docs and Zuplo's k6 rate-limit example use. Before 21/11 the gates were `< 95%` on `/producers/*` and absent on `/chat` and favorites, which read the limiter's 429s as errors (98% "failed" on run 44909071841 with every check green). The same run showed `/chat` answering 422 to every call: the body was `{message, history}`, the schema wants `messages: [{role, content}]` (`backend/app/schemas/site.py`). So `/chat` was never measured before 21/11.
 
 **Rate-limit-aware measurement strategy.** The Railway backend enforces slowapi rate limits per IP — `GET /producers` is capped at 120/min (see `backend/app/routers/producers.py` rate_limit decorators). A 50-VU k6 ramp from a single laptop IP generates ~3000 req/min on each producer endpoint, so after the first ~3 seconds of the ramp ~95% of responses become HTTP 429. This is the same per-IP limit a normal user hits, just from a single client.
 
@@ -107,7 +107,7 @@ If your response shape is a bare array instead of `{producers: [...]}`, use `jq 
 k6 run scripts/load-test.js
 ```
 
-Expected wall-clock runtime: ~8 minutes (4 ramp scenarios in parallel + the 60-second `/chat` scenario nested inside them). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
+Expected wall-clock runtime: ~22 minutes (4 ramp scenarios in sequence, the 60-second `/chat` scenario alongside the first; peak 87 VUs by `k6 inspect --execution-requirements`). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
 
 **Optional: stream JSON for richer analysis.**
 
@@ -135,6 +135,22 @@ Then `jq` or import into Grafana Cloud k6 (free tier) for percentile charts.
 - `frontend/playwright.config.ts:38` — canonical pattern for the Vercel Deployment Protection bypass header (harmlessly preserved in the k6 script for the unlikely case someone re-points BASE_URL at the Vercel frontend).
 - `docs/DEPLOYMENT.md:176` — canonical per-environment Railway backend URLs (the source of truth for the BASE_URL default in this script).
 - `frontend/next.config.js:130-134` — Next.js only proxies `/api/:path*` to the backend; `/producers/*` is a Next.js page route, NOT a backend proxy. This is why `BASE_URL=https://staging.mehamakor.online` failed the first run.
+
+## Re-run 2026-11-21 (MEH-3564)
+
+**Setup.** The script is `scripts/load-test.js` at `c54ed22`, run against the staging backend from `.github/workflows/load-test.yml` (`workflow_dispatch`). Each ramp runs on its own, one after another: 1→50 VUs for each endpoint, with `/chat` at 10/s. Peak is 87 VUs, which fits the Grafana Cloud free tier's 100-VU limit. A 429 counts as expected and is tallied separately (`rate_limited`). A real error means any status outside the expected set. Gates per endpoint: p95 < 2000ms and real errors < 1%.
+
+| Endpoint | p95, GitHub runner (run 44917050198) | p95, Grafana Cloud, Columbus (run 9063351) | Real errors |
+|---|---|---|---|
+| `GET /producers` | 745ms | 644ms (worst minute 778ms) | 0% |
+| `GET /producers/by-slug/{slug}` | 670ms | 461ms | 0% |
+| `GET /producers/{producer_id}` | 696ms | 578ms | 0% |
+| `POST /users/me/favorites/{producer_id}` (unauth, 401) | 602ms | 628ms | 0% |
+| `POST /chat` | 1.59s | 459ms | 0% |
+
+All thresholds passed in both runs (18/18 on the runner).
+
+**List tail at peak.** An earlier cloud run, 9063095 on `bddf0b4`, failed one threshold: `http_req_duration{endpoint:producers_list}`. Grafana Cloud evaluates thresholds during the run, and the short-window p95 crossed 2s twice at peak (about 71 requests over 2s), while the whole-run p95 was 1.06s. Run 9063351 passed, yet about 263 of 35.8k list requests (0.7%) still went over 2s. The counts come from histogram buckets, so they are estimates. The cause is unverified (DB pool wait at burst is the likely candidate). The test hits Railway directly, bypassing the 30s edge cache that the site uses. Follow-up: MEH-3625.
 
 ## Out of scope
 

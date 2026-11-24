@@ -1,12 +1,14 @@
 // @ts-check
-import { notFound } from "next/navigation";
-import * as Sentry from "@sentry/nextjs";
+import { notFound, permanentRedirect } from "next/navigation";
+import { routing } from "@/i18n/routing";
+import { isSlugShaped } from "@/lib/slug";
+import { isOwnerPreview } from "@/lib/owner-preview";
+import staticRoutes from "@/lib/static-routes.json";
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
-import { API_URL } from "@/lib/env";
-import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { ProducerDetailSchema } from "@/lib/schemas"; // MEH-1752: the detail contract
+import { fetchSsrEntity } from "@/lib/ssr-entity-fetch";
 
 const ROUTE = "/[locale]/producer/[id]";
 
@@ -16,70 +18,16 @@ const ROUTE = "/[locale]/producer/[id]";
 // `notFound()` is forbidden here (the MEH-1754 indexing-risk class). Neither is
 // re-litigated; this is the third row of that table.
 //
-// Reporting is inline at all four SSR sites rather than behind a shared
-// helper, per the ticket's over-engineering guard: "four call sites, one
-// pattern, inline". Call shape copied from lib/api.js:141.
-// A non-ok response only reports at >= 500: a 404 here is an ordinary
-// outcome (deleted producer, crawler on a stale URL) and paging the operator
-// on it would bury the signal this ticket exists to create. Same threshold as
-// lib/api.js:140.
-async function getProducer(id) {
-  // MEH-2101: `null` means ONE thing — this producer does not exist, and only a
-  // 404 may become notFound(). Every other failure THROWS, so it reaches
-  // app/[locale]/error.js and the response carries a 5xx.
-  //
-  // The old shape returned `null` for every `!res.ok` and swallowed the catch,
-  // so a 404, a 500, a 429 and a timeout were indistinguishable — all four
-  // rendered a soft 404 with no error status. That is not only a debugging
-  // problem: a 404 tells Google the page is GONE and de-indexing starts, while
-  // a 5xx says "try later". §6 of
-  // docs/audits/producer-detail-page-validation.md used to forbid throwing
-  // here; this ticket replaced that ruling with the three-way table.
-  let res;
-  try {
-    res = await serverFetch(`${API_URL}/producers/${id}`, {
-      next: { revalidate: 60 },
-    });
-  } catch (err) {
-    // Network failure or timeout — not a missing producer. Report, then rethrow.
-    Sentry.captureException(err, { extra: { route: ROUTE, id } });
-    throw err;
-  }
-
-  // MEH-2552: 422 = the backend rejected the id itself (the param is a UUID,
-  // so /producer/1 can never exist) — a missing entity, not an outage.
-  if (res.status === 404 || res.status === 422) return null;
-
-  if (!res.ok) {
-    Sentry.captureMessage("SSR fetch failed", {
-      level: "error",
-      extra: { route: ROUTE, id, status: res.status },
-    });
-    /** @type {Error & { status?: number, entityId?: string }} */
-    const err = new Error(
-      `producer lookup failed: ${res.status} ${res.statusText} (id=${id})`
-    );
-    // Read by Sentry in app/[locale]/error.js; keeps id+status on the event.
-    err.status = res.status;
-    err.entityId = id;
-    throw err;
-  }
-
-  const data = await res.json();
-  const parsed = ProducerDetailSchema.safeParse(data);
-  if (!parsed.success) {
-    Sentry.captureMessage("SSR payload failed schema validation", {
-      level: "warning",
-      extra: { route: ROUTE, id, issues: parsed.error.issues },
-    });
-  }
-  // Return `data`, NEVER `parsed.data`: z.object strips undeclared keys, and
-  // ProducerDetailSchema declares 51 of ProducerDetailOut's 81 fields — so
-  // returning the parsed object would delete 30 fields from the JSON-LD
-  // input. That is the MEH-901 stripping class, which this ticket must not
-  // introduce while trying to observe it. safeParse here is a probe, not a
-  // transform.
-  return data;
+// Reporting was inline at all four SSR sites (MEH-1885's "four call sites,
+// one pattern, inline"); the four identical copies became
+// lib/ssr-entity-fetch.js in MEH-3465. Call shape from lib/api.js:141.
+// 404 / 422 are ordinary outcomes (deleted producer, crawler on a stale URL)
+// and return null without a report; every other non-ok reports and throws
+// (MEH-2101's three-way table, which replaced §6's "never throw").
+function getProducer(id) {
+  // MEH-3465: the three-way fetch (null = missing, throw = unavailable) and
+  // its reporting live in lib/ssr-entity-fetch.js, shared by four pages.
+  return fetchSsrEntity({ path: "/producers", id, route: ROUTE, noun: "producer", schema: ProducerDetailSchema });
 }
 
 // MEH-476 PR 3b2: per-page hreflang for producer-by-id route. D1 title
@@ -101,7 +49,8 @@ export async function generateMetadata(props) {
   if (!producer) notFound();
 
   const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
-  const alternates = buildAlternates(path, locale);
+  // MEH-3638: Hebrew-only main content — no hreflang pair, /en is noindex.
+  const { alternates, robots: untranslatedRobots } = buildUntranslatedEntityMeta(path, locale);
 
   if (!producer) {
     return {
@@ -124,6 +73,7 @@ export async function generateMetadata(props) {
       locale: OG_LOCALE[locale],
     },
     alternates,
+    ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),
   };
 }
 
@@ -138,11 +88,32 @@ function ProducerJsonLd({ producer, locale }) {
   );
 }
 
+// MEH-3708: where a business with a slug lives — /{slug} (he) or
+// /{locale}/{slug}, with the request's query kept (?product=, ?from=, ?rt=).
+function slugTarget(slug, locale, searchParams) {
+  const prefix = locale === routing.defaultLocale ? "" : `/${locale}`;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams || {})) {
+    for (const v of [].concat(value)) query.append(key, v);
+  }
+  const qs = query.toString();
+  return `${prefix}/${encodeURIComponent(slug)}${qs ? `?${qs}` : ""}`;
+}
+
 export default async function ProducerPage(props) {
   const params = await props.params;
   const producer = await getProducer(params.id);
   // generateMetadata already 404s this case; belt-and-braces for the body.
   if (!producer) notFound();
+  // MEH-3708: the real 308 is minted by middleware.js; this covers the
+  // requests it skips (a router prefetch, a fail-open lookup). ?preview=1
+  // stays here, as in the middleware.
+  const searchParams = (await props.searchParams) || {};
+  const servable = producer.slug && isSlugShaped(producer.slug) &&
+    !staticRoutes.routes.includes(producer.slug.toLowerCase());
+  if (servable && !isOwnerPreview(searchParams)) {
+    permanentRedirect(slugTarget(producer.slug, params.locale, searchParams));
+  }
 
   return (
     <>

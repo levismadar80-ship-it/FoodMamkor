@@ -115,7 +115,7 @@ def test_the_keys_are_the_whitelist(db):
     # A new key must be added here on purpose: this is the privacy review.
     assert set(ctx.facts(_business(db), "משלוח לחיפה?")) == {
         "business",
-        "page",
+        "on_its_page",  # MEH-3584: replaced the raw page path
         "city",
         "categories",
         "about",

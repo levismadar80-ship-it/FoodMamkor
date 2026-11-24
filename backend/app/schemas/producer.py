@@ -411,6 +411,9 @@ class ProducerUpdate(BaseModel):
     # on the public producer page, same surface class as images[].
     owner_bio: str | None = None
     owner_photo_url: str | None = Field(default=None, max_length=500)
+    # MEH-3611: the logo. Same image-URL guard as owner_photo_url; ownership
+    # (MEH-3247) is checked in PUT /producers/me.
+    logo_url: str | None = Field(default=None, max_length=500)
     # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
     # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
     # same schema) silently dropped it. Present on ProducerOwnerOut already.
@@ -616,7 +619,7 @@ class ProducerUpdate(BaseModel):
         return sanitize_text(v, max_length=300)
 
     # MEH-1335: owner photo — image-URL guard, not just scheme (MEH-1222 class).
-    @field_validator("owner_photo_url")
+    @field_validator("owner_photo_url", "logo_url")
     @classmethod
     def _validate_owner_photo_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
@@ -714,7 +717,7 @@ class ProducerUpdate(BaseModel):
         return sanitize_text(v, max_length=30) or None
 
     # MEH-3339: the number/label pair is judged on the MERGED state in the
-    # PUT handlers (routers/producer_me.py:reconcile_secondary_phone), not here.
+    # PUT handlers (services/producer_me_writes.py:reconcile_secondary_phone), not here.
 
     @field_validator("whatsapp_group")
     @classmethod

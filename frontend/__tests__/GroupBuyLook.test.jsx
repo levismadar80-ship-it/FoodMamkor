@@ -37,7 +37,7 @@ vi.mock("next/image", () => ({
   default: ({ src, alt, onError }) => <img src={src} alt={alt} data-testid="gb-img" onError={onError} />,
 }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 // MEH-2859: /group-buys now renders the shared hub tab row. It is not this
 // file's subject (and it owns a router + its own supply gates), so it is
@@ -110,7 +110,7 @@ describe("group-buy card", () => {
     ]);
     const lines = screen.getAllByTestId("group-buy-progress-line").map((n) => n.textContent);
     expect(lines[0]).toBe("group_buys.detail.remaining_to_open 3");
-    expect(lines[1]).toBe("group_buys.card.progress_label 5 5");
+    expect(lines[1]).toBe("group_buys.card.progress_joined 5"); // MEH-3588: at the minimum too
     // MEH-3289: past the minimum the group keeps filling — the count alone.
     expect(lines[2]).toBe("group_buys.card.progress_joined 6");
   });
@@ -129,18 +129,22 @@ describe("group-buy page", () => {
     expect(screen.queryByTestId("group-buy-discount")).toBeNull();
   });
 
-  it("open → «איך זה עובד» with the group's minimum; funded → no box", async () => {
+  // MEH-3588: the box stays while the group can be joined (funded too), and
+  // gained a «keeps filling past the goal» line.
+  it("open → «איך זה עובד» with the group's minimum; funded → the box stays, without the unlock line", async () => {
     api.get.mockResolvedValue({ data: GB });
     const { unmount } = render(<GroupBuyDetailClient id="gb-1" />);
     await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
     const how = screen.getByTestId("group-buy-how");
-    expect(how.querySelectorAll("li")).toHaveLength(3);
+    expect(how.querySelectorAll("li")).toHaveLength(4);
     expect(how.textContent).toContain(`group_buys.detail.how_unlock ${GB.min_participants}`);
     unmount();
     api.get.mockResolvedValue({ data: { ...GB, status: "funded" } });
     render(<GroupBuyDetailClient id="gb-1" />);
     await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
-    expect(screen.queryByTestId("group-buy-how")).toBeNull();
+    const funded = screen.getByTestId("group-buy-how");
+    expect(funded.textContent).toContain("group_buys.detail.how_funded_price");
+    expect(funded.textContent).not.toContain("group_buys.detail.how_unlock");
   });
 
   it("funded → the on-dark seed burst opens inside the funded banner (MEH-2833); no canvas", async () => {

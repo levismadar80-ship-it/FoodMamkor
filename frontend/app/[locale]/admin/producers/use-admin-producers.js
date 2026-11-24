@@ -121,22 +121,13 @@ function useProducerActions(loadAllProducers, deps) {
   // needs its `openDecision`, and a hook cannot use a value defined after it.
   const { run, openDecision } = deps;
 
-  // MEH-2299: `opts.withoutLicense` sends the MEH-971 override the backend has
-  // always accepted (admin.py `allow_without_license`, logged there) but no
-  // screen ever exposed. Sapir's ruling 22/10: a business with no license
-  // number may be approved case by case; it simply gets no badge. The plain
-  // approve call is left byte-identical — no params, one argument.
-  const quickApprove = (producer, opts = {}) =>
+  // MEH-3026: a missing licence number no longer blocks approve, so the
+  // MEH-2299 `allow_without_license` override (and its opts) is gone.
+  const quickApprove = (producer) =>
     run(
       `approve:${producer.id}`,
       async () => {
-        if (opts.withoutLicense) {
-          await api.post(`/admin/producers/${producer.id}/approve`, undefined, {
-            params: { allow_without_license: true },
-          });
-        } else {
-          await api.post(`/admin/producers/${producer.id}/approve`);
-        }
+        await api.post(`/admin/producers/${producer.id}/approve`);
         loadAllProducers();
         showToast.success(t("producers.toast_approved")); // MEH-1446
       },

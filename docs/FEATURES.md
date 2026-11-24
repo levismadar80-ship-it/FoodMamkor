@@ -40,7 +40,7 @@ left in v1" vs "what's planned for v2".
 | `/producers/diet/[dietSlug]` | SEO landing page: businesses by diet (vegan, gluten-free …) |
 | `/[slug]` | Business page (canonical vanity URL): about, products, order/contact, delivery checker, reviews, events, recipes, mini-map |
 | `/[slug]/recipes/[recipe_id]` | A business's recipe, with servings scaler and ingredient checklist |
-| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`) |
+| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`). A business with a slug answers a 308 to `/{slug}` (MEH-3708); `?preview=1` keeps the id page |
 | `/p/[slug]` | Redirect stub to `/[slug]`, noindex |
 | `/business-gone` | Shown (via middleware rewrite) for a deleted business URL |
 | `/events` | Events hub tab: markets, farm days, workshops; date chips |
@@ -48,6 +48,7 @@ left in v1" vs "what's planned for v2".
 | `/experiences` | Community experiences / workshops hub tab |
 | `/experiences/[id]` | Experience page |
 | `/rescue` | Surprise bags (food rescue) hub tab: reserve a bag, pickup window |
+| `/rescue/[offerId]` | One surprise bag: price vs worth, pickup window, map, what is usually inside, allergens, how pickup works, cancellation, reserve (MEH-3586) |
 | `/group-buys` | Group buys hub tab: join a group, progress to target |
 | `/group-buys/[id]` | Group buy page |
 | `/organizers/[slug]` | Public page of a markets / events organizer and their events |
@@ -64,7 +65,8 @@ left in v1" vs "what's planned for v2".
 | `/verify-email` | Email verification landing |
 | `/account-deleted` | Landing after an account is deleted (MEH-3248) |
 | `/favorites` | Saved businesses and items, with alert preferences (new events, group buys, rescue bags) |
-| `/my-orders` | MEH-3525: the signed-in buyer's on-site orders, newest first; each row opens `/order/[id]`. Linked from the account menus while ordering is on |
+| `/my-group-buys` | MEH-3609 page; since MEH-3698 a redirect to `/my-orders`, where group buys are listed. Not in the menus |
+| `/my-orders` | MEH-3525 · MEH-3698: one list of the signed-in buyer's product orders, group buys and surprise bags, «פעילות» then «קודמות», a tag per row; each row opens that item's page. In the account menus only for someone with at least one |
 | `/messages` | Messages between visitors and businesses |
 | `/settings` | Profile, security, notifications, delete account |
 | `/registration/[token]` | Cancel an event registration from the confirmation email (noindex) |
@@ -86,19 +88,23 @@ left in v1" vs "what's planned for v2".
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
 | `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
-| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change. The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
+| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The business name links to its page, with its contact button, and a confirmed pickup gets Waze / Google Maps to the address (MEH-3755). «להזמין שוב» once finished (MEH-3764: the items still on the menu go back in the cart on the business page, the rest are named). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
+| `/producer/dashboard/orders/preview` | «איך זה נראה ללקוחות»: her business page in preview mode with her own order menu, so she sees the order form a buyer gets (slots, cancel line, minimum) even before ordering is on; sending and the WhatsApp code are off (MEH-3746) |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
 | `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches, «מה להכין» on the today list, «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
-| `/producer/dashboard/tools` | «כלים» tab: launcher for creation tools |
-| `/producer/dashboard/qr-card` | Printable QR card for the counter |
+| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, bring in customers, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749), in its own group «להביא לקוחות» (MEH-3787) |
+| `/producer/dashboard/share` | «שיתוף»: the QR card and «ערכת שיתוף», approved business only, opened from «כלים» (MEH-3749) |
+| `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
+| `/producer/dashboard/offer` | «הטבה»: the business's one offer to customers, from «כלים» › «להציע ללקוחות» (MEH-3785; was a card in the edit tab) |
+| `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
 | `/producer/dashboard/events` | Manage events |
 | `/producer/dashboard/events/new` | Create an event |
 | `/producer/dashboard/events/[id]/edit` | Edit an event |
@@ -136,6 +142,7 @@ left in v1" vs "what's planned for v2".
 | `/admin` | Admin dashboard: pending queue counts, stats, health |
 | `/admin/billing` | Billing: per-business results against the ADR-042 threshold (MEH-3180) |
 | `/admin/audit-log` | Admin audit log: who changed what in the admin area (MEH-3306, #4771) |
+| `/admin/copy` | Site copy: every string in `he.json` by group, with the screens that read it, search and a screen filter; read only (MEH-3672) |
 | `/admin/producers` | Businesses: search, approve, request changes, edit |
 | `/admin/producers/new` | Add a business by hand |
 | `/admin/producers/[id]/edit` | Edit a business |
@@ -178,7 +185,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | "קרוב אלי" (geolocation) — single re-used marker, no leak | `MapComponent.jsx` |
 | ✅ | v1 | Map ↔ list hover sync (bidirectional) | `MapClient.jsx` |
 | ✅ | v1 | Mobile bottom-sheet for selected producer | `MapClient.jsx` |
-| ✅ | v1 | Category legend = filter (toggleable) | `MapClient.jsx` |
+| ✅ | v1 | Category legend = filter (toggleable), one row per group since MEH-3076 | `map/components/MapPane.jsx` |
 | ✅ | v1 | Producer detail page with sticky contact sidebar | `frontend/app/[slug]/page.js`, `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — mobile column order fixed (name above fold), inline mobile CTA, IO StickyContactBar | `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | Producer detail — short_description subtitle + contact_name micro-line | `producer/[id]/ProducerDetail.jsx` |
@@ -189,7 +196,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1.5.1 | Report a review — ⋮ on each review card (public page + owner dashboard), reason list, email to admin, no automatic action (MEH-3260) | `frontend/components/ReviewReportMenu.jsx` |
 | ✅ | v1 | Image gallery with keyboard nav + 44px touch targets | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Slug-based producer URLs (`/cow-farm-name`) | `frontend/app/[slug]/page.js` |
-| ✅ | v1 | "מהמטבח של השכן" — dedicated `/neighbor` page | `frontend/app/neighbor/NeighborClient.jsx` |
+| ❌ | v1 | "מהמטבח של השכן" — `/neighbor` page, removed (MEH-793; backend MEH-796) | — |
 | ✅ | v1 | Events: list, filter, detail (`/events`, `/events/:id`) | `frontend/app/events/` |
 | ✅ | v1 | Upcoming events preview on homepage (3 cards) | `frontend/app/page.js` |
 | ✅ | v1 | Community experiences: list, submit, detail (`/experiences`, `/experiences/new`, `/experiences/:id`) | `frontend/app/experiences/` |
@@ -215,30 +222,27 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
-| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old. Part 2: a «חדש» pill on a new «כלים» tile + a dot on the tab for 14 days, and once-only first-moment cards (first review / WhatsApp click / 100 views / first follower). Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
+| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old (its «שאלה?» line opens the shared support sheet — WhatsApp · email · form, `frontend/components/SupportContactSheet.jsx`, MEH-3720). Part 2: a «חדש» pill on a new «כלים» tile + a dot on the tab for 14 days, and once-only first-moment cards (first review / WhatsApp click / 100 views / first follower). Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
 | ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)
 
+❌ Removed. The page went in MEH-793; the API was unmounted in MEH-1406; the rows, the code and the tables are being removed by MEH-796 (MEH-3645 rows, MEH-3646 code, then a table drop). Brand LOCK: licensed businesses only.
+
+### Moderation and forms
+
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | Free posting (no producer approval required) | `backend/app/routers/home_products.py` |
-| ✅ | v1 | Hybrid AI moderation: APPROVED / FLAGGED / REJECTED | `backend/app/services/home_product_moderation.py` |
-| ✅ | v1 | Real-time validation while typing (debounced 1.5s) | `frontend/components/HomeProductForm.jsx` |
 | ✅ | v1 | Experiences moderation: Claude Haiku pre-check + admin approval gate | `backend/app/services/experience_moderation.py`, `backend/app/routers/admin_experiences.py` |
 | ✅ | v1 | Approved-business edit check (MEH-3261): changed description / tagline / owner story and product name / description / ingredients / storage («אחסון ותוקף», MEH-3444) / cereal and nut detail (MEH-3442) go through the AI check (REJECTED → 422, nothing saved; fail-open saves); one admin ping per content save, marked when FLAGGED | `backend/app/services/approved_edit_moderation.py`, `backend/app/routers/producer_me.py` |
 | ✅ | v1 | `/admin/experiences` queue with tabs, approve / request-changes / reject + feedback modal | `frontend/app/admin/experiences/page.js` |
 | ✅ | v1 | Address autocomplete via Nominatim (street + house number) | `frontend/components/AddressSearch.jsx` |
-| ✅ | v1 | Trust badges (organic, kosher, storage, category) | `frontend/components/HomeProductCard.jsx` |
-| ✅ | v1 | Private street/zip stored server-side, only city/neighborhood shown publicly | `backend/app/models/models.py` |
-| ✅ | v1 | "🔍 בבדיקה" badge for FLAGGED listings | `HomeProductCard.jsx` |
 
 ### AI features
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
 | ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only and always shown above the BottomNav (hid on scroll-down under MEH-2499 until 4/11/2026, MEH-2664)) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
-| ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
 | ✅ | v1 | Upload a menu → product rows (MEH-3430): the owner photographs her menu or uploads a PDF on the products card, Opus 5.5 reads it (`AI_MENU_MODEL`), she checks and publishes. No key → 503 and she adds by hand | `backend/app/routers/menu_import.py`, `frontend/components/MenuImport.jsx` |
 | ✅ | v1 | Fill the page from free text (MEH-3483): «ספרו לנו על העסק» at the top of the edit hub (and the admin edit page). The owner writes about her business; Claude drafts description, categories, delivery cities, hours and contact details from the text only; she ticks what to keep and it saves through the normal edit routes. No key → 503 and she fills by hand | `backend/app/routers/page_fill.py`, `frontend/components/PageFillPanel.jsx` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
@@ -256,7 +260,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Content / static pages | `frontend/app/admin/content/` |
 | ✅ | v1 | Analytics | `frontend/app/admin/analytics/` |
 | ✅ | v1 | Settings | `frontend/app/admin/settings/` |
-| ✅ | v1.5 | MEH-3182: Billing, read-only (`/admin/billing`): businesses over the results threshold, what each would pay, billing off in launch | `frontend/app/[locale]/admin/billing/page.js`, `backend/app/services/billing_summary.py` |
+| ✅ | v1.5 | MEH-3182: Billing, read-only (`/admin/billing`): businesses over the results threshold, what each would pay, billing off in launch; MEH-3189: income this year against the exempt-dealer ceiling, warning at 70% and 90%; monthly CSV export (`frontend/lib/admin-billing-export.js`, `frontend/components/admin/BillingCsvButton.jsx`) | `frontend/app/[locale]/admin/billing/page.js`, `backend/app/services/billing_summary.py` |
 | ✅ | v1 | Admin seed via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars | `backend/seed_data.py` |
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |
@@ -314,7 +318,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 |---|---|---|---|
 | ✅ | v1 | `/privacy` — Privacy Policy aligned with חוק הגנת הפרטיות amendment 13 (2025); data categories, third parties (Cloudinary/Google/Anthropic/Twilio/Vercel/Railway), user rights, cookies, 18+, contact | `frontend/app/privacy/page.js` |
 | ✅ | v1 | `/terms` — Terms of Service: directory-only platform; seller licensing responsibility under חוק רישוי עסקים התשכ״ח–1968; 18+ requirement; violation reporting; Israeli governing law + Tel Aviv jurisdiction | `frontend/app/terms/page.js` |
-| ✅ | v1 | `/contact` — public contact form with SMTP delivery to `CONTACT_EMAIL` (falls back to `ADMIN_EMAIL`), fail-open to `contact_messages` DB row, 3-business-day SLA copy | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact` |
+| ✅ | v1 | `/contact` — WhatsApp row above the email row, same copy as the dashboard support sheet (MEH-3720); public contact form with SMTP delivery to `CONTACT_EMAIL` (falls back to `ADMIN_EMAIL`), fail-open to `contact_messages` DB row, 3-business-day SLA copy | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact` |
 | ✅ | v1 | `/accessibility` — Israeli Standard ת״י 5568 AA / WCAG 2.1 AA statement with an accessibility coordinator email | `frontend/app/accessibility/page.js` |
 | ✅ | v1 | `DirectoryDisclaimer` — shared "פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד." note, rendered on every producer detail page and inline on every `HomeProductCard` | `frontend/components/DirectoryDisclaimer.jsx` |
 | ✅ | v1 | Cookie banner — two-button ("אני מסכימה" / "רק הכרחיים") consent dialog, persists to `localStorage.cookies_accepted`, SSR-safe (no flash for returning users) | `frontend/components/CookieBanner.jsx` |
@@ -328,7 +332,6 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 | ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP + 3/hour per email; double opt-in via POST /newsletter/confirm from /newsletter/confirm (MEH-3300) | `backend/app/routers/marketing.py` |
 | ✅ | v1 | Contact form — standalone `/contact` page (migrated out of `/about`), POST /contact persists to `contact_messages` + sends SMTP email to CONTACT_EMAIL, fail-open if SMTP unconfigured, rate-limited 5/hour per IP, 12 pytest cases | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact`, `tests/test_api.py::TestContact` |
 | ✅ | v1 | WhatsApp share button on every producer page (viral loop) | `frontend/components/WhatsAppShareButton.jsx` |
-| ✅ | v1 | WhatsApp click tracking on home products | `home_products.py` |
 | ✅ | v1 | Social proof bar with `AnimatedCounter` | `frontend/components/AnimatedCounter.jsx` |
 | ✅ | v1 | Sitemap.xml (auto-generated, includes producer slugs) | `frontend/app/sitemap.js` |
 | ✅ | v1 | robots.txt | `frontend/public/robots.txt` |

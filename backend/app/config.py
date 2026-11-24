@@ -49,6 +49,10 @@ class Settings(BaseSettings):
 
     # Google OAuth
     google_client_id: str = ""
+    # MEH-3690: our own Google button sends an authorization code; the server
+    # swaps it at Google's token endpoint, which needs the client secret.
+    # Unset → POST /auth/google/code answers 503 and signs nobody in.
+    google_client_secret: str = ""
 
     # Apple Sign In
     apple_client_id: str = ""
@@ -172,6 +176,14 @@ class Settings(BaseSettings):
     # tests, which exercise run_watchdog() directly via the public API.
     watchdog_enabled: bool = False
 
+    # MEH-3535: who runs the outbox dispatchers (the email queue and the
+    # on-site order tick). False = the web process's scheduler, as before.
+    # True = the separate Railway worker service (python -m app.worker) owns
+    # them and the web process skips both. Set it in the WEB service only
+    # after the worker service is deployed and logging its ticks; two
+    # dispatchers at once are safe (SKIP LOCKED) but none at all is not.
+    outbox_external_worker: bool = False
+
     # MEH-2644: rescue-bags pilot. Both default off/empty, so every /rescue
     # route answers 404 until RESCUE_BAGS_ENABLED=true is set in Railway, and
     # an enabled pilot opens in no town until RESCUE_BAGS_CITIES names one
@@ -179,6 +191,9 @@ class Settings(BaseSettings):
     # in Vercel, set together with this one (it is inlined at build time).
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
+    # MEH-3605: the rescue pickup-code WhatsApp digest (MEH-2756). Off until
+    # Meta approves rescue_codes_digest_v1; read by services/rescue_digest.py.
+    rescue_digest_enabled: bool = False
 
     # MEH-3393: monthly page-freshness email to owners + the Sunday admin
     # digest of pages unconfirmed for 60 days. Off until

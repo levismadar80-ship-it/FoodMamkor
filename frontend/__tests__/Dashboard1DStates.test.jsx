@@ -9,8 +9,7 @@
  *   - analyticsRef.current→ hasActivity (profile_views/whatsapp_clicks total)
  *
  * Locked behavior under test:
- *   - ShareCta (VanityLinkCard) renders ONLY when complete AND approved;
- *     otherwise a why-locked hint takes its place (never silent).
+ *   - «הלינק שלי» is no longer on the home (MEH-3767, moved to «שיתוף»).
  *   - availability pause switch disabled until approved (+ described-by hint).
  *     MEH-2759: it was four radios.
  *   - KPI strip → warm zero-state when there's no activity yet.
@@ -54,6 +53,7 @@ vi.mock("@/components/ReviewCardCanvas", () => ({
   default: () => <div data-testid="review-card-canvas-stub" />,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   Eye: (p) => <span {...p} />,
   LockSimple: (p) => <span {...p} />,
   Sparkle: (p) => <span {...p} />,
@@ -116,55 +116,21 @@ function setup({ status = "approved", complete = true, analytics = ACTIVE } = {}
   analyticsRef.current = analytics;
 }
 
-describe("Dashboard 1D — share-gate (MEH-964)", () => {
-  beforeEach(() => setup());
-
-  it("shows the share card when complete AND approved", async () => {
-    setup({ status: "approved", complete: true });
+// MEH-3767: «הלינק שלי» left the home for «שיתוף»; its share-gate cases
+// (complete AND approved, else the locked hint) moved with it to
+// DashboardSharePlacement.test.jsx. Here: the home no longer carries either.
+describe("Dashboard 1D — «הלינק שלי» is not on the home (MEH-3767)", () => {
+  it.each([
+    ["approved + complete", { status: "approved", complete: true }],
+    ["approved + incomplete", { status: "approved", complete: false }],
+    ["pending", { status: "pending", complete: true }],
+  ])("%s: no link card and no locked hint", async (_label, opts) => {
+    setup(opts);
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-    expect(screen.queryByTestId("share-locked-hint")).not.toBeInTheDocument();
-    // VanityLinkCard renders the /p/{slug} vanity URL on the canonical
-    // domain (MEH-1267: mehamakor.online staging alias → SITE_URL mehamakor.co.il).
-    expect(screen.getByText(/mehamakor\.co\.il\/p\/demo-farm/)).toBeInTheDocument();
-    // MEH-2827 PR 8: «שתפו» is a button that opens the share sheet — no
-    // WhatsApp-only link on the card.
-    expect(screen.getByTestId("vanity-share").tagName).toBe("BUTTON");
-    expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
-  });
-
-  // MEH-2876: quarantined 10/11 because the click hung the worker. The cause
-  // was the unstable useAuth mock above, not the product.
-  it("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
-    const shareSpy = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "share", { value: shareSpy, configurable: true });
-    try {
-      setup({ status: "approved", complete: true });
-      render(<ProducerDashboardPage />);
-      await screen.findByTestId("producer-overview");
-      screen.getByTestId("vanity-share").click();
-      expect(shareSpy).toHaveBeenCalledTimes(1);
-      expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
-    } finally {
-      // Later cases must not inherit a share sheet, even when this one fails.
-      delete navigator.share;
-    }
-  });
-
-  it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
-    setup({ status: "approved", complete: false });
-    render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
-    expect(screen.queryByText(/mehamakor\.co\.il\/p\//)).not.toBeInTheDocument();
-  });
-
-  it("hides the share card + shows the locked hint when UNAPPROVED", async () => {
-    setup({ status: "pending", complete: true });
-    render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
-    expect(screen.queryByText(/mehamakor\.co\.il\/p\//)).not.toBeInTheDocument();
+    await screen.findByTestId("overview-kpi-strip");
+    expect(screen.queryByTestId("vanity-share")).toBeNull();
+    expect(screen.queryByTestId("share-locked-hint")).toBeNull();
+    expect(screen.queryByText(/mehamakor\.co\.il\/p\//)).toBeNull();
   });
 });
 
@@ -174,8 +140,9 @@ describe("Dashboard 1D — availability-disable (MEH-964)", () => {
   it("hides the availability card until approved", async () => {
     setup({ status: "pending", complete: true });
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
+    // The numbers strip renders after the fetches settle (MEH-3767: the
+    // locked hint that used to mark this moment left the home).
+    await screen.findByTestId("overview-kpi-strip");
     expect(screen.queryByTestId("availability-pause-switch")).toBeNull();
   });
 
@@ -202,10 +169,12 @@ describe("Dashboard 1D — empty-state + view-public (MEH-964)", () => {
     expect(screen.queryByTestId("overview-zero-state")).not.toBeInTheDocument();
   });
 
-  it("exposes a view-public link to /{slug}", async () => {
+  // MEH-3783: the tab bar's «צפייה בעמוד» eye is a business's one link to
+  // her page; the home no longer repeats it.
+  it("an approved business's home carries no second view-public link", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("view-public-link")).toHaveAttribute("href", "/demo-farm");
+    expect(screen.queryByTestId("view-public-link")).toBeNull();
   });
 });

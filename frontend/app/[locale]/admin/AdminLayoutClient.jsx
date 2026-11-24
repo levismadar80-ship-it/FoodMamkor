@@ -18,6 +18,7 @@ import {
   Storefront,
   Users,
   Note,
+  TextAa,
   ChartLineUp,
   Receipt,
   GearSix,
@@ -75,6 +76,8 @@ const NAV_SECTIONS = [
     items: [
       { href: "/admin/users", key: "users", Icon: Users },
       { href: "/admin/content", key: "content", Icon: Note },
+      // MEH-3672: read-only index of every string on the site (item 6 of MEH-3652).
+      { href: "/admin/copy", key: "copy", Icon: TextAa },
       { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/reviews", key: "reviews", Icon: Star },
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
@@ -252,13 +255,13 @@ function AdminShell({ children }) {
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-green-50 flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
           <p className="font-headline-md text-xl text-white">{t("common.brand_admin")}</p>
-          <p className="text-green-50/60 text-xs mt-1">{user.name}</p>
+          <p className="text-green-50/75 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {NAV_SECTIONS.map((section) => {
             const items = itemsOf(section);
             const label = (
-              <p className="text-xs text-white/50 px-3 pb-1">
+              <p className="text-xs text-white/70 px-3 pb-1">
                 {t(`layout.nav_sections.${section.key}`)}
               </p>
             );
@@ -278,7 +281,8 @@ function AdminShell({ children }) {
                   data-testid={`admin-nav-${section.key}`}
                   open={containsActive || undefined}
                 >
-                  <summary className="flex items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
+                  {/* MEH-3539: min-h-6 = axe target-size (24px); was 20px tall. */}
+                  <summary className="flex min-h-6 items-center gap-1 text-xs text-white/70 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
                     <span>{t(`layout.nav_sections.${section.key}`)}</span>
                     <CaretDown size={12} className="transition group-open:rotate-180" aria-hidden="true" />
                   </summary>
@@ -294,7 +298,7 @@ function AdminShell({ children }) {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
+        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/75">
           <BackLink href="/" tone="onDark" label={t("common.back_home")} />
         </div>
       </aside>
@@ -316,7 +320,7 @@ function AdminShell({ children }) {
               <Link
                 key={n.href}
                 href={n.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs transition ${
+                className={`flex items-center min-h-touch gap-1.5 px-3 py-1.5 rounded-sm text-xs transition ${
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
                 aria-current={active ? "page" : undefined}
@@ -337,8 +341,11 @@ function AdminShell({ children }) {
         </nav>
       </div>
 
-      {/* Content — offset by sidebar width on desktop */}
-      <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
+      {/* Content — offset by sidebar width on desktop. MEH-3026 (F3): a div,
+          not <main> — the root layout's <main id="main-content"> already wraps
+          every page, and a second main landmark nested in it is an a11y defect
+          (one main per document). */}
+      <div data-testid="admin-content" className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
         {children}
         {/* MEH-2533: below md /admin had no way out. The header avatar menu
             is md+ only (Header.jsx UserMenu `hidden md:block`) and BottomNav,
@@ -361,7 +368,7 @@ function AdminShell({ children }) {
             </button>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

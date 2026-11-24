@@ -18,6 +18,7 @@ from typing import Any
 import logging
 
 from app.config import ai_fast_request_kwargs, settings
+from app.services import ai_budget
 
 
 logger = logging.getLogger(__name__)
@@ -34,11 +35,10 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
         return _client
     except Exception as e:
@@ -90,6 +90,8 @@ def generate_bio(
         return ""
 
     if not sells or not sells.strip():
+        return ""
+    if not ai_budget.allow("fast"):  # MEH-3498: today's ceiling is spent
         return ""
 
     prompt = _compose_prompt(sells, area, special, instagram)

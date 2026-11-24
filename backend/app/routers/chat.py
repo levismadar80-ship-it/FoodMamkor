@@ -38,6 +38,8 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import (
+    ai_budget,
+    ai_text,
     chat_business_context,
     chat_db_tools,
     chat_intent_router,
@@ -117,20 +119,20 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 נרשמים דרך טופס קצר בעמוד /register/producer, וההרשמה חינם. אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
 
 **איך נרשמים כלקוחות**
-- לקוחות נרשמים חינם בעמוד /register (אימייל + סיסמה, או Google/Apple).
+- לקוחות נרשמים חינם בעמוד /register (מייל + סיסמה, או Google/Apple).
 
 **איך מוצאים בתי עסק קרובים**
 יש שתי דרכים קלות:
 1. המפה שלנו, בעמוד /map — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').
 2. דף הבית — חפשו לפי קטגוריה או עיר.
 
-בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר 😊
+בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר.
 
 **עוד נושאים שגולשים שואלים**
 - **כמה זמן לוקח האישור של העסק?** — אחרי שבית עסק ממלא את טופס ההרשמה, הצוות שלנו בודק את הפרטים ובדרך כלל מאשר את העסק שלו עד 3 ימי עסקים. מרגע האישור העסק מופיע באתר וגולשים יכולים למצוא אותו במפה ובחיפוש.
 - **איך יוצרים קשר עם בית עסק?** — בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר. אפשר גם לראות את הטלפון, האינסטגרם והאתר אם הוסיפו אותם.
 - **איך מדווחים על בעיה?** — בכל עמוד של עסק או מוצר יש כפתור "דווח על עסק". אפשר גם לפנות אלינו ישירות דרך טופס יצירת הקשר בעמוד /contact — הצוות שלנו יטפל בפנייה בהקדם.
-- **אני מוכר/ת בשווקים או בדוכנים — איך מוסיפים את זה?** — בעמוד /producer/dashboard, במסך «מיקומים», לוחצים «הוסיפו מיקום» ובוחרים סוג «דוכן שוק». כותבים את העיר, את הכתובת של השוק, ובשעות — מתי אתם שם (למשל «כל שלישי 11:00–18:00»). הדוכן יופיע על המפה במקום השוק. שוק חד-פעמי או אירוע מוסיפים במסך «האירועים שלי», והוא יופיע בעמוד /events.
+- **אנחנו מוכרים בשווקים או בדוכנים — איך מוסיפים את זה?** — בעמוד /producer/dashboard, במסך «מיקומים», לוחצים «הוסיפו מיקום» ובוחרים סוג «דוכן שוק». כותבים את העיר, את הכתובת של השוק, ובשעות — מתי אתם שם (למשל «כל שלישי 11:00–18:00»). הדוכן יופיע על המפה במקום השוק. שוק חד-פעמי או אירוע מוסיפים במסך «האירועים שלי», והוא יופיע בעמוד /events.
 - **איפה רואים שווקים ואירועים?** — בעמוד /events. שם מופיעים שווקים, ימים פתוחים וסדנאות של בתי העסק, לפי תאריך, עם המיקום של כל אירוע.
 - **מה זה קבוצת רכישה?** — קבוצת רכישה היא הזמנה משותפת מבית עסק: כשמספיק אנשים מצטרפים עד המועד האחרון, כולם מקבלים מחיר קבוצתי נמוך יותר. ההצטרפות בלי לשלם כלום דרך האתר. כשהקבוצה מגיעה למינימום, בית העסק יוצר קשר לתיאום ההזמנה, והתשלום עובר ישירות ביניכם. לא הגיעו ליעד עד המועד? אין שום התחייבות.
 - **איפה מוצאים קבוצות רכישה ואיך מצטרפים?** — בעמוד /group-buys, וגם בעמוד של כל בית עסק שפתח קבוצה. כשיש קבוצות פתוחות, יש אליהן קישור גם בתחתית האתר ובעמוד /events. כדי להצטרף צריך להתחבר לאתר. רק בתי עסק פותחים קבוצות רכישה, מלוח הבקרה, אחרי שהעסק אושר.
@@ -148,7 +150,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 - אל תתחזי לבית עסק או לצוות האתר — את עוזרת AI.
 
 **פורמט התשובה**
-עני בטקסט פשוט בלבד. אל תשתמשי ב-markdown, כוכביות (`**`), bold, כותרות עם `#`, רשימות עם `-` או `*`, או כל סימן פורמט אחר. כתבי כמו שמדברים בצ'אט — רק המילים עצמן."""
+עני בטקסט פשוט בלבד. אל תשתמשי ב-markdown, כוכביות (`**`), bold, כותרות עם `#`, רשימות עם `-` או `*`, או כל סימן פורמט אחר. כתבי כמו שמדברים בצ'אט — רק המילים עצמן. בלי אימוג׳י בכלל."""
 
 
 # Strip any leftover markdown syntax from Claude's response as
@@ -187,23 +189,14 @@ def _get_client() -> Any:
         # Imports kept lazy so missing packages can't crash module load
         # (the rest of the backend stays up even if anthropic is broken).
         import anthropic
-        import httpx
 
-        # Construct an explicit httpx.Client() and pass it via the
-        # Anthropic SDK's `http_client` kwarg. This bypasses the SDK's
-        # internal call to `httpx.Client(proxies=...)`, which is broken
-        # against httpx 0.28+ — that release dropped the `proxies=` kwarg
-        # in favor of `proxy=` (singular), and the anthropic 0.39 SDK
-        # didn't update its internal call. Symptom of the unfixed code:
-        #     TypeError: Client.__init__() got an unexpected keyword
-        #                argument 'proxies'
-        # Caught by PR #29's debug instrumentation, fixed in PR #31.
-        # The explicit `httpx.Client()` works against any httpx version
-        # because we're constructing it ourselves with no kwargs, so we
-        # don't have to chase the SDK-vs-transitive-dep version dance.
+        # Always pass the SDK's own client (docs/LOCKED_DECISIONS.md).
+        # anthropic 1.0+ runs on httpx2 and raises TypeError at construction
+        # on a plain httpx.Client — the fail-open path would hide that as a
+        # silent "offline" chat. DefaultHttpxClient is the SDK's re-export.
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
         )
         return _client
     except Exception as e:  # pragma: no cover — defensive
@@ -326,6 +319,10 @@ def _live_data_context(
     latest = next(
         (m["content"] for m in reversed(api_messages) if m["role"] == "user"), ""
     )
+    # MEH-3498: the intent call is a second Haiku call, so it spends its own
+    # unit; above the ceiling chat answers without live data.
+    if not ai_budget.allow("fast"):
+        return None
     categories = chat_db_tools.list_category_slugs()
     decision = chat_intent_router.classify(client, latest, categories)
     if decision.route != chat_intent_router.ROUTE_DB or not decision.tool:
@@ -369,6 +366,10 @@ def _business_context(
             producer,
             questions[0],
             takes_site_orders=chat_business_context.takes_site_orders(db, producer),
+            # MEH-3584: opened from this business's own page.
+            # str(): a Column comparison is typed as SQL, not bool (mypy).
+            on_its_page=page_producer_id is not None
+            and str(producer.id) == str(page_producer_id),
         )
     finally:
         # MEH-3481: never hold a pooled connection through a model call
@@ -407,7 +408,7 @@ def _global_chat_allowed() -> bool:
         return True
 
 
-OFFLINE_REPLY = "העוזרת לא זמינה כרגע 🌿 נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות."
+OFFLINE_REPLY = "העוזרת לא זמינה כרגע. נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות."
 
 
 # ---------- endpoint ----------
@@ -424,9 +425,13 @@ def chat(
     if client is None:
         # Fail-open friendly message — UI keeps working.
         return ChatResponse(reply=OFFLINE_REPLY)
-    if not _global_chat_allowed():
-        # MEH-3010: site-wide daily cap reached — same reply, no model call.
-        logger.warning("chat global daily cap reached (%s)", GLOBAL_DAILY_LIMIT)
+    # MEH-3010: the chat's own site-wide daily cap; MEH-3498: the AI ceiling
+    # shared with the owner tools (ai_budget logs its own refusal). This is
+    # the unit for the reply call; the intent call spends a second one in
+    # _live_data_context, so a message costs up to two. Same reply, no
+    # model call.
+    if not _global_chat_allowed() or not ai_budget.allow("fast"):
+        logger.warning("chat daily cap reached (chat %s)", GLOBAL_DAILY_LIMIT)
         return ChatResponse(reply=OFFLINE_REPLY)
 
     # Trim to the last MAX_HISTORY_TURNS turns. A "turn" here = one
@@ -475,18 +480,20 @@ def chat(
     except Exception as e:  # pragma: no cover — network/quota
         logger.warning("chat completion failed: %s", e)
         return ChatResponse(
-            reply="משהו השתבש בצד שלי 🌱 נסו שוב בעוד רגע. אם זה נמשך — דווחו לנו דרך טופס יצירת הקשר.",
+            reply="משהו השתבש בצד שלי. נסו שוב בעוד רגע. אם זה נמשך — דווחו לנו דרך טופס יצירת הקשר.",
         )
     log_cache_usage("chat", response)
 
     # Pull the first text block out of the response.content list.
     reply = next((b.text for b in response.content if b.type == "text"), "")
-    if not reply:
-        # Empty response is not expected but handle it gracefully.
-        reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     # MEH-31/32: strip any leftover markdown so the UI (which doesn't
     # parse it) doesn't render literal asterisks / underscores.
-    reply = _strip_markdown(reply)
+    # MEH-3668: no emoji on the site (Sapir 22/11). The prompt asks; this enforces.
+    reply = ai_text.strip_emoji(_strip_markdown(reply))
+    if not reply:
+        # Empty response (or one made only of emoji) is not expected but
+        # handle it gracefully. Checked after stripping, so it can't be "".
+        reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     return ChatResponse(reply=reply)

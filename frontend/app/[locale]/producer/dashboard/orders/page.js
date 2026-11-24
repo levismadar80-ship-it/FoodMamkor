@@ -16,14 +16,19 @@
  *           DashboardLayoutClient.jsx (the tab) · lib/use-orders-tab.js
  * History:  MEH-3316 (creation; stage 4 of MEH-3216) · settings start closed
  *           once set up, 18/11 · MEH-3216 gaps: the products card (its own
- *           read, GET /producers/me/products/ordering)
+ *           read, GET /producers/me/products/ordering) · MEH-3561 (customers card)
+ *           · MEH-3746 (the link to the order preview beside the title)
+ *           · MEH-3752 («ספרו לנו איך אתם מקבלים הזמנות»: one draft for the
+ *           three setup cards, each saved with its own button)
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Eye } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
+import FormFillBox from "@/components/FormFillBox";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonList } from "@/components/Skeleton";
 import OrderSetupChecklist from "@/components/dashboard/orders/OrderSetupChecklist";
@@ -31,7 +36,9 @@ import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
+import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import api from "@/lib/api";
+import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
@@ -64,6 +71,8 @@ export default function OrdersPage() {
   );
   // A failed products read counts as none, so the step points to «עריכה».
   const noProducts = useCallback(() => setProducts({ orderable: 0, total: 0 }), []);
+  // MEH-3752: the last order-setup draft; each card fills from it and opens.
+  const [draft, setDraft] = useState(/** @type {Record<string, unknown> | null} */ (null));
 
   useEffect(() => {
     let live = true;
@@ -84,6 +93,7 @@ export default function OrdersPage() {
   // start open; after, closed (isSetUp). Decided at load only (loadAll), so
   // saving never snaps a card shut under her hand.
   const setUp = Boolean(data?.setUp);
+  const folded = setUp && !draft;
   const replace = (/** @type {any} */ updated) => {
     window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT));
     return setData((/** @type {any} */ old) => ({
@@ -94,7 +104,18 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6" data-testid="orders-page">
-      <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
+        {/* MEH-3746: the order form as a buyer sees it, before ordering is on. */}
+        <Link
+          href="/producer/dashboard/orders/preview"
+          data-testid="orders-preview-link"
+          className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
+        >
+          <Eye size={16} aria-hidden="true" />
+          {t("preview_link")}
+        </Link>
+      </div>
       {failed && (
         <div className="space-y-2">
           <InlineMessage tone="error">{t("load_error")}</InlineMessage>
@@ -113,9 +134,14 @@ export default function OrdersPage() {
           <OrdersBoard orders={data.orders} onChanged={replace} />
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
-          <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} />
-          <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={setUp} />
-          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} onSaved={(saved) => setWindowsCount(saved.length)} />
+          <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} draft={draft} />
+          {/* MEH-3561: who ordered and who came back, with a CSV download. */}
+          <OrderCustomersCard />
+          {/* MEH-3752: beside the one-time setup it fills, not above the
+              daily orders. A draft opens the setup cards. */}
+          <FormFillBox form="order_setup" title={t("fill.title")} intro={t("fill.intro")} onDraft={(next) => setDraft({ ...next })} />
+          <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={folded} draft={draft} />
+          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={folded} onSaved={(saved) => setWindowsCount(saved.length)} draft={draft} />
         </>
       )}
     </div>

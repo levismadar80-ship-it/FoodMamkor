@@ -6,12 +6,11 @@
   "app/[locale]/map/state/useProducersFeed.js": 1,
   "app/global-error.js": 4,
   "components/AccountSheet.jsx": 1,
-  "components/CategoryIcons.jsx": 19,
   "components/EventEntryRow.jsx": 9,
   "components/LocationModal.jsx": 4,
   "components/ui/Button.jsx": 1,
   "lib/admin-producers-export.js": 16,
-  "lib/category-registry.js": 8,
+  "lib/category-taxonomy.js": 20,
   "lib/constants.js": 5,
   "lib/delivery-days.js": 7,
   "lib/distance.js": 2,
@@ -26,7 +25,7 @@
   "lib/producer-completeness.js": 1,
   "lib/producer-description-placeholders.js": 4,
   "lib/rescue.js": 1,
-  "lib/resolvedQuestions.js": 2,
+  "lib/resolved-questions.js": 2,
   "lib/schemas.js": 7,
   "lib/utils.js": 1
 }

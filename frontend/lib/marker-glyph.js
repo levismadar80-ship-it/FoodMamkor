@@ -17,7 +17,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Memoized by the icon COMPONENT reference (not a hand-maintained iconName
 // string): keys are the stable module-level Phosphor refs from CATEGORY_STYLES
-// + DEFAULT_CATEGORY_STYLE, so there are ≤8 distinct entries and no implicit
+// + DEFAULT_CATEGORY_STYLE, so there are ≤20 distinct entries (MEH-3076: one
+// glyph per category) and no implicit
 // "every entry must carry a matching iconName" contract to drift. renderToStatic-
 // Markup runs once per glyph, reused across every marker + re-render (the /map
 // feed renders up to ~100 producers).

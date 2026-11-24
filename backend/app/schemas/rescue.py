@@ -229,6 +229,7 @@ class RescueProducerSummary(BaseModel):
     slug: str | None = None
     city: str | None = None
     image_url: str | None = None
+    logo_url: str | None = None  # MEH-3611: shown beside the name
     # The pickup point itself. `address` is only ever filled for a location
     # whose precision is `exact` (the MEH-829 carve-out that lets a full
     # address show while a bag is live); an approximate point cannot host an
@@ -266,6 +267,36 @@ class RescueOfferPublicOut(BaseModel):
     distance_km: float | None = None
 
 
+class RescueProducerDetail(RescueProducerSummary):
+    """The bag page's business block (MEH-3586): the summary plus the public
+    business rating, so a buyer can judge who packs the bag. The same two
+    numbers the business page shows; never the bag reviews, which feed only
+    the pilot metrics (RescueReview's docstring).
+    """
+
+    avg_rating: float | None = None
+    reviews_count: int = 0
+    # The business's own one-line description, so the page says who it is.
+    short_description: str | None = None
+
+
+class RescueOfferDetailOut(RescueOfferPublicOut):
+    """`GET /rescue/offers/{id}` — one of today's bags for its own page.
+
+    `state` is why a bag can or cannot be reserved now; the list omits every
+    bag that is not `available`, the page explains it instead. `lat`/`lng`
+    are the pickup point (exact precision by construction) for the map.
+    """
+
+    state: Literal["available", "sold_out", "cancelled", "ended"]
+    producer: RescueProducerDetail
+    lat: float | None = None
+    lng: float | None = None
+    # MEH-3593: «הוראות איסוף» of the bag's pickup point
+    # (producer_locations.pickup_note); None = none written.
+    pickup_note: str | None = None
+
+
 class RescueOrderCreatedOut(RescueOrderOut):
     """What a successful reservation returns. Same shape as RescueOrderOut
     plus the two numbers the confirmation screen shows without a second
@@ -273,6 +304,8 @@ class RescueOrderCreatedOut(RescueOrderOut):
     """
 
     price_agorot: int
+    # MEH-3702: the Israel pickup date, so the screen can say «מחר».
+    date: date_type
     cancel_until: UtcDatetimeOut
     pickup_start: UtcDatetimeOut
     pickup_end: UtcDatetimeOut
@@ -294,6 +327,26 @@ class RescueMyOrderOut(RescueOrderCreatedOut):
     # MEH-2738: the business cancelled the bag, so this reservation went with
     # it. Only a cancelled row can carry True; the page says so in words.
     # Required (no default) so the generated zod adds no default export.
+    cancelled_by_business: bool
+
+
+class RescueHistoryOut(BaseModel):
+    """One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).
+
+    No `pickup_code`: the list row links to the bag's page, which shows the
+    code on the day. `producer_name` is what the row prints.
+    """
+
+    id: UUID
+    offer_id: UUID
+    qty: int
+    status: RescueOrderStatus
+    created_at: UtcDatetimeOut
+    date: date_type
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    producer_id: UUID
+    producer_name: str
     cancelled_by_business: bool
 
 
@@ -327,6 +380,8 @@ class RescueOwnerOrderOut(BaseModel):
 
     id: UUID
     offer_id: UUID
+    # MEH-3702: the Israel pickup date — today's and tomorrow's rows share the list.
+    date: date_type
     qty: int
     pickup_code: str
     status: RescueOrderStatus
@@ -351,6 +406,7 @@ class RescueOwnerOfferOut(BaseModel):
     """
 
     id: UUID
+    date: date_type  # MEH-3702
     qty_total: int
     qty_left: int
     status: str

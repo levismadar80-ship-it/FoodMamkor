@@ -162,13 +162,14 @@ def approve_recipe(
             if producer and producer.slug
             else f"/producer/{recipe.producer_id}"
         )
-        # Copy approved by Sapir 20/07 (singular "לך"; business name gives the
-        # notification its context, consistent with the 🚚 delivery template).
+        # Copy approved by Sapir 20/07; "לך" dropped under MEH-3815 (BRAND §9,
+        # no singular address). The business name gives the notification its
+        # context, consistent with the 🚚 delivery template.
         producer_name = producer.name if producer else ""
         body = (
-            f"מתכון חדש מ{producer_name} מחכה לך באתר"
+            f"מתכון חדש מ{producer_name} מחכה באתר"
             if producer_name
-            else "מתכון חדש מחכה לך באתר"
+            else "מתכון חדש מחכה באתר"
         )
         background_tasks.add_task(
             fire_alerts,
@@ -176,7 +177,7 @@ def approve_recipe(
             recipe.producer_id,  # type: ignore[arg-type]
             "new_recipe",
             AlertContent(
-                title=f"🍲 מתכון חדש: {recipe.title}",
+                title=f"מתכון חדש: {recipe.title}",
                 body=body,
                 url=url,
             ),

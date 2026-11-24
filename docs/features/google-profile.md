@@ -1,0 +1,22 @@
+# הפרופיל בגוגל
+
+**מה הוא עושה.** כלי בלשונית «עריכה» של לוח הבקרה, אריח אחרי «קשר» (MEH-3641; עבר מ«כלים» ב-MEH-3723, כי הוא בודק את פרטי העסק). בעלת העסק מקבלת מדריך קצר לפתיחה או לעדכון של פרופיל עסק בגוגל, עם הקישור לעמוד שלה להעתקה ועם הכלל של גוגל נגד תמורה על ביקורות. היא מוצאת את הפרופיל שלה בגוגל ומחברת אותו לעמוד: השרת מקבל חיבור רק כשהשם או הטלפון בגוגל תואמים לבית העסק, ורק כשהפרופיל לא מחובר כבר לבית עסק אחר, והאדמין מקבלת מייל «פרטים רגישים» כשעסק מאושר משנה אותו. אחרי החיבור היא יכולה לבדוק אם השם, הטלפון והאתר בגוגל זהים לעמוד שלה, ולראות את שעות הפתיחה של שני הצדדים זו ליד זו. החיבור הוא גם מה שמדליק את שורת הדירוג מגוגל בעמוד הציבורי (מ-20 ביקורות). מגוגל נשמר רק ה-place_id (תנאי השימוש, §3.2.3(b)). בלי מפתח Places הכלי מציג «לא זמין» ולא פונה לגוגל.
+
+**Routes**
+* `frontend/app/[locale]/producer/dashboard/google-profile/`
+
+**קבצים מרכזיים**
+* `frontend/components/dashboard/google-profile/GoogleProfileTool.jsx` — קורא את המצב ומרכיב את שלושת החלקים.
+* `frontend/components/dashboard/google-profile/GoogleProfileHubTile.jsx` — האריח ב-hub של «עריכה», אחרי «קשר», לבית עסק בלבד (MEH-3723). נבדק ב-`frontend/__tests__/EditHubNav.test.jsx`.
+* `frontend/components/dashboard/google-profile/GoogleProfileLink.jsx` · `frontend/components/dashboard/google-profile/GoogleProfileCheck.jsx` · `frontend/components/dashboard/google-profile/GoogleProfileGuide.jsx`
+* `backend/app/routers/producer_google_profile.py` — ארבעת ה-routes של הבעלים תחת `/producers/me/google-profile`, כל אחד מהם (חוץ מקריאת המצב) 10 בשעה.
+* `backend/app/services/google_profile.py` — הקריאות לגוגל וההשוואה: שם (זהה אחרי ניקוי, או לפחות שתי מילים שלמות של השם הקצר ברצף בתוך הארוך), טלפון (נייד או קווי), אתר (כל עמוד באתר שלה, או העמוד שלה כאן ולא של עסק אחר).
+* `backend/app/routers/google_rating.py` — הצד של האדמין ושורת הדירוג הציבורית, שקוראת את אותו place_id.
+
+**Flags.** אין. משתמש ב-`GOOGLE_PLACES_API_KEY` הקיים.
+
+**טסטים**
+* `tests/test_meh3641_owner_google_profile.py` — **השומר**: חיבור רק בהתאמה, 409 על פרופיל של מישהו אחר, ניתוק בלי קריאה לגוגל, «לא זמין» בלי מפתח, שום דבר מגוגל לא נשמר, ומגבלת הקצב.
+* `frontend/__tests__/GoogleProfileTool.test.jsx` — כל המצבים במסך: לא מחובר, 0 / 1 / כמה תוצאות, מחובר, בדיקה שלא רצה / הצליחה / נכשלה, «לא זמין».
+
+**מזהי רישום שזה מכסה.** `google_profile`.

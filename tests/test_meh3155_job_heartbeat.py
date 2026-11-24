@@ -47,10 +47,12 @@ def _stub_services(monkeypatch):
         auto_reply_watchdog,
         billing_start_signal,
         group_buy_expiry,
+        group_buy_pickup_reminder,
         onboarding_followup,
         pending_nudge,
         registration_reminders,
         rescue_digest,
+        rescue_reminders,
         retention_purge,
         weekly_owner_summary,
     )
@@ -67,7 +69,17 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
     monkeypatch.setattr(retention_purge, "run_purge", lambda db: {})
     monkeypatch.setattr(group_buy_expiry, "expire_unfunded_group_buys", lambda db: 0)
+    monkeypatch.setattr(
+        group_buy_pickup_reminder, "send_pickup_reminders", lambda db: 0
+    )
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
+    # MEH-3702: the rescue morning reminder.
+    monkeypatch.setattr(
+        rescue_reminders, "queue_morning_reminders", lambda db, **kw: {}
+    )
+    monkeypatch.setattr(  # MEH-3805: its evening twin
+        rescue_reminders, "queue_evening_reminders", lambda db, **kw: {}
+    )
     monkeypatch.setattr(
         registration_reminders, "send_registration_reminders", lambda db: 0
     )
@@ -130,6 +142,18 @@ JOBS = [
         job_heartbeat.RESCUE_DIGEST_INTERVAL_MINUTES,
     ),
     (
+        "_run_rescue_morning_reminder_job",
+        "rescue-morning-reminder-daily",
+        "crontab",
+        job_heartbeat.RESCUE_REMINDER_CRON,
+    ),
+    (
+        "_run_rescue_evening_reminder_job",
+        "rescue-evening-reminder-daily",
+        "crontab",
+        job_heartbeat.RESCUE_EVENING_REMINDER_CRON,
+    ),
+    (
         "_run_weekly_owner_summary_job",
         "weekly-owner-summary",
         "crontab",
@@ -142,10 +166,22 @@ JOBS = [
         job_heartbeat.REGISTRATION_REMINDER_CRON,
     ),
     (
+        "_run_group_buy_pickup_reminder_job",
+        "group-buy-pickup-reminder-daily",
+        "crontab",
+        job_heartbeat.GROUP_BUY_PICKUP_REMINDER_CRON,
+    ),
+    (
         "_run_product_order_jobs",
         "product-orders-tick",
         "interval",
         job_heartbeat.PRODUCT_ORDERS_INTERVAL_MINUTES,
+    ),
+    (
+        "_run_email_outbox_job",
+        "email-outbox-tick",
+        "interval",
+        job_heartbeat.EMAIL_OUTBOX_INTERVAL_MINUTES,
     ),
 ]
 
@@ -225,6 +261,8 @@ def _registered(monkeypatch, *, flags_on: bool):
     from app.services import rescue_digest
 
     monkeypatch.setattr(startup.settings, "watchdog_enabled", flags_on)
+    # MEH-3630: the staging-only reset job stays out of these exact sets.
+    monkeypatch.setattr(startup.settings, "railway_environment", "")
     monkeypatch.setattr(startup.settings, "rescue_bags_enabled", flags_on)
     monkeypatch.setattr(rescue_digest, "digest_enabled", lambda: flags_on)
     from app.services import weekly_owner_summary
@@ -269,11 +307,15 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     triggers = _registered(monkeypatch, flags_on=False)
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
+    assert "_run_rescue_morning_reminder_job" not in triggers  # MEH-3702
+    assert "_run_rescue_evening_reminder_job" not in triggers  # MEH-3805
     assert "_run_weekly_owner_summary_job" not in triggers
     assert "_run_product_order_jobs" not in triggers  # MEH-3296
     flagged = {
         "_run_watchdog_job",
         "_run_rescue_digest_job",
+        "_run_rescue_morning_reminder_job",
+        "_run_rescue_evening_reminder_job",
         "_run_weekly_owner_summary_job",
         "_run_product_order_jobs",
     }

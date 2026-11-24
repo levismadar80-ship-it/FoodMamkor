@@ -8,6 +8,8 @@ import { Check, MagnifyingGlass } from "@phosphor-icons/react";
 // lookup — the local `Leaf` import that used to supply the fallback here is
 // gone, so there is one owner of that decision instead of three.
 import { resolveCategoryGlyph } from "@/lib/category-registry";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import ShowMore from "@/components/ui/ShowMore";
 import Input from "@/components/ui/Input";
 
@@ -97,6 +99,8 @@ const REST_DESC_SLUGS = new Set([
   "chocolate",
   // MEH-3401: «קפה» — its slug is the transliteration, not a fixed-table token.
   "kph",
+  // MEH-3738: «בישול לפי הזמנה», created from the admin like coffee.
+  "byshvl-lpy-hzmnh",
   "honey",
   "fish",
 ]);
@@ -121,6 +125,7 @@ const MAX_CATEGORIES = 5;
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
+  const tRoot = useTranslations();
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
 
@@ -297,7 +302,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-xl leading-tight text-text">
-                      {cat.name}
+                      {categoryLabel(tRoot, cat)}
                       {/* MEH-1297: "ראשית" pill on the first-selected category */}
                       {isPrimary && (
                         <span

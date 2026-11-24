@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from pydantic import (
     AfterValidator,
+    BeforeValidator,
     Field,
 )
 
@@ -421,7 +422,7 @@ def _normalize_contact_email(value: str | None) -> str | None:
     if stripped == "":
         return None
     if not _EMAIL_FORMAT_RE.match(stripped):
-        raise ValueError("כתובת אימייל לא תקינה")
+        raise ValueError("כתובת מייל לא תקינה")
     return stripped
 
 
@@ -559,7 +560,7 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    lib/resolved-questions.js `ownerQuestionLabels` — the one derivation the
     page component and the dashboard preview share — and tests
     `custom_questions?.length > 0`, so both yield no owner rows), but
     collapsing them would still rewrite what the column stores
@@ -639,6 +640,50 @@ def _image_url_validator(value: str | None) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+# MEH-3671 (Sapir 22/11, «רק בשמות ובכותרות»): no emoji in a name or a
+# title a person types. Same code points ai_text.strip_emoji removes
+# (MEH-3668); ✓ ✗ ✕ ★ ☆ ™ ₪ are typography and pass. Descriptions, reviews
+# and other free text are deliberately NOT checked.
+_EMOJI_IN_NAME = re.compile(
+    "[\U0001f000-\U0001faff\u2600-\u2604\u2607-\u2712\u2714\u2716"
+    "\u2718-\u27bf\u2b00-\u2bff\u231a-\u23ff\ufe0f\u200d"
+    "\u20e3\u203c\u2049\u2139\u21a9\u21aa\u25aa\u25ab\u25b6\u25c0"
+    "\u25fb-\u25fe\u3030\u303d\u3297\u3299\U000e0020-\U000e007f]"
+)
+NO_EMOJI_IN_NAME_MSG = (
+    "בשמות ובכותרות אפשר להשתמש באותיות, מספרים וסימני פיסוק, בלי אימוג׳י"
+)
+
+
+def strip_emoji_from_name(value: str) -> str:
+    """MEH-3671: an outreach lead name is pasted by an admin from a real
+    sheet (e.g. «🍞 לחם אלחנן»), so its emoji is dropped rather than refused.
+    The name then reaches the owner's prefilled sign-up form clean, where
+    reject_emoji would otherwise stop her."""
+    if not _EMOJI_IN_NAME.search(value):
+        return value
+    return " ".join(_EMOJI_IN_NAME.sub("", value).split())
+
+
+def _strip_emoji_before(value: Any) -> Any:
+    """BeforeValidator form of strip_emoji_from_name. A name made only of
+    emoji would otherwise reach a Field(min_length=1) as "" and fail with
+    pydantic's English message, so it gets the Hebrew one here."""
+    if not isinstance(value, str):
+        return value
+    stripped = strip_emoji_from_name(value)
+    if value.strip() and not stripped:
+        raise ValueError("שם לא יכול להיות ריק")
+    return stripped
+
+
+def reject_emoji(value: str | None) -> str | None:
+    """MEH-3671: 422 when a name or title carries an emoji; else unchanged."""
+    if value and _EMOJI_IN_NAME.search(value):
+        raise ValueError(NO_EMOJI_IN_NAME_MSG)
+    return value
+
+
 def _sanitized_business_name(value: str) -> str:
     """Bleach → ≥3-letter floor. Mirrors ProducerCreate._validate_name_letters
     stacked on ContactIn._sanitize_name, which is exactly what MEH-1623
@@ -650,7 +695,7 @@ def _sanitized_business_name(value: str) -> str:
     coerces that None to "" and raises a clean ValueError (422) instead of
     letting None reach the DB as a 500 (the HOT-003 path, schemas.py:59).
     """
-    return _min_letters_validator(sanitize_text(value, max_length=200))
+    return _min_letters_validator(reject_emoji(sanitize_text(value, max_length=200)))
 
 
 def _sanitized_person_name(value: str) -> str:
@@ -668,7 +713,7 @@ def _sanitized_person_name(value: str) -> str:
     legitimate as a 2-letter given name ("תה"). Shared rather than copied so
     the two can never drift.
     """
-    cleaned = sanitize_text(value, max_length=200)
+    cleaned = reject_emoji(sanitize_text(value, max_length=200))
     if cleaned is None:
         raise ValueError("שם לא יכול להיות ריק")
     return cleaned
@@ -682,7 +727,7 @@ def _sanitized_title(value: str) -> str:
     field keeps its own narrower Field(max_length=…) constraint, which runs
     first, so per-field length behaviour is unchanged.
     """
-    return _min_letters_validator(sanitize_text(value, max_length=300))
+    return _min_letters_validator(reject_emoji(sanitize_text(value, max_length=300)))
 
 
 def _sanitized_address(value: str) -> str | None:
@@ -708,6 +753,15 @@ SanitizedPersonNameField = Annotated[str, AfterValidator(_sanitized_person_name)
 # product name, so SanitizedBusinessNameField would be wrong for these.
 SanitizedLabelField = Annotated[str, AfterValidator(_sanitized_person_name)]
 SanitizedTitleField = Annotated[str, AfterValidator(_sanitized_title)]
+# MEH-3671: a name that arrives from outside rather than typed into our form
+# (an outreach lead pasted from the sheet; the name Apple sends once and the
+# person cannot edit) drops its emoji instead of being refused. Same rule as
+# SanitizedLabelField otherwise.
+SanitizedImportedNameField = Annotated[
+    str,
+    BeforeValidator(_strip_emoji_before),
+    AfterValidator(_sanitized_person_name),
+]
 
 
 def _sanitized_description(value: str) -> str | None:
@@ -891,7 +945,6 @@ from app.schemas.admin_review import (  # noqa: E402
     ProducerReviewChecksOut as ProducerReviewChecksOut,
     RejectionPresetOut as RejectionPresetOut,
     RequestChangesIn as RequestChangesIn,
-    SetAmbassadorIn as SetAmbassadorIn,
 )
 from app.schemas.catalog import (  # noqa: E402
     CategoryOut as CategoryOut,
@@ -899,7 +952,6 @@ from app.schemas.catalog import (  # noqa: E402
     DeliveryAreaOut as DeliveryAreaOut,
     MAX_OFFER_HEADLINE as MAX_OFFER_HEADLINE,
     OFFER_TYPES as OFFER_TYPES,
-    ProducerCityOut as ProducerCityOut,
     ProducerLocationCreate as ProducerLocationCreate,
     ProducerLocationOut as ProducerLocationOut,
     ProducerLocationOwnerOut as ProducerLocationOwnerOut,
@@ -921,14 +973,7 @@ from app.schemas.catalog import (  # noqa: E402
 )
 from app.schemas.community import (  # noqa: E402
     FavoriteOut as FavoriteOut,
-    HomeProductCreate as HomeProductCreate,
-    HomeProductModerationRequest as HomeProductModerationRequest,
-    HomeProductModerationResult as HomeProductModerationResult,
-    HomeProductOut as HomeProductOut,
-    HomeProductRatingOut as HomeProductRatingOut,
-    HomeProductUpdate as HomeProductUpdate,
     ProducerInfoReportCreate as ProducerInfoReportCreate,
-    RatingSubmit as RatingSubmit,
     ReportCreate as ReportCreate,
     ReportOut as ReportOut,
     REVIEW_REPORT_REASONS as REVIEW_REPORT_REASONS,
@@ -977,6 +1022,9 @@ from app.schemas.group_buys_requests import (  # noqa: E402
     GroupBuyOut as GroupBuyOut,
     GroupBuyStatusOut as GroupBuyStatusOut,
     GroupBuyStatusUpdate as GroupBuyStatusUpdate,
+    GroupBuyQuantityUpdate as GroupBuyQuantityUpdate,
+    GroupBuySettingsUpdate as GroupBuySettingsUpdate,
+    GroupBuyWaitlistRequest as GroupBuyWaitlistRequest,
     ProducerNameChangeRequestCreate as ProducerNameChangeRequestCreate,
     ProducerNameChangeRequestOut as ProducerNameChangeRequestOut,
     ProducerNameChangeRequestUpdate as ProducerNameChangeRequestUpdate,
@@ -1020,6 +1068,8 @@ from app.schemas.registration import (  # noqa: E402
     CheckPasswordRequest as CheckPasswordRequest,
     ForgotPasswordRequest as ForgotPasswordRequest,
     GoogleAuthRequest as GoogleAuthRequest,
+    GoogleCodeRequest as GoogleCodeRequest,  # MEH-3690
+    GoogleCodeResponse as GoogleCodeResponse,  # MEH-3690
     GoogleAuthResponse as GoogleAuthResponse,
     LoginRequest as LoginRequest,
     OwnerInviteAccept as OwnerInviteAccept,
@@ -1084,7 +1134,6 @@ from app.schemas.site import (  # noqa: E402
     ProducerViewIn as ProducerViewIn,
     ProductHit as ProductHit,
     ProfileUpdate as ProfileUpdate,
-    RiskScoreResponse as RiskScoreResponse,
     SavedEventOut as SavedEventOut,
     SavedExperienceOut as SavedExperienceOut,
     SavedItemRefOut as SavedItemRefOut,

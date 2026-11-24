@@ -31,6 +31,7 @@
 | `GOOGLE_PLACES_API_KEY` | Railway production + staging | «mehamakor server places» (נוצר 20/11/2026) | API: Places API (New) בלבד · אפליקציה: None (השרת קורא, אין Referer) | `GET /api/health/places` → `{"status":"ok"}` |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Vercel | «Maps Platform API Key» | HTTP referrers · 35 APIs. ציבורי מעצם הגדרתו (נשלח לדפדפן) | המפה בעמוד בית עסק נטענת |
 | `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Railway + Vercel | OAuth client «מהמקור» (591935721343-jjrc…) | Web application | כניסה עם Google ב-`/login` |
+| `GOOGLE_CLIENT_SECRET` | Railway production + staging (נוסף 24/11/2026) | סוד של אותו client «מהמקור» (Client secrets) | — (צד שרת בלבד) | כניסה עם Google: בלעדיו `POST /api/auth/google/code` עונה 503. החלפה: «Add secret» בקונסול, הדבקה בשתי הסביבות, ורק אז מחיקת הישן (MEH-3690) |
 
 **לא להשתמש:** הפרויקט `project-cddabfa3-9d77-4d7a-862` («My First Project»,
 ארגון levismadar80-org) יושב על חשבון חיוב trial שנגמר. כל מפתח ממנו מחזיר 403
@@ -48,7 +49,7 @@
 | `EDGE_PROXY_SECRET` | — (נוצר מקומית) | Railway + Vercel, אותו ערך בשניהם | — | לא נבדק |
 | `DATABASE_URL` | Railway Postgres | Railway (מוזרק) | פרויקט Railway `67ecffa1…` | מנוהל ע"י Railway |
 | `MIGRATION_DATABASE_URL`, `DATABASE_URL_PRODUCTION`, `DATABASE_URL_STAGING` | Railway Postgres | מקומי / CI | אותו פרויקט | `DATABASE_URL_PRODUCTION` אסור בסשן של Claude (security.md) |
-| `ANTHROPIC_API_KEY` | Anthropic | Railway | לא נבדק | חסר → AI במצב fail-open (CLAUDE.md) |
+| `ANTHROPIC_API_KEY` | Anthropic | Railway | `/api/health/ai` (MEH-3724) | חסר → AI במצב fail-open (CLAUDE.md); לקוח שלא נבנה או לא עונה → 503 ב-`/api/health/ai` + Sentry |
 | `RESEND_API_KEY` | Resend | Railway, נפרד ל-staging (MEH-3405) | לא נבדק | |
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ID` | Meta (WhatsApp Cloud API) | Railway, staging על מספר בדיקות נפרד (MEH-3405) | לא נבדק | |
 | `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY` | — (נוצר מקומית, Web Push) | Railway, נפרד ל-staging (MEH-3405) | — | |

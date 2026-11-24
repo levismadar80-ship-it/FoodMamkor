@@ -139,6 +139,16 @@ class MyProductsOrderingOut(BaseModel):
     products: list[MyProductOrderingOut]
 
 
+class OrderMenuVariantOut(BaseModel):
+    """MEH-3617: one size or flavour, with the price the order route stores."""
+
+    id: UUID
+    name: str
+    price_agorot: int
+    price_is_estimate: bool
+    in_stock: bool
+
+
 class OrderMenuProductOut(BaseModel):
     id: UUID
     name: str
@@ -151,6 +161,12 @@ class OrderMenuProductOut(BaseModel):
     price_is_estimate: bool
     in_stock: bool
     contains_alcohol: bool
+    # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64;
+    # NULL = every day. The sheet offers only slots on days every line is made.
+    available_weekdays: int | None = None
+    # MEH-3617: empty = no choice. One = applied without a choice. Many = the
+    # buyer must pick one; `in_stock` above is false when all are out.
+    variants: list[OrderMenuVariantOut] = []
 
 
 class OrderMenuSlotOut(BaseModel):
@@ -166,7 +182,9 @@ class OrderMenuOut(BaseModel):
     cancel_cutoff_hours: int
     lead_time_hours: int
     # MEH-3216: the seller's «מספר עוסק או ח״פ», for the order form's seller
-    # line (distance-selling disclosure). Always set: takes_orders() needs it.
+    # line (distance-selling disclosure). Always set for a buyer:
+    # takes_orders() needs it. MEH-3746: the owner's preview, readable before
+    # that, sends "" while she has not filled it in.
     business_id_number: str
     products: list[OrderMenuProductOut]
     slots: list[OrderMenuSlotOut]

@@ -185,8 +185,12 @@ def _set_license(db, producer, value):
     db.refresh(producer)
 
 
-def test_approve_license_required_no_license_is_blocked(client, db, monkeypatch):
-    """(a) license-required category + NULL license + no override → 422, no flip."""
+def test_approve_license_required_no_license_is_approved_without_badge(
+    client, db, monkeypatch, caplog
+):
+    """MEH-3026 (Sapir 21/11): license-required category + NULL license, plain
+    approve with no override → approved, and no «מאומת» badge. Replaces the
+    MEH-971 422 and its ?allow_without_license override."""
     calls = []
     monkeypatch.setattr(
         admin_module, "notify_producer_approved", lambda *a, **k: calls.append(a)
@@ -198,28 +202,17 @@ def test_approve_license_required_no_license_is_blocked(client, db, monkeypatch)
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
-    assert resp.status_code == 422, resp.text
-    db.refresh(producer)
-    assert producer.status == "pending", "blocked approve must not change status"
-    assert calls == [], "blocked approve must not fire producer_approved_v1"
-
-
-def test_approve_license_required_with_override_succeeds(client, db, monkeypatch):
-    """(b) same as (a) but ?allow_without_license=true → approved."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
-    cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
-    producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
-    )
-    resp = client.post(
-        f"/admin/producers/{producer.id}/approve?allow_without_license=true",
-        headers=auth_header(_admin(db)),
-    )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.status == "approved"
+    assert producer.verified_at is None, "approval alone must not grant «מאומת»"
+    assert len(calls) == 1, "approve must fire producer_approved_v1 once"
+    assert "approved without a licence number" in caplog.text, (
+        "a licence-less approval must leave an audit line"
+    )
+    page = client.get(f"/producers/{producer.id}")
+    assert page.status_code == 200
+    assert page.json()["verification_tier"] != "verified"
 
 
 def test_approve_license_required_with_license_succeeds(client, db, monkeypatch):
@@ -286,7 +279,8 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
         # a ticket that never mentions it. Deliberately not captured: this test
         # asserts the SUBJECT (MEH-2113), and the HTML part's own contract lives
         # in tests/test_meh2151_approval_email_cta.py.
-        lambda to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
+        # MEH-3535: the wrapper now takes (db, kind, ...) and queues.
+        lambda db, kind, to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 

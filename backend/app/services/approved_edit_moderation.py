@@ -4,7 +4,7 @@ Purpose:  MEH-3261 — once a business is approved its public text and photos go
           live with no review. This adds the two missing signals: an AI check on
           changed text (a REJECTED verdict refuses the save with a 422) and one
           admin ping per save that changed the description, short description,
-          owner story or photos («📝 עסק מאושר עדכן תוכן»).
+          owner story or photos («עסק מאושר עדכן תוכן»).
 Touches:  Anthropic (fast-tier Haiku, one call per save that changed text),
           WhatsApp + Resend (admin ping, BackgroundTask). No DB writes, no schema.
 Does NOT: moderate a PENDING business (the admin reads everything at approval),
@@ -33,7 +33,6 @@ from app.services.email import send_email
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
-from app.services.whatsapp import send_text
 
 log = logging.getLogger(__name__)
 
@@ -98,11 +97,10 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
+            http_client=anthropic.DefaultHttpxClient(),
             max_retries=1,  # the call runs inside the owner's save
         )
         return _client
@@ -258,22 +256,18 @@ def check_product(
 def content_edit_message(name: str, changed: list[str], flagged: bool) -> str:
     fields = " · ".join(CONTENT_FIELD_LABELS.get(f, f) for f in changed)
     suffix = FLAGGED_SUFFIX if flagged else ""
-    return f"📝 עסק מאושר עדכן תוכן: {_sanitize_wa_param(name)} — {fields}{suffix}"
+    return f"עסק מאושר עדכן תוכן: {_sanitize_wa_param(name)} — {fields}{suffix}"
 
 
 def notify_admin_content_edit(
     name: str, changed: list[str], flagged: bool, test_cause: bool = False
 ) -> None:
     # REUSES: auth_notifications.notify_admin_producer_sensitive_edit — same
-    # channels, per-channel try blocks so a WhatsApp raise never skips email.
+    # channel: email only (MEH-3589).
     if test_cause:  # MEH-2952
         return _skip_test_cause("notify_admin_content_edit", None)
     message = content_edit_message(name, changed, flagged)
-    try:
-        if settings.admin_whatsapp_to:
-            send_text(settings.admin_whatsapp_to, message, test_cause=test_cause)
-    except Exception:  # noqa: BLE001
-        log.exception("[NOTIFY] content-edit WhatsApp failed for '%s'", name)
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
     try:
         if settings.admin_email:
             send_email(

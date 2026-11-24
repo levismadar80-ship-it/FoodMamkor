@@ -73,6 +73,7 @@ import path from "node:path";
 import type { APIRequestContext, Page, Route } from "@playwright/test";
 
 import { authedContext } from "../auth-fixture";
+import { layoutSettled } from "./_layout-settled";
 import { expect, test } from "./_cloudinary-stub";
 import he from "../../messages/he.json";
 
@@ -136,6 +137,30 @@ async function stubPasswordCheck(page: Page): Promise<void> {
   );
 }
 
+/**
+ * MEH-3550: open the invite form, and prove it opened.
+ *
+ * The edit page fetches the business, then renders the panel. A slow runner
+ * can still be laying the page out (or re-render the panel after a reload)
+ * when the click lands, and a click whose mouseup hits another element is
+ * reported as done while the handler never ran (MEH-3449). So: wait for the
+ * button to stop moving, click, and repeat the click until the form is on
+ * screen. Only a lost click is retried: a click that DID open the form shows it
+ * synchronously, so the form check passes on that same attempt. (The panel
+ * renders the button only while closed, so a retry after a successful click
+ * would fail on the click — that is why the form check sits in the same
+ * attempt and not in a later one.)
+ */
+async function openInvite(page: Page): Promise<void> {
+  const open = page.getByTestId("owner-invite-open");
+  const form = page.getByTestId("owner-invite-form");
+  await layoutSettled(open);
+  await expect(async () => {
+    await open.click({ timeout: 2_000 });
+    await expect(form).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 async function createBusiness(
   slot: string,
   status: "approved" | "inactive" = "approved",
@@ -150,9 +175,9 @@ async function createBusiness(
       description: "נוצר ע״י ספק הבדיקות של MEH-2974 ונמחק בסוף הריצה.",
       category_ids: [],
       // MEH-3246: an invite needs a business that is complete enough to
-      // publish — at least one photo, and a licence number when a category
-      // requires one (services/invite_gate.py, 422 otherwise). No category
-      // here, so no licence is owed; the photo is the one the other flows use.
+      // publish — at least one photo (services/invite_gate.py, 422
+      // otherwise; a licence number is not required since MEH-3026). The
+      // photo is the one the other flows use.
       images: [TEST_IMAGE],
     },
   });
@@ -242,8 +267,7 @@ test.describe("owner invite — the admin panel", () => {
     await expect(page.getByTestId("owner-invite-result")).toHaveCount(0);
     // 0 invites × OPEN: the form, and the warning that this page is ALREADY
     // live — the state the admin is told to fix before minting a link.
-    await page.getByTestId("owner-invite-open").click();
-    await expect(page.getByTestId("owner-invite-form")).toBeVisible();
+    await openInvite(page); // asserts the form is visible
     await expect(page.getByTestId("owner-invite-status-live")).toBeVisible();
     await expect(page.getByTestId("owner-invite-status-hidden")).toHaveCount(0);
   });
@@ -254,7 +278,7 @@ test.describe("owner invite — the admin panel", () => {
     const business = await createBusiness("panel-hidden", "inactive");
     await page.goto(`/he/admin/producers/${business.id}/edit`);
     await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("owner-invite-open").click();
+    await openInvite(page);
     // The other arm of the same matrix cell, and the one that proves the panel
     // renders at all on a hidden business — it was gated on `approved` until
     // the card's v3 revision, which would have made this flow unreachable.
@@ -268,7 +292,7 @@ test.describe("owner invite — the admin panel", () => {
     const business = await createBusiness("panel-mint", "inactive");
     await page.goto(`/he/admin/producers/${business.id}/edit`);
     await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("owner-invite-open").click();
+    await openInvite(page);
     // The address field is left EMPTY on purpose: the submit must enable
     // without it since v3, which is the assertion this test exists for.
     await page.getByTestId("owner-invite-name").fill("דנה הבדיקה");
@@ -313,14 +337,13 @@ test.describe("owner invite", () => {
     // Minted with no address, so the field is empty and hers to fill.
     await expect(page.getByTestId("owner-invite-email")).toHaveValue("");
 
-    // Refused until a code is live — asserted BEFORE anything is typed, and
-    // again after the password alone, so the button's disabled state is shown
-    // to depend on the code rather than on the form being empty.
-    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
-    await page.getByTestId("owner-invite-password").fill(OWNER_PASSWORD);
-    await page.getByTestId("owner-invite-terms").check();
-    await page.getByTestId("owner-invite-declaration").check();
-    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
+    // MEH-3662: one step at a time. Before a code is live only the address
+    // and the send button are on screen — no code field, no password, no
+    // submit — so nothing can be sent without a code.
+    await expect(page.getByTestId("owner-invite-send-code")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-code")).toHaveCount(0);
+    await expect(page.getByTestId("owner-invite-password")).toHaveCount(0);
+    await expect(page.getByTestId("owner-invite-submit")).toHaveCount(0);
 
     // The real round trip. Its answer is deliberately the same whatever
     // happened on the far side, so the only thing to assert is that the page
@@ -330,10 +353,14 @@ test.describe("owner invite", () => {
     await expect(page.getByTestId("owner-invite-code-sent")).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByTestId("owner-invite-code")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-password")).toHaveCount(0);
 
     // A WRONG code is refused by the SERVER, and its message is rendered
     // verbatim. The right one is unreachable from a browser — see the header.
     await page.getByTestId("owner-invite-code").fill("000000");
+    await page.getByTestId("owner-invite-password").fill(OWNER_PASSWORD);
+    await page.getByTestId("owner-invite-consent").check();
     await expect(page.getByTestId("owner-invite-submit")).toBeEnabled();
     await page.getByTestId("owner-invite-submit").click();
     await expect(page.getByTestId("owner-invite-error")).toBeVisible({ timeout: 15_000 });

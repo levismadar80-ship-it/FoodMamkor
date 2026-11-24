@@ -3,7 +3,8 @@
 Two layers:
 1. Render: all 12 HTML templates are built (the report_info one through its
    real route) and each must carry the <img> with alt «מהמקור» and an
-   absolute https URL to /email-logo.png (frontend_url set to production),
+   absolute https URL to the public origin's /email-logo.png in every
+   environment (MEH-3583),
    above its first heading or paragraph.
 2. Scan: every module under backend/app that contains an HTML document
    (`<html`, any case, any attributes) must make one real email_logo_html()
@@ -142,13 +143,93 @@ def test_every_html_email_starts_with_the_logo(prod_site, monkeypatch, client, d
         _assert_logo_first(html, label)
 
 
-def test_logo_url_follows_frontend_url(monkeypatch):
-    monkeypatch.setattr(settings, "frontend_url", "https://staging.mehamakor.online/")
-    assert (
-        email_branding.email_logo_url()
-        == "https://staging.mehamakor.online/email-logo.png"
-    )
+@pytest.mark.parametrize(
+    "frontend_url",
+    [
+        "https://staging.mehamakor.online/",
+        "https://staging.mehamakor.co.il",
+        "http://localhost:3000",
+        "https://mehamakor.co.il",
+    ],
+)
+def test_logo_url_is_public_production_in_every_environment(monkeypatch, frontend_url):
+    """MEH-3583: the logo never follows frontend_url. Both staging hosts answer
+    302 → vercel.com/login (Deployment Protection), so a mail client's image
+    proxy got no image and Gmail showed «?». The old test here asserted the
+    opposite — that the logo follows frontend_url — and pinned the bug."""
+    monkeypatch.setattr(settings, "frontend_url", frontend_url)
+    assert email_branding.email_logo_url() == "https://mehamakor.co.il/email-logo.png"
     assert 'alt="מהמקור"' in email_logo_html()
+
+
+STAGING_FRONTEND = "https://staging.mehamakor.online"
+# The one host every mail client can fetch from: public, no auth, no redirect.
+PUBLIC_ORIGIN = "https://mehamakor.co.il"
+IMG_TAG = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+ATTR = re.compile(r'\b(src|width|height|alt)="([^"]*)"', re.IGNORECASE)
+HREF = re.compile(r'\bhref="([^"]*)"', re.IGNORECASE)
+# What Gmail, Outlook and Apple Mail all render: no SVG (Gmail/Outlook drop it),
+# no WebP (Outlook desktop), no data: URIs (Gmail strips them).
+EMAIL_IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif")
+
+
+def _email_image_problems(html: str) -> list[str]:
+    problems = []
+    imgs = IMG_TAG.findall(html)
+    if not imgs:
+        problems.append("no <img> at all")
+    for tag in imgs:
+        attrs = {k.lower(): v for k, v in ATTR.findall(tag)}
+        src = attrs.get("src", "")
+        if not src.startswith(PUBLIC_ORIGIN + "/"):
+            problems.append(f"image not on the public origin: {src!r}")
+        if not src.split("?")[0].lower().endswith(EMAIL_IMAGE_EXT):
+            problems.append(f"image is not PNG/JPEG/GIF: {src!r}")
+        for need in ("width", "height", "alt"):
+            if not attrs.get(need):
+                problems.append(f"<img> without {need}: {tag[:80]}")
+    for href in HREF.findall(html):
+        if not href.startswith(("https://", "mailto:")):
+            problems.append(f"link is not absolute https: {href!r}")
+    return problems
+
+
+def test_image_guard_catches_what_it_claims():
+    """Control (testing.md): the checker on inputs whose answers are known."""
+    good = (
+        '<img src="https://mehamakor.co.il/email-logo.png" width="120" height="30" alt="x">'
+        '<a href="https://staging.mehamakor.online/x">a</a><a href="mailto:a@b.c">m</a>'
+    )
+    assert _email_image_problems(good) == []
+    for bad in (
+        # the exact staging-era URL that broke (MEH-3583)
+        '<img src="https://staging.mehamakor.online/email-logo.png" width="1" height="1" alt="x">',
+        '<img src="/email-logo.png" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/logo.svg" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.webp" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" height="1">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" height="1" alt="x">'
+        '<a href="/reset">r</a>',
+    ):
+        assert _email_image_problems(bad), bad
+
+
+def test_every_html_email_images_load_when_sent_from_staging(monkeypatch, client, db):
+    """MEH-3583: render every template the way staging sends it (frontend_url =
+    a protected staging host) and require every image to be a public,
+    absolute https PNG/JPEG/GIF with width/height/alt. Before the fix every
+    template failed here: the logo src was the staging host."""
+    monkeypatch.setattr(settings, "frontend_url", STAGING_FRONTEND)
+    monkeypatch.setattr(settings, "resend_api_key", "re_test_dummy")
+    rendered = _render_all(monkeypatch, client, db)
+    assert len(rendered) == 12, sorted(rendered)
+    failures = {
+        label: problems
+        for label, html in rendered.items()
+        if (problems := _email_image_problems(html or ""))
+    }
+    assert not failures, failures
 
 
 FRONTEND_PUBLIC = Path(__file__).resolve().parents[1] / "frontend" / "public"
@@ -231,24 +312,10 @@ def test_no_html_email_in_the_backend_without_the_logo():
         assert calls >= docs, (
             f"{path.relative_to(BACKEND_APP)}: {docs} HTML document(s), {calls} logo call(s)"
         )
-    # Control: the scan must have found the files it exists for, or it proves nothing.
-    # MEH-2974 moved both numbers by exactly one: `send_owner_invite_email` is a
-    # fifth HTML document in auth_emails.py, and it carries `email_logo_html()`
-    # like the other four. The pin is the control — it is what makes "every HTML
-    # email has the logo" a measurement rather than a scan that found nothing.
-    # v3 of the same card added a sixth: `send_owner_invite_code_email`, the
-    # 6-digit code mail, which carries the logo too.
-    assert checked.get("services/auth_emails.py") == (6, 6), checked
-    # MEH-3079 moved the total by one: the weekly owner summary
-    # (services/weekly_owner_summary.py) is a new HTML document with its logo.
-    assert checked.get("services/weekly_owner_summary.py") == (1, 1), checked
-    # MEH-3260 moved it by one more: the admin mail about a reported review
-    # (services/review_reports.py) is a new HTML document with its logo.
-    assert checked.get("services/review_reports.py") == (1, 1), checked
-    # MEH-3300 moved it by one more: the newsletter confirm-link email in
-    # routers/marketing.py is a second HTML document there, with its logo.
-    assert checked.get("routers/marketing.py") == (2, 2), checked
-    # MEH-3256 (D9) moved it by one more: the «ניתוק בעלים» notice
-    # (services/owner_detach.py), with its logo.
-    assert checked.get("services/owner_detach.py") == (1, 1), checked
-    assert sum(d for d, _ in checked.values()) == 18, checked
+    # Control: the scan must have found the file it exists for, or it proves
+    # nothing. MEH-3621: every email is built from email_layout.frame(), so the
+    # whole backend has exactly ONE HTML document, and it carries the logo. A
+    # template that builds its own <html> again shows up here as a second
+    # file. (Until 21/11 this pinned 18 documents in 9 files, one per
+    # hand-built template; MEH-2974, 3079, 3260, 3300 and 3256 each moved it.)
+    assert checked == {"services/email_layout.py": (1, 1)}, checked

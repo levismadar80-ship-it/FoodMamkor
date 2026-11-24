@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "node -e \"const f='scripts/build-copy-screens.mjs';require('fs').existsSync(f)&&require('child_process').execFileSync(process.execPath,[f],{stdio:'inherit'})\"",
+    "predev": "node scripts/build-copy-screens.mjs",
     "dev": "next dev -p 3000",
+    "prebuild": "node scripts/build-copy-screens.mjs",
     "build": "next build",
     "postbuild": "node scripts/static-routes-guard.mjs",
     "start": "next start -p 3000",
@@ -20,10 +23,10 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
-    "@sentry/nextjs": "^11.12.0",
+    "@sentry/nextjs": "^11.15.0",
     "@swc/helpers": "^0.5.24",
     "@t3-oss/env-nextjs": "^0.13.11",
-    "@vercel/speed-insights": "^1.3.1",
+    "@vercel/speed-insights": "^2.1.0",
     "axios": "^1.21.1",
     "framer-motion": "^13.1.1",
     "leaflet": "^1.9.4",
@@ -31,8 +34,8 @@
     "leaflet.markercluster": "^1.5.3",
     "lenis": "^1.3.27",
     "next": "^16.4.6",
-    "next-intl": "^4.15.1",
-    "posthog-js": "^1.449.2",
+    "next-intl": "^4.15.3",
+    "posthog-js": "^1.453.0",
     "qrcode": "1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -53,8 +56,8 @@
     "@types/node": "^26.6.6",
     "@types/react": "19.2.14",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vitest/coverage-v8": "^4.1.11",
-    "autoprefixer": "^10.6.2",
+    "@vitest/coverage-v8": "^4.1.12",
+    "autoprefixer": "^10.7.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.6",
     "eslint-plugin-i18next": "^6.1.5",
@@ -63,12 +66,28 @@
     "eslint-plugin-security": "^4.2.1",
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-unicorn": "^64.0.0",
+    "globals": "14.0.0",
     "jiti": "^2.7.0",
     "jsdom": "^30.0.1",
-    "knip": "^6.45.1",
+    "knip": "^6.46.1",
     "orval": "8.48.0",
     "postcss": "^8.5.33",
     "tailwindcss": "^3.4.13",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.12"
+  },
+  "overrides": {
+    "vite": "^8.3.8",
+    "brace-expansion@1": "^1.1.22",
+    "brace-expansion@5": "^5.0.13",
+    "@google/design.md": {
+      "zod": "$zod"
+    },
+    "dompurify": "^3.4.18",
+    "fflate@0.4": "^0.4.9",
+    "postcss-selector-parser@6": "^6.1.6",
+    "eslint-plugin-sonarjs": {
+      "minimatch": "^11.0.9"
+    },
+    "typescript-eslint": "^8.73.0"
   }
 }

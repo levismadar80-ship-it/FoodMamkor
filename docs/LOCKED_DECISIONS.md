@@ -32,32 +32,36 @@ the container is up, Railway just can't reach it.
 
 ---
 
-## Anthropic client: always pass `http_client=httpx.Client()`
+## Anthropic client: always pass `http_client=anthropic.DefaultHttpxClient()`
 
 **Decision:** always initialize the Anthropic client with
-`http_client=httpx.Client()`.
+`http_client=anthropic.DefaultHttpxClient()` (updated 22/11/2026, the
+anthropic 0.107 → 2.10 bump, PR #5154; before that, `httpx.Client()`).
 
-**Why:** the anthropic 0.39 SDK calls `httpx.Client(proxies=...)`
-internally, which raises `TypeError` against httpx 0.28+ (the kwarg was
-renamed from `proxies=` to `proxy=`). Passing our own `http_client`
-bypasses the internal call.
+**Why:** originally, the anthropic 0.39 SDK called `httpx.Client(proxies=...)`
+internally, which raises `TypeError` against httpx 0.28+, and passing our own
+client bypassed that. Since anthropic 1.0 the SDK runs on httpx2 and raises
+`TypeError` at construction when handed a plain `httpx.Client`, so the old
+pattern now breaks the client it was meant to protect. `DefaultHttpxClient`
+is the SDK's own re-export: it always matches the SDK's HTTP package.
 
 **Pattern:**
 
 ```python
 anthropic.Anthropic(
     api_key=settings.anthropic_api_key,
-    http_client=httpx.Client(),
+    http_client=anthropic.DefaultHttpxClient(),
 )
 ```
 
 **Files:** `backend/app/routers/chat.py`,
-`backend/app/services/home_product_moderation.py`.
+`backend/app/services/moderation_common.py` (`make_anthropic_client`, MEH-3619).
 
 **The trap:** the `TypeError` is caught by the AI fail-open mechanism —
-no user-facing 5xx, just a silent Hebrew "offline" message. Removing the
-kwarg appears to "work" in testing but silently disables AI features in
-production.
+no user-facing 5xx, just a silent Hebrew "offline" message. A wrong client
+appears to "work" in tests that mock the SDK but silently disables AI
+features in production. `tests/test_anthropic_http_client.py` builds every
+client for real so this reds in CI.
 
 ---
 

@@ -6,27 +6,36 @@
  * Purpose:  The buyer's status page for one on-site order: where it stands,
  *           when and where to collect it, the pickup code, what to pay, and
  *           the two things she can do — cancel, or accept a proposed change.
- * Touches:  lib/order-status.js (POST /product-orders/status…). Reads the
+ * Touches:  lib/buyer-order.js (POST /product-orders/status…). Reads the
  *           token from `#t=` once and keeps it in memory only.
  * Does NOT: take payment (paid directly to the business, ADR-042 §5), or show
  *           the buyer's own phone or address. A missing, wrong or expired
  *           link, or ordering switched off, is the site's 404.
- * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
- * History:  MEH-3216 stage 5a (creation)
+ * Related:  app/[locale]/order/[id]/page.js, lib/buyer-order.js
+ * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»); MEH-3620 («כתבו ביקורת» once handed);
+ *           MEH-3755 (business link, contact, nav — OrderBusinessLinks.jsx);
+ *           MEH-3764 («להזמין שוב» once finished)
  */
 
 import { useEffect, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
+import AddToCalendarButton from "@/components/ui/AddToCalendarButton";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import InlineMessage from "@/components/ui/InlineMessage";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
-import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
+import { useRouter } from "@/i18n/navigation";
+import { trackEvent } from "@/lib/analytics";  // MEH-3794
+import { canOrderAgain, stashOrderAgain } from "@/lib/order-again";
+import { producerPath } from "@/lib/producer-path";
+import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -46,7 +55,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: line.name })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
       ))}
     </ul>
   );
@@ -69,6 +78,26 @@ function Proposal({ order, busy, onAccept, onCancel }) {
         <Button variant="outlined" onClick={onCancel} disabled={busy}>{t("cancel")}</Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * MEH-3764: put the finished order's items back in the cart on the business page.
+ * @param {{ order: any, primary: boolean }} props
+ */
+function OrderAgain({ order, primary }) {
+  const t = useTranslations("order_again");
+  const router = useRouter();
+  const go = () => {
+    // MEH-3794: status and line count only, never the order, business or account.
+    trackEvent("order_again_clicked", { status: order.status, lines: order.items.length });
+    stashOrderAgain(order.producer_id, order.items);
+    router.push(/** @type {string} */ (producerPath({ id: order.producer_id })));
+  };
+  return (
+    <Button variant={primary ? "primary" : "outlined"} onClick={go} data-testid="order-again">
+      {t("button")}
+    </Button>
   );
 }
 
@@ -115,6 +144,20 @@ export function OrderStatusView({ order, onChange, refOf }) {
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />
       )}
+      {view.when && order.slot_start && order.slot_end && (
+        <AddToCalendarButton
+          testId="order-add-to-calendar"
+          slot={{
+            uid: `order-${order.id}`,
+            start: order.slot_start,
+            end: order.slot_end,
+            title: t(view.when === "when_pickup" ? "calendar_pickup" : "calendar_delivery", { business_name: order.producer_name }),
+            location: view.when === "when_pickup" ? order.pickup_address : null,
+            // No URL on purpose: the page opens only with the #t= token, and a
+            // calendar file is not a place to keep that secret.
+          }}
+        />
+      )}
       {view.code && (
         <div className="rounded-lg border border-border bg-surface p-4 text-center" data-testid="order-code">
           <p className="text-3xl font-black tracking-widest text-text" dir="ltr">{order.pickup_code}</p>
@@ -126,11 +169,20 @@ export function OrderStatusView({ order, onChange, refOf }) {
       )}
       <Lines order={order} />
       {view.toPay && <p className="font-medium text-text">{t("to_pay", { total: shekelsText(toPayAgorot(order)) })}</p>}
+      {/* MEH-3755: the business page, its contact button, and nav to the pickup address. */}
+      <OrderBusinessLinks producerId={order.producer_id} pickupAddress={view.when === "when_pickup" ? order.pickup_address : null} />
       {state.error && !state.asking && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {view.cancel === "cancel" && !view.proposal && (
         <Button variant="outlined" onClick={() => setState({ asking: true })} data-testid="order-cancel">{t("cancel")}</Button>
       )}
       {view.cancel === "too_late" && <p className="text-sm text-fg-muted">{t("too_late")}</p>}
+      {/* MEH-3620: the business's verified-review link, sent only once handed. */}
+      {order.status === "handed" && order.review_url && (
+        <Button onClick={() => window.location.assign(order.review_url)} data-testid="order-write-review">
+          {t("write_review")}
+        </Button>
+      )}
+      {canOrderAgain(order) && <OrderAgain order={order} primary={!(order.status === "handed" && order.review_url)} />}
       {state.asking && (
         <CancelDialog
           busy={Boolean(state.busy)}

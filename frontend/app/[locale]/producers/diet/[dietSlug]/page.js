@@ -33,6 +33,8 @@ import {
 } from "@/lib/diet-pages";
 import SectionHeading from "@/components/ui/SectionHeading";
 import BackLink from "@/components/ui/BackLink";
+import { siteOgImageUrl } from "@/lib/og-site-image";
+import { producerPath } from "@/lib/producer-path";
 
 // How many businesses the SSR'd grid renders. The ItemList JSON-LD mirrors
 // exactly this set, so a crawler sees the same businesses in the markup and in
@@ -179,13 +181,13 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath(path, locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     twitter: {
       card: "summary_large_image",
       title: socialTitle,
       description,
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates(path, locale),
   };
@@ -237,7 +239,7 @@ export default async function DietLandingPage({ params }) {
     items: items.map((p) => ({
       name: p.name,
       url: urlForLocalePath(
-        p.slug ? `/${p.slug}` : `/producer/${p.id}`,
+        producerPath(p),
         locale,
       ),
     })),

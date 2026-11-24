@@ -98,6 +98,8 @@ export const ProducerListSchema = z.object({
     // MEH-3255 (D10): served on every nested category; declared so the
     // nested-parity guard does not strip it.
     requires_license: z.boolean().optional(),
+    // MEH-3076: stable key for the /en category name (lib/category-label.js).
+    slug: z.string().nullable().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),
@@ -198,6 +200,8 @@ export const ProducerListSchema = z.object({
     pickup_days: z.array(z.string()).nullable().optional(),
     order_cutoff_day: z.string().nullable().optional(),
     order_cutoff_time: z.string().nullable().optional(),
+    // MEH-3593: «הוראות איסוף» — declared so the parse does not strip it.
+    pickup_note: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
@@ -341,7 +345,7 @@ export const ProducerListSchema = z.object({
   // thing that fails a parse. Inner fields stay permissive anyway, because the
   // /map feed parses all-or-nothing (useProducersFeed.js:41) and one odd range
   // must never cost a whole business — `normalizeDayEntries`
-  // (lib/orderWindow.js:93) already drops any range that is not valid HH:MM.
+  // (lib/order-window-status.js:93) already drops any range that is not valid HH:MM.
   order_window: z
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
     .nullable()
@@ -357,7 +361,7 @@ export const ProducerListSchema = z.object({
   // The per-date entry is `.nullable()` ON PURPOSE even though the backend
   // validator never writes a null entry: this literal guards two all-or-nothing
   // feeds, and a hand-edited or imported row with one null entry must cost that
-  // one date (the readers skip it — orderWindow.js `overrideFor`), never the
+  // one date (the readers skip it — order-window-status.js `overrideFor`), never the
   // whole business. Tightening it here would turn a data blemish into a
   // vanished producer, which is the exact failure the permissive inner shape
   // above exists to prevent.
@@ -425,6 +429,11 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-3216 stage 5b: whether the page offers «הוספה» (the route folds in
   // the site flag and the business's switch). Optional: older payloads lack it.
   takes_site_orders: z.boolean().optional(),
+  // MEH-2952 chunk 3: true only for a seeded test business — the page then
+  // carries robots noindex and no JSON-LD. Declared because z.object strips.
+  noindex: z.boolean().optional(),
+  // MEH-3611: the business logo beside its name. Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),
@@ -662,4 +671,6 @@ export const LocationInputSchema = z.object({
   pickup_days: z.array(z.string()).max(14).optional(),
   order_cutoff_day: z.string().nullable().optional(),
   order_cutoff_time: z.string().nullable().optional(),
+  // MEH-3593: the server enforces ≥ 3 letters and one line (Hebrew 422).
+  pickup_note: z.string().trim().max(200).nullable().optional(),
 });

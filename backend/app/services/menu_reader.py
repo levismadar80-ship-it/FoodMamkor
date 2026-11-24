@@ -27,6 +27,8 @@ from typing import Any
 
 from app.config import AI_MENU_MODEL, settings
 from app.schemas.menu_import import MenuRow
+from app.schemas.schemas import strip_emoji_from_name
+from app.services import ai_budget
 
 logger = logging.getLogger(__name__)
 
@@ -104,15 +106,14 @@ def _get_client() -> Any:
         return None
     try:
         import anthropic
-        import httpx
 
-        # CLAUDE.md lock: always an explicit httpx.Client. A menu with several
+        # CLAUDE.md lock: always the SDK's DefaultHttpxClient (httpx2). A menu with several
         # pages takes ~5–15 s; 60 s and no retry stay under the browser's
         # 120 s upload timeout (lib/api.js), so a slow read ends as a 503 the
         # screen can show, not as a request the browser gave up on.
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(timeout=60.0),
+            http_client=anthropic.DefaultHttpxClient(timeout=60.0),
             max_retries=0,
         )
     except Exception as exc:  # pragma: no cover - import failure only
@@ -158,7 +159,9 @@ def to_rows(items: list[dict[str, Any]]) -> list[MenuRow]:
     for item in items[:MAX_ROWS]:
         if not isinstance(item, dict):
             continue
-        name = _text(item.get("name"), _NAME_MAX)
+        # MEH-3671: the model may decorate a dish name; the product schema
+        # refuses emoji in names, so it is dropped here, before review.
+        name = strip_emoji_from_name(_text(item.get("name"), _NAME_MAX) or "")
         if not name:
             continue
         uncertain = {f for f in item.get("uncertain_fields") or [] if f in _UNCERTAIN}
@@ -193,7 +196,7 @@ def read_menu(files: list[tuple[str, bytes]]) -> list[MenuRow] | None:
     None means "could not read" (no key, API error, refusal, cut-off answer);
     an empty list means the model read the files and found no products."""
     client = _get_client()
-    if client is None:
+    if client is None or not ai_budget.allow("menu"):  # MEH-3498
         return None
     content: list[dict[str, Any]] = [_block(m, d) for m, d in files]
     content.append({"type": "text", "text": _PROMPT})

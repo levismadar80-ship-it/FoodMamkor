@@ -1,11 +1,12 @@
 // @ts-check
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import MapClient from "./MapClient";
 import { fetchProducersForSSR } from "@/lib/map-ssr-producers";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-476 PR 3b2: was static metadata const with hardcoded HE. Now per-locale
 // via seo.map.* keys + buildAlternates for hreflang/canonical.
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }) {
       // Include the shared OG image — Next.js REPLACES (not merges) the
       // openGraph object when overridden, so we have to re-declare the
       // image here or social previews will have no image.
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     // MEH-1060 (SEO-10): explicit Twitter card mirroring og so the page no
     // longer inherits the layout's generic site card (Next.js REPLACES twitter
@@ -36,16 +37,22 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/map", locale),
   };
 }
 
-export default async function MapPage() {
+export default async function MapPage({ params }) {
+  // MEH-3628: the locale is passed explicitly and set for the request, as on
+  // /rescue (MEH-3049). getTranslations() with no locale fell back to
+  // headers(), which made /map render per request (ƒ): it could not be
+  // prefetched, so every tap on «מפה» showed the full-page logo loader.
+  const { locale } = await params;
+  setRequestLocale(locale);
   // MEH-473: page-level metadata translation deferred to Wave 6 (SEO).
   // sr-only nav strings are functional UI, translated here.
-  const t = await getTranslations();
+  const t = await getTranslations({ locale });
   const producers = await fetchProducersForSSR();
 
   return (

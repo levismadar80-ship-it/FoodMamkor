@@ -71,9 +71,12 @@ import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
  *      same file; MEH-1599 is the newer truth and is what is asserted.
  * D2 · MT:MEH-1102:1 says the tools grid shows exactly 4 cards and names
  *      "הצגת העסק באתר" as one of them. Measured: FIVE cards, and that one is
- *      not among them — MEH-1357 removed it (tools/page.js:120-122) in favour
- *      of the persistent "צפייה בדף" link in the shell nav. Both the count and
- *      the membership are wrong. The count is asserted at its measured value.
+ *      not among them — MEH-1357 removed it in favour of the persistent
+ *      "צפייה בדף" link in the shell nav. MEH-3669 then grouped the tab: closed,
+ *      the grid links three tools; opening «אירועים» adds two. MEH-3723 took
+ *      the Google tile out and MEH-3749 put the «שיתוף» tile in (four, then
+ *      six). Both counts are
+ *      asserted at their measured values.
  * D3 · MT:MEH-1134:2 asserts that an approved+complete business shows the
  *      completeness card BELOW availability. MEH-1397 deleted that slot
  *      (page.js:800-812): the card now mounts ONLY in the completenessFirst
@@ -713,17 +716,22 @@ test.describe("dashboard shell — tools tab", () => {
     return grid;
   }
 
-  // MT:MEH-1102:1, MT:MEH-1102:3 — drift D2: the doc says four, and names one
-  // that is gone. Row 3 ("targets unchanged") is the href loop below.
-  test("the grid holds exactly five cards, and the two removed ones are absent", async ({
+  // MT:MEH-1102:1, MT:MEH-1102:3 — the tools reachable from the tab, at the
+  // MEASURED count. MEH-3669: «אירועים» (events + experiences) is a card that
+  // opens in place; «הזדמנויות» with surprise bags off (the CI default) holds
+  // one tool, so it is a plain link to group buys. MEH-3641 added «הפרופיל
+  // שלכם בגוגל» to the content group; MEH-3723 moved it to «עריכה», after «קשר».
+  // MEH-3749: the «שיתוף» tile (its own page) joins the content group.
+  // MEH-3785: the «הטבה» tile (its own page) joins «להציע ללקוחות».
+  test("closed, the grid links five tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
     page,
   }) => {
     await stubSession(page);
     const grid = await openTools(page);
 
-    // A COUNT at the MEASURED value. The doc says 4; adding or losing a card
-    // must fail this either way.
     await expect(grid.getByRole("link")).toHaveCount(5);
+    await grid.getByTestId("tool-group-events").getByRole("button").click();
+    await expect(grid.getByRole("link")).toHaveCount(7);
 
     for (const href of [
       "/producer/dashboard/events",
@@ -732,6 +740,10 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/recipes",
       // MEH-3107: the reviews tile opens the dashboard's own reviews page.
       "/producer/dashboard/reviews",
+      // MEH-3749: the share page (QR card + share kit).
+      "/producer/dashboard/share",
+      // MEH-3785: the offer page.
+      "/producer/dashboard/offer",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
@@ -743,17 +755,25 @@ test.describe("dashboard shell — tools tab", () => {
     // MEH-1357 the הצגת-העסק one (duplicate of the shell's צפייה בדף link).
     await expect(grid.locator('a[href$="/producer/dashboard/edit"]')).toHaveCount(0);
     await expect(grid.locator(`a[href$="/producer/${PRODUCER_ID}"]`)).toHaveCount(0);
+    // MEH-3723: the Google profile lives in «עריכה» now, not in «כלים».
+    await expect(grid.locator('a[href$="/producer/dashboard/google-profile"]')).toHaveCount(0);
   });
 
-  // MT:MEH-1102:2
+  // MT:MEH-1102:2 — each card (a group card or a single tile) carries its
+  // icon above the title. The open/close caret is not that icon, so the
+  // title icon is matched by its own classes.
   test("every card carries an icon above its title", async ({ page }) => {
     await stubSession(page);
     const grid = await openTools(page);
-    const cards = grid.getByRole("link");
-    const count = await cards.count();
-    expect(count).toBe(5);
-    for (let i = 0; i < count; i += 1) {
-      await expect(cards.nth(i).locator("svg"), `card ${i} has no icon`).toHaveCount(1);
+    const cards = [
+      grid.getByTestId("tool-group-events"),
+      grid.getByTestId("tool-group-opportunities"),
+      grid.locator('a[href$="/producer/dashboard/reviews"]'),
+      grid.locator('a[href$="/producer/dashboard/recipes"]'),
+      grid.getByTestId("tools-share-tile"),
+    ];
+    for (const [i, card] of cards.entries()) {
+      await expect(card.locator("svg.mb-2"), `card ${i} has no title icon`).toHaveCount(1);
     }
   });
 });

@@ -7,10 +7,12 @@ import { Receipt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { AdminBillingOverviewAdminBillingOverviewGetResponse as OverviewOut } from "@/lib/generated/api.zod";
 import InlineMessage from "@/components/ui/InlineMessage";
-import { formatPrice } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import { SkeletonTiles } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
+import BillingYearCard from "@/components/admin/BillingYearCard";
+import BillingCsvButton from "@/components/admin/BillingCsvButton";
+import { formatAgorot } from "@/lib/money";
 
 /**
  * Module:   admin/billing/page
@@ -21,12 +23,13 @@ import BackLink from "@/components/ui/BackLink";
  * Touches:  GET /admin/billing/overview (read only).
  * Does NOT: charge, change a business's state or hold a price. Every number
  *           comes from the server; the price list is ADR-042 / lib/pricing.js.
- *           No actions yet — the «needs attention» queue, manual corrections
- *           and export arrive with the billing stage (MEH-3180).
+ *           No actions yet — the «needs attention» queue and manual
+ *           corrections arrive with the billing stage (MEH-3180). The one
+ *           action is a CSV of a month (MEH-3189, read only).
  * Related:  backend/app/services/billing_summary.py · admin/AdminLayoutClient.jsx
  *           (the «חיוב» nav entry).
  * History:  MEH-3182 (creation, 2026-11-14); the six-month history (shadow
- *           billing) the same day.
+ *           billing) the same day; MEH-3189 the year-vs-ceiling card.
  *
  * Wording (Sapir, 14/11): every number is a full sentence a new admin can
  * read cold. No «סף», no bare tiles; the amount is always spelled out.
@@ -42,13 +45,10 @@ const monthName = (label, locale) =>
     year: "numeric",
   });
 
-/** @param {number} agorot */
-const shekels = (agorot) => formatPrice(Math.round(agorot) / 100);
-
 /** An amount inside a sentence, kept left-to-right. @param {number} agorot */
 const amountOf = (agorot) =>
   function Amount() {
-    return <span dir="ltr">{shekels(agorot)}</span>;
+    return <span dir="ltr">{formatAgorot(agorot)}</span>;
   };
 
 const CARD = "rounded-lg border border-border bg-surface p-4";
@@ -136,10 +136,14 @@ function MonthCard({ data }) {
             dir="ltr"
             data-testid="admin-billing-would-pay"
           >
-            {shekels(data.would_pay_total_agorot)}
+            {formatAgorot(data.would_pay_total_agorot)}
           </dd>
         </div>
       </dl>
+      {/* MEH-3189: the month as a file for the bookkeeper. */}
+      <div className="mt-4">
+        <BillingCsvButton month={data.month} />
+      </div>
     </section>
   );
 }
@@ -192,6 +196,11 @@ function HistoryMonth({ past, threshold }) {
     <li className="px-4 py-3 text-sm" data-testid="admin-billing-history-month">
       <p className="font-medium text-text">{monthName(past.month, locale)}</p>
       <p className="mt-0.5 text-fg-muted">{line}</p>
+      {past.businesses > 0 ? (
+        <div className="mt-2">
+          <BillingCsvButton month={past.month} />
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -280,6 +289,8 @@ export default function AdminBillingPage() {
       </div>
 
       <ReadyCard data={data} />
+      {/* MEH-3189: income this year against the exempt-dealer ceiling. */}
+      <BillingYearCard year={data.year} charging={charging} />
       <MonthCard data={data} />
 
       <section aria-labelledby="admin-billing-rows-title">

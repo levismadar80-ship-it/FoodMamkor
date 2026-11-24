@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { producersToMapQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
+import { categoryLabel } from "@/lib/category-label"; // MEH-3076: name follows the locale
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -17,7 +18,7 @@ import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -129,8 +130,8 @@ export default function ProducersClient({
   ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
-  // MEH-2616: the location-error strings shared with /map's GPS button.
-  const tGeo = useTranslations("map.client.errors");
+  const tGeo = useTranslations("map.client.errors"); // MEH-2616: shared with /map's GPS button
+  const tRoot = useTranslations(); // MEH-3076: category_names.<slug>
   const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   const searchParams = useSearchParams();
 
@@ -142,7 +143,7 @@ export default function ProducersClient({
   // MEH-2131: the clock for the open-now zero-result guard. `null` on the
   // server pass AND on the first client render, so both produce the same DOM;
   // the effect below fills it in afterwards. Reading `new Date()` during render
-  // is exactly what lib/orderWindow.js's header warns against — the status is
+  // is exactly what lib/order-window-status.js's header warns against — the status is
   // time-derived, so a server pass and hydration can disagree.
   const [openNowClock, setOpenNowClock] = useState(null);
   // MEH-2767: the unfiltered catalog the chip gate counts (see visibleChipDefs).
@@ -907,7 +908,7 @@ export default function ProducersClient({
       const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c ?? g.iconName ?? "");
       const style = c ? CATEGORY_STYLES[c.name] : null;
       const iconColor = c ? (style ? (style.textColor ?? style.color) : undefined) : g.iconColor;
-      const label = c ? c.name : withChipCopy({ key: g.key }).label;
+      const label = c ? categoryLabel(tRoot, c) : withChipCopy({ key: g.key }).label;
       return {
         key: g.key,
         label,
@@ -1329,7 +1330,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
   const t = useTranslations("producers");
   // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
   // business we don't — the footer link was the only way to /recommend.
-  const tNav = useTranslations("nav.footer");
+  const tRoot = useTranslations(); // nav.footer.recommend + category_names (MEH-3076)
   // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
   // `categoryChips` subset the filter row uses. That subset is data-gated on
   // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
@@ -1366,7 +1367,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
               data-testid="producers-empty-category"
               className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
-              {c.name}
+              {categoryLabel(tRoot, c)}
             </button>
           ))}
         </div>
@@ -1386,7 +1387,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
             data-testid="recommend-link-search"
             className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            {tNav("recommend")}
+            {tRoot("nav.footer.recommend")}
             <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
           </Link>
         </div>

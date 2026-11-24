@@ -1,7 +1,7 @@
 """meh3526_producer_staff
 
 Revision ID: c6e8a0b2d4f5
-Revises: b4e6a8c0d2f3
+Revises: d6a8b0c2e4f5
 Create Date: 2026-11-21 09:00:00.000000+00:00
 
 MEH-3526, EXPAND only: one new table, nothing existing is touched.
@@ -56,7 +56,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "c6e8a0b2d4f5"
-down_revision: Union[str, None] = "b4e6a8c0d2f3"
+down_revision: Union[str, None] = "d6a8b0c2e4f5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

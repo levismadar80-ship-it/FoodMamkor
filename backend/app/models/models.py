@@ -185,9 +185,10 @@ class Producer(Base):
         String(20), nullable=False, default="producer", server_default="producer"
     )
     # MEH-2952 (MEH-2892 §C.3): a seeded test business that may run on
-    # production for the post-release smoke. Hidden from every public surface
-    # by `producer_listing.is_business()` (the one rule; `include_test=True`
-    # only where a guard test allows it). Expand-only, NOT NULL + server
+    # production for the post-release smoke. Hidden from every public list,
+    # search and count by `producer_listing.is_business()` (the one rule;
+    # `include_test=True` only where a guard test allows it: by-slug, whose
+    # answer then says `noindex`, chunk 3). Expand-only, NOT NULL + server
     # default false (revision b8cb5480552f). Writers: the seed script and an
     # admin toggle only (chunk 4) — never a self-service form, never a public
     # response (tests/test_meh2952_is_test_guards.py).
@@ -259,6 +260,10 @@ class Producer(Base):
     # migration: f7d2a9c4b1e8.
     owner_bio = Column(Text, nullable=True)
     owner_photo_url = Column(String(500), nullable=True)
+    # MEH-3611: the business's logo (Cloudinary URL from /upload/image, saved by
+    # PUT /producers/me). NULL = no logo; surfaces show the name's first letter.
+    # Registered in services/image_refs.py so the orphan sweep keeps it.
+    logo_url = Column(String(500), nullable=True)
     # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" heritage
     # line on the public masthead (a trust signal for veteran businesses, not a
     # badge). Nullable, Expand-only (ADR-007, no backfill) — NULL = the owner
@@ -815,6 +820,13 @@ class Producer(Base):
         return [cc for c in value if (cc := canonical_city(c))]
 
     @property
+    def noindex(self) -> bool:
+        """MEH-2952 chunk 3: what `ProducerDetailOut.noindex` reads through
+        `from_attributes`, so every builder of a detail answer gets it right
+        without setting it by hand. True only for a seeded test row."""
+        return bool(self.is_test)
+
+    @property
     def active_offer(self) -> "ProducerOffer | None":
         """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
 
@@ -1253,6 +1265,7 @@ from app.models.catalog import (  # noqa: E402
     ProducerLocation as ProducerLocation,
     ProducerOffer as ProducerOffer,
     Product as Product,
+    ProductVariant as ProductVariant,  # MEH-3617
 )
 from app.models.engagement import (  # noqa: E402
     AlertLog as AlertLog,
@@ -1272,6 +1285,7 @@ from app.models.events import (  # noqa: E402
     Experience as Experience,
     GroupBuy as GroupBuy,
     GroupBuyCommit as GroupBuyCommit,
+    GroupBuyWaitlist as GroupBuyWaitlist,
     REGISTRATION_METHODS as REGISTRATION_METHODS,
     Registration as Registration,
 )
@@ -1311,3 +1325,5 @@ import app.models.admin_passkeys  # noqa: E402,F401
 
 # MEH-3526: staff who handle a business's orders (own module, same reason).
 import app.models.producer_staff  # noqa: E402,F401
+# MEH-3535: the durable email queue (own module, same reason).
+import app.models.email_outbox  # noqa: E402,F401

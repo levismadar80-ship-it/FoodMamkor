@@ -17,6 +17,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 const { post } = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock("@/lib/api", () => ({ default: { post } }));
+const { trackPrimaryCtaClick } = vi.hoisted(() => ({ trackPrimaryCtaClick: vi.fn() }));
+vi.mock("@/lib/contact-tracking", () => ({ trackPrimaryCtaClick }));
 
 import ChatWidget from "@/components/ChatWidget";
 import BusinessChatPrompt from "@/app/[locale]/producer/[id]/components/BusinessChatPrompt";
@@ -136,7 +138,7 @@ describe("MEH-3505: the questions differ per business", () => {
     expect(names.sort()).toEqual([he.chat.panel_close_label, he.chat.send_label].sort());
     fireEvent.change(screen.getByLabelText(he.chat.input_label), { target: { value: "יש חניה?" } });
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: he.chat.send_label }));
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: he.chat.send_label }));
     });
     await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     expect(post.mock.calls[0][1].producer_id).toBe(PRODUCER.id);
@@ -169,7 +171,7 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     for (const q of [B.prompts.diet_vegan, B.prompts.delivery, B.prompts.hours]) {
       expect(within(section).getByRole("button", { name: q })).toBeInTheDocument();
     }
-    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
+    expect(within(section).getByTestId("business-chat-input")).toHaveAttribute("placeholder", B.page_other);
   });
 
   it("tapping a question on the page opens the panel and sends it with producer_id", async () => {
@@ -185,17 +187,17 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     });
   });
 
-  it("a page with one question shows that question and «שאלה אחרת», two buttons", () => {
+  it("a page with one question shows that question and the send button, two buttons", () => {
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <BusinessChatPrompt producer={{ ...PRODUCER, products: [], opening_hours: null }} />
       </NextIntlClientProvider>,
     );
     const section = screen.getByTestId("business-chat-prompt");
-    expect(within(section).getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.delivery, B.page_other]);
+    expect(within(section).getAllByRole("button").map((b) => b.textContent || b.getAttribute("aria-label"))).toEqual([B.prompts.delivery, B.page_title.replace("{name}", PRODUCER.name)]);
   });
 
-  it("«שאלה אחרת» opens the panel and sends nothing", async () => {
+  it("send on an empty field opens the panel and sends nothing", async () => {
     renderPage();
     await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -225,7 +227,42 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     const section = screen.getByTestId("business-chat-prompt");
     expect(within(section).queryByTestId("business-chat-questions")).not.toBeInTheDocument();
     expect(within(section).getAllByRole("button")).toHaveLength(1);
-    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
+    expect(within(section).getByTestId("business-chat-input")).toBeInTheDocument();
+  });
+
+  // MEH-3584 (Sapir 21/11): the field on the card looked typeable but a tap
+  // opened the panel. It is a real field now: what is typed is sent.
+  it("typing in the card's field and sending opens the panel with that question sent", async () => {
+    renderPage();
+    const field = within(screen.getByTestId("business-chat-prompt")).getByRole("textbox");
+    fireEvent.change(field, { target: { value: "  יש חניה ליד?  " } });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(); // typing alone opens nothing
+    await act(async () => { fireEvent.submit(screen.getByTestId("business-chat-form")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post).toHaveBeenCalledWith("/chat", {
+      messages: [{ role: "user", content: "יש חניה ליד?" }],
+      producer_id: PRODUCER.id,
+    });
+    expect(field).toHaveValue("");
+  });
+
+  it("the card's send button sends what was typed (its name is not the panel's «שלחו שאלה»)", async () => {
+    renderPage();
+    const card = within(screen.getByTestId("business-chat-prompt"));
+    fireEvent.change(card.getByRole("textbox"), { target: { value: "יש אריזת מתנה?" } });
+    await act(async () => { fireEvent.click(card.getByRole("button", { name: B.page_title.replace("{name}", PRODUCER.name) })); });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].messages).toEqual([{ role: "user", content: "יש אריזת מתנה?" }]);
+    expect(within(screen.getByRole("dialog")).getAllByRole("button", { name: he.chat.send_label })).toHaveLength(1);
+  });
+
+  it("a whitespace-only field opens the panel and sends nothing", async () => {
+    renderPage();
+    fireEvent.change(within(screen.getByTestId("business-chat-prompt")).getByRole("textbox"), { target: { value: "   " } });
+    await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
   });
 });
 
@@ -251,5 +288,94 @@ describe("where the page's button is not shown", () => {
   it("the owner's preview (draft link, dashboard)", () => {
     render(withIntl(<PreviewModeProvider><BusinessChatPrompt producer={PRODUCER} /></PreviewModeProvider>));
     expect(screen.queryByTestId("business-chat-prompt")).not.toBeInTheDocument();
+  });
+});
+
+describe("MEH-3513: after an answer — follow-ups and «ask the business»", () => {
+  beforeEach(() => { mockMatchMedia(true); trackPrimaryCtaClick.mockReset(); });
+
+  async function askFromPage(producer, label) {
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <BusinessChatPrompt producer={producer} />
+        <ChatWidget businessOnly />
+      </NextIntlClientProvider>,
+    );
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId("business-chat-prompt")).getByRole("button", { name: label }));
+    });
+    await waitFor(() => expect(screen.getByText("תשובה")).toBeInTheDocument());
+    return within(screen.getByRole("dialog"));
+  }
+
+  it("shows only the questions not yet asked, and a WhatsApp link carrying the question", async () => {
+    const producer = { ...PRODUCER, phone: "050-1234567" };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.queryByRole("button", { name: B.prompts.delivery })).not.toBeInTheDocument();
+    expect(after.getByRole("button", { name: B.prompts.hours })).toBeInTheDocument();
+    expect(after.getByRole("button", { name: B.prompts.diet_vegan })).toBeInTheDocument();
+    const link = after.getByTestId("business-chat-handoff");
+    expect(link).toHaveTextContent(B.ask_business.replace("{name}", producer.name));
+    const text = decodeURIComponent(new URL(link.getAttribute("href")).searchParams.get("text"));
+    expect(link.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972501234567\?/);
+    expect(text.startsWith(`שלום ${producer.name}, ${B.prompts.delivery}`)).toBe(true);
+    expect(text.endsWith(he.whatsapp.question_chips.source_line)).toBe(true);
+    // wa.me opens in place, like the contact button (isPrimaryExternal).
+    expect(link).not.toHaveAttribute("target");
+    fireEvent.click(link);
+    expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "whatsapp");
+  });
+
+  it("a follow-up tap sends it with producer_id, hides the block while waiting, then drops it from the list", async () => {
+    const producer = { ...PRODUCER, phone: "050-1234567" };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    let answer;
+    post.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; }));
+    await act(async () => {
+      fireEvent.click(within(dialog.getByTestId("business-chat-after-answer")).getByRole("button", { name: B.prompts.hours }));
+    });
+    expect(post).toHaveBeenCalledTimes(2);
+    const sent = post.mock.calls[1][1];
+    expect(sent.producer_id).toBe(producer.id);
+    expect(sent.messages.at(-1)).toEqual({ role: "user", content: B.prompts.hours });
+    expect(dialog.queryByTestId("business-chat-after-answer")).not.toBeInTheDocument();
+    await act(async () => { answer({ data: { reply: "תשובה שנייה" } }); });
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.queryByRole("button", { name: B.prompts.hours })).not.toBeInTheDocument();
+    expect(after.getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.diet_vegan]);
+  });
+
+  it("one question left and no contact channel: that question and no link", async () => {
+    const producer = { ...PRODUCER, products: [] };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.hours]);
+    expect(after.queryByTestId("business-chat-handoff")).not.toBeInTheDocument();
+  });
+
+  it("every question asked: only the link stays", async () => {
+    const producer = { ...PRODUCER, phone: "050-1234567", products: [], opening_hours: null };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.queryAllByRole("button")).toHaveLength(0);
+    expect(after.getByTestId("business-chat-handoff")).toBeInTheDocument();
+  });
+
+  it("a business with no contact channel and nothing left to ask shows nothing under the answer", async () => {
+    const producer = { ...PRODUCER, products: [], opening_hours: null };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    expect(dialog.queryByTestId("business-chat-after-answer")).not.toBeInTheDocument();
+  });
+
+  it("a website channel links like the contact button: referral UTM, new tab, referrer kept", async () => {
+    const producer = { ...PRODUCER, primary_contact_method: "website", website: "example.com" };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    const link = dialog.getByTestId("business-chat-handoff");
+    expect(link).toHaveAttribute("href", "https://example.com/?utm_source=mehamakor&utm_medium=referral");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener");
+    fireEvent.click(link);
+    expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "website");
   });
 });

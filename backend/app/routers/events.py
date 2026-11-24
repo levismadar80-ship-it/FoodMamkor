@@ -366,7 +366,7 @@ def create_event(
         user.producer_id,  # type: ignore[arg-type]
         "new_event",
         AlertContent(
-            title=f"🎉 אירוע חדש: {data.title}",
+            title=f"אירוע חדש: {data.title}",
             body=f"{producer_name} — {data.city or ''}\n{data.event_date}",
             url=f"/events/{event.id}",
         ),

@@ -2,6 +2,8 @@
 // §10 "Meet a Producer" selector — extracted from use-home-page.js for unit
 // testability (MEH-542). Reuses the existing is_recommended flag (no schema).
 
+import { producerPath } from "./producer-path";
+
 /**
  * Newest recommended producer with a usable short_description, mapped to the
  * §10 editorial shape; null ⇒ section self-hides (HomeStaticBlocks.jsx:199).
@@ -34,11 +36,13 @@ export function selectFeaturedProducer(producers) {
     name: source.name,
     city: source.city,
     category: source.categories?.[0]?.name,
+    // MEH-3076: the slug picks the shown name (category_names.<slug>).
+    categorySlug: source.categories?.[0]?.slug,
     photo: source.images?.[0],
     quote: source.short_description.trim(),
     // MEH-2441: no `story` — the green band shows one line (the quote); the
     // producer page owns the long description.
-    // slug → pretty URL, else the UUID fallback (mirrors ProducerCard.jsx:185).
-    href: source.slug ? `/${source.slug}` : `/producer/${source.id}`,
+    // slug → pretty URL, else the UUID fallback (producerPath, MEH-3707).
+    href: producerPath(source),
   };
 }

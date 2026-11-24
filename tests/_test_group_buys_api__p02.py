@@ -18,6 +18,8 @@ from uuid import uuid4
 from _test_group_buys_api__common import _contact_details_in  # noqa: F401
 from _test_group_buys_api__common import _make_group_buy  # noqa: F401
 from _test_group_buys_api__common import _producer_user  # noqa: F401
+JOIN_SUBJECT_PREFIX = "מהמקור — ההצטרפות לקבוצה"
+
 
 class TestFundedNotificationDispatch:
     """Idempotency, recipient fan-out, and the best-effort contract."""
@@ -26,6 +28,10 @@ class TestFundedNotificationDispatch:
     def _capture_sends(monkeypatch):
         sends = []
         def capture(to, subject, body, html=None, test_cause=False):
+            # MEH-3591: the join confirmation is its own email with its own
+            # tests (test_meh3591_missing_emails.py); these count funded mail.
+            if subject.startswith(JOIN_SUBJECT_PREFIX):
+                return
             sends.append({"to": to, "subject": subject, "body": body})
 
         monkeypatch.setattr("app.services.group_buy_notifications.send_email", capture)
@@ -525,9 +531,10 @@ class TestCancelNotification:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None, test_cause=False: sends.append(
-                {"to": to, "subject": subject, "body": body}
-            ),
+            # MEH-3591: skip the join confirmation, as in the class above.
+            lambda to, subject, body, html=None, test_cause=False: None
+            if subject.startswith(JOIN_SUBJECT_PREFIX)
+            else sends.append({"to": to, "subject": subject, "body": body}),
         )
         return sends
 
@@ -562,7 +569,7 @@ class TestCancelNotification:
         assert sent["subject"] == 'מהמקור — הקבוצה "רכש קמח מלא" בוטלה'
         assert sent["body"] == (
             "שלום,\n\n"
-            'הקבוצה שהצטרפת אליה, "רכש קמח מלא", בוטלה על ידי מאפיית הגליל.\n'
+            'הקבוצה שהצטרפתם אליה, "רכש קמח מלא", בוטלה על ידי מאפיית הגליל.\n'
             "לשאלות צרו קשר עם מאפיית הגליל.\n\n"
             "בברכה,\nצוות מהמקור"
         )
@@ -666,10 +673,10 @@ class TestCancelNotification:
         producer, owner = _producer_user(db, email="cn_own9@test.com")
         gb = _make_group_buy(db, producer, min_participants=5)
         self._join(client, db, gb, "cn_o1@test.com")
-        resp = client.post(
-            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(owner)
-        )
-        assert resp.status_code == 201, resp.text
+        # MEH-3691: the commit route now refuses an owner's own group, so the
+        # self-join is a row that predates the refusal, written directly.
+        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=owner.id, quantity=1))
+        db.commit()
 
         assert self._patch(client, gb, "cancelled", owner).status_code == 200
         assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]

@@ -6,12 +6,15 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import FadeInSection from "@/components/FadeInSection";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { producerPath } from "@/lib/producer-path";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -155,7 +158,7 @@ function HomeProducerStrip({
                 </div>
               ))}
             {items.map((p) => {
-            const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+            const href = producerPath(p);
             const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
             return (
               <Link
@@ -212,6 +215,7 @@ function HomeProducerStrip({
  *   name: string,         // first name — interpolated into both CTAs
  *   attribution: string,  // "שם מלא · עסק, עיר" meta line (middle-dot rhythm)
  *   category?: string,
+ *   categorySlug?: string,
  *   city?: string,
  *   photo?: string,       // Cloudinary URL — helper applies f_auto,q_auto
  *   href?: string,        // producer-page target; meet-CTA hidden without it
@@ -220,6 +224,7 @@ function HomeProducerStrip({
  */
 export function HomeFeaturedProducer({ featured }) {
   const t = useTranslations("home.featured");
+  const tRoot = useTranslations();
   // MEH-1976: above the `if (!featured)` early return — hooks cannot be
   // conditional. Holds the src that failed so a new photo clears it on render.
   const [failedSrc, setFailedSrc] = useState(null);
@@ -239,7 +244,10 @@ export function HomeFeaturedProducer({ featured }) {
   // The "מאחורי הקלעים" sub-heading and the long description were dropped —
   // the band carries one line of the business's voice, the producer page
   // carries the story.
-  const place = [featured.city, featured.category].filter(Boolean).join(" · ");
+  const categoryName = featured.category
+    ? categoryLabel(tRoot, { name: featured.category, slug: featured.categorySlug })
+    : null;
+  const place = [featured.city, categoryName].filter(Boolean).join(" · ");
   return (
     <section className="bg-primary text-background" data-testid="home-featured">
       <div className="max-w-7xl mx-auto px-4 md:px-12 py-12 md:py-20">

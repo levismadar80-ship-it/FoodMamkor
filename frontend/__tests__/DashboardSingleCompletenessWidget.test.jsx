@@ -74,12 +74,15 @@ vi.mock("@/components/ReviewCardCanvas", () => ({
   default: () => <div data-testid="review-card-canvas-stub" />,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  ChatText: (p) => <span {...p} />,
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
   // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
   Check: (p) => <span {...p} />,
   ArrowRight: (p) => <span {...p} />,
+  // MEH-3745: a link row ends with a caret.
+  CaretLeft: (p) => <span {...p} />,
   // MEH-964 1C: ActivityPulse references WhatsappLogo + Eye in its rows array
   // on every render (the count gate only hides them from the DOM).
   WhatsappLogo: (p) => <span {...p} />,
@@ -98,7 +101,7 @@ vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
 // MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
 vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 // ProfileCompletenessCard is NOT mocked — we render the real canonical card so
-// its ring (role="progressbar") is the thing we count.
+// the card itself is the thing we count (MEH-3659).
 
 // An incomplete profile → the canonical card renders its ring (the non-green
 // branch), not the collapsed green confirmation line.
@@ -145,17 +148,18 @@ describe("Producer dashboard — single completeness widget (MEH-961)", () => {
     mockPush.mockClear();
   });
 
-  it("mounts exactly one completeness widget (the canonical ring)", async () => {
+  it("mounts exactly one completeness widget (the canonical card)", async () => {
     render(<ProducerDashboardPage />);
 
-    // Wait for the happy-path fetches to settle and the canonical card's ring
-    // to mount. AnalyticsSection has also rendered by now.
-    const ring = await screen.findByRole("progressbar");
-    expect(ring).toBeInTheDocument();
+    // MEH-3659: the ring became a «N מתוך M» counter, so the card itself is
+    // what we count. AnalyticsSection has also rendered by now.
+    const card = await screen.findByTestId("profile-completeness-card");
+    expect(card).toBeInTheDocument();
 
     // Exactly one completeness indicator — the stale ProfileStrengthCard (which
-    // had no progressbar role and lived in AnalyticsSection) is gone.
-    expect(screen.getAllByRole("progressbar")).toHaveLength(1);
+    // lived in AnalyticsSection) is gone, and no second counter renders.
+    expect(screen.getAllByTestId("profile-completeness-card")).toHaveLength(1);
+    expect(screen.getAllByTestId("completeness-counter")).toHaveLength(1);
 
     // Producer user cleared the guard — no redirect to /login.
     expect(mockPush).not.toHaveBeenCalled();

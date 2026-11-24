@@ -1,5 +1,5 @@
 """MEH-3268 (B9 follow-up): an invite accepted for a page that lost its photo
-(or its required licence number) after the invite went out links the owner
+after the invite went out links the owner
 but leaves the page hidden.
 
 MEH-3246 gates SENDING the invite. Between the send and the acceptance only an
@@ -59,7 +59,9 @@ def test_photo_removed_after_invite_links_owner_and_keeps_page_hidden(
     assert [m for m in mails if m[1] == _APPROVED_SUBJECT] == []
 
 
-def test_licence_category_without_licence_keeps_page_hidden(client, db, monkeypatch):
+def test_licence_category_without_licence_goes_live(client, db, monkeypatch):
+    # MEH-3026: the licence is no longer a gap; the page goes live without
+    # «מאומת».
     notes, _ = _record(monkeypatch, poi)
     cat = make_category(db, name="לחמים ואפייה")
     p = make_producer(db, status="inactive", images=_PHOTO, category=cat)
@@ -71,8 +73,9 @@ def test_licence_category_without_licence_keeps_page_hidden(client, db, monkeypa
     db.commit()
 
     assert accept_invite(client, token).status_code == 200
-    assert _row(db, p).status == "inactive"
-    assert notes[0][1]["missing"] == ["מספר רישיון"]
+    assert _row(db, p).status == "approved"
+    assert notes[0][1]["missing"] == []
+    assert _row(db, p).verified_at is None
 
 
 def test_complete_hidden_page_still_goes_live(client, db, monkeypatch):
@@ -109,9 +112,9 @@ def test_admin_message_says_the_page_did_not_go_live(monkeypatch):
     from app.services import auth_notifications as an
 
     sent = []
-    monkeypatch.setattr(an.settings, "admin_whatsapp_to", "+972500000000")
-    monkeypatch.setattr(an, "send_text", lambda to, msg, **k: sent.append(msg) or True)
-    monkeypatch.setattr(an, "send_email", lambda *a, **k: None)
+    monkeypatch.setattr(an.settings, "admin_email", "admin@example.com")
+    # MEH-3589: the admin reads it by email only.
+    monkeypatch.setattr(an, "send_email", lambda to, subj, body, **k: sent.append(body))
 
     an.notify_admin_owner_invite_accepted(
         "מאפיית דנה", "o@example.com", False, missing=["תמונה"]

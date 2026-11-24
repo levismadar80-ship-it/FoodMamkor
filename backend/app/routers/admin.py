@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 from typing import Any, cast
 from uuid import UUID
 
@@ -12,12 +11,11 @@ from fastapi import (
     Query,
     Request,
 )
-from sqlalchemy import ColumnElement, CursorResult, func, text
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import CursorResult, text
+from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.utils.clock import business_days_waiting, israel_now, israel_today
-from app.utils.pii import mask_phone
+from app.utils.clock import israel_now, israel_today
 from app.config import settings
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
@@ -28,18 +26,14 @@ from app.services.booking_cancellations import (  # MEH-2498, MEH-3227
     hide_business,  # MEH-2871
 )
 from app.services.product_order_guards import refuse_delete_with_open_orders  # MEH-3262
-from app.services.admin_draft_missing import attach_draft_missing  # MEH-3409
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
 )
-from app.services.producer_listing import is_business  # MEH-2459
-from app.services.page_freshness import stale_clause
-from app.services.producer_duplicates import attach_duplicate_signals  # MEH-3408
-from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
-from app.routers.producer_me import (
+from app.services.producer_me_writes import reconcile_secondary_phone  # MEH-3339
+from app.services.producer_me_writes import (
     _apply_delivery_rows,
-)  # MEH-3475: one writer for structured rows
+)  # MEH-3475: one writer for structured rows (moved from routers/producer_me.py, MEH-3569)
 from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
@@ -53,7 +47,6 @@ from app.database import get_db
 from app.rate_limit import limiter
 from app.models import (
     DeliveryArea,
-    HomeProduct,
     Producer,
     ProducerCategory,
     Product,
@@ -61,16 +54,11 @@ from app.models import (
 )
 from app.schemas.schemas import (
     LicenseExpiryReminderOut,
-    LicenseExpiryReminderRow,
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerAdminUpdate,
     WRITABLE_AVAILABILITY_STATES,
     StoryCardUploadRequest,
-)
-from app.services.license_validation import (
-    enforce_license_gate_on_update,
-    ensure_license_for_categories,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
@@ -90,7 +78,13 @@ from app.services.review_conflicts import (  # MEH-3258
 # MEH-2021 corpus keep working; only the body is gone.
 from app.slug_utils import slugify as _slugify
 from app.slug_utils import latin_slug  # MEH-3336
-from app.utils.sql import LIKE_ESCAPE, escape_like
+from app.services.admin_producer_reads import (  # MEH-3562
+    admin_producer_list,
+    admin_producer_or_404,
+    admin_stats,
+    attach_has_owner as _attach_has_owner,
+    license_expiry_reminders_for,
+)
 from app.services.producer_approval import (
     ApprovalOverrides,
     _assert_approvable,
@@ -171,111 +165,6 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
         )
 
 
-def _attach_has_owner(db: Session, producers: list[Any]) -> None:
-    """MEH-2495 — hydrate `has_owner` for every row in ONE query.
-
-    `users.producer_id` has no unique index (producer_claim.py residual risks),
-    so this asks "is there at least one" with DISTINCT rather than joining —
-    a join would duplicate rows. Called by every route that returns
-    `ProducerAdminOut`; the field defaults to None, so a route that skipped
-    this fails closed (no chip, no action) rather than lying, and
-    tests/test_meh2495_admin_draft_owner.py lists those routes so a new one
-    has to be added there — and hydrated — on purpose.
-
-    MEH-2974 added `owner` (name + email) to the same hydration, deliberately
-    HERE and not as a `relationship` on the model. A lazy relationship would be
-    read once per row by Pydantic's `from_attributes`, which is precisely the
-    per-row SELECT that MEH-2541 removed from `GET /admin/producers`
-    (tests/test_meh2541_admin_producers_query_count.py asserts the count for
-    one producer equals the count for four, and would red). Selecting three
-    columns instead of one keeps this at exactly one query, so both guards
-    stay green and `has_owner`'s own semantics are untouched.
-
-    When a row somehow has more than one owning account — possible precisely
-    because there is no unique index — `owner` reports the FIRST by id. One
-    deterministic answer beats a nondeterministic one; `has_owner` already
-    collapsed that case to a bool, and MEH-2494's residual-risk note is where
-    the duplicate itself belongs.
-    """
-    ids = [p.id for p in producers]
-    # No DISTINCT: `users.id` is in the select list precisely so the ORDER BY
-    # that makes the multi-owner tie-break deterministic is legal (Postgres
-    # rejects `SELECT DISTINCT … ORDER BY <col not selected>`), and with the
-    # primary key selected every row is already distinct. Still ONE query.
-    rows = (
-        db.query(User.producer_id, User.id, User.name, User.email)
-        .filter(User.producer_id.in_(ids))
-        .order_by(User.producer_id, User.id)
-        .all()
-        if ids
-        else []
-    )
-    owners: dict[str, Any] = {}
-    for pid, uid, name, email in rows:
-        # MEH-3256 (D9): the id rides along so «ניתוק בעלים» can say WHICH
-        # owner the admin saw (expected_owner_user_id).
-        owners.setdefault(pid, {"id": uid, "name": name, "email": email})
-    for p in producers:
-        p.has_owner = p.id in owners
-        p.owner = owners.get(p.id)
-
-
-def _attach_aging(producer: Any) -> None:
-    """MEH-2110 — hydrate `business_days_waiting` for an admin list row.
-
-    The server is the single source of truth for aging: one implementation,
-    covered by tests/test_admin_queue_sla_aging.py, instead of a date
-    calculation duplicated per client and drifting.
-
-    A draft measures from `created_at` because it has no submission to measure
-    from. Everything else uses the same COALESCE the queue ordering uses, so
-    the badge and the sort can never disagree about which row is oldest.
-    `resubmitted_at` comes first (MEH-2869): a resubmission after a rejection
-    writes only that stamp, and `submitted_for_review_at` keeps the FIRST
-    submission — measuring from it put a business that resubmitted today at the
-    top of the queue with weeks of "waiting".
-
-    Called by BOTH admin list routes. `ProducerAdminOut` declares the field, so
-    a route that returned rows without calling this would serialise a silent
-    `0` on every row — a number that looks measured and is not.
-    """
-    producer.business_days_waiting = business_days_waiting(
-        producer.created_at
-        if producer.status == "draft"
-        else (
-            producer.resubmitted_at
-            or producer.submitted_for_review_at
-            or producer.created_at
-        )
-    )
-
-
-# MEH-1494 chunk B: the annual-review predicate, extracted so the filter reads
-# as one named thing in `list_producers` and can be asserted directly.
-#
-# The window is the TripAdvisor/Michelin pattern the card cites: an editorial
-# pick carries a visible clock and is re-examined, rather than being permanent.
-#
-# `recommended_at IS NULL` is IN the due set on purpose, and it is the case
-# that matters most today. Chunk A deliberately did not backfill a date onto
-# rows picked before the column existed, because inventing one would fabricate
-# a decision date; NULL means "picked before there was a clock — review it now",
-# which is exactly how Michelin treats a star that has not been re-examined.
-#
-# 365 days rather than a calendar year: the difference is a leap day on a
-# review cadence measured in months, and `timedelta` costs no dependency. If
-# the boundary ever has to be exact, this is the one line to change.
-REVIEW_WINDOW_DAYS = 365
-
-
-def _recommended_review_due_clause() -> ColumnElement[bool]:
-    """SQL: the row carries the pick AND its clock is unset or past the window."""
-    cutoff = israel_now() - timedelta(days=REVIEW_WINDOW_DAYS)
-    return Producer.is_recommended.is_(True) & (
-        Producer.recommended_at.is_(None) | (Producer.recommended_at < cutoff)
-    )
-
-
 @router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per filter
     status: str | None = Query(
@@ -291,94 +180,15 @@ def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[ProducerAdminOut] | list[Producer]:
-    q = db.query(Producer).options(
-        joinedload(Producer.categories),
-        joinedload(Producer.products),
-        joinedload(Producer.delivery_areas),
-        # MEH-2060: needed by attach_badge_fields' pickup_points/offers_pickup
-        # derivation below. selectinload (not joinedload) — a 4th collection
-        # joinedload here would widen the existing 3-way cartesian.
-        selectinload(Producer.locations),
-        # MEH-2541: ProducerListOut.active_offer reads this collection; without
-        # it every row paid one producer_offers SELECT (Sentry N+1).
-        selectinload(Producer.offers),
+    # MEH-3562: the filters, the queue order and the per-row enrichment live
+    # in services/admin_producer_reads.py.
+    return admin_producer_list(
+        db,
+        status=status,
+        search=search,
+        recommended_review_due=recommended_review_due,
+        freshness_stale=freshness_stale,
     )
-    # MEH-2100: three-way, and the DEFAULT (no `status` param) is the one that
-    # changed. The admin toolbar sends no param for its "כל הסטטוסים" option
-    # (use-admin-producers.js omits it when the selection is "all"), so that
-    # default IS the review queue the admin actually looks at — and drafts must
-    # not be in it. A draft is a business that has not asked to be reviewed;
-    # showing it is the queue-noise this ticket exists to remove.
-    #
-    #   no param      -> everything EXCEPT draft  (the working queue)
-    #   ?status=all   -> genuinely everything, drafts included (the escape
-    #                    hatch — "all" must not quietly mean "all but one")
-    #   ?status=draft -> drafts only (the new "טיוטות" option, visibility only)
-    #
-    # `?status=pending` used to group two values, pending + pending_whatsapp;
-    # the second was removed in MEH-2124 along with the state itself, so the
-    # filter is a plain equality now and the branch that special-cased it is
-    # gone.
-    if status == "all":
-        pass  # no status filter at all — the only view that shows drafts
-    elif status:
-        q = q.filter(Producer.status == status)
-    else:
-        q = q.filter(Producer.status != "draft")
-    if search:
-        # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
-        # matches literally instead of acting as a wildcard (same class as F1).
-        like = f"%{escape_like(search)}%"
-        q = q.filter(
-            Producer.name.ilike(like, escape=LIKE_ESCAPE)
-            | Producer.city.ilike(like, escape=LIKE_ESCAPE)
-        )
-    if recommended_review_due:
-        q = q.filter(_recommended_review_due_clause())
-    if freshness_stale:
-        q = q.filter(stale_clause())
-    # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
-    # עסקים" promise starts at submission and a business that has waited longest
-    # is the one closest to breaking it. Newest-first (the old default) let an
-    # old row sink under fresh arrivals and the promise break silently.
-    #
-    # WHICH VIEWS SORT ASC, and why it is not just `?status=pending`: the
-    # admin's working view is the DEFAULT (no param), which this file's filter
-    # above resolves to `status != "draft"` — NOT to the pending filter.
-    # The ticket's wording assumed those were the same view; they are not, so
-    # sorting only the explicit pending filter would have left the screen the
-    # admin actually opens completely unchanged. Explicit approved/rejected/
-    # inactive/draft filters keep the existing newest-first order, where recency
-    # is the useful axis and there is no SLA to track.
-    queue_view = status is None or status == "pending"
-    if queue_view:
-        # COALESCE, not submitted_for_review_at alone: rows seeded before
-        # MEH-2100 (and every draft) have a NULL stamp, and a bare column sort
-        # would bunch them all at one end regardless of real age. The latest
-        # resubmission comes first (MEH-2869), the same order as _attach_aging.
-        order_key = func.coalesce(
-            Producer.resubmitted_at,
-            Producer.submitted_for_review_at,
-            Producer.created_at,
-        ).asc()
-    else:
-        order_key = Producer.created_at.desc()
-    results = q.order_by(order_key).all()
-    # MEH-2060: this endpoint never called attach_badge_fields before, so
-    # pickup_points (and every other computed badge field) silently defaulted
-    # to Pydantic's False/0 in this response — a pre-existing gap, not
-    # something this change introduces. Calling it here is what makes
-    # AdminProducersTable.jsx's pickup badge (:128) agree with every other
-    # consumer surface instead of reading a raw, no-longer-authoritative column.
-    for p in results:
-        attach_badge_fields(p)
-        _attach_aging(p)
-    _attach_has_owner(db, results)
-    # MEH-3409: what a claimed draft still lacks (after has_owner, which it reads).
-    attach_draft_missing(db, results)
-    # MEH-3408: «כפילות?» compares against every status, not the loaded page.
-    attach_duplicate_signals(db, results)
-    return results
 
 
 @router.post("/producers", response_model=ProducerAdminOut, status_code=201)
@@ -404,21 +214,9 @@ def admin_create_producer(
     # must never be stored — NULL keeps the /producer/{id} fallback (MEH-1817).
     stored_slug: str | None = _ensure_unique_slug(db, slug, city=data.city) or None
 
-    # MEH-530: same conditional-required guard as the public endpoints —
-    # admin form can still persist non-regex license values verbatim
-    # (manual-approval flow), but missing-license-for-required-category
-    # is still a 422.
-    # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
-    # owner's to supply after she claims it. A draft cannot be approved at all
-    # until she submits it (approve_producer 409s on draft), and approval runs
-    # `_assert_approvable` — the MEH-971 license gate, which an admin can
-    # override with ?allow_without_license=true after checking the license
-    # out-of-band. Same exposure, and same override, as the public register
-    # path's `license_pending`; this branch adds no new route to "live".
-    if not data.as_draft:
-        ensure_license_for_categories(
-            db, data.category_ids, data.producer_license_number
-        )
+    # MEH-3026 (Sapir 21/11): no licence 422 here any more — a business with
+    # no licence number goes live without the «מאומת» badge, the same rule as
+    # approval (services/producer_approval.py). Replaces the MEH-530 guard.
 
     producer = Producer(
         name=data.name,
@@ -487,7 +285,7 @@ def admin_create_producer(
     # explicit `false` alongside delivery cities is a deliberate declaration
     # that MEH-1848's predicates are right to exclude. Only the UNSTATED case
     # is derived, which `model_fields_set` distinguishes and a plain falsy
-    # check cannot. Same distinction `_sync_active_offer` (producer_me.py)
+    # check cannot. Same distinction `_sync_active_offer` (services/producer_me_writes.py)
     # already relies on: "omitted" and "explicitly false" are different answers.
     if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
         producer.offers_delivery = True  # type: ignore[assignment]
@@ -514,11 +312,8 @@ def admin_create_producer(
     return producer
 
 
-# MEH-2072: how far ahead the licence reminder looks. One constant, not a query
-# param — mirroring EXPIRY_REMINDER_WINDOW_DAYS in admin_kashrut.py:31 and for
-# the same reason recorded there: a caller-chosen window lets a mistyped value
-# sweep in every business on file, and the ticket scopes this to 30 days.
-LICENSE_EXPIRY_REMINDER_WINDOW_DAYS = 30
+# MEH-3562: LICENSE_EXPIRY_REMINDER_WINDOW_DAYS and the selection live in
+# services/admin_producer_reads.py.
 
 
 @router.get("/license-expiry-reminders", response_model=LicenseExpiryReminderOut)
@@ -566,45 +361,7 @@ def license_expiry_reminders(
     mandatory here, so the new route follows the documented rule rather than the
     surrounding silence. Retro-fitting the rest of the module is out of scope.
     """
-    today = israel_today()
-    horizon = today + timedelta(days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS)
-    producers = (
-        db.query(Producer)
-        .filter(
-            Producer.license_expires_at.isnot(None),
-            Producer.license_expires_at >= today,
-            Producer.license_expires_at <= horizon,
-            Producer.status == "approved",
-        )
-        .order_by(Producer.license_expires_at.asc())
-        .all()
-    )
-
-    rows = [
-        LicenseExpiryReminderRow(
-            producer_id=producer.id,
-            name=producer.name,
-            # mask_phone handles the missing-phone case; unlike the kashrut
-            # endpoint there is no `phone IS NOT NULL` filter, because a
-            # business with no phone on file still needs its licence chased —
-            # the admin just reaches it another way. Filtering it out would hide
-            # the row entirely, which is the opposite of what this list is for.
-            phone_masked=mask_phone(producer.phone),  # type: ignore[arg-type]
-            expires_at=producer.license_expires_at,
-            # Computed here, not per client: same reasoning as
-            # business_days_waiting on ProducerAdminOut — the number the admin
-            # reads and the order the rows arrive in must come from one clock.
-            days_remaining=(producer.license_expires_at - today).days,
-            producer_license_number=producer.producer_license_number,
-        )
-        for producer in producers
-    ]
-
-    return LicenseExpiryReminderOut(
-        window_days=LICENSE_EXPIRY_REMINDER_WINDOW_DAYS,
-        total=len(rows),
-        rows=rows,
-    )
+    return license_expiry_reminders_for(db, israel_today())  # MEH-3562
 
 
 def _apply_recommended_pick(producer: Producer, payload: dict[str, Any]) -> None:
@@ -765,13 +522,8 @@ def admin_update_producer(
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
 
-    # MEH-2707: the owner path's MEH-999 grandfather rule, shared — only a
-    # NEWLY-ADDED licensed category, or blanking a held license, is refused.
-    # This used to re-check the FULL effective category set (MEH-530), so any
-    # edit to an unlicensed business in a licensed category 422'd — the admin
-    # could not even fix its description. Going live is still gated by
-    # approve_producer → _assert_approvable (MEH-971), unchanged.
-    enforce_license_gate_on_update(db, producer, payload, category_ids)
+    # MEH-3026: the MEH-2707 / MEH-999 licence gate on update is gone — adding
+    # a licensed category without a licence number no longer 422s.
 
     # Keep slug unique if changed; reject reserved slugs.
     # MEH-3336: only a CHANGED slug is validated. The admin form resends the
@@ -797,7 +549,10 @@ def admin_update_producer(
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
     # matters — destroying before commit would orphan-leak in reverse
     # (assets gone, DB still references them) on a commit raise.
-    old_images = list(producer.images or [])
+    old_images, old_logo_url = (
+        list(producer.images or []),
+        producer.logo_url,
+    )  # MEH-3611
 
     # MEH-1494 chunk B: the editorial clock, stamped BEFORE the setattr loop
     # below — that loop is what turns `producer.is_recommended` into the new
@@ -854,6 +609,14 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
             db=db,  # MEH-3247
         )
+    from app.cloudinary_utils import destroy_replaced  # MEH-3611
+
+    destroy_replaced(
+        old_logo_url,
+        producer.logo_url,
+        context="admin.admin_update_producer logo",
+        db=db,
+    )
 
     if indexnow.is_public_owner(producer):  # MEH-2852
         indexnow.schedule(
@@ -982,6 +745,7 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+    old_logo_url = producer.logo_url  # MEH-3611
     # MEH-2852: the page goes with the row — its URL is read before the delete.
     removed_urls = (
         indexnow.producer_urls(producer) if indexnow.is_public_owner(producer) else []
@@ -1049,6 +813,11 @@ def admin_delete_producer(
         context="admin.admin_delete_producer owner_photo",
         db=db,  # MEH-3247
     )
+    destroy_image(
+        old_logo_url,  # type: ignore[arg-type]
+        context="admin.admin_delete_producer logo",
+        db=db,  # MEH-3611
+    )
 
     return {"detail": "Producer deleted"}
 
@@ -1105,26 +874,7 @@ def admin_get_producer(
     is the "looks measured and is not" failure `_attach_aging`'s own docstring
     warns about.
     """
-    producer = (
-        db.query(Producer)
-        .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # selectinload, matching the list endpoint (:448) — a 4th collection
-            # joinedload would widen the existing 3-way cartesian. Needed by
-            # attach_badge_fields' pickup_points/offers_pickup derivation.
-            selectinload(Producer.locations),
-        )
-        .filter(Producer.id == producer_id)
-        .first()
-    )
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    attach_badge_fields(producer)
-    _attach_aging(producer)
-    _attach_has_owner(db, [producer])
-    return producer
+    return admin_producer_or_404(db, producer_id)  # MEH-3562
 
 
 # MEH-1406: admin home-products moderation endpoints removed from the live
@@ -1203,25 +953,7 @@ def upload_story_card(
 def get_stats(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ) -> dict[str, Any]:
-    return {
-        # MEH-2465 (review #3723): businesses only, matching /admin/dashboard.
-        "total_producers": db.query(Producer)
-        .filter(Producer.kind == "producer")
-        .count(),
-        "pending_producers": db.query(Producer)
-        .filter(Producer.status == "pending")
-        .count(),
-        "approved_producers": db.query(Producer)
-        .filter(is_business())  # MEH-2459
-        .count(),
-        "total_users": db.query(User).count(),
-        "total_home_products": db.query(HomeProduct)
-        .filter(HomeProduct.is_active.is_(True))
-        .count(),
-        "hidden_home_products": db.query(HomeProduct)
-        .filter(HomeProduct.is_hidden.is_(True))
-        .count(),
-    }
+    return admin_stats(db)  # MEH-3562
 
 
 _DATA_GOV_URL = (
