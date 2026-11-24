@@ -183,7 +183,7 @@ class TestConfirm:
         assert all(b == bodies[0] for b in bodies)
         assert (
             bodies[0]["detail"]
-            == "הקישור הזה כבר לא פעיל. אפשר לעדכן את העמוד מהלוח שלך."
+            == "הקישור הזה כבר לא פעיל. אפשר לעדכן את העמוד מלוח הבקרה."
         )
         db.refresh(producer)
         assert producer.last_confirmed_at is None

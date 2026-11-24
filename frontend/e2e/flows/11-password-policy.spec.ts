@@ -64,7 +64,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await expect(submit).toBeEnabled();
     await submit.click();
     await expect(page.getByTestId("register-error")).toHaveText(
-      /סיסמתך חייבת להכיל לפחות 12 תווים/,
+      /הסיסמה חייבת להכיל לפחות 12 תווים/,
     );
   });
 

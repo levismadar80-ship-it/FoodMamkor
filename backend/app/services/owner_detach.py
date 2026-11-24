@@ -26,10 +26,10 @@ def send_owner_detached_email(
 ) -> None:
     """Fail-open like every other sender: `send_email` raises nothing."""
     greeting = f"היי {first_name}," if (first_name or "").strip() else "היי,"
-    subject = f"החשבון שלך כבר לא מחובר לדף של {business} במהמקור"
+    subject = f"החשבון כבר לא מחובר לדף של {business} במהמקור"
     lines = [
-        f"רצינו לעדכן שהחשבון שלך במהמקור כבר לא מחובר לדף של {business}.",
-        "החשבון עצמו נשאר: אפשר להמשיך להתחבר, והמועדפים והביקורות שלך שמורים.",
+        f"רצינו לעדכן שהחשבון במהמקור כבר לא מחובר לדף של {business}.",
+        "החשבון עצמו נשאר: אפשר להמשיך להתחבר, והמועדפים והביקורות שמורים.",
         "אם זה נעשה בטעות, אפשר להשיב למייל הזה ונסדר את זה.",
     ]
     body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nצוות מהמקור"

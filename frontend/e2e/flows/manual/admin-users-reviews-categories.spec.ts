@@ -307,7 +307,13 @@ async function settleScroll(page: Page): Promise<void> {
  *  scrolls the row into view AFTER the menu opened. */
 async function openKebab(row: Locator): Promise<Locator> {
   const btn = kebab(row);
-  await btn.scrollIntoViewIfNeeded();
+  // MEH-3827 — centre it, not "if needed". Scrolling UP to a row, "if needed"
+  // parks the ⋮ at the viewport's top edge, under the sticky header + admin
+  // phone strip (44px links since MEH-3827). Playwright's click then finds the
+  // strip at the click point and scrolls again; that scroll lands after the
+  // open and closes the menu (measured on the preview: ⋮ at y=121, scrollY
+  // 701 → 155 after the pointerdown, aria-expanded stays "false").
+  await btn.evaluate((el: HTMLElement) => el.scrollIntoView({ block: "center" }));
   await settleScroll(btn.page());
   await btn.click();
   await expect(btn).toHaveAttribute("aria-expanded", "true");

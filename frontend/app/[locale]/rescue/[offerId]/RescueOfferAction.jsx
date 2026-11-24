@@ -15,6 +15,7 @@ import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
 import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { bagDay, rescueCancelText, israelTime, shekels, worthAgorot } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 import StruckPrice from "@/components/ui/StruckPrice";
 
 const STATE_KEY = {
@@ -46,20 +47,27 @@ const STATE_KEY_TOMORROW = {
  * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/use-rescue-reservation").default> }} props
  */
 export default function RescueOfferAction({ offer, reservation }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   const { order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed, cancelled, businessCancelled, businessCancelledDay, reserve, cancel } = reservation;
-  const tomorrow = bagDay(offer.date) === "tomorrow";
+  const tomorrow = bagDay(offer.date, day) === "tomorrow";
   // REUSES: components/RegistrationOverlays.jsx useInView — the phone bar
   // comes up only once the card's own button has scrolled away (the event
   // page rule), so the two buttons are never on screen together.
   const buttonRef = useRef(null);
   const available = !order && offer.state === "available";
   const buttonInView = useInView(buttonRef, available);
+  const pickupLine = [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null;
 
   if (order) {
     return (
       <div className="space-y-4" data-testid="rescue-offer-reserved">
-        <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+        <RescueConfirmation
+          order={order}
+          onCancel={cancel}
+          cancelling={busy}
+          place={{ name: offer.producer?.name, address: pickupLine }} // MEH-3704
+        />
         {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
           <AddToCalendarButton
             testId="rescue-offer-add-to-calendar"
@@ -68,7 +76,7 @@ export default function RescueOfferAction({ offer, reservation }) {
               start: offer.pickup_start,
               end: offer.pickup_end,
               title: t("offer_page.calendar_title", { business_name: offer.producer?.name ?? "" }),
-              location: [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null,
+              location: pickupLine,
               // The bag page is public, but the pickup code is not: no URL,
               // so the calendar entry never carries anything secret.
             }}

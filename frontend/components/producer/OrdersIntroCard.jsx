@@ -40,11 +40,23 @@ function close() {
   }
 }
 
-/** @param {{ fallback?: import("react").ReactNode }} props */
-export default function OrdersIntroCard({ fallback = null }) {
+/**
+ * `settings`: the answer of GET /producers/me/order-settings when the parent
+ * already read it (MEH-3817: the dashboard home reads it before its first
+ * paint, so the card is decided in that paint instead of being inserted above
+ * the cards a moment later). `{ ok: true, value }` or `{ ok: false }`. Left
+ * out, the card reads it itself.
+ * @param {{ fallback?: import("react").ReactNode, settings?: { ok: boolean, value?: any } }} props
+ */
+export default function OrdersIntroCard({ fallback = null, settings }) {
   const t = useTranslations("dashboard.producer.orders.intro");
-  const [show, setShow] = useState(/** @type {boolean | null} */ (null));
+  const [show, setShow] = useState(
+    /** @type {boolean | null} */ (
+      settings === undefined ? null : !wasClosed() && settings.ok && Boolean(settings.value) && !settings.value?.enabled
+    ),
+  );
   useEffect(() => {
+    if (settings !== undefined) return undefined;
     let live = true;
     // Closed before: no request, the same answer as "nothing to say".
     (wasClosed() ? Promise.resolve(null) : loadSettings())
@@ -53,6 +65,9 @@ export default function OrdersIntroCard({ fallback = null }) {
     return () => {
       live = false;
     };
+    // Read once: a `settings` that arrives later is the parent's first-paint
+    // answer, already used by the initial state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (show === null) return null;
   if (!show) return <>{fallback}</>;

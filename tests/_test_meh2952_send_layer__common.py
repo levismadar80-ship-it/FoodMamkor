@@ -1044,7 +1044,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "wrapper param ← producer.is_test or user.is_test",
     ),
     # MEH-3702: the morning-of reminder, queued to the email outbox.
-    ("services/rescue_reminders.py", "queue_morning_reminders", "enqueue_email"): (
+    ("services/rescue_reminders.py", "_queue", "enqueue_email"): (
         1,
         CON,
         "location.producer.is_test or user.is_test",

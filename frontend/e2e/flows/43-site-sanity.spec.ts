@@ -96,11 +96,8 @@ async function sweep(page: Page): Promise<Sweep> {
       if (!HEB.test(own)) continue;
       out.hebrewCount += 1;
       if (cs.fontStyle !== "normal") out.italic.push(label);
-      // MEH-3688: Google's sign-in button is Google's own branded markup (its
-      // font and letter-spacing are Google's, per its branding guidelines), so
-      // the two typography checks below skip that one slot. Its width is still
-      // held by the layout checks. Sapir's call, 22/11 (option A on the MEH-3688 card).
-      if (el.closest("[data-gsi-slot]")) continue;
+      // MEH-3690: no skip for the Google sign-in button any more (MEH-3688
+      // had one): it is our own markup now, in our font, and checked like the rest.
       if (parseFloat(cs.letterSpacing) > 0) out.tracking.push(`${label} ${cs.letterSpacing}`);
       const key = `${cs.fontFamily}|${cs.fontWeight}|${cs.fontStyle}`;
       // Typed symbols («←», «★») have no glyph in any brand face and fall to a
@@ -264,31 +261,6 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
     });
     const l = await layout(page, true);
     expect(l.covered.join(" | ")).toContain("planted-under-fixed");
-  });
-
-  // MEH-3688: the typography sweep skips Google's sign-in slot and nothing
-  // else. Plant one letter-spaced Hebrew span inside a [data-gsi-slot] and one
-  // outside it: only the outside one may be reported.
-  test("control: the sweep skips only the Google sign-in slot", async ({ page }) => {
-    await page.goto("/about");
-    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
-    await page.evaluate(() => {
-      const main = document.querySelector("main")!;
-      const slot = document.createElement("div");
-      slot.setAttribute("data-gsi-slot", "");
-      const inside = document.createElement("span");
-      inside.textContent = "נטוע בתוך החריץ";
-      inside.style.letterSpacing = "1px";
-      slot.append(inside);
-      const outside = document.createElement("span");
-      outside.textContent = "נטוע מחוץ לחריץ";
-      outside.style.letterSpacing = "1px";
-      main.prepend(slot, outside);
-    });
-    const s = await sweep(page);
-    const tracked = s.tracking.join(" | ");
-    expect(tracked, "a letter-spaced span outside the slot is still reported").toContain("נטוע מחוץ לחריץ");
-    expect(tracked, "the Google slot is skipped").not.toContain("נטוע בתוך החריץ");
   });
 
   for (const path of ROUTES) {

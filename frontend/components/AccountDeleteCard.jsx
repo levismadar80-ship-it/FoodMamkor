@@ -19,14 +19,15 @@
  *           screen with the public /account-deleted page.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { env } from "@/lib/env";
-import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { useGoogleCodeSignIn } from "@/lib/use-google-code-sign-in";
+import GoogleButton from "@/components/ui/GoogleButton";
 import Input from "@/components/ui/Input";
 import PasswordField from "@/components/ui/PasswordField";
 import Button from "@/components/ui/Button";
@@ -38,26 +39,17 @@ const APPLE_JS =
 // The availability switch lives on the dashboard home (dashboard/page.js).
 const PAUSE_HREF = "/producer/dashboard#availability-heading";
 
-/** @param {{ onToken: (token: string) => void }} props */
-function GoogleReauth({ onToken }) {
-  const ref = useRef(/** @type {HTMLDivElement | null} */ (null));
-  const clientId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  useGoogleSignIn(
-    clientId,
-    (/** @type {{ credential: string }} */ response) => onToken(response.credential),
-    () => {
-      if (ref.current) {
-        // @ts-ignore — GSI is a global script, typed nowhere in this repo.
-        window.google.accounts.id.renderButton(ref.current, {
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          locale: gsiLang(),
-        });
-      }
-    },
-  );
-  return <div ref={ref} data-testid="delete-reauth-google" />;
+/** @param {{ onToken: (token: string) => void, onError: (message: string) => void }} props */
+function GoogleReauth({ onToken, onError }) {
+  const t = useTranslations("auth.oauth");
+  // MEH-3690: our own button; the code swap hands back the Google ID token
+  // that POST /auth/me/delete re-checks, as the rendered button's did.
+  const { start, busy } = useGoogleCodeSignIn(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID, {
+    onIdToken: onToken,
+    // @ts-ignore — an axios error carries response.data.detail; anything else has none.
+    onError: (err) => onError(detailToMessage(err?.response?.data?.detail) || t("google_error")),
+  });
+  return <GoogleButton onClick={start} busy={busy} label={t("google_continue")} testId="delete-reauth-google" />;
 }
 
 /** @param {{ onToken: (token: string) => void, label: string }} props */
@@ -236,7 +228,7 @@ export default function AccountDeleteCard() {
               <p className="text-sm text-fg-muted">
                 {t("reauth_prompt", { provider: PROVIDER_LABEL[provider] || provider })}
               </p>
-              {provider === "google" && <GoogleReauth onToken={(id_token) => submit({ id_token })} />}
+              {provider === "google" && <GoogleReauth onToken={(id_token) => submit({ id_token })} onError={setError} />}
               {provider === "apple" && (
                 <AppleReauth onToken={(id_token) => submit({ id_token })} label={tOauth("apple_continue")} />
               )}

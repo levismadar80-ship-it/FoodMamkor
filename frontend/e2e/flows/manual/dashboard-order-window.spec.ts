@@ -127,8 +127,10 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
   });
 }
 
-const card = (page: Page) => page.getByTestId("accordion-order-window");
-const body = (page: Page) => page.locator('#order-window [role="region"]');
+// MEH-3790: the order window is a section (#order-window) of the one «שעות»
+// card; the deep link opens that card and scrolls to the section.
+const card = (page: Page) => page.getByTestId("accordion-hours");
+const body = (page: Page) => page.locator("#order-window");
 const dayToggle = (page: Page, day: string) => body(page).getByRole("checkbox", { name: `${day} — מקבלים הזמנות ביום זה` });
 const from = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} פתיחה ${n}`, { exact: true });
 const to = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} סגירה ${n}`, { exact: true });

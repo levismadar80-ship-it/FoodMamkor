@@ -19,7 +19,7 @@ vi.mock("next-intl", () => ({
       reply_save: "שמירה",
       cancel: "ביטול",
       submit_saving: "בשמירה…",
-      owner_only_eyebrow: "מוצג רק לך",
+      owner_only_eyebrow: "מוצג רק לבעלי העסק",
     };
     const t = (key) => flat[key] || key;
     // guest login-prompt path: render the `login` chunk so its href is testable
@@ -172,10 +172,10 @@ describe("ReviewsSection — business reply (MEH-1039)", () => {
 });
 
 describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
-  it("shows the 'מוצג רק לך' eyebrow above the owner empty state", async () => {
+  it("shows the 'מוצג רק לבעלי העסק' eyebrow above the owner empty state", async () => {
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={true} />);
-    expect(await screen.findByText("מוצג רק לך")).toBeInTheDocument();
+    expect(await screen.findByText("מוצג רק לבעלי העסק")).toBeInTheDocument();
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
@@ -185,7 +185,7 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     // The reader path renders no empty state at all since MEH-2592.
     await waitFor(() => expect(screen.queryByText("loading")).not.toBeInTheDocument());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
+    expect(screen.queryByText("מוצג רק לבעלי העסק")).not.toBeInTheDocument();
   });
 });
 
