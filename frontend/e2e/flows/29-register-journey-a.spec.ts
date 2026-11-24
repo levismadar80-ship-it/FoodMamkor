@@ -329,7 +329,7 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
     await page.getByTestId("register-email").fill("journey-a@example.com");
     await page.getByTestId("register-password").fill("a".repeat(PASSWORD_MIN_LENGTH - 1));
     await expect(page.getByTestId("register-form").locator("ul[aria-live] li")).toHaveCount(2);
-    await clickExpect(`סיסמתך חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`, "register-password");
+    await clickExpect(`הסיסמה חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`, "register-password");
 
     // …+ a long-enough password, but the terms box unchecked.
     await page.getByTestId("register-password").fill(VALID_PASSWORD);

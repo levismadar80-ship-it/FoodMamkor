@@ -239,7 +239,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
 | `services/outbound_guard.py` | Outside production, no message reaches a real person. Every channel that can reach a person asks this module first, so the protection comes from the … |
 | `services/outreach_lead_registration.py` | Mark an outreach lead «registered» when its owner signs up through the lead's prefill link (MEH-3026 F11) — until now the pipeline status never moved, so the … |
-| `services/owner_attention.py` | The «מה מחכה לך» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her events / … |
+| `services/owner_attention.py` | The «מה ממתין לטיפול» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her … |
 | `services/owner_detach.py` | The one mail of the admin «ניתוק בעלים» action: tells the former owner that her account is no longer linked to the business and that the account itself stays. |
 | `services/owner_invite_google.py` | Let a FRESH Google sign-in stand in for the email code when a signed-in account accepts an owner invite (MEH-3675, Sapir's choice 22/11: «כן, רק בכניסה טרייה»). |
 | `services/owner_products.py` | The owner's own product rows: the lookup that keeps a draft (the admin import's until approved) and another business's product out, and the rules a product … |
@@ -810,11 +810,11 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer/DraftSubmitBanner.jsx` | — אין כותרת — |
 | `producer/FeedPostCanvas.jsx` | MEH-3330 — the «פוסט מוכן לשיתוף» card in the owner's share kit. She picks a moment (this week · a new product · an upcoming holiday), sees the 4:5 post built … |
 | `producer/FirstMomentCard.jsx` | A once-only «רגע ראשון» card at the top of the dashboard home — first review, first WhatsApp click, 100 views, first follower (MEH-3200 part 2; … |
-| `producer/LinkEverywhere.jsx` | MEH-3331 — «הקישור שלך בכל מקום»: four places a business puts its page link once (Instagram bio, Facebook page button, Google profile, WhatsApp Business … |
+| `producer/LinkEverywhere.jsx` | MEH-3331 — «קישור אחד לכל מקום»: four places a business puts its page link once (Instagram bio, Facebook page button, Google profile, WhatsApp Business … |
 | `producer/MonthValueLine.jsx` | One line on the dashboard home: what the business got through the site this month, as bookings and their value (MEH-3194 point 1 — the value is shown before … |
 | `producer/NewToolPill.jsx` | The «חדש» pill on a «כלים» tile (or an «עריכה» hub tile, MEH-3723) whose tool arrived in a release of the last 14 days (MEH-3200 part 2, copy approved 14/11). … |
 | `producer/OrdersIntroCard.jsx` | «חדש: הזמנות מראש מהעמוד שלכם» — tells a business that on-site ordering exists and takes it to the «הזמנות» tab. … |
-| `producer/OwnerAttentionCard.jsx` | «מה מחכה לך» — the top of the dashboard home lists what is waiting for the owner right now, each row one tap from the tool that handles it (MEH-3108; … |
+| `producer/OwnerAttentionCard.jsx` | «מה ממתין לטיפול» — the top of the dashboard home lists what is waiting for the owner right now, each row one tap from the tool that handles it (MEH-3108; … |
 | `producer/OwnerWelcomeCard.jsx` | A one-time «ברוכים הבאים למהמקור» note from the founders (Sapir + Topaz, MEH-3323) at the top of the dashboard home for a new business (≤ 30 days old), closed … |
 | `producer/RequestReviewCard.jsx` | — אין כותרת — |
 | `producer/ShareKitSection.jsx` | — אין כותרת — |
@@ -987,7 +987,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx` | «מקבלים הזמנות עד»: a weekday select + a time input, for a row that has its own order cutoff — a pickup point (MEH-3512) or a delivery zone (MEH-3511). … |
 | `[locale]/producer/dashboard/edit/OrderWindowEditor.jsx` | Weekly ORDER-acceptance window editor for the producer dashboard — 7 day rows (א׳–ש׳), a per-day toggle plus open/close time inputs, and a "clear all" action … |
 | `[locale]/producer/dashboard/edit/OrganizerCityCard.jsx` | An organizer changes the city shown on her public page. |
-| `[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx` | «איך משלמים לך?» — the owner picks how customers pay (five tiles with icons + a «בחירת הכל» switch), when they pay (one of three, clearable), and one optional … |
+| `[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx` | «איך משלמים לעסק?» — the owner picks how customers pay (five tiles with icons + a «בחירת הכל» switch), when they pay (one of three, clearable), and one … |
 | `[locale]/producer/dashboard/edit/PickupScheduleField.jsx` | In the location editor, for a pickup point or a market stand: which weekdays it is open for pickup, and (optionally) its own order cutoff — «מקבלים הזמנות עד … |
 | `[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx` | — אין כותרת — |
 | `[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx` | Per-date overrides ABOVE the weekly order window — "ערב ראש השנה 09:00–13:00", "כיפור: סגור" — for the producer dashboard. … |

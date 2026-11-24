@@ -413,7 +413,7 @@ export default function ProducerDashboardPage() {
           Not for an organizer: the copy counts «הזמנות». */}
       {isApproved && !isOrganizer && <MonthValueLine />}
 
-      {/* MEH-3108: «מה מחכה לטיפול» — what is waiting for the owner, right
+      {/* MEH-3108: «מה ממתין לטיפול» — what is waiting for the owner, right
           under the greeting. Renders nothing when nothing is waiting. */}
       {/* MEH-3200: a new business's one-time welcome, else the newest unseen
           «מה חדש» release — never both. Not for an organizer (business copy). */}
@@ -605,7 +605,7 @@ export default function ProducerDashboardPage() {
       )}
 
       {/* MEH-3076 (Sapir 21/11, «מספרים למעלה»): the numbers come right after
-          «מה מחכה לטיפול» and the status banners, before the holiday hint, the
+          «מה ממתין לטיפול» and the status banners, before the holiday hint, the
           status switch (rescue bags and «הלינק שלי» left the home, MEH-3767) — an owner opens the
           dashboard to see what came in, and on a phone these sat a screen down. */}
       {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
@@ -778,7 +778,7 @@ export default function ProducerDashboardPage() {
       )}
 
       {/* MEH-3767: the always-on rescue-bags card (MEH-2884) and «הלינק
-          שלי» (MEH-53) left the home. Live bags are a row of «מה מחכה לטיפול»
+          שלי» (MEH-53) left the home. Live bags are a row of «מה ממתין לטיפול»
           (OwnerAttentionCard), the tool itself stays in «כלים»; the link sits
           on «שיתוף» next to the QR card. */}
 

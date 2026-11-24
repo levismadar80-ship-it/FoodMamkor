@@ -1,6 +1,6 @@
 """
 Module:   owner_attention
-Purpose:  The «מה מחכה לטיפול» card on the business dashboard home (MEH-3108):
+Purpose:  The «מה ממתין לטיפול» card on the business dashboard home (MEH-3108):
           what is waiting for the owner right now — reviews with no reply,
           new sign-ups to her events / workshops, group buys that reached
           their goal and still need her.
