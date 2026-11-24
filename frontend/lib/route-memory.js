@@ -3,14 +3,16 @@
 
 /**
  * Module:   route-memory
- * Purpose:  Two small facts about client-side navigation that the page
- *           components cannot learn on their own:
+ * Purpose:  Small facts about client-side navigation that the page
+ *           components cannot learn on their own, and one use of them:
  *           1. useRevealSkip() — has the reader already been on this route in
  *              this tab? Entrance animations (fade + slide) play on the first
  *              visit only; coming BACK to a list shows it as it was.
  *           2. consumeHistoryReturn() — is this mount a return through the
  *              browser history (back / forward / reload), as opposed to a fresh
  *              arrival through a link (e.g. the logo)?
+ *           3. useScrollTopOnArrival() — a route loading fallback opens at the
+ *              top of the page after a link click (MEH-3800).
  * History:  MEH-2714 — on the homepage, back from a business card replayed the
  *           card entrance (cards at opacity 0 for ~0.5s), which read as "the
  *           whole page rendered again"; and a scroll position stashed by an
@@ -23,6 +25,10 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+
+// A loading fallback is also rendered on the server; React 18 warns about a
+// layout effect there (same pattern as components/ui/Tooltip.jsx).
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const leftPaths = new Set();
 let popPath = null;
@@ -129,11 +135,14 @@ export function consumeHistoryReturn() {
  * A layout effect, so the jump happens before the fallback is painted.
  */
 export function useScrollTopOnArrival() {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const here = window.location.pathname;
     if (popPath !== null && popPath === here) return;
     if (here === entryPath && leftPaths.size === 0) return;
     if (window.scrollY === 0) return;
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    // The two-number form: every engine has it, and with no `scroll-behavior`
+    // on the root (globals.css) it is instant. An options object with
+    // `behavior: "instant"` throws on some old engines — the MEH-3780 class.
+    window.scrollTo(0, 0);
   }, []);
 }

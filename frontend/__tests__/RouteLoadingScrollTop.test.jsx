@@ -71,7 +71,7 @@ describe("route loading fallbacks scroll to the top on a link click", () => {
     window.history.pushState(null, "", "/golden-locations");
     render(<Loading />);
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 });
 
