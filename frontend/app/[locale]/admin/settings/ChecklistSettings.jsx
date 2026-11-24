@@ -33,7 +33,6 @@ import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
-import IconButton from "@/components/ui/IconButton";
 
 const ICON = 16;
 
@@ -201,23 +200,28 @@ export default function ChecklistSettings() {
             }`}
           >
             <div className="flex items-start gap-2">
+              {/* MEH-3832: raw buttons on purpose. The arrows are 16px and 20px apart, so
+                  IconButton's 44px .tap-area zones would overlap and a tap on the lower
+                  part of «up» would run «down». A real fix gives each a 44px cell. */}
               <div className="flex flex-col gap-1 pt-1">
-                <IconButton
+                <button
+                  type="button"
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  label={t("move_up", { label: item.label || t("new_item") })}
+                  aria-label={t("move_up", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowUp size={ICON} weight="bold" aria-hidden="true" />
-                </IconButton>
-                <IconButton
+                </button>
+                <button
+                  type="button"
                   onClick={() => move(index, 1)}
                   disabled={index === items.length - 1}
-                  label={t("move_down", { label: item.label || t("new_item") })}
+                  aria-label={t("move_down", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowDown size={ICON} weight="bold" aria-hidden="true" />
-                </IconButton>
+                </button>
               </div>
 
               <div className="flex-1 space-y-2">

@@ -106,7 +106,7 @@ frontend/app/[locale]/admin/reviews/page.jsx	design-system/no-html-select	1
 frontend/app/[locale]/admin/reviews/page.jsx	design-system/no-placeholder-as-label	1
 frontend/app/[locale]/admin/reviews/page.jsx	no-restricted-syntax	4
 frontend/app/[locale]/admin/reviews/page.jsx	react-hooks/immutability	1
-frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	design-system/no-html-button	2
+frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	design-system/no-html-button	4
 frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	design-system/no-html-heading	2
 frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/admin/settings/PasskeySettings.jsx	design-system/no-html-heading	1

@@ -50,7 +50,7 @@ export default function AdminPhotoGrid({ images, onChange, onRemove }) {
             />
             <IconButton
               onClick={() => onRemove(url)}
-              className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition before:absolute before:-inset-[10px] before:content-['']"
+              className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
               label={t("common.delete")}
             >
               <X size={14} weight="bold" aria-hidden="true" />

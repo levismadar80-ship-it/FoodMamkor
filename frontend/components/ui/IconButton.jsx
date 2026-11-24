@@ -49,7 +49,7 @@ const IconButton = forwardRef(
    */
   function IconButton({ label, children, className = "", type = "button", ...rest }, ref) {
     return (
-      <button ref={ref} type={type} aria-label={label} className={`tap-area ${className}`} {...rest}>
+      <button ref={ref} type={type} className={`tap-area ${className}`} {...rest} aria-label={label}>
         {children}
       </button>
     );

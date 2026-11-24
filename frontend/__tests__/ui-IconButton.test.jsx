@@ -50,4 +50,10 @@ describe("ui/IconButton", () => {
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps `label` as the name even when a caller also passes aria-label", () => {
+    render(<IconButton label="סגירה" aria-label="x" />);
+    expect(screen.getByRole("button", { name: "סגירה" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "x" })).toBeNull();
+  });
 });
