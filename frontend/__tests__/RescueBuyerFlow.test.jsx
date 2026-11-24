@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
+import { israelToday } from "@/lib/israel-date";
 
 function lookup(key) {
   return key.split(".").reduce((o, k) => (o == null ? o : o[k]), heMessages);
@@ -190,6 +191,17 @@ beforeEach(async () => {
 afterEach(() => {
   vi.resetModules();
 });
+
+// MEH-3837: a cutoff 30 minutes from now is tomorrow from 23:30 Israel time,
+// and the line then reads «מחר ב-HH:MM». A test that asserts the bare time
+// runs on a clock frozen at noon Israel time today (09:00 UTC is 11:00 or
+// 12:00), with the offer built after the freeze. Date only, still advancing,
+// so findBy* and waitFor keep their real timeouts.
+function atIsraelNoon() {
+  vi.useFakeTimers({ toFake: ["Date"], shouldAdvanceTime: true });
+  vi.setSystemTime(new Date(`${israelToday()}T09:00:00Z`));
+  fetchOffers.mockResolvedValue([offer()]);
+}
 
 describe("the flag gate", () => {
   it("renders nothing at all when the pilot is off", async () => {
@@ -520,10 +532,15 @@ describe("the business-page section — reserve and confirm", () => {
   // Sapir 6/11: the no-show rule is too much on the card; it stays on the
   // confirmation, where it applies (asserted in "reserve swaps the CTA…").
   it("keeps only the free-cancel cutoff under the CTA, without the no-show rule", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    const terms = await screen.findByTestId("rescue-section-terms");
-    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
-    expect(terms.textContent).not.toContain("אי-הגעות");
+    atIsraelNoon();
+    try {
+      render(<RescueSection producer={PRODUCER} />);
+      const terms = await screen.findByTestId("rescue-section-terms");
+      expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+      expect(terms.textContent).not.toContain("אי-הגעות");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("folds the allergens under «אלרגנים», closed until tapped", async () => {
@@ -1143,9 +1160,14 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
   });
 
   it("before the cutoff the line still gives the time (control)", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    const terms = await screen.findByTestId("rescue-section-terms");
-    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+    atIsraelNoon();
+    try {
+      render(<RescueSection producer={PRODUCER} />);
+      const terms = await screen.findByTestId("rescue-section-terms");
+      expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("the confirmation keeps the no-show rule and drops the time", () => {

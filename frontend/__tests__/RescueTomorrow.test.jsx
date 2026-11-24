@@ -218,8 +218,18 @@ describe("the free-cancel deadline", () => {
     );
     const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
     expect(document.body.textContent).toContain(tomorrowText);
-    rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
-    expect(document.body.textContent).not.toContain(tomorrowText);
+    // MEH-3837: order() sets its cutoff 30 minutes from now, which is
+    // tomorrow from 23:30 Israel time. Build it on a clock frozen at 09:00
+    // UTC today (11:00 or 12:00 in Israel), so this half reads "today" at
+    // any hour.
+    vi.useFakeTimers({ toFake: ["Date"], shouldAdvanceTime: true });
+    try {
+      vi.setSystemTime(new Date(`${TODAY}T09:00:00Z`));
+      rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
+      expect(document.body.textContent).not.toContain(tomorrowText);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
