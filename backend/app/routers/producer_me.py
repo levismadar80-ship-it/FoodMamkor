@@ -62,15 +62,15 @@ from app.services.producer_me_writes import (  # noqa: F401 — MEH-3569: moved;
     reconcile_secondary_phone,
 )
 from app.services.producer_owner_update import (  # noqa: F401 — MEH-3841: moved; producer_me_locations / _review / google_profile and tests import these names from here
-    SENSITIVE_FIELDS,
-    _fire_sensitive_edit,
-    _is_approvable,
-    _maybe_fire_review_ready,
-    _maybe_fire_sensitive_edit,
-    _pending_and_approvable,
-    _sensitive_edit_task,
-    _snapshot_sensitive,
-    _test_cause,
+    SENSITIVE_FIELDS as SENSITIVE_FIELDS,
+    _fire_sensitive_edit as _fire_sensitive_edit,
+    _is_approvable as _is_approvable,
+    _maybe_fire_review_ready as _maybe_fire_review_ready,
+    _maybe_fire_sensitive_edit as _maybe_fire_sensitive_edit,
+    _pending_and_approvable as _pending_and_approvable,
+    _sensitive_edit_task as _sensitive_edit_task,
+    _snapshot_sensitive as _snapshot_sensitive,
+    _test_cause as _test_cause,
     update_owner_producer,
 )
 from app.services.owner_products import (  # MEH-3569
