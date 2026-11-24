@@ -4,6 +4,14 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-24 — מסך הטעינה עולה לראש הדף (PR #5266)
+
+**שורה אחת:** במעבר מרשימה גלולה לדף, מסך הטעינה הוצג בגובה הגלילה הישן, ולכן רואים רק את ה-footer. ‏`useScrollTopOnArrival()` ב-`frontend/lib/route-memory.js` גולל לראש הדף בלחיצה על קישור.
+
+**מה צריך לדעת לפני עבודה:**
+- **`loading.js` חדש קורא ל-`useScrollTopOnArrival()`.** ‏`RouteLoadingScrollTop.test.jsx` סורק את כל קבצי ה-`loading.js` ונכשל על קובץ שלא קורא לו.
+- **פתוח:** חזרה אחורה ל-/group-buys ול-/experiences מאבדת את מקום הגלילה (נמדד 24/11). ל-E2E אין עדיין בדיקה שגוללת, לוחצת וחוזרת ברשת איטית.
+
 ## 2026-11-24 — שורת הצ'יפים לא קורסת בלי `scrollTo` (PR #5251)
 
 **שורה אחת:** תוקנה השגיאה `scrollTo is not a function` מ-Sentry ‏(JAVASCRIPT-NEXTJS-14) בדף /producers. כשאין `scrollTo` או `scrollBy` על אלמנט, `ChipScrollRow.jsx` ו-`useScrollAffordance.js` קובעים את `scrollLeft` ישירות.
