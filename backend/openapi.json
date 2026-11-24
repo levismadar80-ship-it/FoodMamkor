@@ -6952,6 +6952,20 @@
         "title": "MyGroupBuysOut",
         "type": "object"
       },
+      "MyOrdersAnyOut": {
+        "description": "`any`: at least one row in one of the three lists /my-orders shows.",
+        "properties": {
+          "any": {
+            "title": "Any",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "any"
+        ],
+        "title": "MyOrdersAnyOut",
+        "type": "object"
+      },
       "MyProductOrderingOut": {
         "description": "One of the owner's own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.",
         "properties": {
@@ -19262,6 +19276,83 @@
           "qty"
         ],
         "title": "RescueDonatedIn",
+        "type": "object"
+      },
+      "RescueHistoryOut": {
+        "description": "One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag's page, which shows the\ncode on the day. `producer_name` is what the row prints.",
+        "properties": {
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "status",
+          "created_at",
+          "date",
+          "pickup_start",
+          "pickup_end",
+          "producer_id",
+          "producer_name",
+          "cancelled_by_business"
+        ],
+        "title": "RescueHistoryOut",
         "type": "object"
       },
       "RescueMetricsOut": {
@@ -36884,6 +36975,37 @@
         ]
       }
     },
+    "/rescue/orders/history": {
+      "get": {
+        "description": "MEH-3698: the caller's own reservations from every day, newest first,\nwith the business name — the bags in the one «ההזמנות שלי» list. Only the\ncaller's rows; capped at `HISTORY_MAX_ROWS`.",
+        "operationId": "list_my_reservation_history_rescue_orders_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueHistoryOut"
+                  },
+                  "title": "Response List My Reservation History Rescue Orders History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Reservation History",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/rescue/orders/mine": {
       "get": {
         "description": "The caller's own live reservations on today's and tomorrow's bags\n(MEH-2680, MEH-3702).\n\nOnly the caller's rows, only today's and tomorrow's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
@@ -38003,6 +38125,33 @@
         "summary": "List Own Group Buys",
         "tags": [
           "group-buys"
+        ]
+      }
+    },
+    "/users/me/orders/any": {
+      "get": {
+        "description": "True when the caller has an order, a group buy or a bag to list.",
+        "operationId": "has_any_orders_users_me_orders_any_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOrdersAnyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Has Any Orders",
+        "tags": [
+          "users"
         ]
       }
     },

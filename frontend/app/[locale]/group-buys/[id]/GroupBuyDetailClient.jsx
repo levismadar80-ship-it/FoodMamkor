@@ -45,6 +45,7 @@ import GroupBuyCalendarButton from "@/components/group-buy/GroupBuyCalendarButto
 import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
 import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
+import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -213,6 +214,7 @@ export default function GroupBuyDetailClient({ id }) {
       await api.post(`/group-buys/${id}/commit`, {
         quantity: clampQuantity(quantity),
       });
+      clearMyOrdersNavGate(); // MEH-3698: «ההזמנות שלי» now has something
       await load();
     } catch (err) {
       // MEH-975: route through detailToMessage so a 422 `detail` ARRAY never
@@ -244,6 +246,7 @@ export default function GroupBuyDetailClient({ id }) {
     setCancelling(true);
     try {
       await api.delete(`/group-buys/${id}/commit`);
+      clearMyOrdersNavGate(); // MEH-3698: that may have been her only item
       await load();
       showToast.success(t("toast_cancelled")); // MEH-1446
     } catch (err) {

@@ -8255,6 +8255,23 @@
       "cancelled": "Cancelled",
       "expired": "No reply in time",
       "no_show": "Not collected"
+    },
+    "section_active": "Active",
+    "section_past": "Past",
+    "kind": {
+      "order": "Order"
+    },
+    "bag_status": {
+      "handed": "Collected",
+      "no_show": "Not collected",
+      "cancelled_by_business": "Cancelled by the business"
+    },
+    "partial_error": "Part of the list didn't load.",
+    "group_buy_status": {
+      "open": "Open to join",
+      "funded": "Reached its goal",
+      "fulfilled": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "google_profile": {
@@ -8298,20 +8315,5 @@
     "hours_title": "Opening hours",
     "hours_note": "Each side writes hours differently, so compare them yourself.",
     "empty_value": "—"
-  },
-  "my_group_buys": {
-    "title": "My group buys",
-    "empty": "You haven't joined a group buy yet.",
-    "empty_cta": "To group buys",
-    "load_error": "We couldn't load your group buys.",
-    "quantity_unit": "{count} {unit}",
-    "quantity": "Quantity: {count}",
-    "deadline": "Joining closes {date}",
-    "status": {
-      "open": "Open to join",
-      "funded": "Reached its goal",
-      "fulfilled": "Completed",
-      "cancelled": "Cancelled"
-    }
   }
 }

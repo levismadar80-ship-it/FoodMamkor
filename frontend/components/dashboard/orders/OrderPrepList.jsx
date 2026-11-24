@@ -8,14 +8,14 @@
  *           instead of adding up the cards.
  * Touches:  nothing — derived from the orders the page already loaded.
  * Does NOT: count a request still waiting for her answer or a change the
- *           buyer has not accepted (lib/product-ordering.js PREP_STATUSES).
+ *           buyer has not accepted (lib/orderable-products.js PREP_STATUSES).
  *           Renders nothing when there is nothing confirmed today.
  * History:  MEH-3216 gaps (creation)
  */
 
 import { useTranslations } from "next-intl";
 
-import { prepList } from "@/lib/product-ordering";
+import { prepList } from "@/lib/orderable-products";
 
 /** @param {{ todays: any[] }} props */
 export default function OrderPrepList({ todays }) {

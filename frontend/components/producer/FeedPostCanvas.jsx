@@ -23,7 +23,7 @@ import { DownloadSimple, ShareNetwork } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { getUpcomingHoliday } from "@/lib/holidays";
-import { orderProducts } from "@/lib/product-order";
+import { orderProducts } from "@/lib/product-display-order";
 import { itemsLine, trackedLink, weekItems } from "@/lib/share-post";
 import { shareFile } from "@/lib/share-link";
 import { showToast } from "@/lib/toast";
