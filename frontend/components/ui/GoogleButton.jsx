@@ -18,7 +18,7 @@
  * The «G» colours are Google's and never follow our theme.
  *
  * `size="lg"` (48px) matches the Apple button beside it on /register/producer;
- * the default (40px) is the height Google's own "large" button had.
+ * the default (44px) is a full tap target (MEH-3690 review).
  *
  * @param {{ onClick: () => void, busy?: boolean, label: string, testId?: string, size?: "md" | "lg" }} props
  */
@@ -30,7 +30,7 @@ export default function GoogleButton({ onClick, busy = false, label, testId = "g
       disabled={busy}
       aria-busy={busy || undefined}
       data-testid={testId}
-      className={`w-full ${size === "lg" ? "h-12" : "h-10"} px-3 bg-surface text-text border border-border rounded-sm font-medium flex items-center justify-center gap-2.5 hover:bg-background-alt transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary`}
+      className={`w-full ${size === "lg" ? "h-12" : "h-11"} px-3 bg-surface text-text border border-border rounded-sm font-medium flex items-center justify-center gap-2.5 hover:bg-background-alt transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary`}
     >
       <GoogleG />
       <span>{label}</span>

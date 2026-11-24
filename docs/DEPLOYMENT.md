@@ -177,6 +177,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send; also the only numbers, with `ADMIN_WHATSAPP_TO`, that any WhatsApp from staging may reach (MEH-3402 — digits compared, `0…` = `972…`), so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
    | `OTP_TEST_CODE` | Exactly 6 digits; the fixed code handed to the numbers above. Anything else turns the feature OFF rather than half-on. Every issue is logged at WARNING with the producer id (never the phone or the code). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.co.il` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
+   | `GOOGLE_CLIENT_SECRET` | The same Google OAuth client's secret (MEH-3690). Without it `POST /auth/google/code` answers 503 and every Google sign-in fails. See `docs/SECRETS.md`. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.
    If it's pinned to anything else (e.g. `claude/setup-documentation-sQ6Sw`),
@@ -1459,6 +1460,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=14
 
 GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=<the same client's secret; MEH-3690>
 
 CLOUDINARY_CLOUD_NAME=<from cloudinary dashboard>
 CLOUDINARY_API_KEY=<from cloudinary dashboard>

@@ -76,20 +76,20 @@ const SKIP_REASON =
  * container, because GSI's rendered markup is Google's and can drift.
  *
  * Deliberately NOT mocked. e2e/CLAUDE.md forbids mocks in flow specs
- * (MEH-417); this reads the real GSI-rendered DOM. Proving that a CLICK
- * reaches the right callback cannot be done against real Google in CI — that
- * half lives in __tests__/use-google-sign-in.test.jsx, where stubbing the
- * third-party SDK is legitimate.
+ * (MEH-417); this reads the real DOM of our own Google button (MEH-3690).
+ * Proving that a CLICK reaches the right callback cannot be done against real
+ * Google in CI — that half lives in __tests__/GoogleCodeSignIn.test.jsx, where
+ * stubbing the third-party SDK is legitimate.
  */
 async function gsiButtonState(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
-    // GSI renders into whatever element renderButton() was handed. Rather than
-    // guess Google's class names — which are obfuscated and version-dependent —
-    // look for the artifacts it is documented to produce, then measure the box.
+    // Find our Google button and measure its box: a button that is in the
+    // DOM but drawn at zero size is not a live button.
     const candidates = Array.from(
       document.querySelectorAll<HTMLElement>(
-        // MEH-3690: /login and /register draw our own Google button.
-        'iframe[src*="accounts.google.com"], div[role="button"], [aria-labelledby], [data-testid="google-auth-button"]',
+        // MEH-3690: /login and /register draw our own Google button, the
+        // only Google button left; anything wider would count other buttons.
+        '[data-testid="google-auth-button"]',
       ),
     );
     const live = candidates.filter((el) => {

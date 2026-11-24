@@ -1,7 +1,4 @@
 // @ts-check
-/// <reference path="../types/browser-globals.d.ts" />
-"use client";
-
 /**
  * Module:   use-google-sign-in
  * Purpose:  The one place that adds Google's GSI <script>: loadGsiScript() for
@@ -12,6 +9,8 @@
  * History:  MEH-274 / MEH-1784 (the old initialize() singleton, removed in
  *           MEH-3690 with its last caller); MEH-2319 (hl); MEH-3744 (preload).
  */
+/// <reference path="../types/browser-globals.d.ts" />
+"use client";
 
 import { hasFullCookieConsent } from "@/lib/cookie-consent";
 

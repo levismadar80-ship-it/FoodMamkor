@@ -33,11 +33,11 @@ describe("MEH-3343 layout-shift reservations", () => {
     expect(rule[1].replace(/\s+/g, "")).toContain("min-height:0;");
   });
 
-  // MEH-3690: our own button is drawn with the page at its full 40px, so
-  // nothing arrives later to push the form down.
-  it("the Google button is 40px tall from the first render", async () => {
+  // MEH-3690: our own button is drawn with the page at its full 44px (a full
+  // tap target), so nothing arrives later to push the form down.
+  it("the Google button is 44px tall from the first render", async () => {
     const { default: GoogleAuthButton } = await import("@/components/GoogleAuthButton");
     render(<GoogleAuthButton />);
-    expect(screen.getByTestId("google-auth-button").className.split(/\s+/)).toContain("h-10");
+    expect(screen.getByTestId("google-auth-button").className.split(/\s+/)).toContain("h-11");
   });
 });

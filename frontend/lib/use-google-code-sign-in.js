@@ -1,7 +1,4 @@
 // @ts-check
-/// <reference path="../types/browser-globals.d.ts" />
-"use client";
-
 /**
  * Module:   use-google-code-sign-in
  * Purpose:  Sign-in for our own Google button (MEH-3690): open Google's popup
@@ -17,6 +14,8 @@
  *           lib/use-google-sign-in.js (loadGsiScript, the idle preload).
  * History:  MEH-3690 (creation).
  */
+/// <reference path="../types/browser-globals.d.ts" />
+"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
@@ -68,6 +67,13 @@ function makeCodeCallback(handlers, setBusy) {
 }
 
 /**
+ * A tap still counts as the person's own gesture for about this long; a
+ * popup opened later is blocked (Safari ~1 s, Chrome ~5 s). A tap that came
+ * before the script opens the popup only inside this window (MEH-3690).
+ */
+const GESTURE_WINDOW_MS = 1000;
+
+/**
  * @param {string|null|undefined} clientId - NEXT_PUBLIC_GOOGLE_CLIENT_ID
  * @param {Handlers} handlers
  * @returns {{ start: () => void, busy: boolean }}
@@ -79,16 +85,29 @@ export function useGoogleCodeSignIn(clientId, handlers) {
   useEffect(() => { handlersRef.current = handlers; });
   /** @type {{ current: GoogleCodeClient | null }} */
   const clientRef = useRef(null);
-  const state = useRef({ pending: false, failed: false });
+  const state = useRef({ tapAt: 0, failed: false });
   const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  // Bumped by a tap after a failed load: loads the script again.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!clientId || typeof window === "undefined") return undefined;
     let live = true;
     const callback = makeCodeCallback(handlersRef, (b) => { if (live) setBusy(b); });
+    const fail = () => {
+      if (!live) return;
+      state.current.failed = true;
+      if (state.current.tapAt) handlersRef.current.onError(null);
+      state.current.tapAt = 0;
+      setWaiting(false);
+    };
     loadGsiScript().then(() => {
       const oauth2 = window.google?.accounts?.oauth2;
-      if (!live || !oauth2) return;
+      if (!live) return;
+      // A GSI without the code client cannot open the popup: a failure, said
+      // on the tap, never a button that silently does nothing.
+      if (!oauth2) return fail();
       clientRef.current = oauth2.initCodeClient({
         client_id: clientId,
         scope: GOOGLE_CODE_SCOPES,
@@ -98,27 +117,35 @@ export function useGoogleCodeSignIn(clientId, handlers) {
           if (live && e?.type !== "popup_closed") handlersRef.current.onError(null);
         },
       });
-      // A tap that came before the script: open the popup now.
-      if (state.current.pending) clientRef.current.requestCode();
-      state.current.pending = false;
-    }, () => {
-      state.current.failed = true;
-      if (live && state.current.pending) handlersRef.current.onError(null);
-      state.current.pending = false;
-    });
+      const { tapAt } = state.current;
+      state.current.tapAt = 0;
+      setWaiting(false);
+      // A tap that came before the script: open the popup while the tap
+      // still counts as a gesture; after that the button is ready for a
+      // second tap instead of a blocked popup.
+      if (tapAt && Date.now() - tapAt < GESTURE_WINDOW_MS) clientRef.current.requestCode();
+      return undefined;
+    }, fail);
     return () => {
       live = false;
       clientRef.current = null;
-      state.current = { pending: false, failed: false };
+      state.current = { tapAt: 0, failed: false };
     };
-  }, [clientId]);
+  }, [clientId, attempt]);
 
   const start = useCallback(() => {
-    if (busy) return;
+    if (busy || waiting) return;
     if (clientRef.current) clientRef.current.requestCode();
-    else if (state.current.failed) handlersRef.current.onError(null);
-    else state.current.pending = true;
-  }, [busy]);
+    else if (state.current.failed) {
+      // Report this tap, and load the script again for the next one.
+      handlersRef.current.onError(null);
+      state.current.failed = false;
+      setAttempt((n) => n + 1);
+    } else {
+      state.current.tapAt = Date.now();
+      setWaiting(true);
+    }
+  }, [busy, waiting]);
 
-  return { start, busy };
+  return { start, busy: busy || waiting };
 }

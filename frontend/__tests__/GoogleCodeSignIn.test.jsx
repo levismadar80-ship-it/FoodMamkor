@@ -165,4 +165,60 @@ describe("our own Google button (MEH-3690)", () => {
     fireEvent.click(button);
     expect(onError).toHaveBeenCalledWith(he.auth.oauth.google_error);
   });
+
+  // MEH-3690 review: a popup opened long after the tap is blocked by the
+  // browser, so a late script leaves the button ready for a second tap.
+  it("a tap more than a second before the script loaded waits for a second tap", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(10_000);
+    const { button } = await mount();
+    fireEvent.click(button);
+    expect(button.disabled).toBe(true);
+    installFakeGoogle();
+    now.mockReturnValue(12_000);
+    await act(async () => { document.querySelector(GSI).dispatchEvent(new Event("load")); });
+    expect(codeClient.requestCode).not.toHaveBeenCalled();
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(codeClient.requestCode).toHaveBeenCalledTimes(1);
+    now.mockRestore();
+  });
+
+  it("a tap that waited for a script that then failed is reported", async () => {
+    const { button, onError } = await mount();
+    fireEvent.click(button);
+    await act(async () => { document.querySelector(GSI).dispatchEvent(new Event("error")); });
+    expect(onError).toHaveBeenCalledWith(he.auth.oauth.google_error);
+    expect(button.disabled).toBe(false);
+  });
+
+  it("a Google script without the code client is reported, not a dead button", async () => {
+    window.google = { accounts: { id: { initialize: vi.fn() } } };
+    const { button, onError } = await mount();
+    fireEvent.click(button);
+    expect(onError).toHaveBeenCalledWith(he.auth.oauth.google_error);
+  });
+
+  it("after a failed load, a tap reports and loads the script again for the next tap", async () => {
+    const { button, onError } = await mount();
+    await act(async () => { document.querySelector(GSI).dispatchEvent(new Event("error")); });
+    expect(document.querySelectorAll(GSI)).toHaveLength(0);
+    await act(async () => { fireEvent.click(button); });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(document.querySelectorAll(GSI)).toHaveLength(1);
+    installFakeGoogle();
+    await act(async () => { document.querySelector(GSI).dispatchEvent(new Event("load")); });
+    fireEvent.click(button);
+    expect(codeClient.requestCode).toHaveBeenCalledTimes(1);
+  });
+
+  it("an answer from Google after the button is gone is ignored", async () => {
+    installFakeGoogle();
+    post.mockResolvedValue({ data: { id_token: "t" } });
+    const { onSuccess } = await mount();
+    const { callback } = codeClient.config;
+    cleanup();
+    await act(async () => { await callback({ code: "4/0Abc" }); });
+    expect(post).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
 });

@@ -60,12 +60,17 @@ def exchange_google_code(code: str) -> str | ExchangeFailure:
     except httpx.HTTPError as e:
         logger.warning("[GOOGLE CODE] token endpoint unreachable: %s", type(e).__name__)
         return ExchangeFailure.UNREACHABLE
+    # Google's answer also carries an access token (and may carry a refresh
+    # token). We use neither: they are dropped here, never stored or logged.
     id_token = _id_token_from(resp)
     if id_token is None:
         return ExchangeFailure.REFUSED
     # DO NOT skip this because the token came straight from Google over TLS:
     # it is the same aud/iss/exp check /auth/google runs, and the one place a
     # token minted for another client id would be stopped here (MEH-3690).
+    # email_verified: stricter than /auth/google, which never checked it. A
+    # Google account whose email Google has not verified cannot sign in with
+    # our button (MEH-3690 review; /auth/google itself: MEH-3813).
     claims = verify_google_token(id_token)
     if not claims or claims.get("email_verified") is not True:
         return ExchangeFailure.REFUSED

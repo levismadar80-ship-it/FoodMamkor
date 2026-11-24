@@ -539,8 +539,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-experiences-nav-gate.js` | MEH-1918 — decide whether the "חוויות" link appears in the nav. It appears only once the surface has real supply, so a reader who follows it never lands on a … |
 | `use-favorite-producers.js` | — אין כותרת — |
 | `use-focus-return.js` | — אין כותרת — |
-| `use-google-code-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
-| `use-google-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
+| `use-google-code-sign-in.js` | Sign-in for our own Google button (MEH-3690): open Google's popup (GIS code client), swap the one-time code at POST /auth/google/code, and hand the caller the … |
+| `use-google-sign-in.js` | The one place that adds Google's GSI <script>: loadGsiScript() for our own Google button, and preloadGsiWhenIdle() so the library is ready before a sign-in … |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
