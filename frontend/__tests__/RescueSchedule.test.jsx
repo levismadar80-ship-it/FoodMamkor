@@ -112,7 +112,7 @@ describe("the strip", () => {
     get.mockResolvedValue({ data: [row()] });
     render(<Strip today={THU} offers={[]} orders={[]} onChanged={() => {}} />);
     const line = await screen.findByTestId("rescue-schedule-line");
-    expect(line.textContent).toContain("בלוח של מחר: 4 סלים");
+    expect(line.textContent).toContain("בלוח של מחר: 4 סלים ב-15 ₪");
     expect(line.textContent).not.toContain("הסניף בכרמל");
     expect(screen.getByTestId("rescue-schedule-edit-link").getAttribute("href")).toBe("/producer/dashboard/rescue/schedule");
   });

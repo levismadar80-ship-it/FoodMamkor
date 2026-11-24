@@ -21,7 +21,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { ListMySchedulesProducersMeRescueSchedulesGetResponse as SchedulesOut } from "@/lib/generated/api.zod";
-import { formatAgorot } from "@/lib/money";
+import { shekels } from "@/lib/rescue";
 import { israelToday } from "@/lib/israel-date";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
@@ -111,7 +111,7 @@ export default function RescueScheduleStrip({ today, offers, orders, onChanged }
       {shown.map((row) => {
         const s = row.schedule;
         const place = row.label || row.address || "";
-        const values = { place, qty: s.qty, price: formatAgorot(s.price_agorot), from: s.pickup_start, to: s.pickup_end };
+        const values = { place, qty: s.qty, price: `${shekels(s.price_agorot)} ₪`, from: s.pickup_start, to: s.pickup_end };
         // Whole keys, never built from parts, so the unused-key scan can read them.
         const key = row.skipped
           ? many && place ? "strip_skipped_at" : "strip_skipped"
