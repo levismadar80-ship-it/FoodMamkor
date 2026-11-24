@@ -95,9 +95,7 @@ touched (21/11):
 `frontend/lib`, `frontend/hooks` or `backend/app/services` carries
 `Reuse: <what it reused or extended>` or `Reuse: none fit — <what was searched>`
 (this table, `docs/CODE_INDEX.md`). `scripts/checks/reuse-line-guard.sh` warns
-when the line is missing. A new primitive (overlay, positioning, forms, dates,
-email rendering, auth glue) also names the open-source library checked, and
-uses it when one fits (`.claude/rules/workflow.md` rule 43).
+when the line is missing.
 
 ## Conventions specific to this dir
 - **Imports**: `useAuth` from `@/lib/auth-context`, `api` from `@/lib/api`.
