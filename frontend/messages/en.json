@@ -5326,6 +5326,8 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "locked_rejected": "Opens once you fix and resubmit, and your business is approved",
+        "locked_inactive": "Closed while your business is inactive",
         "groups": {
           "offer_heading": "Offer to customers",
           "reviews_heading": "Customer reviews",
@@ -5921,6 +5923,8 @@
       "manage_events": {
         "heading": "My events",
         "pending_note": "Your events will appear on the site once your business is approved.",
+        "rejected_note": "Your events will appear on the site once you fix and resubmit, and your business is approved.",
+        "inactive_note": "Your business is inactive right now, so your events don't appear on the site. Contact us to reactivate it.",
         "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
