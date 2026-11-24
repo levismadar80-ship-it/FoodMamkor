@@ -30,21 +30,21 @@ def send_reset_email(
     name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
-        f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
+        f"קיבלנו בקשה לאיפוס הסיסמה בחשבון במהמקור.\n\n"
         f"לאיפוס הסיסמה יש ללחוץ על הקישור הבא (תוקף: שעה אחת):\n"
         f"{reset_link}\n\n"
-        f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
+        f"אם הבקשה לא הגיעה מכם, אפשר להתעלם ממייל זה — החשבון בטוח.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
     html_body = frame(
         f"שלום {name_html},",
         """\
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה בחשבון במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
         """,
         button(reset_link, "איפוס סיסמה")
         + note_row(
             f"""\
-            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם הבקשה לא הגיעה מכם, אפשר להתעלם ממייל זה — החשבון בטוח.</p>
             <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
             <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
             אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
@@ -76,7 +76,7 @@ def send_verify_email(
     name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
-        f"לאימות כתובת המייל שלך יש ללחוץ על הקישור הבא:\n\n"
+        f"לאימות כתובת המייל יש ללחוץ על הקישור הבא:\n\n"
         f"{verify_url}\n\n"
         f"הקישור תקף ל-24 שעות.\n\n"
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
@@ -85,7 +85,7 @@ def send_verify_email(
     html_body = frame(
         f"שלום {name_html},",
         """\
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת המייל שלך יש ללחוץ על הכפתור:</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת המייל יש ללחוץ על הכפתור:</p>
         """,
         button(verify_url, "אימות המייל")
         + note_row(
@@ -102,7 +102,7 @@ def send_verify_email(
     )
     send_email(
         email,
-        "מהמקור - אימות המייל שלך",
+        "מהמקור - אימות כתובת המייל",
         body,
         html=html_body,
         test_cause=test_cause,
@@ -139,9 +139,9 @@ def send_welcome_email(
     producer_body = (
         f"שלום {first_name},\n\n"
         f"ברוכים הבאים למהמקור! 🌿\n\n"
-        f"העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא\n"
+        f"העסק ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא\n"
         f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).\n\n"
-        f"אחרי האישור יגיע מייל עם הקישור לעסק שלך,\n"
+        f"אחרי האישור יגיע מייל עם הקישור לעמוד העסק,\n"
         f"ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
         f"ללוח הבקרה: {settings.frontend_url}/producer/dashboard\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
@@ -174,8 +174,8 @@ def send_welcome_email(
         f"שלום {first_name_html},",
         f"""\
             <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).</p>
-            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעסק שלך, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק ממתין כרגע לאישור הצוות — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם ידועים, בלי מזון מעובד).</p>
+            <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעמוד העסק, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
             <div style="text-align:center;margin:0 0 28px;">
             <a href="{settings.frontend_url}/producer/dashboard"
             style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
@@ -218,8 +218,8 @@ def send_duplicate_attempt_email(
     POST /auth/register where the response body is identical to the
     happy path; this email is the only out-of-band signal the legitimate
     owner receives. `provider` selects body copy:
-      - "password" → "כבר יש לך חשבון אצלנו עם סיסמה"
-      - "google"/"apple" → "כבר יש לך חשבון אצלנו דרך {Google|Apple}"
+      - "password" → "כבר יש חשבון אצלנו עם סיסמה"
+      - "google"/"apple" → "כבר יש חשבון אצלנו דרך {Google|Apple}"
 
     MEH-1815: `flow` selects which registration surface was attempted.
     The producer collision branch discards the entire Producer payload
@@ -238,23 +238,23 @@ def send_duplicate_attempt_email(
         producer_register_path = _PRODUCER_REGISTER_PATH
         if provider == "password":
             identity = (
-                "כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, חשוב לדעת: "
+                "כבר יש חשבון אצלנו עם סיסמה. אם זה הייתם אתם, חשוב לדעת: "
                 "פרטי העסק שמולאו בטופס לא נשמרו."
             )
-            closing = "אם זה לא היה ניסיון שלך — הסיסמה לא נחשפה ולא דרושה פעולה."
+            closing = "אם זה לא הייתם אתם — הסיסמה לא נחשפה ולא דרושה פעולה."
         else:
             provider_label = "Google" if provider == "google" else "Apple"
             identity = (
-                f"כבר יש לך חשבון אצלנו דרך {provider_label}. אם זה היה ניסיון שלך, חשוב לדעת: "
+                f"כבר יש חשבון אצלנו דרך {provider_label}. אם זה הייתם אתם, חשוב לדעת: "
                 f"פרטי העסק שמולאו בטופס לא נשמרו."
             )
-            closing = "אם זה לא היה ניסיון שלך — החשבון לא נפגע ולא דרושה פעולה."
+            closing = "אם זה לא הייתם אתם — החשבון לא נפגע ולא דרושה פעולה."
         body = (
             f"היי {name},\n"
-            f"מישהו ניסה לרשום בית עסק במהמקור עם הכתובת שלך.\n"
+            f"מישהו ניסה לרשום בית עסק במהמקור עם כתובת המייל הזאת.\n"
             f"{identity}\n"
             f"כדי לרשום את העסק, צריך להיכנס לחשבון ולמלא את הטופס — "
-            f"הפרטים ששמרנו בדפדפן ימתינו לך:\n"
+            f"הפרטים ששמרנו בדפדפן ימתינו שם:\n"
             f"{login_url}?redirect={producer_register_path}\n\n"
             f"{closing}\n"
             f"בברכה,\n"
@@ -262,19 +262,19 @@ def send_duplicate_attempt_email(
         )
         send_email(
             email,
-            "ניסיון רישום עסק במהמקור — יש לך כבר חשבון",
+            "ניסיון רישום עסק במהמקור — כבר יש חשבון",
             body,
             test_cause=test_cause,
         )
         return
-    subject = "ניסיון רישום במהמקור — יש לך כבר חשבון"
+    subject = "ניסיון רישום במהמקור — כבר יש חשבון"
     if provider == "password":
         body = (
             f"היי {name},\n"
-            f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
-            f"כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, אפשר להיכנס כאן:\n"
+            f"מישהו ניסה להירשם למהמקור עם כתובת המייל הזאת.\n"
+            f"כבר יש חשבון אצלנו עם סיסמה. אם זה הייתם אתם, אפשר להיכנס כאן:\n"
             f"{login_url}\n\n"
-            f"אם זה לא היה ניסיון שלך — הסיסמה לא נחשפה ולא דרושה פעולה.\n"
+            f"אם זה לא הייתם אתם — הסיסמה לא נחשפה ולא דרושה פעולה.\n"
             f"בברכה,\n"
             f"צוות מהמקור"
         )
@@ -282,10 +282,10 @@ def send_duplicate_attempt_email(
         provider_label = "Google" if provider == "google" else "Apple"
         body = (
             f"היי {name},\n"
-            f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
-            f"כבר יש לך חשבון אצלנו דרך {provider_label}. אם זה היה ניסיון שלך, אפשר להיכנס כאן:\n"
+            f"מישהו ניסה להירשם למהמקור עם כתובת המייל הזאת.\n"
+            f"כבר יש חשבון אצלנו דרך {provider_label}. אם זה הייתם אתם, אפשר להיכנס כאן:\n"
             f"{login_url}\n\n"
-            f"אם זה לא היה ניסיון שלך — החשבון לא נפגע ולא דרושה פעולה.\n"
+            f"אם זה לא הייתם אתם — החשבון לא נפגע ולא דרושה פעולה.\n"
             f"בברכה,\n"
             f"צוות מהמקור"
         )
@@ -295,15 +295,15 @@ def send_duplicate_attempt_email(
 def send_deletion_email(email: str, name: str, test_cause: bool = False) -> None:
     body = (
         f"שלום {name},\n\n"
-        f"החשבון שלך במהמקור נמחק בהצלחה.\n"
-        f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
+        f"החשבון במהמקור נמחק בהצלחה.\n"
+        f"כל הנתונים, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
         # Neutral plural (Sapir, 04/11/2026): every reader-facing imperative in
         # this module is plural or infinitive, never feminine or masculine
         # singular. Was "צור" (MEH-1965), then "צרי".
-        f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיד.\n\n"
+        f"אם לא אתם ביקשתם למחוק את החשבון, צרו איתנו קשר מיד.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(email, "מהמקור - החשבון שלך נמחק", body, test_cause=test_cause)
+    send_email(email, "מהמקור - החשבון נמחק", body, test_cause=test_cause)
 
 
 def _hint(address: str) -> str:
@@ -336,9 +336,9 @@ def send_email_changed_notice(
     contact_url = f"{settings.frontend_url}/contact"
     body = (
         f"שלום,\n\n"
-        f"כתובת המייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
+        f"כתובת המייל בחשבון במהמקור שונתה ל-{_hint(new_email)}.\n"
         f"מעכשיו ההודעות מהאתר יישלחו לכתובת החדשה.\n\n"
-        f"אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
+        f"אם אתם ביצעתם את השינוי, אין צורך לעשות דבר.\n"
         f"אם לא, צרו איתנו קשר מיד ונחזיר את החשבון: {contact_url}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -361,9 +361,9 @@ def send_password_changed_notice(email: str, test_cause: bool = False) -> None:
     base = settings.frontend_url
     body = (
         "שלום,\n\n"
-        "הסיסמה בחשבון שלך במהמקור שונתה עכשיו, "
+        "הסיסמה בחשבון במהמקור שונתה עכשיו, "
         "וכל המכשירים האחרים שהיו מחוברים לחשבון נותקו.\n\n"
-        "אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
+        "אם אתם ביצעתם את השינוי, אין צורך לעשות דבר.\n"
         "אם לא, כדאי לבחור סיסמה חדשה מיד ולספר לנו.\n\n"
         f"לבחירת סיסמה חדשה: {base}/forgot-password\n"
         f"ליצירת קשר: {base}/contact\n\n"

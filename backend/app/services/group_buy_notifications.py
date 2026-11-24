@@ -80,7 +80,7 @@ def notify_producer_funded(
         f"שלום,\n\n"
         f'קבוצת הרכישה "{title}" הגיעה ליעד.\n'
         f"מספר הצטרפויות: {participant_count}\n\n"
-        f"נשלחה הודעה לכל מי שהצטרף, ופניות לתיאום ההזמנה יגיעו אליך.\n\n"
+        f"נשלחה הודעה לכל מי שהצטרף, ופניות לתיאום ההזמנה יגיעו ישירות לעסק.\n\n"
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -215,12 +215,12 @@ def notify_participant_joined(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
     # the formatting is inside the guard too, as in send_funded_notifications.
     try:
         day = deadline.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
-        subject = f'מהמקור — הצטרפת לקבוצה "{title}"'
+        subject = f'מהמקור — ההצטרפות לקבוצה "{title}" נקלטה'
         body = (
             f"שלום,\n\n"
-            f'ההצטרפות שלך לקבוצה "{title}" נקלטה. הכמות שביקשת: {quantity}.\n'
+            f'ההצטרפות לקבוצה "{title}" נקלטה. הכמות שנבחרה: {quantity}.\n'
             f"עד עכשיו הצטרפו {joined} מתוך {goal} שצריך כדי שהקבוצה תצא לדרך.\n\n"
-            f"נעדכן אותך במייל כשהקבוצה תגיע ליעד, או אם עד {day:%d.%m.%Y} היא לא תגיע אליו.\n"
+            f"נעדכן במייל כשהקבוצה תגיע ליעד, או אם עד {day:%d.%m.%Y} היא לא תגיע אליו.\n"
             f"אפשר לבטל את ההצטרפות מדף הקבוצה עד המועד הזה.\n\n"
             f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
             f"בברכה,\nצוות מהמקור"

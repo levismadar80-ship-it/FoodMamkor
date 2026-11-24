@@ -23,7 +23,7 @@ from app.services.page_freshness import confirm, decode_confirm_token
 router = APIRouter(tags=["page-freshness"])
 
 # Copy DRAFT, pending Sapir's word-for-word approval (rule 22).
-_DEAD_LINK = "הקישור הזה כבר לא פעיל. אפשר לעדכן את העמוד מהלוח שלך."
+_DEAD_LINK = "הקישור הזה כבר לא פעיל. אפשר לעדכן את העמוד מלוח הבקרה."
 
 
 @router.post("/page-freshness/confirm", response_model=PageFreshnessConfirmOut)
