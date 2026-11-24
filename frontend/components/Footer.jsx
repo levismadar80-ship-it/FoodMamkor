@@ -432,7 +432,7 @@ export default function Footer() {
                     (the extra hit area is vertical padding, not layout). */}
                 <Link prefetch={false}
                   href={link.href}
-                  className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+                  className="inline-flex items-center justify-center min-h-touch min-w-touch text-sm text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>
@@ -446,7 +446,7 @@ export default function Footer() {
                 type="button"
                 onClick={openCookieSettings}
                 data-testid="footer-cookie-settings"
-                className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+                className="inline-flex items-center justify-center min-h-touch min-w-touch text-sm text-green-100 hover:text-white transition"
               >
                 {t("nav.footer.cookie_settings")}
               </button>

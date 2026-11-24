@@ -13,9 +13,10 @@
  *   - the home block's filter removed  -> "the home block shows today's bags only"
  *   - tomorrow counted at the counter  -> "the counters and the code box are today's"
  *   - the deadline without its day     -> "says «מחר ב-» when the deadline…"
+ *   - no useIsraelToday in the screen  -> "«איסוף מחר» turns into today's window…" (MEH-3805)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 
 import { renderHe as render } from "./helpers/render-with-he";
 import he from "../messages/he.json";
@@ -172,16 +173,66 @@ describe("the confirmation", () => {
   });
 });
 
+describe("a page left open across midnight (MEH-3805)", () => {
+  it("«איסוף מחר» turns into today's window when the Israel day changes, with no reload", () => {
+    // 23:59 in Israel (winter, UTC+2) on 10/12; the bag is for 11/12.
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    try {
+      vi.setSystemTime(new Date("2026-12-10T21:59:00Z"));
+      render(<RescueConfirmation order={order({ date: "2026-12-11" })} onCancel={() => {}} />);
+      const line = () => screen.getByTestId("rescue-confirmation-window").textContent;
+      expect(line().startsWith("איסוף מחר ")).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(2 * 60_000); // 00:01 on 11/12
+      });
+      expect(line().startsWith("איסוף מחר")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the /rescue list moves a bag from «מחר» to «היום» when the Israel day changes", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    try {
+      vi.setSystemTime(new Date("2026-12-10T21:59:00Z"));
+      fetchOffers.mockResolvedValue([offer({ id: "t1", date: "2026-12-11" })]);
+      render(<RescueList />);
+      await screen.findAllByTestId("rescue-bag-row");
+      expect(screen.getByTestId("rescue-list-group-tomorrow")).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(2 * 60_000); // 00:01 on 11/12
+      });
+      expect(screen.queryByTestId("rescue-list-group-tomorrow")).toBeNull();
+      expect(screen.getAllByTestId("rescue-bag-row")).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("the free-cancel deadline", () => {
   it("says «מחר ב-» when the deadline is on the next Israel day, the bare time when today", () => {
-    const at = (day) => `${day}T09:00:00Z`; // 11:00/12:00 in Israel, same date
-    const { rerender } = render(
-      <RescueConfirmation order={order({ date: TOMORROW, cancel_until: at(TOMORROW) })} onCancel={() => {}} />,
-    );
-    const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
-    expect(document.body.textContent).toContain(tomorrowText);
-    rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
-    expect(document.body.textContent).not.toContain(tomorrowText);
+    // The clock is frozen at 10:00 Israel on 10/12. On the real clock, from
+    // 23:30 Israel the default deadline (now + 30 min) is already tomorrow
+    // and the «today» half went red (MEH-3704 CI, 21:39 UTC).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-12-10T08:00:00Z"));
+      const { rerender } = render(
+        <RescueConfirmation
+          order={order({ date: "2026-12-11", cancel_until: "2026-12-11T09:00:00Z" })}
+          onCancel={() => {}}
+        />,
+      );
+      const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
+      expect(document.body.textContent).toContain(tomorrowText);
+      // Today's bag, deadline 10:30 Israel the same day: the bare time.
+      rerender(<RescueConfirmation order={order({ date: "2026-12-10" })} onCancel={() => {}} />);
+      expect(document.body.textContent).toContain("10:30");
+      expect(document.body.textContent).not.toContain(tomorrowText);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

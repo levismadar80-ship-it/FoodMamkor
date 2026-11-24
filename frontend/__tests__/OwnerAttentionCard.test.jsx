@@ -1,5 +1,5 @@
 /**
- * MEH-3108: «מה מחכה לך» on the dashboard home. 0 items → nothing rendered;
+ * MEH-3108: «מה ממתין לטיפול» on the dashboard home. 0 items → nothing rendered;
  * 1 → one row; 3 → reviews, the top sign-up item, funded group buys, each
  * linking to its tool. Rendered with the real he.json so the ICU plurals are
  * read, not keys.
@@ -38,7 +38,7 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
   it("1 item: one row, singular copy, links to the reviews page", () => {
     renderCard({ ...none, unreplied_reviews: 1 });
     const card = screen.getByTestId("owner-attention");
-    expect(within(card).getByRole("heading")).toHaveTextContent("מה מחכה לך");
+    expect(within(card).getByRole("heading")).toHaveTextContent("מה ממתין לטיפול");
     expect(within(card).getAllByRole("listitem")).toHaveLength(1);
     const row = screen.getByTestId("owner-attention-reviews");
     expect(row).toHaveTextContent("ביקורת אחת בלי תגובה");

@@ -460,7 +460,7 @@ def test_producer_older_than_24h_is_due(db, sent_log):
 # these strings are Sapir-approved copy whose whole point is that they are what
 # they are. `[מספר]` is her placeholder token; a sent subject must never still
 # contain it.
-_SUBJECT_DAY_1 = "עוד צעד קטן — והעסק שלך עובר לבדיקה"
+_SUBJECT_DAY_1 = "עוד צעד קטן — והעסק עובר לבדיקה"
 _SUBJECT_DAY_3_TEMPLATE = "נשארו [מספר] צעדים — והעסק שלכם עולה לאתר"
 _SUBJECT_DAY_7_TEMPLATE = "המקום שלכם שמור — נשארו [מספר] צעדים"
 _COUNT_TOKEN = "[מספר]"

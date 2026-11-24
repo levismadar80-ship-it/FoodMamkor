@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.14 (24/11): seven lines approved word for word by Sapir in the
+  // release thread («מאשרת», 24/11 21:29): order-form preview, AI drafts from
+  // text, tomorrow's surprise bags, the closed-day warning, review requests,
+  // «שיתוף», and the «בישול לפי הזמנה» category.
+  { version: "1.5.14", key: "v1_5_14", date: "2026-11-24", items: 7 },
   // 1.5.13 (23/11): the self-purchase block (#5164, MEH-3691) fixes an
   // existing tool rather than adding one; the rest is tests, CI and
   // dependency bumps. Nothing for businesses, so items: 0.

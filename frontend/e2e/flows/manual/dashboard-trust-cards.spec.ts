@@ -392,7 +392,7 @@ test.describe("business-name card", () => {
     await submit(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "POST").length, { message: "the POST never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({ requested_name: "מאפיית שקד ובנות", reason: null });
-    await expect(page.getByTestId("name-change-sent")).toHaveText("הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.");
+    await expect(page.getByTestId("name-change-sent")).toHaveText("הבקשה נשלחה. נשלח עדכון כשהשם החדש יאושר.");
   });
 
   // MT:MEH-1872b:6 — a pending request replaces the form.

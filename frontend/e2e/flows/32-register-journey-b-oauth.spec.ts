@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { googleCodeClientReady, googleCodeConfig, sendGoogleCode, stubGoogleCodeClient } from "./_google-code-stub";
 
 /**
  * Spec:     32-register-journey-b-oauth
@@ -27,7 +28,13 @@ import { test, expect } from "./_cloudinary-stub";
  *           backend/app/services/oauth_verifiers.py:211-227 (verify_google_token
  *           returns None on any verification failure, malformed token
  *           included).
- * History:  MEH-215 (creation).
+ * History:  MEH-215 (creation). MEH-3690: our own Google button. The page now
+ *           gets a one-time CODE from Google's popup and swaps it at the REAL
+ *           POST /api/auth/google/code, which swaps it at Google's REAL token
+ *           endpoint; an invalid code is refused there (invalid_grant) and
+ *           the route answers 401. That replaces the invalid-credential call
+ *           to /api/auth/google below; the rest of this header predates it
+ *           and describes the old route where it names /api/auth/google.
  *
  * Viewports: both default projects — `mobile` (Pixel 5, viewport 393x727)
  * and `desktop` (1440x900). The `393x851` figure this docstring first cited
@@ -122,128 +129,51 @@ import { test, expect } from "./_cloudinary-stub";
 // ends up needing `covered-by-stub` / `superseded` / `not-applicable`. The
 // happy-path gap is documented in the header's coverage map instead.
 
-// backend/app/routers/auth.py:825 — the real, deterministic 401 detail string
-// for an id_token that fails google.oauth2.id_token.verify_oauth2_token().
-// NOT egress-free: see the header's "A real, unmocked network call" section —
-// the backend fetches Google's certs before it ever inspects the token's
-// shape, so this assertion still depends on a real outbound HTTP call.
-const GOOGLE_TOKEN_INVALID = "אסימון Google לא תקין";
+// backend/app/routers/auth_google_code.py — the real 401 detail for a code
+// Google refuses. NOT egress-free: the backend posts the code to Google's
+// token endpoint (oauth2.googleapis.com/token) before it answers. If the
+// backend has no GOOGLE_CLIENT_SECRET the route answers 503 with another
+// detail, and the assertion below fails LOUDLY — wanted, not an oversight.
+const GOOGLE_CODE_REFUSED = "ההתחברות עם Google לא הושלמה. נסו שוב.";
 
-// /auth/google is limited to 10/minute (auth.py:805). This spec's two real
-// calls (mobile + desktop) are far under that, but on shared CI runner IPs
-// under concurrent PR load a 429 instead of 401 is possible — same exposure
-// flows/29's docstring names for /auth/register, not yet hit in practice.
-
-/**
- * Installs a stub for `window.google.accounts.id` BEFORE the page loads, so
- * `useGoogleSignIn`'s `initialize()` call captures our callback instead of
- * waiting for the real (network-unreachable in CI) Google script. Same shape
- * as flows/10's stub, with one addition: `renderButton` marks the real DOM
- * node it receives, carrying the real options GoogleAuthButton.jsx passed —
- * see the header's "On mocking" section for why this avoids a production edit.
- */
-async function stubGoogleSdk(page) {
-  await page.addInitScript(() => {
-    let captured: ((res: { credential: string }) => void) | null = null;
-    (
-      window as unknown as { __getConsumerGoogleCallback: () => typeof captured }
-    ).__getConsumerGoogleCallback = () => captured;
-    (window as unknown as { google: unknown }).google = {
-      accounts: {
-        id: {
-          initialize: ({ callback }: { callback: typeof captured }) => {
-            captured = callback;
-          },
-          renderButton: (
-            el: HTMLElement,
-            opts: { text?: string; locale?: string },
-          ) => {
-            el.setAttribute(
-              "data-e2e-google-btn",
-              JSON.stringify({ text: opts.text ?? null, locale: opts.locale ?? null }),
-            );
-          },
-          cancel: () => {},
-        },
-      },
-    };
-  });
-}
-
-/**
- * True once the GSI stub's callback has actually been captured — i.e. the
- * component mounted and called initialize(). False when
- * NEXT_PUBLIC_GOOGLE_CLIENT_ID is unset at build time and GoogleAuthButton
- * renders null.
- *
- * Polls for up to 5s rather than checking once. flows/10's identical-shaped
- * check (a single `page.evaluate` right after `domcontentloaded`) races
- * `useGoogleSignIn`'s effect, which only runs once React hydration reaches
- * that component — not guaranteed by `domcontentloaded` (HTML-parse
- * completion, not hydration). A false skip there would read as a
- * legitimate "not configured" case and silently drop this test's real
- * coverage. `waitForFunction`'s own default timeout is 30s; capped to 5s
- * here so a genuinely-unconfigured run still skips promptly rather than
- * waiting out the default.
- */
-async function googleCallbackReady(page): Promise<boolean> {
-  return page
-    .waitForFunction(
-      () => {
-        const getter = (
-          window as unknown as { __getConsumerGoogleCallback?: () => unknown }
-        ).__getConsumerGoogleCallback;
-        return typeof getter === "function" && typeof getter() === "function";
-      },
-      { timeout: 5_000 },
-    )
-    .then(() => true)
-    .catch(() => false);
-}
+// /auth/google/code is limited to 10/minute, like /auth/google. This spec's
+// two real calls (mobile + desktop) are far under that.
 
 test.describe("MEH-215 journey B — consumer Google OAuth registration", () => {
-  test("B1 - the Google button renders with the real SDK call, unmocked backend", async ({
+  test("B1 - our Google button renders and creates a popup code client, unmocked backend", async ({
     page,
   }) => {
-    await stubGoogleSdk(page);
+    await stubGoogleCodeClient(page);
     await page.goto("/register");
     await page.waitForLoadState("domcontentloaded");
 
     test.skip(
-      !(await googleCallbackReady(page)),
+      !(await googleCodeClientReady(page)),
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent",
     );
 
-    const marker = page.locator("[data-e2e-google-btn]");
-    // MEH-2168 chunk 3: attached, not visible. stubGoogleSdk's renderButton
-    // writes the marker attribute and nothing else into the div, so the
-    // element the app hands to renderButton is 0-height by construction —
-    // `toBeVisible` could only pass if the REAL gsi/client script overwrote
-    // window.google first and drew its iframe, which is a race this test
-    // never meant to assert (and which GSI now refuses on the CI origin with
-    // 403 "origin is not allowed"). The claim under test is the renderButton
-    // CALL with the right opts, and that is the attribute below.
-    await expect(marker).toBeAttached();
+    // MEH-3690: our own button, drawn by the page, with the approved label.
+    await expect(page.getByTestId("google-auth-button")).toBeVisible();
+    await expect(page.getByTestId("google-auth-button")).toHaveText("להמשיך עם Google");
 
-    // GoogleAuthButton.jsx's real renderButton call — asserted, not assumed.
-    const opts = JSON.parse(
-      (await marker.getAttribute("data-e2e-google-btn")) ?? "{}",
-    );
-    expect(opts.text).toBe("continue_with");
-    expect(opts.locale).toBe("he");
+    // The code client our button created — asserted, not assumed: a popup,
+    // with the openid scope that makes Google return an ID token.
+    const config = await googleCodeConfig(page);
+    expect(config?.ux_mode).toBe("popup");
+    expect(String(config?.scope).split(" ")).toContain("openid");
 
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   });
 
-  test("B1 - an invalid credential hits the REAL backend and surfaces its REAL 401, no navigation", async ({
+  test("B1 - an invalid code hits the REAL backend and surfaces its REAL 401, no navigation", async ({
     page,
   }) => {
-    await stubGoogleSdk(page);
+    await stubGoogleCodeClient(page);
     await page.goto("/register");
     await page.waitForLoadState("domcontentloaded");
 
     test.skip(
-      !(await googleCallbackReady(page)),
+      !(await googleCodeClientReady(page)),
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent",
     );
 
@@ -254,21 +184,11 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
     // is the wanted behaviour (a real backend misconfiguration should be
     // visible), not an oversight to fix.
 
-    // Fire the captured GSI callback with a credential that is not even
-    // JWT-shaped — no dots, no base64 segments. Deliberately NOT
-    // page.route()'d: this is the real POST /api/auth/google, hitting the
-    // real backend, and the real oauth_verifiers.verify_google_token()
-    // rejection path. No user is created — the route returns 401 before any
-    // DB lookup (auth.py:825, before the first db.query at :833), so this
-    // leaves no row to clean up.
-    await page.evaluate(() => {
-      const getter = (
-        window as unknown as {
-          __getConsumerGoogleCallback: () => (res: { credential: string }) => void;
-        }
-      ).__getConsumerGoogleCallback;
-      getter()({ credential: "not-a-real-google-jwt" });
-    });
+    // Hand the page a code Google never issued. Deliberately NOT
+    // page.route()'d: this is the real POST /api/auth/google/code, and the
+    // backend's real swap at Google's token endpoint, which refuses it. No
+    // user is created — the route signs no one in.
+    await sendGoogleCode(page, "not-a-real-google-code");
 
     // MEH-2577 (#3843): Google/Apple moved above the email form, and their
     // failures render in their own alert under the consent line
@@ -277,7 +197,7 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
     const error = page.getByTestId("register-oauth-error");
     await expect(error).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId("register-error")).toHaveCount(0);
-    await expect(error).toHaveText(GOOGLE_TOKEN_INVALID);
+    await expect(error).toHaveText(GOOGLE_CODE_REFUSED);
     await expect(error).toHaveAttribute("role", "alert");
 
     // The redirect-on-success path (RegisterClient.jsx:434, router.push) must

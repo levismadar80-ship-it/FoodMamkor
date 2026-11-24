@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
  * Purpose:  MEH-2100 — the draft→submit-for-review state machine, end to end in
  *           a real browser. Pins the four things the batch actually changed:
  *             A — a `draft` business gets the COMPLETION surface and never the
- *                 "העמוד שלך בבדיקה" review banner, with the missing items
+ *                 "עמוד העסק בבדיקה" review banner, with the missing items
  *                 named, the CTA disabled and the OTP card mounted in place.
  *             B — completing the requirements shows the CTA; one tap POSTs
  *                 to /producers/me/submit-for-review exactly once and the

@@ -1,5 +1,5 @@
 /**
- * MEH-3035 chunk 2 — PaymentInfoEditor («איך משלמים לך?»).
+ * MEH-3035 chunk 2 — PaymentInfoEditor («איך משלמים לעסק?»).
  *
  * Methods are five tiles (toggle buttons) plus a «בחירת הכל» switch; timing is
  * one-of-three toggle buttons that can be cleared; the note is one optional
