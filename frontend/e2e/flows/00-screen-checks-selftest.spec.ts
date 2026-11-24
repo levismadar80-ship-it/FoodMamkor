@@ -61,6 +61,36 @@ test.describe("screenChecks self-test (MEH-3816)", () => {
     expect(r.problems.join("\n")).toContain("Image without alt");
   });
 
+  test("text ending in a literal ... is flagged as truncation", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<p>ועוד הרבה דברים...</p>`));
+    const r = await screenChecks(page, "ellipsis");
+    expect(r.problems.join("\n")).toContain("Unintentional truncation");
+  });
+
+  test("content cut by overflow:hidden is flagged as clipped", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<div style="width:200px;overflow:hidden"><div style="width:600px;height:20px;background:#2e6853"></div></div>`));
+    const r = await screenChecks(page, "clip");
+    expect(r.problems.join("\n")).toContain("Clipped by overflow:hidden");
+  });
+
+  test("a dialog wider than the screen is flagged", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<div role="dialog" aria-label="חלון" style="position:fixed;top:0;left:0;width:3000px;height:100px;background:#fff"></div>`));
+    const r = await screenChecks(page, "modal");
+    expect(r.problems.join("\n")).toContain("Modal exceeds viewport");
+  });
+
+  test("a fixed header painted over the top of main is flagged", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<header style="position:fixed;top:0;inset-inline:0;height:80px;background:#2e6853"></header>`));
+    const r = await screenChecks(page, "header");
+    expect(r.problems.join("\n")).toContain("Header/footer overlaps body");
+  });
+
+  test("a fixed nav running past the bottom of the screen is flagged", async ({ page }) => {
+    await load(page, doc(`${CLEAN}<nav aria-label="ניווט" style="position:fixed;inset-inline:0;bottom:-40px;height:80px;background:#2e6853"></nav>`));
+    const r = await screenChecks(page, "nav");
+    expect(r.problems.join("\n")).toContain("Nav/tab bar cut off");
+  });
+
   test("pale text on a light background is flagged by axe color-contrast", async ({ page }) => {
     await load(page, doc(`${CLEAN}<p style="color:#cfcfcf;background:#ffffff">טקסט חיוור</p>`));
     const r = await screenChecks(page, "contrast");

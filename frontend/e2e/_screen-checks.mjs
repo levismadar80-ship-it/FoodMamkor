@@ -243,13 +243,19 @@ export async function imageChecks(page) {
 
 /**
  * axe on the current state of the page, WCAG A + AA, critical and serious only.
- * color-contrast is included here (unlike the 12-axe-a11y gate, which ignores
- * it for known deferred pairs): a screenshot review wants to see it.
+ * Differs from the 12-axe-a11y gate on purpose:
+ * - color-contrast is included (the gate ignores it for known deferred pairs):
+ *   a screenshot review wants to see it;
+ * - no `wcag22aa`: its one rule, `target-size` (24px), would repeat the
+ *   stricter 44px tap check above.
+ * Same as the gate: Leaflet marker icons are excluded (unnamed markers,
+ * tracked there).
  * @param {import("@playwright/test").Page} page
  */
 export async function axeChecks(page) {
   const res = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .exclude(".leaflet-marker-icon")
     .analyze();
   return res.violations
     .filter((v) => v.impact === "critical" || v.impact === "serious")

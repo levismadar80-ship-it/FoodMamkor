@@ -30,6 +30,9 @@ const r = await screenChecks(page, "390 list-3-items");
 // r.problems: one line per problem. Read every line.
 ```
 
+Run it with the Playwright that `frontend/node_modules` installs (the helper
+imports `@axe-core/playwright` from there).
+
 Staging needs the TLS cap and the bypass cookie of `.claude/rules/testing.md`
 «Driving Playwright against staging»; a screen behind login uses the demo
 accounts of the same section. Put the harness in a scratch directory, never in
@@ -76,8 +79,10 @@ is "not captured" (say which screenshot is missing).
 
 ## 3. Report
 
-**Per screenshot, one caption line** for the gallery (the
-screenshots-drive-link rule) and for the PR body under `## Screenshot review`:
+**Per screenshot, one caption line** for the gallery Sapir gets (project
+memory «screenshots-drive-link»: an Artifact gallery plus the Drive evidence
+folder of `.claude/rules/testing.md` «QA screenshots live outside the repo»),
+and for the PR body under `## Screenshot review`:
 
 ```
 390 · רשימה עם 3 פריטים, פתוחה · נמדד: תקין · נבדק: מצבים, RTL, מחירים ושעות, פעולה ראשית «הזמנה»
@@ -89,10 +94,10 @@ When something failed, the line names it:
 390 · רשימה ריקה · נמדד: כפתור «סינון» 30×30 · נבדק: אין צילום של מצב שגיאה
 ```
 
-**Findings.** A problem you will report as a bug follows the house rule for
-findings: a stable state, at least 3 matching measurements and a screenshot.
-Until then it is labelled «חשד, לא מאומת» (MEH-3814, `verifyFinding`, once it
-merges).
+**Findings.** Before you report a problem as a bug: measure it in a stable
+state, get at least 3 matching measurements, and keep a screenshot. Until then
+call it «חשד, לא מאומת» (Sapir, 24/11/2026). If `frontend/e2e/_verify-finding.mjs`
+exists (MEH-3814), run the finding through `verifyFinding`.
 
 Write every Hebrew caption through `hebrew-content-writer`. Keep each one to a
 single line.
@@ -101,6 +106,6 @@ single line.
 
 - It does not take the screenshots. The task does, at the sizes of workflow
   rule 38.
-- It does not upload them. Drive and the gallery are the screenshots-drive-link
-  rule.
+- It does not upload them. The Drive folder (testing.md) and the gallery
+  (project memory) do that.
 - It does not replace the rule-5a reviewer or a full design review.
