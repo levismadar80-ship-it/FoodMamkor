@@ -33,6 +33,7 @@
 * `tests/test_meh3591_missing_emails.py` — מייל אישור ההצטרפות (רק כשההצטרפות לא הביאה ליעד), ומייל «הסיסמה שונתה».
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`
 * `frontend/__tests__/GroupBuysServerFirstList.test.jsx` — ה-HTML מהשרת מכיל את הכרטיסים, הגעה בלי סינון לא שולחת בקשה, ועיר שמוקלדת אחר כך כן (MEH-2233).
+* `frontend/__tests__/GroupBuysSavedCity.test.jsx` — הרשימה מתחילה מהעיר השמורה (`frontend/lib/use-user-city.js`) רק כשיש בה קבוצה פתוחה; בלי עיר שמורה או בלי קבוצה בה — כל הערים. הקלדה לא נדרסת ולא משנה את העיר השמורה (MEH-3736).
 * `frontend/__tests__/GroupBuyAfterGoal.test.jsx` — מה רואים כשהקבוצה מגיעה ליעד: «הקבוצה הגיעה ליעד» ומספר המצטרפות לבד (לא «2 מתוך 2», שנקרא כמו «מלאה»), «נשארו N מקומות» כשיש תקרה, באנר «עוד אפשר להצטרף» למי שלא הצטרפה, ו«איך זה עובד» שנשאר כל עוד אפשר להצטרף (MEH-3588).
 * `tests/test_meh3691_no_self_buying.py` · `frontend/__tests__/GroupBuyOwnerNoJoin.test.jsx` — החשבון של בית העסק לא מצטרף לקבוצה של עצמו ולא נרשם לרשימת ההמתנה שלה: שני המסלולים עונים 403, והדף לא מציג לו טופס הצטרפות או רשימת המתנה. בית עסק אחר מצטרף כמו כל לקוח (MEH-3691).
 * `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` · `frontend/__tests__/GroupBuyGuestLogin.test.jsx` — הצטרפות אחרי Google בחלונית, פעם אחת ובכמות שנבחרה; סגירת החלונית לא שולחת כלום; «היכנסו» נושא את הדרך חזרה (MEH-3679, MEH-2982).
