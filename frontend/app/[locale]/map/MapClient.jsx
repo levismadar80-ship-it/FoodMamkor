@@ -57,12 +57,17 @@ const CITY_FLY_ZOOM = 13;
 // MEH-1009: SSR/first-paint fallback for the desktop shell's top offset —
 // matches the 64px the height calc always hardcoded; corrected by a live
 // measurement on mount (see the measurement effect in MapPage).
-const DESKTOP_HEADER_OFFSET_PX = 64;
+// MEH-3820: 82, not 64. The floating header ends at 82px (measured 24/11 at
+// 320, 360, 375, 390, 430, 1024, 1280 and 1440 wide; 130 at 768, where the
+// mobile shell's own measurement corrects it). A 64 guess made the shell 18px
+// too tall until the measurement ran after hydration, so the map shrank on a
+// slow phone. A real top banner (VerifyBanner) is still caught by the
+// measurement below.
+const DESKTOP_HEADER_OFFSET_PX = 82;
 
-// MEH-1019: same SSR/first-paint fallback for the MOBILE shell — it hardcoded
-// the identical 64 before this fix. Corrected by a live measurement on mount
-// (mobile mirror of the desktop reservation).
-const MOBILE_HEADER_OFFSET_PX = 64;
+// MEH-1019: same SSR/first-paint fallback for the MOBILE shell. Corrected by a
+// live measurement on mount (mobile mirror of the desktop reservation).
+const MOBILE_HEADER_OFFSET_PX = 82;
 
 // MEH-3820: the mobile filter bar is in flow (a flex column), so the map
 // starts under it with no measured padding. The old 174px first-paint guess
