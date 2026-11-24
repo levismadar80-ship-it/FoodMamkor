@@ -254,9 +254,8 @@ function EditPageInner() {
   // Read in the same render as the profile, so the panel does not pop in a
   // commit later and push the tiles down; the latch only keeps it there.
   const showFill = fillLatched || pageEmpty;
-  useEffect(() => {
-    if (pageEmpty) setFillLatched(true);
-  }, [pageEmpty]);
+  // Set during render, not in an effect (eslint set-state-in-effect ratchet).
+  if (pageEmpty && !fillLatched) setFillLatched(true);
 
   // MEH-1116: accordion state — one card open at a time, all collapsed on load.
   const [openKey, setOpenKey] = useState(null);
