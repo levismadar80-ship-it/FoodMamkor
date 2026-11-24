@@ -325,7 +325,8 @@ export default function BottomNav() {
   // Toaster, InstallPrompt, ChatWidget and BackToTop. Every one keeps a static
   // fallback: this var is ABSENT on desktop (the pill is md:hidden so height is
   // 0), on producer pages (the MEH-2148 gate unmounts the pill), and before
-  // hydration — so a consumer with no fallback would collapse to 0 in three
+  // hydration on a page that shows the pill (on a page without it, MEH-3818's
+  // no-pill <style> sets it in the server HTML) — so a consumer with no fallback would collapse to 0 in three
   // routine states, not exotic ones.
   //
   // Two of the eight were not parity swaps: MapBottomSheet and FavoritesClient

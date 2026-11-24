@@ -108,8 +108,10 @@ export default function ChecklistSettings({ preload } = {}) {
   const [adopted, setAdopted] = useState(false);
   if (preload && !adopted) {
     setAdopted(true);
-    if (preload.error) setLoadError(true);
-    else if (items === null) setItems(toItems(preload.data ?? []));
+    // A body that is not a list is a failed read, as it was for the
+    // card's own load (toItems throws on it, and .catch showed the error).
+    if (preload.error || !Array.isArray(preload.data)) setLoadError(true);
+    else if (items === null) setItems(toItems(preload.data));
   }
 
   // Every mutation clears the confirmation. "נשמר" is a claim about the list

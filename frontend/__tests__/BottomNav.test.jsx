@@ -241,6 +241,7 @@ describe("BottomNav", () => {
       const { container } = render(<BottomNav />);
       // MEH-3818: only the no-pill clearance <style>; no element is shown.
       expect(container.querySelector(":not(style)")).toBeNull();
+      expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
     },
   );
 
@@ -258,6 +259,7 @@ describe("BottomNav", () => {
     pathnameRef.current = path;
     const { container } = render(<BottomNav />);
     expect(container.querySelector(":not(style)")).toBeNull();
+    expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
   });
 
   // Controls: consumer routes keep the nav, so a gate that hides it
@@ -365,6 +367,7 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
       // no-pill clearance, on the same path, so the two cannot drift apart.
       // MEH-3818: nothing visible; only the no-pill clearance rule.
       expect(container.querySelector(":not(style)")).toBeNull();
+      expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
       expect(clearance()).toBe("calc(env(safe-area-inset-bottom, 0px) + 12px)");
     },
   );

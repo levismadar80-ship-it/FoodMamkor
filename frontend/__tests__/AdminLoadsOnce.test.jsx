@@ -19,6 +19,7 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import ProducersPage from "@/app/[locale]/admin/producers/page";
 import AdminLayout from "@/app/[locale]/admin/AdminLayoutClient";
+import { QUEUES } from "@/app/[locale]/admin/queues";
 
 const nav = vi.hoisted(() => ({ pathname: "/admin/producers" }));
 vi.mock("next/navigation", () => ({
@@ -76,17 +77,59 @@ describe("MEH-3818 — /admin/producers", () => {
 describe("MEH-3818 — the phone nav strip", () => {
   const stripLinks = () =>
     [...document.querySelectorAll("div.md\\:hidden nav a")].map((a) => a.getAttribute("href"));
+  const placeholder = () => document.querySelector("div.md\\:hidden nav span[aria-hidden='true']");
 
-  it("shows its tabs once, with the queue tabs already in place", async () => {
+  it("holds its height with a hidden placeholder, then shows its tabs with the queue tabs already in place", async () => {
     api.get.mockImplementation(() => held());
     render(intl(<AdminLayout><div /></AdminLayout>));
     await act(async () => {});
     expect(stripLinks()).toEqual([]);
+    expect(placeholder()).not.toBeNull();
 
-    await act(async () => release({ data: { stats: { pending_producers: 2, pending_reviews: 3 } } }));
+    await act(async () => release({ data: { stats: { ...Object.fromEntries(QUEUES.map((q) => [q.stat, 0])), pending_kashrut_requests: 1 } } }));
     const links = stripLinks();
-    expect(links).toContain("/admin/producers");
+    expect(links).toContain("/admin/kashrut");
+    expect(links).not.toContain("/admin/category-requests");
     expect(links).toContain("/admin/settings");
-    expect(links.length).toBeGreaterThan(2);
+    expect(placeholder()).toBeNull();
+  });
+
+  it("a failed first read still shows the tabs and the home's logout", async () => {
+    nav.pathname = "/admin";
+    api.get.mockImplementation(() => Promise.reject(new Error("down")));
+    render(intl(<AdminLayout><div /></AdminLayout>));
+    expect(await screen.findByTestId("admin-mobile-logout")).toBeInTheDocument();
+    expect(stripLinks()).toContain("/admin/settings");
+  });
+
+  it("keeps its tabs while a refetch after a failure is in flight", async () => {
+    api.get.mockImplementation(() => Promise.reject(new Error("down")));
+    const { rerender } = render(intl(<AdminLayout><div /></AdminLayout>));
+    await act(async () => {});
+    expect(stripLinks()).toContain("/admin/settings");
+
+    api.get.mockImplementation(() => held());
+    nav.pathname = "/admin/settings";
+    rerender(intl(<AdminLayout><div /></AdminLayout>));
+    await act(async () => {});
+    expect(api.get).toHaveBeenLastCalledWith("/admin/dashboard");
+    expect(stripLinks()).toContain("/admin/settings");
+    expect(placeholder()).toBeNull();
+  });
+
+  it("shows its tabs after 2.5 s when the counts never answer", async () => {
+    vi.useFakeTimers();
+    try {
+      api.get.mockImplementation(() => new Promise(() => {}));
+      render(intl(<AdminLayout><div /></AdminLayout>));
+      await act(async () => {});
+      expect(stripLinks()).toEqual([]);
+      await act(async () => { vi.advanceTimersByTime(2499); });
+      expect(stripLinks()).toEqual([]);
+      await act(async () => { vi.advanceTimersByTime(1); });
+      expect(stripLinks()).toContain("/admin/settings");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

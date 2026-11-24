@@ -17,6 +17,8 @@ import { renderHe as render } from "./helpers/render-with-he";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import AdminSettingsPage, { SECTIONS_WAIT_MS } from "@/app/[locale]/admin/settings/page";
+import ChecklistSettings from "@/app/[locale]/admin/settings/ChecklistSettings";
+import PasskeySettings from "@/app/[locale]/admin/settings/PasskeySettings";
 
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 vi.mock("@/i18n/navigation", () => ({
@@ -88,5 +90,34 @@ describe("MEH-3818 — the settings page shows once", () => {
     await screen.findByText(HOLIDAY);
     const reads = api.get.mock.calls.filter(([u]) => u.startsWith("/admin/checklist-items"));
     expect(reads).toHaveLength(1);
+  });
+
+  it("shows the passkey card from the page's read, without reading it again", async () => {
+    render(<AdminSettingsPage />);
+    await act(async () => releaseChecklist());
+    expect(await screen.findByTestId("passkey-empty")).toBeInTheDocument();
+    expect(api.get.mock.calls.filter(([u]) => u === "/auth/passkey")).toHaveLength(1);
+  });
+});
+
+describe("MEH-3818 — a card given the page's read", () => {
+  it("a failed preload shows the card's error, and retry reads the list", async () => {
+    api.get.mockResolvedValue({ data: ITEMS });
+    render(<ChecklistSettings preload={{ error: true }} />);
+    expect(screen.getByText(he.admin.settings.checklist.load_error)).toBeInTheDocument();
+    expect(api.get).not.toHaveBeenCalled();
+    await act(async () => screen.getByText(he.admin.settings.checklist.retry).click());
+    expect(await screen.findByDisplayValue("פרטים בסיסיים")).toBeInTheDocument();
+  });
+
+  it("a preload body that is not a list is a failed read, not a crash", () => {
+    render(<ChecklistSettings preload={{ data: { detail: "oops" } }} />);
+    expect(screen.getByText(he.admin.settings.checklist.load_error)).toBeInTheDocument();
+  });
+
+  it("the passkey card adopts the page's read and does not read itself", () => {
+    render(<PasskeySettings preload={{ data: PASSKEYS }} />);
+    expect(screen.getByTestId("passkey-empty")).toBeInTheDocument();
+    expect(api.get).not.toHaveBeenCalled();
   });
 });

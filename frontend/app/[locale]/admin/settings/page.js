@@ -16,7 +16,7 @@ import Switch from "@/components/ui/Switch";
 
 // MEH-3818: how long the page holds its skeleton for the checklist and passkey
 // reads once its own settings have arrived. Past it, the page shows and a late
-// card fills in where it stands (the MEH-3819 cap on the business page).
+// card fills in where it stands.
 export const SECTIONS_WAIT_MS = 2500;
 
 /** @param {string} url @param {(v: any) => void} set */
