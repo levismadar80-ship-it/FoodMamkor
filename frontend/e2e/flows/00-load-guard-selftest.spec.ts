@@ -46,6 +46,7 @@ async function settle(page: import("@playwright/test").Page) {
 
 test.describe("load guard self-test (MEH-3809)", () => {
   test("a block inserted 300 ms after load fails the CLS check, naming the page", async ({ page, browserName }) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: layout-shift entries are Chromium-only
     test.skip(browserName !== "chromium", "layout-shift entries exist only in Chromium; the guard says so instead of reading 0");
     await servePage(LATE_BLOCK)({ page });
     const state = await installLoadGuard(page);
@@ -59,6 +60,7 @@ test.describe("load guard self-test (MEH-3809)", () => {
   });
 
   test("the same page without the late block is clean", async ({ page, browserName }) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: layout-shift entries are Chromium-only
     test.skip(browserName !== "chromium", "layout-shift entries exist only in Chromium");
     await servePage(STABLE)({ page });
     const state = await installLoadGuard(page);
@@ -99,12 +101,37 @@ test.describe("load guard self-test (MEH-3809)", () => {
     expect(CONSOLE_ALLOW.some((a) => a.pattern.test("SENTINEL: a real application error"))).toBe(false);
   });
 
+  test("WebKit's cancelled-fetch pageerror is allowed on WebKit only, and only as a pageerror", () => {
+    const cancelled = "pageerror: Fetch API cannot load https://localhost:3443/api/categories due to access control checks.";
+    const state = (e: string) => ({ errors: [e], shifts: [], ready: [] });
+    expect(loadGuardFailures(state(cancelled), { browserName: "webkit", navigated: false })).toEqual([]);
+    expect(loadGuardFailures(state(cancelled), { browserName: "chromium", navigated: false })).toHaveLength(1);
+    const asConsole = cancelled.replace(/^pageerror: /, "console.error: ");
+    expect(loadGuardFailures(state(asConsole), { browserName: "webkit", navigated: false })).toHaveLength(1);
+  });
+
+  test("the Speed Insights refusal is allowed; another refused script is not", () => {
+    const state = (e: string) => ({ errors: [e], shifts: [], ready: [] });
+    const si =
+      'console.error: Refused to execute https://localhost:3443/_vercel/speed-insights/script.js as script because "X-Content-Type-Options: nosniff" was given';
+    expect(loadGuardFailures(state(si), { browserName: "webkit", navigated: false })).toEqual([]);
+    const other = si.replace("/_vercel/speed-insights/script.js", "/_next/static/chunks/app.js");
+    expect(loadGuardFailures(state(other), { browserName: "webkit", navigated: false })).toHaveLength(1);
+    // Chromium's wording for the same refusal, read off the first Chromium run.
+    const siChromium =
+      "console.error: Refused to execute script from 'http://localhost:3000/_vercel/speed-insights/script.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.";
+    expect(loadGuardFailures(state(siChromium), { browserName: "chromium", navigated: false })).toEqual([]);
+    const otherChromium = siChromium.replace("/_vercel/speed-insights/script.js", "/_next/static/chunks/app.js");
+    expect(loadGuardFailures(state(otherChromium), { browserName: "chromium", navigated: false })).toHaveLength(1);
+  });
+
   test("on Chromium, a probe that never reported fails instead of reading green", () => {
     const failures = loadGuardFailures({ errors: [], shifts: [], ready: [] }, { browserName: "chromium", navigated: true });
     expect(failures.some((f) => f.includes("observer never reported"))).toBe(true);
   });
 
   test("on the real home page the probe is alive", async ({ page, browserName }) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: layout-shift entries are Chromium-only
     test.skip(browserName !== "chromium", "layout-shift entries exist only in Chromium");
     const state = await installLoadGuard(page);
     await page.goto("/");

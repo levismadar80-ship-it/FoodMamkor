@@ -31,10 +31,11 @@ export const CLS_LIMIT = 0.1;
 
 /** React 18 production hydration errors (#418 text, #419 boundary, #421-#425
  *  mismatches) and their dev-build wording. Checked BEFORE the allowlist. */
-export const HYDRATION =
+const HYDRATION =
   /Minified React error #(418|419|421|422|423|425)\b|Hydration failed|did not match\. Server|Text content does not match server-rendered HTML|while hydrating/i;
 
-export type Allow = { pattern: RegExp; reason: string; card: string };
+/** `kind` defaults to "console". `browser` limits an entry to one engine. */
+type Allow = { pattern: RegExp; reason: string; card: string; kind?: "console" | "pageerror"; browser?: string };
 
 /** Console errors that are not application errors. Each entry: why, and the
  *  card that owns it. Widening one until it matches arbitrary text is caught
@@ -46,12 +47,28 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
       "The browser's own network log for a non-2xx response. Many specs stub 4xx/5xx on purpose and assert the UI's handling; an error in our handling surfaces as pageerror or as our own console.error.",
     card: "MEH-3809",
   },
+  {
+    // WebKit: `Refused to execute <url> as script because …nosniff…`.
+    // Chromium: `Refused to execute script from '<url>' because its MIME type …`.
+    pattern: /^Refused to execute (?:script from ')?\S+\/_vercel\/(?:speed-insights|insights)\/script\.js(?:' because its MIME type| as script\b)/,
+    reason:
+      "CI runs E2E on a local `next start`, which has no Vercel edge, so /_vercel/speed-insights/script.js is a 404 that both engines refuse to run as script. On Vercel the script exists. Measured: PR #5280 first run — WebKit 49 of 84 guard failures, Chromium 1,395 of 1,632 tests (the same script, Chromium's wording).",
+    card: "MEH-3809",
+  },
+  {
+    pattern: /due to access control checks\.$/,
+    kind: "pageerror",
+    browser: "webkit",
+    reason:
+      "WebKit reports a fetch it cancelled because the page navigated away as 'Fetch API cannot load <url> due to access control checks'. It is the same text as a real CORS block, but Chromium runs every one of these tests and reports a real CORS block as 'blocked by CORS policy', which is not allowlisted. Measured: PR #5280 first WebKit run, same-origin /api/* reads cancelled by a click away.",
+    card: "MEH-3809",
+  },
 ];
 
 type Shift = { doc: number; url: string; t: number; v: number; src: string };
 type Ready = { doc: number; supported: boolean };
 
-export type LoadGuardState = {
+type LoadGuardState = {
   errors: string[];
   shifts: Shift[];
   ready: Ready[];
@@ -108,7 +125,7 @@ export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
 }
 
 /** web-vitals CLS: the largest session window of one document's shifts. */
-export function maxSessionCls(shifts: readonly Shift[]): { value: number; worst: Shift[] } {
+function maxSessionCls(shifts: readonly Shift[]): { value: number; worst: Shift[] } {
   const sorted = [...shifts].sort((a, b) => a.t - b.t);
   let best = { value: 0, worst: [] as Shift[] };
   let cur: Shift[] = [];
@@ -141,7 +158,8 @@ export function loadGuardFailures(
       out.push(`hydration mismatch — ${e}`);
       continue;
     }
-    if (e.startsWith("console.error: ") && allow.some((a) => a.pattern.test(text))) continue;
+    const kind = e.startsWith("pageerror: ") ? "pageerror" : "console";
+    if (allow.some((a) => (a.kind ?? "console") === kind && (!a.browser || a.browser === opts.browserName) && a.pattern.test(text))) continue;
     out.push(e);
   }
 
