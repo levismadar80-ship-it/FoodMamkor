@@ -140,4 +140,25 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
       unmount();
     }
   });
+
+  // MEH-3767: live rescue bags — the row that replaced the home's rescue card.
+  it("rescue: 0 → no row; 1 → singular, to the rescue tool; right after orders", () => {
+    const { unmount } = renderCard({ ...none, live_rescue_offers: 0, unreplied_reviews: 1 });
+    expect(screen.queryByTestId("owner-attention-rescue")).toBeNull();
+    unmount();
+    renderCard({ ...none, pending_orders: 1, live_rescue_offers: 1, unreplied_reviews: 1 });
+    expect(screen.getAllByRole("listitem").map((r) => r.dataset.testid)).toEqual([
+      "owner-attention-orders",
+      "owner-attention-rescue",
+      "owner-attention-reviews",
+    ]);
+    const row = screen.getByTestId("owner-attention-rescue");
+    expect(row).toHaveTextContent("סלי הפתעה פתוחים היום");
+    expect(within(row).getByRole("link", { name: "לניהול" })).toHaveAttribute("href", "/producer/dashboard/rescue");
+  });
+
+  it("rescue: several offers → the plural with the count", () => {
+    renderCard({ ...none, live_rescue_offers: 3 });
+    expect(screen.getByTestId("owner-attention-rescue")).toHaveTextContent("3 פרסומים של סלי הפתעה פתוחים היום");
+  });
 });

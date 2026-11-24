@@ -1,10 +1,11 @@
 /**
- * MEH-3103 — «הלינק שלי» copy feedback on the dashboard home.
+ * MEH-3103 — «הלינק שלי» copy feedback. Since MEH-3767 the card lives on
+ * «שיתוף» (/producer/dashboard/share), so that page is rendered.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { showToast } from "@/lib/toast";
-import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
+import SharePage from "@/app/[locale]/producer/dashboard/share/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 // A stable user object, as the real AuthProvider gives: the tools page's fetch
@@ -31,6 +32,8 @@ vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
 vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
+vi.mock("@/components/producer/BusinessQrCard", () => ({ default: () => null }));
+vi.mock("@/components/producer/ShareKitSection", () => ({ default: () => null }));
 
 const { stateRef } = vi.hoisted(() => ({ stateRef: { current: { status: "approved", complete: true, kind: "producer", profileFails: false } } }));
 
@@ -73,7 +76,7 @@ beforeEach(() => {
 // MEH-3103: the «הלינק שלי» copy had no catch — a failed copy did nothing
 // (a dead button and an unhandled rejection). It now says so. Mocks: the same
 // real response shapes as DashboardSharePlacement.test.jsx.
-describe("home — «הלינק שלי» copy feedback (MEH-3103)", () => {
+describe("«שיתוף» — «הלינק שלי» copy feedback (MEH-3103)", () => {
   const setClipboard = (value) =>
     Object.defineProperty(navigator, "clipboard", { value, configurable: true });
   let errorSpy;
@@ -88,7 +91,7 @@ describe("home — «הלינק שלי» copy feedback (MEH-3103)", () => {
   it("copy succeeds → the label flips to «הועתק», the link is on the clipboard, no error", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     setClipboard({ writeText });
-    render(<ProducerDashboardPage />);
+    render(<SharePage />);
     fireEvent.click(await screen.findByTestId("vanity-copy"));
     await waitFor(() => expect(screen.getByTestId("vanity-copy").textContent).toBe("copied"));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/p/arugot-noam"));
@@ -97,7 +100,7 @@ describe("home — «הלינק שלי» copy feedback (MEH-3103)", () => {
 
   it("copy fails → the share_error toast, and the label stays «העתק»", async () => {
     setClipboard(undefined);
-    render(<ProducerDashboardPage />);
+    render(<SharePage />);
     fireEvent.click(await screen.findByTestId("vanity-copy"));
     await waitFor(() => expect(errorSpy).toHaveBeenCalledWith("share_error"));
     expect(screen.getByTestId("vanity-copy").textContent).toBe("copy_cta");
