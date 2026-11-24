@@ -13,8 +13,8 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import { matchDeliveryCity } from "@/components/DeliveryChecker";
-import { deliveryTimeMessage } from "@/lib/deliveryTime";
-import { sharedCutoff } from "@/lib/nextDelivery";
+import { deliveryTimeMessage } from "@/lib/delivery-time";
+import { sharedCutoff } from "@/lib/next-delivery";
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })), post: vi.fn() },

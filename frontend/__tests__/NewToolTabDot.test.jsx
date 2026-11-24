@@ -2,6 +2,8 @@
  * MEH-3200 part 2: the dot on the «כלים» tab while a tool from a release of
  * the last 14 days is new. Cells: 0 new tools → no dot; ≥ 1 → dot on «כלים»
  * only, with its screen-reader text; organizer (no «כלים» tab) → no dot.
+ * MEH-3723: a new tool whose registry home is «עריכה» (the Google profile)
+ * puts the dot on «עריכה», not on «כלים»; an organizer gets none there either.
  * Mocks follow DashboardOrganizerTabs.test.jsx (same layout).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -54,6 +56,21 @@ describe("«כלים» tab dot (MEH-3200 part 2)", () => {
   it("organizer: no «כלים» tab, so no dot", () => {
     authState.user = { role: "producer", producer_id: "p-2", producer_kind: "organizer" };
     toolsMock.list = rel(["/producer/dashboard/rescue"]);
+    render(<DashboardLayout><div /></DashboardLayout>);
+    expect(screen.queryByTestId("new-tool-dot")).toBeNull();
+  });
+
+  it("a new tool that lives in «עריכה» (MEH-3723): the dot is on «עריכה», not «כלים»", () => {
+    toolsMock.list = rel(["/producer/dashboard/google-profile"]);
+    render(<DashboardLayout><div /></DashboardLayout>);
+    expect(screen.getAllByTestId("new-tool-dot")).toHaveLength(1);
+    within(screen.getByTestId("dashboard-tab-edit")).getByTestId("new-tool-dot");
+    expect(within(screen.getByTestId("dashboard-tab-tools")).queryByTestId("new-tool-dot")).toBeNull();
+  });
+
+  it("organizer + a new «עריכה» tool: still no dot", () => {
+    authState.user = { role: "producer", producer_id: "p-2", producer_kind: "organizer" };
+    toolsMock.list = rel(["/producer/dashboard/google-profile"]);
     render(<DashboardLayout><div /></DashboardLayout>);
     expect(screen.queryByTestId("new-tool-dot")).toBeNull();
   });

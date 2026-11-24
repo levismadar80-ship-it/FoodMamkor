@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { MapPin, X } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
+import MapPickupPointPanel from "./MapPickupPointPanel";  // MEH-3756
 
 // The gap between the card and the sheet's top edge, and what it adds to the
 // edge the map controls ride (card height + this gap, on both sides).
@@ -137,6 +138,9 @@ export default function MobileSheetSelectedCard({
           direction, or on /en the X would land on the photo. */}
       <div dir="rtl" className="relative rounded-md bg-background shadow-lg">
         <MapProducerCard producer={selectedProducer} active />
+        {/* MEH-3756: a pickup point / market stand says when and how to collect
+            there, and how to reach the business page. Nothing for a branch. */}
+        <MapPickupPointPanel producer={selectedProducer} location={selectedLocation} />
         <button
           type="button"
           onClick={onClose}

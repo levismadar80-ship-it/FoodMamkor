@@ -56,6 +56,10 @@ const liveHub = (page: Page) => page.locator(HUB).filter({ visible: true });
 // MEH-3090: a hidden copy of the hub carries its own #events-city (empty), so
 // a bare #events-city can resolve to two inputs (strict-mode red, 375).
 const cityInput = (page: Page) => page.locator("#events-city").filter({ visible: true });
+// MEH-3773: the hidden copy carries HubShell's <h1> too, so a bare "h1" can
+// resolve to two headings, one hidden (strict-mode red, run 45292234580, en,
+// mobile). The user reads one title; address the visible one.
+const liveH1 = (page: Page) => page.locator("h1").filter({ visible: true });
 
 async function openHub(page: Page, path: string) {
   await page.goto(path);
@@ -178,7 +182,7 @@ for (const locale of ["he", "en"] as const) {
     // «קבוצות רכישה» tab row is not drawn at all, so the row cannot be the
     // readiness signal here. The hub's H1 is server-rendered with the page;
     // once it shows, a 0 below is not 0 merely because nothing rendered yet.
-    await expect(page.locator("h1")).toBeVisible({ timeout: 15_000 });
+    await expect(liveH1(page)).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('[data-tab-value="events"], [data-tab-value="experiences"]')).toHaveCount(0);
     const link = page
       // Header on desktop, the pill on mobile (the header copy is hidden
@@ -194,6 +198,6 @@ for (const locale of ["he", "en"] as const) {
     await expect(hub).toHaveCount(1, { timeout: 15_000 });
     await expect(hub.locator('[role="tab"][aria-selected="true"]')).toHaveCount(1);
     await expect(hub.locator('[data-tab-value="groupBuys"], [data-tab-value="rescue"]')).toHaveCount(0);
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(liveH1(page)).toBeVisible();
   });
 }

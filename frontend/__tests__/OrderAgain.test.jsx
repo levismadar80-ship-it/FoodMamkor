@@ -195,7 +195,7 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
   const takes = { id: SHOP, takes_site_orders: true };
 
   it("all orderable: the cart fills and the toast says so", async () => {
-    menuRead.mockResolvedValue({ products: [bread, cheese] });
+    menuRead.mockResolvedValue({ producer_id: SHOP, products: [bread, cheese] });
     stashOrderAgain(SHOP, [breadLine, cheeseLine]);
     const { result } = renderHook(() => useOrderCart(takes), { wrapper });
     await waitFor(() => expect(result.current.count).toBe(3));
@@ -204,7 +204,7 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
   });
 
   it("some gone: the rest is added and the toast names what is not", async () => {
-    menuRead.mockResolvedValue({ products: [bread] });
+    menuRead.mockResolvedValue({ producer_id: SHOP, products: [bread] });
     stashOrderAgain(SHOP, [breadLine, cheeseLine, goneLine]);
     const { result } = renderHook(() => useOrderCart(takes), { wrapper });
     await waitFor(() => expect(result.current.count).toBe(2));
@@ -212,7 +212,7 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
   });
 
   it("nothing orderable: the cart stays empty and the toast says so", async () => {
-    menuRead.mockResolvedValue({ products: [] });
+    menuRead.mockResolvedValue({ producer_id: SHOP, products: [] });
     stashOrderAgain(SHOP, [breadLine]);
     renderHook(() => useOrderCart(takes), { wrapper });
     await waitFor(() => expect(toast.info).toHaveBeenCalledWith("הפריטים מהפעם הקודמת לא זמינים כרגע"));
@@ -226,7 +226,7 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
   });
 
   it("a stash for another business is left alone and shows nothing here", async () => {
-    menuRead.mockResolvedValue({ products: [bread] });
+    menuRead.mockResolvedValue({ producer_id: SHOP, products: [bread] });
     stashOrderAgain("another-business", [breadLine]);
     const { result } = renderHook(() => useOrderCart(takes), { wrapper });
     await waitFor(() => expect(menuRead).toHaveBeenCalled());
@@ -247,7 +247,7 @@ describe("the business page cart (useOrderCart) takes the stash", () => {
   });
 
   it("no stash: an ordinary visit shows no toast", async () => {
-    menuRead.mockResolvedValue({ products: [bread] });
+    menuRead.mockResolvedValue({ producer_id: SHOP, products: [bread] });
     renderHook(() => useOrderCart(takes), { wrapper });
     await waitFor(() => expect(menuRead).toHaveBeenCalled());
     await act(async () => {});

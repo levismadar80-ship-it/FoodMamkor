@@ -15,7 +15,7 @@
 * `frontend/lib/diet-pages.js` · `frontend/lib/category-registry.js` — הרישומים שמהם הדפים נגזרים.
 * `frontend/lib/category-label.js` — השם המוצג של קטגוריה לפי השפה: `category_names.<slug>` ב-`frontend/messages/`, ושם ה-DB כשאין ערך. ב-/en שמות באנגלית, ב-/he כמו קודם (MEH-3076).
 * `frontend/components/DeliveryChecker.jsx` · `frontend/lib/delivery-coverage.js` — בדיקת משלוח.
-* `frontend/lib/nextDelivery.js` · `frontend/components/NextDeliveryLine.jsx` — «המשלוח הבא: יום שלישי 24.11» מתחת לכל כותרת יום ובתשובת «מגיעים אלייך?» (MEH-3485). תאריך לפי ימי המשלוח של העיר ושעת סגירת ההזמנות כשיש אחת ברורה; בלי תאריך בחופשה או בלי יום.
+* `frontend/lib/next-delivery.js` · `frontend/components/NextDeliveryLine.jsx` — «המשלוח הבא: יום שלישי 24.11» מתחת לכל כותרת יום ובתשובת «מגיעים אלייך?» (MEH-3485). תאריך לפי ימי המשלוח של העיר ושעת סגירת ההזמנות כשיש אחת ברורה; בלי תאריך בחופשה או בלי יום.
 * `backend/app/services/producer_listing.py` · `backend/app/services/producer_queries.py` — הרשימה, הסינון והמיון בשרת.
 * `frontend/lib/use-home-page.js` — הזנת עמוד הבית.
 * `backend/app/routers/search.py` · `backend/app/utils/hebrew_search.py` — ההצעות בחיפוש, וכללי ההתאמה בעברית לשני מסלולי החיפוש: תחיליות, סמיכות, ניקוד, ומקלדת בשפה הלא נכונה (`sca` → «דבש», השדה `corrected_query`; MEH-3415).

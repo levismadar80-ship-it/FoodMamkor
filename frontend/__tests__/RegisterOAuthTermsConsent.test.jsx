@@ -63,7 +63,7 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn().mockResolvedValue({}) } }));
-vi.mock("@/lib/passwordMessages", () => ({
+vi.mock("@/lib/password-messages", () => ({
   firstFailureMessage: (failures) => `policy:${failures[0]}`,
 }));
 vi.mock("@/lib/validators", () => ({

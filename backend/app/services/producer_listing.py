@@ -573,7 +573,7 @@ def _pickup_condition(cities: list[str] | None = None) -> ColumnElement[bool]:
     the owner write path because the column duplicates
     ProducerLocation.kind='pickup', so only admin.py and producer_import.py
     write it, while every consumer surface reads the ROWS — the map layer
-    (frontend/lib/producerPoints.js), DeliveryBlock, and the pinnable predicate
+    (frontend/lib/producer-points.js), DeliveryBlock, and the pinnable predicate
     at :197-202. Filtering the column would hide a business whose owner added a
     pickup point in LocationsEditor, which is the only pickup editor that
     exists. Sapir measured zero businesses holding the column with no matching
@@ -739,7 +739,7 @@ def _kosher_condition(kosher: bool) -> ColumnElement[bool]:
 
 
 # MEH-1881: the Israel weekday names `order_window` is keyed by. Index-aligned
-# with schemas._ORDER_WINDOW_DAYS and with lib/orderWindow.js ORDER_DAY_KEYS, so
+# with schemas._ORDER_WINDOW_DAYS and with lib/order-window-status.js ORDER_DAY_KEYS, so
 # index 0 means Sunday on every axis in the codebase.
 _ORDER_DAY_KEYS = (
     "sunday",

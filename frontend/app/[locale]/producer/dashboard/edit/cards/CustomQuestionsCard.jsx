@@ -20,7 +20,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import { ViewOnPageLink } from "../cards";
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 import Button from "@/components/ui/Button";
 
 // ============================================================
@@ -80,7 +80,7 @@ export function CustomQuestionsCard({
   const tRoot = useTranslations("dashboard.producer");
   // Same namespace the public renderer reads, so the labels fed to the resolver
   // are the exact strings WhatsAppQuestionChips resolves — see
-  // lib/resolvedQuestions.js § "why the labels are arguments".
+  // lib/resolved-questions.js § "why the labels are arguments".
   const tChips = useTranslations("whatsapp.question_chips");
   const [questions, setQuestions] = useState(() => {
     const saved = profile?.custom_questions || [];

@@ -207,8 +207,15 @@ describe("new tools («חדש» pill)", () => {
     expect(newToolHrefs(Date.parse("2026-11-29T22:30:00Z"), [rel("2026-11-15", ["/a"])]).size).toBe(0);
   });
 
-  it("every `tools` href in the real releases has a «חדש» pill on a «כלים» tile", () => {
-    const page = readFileSync(path.resolve(__dirname, "../app/[locale]/producer/dashboard/tools/page.js"), "utf8");
+  // MEH-3723: a tool may live on «עריכה» too (the Google profile tile), so the
+  // pill is looked for on the tiles of both tabs, not on tools/page.js alone.
+  // Source text on purpose: the pill only renders inside the release window.
+  it("every `tools` href in the real releases has a «חדש» pill on its tile («כלים» or «עריכה»)", () => {
+    const files = [
+      "../app/[locale]/producer/dashboard/tools/page.js",
+      "../components/dashboard/google-profile/GoogleProfileHubTile.jsx",
+    ];
+    const page = files.map((f) => readFileSync(path.resolve(__dirname, f), "utf8")).join("\n");
     const pilled = new Set([...page.matchAll(/<NewToolPill href="([^"]+)"/g)].map((m) => m[1]));
     expect(pilled.size).toBeGreaterThan(0);
     for (const r of WHATS_NEW_RELEASES) for (const href of r.tools ?? []) expect(pilled).toContain(href);

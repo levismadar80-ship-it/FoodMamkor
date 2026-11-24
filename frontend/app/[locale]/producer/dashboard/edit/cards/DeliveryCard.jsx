@@ -17,7 +17,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
-import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillmentTags";
+import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
 import { resolveStoreHours } from "@/lib/hours";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";

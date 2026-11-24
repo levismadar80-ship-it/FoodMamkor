@@ -14,12 +14,12 @@
  *           MEH-2142 (added resolveStoreHours — the one place that decides
  *           WHICH hours string a consumer surface reads);
  *           MEH-2383 (computeStatus reads the Israel clock through
- *           lib/orderWindow.js `israelNowParts` and takes an injectable `now`);
+ *           lib/order-window-status.js `israelNowParts` and takes an injectable `now`);
  *           MEH-2803 (parseHours also reads owner-typed Hebrew — «א'-ה' 7:00-14:00»
  *           — and sameWeeklyHours decides when two sets are one fact).
  */
 
-import { israelNowParts } from "@/lib/orderWindow";
+import { israelNowParts } from "@/lib/order-window-status";
 
 // Day name constants. DAY_ABBR (English) is the API axis — used to parse
 // backend strings like "Sun-Thu 09:00-18:00". DAY_KEYS maps each index to
@@ -181,11 +181,11 @@ export function toMinutes(hhmm) {
 // fake-timers setup; production callers pass nothing.
 export function computeStatus(map, now = new Date()) {
   // MEH-2383: the Israel-local weekday + wall-clock come from the one owner,
-  // lib/orderWindow.js `israelNowParts` (Intl formatToParts — portable, unlike
+  // lib/order-window-status.js `israelNowParts` (Intl formatToParts — portable, unlike
   // the toLocaleString re-parse MEH-845 removed). This function used to carry
   // a line-for-line private copy; israel-clock-guard.sh flagged it.
   const { dayIndex: dayIdx, minutes: nowMin } = israelNowParts(now);
-  // Same guard as orderWindow.js / order-status.js `israelDayKey`: an ICU
+  // Same guard as order-window-status.js / order-status.js `israelDayKey`: an ICU
   // weekday abbreviation that matches nothing is "unknown", not Saturday-1.
   if (dayIdx < 0) return { isOpen: false };
 

@@ -47,6 +47,7 @@ from app.services import whatsapp_templates as wt
 from app.services.review_invite import review_invite_url
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.utils.clock import ISRAEL_TZ, utc_now
+from app.utils.money import shekels_text
 from app.utils.phone import canonical_il_msisdn
 
 log = logging.getLogger(__name__)
@@ -180,11 +181,6 @@ def _hhmm(at: object) -> str:
     return _local(at).strftime("%H:%M")
 
 
-def _shekels(agorot: int) -> str:
-    whole, rest = divmod(int(agorot), 100)
-    return f"{whole}" if rest == 0 else f"{whole}.{rest:02d}"
-
-
 def _to_pay(order: ProductOrder) -> int:
     goods = order.final_total_agorot
     if goods is None:
@@ -251,7 +247,7 @@ def _business_text(
         template: wt.WhatsAppTemplate = wt.ProductOrderNewV1(
             customer_name=customer,
             count=str(count),
-            total=_shekels(_to_pay(order)),
+            total=shekels_text(_to_pay(order)),
             fulfilment=_FULFILMENT[str(order.fulfilment)],
             day=_day(order.slot_start),
             starts=_hhmm(order.slot_start),
@@ -260,7 +256,7 @@ def _business_text(
         )
         body = (
             f"הזמנה חדשה ממהמקור: {customer}, {count} פריטים, "
-            f"{_shekels(_to_pay(order))} ₪, {_FULFILMENT[str(order.fulfilment)]} "
+            f"{shekels_text(_to_pay(order))} ₪, {_FULFILMENT[str(order.fulfilment)]} "
             f"ב{_day(order.slot_start)} {_hhmm(order.slot_start)}–{_hhmm(order.slot_end)}. "
             f"לאישור: {link}"
         )
@@ -304,7 +300,7 @@ def _buyer_template(
             day=_day(order.slot_start),
             starts=_hhmm(order.slot_start),
             ends=_hhmm(order.slot_end),
-            total=_shekels(_to_pay(order)),
+            total=shekels_text(_to_pay(order)),
             link=link,
         )
     if kind == "change_proposed":
@@ -428,6 +424,12 @@ def _still_relevant(
 ) -> bool:
     if row.kind == "business_reminder":
         return str(order.status) == "pending"
+    if row.kind == "new_order":
+        # MEH-3768: an order closed before its «new order» went out (the
+        # business was taken off the site, the buyer cancelled at once) is not
+        # news to the business. Auto-confirmed stays relevant: the email still
+        # tells her about it, the WhatsApp is skipped in _compose.
+        return str(order.status) not in ("cancelled", "declined", "expired")
     if row.kind == "day_before":
         return str(order.status) in ("confirmed", "ready") and bool(
             order.slot_start > now

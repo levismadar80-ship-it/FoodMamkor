@@ -187,3 +187,118 @@ def test_every_business_ai_generation_route_has_a_daily_cap():
         f"{missing}. Add `@limiter.limit('<N>/day', key_func=_business_key)` "
         "(routers/product_describe.py) on top of the per-IP hourly limit."
     )
+
+
+# ---------------------------------------------------------------------------
+# MEH-3498 — the site-wide daily ceiling (services/ai_budget.py).
+# ---------------------------------------------------------------------------
+
+DIRECT_CALL = re.compile(r"\.messages\.(create|stream|parse)\(")
+_MODEL_METHODS = {"create", "stream", "parse"}
+_FUNCS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+
+# Modules whose model call does NOT spend the ceiling, and why. Moderation
+# keeps running above it (the card); the chat's intent call spends its own
+# unit in routers/chat.py `_live_data_context`, before it calls classify().
+BUDGET_EXEMPT = {
+    "app.services.approved_edit_moderation": "moderation on save",
+    "app.services.moderation_common": "moderation on save",
+    "app.services.producer_risk": "moderation on save",
+    "app.routers.reviews": "moderation on save",
+    "app.services.chat_intent_router": "spent by its caller, routers/chat.py _live_data_context",
+}
+
+# The reference: the shared helper behind two owner tools.
+CONTROL_BUDGETED = ("app.services.ai_text", "ask")
+
+
+def _own_nodes(func):
+    """Nodes of `func` itself, parents attached, not descending into nested defs."""
+    out, stack = [], [func]
+    while stack:
+        node = stack.pop()
+        for child in ast.iter_child_nodes(node):
+            child._parent = node  # type: ignore[attr-defined]
+            if isinstance(child, _FUNCS):
+                continue
+            out.append(child)
+            stack.append(child)
+    return out
+
+
+def _is_model_call(n) -> bool:
+    f = n.func if isinstance(n, ast.Call) else None
+    return (
+        isinstance(f, ast.Attribute)
+        and f.attr in _MODEL_METHODS
+        and isinstance(f.value, ast.Attribute)
+        and f.value.attr == "messages"
+    )
+
+
+def _is_used_budget_call(n) -> bool:
+    """An ai_budget.allow(...) call whose result is read (not a bare statement)."""
+    f = n.func if isinstance(n, ast.Call) else None
+    return (
+        isinstance(f, ast.Attribute)
+        and f.attr == "allow"
+        and isinstance(f.value, ast.Name)
+        and f.value.id == "ai_budget"
+        and not isinstance(getattr(n, "_parent", None), ast.Expr)
+    )
+
+
+def _unbudgeted_calls(mod: str) -> list[str]:
+    """Functions in `mod` that call the model with no used ai_budget.allow of their own."""
+    out = []
+    for fn in ast.walk(ast.parse(SRC[mod])):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        own = _own_nodes(fn)
+        if any(map(_is_model_call, own)) and not any(map(_is_used_budget_call, own)):
+            out.append(fn.name)
+    return out
+
+
+def test_the_budget_walker_tells_budgeted_from_unbudgeted():
+    """Self-test on synthetic modules: a comment, a bare call and a nested def
+    must not count as spending the ceiling."""
+    cases = {
+        "ok": "def f(c):\n    if not ai_budget.allow('fast'):\n        return None\n    return c.messages.create()\n",
+        "comment": "def f(c):\n    # ai_budget.allow('fast')\n    return c.messages.create()\n",
+        "bare": "def f(c):\n    ai_budget.allow('fast')\n    return c.messages.create()\n",
+        "nested": "def f(c):\n    def g():\n        return 1\n    return c.messages.create()\n",
+        "inner_only": "def f(c):\n    def g():\n        return ai_budget.allow('fast')\n    return c.messages.create()\n",
+    }
+    for name, src in cases.items():
+        SRC[f"_selftest.{name}"] = src
+    try:
+        verdict = {n: _unbudgeted_calls(f"_selftest.{n}") for n in cases}
+    finally:
+        for name in cases:
+            SRC.pop(f"_selftest.{name}")
+    assert verdict["ok"] == []
+    assert verdict["comment"] == ["f"]
+    assert verdict["bare"] == ["f"]
+    assert verdict["nested"] == ["f"]
+    assert verdict["inner_only"] == ["f"]
+
+
+def test_every_model_call_spends_the_site_wide_ceiling():
+    direct = {m for m, s in SRC.items() if DIRECT_CALL.search(s)}
+    # CONTROL: the walker sees the reference call and judges it budgeted.
+    mod, func = CONTROL_BUDGETED
+    assert mod in direct, "walker lost the control module"
+    assert func not in _unbudgeted_calls(mod)
+    assert len(direct - set(BUDGET_EXEMPT)) >= 6, sorted(direct)
+    stale = set(BUDGET_EXEMPT) - direct
+    assert not stale, f"Exempt but no longer calls the model: {sorted(stale)}"
+    missing = sorted(
+        f"{m}.{f}" for m in direct - set(BUDGET_EXEMPT) for f in _unbudgeted_calls(m)
+    )
+    assert not missing, (
+        f"Model call(s) outside the site-wide ceiling: {missing}. Call "
+        "`ai_budget.allow(<tier>)` before the call and answer as if the key "
+        "were missing when it is False, or add the module to BUDGET_EXEMPT "
+        "with the reason (services/ai_budget.py, MEH-3498)."
+    )

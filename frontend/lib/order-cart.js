@@ -11,7 +11,8 @@
  *           backend/app/routers/product_order_offer.py::get_order_menu,
  *           backend/app/models/product_orders.py (the two caps mirrored here)
  * History:  MEH-3216 stage 5b (creation); MEH-3617 (a pick is a product or
- *           one of its variants: the key is lib/product-variants.js::lineKey)
+ *           one of its variants: the key is lib/product-variants.js::lineKey);
+ *           MEH-3746 (the owner's preview reads her own menu)
  */
 
 import api from "@/lib/api";
@@ -36,8 +37,27 @@ export const MAX_LINES = 30;
  * @returns {Promise<OrderMenu | null>}
  */
 export async function loadOrderMenu(producerId) {
+  return readMenu(() => api.get(`/producers/${producerId}/order-menu`));
+}
+
+/**
+ * MEH-3746: the owner's own menu as a buyer would get it, read with her token
+ * even while ordering is off (the public menu 404s until it is on).
+ * @returns {Promise<OrderMenu | null>}
+ */
+export async function loadOwnerMenuPreview() {
+  return readMenu(() => api.get("/producers/me/order-menu/preview"));
+}
+
+/**
+ * Each caller passes its own `api.get` with the path written out, so the
+ * route scanners (unwired-route-guard, check_api_contract) see both reads.
+ * @param {() => Promise<{ data: unknown }>} read
+ * @returns {Promise<OrderMenu | null>}
+ */
+async function readMenu(read) {
   try {
-    const { data } = await api.get(`/producers/${producerId}/order-menu`);
+    const { data } = await read();
     const parsed = GetOrderMenuProducersProducerIdOrderMenuGetResponse.safeParse(data);
     return parsed.success ? parsed.data : null;
   } catch {

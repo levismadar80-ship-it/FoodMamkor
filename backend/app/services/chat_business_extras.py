@@ -11,8 +11,8 @@ Touches:  DB read only — events, experiences, group_buys (through the same
           «is public» queries the site's lists use).
 Does NOT: decide which business (chat_business_context.find), call the model
           or phrase answers (routers/chat.py).
-Related:  frontend/lib/nextDelivery.js (the rule ported in `next_delivery`);
-          frontend/lib/orderWindow.js getSingleOrderCutoff;
+Related:  frontend/lib/next-delivery.js (the rule ported in `next_delivery`);
+          frontend/lib/order-window-status.js getSingleOrderCutoff;
           routers/experiences.py _public_listing_query;
           routers/group_buys.py _status_tab_query.
 History:  MEH-3510 (creation; reviews the page shows, no names); MEH-3584
@@ -32,7 +32,7 @@ from app.utils.clock import ISRAEL_TZ, israel_now, israel_today
 
 # frontend/lib/delivery-days.js DELIVERY_DAYS (Sunday = 0).
 DAYS_HE = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
-# frontend/lib/orderWindow.js ORDER_DAY_KEYS.
+# frontend/lib/order-window-status.js ORDER_DAY_KEYS.
 ORDER_DAY_KEYS = (
     "sunday",
     "monday",
@@ -63,7 +63,7 @@ def _minutes(hhmm: Any) -> int | None:
 
 
 def _ranges(entry: Any) -> list[dict[str, str]]:
-    """orderWindow.js normalizeDayEntries: list or legacy single dict, valid
+    """order-window-status.js normalizeDayEntries: list or legacy single dict, valid
     ranges only, sorted by open."""
     if not entry:
         return []
@@ -79,7 +79,7 @@ def _ranges(entry: Any) -> list[dict[str, str]]:
 
 
 def single_order_cutoff(order_window: Any) -> tuple[int, str] | None:
-    """orderWindow.js getSingleOrderCutoff: (dayIndex, close) when exactly one
+    """order-window-status.js getSingleOrderCutoff: (dayIndex, close) when exactly one
     order day is open; None when none or several (ambiguous)."""
     if not isinstance(order_window, dict) or not order_window:
         return None
@@ -101,7 +101,7 @@ def _day_index(now: datetime) -> int:
 def next_delivery(
     days: list[str], order_window: Any, on_vacation: bool, now: datetime | None = None
 ) -> dict[str, str] | None:
-    """nextDelivery.js nextDeliveryDate. One clear order cutoff → the first
+    """next-delivery.js nextDeliveryDate. One clear order cutoff → the first
     delivery day on or after it (can be today); otherwise the first delivery
     day from tomorrow. None on vacation or with no delivery day."""
     if on_vacation:
@@ -127,7 +127,7 @@ def next_delivery(
 
 
 def row_days(area: Any) -> list[str]:
-    """nextDelivery.js daysOfRow: delivery_days when set (MEH-3484), else the
+    """next-delivery.js daysOfRow: delivery_days when set (MEH-3484), else the
     single delivery_day."""
     many = [d for d in (getattr(area, "delivery_days", None) or []) if d]
     if many:

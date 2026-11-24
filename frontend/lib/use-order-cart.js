@@ -5,12 +5,15 @@
  * Purpose:  The buyer's picks on one business page, held by ProducerDetail so
  *           the product rows and the order bar read the same state.
  * Touches:  GET /producers/{id}/order-menu, once per business, and only when
- *           the page payload says `takes_site_orders`.
+ *           the page payload says `takes_site_orders`; inside the owner's
+ *           preview GET /producers/me/order-menu/preview instead (MEH-3746).
  * Does NOT: persist — the picks live in memory and a reload starts empty.
  *           The one hand-off in is «להזמין שוב» (lib/order-again.js): a
  *           stash left by the order page, merged once when the menu loads.
  * Related:  lib/order-cart.js (the pure helpers this wraps)
- * History:  MEH-3216 stage 5b (creation); MEH-3764 («להזמין שוב» hand-off)
+ * History:  MEH-3216 stage 5b (creation); MEH-3746 (inside the owner's
+ *           preview: her own menu, read even while ordering is off);
+ *           MEH-3764 («להזמין שוב» hand-off)
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,7 +21,8 @@ import { useTranslations } from "next-intl";
 
 import { applyOrderAgain, takeOrderAgain } from "@/lib/order-again";
 import { showToast } from "@/lib/toast";
-import { keepOrderable, loadOrderMenu, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
+import { keepOrderable, loadOrderMenu, loadOwnerMenuPreview, pickedCount, pickedTotalAgorot, setQty } from "@/lib/order-cart";
+import { useOwnerOrderMenu } from "@/lib/preview-mode";
 
 /** @typedef {import("@/lib/order-cart").OrderMenu} OrderMenu */
 /** @typedef {import("@/lib/order-cart").MenuProduct} MenuProduct */
@@ -56,7 +60,11 @@ const NO_PICKS = Object.freeze({});
 export function useOrderCart(producer) {
   const t = useTranslations("order_again");
   const producerId = producer?.id;
-  const takesOrders = Boolean(producer?.takes_site_orders);
+  // MEH-3746: the owner's preview shows the order form before ordering is on.
+  // Only where the page opts in (OrderPreviewClient), never from preview mode
+  // alone: the draft-preview page has no owner session (fresh review).
+  const preview = useOwnerOrderMenu();
+  const takesOrders = preview || Boolean(producer?.takes_site_orders);
   const [menu, setMenu] = useState(/** @type {OrderMenu | null} */ (null));
   const [picks, setPicks] = useState(/** @type {Record<string, number>} */ ({}));
   // Bumped to read the menu again: the order sheet does it when the server
@@ -70,8 +78,11 @@ export function useOrderCart(producer) {
     // takes no orders, so no state is reset here.
     if (!producerId || !takesOrders) return undefined;
     let live = true;
-    loadOrderMenu(producerId).then((loaded) => {
+    (preview ? loadOwnerMenuPreview() : loadOrderMenu(producerId)).then((read) => {
       if (!live) return;
+      // The owner route answers for HER business; a page of another business
+      // never shows her menu.
+      const loaded = read && read.producer_id === producerId ? read : null;
       setMenu(loaded);
       // MEH-3764: read after the menu, so a stash is spent only once it can be
       // checked against what is orderable now.
@@ -93,7 +104,7 @@ export function useOrderCart(producer) {
     };
     // `t` is read, not reacted to: a locale switch must not re-read the menu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producerId, takesOrders, generation]);
+  }, [producerId, takesOrders, preview, generation]);
 
   // MEH-3764: «להזמין שוב» to a business that stopped taking site orders.
   // The button opens /producer/{id}, which reads the business fresh in the

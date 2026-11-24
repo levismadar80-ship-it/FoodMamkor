@@ -13,6 +13,7 @@
  *           link, or ordering switched off, is the site's 404.
  * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
  * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»); MEH-3620 («כתבו ביקורת» once handed);
+ *           MEH-3755 (business link, contact, nav — OrderBusinessLinks.jsx);
  *           MEH-3764 («להזמין שוב» once finished)
  */
 
@@ -33,6 +34,7 @@ import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -164,6 +166,8 @@ export function OrderStatusView({ order, onChange, refOf }) {
       )}
       <Lines order={order} />
       {view.toPay && <p className="font-medium text-text">{t("to_pay", { total: shekelsText(toPayAgorot(order)) })}</p>}
+      {/* MEH-3755: the business page, its contact button, and nav to the pickup address. */}
+      <OrderBusinessLinks producerId={order.producer_id} pickupAddress={view.when === "when_pickup" ? order.pickup_address : null} />
       {state.error && !state.asking && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {view.cancel === "cancel" && !view.proposal && (
         <Button variant="outlined" onClick={() => setState({ asking: true })} data-testid="order-cancel">{t("cancel")}</Button>

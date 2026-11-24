@@ -13,6 +13,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
+import { useUserCity } from "@/lib/use-user-city"; // MEH-3736
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
 import { CountGroupBuysByStatusGroupBuysCountsGetResponse as StatusCountsOut } from "@/lib/generated/api.zod";
@@ -190,6 +191,25 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
   const [loading, setLoading] = useState(() => !initialList);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
+  // MEH-3736: start from the city the user saved on the site, but only when
+  // that city has an open group buy — with few groups, a saved city with none
+  // would open on an empty list. Once the user types, the seed never lands.
+  // Typing filters only; it does not write the saved city (a keystroke is not
+  // a choice of home city).
+  const { city: savedCity } = useUserCity();
+  const userTyped = useRef(false);
+  const seedTried = useRef(false);
+  useEffect(() => {
+    if (!savedCity || seedTried.current) return;
+    seedTried.current = true;
+    api
+      .get("/group-buys/counts", { params: { city: savedCity } })
+      .then((r) => {
+        const parsed = StatusCountsOut.safeParse(r.data);
+        if (!userTyped.current && parsed.success && (parsed.data.open ?? 0) > 0) setCity(savedCity);
+      })
+      .catch(() => {}); // no seed: the list stays on all cities
+  }, [savedCity]);
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
   // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
@@ -227,22 +247,29 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, statusFilter]);
 
+  // MEH-3736: only the latest list request may write. The saved-city seed
+  // makes «all cities, then my city» a routine pair of requests, and an older
+  // answer landing last would show every city under a filled city field.
+  const lastLoad = useRef(0);
   const load = async ({ quiet = false } = {}) => {
+    const id = ++lastLoad.current;
     if (!quiet) setLoading(true);
     setError(false);
     try {
       const params = { status: statusFilter };
       if (city) params.city = city;
       const r = await api.get("/group-buys", { params });
+      if (id !== lastLoad.current) return;
       setItems(r.data);
     } catch {
+      if (id !== lastLoad.current) return;
       if (quiet) return; // the server's list stays on screen
       // MEH-863 F12: surface the failure (error state + retry) instead of
       // swallowing it into the empty state (MEH-325 silent-except pattern).
       setError(true);
       setItems([]);
     } finally {
-      setLoading(false);
+      if (id === lastLoad.current) setLoading(false);
     }
   };
 
@@ -270,7 +297,10 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
             id="group-buys-city"
             label={tHub("filter_city_label")}
             value={city}
-            onChange={(v) => setCity(v)}
+            onChange={(v) => {
+              userTyped.current = true; // MEH-3736: a late seed answer must not override her
+              setCity(v);
+            }}
             placeholder={tHub("filter_city_placeholder")}
             className="flex-1 md:max-w-xs"
           />
