@@ -88,6 +88,7 @@ This page links to those and does not repeat their numbers.
 | Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
 | The page a customer signed up from by email (MEH-3661) | browser `localStorage`, `post_auth_return`: an internal path and when it was stored | 24 hours (the verify link's own life); read by /verify-email to send her back, then cleared; only paths `isReturnablePath` allows (no auth screens, no token flows) |
 | Whether the account menus show «ההזמנות שלי» (MEH-3525; since MEH-3698: whether the person has an order, a group buy or a bag, from `GET /users/me/orders/any`) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored; dropped after an order, a group-buy join or leave, or a bag reservation (`frontend/lib/my-orders-nav-cache.js`) |
+| A finished order's lines on their way back to the cart, «להזמין שוב» (MEH-3764) | browser `sessionStorage`, `meh_order_again`: the business id, each line's product (and variant) id, quantity and name, and when it was stored | read once by that business's page and removed on read; ignored after 30 minutes or for another business; cleared with the tab |
 
 ## What gives first under load
 

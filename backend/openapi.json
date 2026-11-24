@@ -7423,6 +7423,18 @@
             "title": "Price Unit",
             "type": "string"
           },
+          "product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
           "qty": {
             "title": "Qty",
             "type": "integer"
@@ -7430,6 +7442,18 @@
           "unit_price_agorot": {
             "title": "Unit Price Agorot",
             "type": "integer"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
           },
           "variant_name": {
             "anyOf": [

@@ -12,7 +12,8 @@ Does NOT: send anything (the per-event emails live in content_notifications
 Related:  backend/app/routers/producer_me.py `dashboard` (the only caller) ·
           frontend/components/producer/OwnerAttentionCard.jsx.
 History:  MEH-3108 (creation); MEH-3430 (product count for the menu row);
-          MEH-3445 (products with no allergen declaration).
+          MEH-3445 (products with no allergen declaration); MEH-3767 (live
+          rescue bags — the home's rescue card became this row).
 """
 
 import logging
@@ -28,8 +29,10 @@ from app.models import (
     Experience,
     Producer,
     Product,
+    ProducerLocation,
     ProducerReview,
     Registration,
+    RescueOffer,
 )
 from app.models.models import GroupBuy
 from app.utils.clock import utc_now
@@ -54,6 +57,7 @@ class OwnerAttention(TypedDict):
     pending_orders: int
     products: int  # MEH-3430: 0 → the «העלו תפריט» row
     products_no_allergens: int  # MEH-3445: > 0 → the «לסימון» row
+    live_rescue_offers: int  # MEH-3767: > 0 → the rescue-bags row
 
 
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
@@ -165,6 +169,22 @@ def _products_no_allergens(db: Session, producer_id: UUID) -> int:
     return int(n or 0)
 
 
+def _live_rescue_offers(db: Session, producer_id: UUID) -> int:
+    # MEH-3767: the same "live" as booking_cancellations._live_offers_query —
+    # active, pickup not over. Sold out still counts: she has codes to hand over.
+    n = (
+        db.query(func.count(RescueOffer.id))
+        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            RescueOffer.status == "active",
+            RescueOffer.pickup_end > utc_now(),
+        )
+        .scalar()
+    )
+    return int(n or 0)
+
+
 def owner_attention(
     db: Session, producer_id: UUID, host_user_id: Any
 ) -> OwnerAttention:
@@ -187,6 +207,7 @@ def owner_attention(
             # Unknown, not zero: a failed count must not tell her she has none.
             "products": -1,
             "products_no_allergens": 0,
+            "live_rescue_offers": 0,
         }
 
 
@@ -198,4 +219,5 @@ def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention
         "pending_orders": _pending_orders(db, producer_id),
         "products": _products(db, producer_id),
         "products_no_allergens": _products_no_allergens(db, producer_id),
+        "live_rescue_offers": _live_rescue_offers(db, producer_id),
     }
