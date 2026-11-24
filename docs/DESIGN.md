@@ -1025,6 +1025,15 @@ glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.
 
+When the control must keep its drawn size (an «i» button, a badge chip, a
+crumb, a back link: growing the box would move the line), give it the
+`.tap-area` utility (`app/globals.css`, MEH-3827): an invisible `::before`
+whose insets grow the hit area to 44 × 44 around the control and leave a
+bigger control alone. Used by `ui/BackLink`, `InfoTooltip`, `BadgeRow` and
+`Breadcrumb`. It does not work inside a scroller with `overflow` (the pseudo
+is clipped): use `min-h-touch` there, as the admin phone nav does.
+Neighbouring hit areas may overlap; the later element in the DOM takes the tap.
+
 **Documented exceptions.** These are deliberate and stay below a floor for a
 recorded reason — do not "fix" them:
 
