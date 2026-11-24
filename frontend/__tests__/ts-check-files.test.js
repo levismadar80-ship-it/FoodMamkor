@@ -73,5 +73,9 @@ describe("// @ts-check files type-check", () => {
       expect(files.map((f) => path.relative(ROOT, f))).toContain(anchor);
     }
     expect(diagnose(files)).toEqual([]);
-  }, 120_000);
+    // 26-30 s locally, but over 120 s on a loaded CI runner: it timed out on
+    // three PR runs on 23-24/11 (#5210, #5217, #5221; MEH-3769) with no
+    // assertion failing. The bound only has to catch a hang, not a slow
+    // runner (testing.md, MEH-2972: no wall-clock budget on a CI runner).
+  }, 300_000);
 });
