@@ -1,6 +1,6 @@
 // MEH-3055 — the one ordering rule, shared by the public page and the dashboard.
 import { describe, it, expect } from "vitest";
-import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
+import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-display-order";
 
 const p = (id, extra = {}) => ({ id, image_url: null, position: null, group_id: null, ...extra });
 const ids = (list) => list.map((x) => x.id);

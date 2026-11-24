@@ -9,14 +9,14 @@
  * Does NOT: render, fetch, or change the storage format. The API and the parser
  *           (lib/hours.js) are untouched; this only builds the string HoursCard
  *           persists and prefills the editor from what the API already returns.
- * Related:  frontend/lib/hours.js (DAY_ABBR + parseHours + toMinutes — the read
+ * Related:  frontend/lib/hours.js (DAY_ABBR + parseHours + clockToMinutes — the read
  *           axis this mirrors), frontend/app/[locale]/producer/dashboard/edit/
  *           HoursEditor.jsx (the only UI consumer).
  * History:  MEH-1276 — structured Hebrew hours editor replaces the free-text
  *           HoursCard field (MEH-1242 PR5); serializer keeps the stored string
  *           byte-compatible so DB/API/parseHours never change.
  */
-import { DAY_ABBR, parseHours, toMinutes } from "./hours";
+import { DAY_ABBR, parseHours, clockToMinutes } from "./hours";
 
 // Sensible defaults for a freshly-opened day row (editor UX only — never
 // persisted unless the row is toggled open).
@@ -56,7 +56,7 @@ const toHHMM = (min) =>
  */
 export function nextRange(last) {
   if (!last || !HHMM_RE.test(last.to ?? "")) return emptyRange();
-  const from = toMinutes(last.to);
+  const from = clockToMinutes(last.to);
   // No room left in the day. Returning {from: "23:59", to: "23:59"} here would
   // hand the owner a row that fails validation the moment it appears — an
   // unsaveable form she did not break. `canAddRange` hides the control instead.
@@ -126,16 +126,16 @@ export function dayIssues(days) {
       if (
         !HHMM_RE.test(range?.from ?? "") ||
         !HHMM_RE.test(range?.to ?? "") ||
-        toMinutes(range.to) <= toMinutes(range.from)
+        clockToMinutes(range.to) <= clockToMinutes(range.from)
       ) {
         issues.push({ index: i, reason: "invalid_range" });
         return;
       }
-      if (prevTo !== null && toMinutes(range.from) < prevTo) {
+      if (prevTo !== null && clockToMinutes(range.from) < prevTo) {
         issues.push({ index: i, reason: "invalid_overlap" });
         return;
       }
-      prevTo = toMinutes(range.to);
+      prevTo = clockToMinutes(range.to);
     }
   });
   return issues;

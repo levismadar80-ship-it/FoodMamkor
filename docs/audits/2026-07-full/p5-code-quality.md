@@ -200,7 +200,7 @@ the ticket's "same problem solved differently in different places":
 
 | Surface | What it owns |
 |---|---|
-| `frontend/lib/order-window.js` (3.4 KB, 2 consumers) | editor ↔ backend JSONB serialization |
+| `frontend/lib/order-window-editor.js` (3.4 KB, 2 consumers) | editor ↔ backend JSONB serialization |
 | `frontend/lib/order-window-status.js` (7.3 KB, 5 consumers) | open / closing-soon / closed status + display ranges |
 | `HoursEditor.jsx:173` | 47 lines shared with ↓ |
 | `OrderWindowEditor.jsx:134` | …this |

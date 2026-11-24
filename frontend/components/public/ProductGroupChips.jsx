@@ -7,7 +7,7 @@
  *           «עוד מוצרים» for products in no group. Etsy shows shop sections
  *           the same way: a short list of the seller's sections as filters.
  * Does NOT: decide when it is shown (ProducerSections: 2+ groups with
- *           products) or the order (lib/product-order.js).
+ *           products) or the order (lib/product-display-order.js).
  * History:  MEH-3055 (creation)
  */
 import { useTranslations } from "next-intl";
