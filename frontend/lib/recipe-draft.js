@@ -8,11 +8,16 @@
  *           RecipeForm saves through its own route).
  * Related:  backend/app/services/form_filler.py (the draft's shape) ·
  *           backend/app/data/form_maps/recipe.json (the keys)
- * History:  MEH-3740 (creation)
+ * History:  MEH-3740 (creation) · MEH-3751 (the field rule moved to
+ *           lib/form-draft.js, shared with the event form)
  */
 
-const TEXT_KEYS = new Set(["title", "description", "ingredients", "instructions"]);
-const NUMBER_KEYS = new Set(["prep_time_min", "cook_time_min", "servings"]);
+import { applyDraftFields } from "@/lib/form-draft";
+
+const KEYS = {
+  text: ["title", "description", "ingredients", "instructions"],
+  number: ["prep_time_min", "cook_time_min", "servings"],
+};
 
 /**
  * @template {Record<string, any>} T
@@ -23,14 +28,7 @@ const NUMBER_KEYS = new Set(["prep_time_min", "cook_time_min", "servings"]);
  */
 export function applyRecipeDraft(form, { draft, products }) {
   /** @type {Record<string, any>} */
-  const next = { ...form };
-  for (const [key, value] of Object.entries(draft)) {
-    if (TEXT_KEYS.has(key) && typeof value === "string" && value.trim()) {
-      next[key] = value;
-    } else if (NUMBER_KEYS.has(key) && typeof value === "number" && Number.isInteger(value)) {
-      next[key] = String(value);
-    }
-  }
+  const next = applyDraftFields(form, draft, KEYS);
   // Only products the form shows: an id the list does not hold could not be
   // unticked, and the save would reject it.
   const listed = new Set(products.map((product) => product.id));

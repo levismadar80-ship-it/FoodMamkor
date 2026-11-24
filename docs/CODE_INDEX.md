@@ -206,6 +206,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/experience_notifications.py` | Email notifications for the experiences moderation flow. |
 | `services/experience_sessions.py` | MEH-3441 (stage 2 of MEH-3264) — a recurring workshop's dates. An owner lists dates (date + time); … |
 | `services/farmer_declaration.py` | Server-side gate + record for the grower declaration («גידלתי בחלקתי בלבד») at producer registration, apart from the licensing declaration (declared_at / … |
+| `services/form_fill_windows.py` | The hand-over windows of an order-setup draft (MEH-3752): keep a window only when the text names its day and states its hours (a clock time, an hour number, … |
 | `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
@@ -391,6 +392,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `event-categories.js` | Single source of truth for the /events (4) and /experiences (7) category sets — previously duplicated across 5 call-sites in 4 files (EventsClient, the … |
 | `event-category-gate.js` | Decide which category chips /events and /experiences show — only categories that have at least one result in the current city, so no chip leads to «לא נמצאו … |
 | `event-date-filter.js` | MEH-3118 — the three date shortcuts on /events and /experiences («היום», «מחר», «סוף השבוע»), as Eventbrite and Meetup offer them. … |
+| `event-draft.js` | Put a «יש לכם מודעה על האירוע?» draft (MEH-3751) into the event form's state: a field the draft fills replaces the form's value, a field it leaves empty keeps … |
 | `event-entry.js` | toEventEntry — normalizes an event OR experience API row into the one shape EventEntryRow renders. … |
 | `event-ics.js` | Turn one event into an iCalendar (RFC 5545) file the visitor can open in Google / Apple / Outlook calendar — the «הוספה ליומן» button on the event page. |
 | `event-when.js` | How close an event's date is to today in Israel — the «היום» / «מחר» / «השבוע» chip beside the date, and whether the event is already over (MEH-2548). |
@@ -401,6 +403,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `filter-taxonomy.js` | MEH-2130 — THE single definition of every consumer filter axis. One object per axis carrying its key, consumer label, Label Scope Contract metadata (scope × … |
 | `filter-url.js` | — אין כותרת — |
 | `first-moments.js` | The once-only «רגע ראשון» cards on the dashboard home (MEH-3200 part 2, approved by Sapir 14/11): first review, first WhatsApp click, 100 page views, first … |
+| `form-draft.js` | The one rule for putting a «fill the form from text» draft into a form's state (MEH-3751, rule of two): a text field the draft fills replaces the form's … |
 | `format-date.js` | Locale-aware date formatting for event / experience surfaces. Single source replacing 4 duplicated formatDate helpers that hardcoded "he-IL" (so /en/* … |
 | `format.js` | Locale-aware number formatting helpers shared across pages. |
 | `friday-mode.js` | MEH-50: שוק שישי mode — Thu 18:00 → Fri 14:00 Israel time. Pure function, no async, no deps. Uses Intl for correct DST handling. |
@@ -450,6 +453,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-again.js` | «להזמין שוב»: carry a finished order's lines from its status page to the business page, where they fill the cart again — the items still on the menu are … |
 | `order-cart.js` | What a buyer has picked on a business page before she sends an order request: the menu read, and the pure sums over her picks. |
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
+| `order-setup-draft.js` | Put a «ספרו לנו איך אתם מקבלים הזמנות» draft (MEH-3752) into the three order-setup cards: the settings numbers, the weekly hand-over windows and the products … |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
 | `order-status.js` | The buyer's side of one on-site order: read it, cancel it, accept the business's proposed change, and decide which approved sentences the status page shows … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |

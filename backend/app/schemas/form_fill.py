@@ -8,7 +8,7 @@ Does NOT: validate the draft as a write — the owner's approved fields go
           /producers/me/recipes) with its validation and moderation.
 Related:  app/services/form_filler.py · app/routers/form_fill.py ·
           app/schemas/page_fill.py (same text limits)
-History:  MEH-3740 (creation)
+History:  MEH-3740 (creation) · MEH-3752 (a list of windows)
 """
 
 from pydantic import BaseModel
@@ -25,4 +25,6 @@ class FormFillOut(BaseModel):
     empty list for a list field; the form decides which keys it reads."""
 
     form: str
-    draft: dict[str, str | int | list[str] | None]
+    # MEH-3752: order_setup's `windows` is a list of {weekday, start_time,
+    # end_time, fulfilment}.
+    draft: dict[str, str | int | list[str] | list[dict[str, str | int]] | None]

@@ -21,14 +21,14 @@
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 54 | 51 | 1 | 2 | 0 |
 | Pages — public | 62 | 52 | 0 | 10 | 0 |
-| Pages — dashboard | 24 | 20 | 0 | 4 | 0 |
+| Pages — dashboard | 24 | 21 | 0 | 3 | 0 |
 | Pages — admin | 22 | 19 | 0 | 3 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 38 | 1 | 6 | 0 |
 | Mandatory extra rows (§B.3) | 25 | 23 | 1 | 1 | 0 |
 
 Pages opened by a CI-run Playwright spec: **42 / 108** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 112** (route positive 5 · route negative 81 · tools 2 · pages 17 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 111** (route positive 5 · route negative 81 · tools 2 · pages 16 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -570,7 +570,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/producer/dashboard/google-profile` | GAP | `frontend/__tests__/GoogleProfilePageBackLink.test.jsx:14` | covered |
 | `/producer/dashboard/group-buys` | `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:383` | `frontend/__tests__/DashboardEmptyStateFormExclusive.test.jsx:64` | covered |
 | `/producer/dashboard/insights` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:634` | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | covered |
-| `/producer/dashboard/orders` | GAP | GAP | GAP |
+| `/producer/dashboard/orders` | GAP | `frontend/__tests__/OrderSetupAiFill.test.jsx:42` | covered |
 | `/producer/dashboard/orders/preview` | GAP | GAP | GAP |
 | `/producer/dashboard` | `frontend/e2e/flows/22-register-personas.spec.ts:215` | `frontend/__tests__/Dashboard1025Banner.test.jsx:14` | covered |
 | `/producer/dashboard/preview` | GAP | GAP | GAP |
