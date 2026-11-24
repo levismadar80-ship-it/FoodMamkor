@@ -56,7 +56,7 @@ from app.services.rescue_reads import (
     owner_offer_row,
     reserve_days,
 )
-from app.utils.clock import utc_now
+from app.utils.clock import israel_today, utc_now
 
 # The router's `_offer_for_update`, passed in (see the module docstring).
 OfferLock = Callable[[Session, UUID], RescueOffer]
@@ -424,6 +424,14 @@ def hand_over(
     order = order_or_404(db, order_id)
     require_offer_owner(user, order.offer)
     refuse_unless_reserved_for_handover(order)
+    # MEH-3805: tomorrow's bag is reserved, not collectable. The dashboard
+    # shows no button on tomorrow's rows; this holds a direct call too. A
+    # past day stays allowed: a business may mark yesterday's bag late.
+    if order.offer.date > israel_today():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="אפשר למסור את הסל רק ביום האיסוף",
+        )
 
     # Lock the offer, then the order — the order cancel_order takes them in —
     # and read the status AGAIN under the lock (MEH-2865). The check above ran
