@@ -378,6 +378,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `contact-method.js` | Primary contact method helpers (MEH-17). Pure functions — no React. |
 | `contact-topics.js` | The one whitelist of contact-form topics, and the ?topic= reader that falls back to the default for anything else. |
 | `contact-tracking.js` | Analytics beacons for any /producer surface. |
+| `cookie-banner-height-inline.js` | Publish the cookie banner's height as --cookie-banner-h on <html> while the banner is being parsed, so /map reserves the banner's strip from the first paint … |
 | `cookie-consent.js` | Cookie-consent storage contract — the ONE place that knows the localStorage key, the accepted values and the event name (MEH-2394 reviewer note: the … |
 | `css-url.js` | A quoted, escaped CSS 'url()' for an inline background-image. The picture can be an owner-supplied URL; … |
 | `dashboard-edit-anchors.js` | The deep-link registry for the producer dashboard's edit page — which card a URL hash means, where to scroll, and which accordion group to open. |
@@ -990,7 +991,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/[id]/components/ReservistBadgeLine.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/ReviewExcerpt.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/StickyContactBar.jsx` | — אין כותרת — |
-| `[locale]/producer/[id]/hooks/useLazyReviews.js` | — אין כותרת — |
+| `[locale]/producer/[id]/hooks/useProducerActivities.js` | The business page's upcoming events, experiences and open group buys, read together so the page paints them in one go instead of inserting each list above the … |
 | `[locale]/producer/[id]/hooks/useProducerData.js` | — אין כותרת — |
 | `[locale]/producer/[id]/hooks/useStickyBar.js` | — אין כותרת — |
 | `[locale]/producer/[id]/lib/order-status.js` | Pure mapper + formatters behind the producer page's SINGLE status element — resolves which of the five precedence branches wins and formats the Israel-local … |
