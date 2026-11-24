@@ -79,7 +79,7 @@ def send_verify_email(
         f"לאימות כתובת המייל יש ללחוץ על הקישור הבא:\n\n"
         f"{verify_url}\n\n"
         f"הקישור תקף ל-24 שעות.\n\n"
-        f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
+        f"אם לא נרשמתם למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
     html_body = frame(
@@ -91,7 +91,7 @@ def send_verify_email(
         + note_row(
             f"""\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
-            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
+            <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמתם למהמקור, אפשר להתעלם מהמייל הזה.</p>
             <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
             <p style="color:#6B6860;font-size:11px;word-break:break-all;margin:0;">
             אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>

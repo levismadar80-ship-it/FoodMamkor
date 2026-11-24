@@ -110,7 +110,7 @@ def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
     subject = f'מהמקור — הקבוצה "{title}" הגיעה ליעד'
     body = (
         f"שלום,\n\n"
-        f'הקבוצה שהצטרפת אליה, "{title}", הגיעה ליעד.\n'
+        f'הקבוצה שהצטרפתם אליה, "{title}", הגיעה ליעד.\n'
         f"לתיאום ההזמנה צרו קשר עם {producer_name}.\n\n"
         + (f"{pickup}\n" if pickup else "")
         # MEH-2453: the business page shows its delivery areas and pickup
@@ -244,7 +244,7 @@ def notify_participant_cancelled(
     subject = f'מהמקור — הקבוצה "{title}" בוטלה'
     body = (
         f"שלום,\n\n"
-        f'הקבוצה שהצטרפת אליה, "{title}", בוטלה על ידי {producer_name}.\n'
+        f'הקבוצה שהצטרפתם אליה, "{title}", בוטלה על ידי {producer_name}.\n'
         f"לשאלות צרו קשר עם {producer_name}.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -265,7 +265,7 @@ def notify_participant_cancelled_delisted(
     subject = f'מהמקור — הקבוצה "{title}" בוטלה'
     body = (
         f"שלום,\n\n"
-        f'הקבוצה שהצטרפת אליה, "{title}", בוטלה כי בית העסק {producer_name} '
+        f'הקבוצה שהצטרפתם אליה, "{title}", בוטלה כי בית העסק {producer_name} '
         f"כבר לא מופיע במהמקור.\n"
         f"אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.\n\n"
         f"בברכה,\nצוות מהמקור"
@@ -325,7 +325,7 @@ def notify_participant_expired(
     subject = f'מהמקור — הקבוצה "{title}" לא הגיעה ליעד'
     body = (
         f"שלום,\n\n"
-        f'הקבוצה שהצטרפת אליה, "{title}" של {producer_name}, לא הגיעה '
+        f'הקבוצה שהצטרפתם אליה, "{title}" של {producer_name}, לא הגיעה '
         f"למספר המשתתפים הנדרש עד המועד האחרון, ולכן היא לא יוצאת לפועל.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -366,7 +366,7 @@ def notify_waitlist_place(
     subject = f'מהמקור — התפנה מקום בקבוצת הרכישה "{title}"'
     body = (
         f"שלום,\n\n"
-        f'התפנה מקום בקבוצת הרכישה "{title}", שנרשמת לרשימת ההמתנה שלה.\n'
+        f'התפנה מקום בקבוצת הרכישה "{title}", שנרשמתם לרשימת ההמתנה שלה.\n'
         f"המקום לא שמור: הוא הולך להצטרפות הראשונה.\n\n"
         f"להצטרפות: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
@@ -466,7 +466,7 @@ def notify_allergens_changed(
     subject = f'מהמקור — האלרגנים של "{title}" עודכנו'
     body = (
         f"שלום,\n\n"
-        f'בית העסק עדכן את רשימת האלרגנים בקבוצת הרכישה "{title}" שהצטרפת אליה.\n'
+        f'בית העסק עדכן את רשימת האלרגנים בקבוצת הרכישה "{title}" שהצטרפתם אליה.\n'
         f"כדאי לבדוק אותה בדף הקבוצה לפני האיסוף: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )

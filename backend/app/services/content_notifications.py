@@ -140,7 +140,7 @@ def notify_reviewer_reply(
     subject = f"מהמקור — {_one_line(producer_name)} הגיבו לביקורת"
     body = (
         f"שלום,\n\n"
-        f'"{producer_name}" הגיבו לביקורת שכתבת במהמקור.\n\n'
+        f'"{producer_name}" הגיבו לביקורת שכתבתם במהמקור.\n\n'
         f"לקריאת התגובה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )

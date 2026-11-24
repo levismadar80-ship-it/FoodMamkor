@@ -72,7 +72,7 @@ def notify_host_approved(
     subject = f'מהמקור — החוויה "{title}" אושרה!'
     body = (
         f"שלום,\n\n"
-        f'שמחים לבשר שהחוויה שהגשת, "{title}", אושרה ופורסמה במהמקור.\n'
+        f'שמחים לבשר שהחוויה "{title}" אושרה ופורסמה במהמקור.\n'
         f"החוויה זמינה עכשיו לציבור הרחב.\n\n"
         f"לצפייה: {settings.frontend_url}/experiences/{experience_id}\n\n"
         f"בברכה,\nצוות מהמקור"

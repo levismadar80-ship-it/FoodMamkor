@@ -84,7 +84,7 @@ class TestConsumerVariantUnchanged:
         )
         assert sent["subject"] == "ניסיון רישום במהמקור — כבר יש חשבון"
         body = sent["body"]
-        assert "מישהו ניסה להירשם למהמקור עם הכתובת שלך" in body
+        assert "מישהו ניסה להירשם למהמקור עם כתובת המייל הזאת" in body
         assert "כבר יש חשבון אצלנו עם סיסמה. אם זה הייתם אתם, אפשר להיכנס כאן" in body
         # The consumer flow must never mention a business at all.
         assert "עסק" not in body
