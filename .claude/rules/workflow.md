@@ -608,7 +608,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     A new primitive (overlay, positioning, form handling, date or calendar,
     email rendering, auth glue) also names on that line the maintained
     open-source library it checked, with license, size and RTL support, or
-    why none fits (Sapir 24/11, MEH-3801).
+    why none fits; when one fits, the PR uses it (Sapir 24/11, MEH-3801).
 
     | Task | Skills |
     |---|---|
