@@ -1170,6 +1170,14 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > or ended bookings and other businesses are untouched. Rows are read before
 > the delete cascade. No schema change.
 >
+> **MEH-3768 — and its on-site orders it never accepted.** The same call moves
+> the business's `pending` and `change_proposed` product orders to `cancelled`
+> as the system (`product_order_actions.release_unaccepted_orders`, note «בית
+> העסק הוסר מהאתר»); each buyer is owed the «closed» WhatsApp, and a «new
+> order» message still owed to the business is skipped. `confirmed` / `ready`
+> stay open, and the owner's email says so. The two delete paths refuse a
+> business with open orders before this runs (MEH-3262).
+>
 > **MEH-3227 — the business changes one event or experience.**
 > `PUT /events/{id}` / `PUT /experiences/{id}` with `is_active` true→false, and
 > `DELETE` on either, cancel the item's `registered` sign-ups and mail each
