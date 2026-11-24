@@ -1,5 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
-import { installLoadGuard, loadGuardFailures, CONSOLE_ALLOW, CLS_LIMIT } from "./_load-guard";
+import { installLoadGuard, loadGuardFailures, CONSOLE_ALLOW, CLS_LIMIT, KNOWN_CLS } from "./_load-guard";
 
 /**
  * MEH-3809 self-test for the load guard (testing.md «A classifier ships a
@@ -123,6 +123,47 @@ test.describe("load guard self-test (MEH-3809)", () => {
     expect(loadGuardFailures(state(siChromium), { browserName: "chromium", navigated: false })).toEqual([]);
     const otherChromium = siChromium.replace("/_vercel/speed-insights/script.js", "/_next/static/chunks/app.js");
     expect(loadGuardFailures(state(otherChromium), { browserName: "chromium", navigated: false })).toHaveLength(1);
+  });
+
+  test("KNOWN_CLS: a listed page passes under its ceiling, fails above it; an unlisted page and errors still fail", () => {
+    const shifted = (url: string, v: number, errors: string[] = []) => ({
+      errors,
+      shifts: [{ doc: 1, url, t: 500, v, src: "div#x" }],
+      ready: [{ doc: 1, supported: true }],
+    });
+    const run = (s: ReturnType<typeof shifted>, cls?: boolean) =>
+      loadGuardFailures(s, { browserName: "chromium", navigated: true, cls });
+    // Anchored to a real row: the dashboard, at a value measured on PR #5280.
+    expect(KNOWN_CLS.some((k) => k.card === "MEH-3817")).toBe(true);
+    expect(run(shifted("/producer/dashboard/edit?group=products", 0.548))).toEqual([]);
+    expect(run(shifted("/en/producer/dashboard", 0.55))).toEqual([]);
+    // Worse than the ceiling: still red, and says it got worse.
+    const worse = run(shifted("/producer/dashboard", 1.6));
+    expect(worse).toHaveLength(1);
+    expect(worse[0]).toContain("got worse");
+    // A page that is not listed fails at the plain limit, a lookalike path too.
+    expect(run(shifted("/producers", CLS_LIMIT + 0.05))).toHaveLength(1);
+    expect(run(shifted("/producer/dashboardx", 0.3))).toHaveLength(1);
+    // A listed page never hides an error.
+    expect(run(shifted("/producer/dashboard", 0.3, ["pageerror: boom"]))).toEqual(["pageerror: boom"]);
+    // "errors" mode (cls: false) drops CLS only.
+    expect(run(shifted("/producers", 0.9), false)).toEqual([]);
+    expect(run(shifted("/producers", 0.9, ["console.error: boom"]), false)).toEqual(["console.error: boom"]);
+  });
+
+  test("Google sign-in noise from the localhost origin is allowed; our own CORS and other CSP refusals are not", () => {
+    const state = (e: string) => ({ errors: [e], shifts: [], ready: [] });
+    const fails = (e: string) => loadGuardFailures(state(e), { browserName: "chromium", navigated: false }).length;
+    expect(fails("console.error: [GSI_LOGGER]: The given origin is not allowed for the given client ID.")).toBe(0);
+    const gsiCors =
+      "console.error: Access to XMLHttpRequest at 'https://accounts.google.com/gsi/style' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.";
+    expect(fails(gsiCors)).toBe(0);
+    expect(fails(gsiCors.replace("https://accounts.google.com/gsi/style", "https://staging.mehamakor.co.il/api/producers"))).toBe(1);
+    expect(fails(gsiCors.replace("http://localhost:3000", "https://mehamakor.co.il"))).toBe(1);
+    const bread =
+      "console.error: Loading the image 'https://bread.jpg/' violates the following Content Security Policy directive: \"img-src 'self' https://res.cloudinary.com\".";
+    expect(fails(bread)).toBe(0);
+    expect(fails(bread.replace("https://bread.jpg/", "https://evil.example.com/x.png"))).toBe(1);
   });
 
   test("on Chromium, a probe that never reported fails instead of reading green", () => {

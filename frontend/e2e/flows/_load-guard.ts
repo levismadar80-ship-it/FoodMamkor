@@ -8,7 +8,12 @@
  * Wired:    _cloudinary-stub.ts installs it on the shared `page` fixture, so
  *           every spec that imports `test` from there gets it.
  * Opt out:  `test.use({ loadGuard: "off" })` in a spec that provokes errors on
- *           purpose, with a comment saying why. Never to get a spec green.
+ *           purpose; `"errors"` keeps the error checks and drops CLS, for a spec
+ *           that moves the layout itself (resizes text, synthetic clicks). Both
+ *           with a comment saying why. Never to get a spec green.
+ * Known:    KNOWN_CLS lists pages that already shift, one card each. It only
+ *           shrinks: a fix removes its row. A listed page still fails above its
+ *           ceiling, and every page not listed fails at 0.1.
  * History:  MEH-3809 — the footer flash of MEH-3800 passed the whole suite,
  *           because no check looked at the page while it was loading.
  *
@@ -25,7 +30,7 @@
  */
 import type { Page, TestInfo } from "@playwright/test";
 
-export type LoadGuardMode = "on" | "off";
+export type LoadGuardMode = "on" | "errors" | "off";
 
 export const CLS_LIMIT = 0.1;
 
@@ -56,6 +61,24 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
     card: "MEH-3809",
   },
   {
+    pattern: /^\[GSI_LOGGER\]: The given origin is not allowed for the given client ID\.$/,
+    reason:
+      "CI builds with the real Google client id but serves the app from http://localhost:3000, which is not an authorised JavaScript origin of that client, so Google's own script logs this on every page with a sign-in button. On the real origins it does not appear. Measured: PR #5280 second run, 82 guard failures.",
+    card: "MEH-3809",
+  },
+  {
+    pattern: /^Access to XMLHttpRequest at 'https:\/\/(?:accounts\.google\.com\/gsi\/|ssl\.gstatic\.com\/_\/gsi\/)\S*' from origin 'http:\/\/localhost:\d+' has been blocked by CORS policy/,
+    reason:
+      "The same unauthorised localhost origin, seen from Google's sign-in script's own requests to its servers. Limited to Google's GSI paths and to a localhost origin, so a CORS block on our API or on a real origin still fails. Measured: PR #5280 second run, 5 guard failures.",
+    card: "MEH-3809",
+  },
+  {
+    pattern: /^Loading the image 'https:\/\/bread\.jpg\/' violates the following Content Security Policy directive/,
+    reason:
+      "A fixture, not a bug: admin-producers-queue.spec.ts gives a business the image URL https://bread.jpg on purpose to show the «תמונה שבורה» marker, and CSP refuses it. Only that one fake host is allowed; a CSP refusal of any other image still fails.",
+    card: "MEH-3809",
+  },
+  {
     pattern: /due to access control checks\.$/,
     kind: "pageerror",
     browser: "webkit",
@@ -64,6 +87,51 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
     card: "MEH-3809",
   },
 ];
+
+type KnownCls = { path: RegExp; ceiling: number; reason: string; card: string };
+
+/** Pages that already shift above CLS_LIMIT, measured on PR #5280's E2E run
+ *  (Chromium, desktop + mobile). `path` is matched against the pathname with
+ *  no locale prefix and no query. `ceiling` is 1.5 × the largest value seen,
+ *  so a page that gets worse still fails. Remove a row when its card is fixed;
+ *  never add one to get a new shift green — a new shift gets a fix. */
+export const KNOWN_CLS: readonly KnownCls[] = [
+  {
+    path: /^\/producer\/dashboard(?:\/edit)?$/,
+    ceiling: 1.5,
+    reason: "Owner dashboard home and edit groups: late cards push the page down (largest 0.981, mobile).",
+    card: "MEH-3817",
+  },
+  {
+    path: /^\/admin(?:\/settings|\/producers)?$/,
+    ceiling: 0.8,
+    reason: "Admin home, settings and businesses: content arrives after load (largest 0.525, mobile).",
+    card: "MEH-3818",
+  },
+  {
+    path: /^\/(?:producer\/[0-9a-f-]{36}|ruach-hasadeh)$/,
+    ceiling: 2.0,
+    reason: "Business page: delivery and reviews sections pushed down after load (largest 1.334, mobile).",
+    card: "MEH-3819",
+  },
+  {
+    path: /^\/map$/,
+    ceiling: 0.25,
+    reason: "Phone map shrinks after load, e.g. when the cookie banner comes up (largest 0.138).",
+    card: "MEH-3820",
+  },
+  {
+    path: /^\/$/,
+    ceiling: 0.65,
+    reason: "Home with a city on the phone: the minimap section is pushed down after load (0.415).",
+    card: "MEH-3821",
+  },
+];
+
+/** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
+function barePath(url: string): string {
+  return url.replace(/[?#].*$/, "").replace(/^\/en(?=\/|$)/, "") || "/";
+}
 
 type Shift = { doc: number; url: string; t: number; v: number; src: string };
 type Ready = { doc: number; supported: boolean };
@@ -147,9 +215,10 @@ function maxSessionCls(shifts: readonly Shift[]): { value: number; worst: Shift[
 /** Every reason this test's pages fail the guard. Empty = clean. */
 export function loadGuardFailures(
   state: LoadGuardState,
-  opts: { browserName: string; navigated: boolean; allow?: readonly Allow[] },
+  opts: { browserName: string; navigated: boolean; allow?: readonly Allow[]; known?: readonly KnownCls[]; cls?: boolean },
 ): string[] {
   const allow = opts.allow ?? CONSOLE_ALLOW;
+  const known = opts.known ?? KNOWN_CLS;
   const out: string[] = [];
 
   for (const e of state.errors) {
@@ -163,7 +232,7 @@ export function loadGuardFailures(
     out.push(e);
   }
 
-  if (opts.browserName === "chromium" && opts.navigated) {
+  if (opts.cls !== false && opts.browserName === "chromium" && opts.navigated) {
     if (!state.ready.some((r) => r.supported)) {
       out.push(
         "load guard: the layout-shift observer never reported as installed on Chromium — the CLS check did not run, so it cannot be read as green",
@@ -175,6 +244,14 @@ export function loadGuardFailures(
       const { value, worst } = maxSessionCls(list);
       if (value > CLS_LIMIT) {
         const top = [...worst].sort((a, b) => b.v - a.v)[0];
+        const k = known.find((x) => x.path.test(barePath(top.url)));
+        if (k && value <= k.ceiling) continue;
+        if (k) {
+          out.push(
+            `layout shift got worse: CLS ${value.toFixed(3)} > the ${k.ceiling} ceiling of known page ${top.url} (${k.card}) — element ${top.src || "(unknown)"}`,
+          );
+          continue;
+        }
         out.push(
           `layout shift: CLS ${value.toFixed(3)} > ${CLS_LIMIT} on ${top.url} — largest shift ${top.v.toFixed(3)} at ${Math.round(top.t)} ms, element ${top.src || "(unknown)"}`,
         );
@@ -189,10 +266,11 @@ export async function enforceLoadGuard(
   page: Page,
   state: LoadGuardState,
   testInfo: TestInfo,
-  browserName: string,
+  opts: { browserName: string; mode: LoadGuardMode },
 ): Promise<void> {
+  const { browserName } = opts;
   const navigated = state.ready.length > 0 || !/^about:blank$/.test(page.url());
-  const failures = loadGuardFailures(state, { browserName, navigated });
+  const failures = loadGuardFailures(state, { browserName, navigated, cls: opts.mode === "on" });
   if (failures.length === 0) return;
   await testInfo.attach("load-guard.json", {
     body: JSON.stringify({ failures, errors: state.errors, shifts: state.shifts }, null, 2),
@@ -203,6 +281,6 @@ export async function enforceLoadGuard(
   throw new Error(
     `Load guard (MEH-3809) — ${failures.length} problem(s) while this test's pages loaded:\n- ` +
       failures.join("\n- ") +
-      "\nA real bug gets a card and a fix. Noise that is not an app error goes into CONSOLE_ALLOW in e2e/flows/_load-guard.ts with a reason and a card.",
+      "\nA real bug gets a card and a fix. Noise that is not an app error goes into CONSOLE_ALLOW in e2e/flows/_load-guard.ts with a reason and a card. KNOWN_CLS only shrinks.",
   );
 }

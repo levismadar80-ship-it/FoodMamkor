@@ -74,7 +74,14 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
 page whose observer never reported fails the test, so a dead probe cannot read
 green. A spec that provokes errors on purpose opts out with
-`test.use({ loadGuard: "off" })` and a comment saying why. The guard's own
+`test.use({ loadGuard: "off" })` and a comment saying why; a spec that moves the
+layout itself (enlarges text, taps with `dispatchEvent`, which is not counted
+as input) uses `"errors"`, which keeps the error checks and drops CLS.
+
+Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
+1.5 × the largest value measured. A listed page passes under its ceiling and
+fails above it; every other page fails at 0.1. The list only shrinks: a fix
+removes its row, and a new shift gets a fix, not a row. The guard's own
 self-test is `flows/00-load-guard-selftest.spec.ts`.
 
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)

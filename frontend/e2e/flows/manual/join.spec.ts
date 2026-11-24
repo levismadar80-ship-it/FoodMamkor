@@ -446,7 +446,10 @@ test.describe("manual › /join (MEH-995)", () => {
   // opts back into motion because the suite runs reducedMotion: "reduce"
   // (playwright.config.ts:97), and the smooth path is the one a phone takes.
   test.describe("with motion", () => {
-    test.use({ reducedMotion: "no-preference" });
+    // MEH-3809: these tests tap with dispatchEvent, which the browser does not
+    // count as input, so the selected card's reflow reads as a load shift. A
+    // real tap is input and is excluded. Error checks stay on.
+    test.use({ reducedMotion: "no-preference", loadGuard: "errors" });
 
     test("phone shelf: each tapped neighbour ends centred and selected", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });

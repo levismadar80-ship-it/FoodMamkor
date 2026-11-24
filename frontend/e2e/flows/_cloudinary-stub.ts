@@ -113,7 +113,7 @@ export const test = base.extend<{ loadGuard: LoadGuardMode }>({
   page: async ({ page, loadGuard, browserName }, use, testInfo) => {
     // MEH-3809: installed before any navigation, so the first document's
     // layout shifts and errors are seen. See _load-guard.ts.
-    const loadState = loadGuard === "on" ? await installLoadGuard(page) : null;
+    const loadState = loadGuard === "off" ? null : await installLoadGuard(page);
     // MEH-2957: registered first, so every page.route a spec adds wins over it —
     // it only sees a /producers/me call nobody stubbed. See _unstubbed-me-guard.ts.
     await guardUnstubbedMe(page, testInfo.file.replace(/^.*\/e2e\//, "e2e/"));
@@ -134,7 +134,7 @@ export const test = base.extend<{ loadGuard: LoadGuardMode }>({
       else await route.continue();
     });
     await use(page);
-    if (loadState) await enforceLoadGuard(page, loadState, testInfo, browserName);
+    if (loadState) await enforceLoadGuard(page, loadState, testInfo, { browserName, mode: loadGuard });
   },
 });
 
