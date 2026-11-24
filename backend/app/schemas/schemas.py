@@ -1068,6 +1068,8 @@ from app.schemas.registration import (  # noqa: E402
     CheckPasswordRequest as CheckPasswordRequest,
     ForgotPasswordRequest as ForgotPasswordRequest,
     GoogleAuthRequest as GoogleAuthRequest,
+    GoogleCodeRequest as GoogleCodeRequest,  # MEH-3690
+    GoogleCodeResponse as GoogleCodeResponse,  # MEH-3690
     GoogleAuthResponse as GoogleAuthResponse,
     LoginRequest as LoginRequest,
     OwnerInviteAccept as OwnerInviteAccept,

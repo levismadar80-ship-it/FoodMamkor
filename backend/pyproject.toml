@@ -357,6 +357,8 @@ files = [
     "app/services/moderation_schemas.py",
     "app/services/newsletter_sync.py",
     "app/services/oauth_verifiers.py",
+    "app/services/google_code_exchange.py",  # MEH-3690
+    "app/routers/auth_google_code.py",  # MEH-3690
     "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
     "app/services/ops_alert.py",

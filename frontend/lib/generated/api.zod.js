@@ -3733,6 +3733,15 @@ export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.union([/*#__PU
 
 
 /**
+ * Swap a Google authorization code for a verified Google ID token.
+ * @summary Google Code
+ */
+export const GoogleCodeAuthGoogleCodePostResponse = /*#__PURE__*/ zod.object({
+  "id_token": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.'))
+
+
+/**
  * @summary Login
  */
 export const loginAuthLoginPostResponseOneTokenTypeDefault = `bearer`;

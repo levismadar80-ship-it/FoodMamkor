@@ -18,6 +18,7 @@ from app.routers import (
     admin_passkey,
     auth,
     auth_register_producer,
+    auth_google_code,
     business_suggestions,
     category_requests,
     chat,
@@ -126,6 +127,9 @@ def _include_admin(app: FastAPI) -> None:
     app.include_router(admin_product_organize.router)
     # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
     app.include_router(admin_test_business.router)
+    # MEH-3690: POST /auth/google/code, our own Google button's code swap.
+    # Here only to keep register_routers under the statement limit.
+    app.include_router(auth_google_code.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:
