@@ -91,7 +91,13 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
   // MEH-1207: ProducerSections still registers its section elements here (its
   // sectionRefs prop is unchanged); the anchor-nav addresses sections by id.
   const sectionRefs = useRef({});
-  const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
+  // MEH-3819: the client route shows the loading line until its activities
+  // answer, so the sections (and the inline contact card) mount one render
+  // AFTER `producer` is set. Effects that look up DOM in the sections key on
+  // this, not on `producer`, or they run against the loading line, find
+  // nothing, and never run again (the sticky bar stayed parked in WebKit).
+  const painted = Boolean(producer) && !loading && (Boolean(initialProducer) || activities.ready);
+  const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: painted ? producer.id : null });
   // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
   // order bar. Reads the menu only for a business that takes orders.
   const orderCart = useOrderCart(producer);
@@ -122,19 +128,19 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
   // producer has rendered (mirror of edit/page.js applyHash, load-time only;
   // later same-page hash clicks scroll natively because the target exists).
   useEffect(() => {
-    if (!producer) return;
+    if (!painted) return;
     const hash = window.location.hash.replace(/^#/, "");
     if (!hash.startsWith("section-")) return;
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [producer]);
+  }, [painted]);
 
   // MEH-3819: the client route paints once its activity lists answered too,
   // so they never land above the reviews and delivery a moment later. A
   // server-rendered page (initialProducer) never waits here: it would trade
   // its server HTML for the loading line.
-  if (loading || (!initialProducer && producer && !activities.ready)) {
+  if (loading || (producer && !painted)) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.loading_fresh")}
