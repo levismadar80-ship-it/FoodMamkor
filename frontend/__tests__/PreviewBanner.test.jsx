@@ -21,8 +21,10 @@ describe("PreviewBanner", () => {
       </PreviewBanner>,
     );
     const banner = screen.getByTestId("order-preview-banner");
-    expect(banner.className).toContain("bg-green-50");
-    expect(banner.className).toContain("mx-4 mt-3");
+    // the look the three screens had before MEH-3776, unchanged
+    expect(banner.className).toBe(
+      "flex items-start gap-2 bg-green-50 border border-primary/30 rounded-md px-4 py-3 text-sm text-text text-start mx-4 mt-3",
+    );
   });
 
   it("stays a status even when a caller passes another role", () => {
