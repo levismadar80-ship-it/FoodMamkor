@@ -88,7 +88,9 @@ def _id_token_from(resp: "httpx.Response") -> str | None:
     if resp.status_code != 200:
         # invalid_grant = a used, expired or forged code. Log the error code
         # only, never the body.
-        logger.info("[GOOGLE CODE] refused: %s %s", resp.status_code, body.get("error", "-"))
+        logger.info(
+            "[GOOGLE CODE] refused: %s %s", resp.status_code, body.get("error", "-")
+        )
         return None
     id_token = body.get("id_token")
     return id_token if isinstance(id_token, str) and id_token else None

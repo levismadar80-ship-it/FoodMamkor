@@ -10,7 +10,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3598_env_map.py -->
 
-48 Settings fields · 14 direct backend reads · 26 frontend (site) · 25 frontend (tests and tooling).
+49 Settings fields · 14 direct backend reads · 26 frontend (site) · 25 frontend (tests and tooling).
 
 ### שרת: שדות `Settings` (`backend/app/config.py`)
 
@@ -36,7 +36,7 @@
 | `ENV` | `str` | יש | Environment flag (dev\|staging\|production). |
 | `FRONTEND_URL` | `str` | יש | App |
 | `GOOGLE_CLIENT_ID` | `str` | ריק | Google OAuth |
-| `GOOGLE_CLIENT_SECRET` | `str` | ריק | הסוד של אותו OAuth client, ל-`POST /auth/google/code` (MEH-3690). ריק → הנתיב עונה 503 וכל כניסה עם Google נכשלת |
+| `GOOGLE_CLIENT_SECRET` | `str` | ריק | MEH-3690: our own Google button sends an authorization code; the server swaps it at Google's token endpoint, which needs the client secret. |
 | `GOOGLE_PLACES_API_KEY` | `str` | ריק | MEH-1490: server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: rating/userRatingCount). |
 | `OTP_TEST_CODE` | `str` | ריק | — |
 | `OTP_TEST_NUMBERS` | `str` | ריק | MEH-2231: a fixed OTP code for a fixed allow-list of TEST phone numbers, so a harness can pass the `phone_verified` submission gate outside production. |

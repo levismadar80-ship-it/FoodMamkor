@@ -32,7 +32,9 @@ _FAILURES = {
     "/google/code",
     response_model=GoogleCodeResponse,
     responses={
-        401: {"description": "Google refused the code or the token failed verification"},
+        401: {
+            "description": "Google refused the code or the token failed verification"
+        },
         502: {"description": "Google's token endpoint could not be reached"},
         503: {"description": "Google sign-in is not configured on this server"},
     },
