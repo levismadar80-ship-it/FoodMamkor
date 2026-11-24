@@ -25,8 +25,9 @@
  *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
  *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3723 (that tile moved
  *           to the edit tab); MEH-3749 (the «שיתוף» section became a tile; its
- *           page is share/page.js); MEH-3787 (that tile got its own group,
- *           «להביא לקוחות»).
+ *           page is share/page.js); MEH-3785 (the «הטבה» tile in «להציע
+ *           ללקוחות», its page moved out of עריכה); MEH-3787 (the «שיתוף»
+ *           tile got its own group, «להביא לקוחות»).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -36,7 +37,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, ShareNetwork } from "@phosphor-icons/react";
+import { CalendarPlus, UsersThree, CookingPot, Star, ShareNetwork, Tag } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
@@ -67,6 +68,7 @@ export default function ProducerDashboardToolsPage() {
   const tNav = useTranslations("nav");
   // MEH-3669: «קבוצת רכישה» already lives here; reuse it (messages-hygiene-guard).
   const tType = useTranslations("home.whats_on.type");
+  const tOffer = useTranslations("producer.offer");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-1777: a rejected fetch used to leave `data` null forever, and
@@ -138,6 +140,7 @@ export default function ProducerDashboardToolsPage() {
   // the tile, before the owner opens them. The tile stays a link so the
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
+  const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
   const rescueOn = rescueBagsEnabled();
   // MEH-3753: the server refuses group buys and bags to every status but
   // approved (group_buys.py, rescue_writes.py), so every one of them gets a
@@ -194,6 +197,18 @@ export default function ProducerDashboardToolsPage() {
               ]}
               footer={lockedLine}
             />
+            {/* MEH-3785: «הטבה» lived in עריכה › מוצרים ומחירים while every
+                other thing offered to customers is here (Shopify keeps
+                discounts apart from products). No lock line: the offer saves
+                on PUT /producers/me, open before approval like every edit
+                card. Never an organizer — she had no products group either. */}
+            {!isOrganizer && (
+              <Link href="/producer/dashboard/offer" data-testid="tools-offer-tile" className={CARD}>
+                <Tag size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{tOffer("card_title")}</p>
+                <p className="text-sm text-fg-muted">{tFeat("offer.label")}</p>
+              </Link>
+            )}
           </div>
         </section>
         {/* MEH-2784 / MEH-1428: an unapproved business has no public page yet
