@@ -14,6 +14,8 @@
  * History:  MEH-3617 (creation)
  */
 
+import { agorotToShekels } from "@/lib/money";
+
 const SEP = "~";
 
 /**
@@ -86,7 +88,7 @@ export function variantPrice(product) {
   if (variants.every((v) => typeof v.price_agorot !== "number")) return null;
   const base = product.price_min === null || product.price_min === undefined ? null : Number(product.price_min);
   const prices = /** @type {number[]} */ (variants
-    .map((v) => (typeof v.price_agorot === "number" ? v.price_agorot / 100 : base))
+    .map((v) => (typeof v.price_agorot === "number" ? agorotToShekels(v.price_agorot) : base))
     .filter((p) => typeof p === "number" && Number.isFinite(p)));
   if (!prices.length) return null;
   const low = Math.min(...prices);
