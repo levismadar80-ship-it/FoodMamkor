@@ -2,11 +2,13 @@
 
 /**
  * Module:   LocationHoursField
- * Purpose:  The opening-hours picker of one location in the owner's
- *           LocationsEditor: seven day rows (א׳–ש׳), each with an open toggle
- *           and up to three time ranges. Writes the canonical string
+ * Purpose:  The opening-hours picker of one location, in the owner's
+ *           «שעות» card (HoursCard, MEH-3790) and the admin LocationsEditor:
+ *           seven day rows (א׳–ש׳), each with an open toggle and up to three
+ *           time ranges. Writes the canonical string
  *           ("Sun-Thu 09:00-18:00, Fri 09:00-13:00") the public page reads.
- * Does NOT: save anything itself — the location form owns the request; this
+ * Does NOT: save anything itself — HoursCard or the location form owns
+ *           the request; this
  *           only reports a string and a validity flag upward. No special
  *           hours (SpecialHoursEditor), no "open 24h", no admin use (the admin
  *           ProducerForm keeps its text field).

@@ -201,6 +201,8 @@ describe("review of #4263 — the gates on the slug's new source", () => {
     await screen.findByTestId("tools-grid");
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByTestId("tools-share-tile")).toBeNull();
+    // MEH-3787: and no «להביא לקוחות» heading left with nothing under it.
+    expect(screen.queryByTestId("tools-group-reach")).toBeNull();
   });
 
   it("share page: a failed profile fetch says so instead of rendering nothing", async () => {

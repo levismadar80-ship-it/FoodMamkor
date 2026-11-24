@@ -105,7 +105,7 @@ _EMAIL_2_BODY = """\
 ---
 
 רוצים דוגמאות לפני ואחרי?
-📖 מדריך מלא — איך לכתוב סיפור טוב על העסק שלך:
+📖 מדריך מלא — איך לכתוב סיפור טוב על העסק:
 {frontend_url}/about/for-businesses/guides/business-story
 
 החודש הראשון הוא הכי חשוב. משהו לא מסתדר? עונים למייל הזה ונעזור.
@@ -225,7 +225,7 @@ _EMAIL_5A_BODY = """\
 # ("the profile is waiting", "we only show licensed businesses", "we'll
 # remove your details") was false and read as a threat. The badge is an
 # add-on, never a condition. Copy approved verbatim by Sapir, 22/10/2026.
-_EMAIL_5B_SUBJECT = "חודש איתנו — ויש תג שמחכה לך"
+_EMAIL_5B_SUBJECT = "חודש איתנו — ויש תג שמחכה לעסק"
 _EMAIL_5B_BODY = """\
 {greeting}
 

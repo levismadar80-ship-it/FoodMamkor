@@ -105,7 +105,7 @@ def test_post_review_rejects_producer_owner(client, db):
     )
     assert r.status_code == 403, r.text
     # MEH-2709 (ADR-037): gender-neutral, asserted by equality.
-    assert r.json().get("detail") == "אי אפשר לכתוב ביקורת על בית העסק שלך"
+    assert r.json().get("detail") == "אי אפשר לכתוב ביקורת על בית עסק בבעלות החשבון הזה"
 
 
 # ---------------------------------------------------------------------------

@@ -28,6 +28,7 @@ from app.services.job_heartbeat import (
     REGISTRATION_REMINDER_TZ,
     GROUP_BUY_PICKUP_REMINDER_CRON,
     GROUP_BUY_PICKUP_REMINDER_TZ,
+    RESCUE_EVENING_REMINDER_CRON,
     RESCUE_REMINDER_CRON,
     RESCUE_REMINDER_TZ,
     cron_monitor_config,
@@ -603,6 +604,30 @@ def _run_rescue_morning_reminder_job() -> None:
         db.close()
 
 
+# MEH-3805: the evening-before reminder for a bag whose window ends by 08:00.
+@heartbeat(
+    "rescue-evening-reminder-daily",
+    cron_monitor_config(RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_evening_reminder_job() -> None:
+    """MEH-3805: queue tomorrow's early-window reminders. Same guards as the
+    morning job: fresh session, exceptions swallowed, once a day."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_evening_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_evening_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] evening run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_evening_reminder")
+        log.error("[RESCUE-REMINDER] evening run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
@@ -988,6 +1013,19 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
             _run_rescue_morning_reminder_job,
             CronTrigger.from_crontab(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
             id="meh_3702_rescue_morning_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
+        # MEH-3805: the evening twin, 20:00 Israel. Same 3h grace: a run as
+        # late as 23:00 still lands before any early window starts.
+        followup_scheduler.add_job(
+            _run_rescue_evening_reminder_job,
+            CronTrigger.from_crontab(
+                RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ
+            ),
+            id="meh_3805_rescue_evening_reminder",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

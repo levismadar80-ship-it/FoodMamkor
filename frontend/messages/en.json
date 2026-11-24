@@ -5399,6 +5399,7 @@
         "groups": {
           "offer_heading": "Offer to customers",
           "reviews_heading": "Customer reviews",
+          "reach_heading": "Bring in customers",
           "content_heading": "Content",
           "events_sub": "A one-time event, or an experience people sign up for",
           "opportunities_sub": "A group buy, or surprise bags from what is left today"
@@ -5851,7 +5852,6 @@
         "note_placeholder": "For example: Rosh Hashana eve",
         "invalid_date": "Invalid or duplicate date",
         "save_success": "Special hours saved",
-        "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "payment_info": {
