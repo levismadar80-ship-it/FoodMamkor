@@ -88,7 +88,7 @@ export const BUSINESS_FEATURES = [
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
-  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/share" } },
   // MEH-3641: «הפרופיל שלכם בגוגל» — guide, owner self-link of the place_id,
   // live check. Copy chosen by Claude on Sapir's delegation (21/11). No tile:
   // «found» already has its 4.
@@ -174,6 +174,9 @@ export const DASHBOARD_SUBPAGES = {
   "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
   "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
   "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+  // MEH-3749: the print view of the QR card, opened from the «שיתוף» page
+  // (that page is the qr_code tool's landing page now).
+  "/producer/dashboard/qr-card": "/producer/dashboard/share",
   // MEH-2916: a view of an existing surface (her own business page), not a new
   // tool — so a sub-page entry rather than a registry tool with its own copy.
   // Reached in 1 tap from anywhere in the dashboard: the «צפייה בדף» link in
