@@ -63,7 +63,7 @@ beforeEach(() => {
 
 describe("Missing-badge request line (MEH-2695)", () => {
   it("uses the copy Sapir approved word-for-word", () => {
-    expect(copy.prompt).toBe("חסר תג שמתאים לעסק שלך?");
+    expect(copy.prompt).toBe("חסר תג שמתאים לעסק?");
     expect(copy.link).toBe("כתבו לנו");
   });
 

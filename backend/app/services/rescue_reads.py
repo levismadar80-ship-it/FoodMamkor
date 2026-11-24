@@ -198,6 +198,8 @@ def _public_row(
             "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
+            # MEH-3704: the list sorts by it; the bag page shows it (MEH-3586).
+            "avg_rating": producer.avg_rating or None,
         },
         "typical_items": list(typical[0] or []),
         "allergens": typical[1],
@@ -260,10 +262,9 @@ def offer_detail(
     exact = location.location_precision == "exact"
     out["lat"] = location.lat if exact else None
     out["lng"] = location.lng if exact else None
-    out["producer"]["avg_rating"] = producer.avg_rating or None
-    out["producer"]["reviews_count"] = producer.reviews_count or 0
     # MEH-3593: the point's own; withheld with the pin on an approximate point.
     out["pickup_note"] = location.pickup_note if exact else None
+    out["producer"]["reviews_count"] = producer.reviews_count or 0
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None
