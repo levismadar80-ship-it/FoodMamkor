@@ -11,6 +11,7 @@ import HubAlertHint from "@/components/HubAlertHint";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { bagDay, fetchOffers } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 
 /**
  * Module:   RescueList
@@ -25,6 +26,7 @@ import { bagDay, fetchOffers } from "@/lib/rescue";
  *           MEH-3702 (tomorrow's bags under «מחר», after today's)
  */
 export default function RescueList({ initialCity = "", limit = null, heading = null }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // MEH-3013: the city field reads exactly as it does on the other hub tabs.
   const tHub = useTranslations("events.list");
@@ -65,8 +67,8 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
   const shown = limit && offers ? offers.slice(0, limit) : offers;
   // MEH-3702: today's bags, then tomorrow's. The day headings appear only once
   // a tomorrow bag is listed, so a list of today's bags looks as it did.
-  const today = (shown || []).filter((o) => bagDay(o.date) === "today");
-  const tomorrow = (shown || []).filter((o) => bagDay(o.date) === "tomorrow");
+  const today = (shown || []).filter((o) => bagDay(o.date, day) === "today");
+  const tomorrow = (shown || []).filter((o) => bagDay(o.date, day) === "tomorrow");
   const groups = tomorrow.length
     ? [
         { key: "today", rows: today },

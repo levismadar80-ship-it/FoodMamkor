@@ -9,6 +9,11 @@ import { test, expect } from "./_cloudinary-stub";
  * Root cause: GoogleAuthButton and ProducerOAuthButtons each called
  * google.accounts.id.initialize() independently. Fixed by useGoogleSignIn hook.
  *
+ * MEH-3690: both now draw our own button with a code client of its own, and
+ * nothing calls initialize() at all. The checks below still hold (no producer
+ * call, no double-init warning, a live button after navigation); the hook
+ * they name is deleted.
+ *
  * ── MEH-1778 — this file used to pass on an empty universe ──────────────────
  *
  * MEH-1776 Phase 0 found the GSI assertions here were green for two reasons
@@ -41,7 +46,7 @@ import { test, expect } from "./_cloudinary-stub";
 const DOUBLE_INIT = /initialize\(\).*multiple times|multiple times.*initialize/i;
 
 /** True when the GSI script actually loaded — i.e. a client id was present at
- *  build time and useGoogleSignIn got past its guard. Skipping on this is the
+ *  build time and our Google button loaded it. Skipping on this is the
  *  whole point: without it, every assertion below is vacuous. */
 async function gsiLoaded(page: import("@playwright/test").Page) {
   return page.evaluate(() =>
@@ -71,19 +76,20 @@ const SKIP_REASON =
  * container, because GSI's rendered markup is Google's and can drift.
  *
  * Deliberately NOT mocked. e2e/CLAUDE.md forbids mocks in flow specs
- * (MEH-417); this reads the real GSI-rendered DOM. Proving that a CLICK
- * reaches the right callback cannot be done against real Google in CI — that
- * half lives in __tests__/use-google-sign-in.test.jsx, where stubbing the
- * third-party SDK is legitimate.
+ * (MEH-417); this reads the real DOM of our own Google button (MEH-3690).
+ * Proving that a CLICK reaches the right callback cannot be done against real
+ * Google in CI — that half lives in __tests__/GoogleCodeSignIn.test.jsx, where
+ * stubbing the third-party SDK is legitimate.
  */
 async function gsiButtonState(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
-    // GSI renders into whatever element renderButton() was handed. Rather than
-    // guess Google's class names — which are obfuscated and version-dependent —
-    // look for the artifacts it is documented to produce, then measure the box.
+    // Find our Google button and measure its box: a button that is in the
+    // DOM but drawn at zero size is not a live button.
     const candidates = Array.from(
       document.querySelectorAll<HTMLElement>(
-        'iframe[src*="accounts.google.com"], div[role="button"], [aria-labelledby]',
+        // MEH-3690: /login and /register draw our own Google button, the
+        // only Google button left; anything wider would count other buttons.
+        '[data-testid="google-auth-button"]',
       ),
     );
     const live = candidates.filter((el) => {

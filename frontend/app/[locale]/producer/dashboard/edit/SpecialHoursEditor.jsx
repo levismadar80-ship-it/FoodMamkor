@@ -9,7 +9,8 @@
  *           anything on their own (Sapir's ruling ב). Opt-in: a business that
  *           never touches it stores NULL and its public page shows nothing.
  * Does NOT: edit the weekly window (OrderWindowEditor.jsx) or store hours
- *           (LocationsEditor) — the override is order-axis only (ruling א).
+ *           (HoursCard / LocationHoursField) — the override is order-axis only (ruling א).
+ *           Mounted as a section of the «שעות» card (HoursCard.jsx, MEH-3790).
  *           It does not derive "open now"; the public page owns that
  *           (lib/order-window-status.js). Past dates are not editable here: they are
  *           dropped on load and therefore on the next save (ruling ג).

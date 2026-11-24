@@ -196,7 +196,6 @@ frontend/app/[locale]/map/state/useMapFilters.js	react-hooks/set-state-in-effect
 frontend/app/[locale]/map/state/useMapSync.js	sonarjs/no-unused-vars	2
 frontend/app/[locale]/map/state/useProducersFeed.js	react-hooks/exhaustive-deps	1
 frontend/app/[locale]/messages/page.js	design-system/no-html-heading	2
-frontend/app/[locale]/my-group-buys/MyGroupBuysClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/my-orders/MyOrdersClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/order/[id]/OrderStatusClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/organizers/[slug]/page.js	design-system/no-html-heading	1
@@ -232,6 +231,8 @@ frontend/app/[locale]/producer/dashboard/ChangesRequestedBanner.jsx	design-syste
 frontend/app/[locale]/producer/dashboard/DashboardLayoutClient.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	eqeqeq	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-button	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx	design-system/no-html-button	3
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx	design-system/no-html-button	7
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx	design-system/no-html-select	2
@@ -305,7 +306,7 @@ frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-b
 frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/share/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-button	1
-frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	4
+frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	5
 frontend/app/[locale]/producer/dashboard/tools/page.js	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	jsx-a11y/no-redundant-roles	1
@@ -735,7 +736,6 @@ frontend/lib/use-admin-action.js	react-hooks/exhaustive-deps	1
 frontend/lib/use-events-nav-gate.js	react-hooks/set-state-in-effect	1
 frontend/lib/use-experiences-nav-gate.js	react-hooks/set-state-in-effect	1
 frontend/lib/use-favorite-producers.js	react-hooks/set-state-in-effect	1
-frontend/lib/use-google-sign-in.js	react-hooks/refs	1
 frontend/lib/use-home-page.js	react-hooks/exhaustive-deps	1
 frontend/lib/use-rescue-reservation.js	react-hooks/refs	1
 frontend/lib/use-user-city.js	react-hooks/set-state-in-effect	1

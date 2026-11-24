@@ -48,7 +48,7 @@ JOINS_CLOSED = "בית העסק עצר את ההצטרפות לקבוצה הזא
 FULL = "קבוצת הרכישה מלאה"
 LAST_CALL_REFUSED = "ב-24 השעות האחרונות אי אפשר לבטל אם הקבוצה תרד מתחת ליעד"
 # MEH-3691: copy approved word for word by Sapir, 22/11.
-OWN_GROUP = "אי אפשר להצטרף לקבוצת הרכישה של בית העסק שלך"
+OWN_GROUP = "אי אפשר להצטרף לקבוצת הרכישה של בית עסק בבעלות החשבון הזה"
 
 
 def refuse_own_group(gb: GroupBuy, user: User) -> None:

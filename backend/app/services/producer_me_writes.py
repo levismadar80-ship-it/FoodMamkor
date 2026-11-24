@@ -421,7 +421,7 @@ def _resolve_top_product(
         # for other producers' product ids.
         raise HTTPException(
             status_code=422,
-            detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
+            detail="המוצר המוביל חייב להיות מוצר קיים של העסק",
         )
     payload["top_product_name"] = product.name
 
