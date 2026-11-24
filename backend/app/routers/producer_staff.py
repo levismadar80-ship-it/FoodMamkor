@@ -226,7 +226,12 @@ def remove_staff(
     )
     if row is None:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
-    _revoke(row)
+    if row.status == "pending":
+        # A withdrawn invite leaves nothing behind: kept as `revoked`, an
+        # invite-then-withdraw loop would add rows without bound (MEH-3022).
+        db.delete(row)
+    else:
+        _revoke(row)
     db.commit()
     logger.info("producer_staff.removed", producer_id=str(producer_id))
     return Response(status_code=204)

@@ -13,6 +13,9 @@ from app.models.models import User
 from app.models.producer_staff import ProducerStaff
 from app.routers import producer_staff as staff_module
 from app.services import order_access
+from app.services.staff_membership import end_staff_membership
+from app.slug_utils import is_reserved
+from app.utils.pii import redact_url_tokens
 from app.utils.clock import utc_now
 from tests._test_meh3263_order_route__common import Shop, flag_on, stored_order  # noqa: F401
 from tests.conftest import auth_header, make_user
@@ -62,14 +65,25 @@ def test_the_invite_answer_is_the_same_with_and_without_an_account(
     make_user(db, email="has-account@example.com")
     with_account = _invite(client, shop, "has-account@example.com").json()
     without = _invite(client, shop, "no-account@example.com").json()
-    strip = lambda body: {k: v for k, v in body.items() if k not in ("id", "email", "created_at")}  # noqa: E731
-    assert strip(with_account) == strip(without) == {
-        "status": "pending",
-        "expired": False,
-        "accepted_at": None,
-    }
-    assert [m[0] for m in mails] == ["has-account@example.com", "no-account@example.com"]
-    assert all(link.startswith("http") and "/staff-invite/" in link for _, _, link in mails)
+    strip = lambda body: {
+        k: v for k, v in body.items() if k not in ("id", "email", "created_at")
+    }  # noqa: E731
+    assert (
+        strip(with_account)
+        == strip(without)
+        == {
+            "status": "pending",
+            "expired": False,
+            "accepted_at": None,
+        }
+    )
+    assert [m[0] for m in mails] == [
+        "has-account@example.com",
+        "no-account@example.com",
+    ]
+    assert all(
+        link.startswith("http") and "/staff-invite/" in link for _, _, link in mails
+    )
 
 
 def test_the_token_is_stored_only_as_a_hash(client, db, flag_on, mails):
@@ -95,9 +109,9 @@ def test_a_lapsed_invite_stops_counting(client, db, flag_on, mails):
     for n in range(5):
         _invite(client, shop, f"p{n}@example.com")
     past = datetime.now(timezone.utc) - timedelta(minutes=1)
-    db.query(ProducerStaff).filter(ProducerStaff.invited_email == "p0@example.com").update(
-        {"expires_at": past}
-    )
+    db.query(ProducerStaff).filter(
+        ProducerStaff.invited_email == "p0@example.com"
+    ).update({"expires_at": past})
     db.commit()
     assert _invite(client, shop, "p5@example.com").status_code == 200
 
@@ -111,7 +125,9 @@ def test_sending_again_replaces_the_link(client, db, flag_on, mails):
     assert db.query(ProducerStaff).count() == 1
     old = client.post(ACCEPT, json={"token": first}, headers=auth_header(person))
     assert old.status_code == 404
-    new = client.post(ACCEPT, json={"token": _token(mails)}, headers=auth_header(person))
+    new = client.post(
+        ACCEPT, json={"token": _token(mails)}, headers=auth_header(person)
+    )
     assert new.status_code == 200
 
 
@@ -132,13 +148,17 @@ def test_accept_makes_the_person_staff_and_me_says_so(client, db, flag_on, mails
     db.refresh(person)
     assert person.producer_id is None and person.role == "consumer"
     row = db.query(ProducerStaff).one()
-    assert row.status == "active" and row.token_hash is None and row.user_id == person.id
+    assert (
+        row.status == "active" and row.token_hash is None and row.user_id == person.id
+    )
 
 
 def test_a_used_link_cannot_be_used_again(client, db, flag_on, mails):
     shop = Shop(db)
     person = _staff(client, db, shop, mails)
-    again = client.post(ACCEPT, json={"token": _token(mails)}, headers=auth_header(person))
+    again = client.post(
+        ACCEPT, json={"token": _token(mails)}, headers=auth_header(person)
+    )
     assert again.status_code == 404
 
 
@@ -159,7 +179,9 @@ def test_another_address_cannot_accept(client, db, flag_on, mails):
     shop = Shop(db)
     _invite(client, shop, "invited@example.com")
     stranger = make_user(db, email="stranger@example.com")
-    r = client.post(ACCEPT, json={"token": _token(mails)}, headers=auth_header(stranger))
+    r = client.post(
+        ACCEPT, json={"token": _token(mails)}, headers=auth_header(stranger)
+    )
     assert r.status_code == 403
     assert db.query(ProducerStaff).one().status == "pending"
 
@@ -199,7 +221,9 @@ def test_a_business_with_no_owner_cannot_be_joined(client, db, flag_on, mails):
     assert r.status_code == 409
 
 
-def test_of_two_accepts_on_one_link_exactly_one_wins(client, db, flag_on, mails, monkeypatch):
+def test_of_two_accepts_on_one_link_exactly_one_wins(
+    client, db, flag_on, mails, monkeypatch
+):
     """The second request read the invite while it was still pending (the
     state is injected: its pre-checks see the row as it was before the first
     commit). Only the conditional UPDATE can refuse it, and it must."""
@@ -254,6 +278,9 @@ def test_staff_of_a_cannot_touch_an_order_of_b(client, db, flag_on, mails):
         ("get", "/producers/me/order-settings"),
         ("get", "/producers/me/order-windows"),
         ("get", "/producers/me"),
+        ("get", f"{ORDERS}/customers"),
+        ("get", "/producers/me/products/ordering"),
+        ("get", "/producers/me/order-menu/preview"),
         ("get", INVITES),
         ("post", INVITES),
     ],
@@ -279,6 +306,55 @@ def test_a_removed_member_is_refused_on_the_next_request(client, db, flag_on, ma
     assert client.get("/auth/me", headers=h).json()["staff_of"] is None
 
 
+def test_withdrawing_a_pending_invite_leaves_no_row(client, db, flag_on, mails):
+    """MEH-3022: kept as `revoked`, invite-then-withdraw would grow rows forever."""
+    shop = Shop(db)
+    assert _invite(client, shop, "later@example.com").status_code == 200
+    row_id = db.query(ProducerStaff.id).scalar()
+    assert client.delete(f"{INVITES}/{row_id}", headers=shop.headers).status_code == 204
+    db.expire_all()
+    assert db.query(ProducerStaff).count() == 0
+    r = client.post(
+        ACCEPT,
+        json={"token": _token(mails)},
+        headers=auth_header(make_user(db, email="later@example.com")),
+    )
+    assert r.status_code == 404
+
+
+def test_removing_an_active_member_keeps_the_row_as_revoked(client, db, flag_on, mails):
+    shop = Shop(db)
+    _staff(client, db, shop, mails)
+    row_id = db.query(ProducerStaff.id).scalar()
+    assert client.delete(f"{INVITES}/{row_id}", headers=shop.headers).status_code == 204
+    db.expire_all()
+    row = db.query(ProducerStaff).one()
+    assert row.status == "revoked" and row.revoked_at is not None
+
+
+def test_staff_who_becomes_an_owner_leaves_the_team(client, db, flag_on, mails):
+    """The three owner-promotion routes call this; the row stops holding a seat."""
+    shop = Shop(db)
+    person = _staff(client, db, shop, mails)
+    assert end_staff_membership(db, person.id) == 1
+    db.commit()
+    db.expire_all()
+    assert db.query(ProducerStaff).one().status == "revoked"
+    assert client.get(ORDERS, headers=auth_header(person)).status_code == 403
+    assert client.get(INVITES, headers=shop.headers).json()["staff"] == []
+    assert end_staff_membership(db, person.id) == 0
+
+
+def test_the_invite_link_is_scrubbed_from_reported_urls():
+    token = "A" * 43
+    out = redact_url_tokens(f"https://mehamakor.co.il/he/staff-invite/{token}?x=1")
+    assert token not in out and "/staff-invite/[token]" in out
+
+
+def test_staff_invite_cannot_be_a_business_slug():
+    assert is_reserved("staff-invite")
+
+
 def test_a_member_who_leaves_is_refused(client, db, flag_on, mails):
     shop = Shop(db)
     person = _staff(client, db, shop, mails)
@@ -293,7 +369,10 @@ def test_staff_cannot_invite_or_remove(client, db, flag_on, mails):
     person = _staff(client, db, shop, mails)
     row_id = db.query(ProducerStaff.id).scalar()
     h = auth_header(person)
-    assert client.post(INVITES, json={"email": "y@example.com"}, headers=h).status_code == 403
+    assert (
+        client.post(INVITES, json={"email": "y@example.com"}, headers=h).status_code
+        == 403
+    )
     assert client.delete(f"{INVITES}/{row_id}", headers=h).status_code == 403
     assert db.query(ProducerStaff).one().status == "active"
 
@@ -306,7 +385,9 @@ def test_an_owner_cannot_remove_another_business_staff(client, db, flag_on, mail
     assert db.query(ProducerStaff).one().status == "active"
 
 
-def test_staff_loses_access_when_the_business_loses_its_owner(client, db, flag_on, mails):
+def test_staff_loses_access_when_the_business_loses_its_owner(
+    client, db, flag_on, mails
+):
     shop = Shop(db)
     person = _staff(client, db, shop, mails)
     shop.owner.producer_id = None
@@ -320,9 +401,14 @@ def test_staff_sees_closed_orders_for_seven_days_only(client, db, flag_on, mails
     recent = stored_order(db, shop, status="handed", closed_at=now - timedelta(days=6))
     old = stored_order(db, shop, status="handed", closed_at=now - timedelta(days=8))
     person = _staff(client, db, shop, mails)
-    seen = {o["id"] for o in client.get(ORDERS, headers=auth_header(person)).json()["orders"]}
+    seen = {
+        o["id"]
+        for o in client.get(ORDERS, headers=auth_header(person)).json()["orders"]
+    }
     assert seen == {str(recent.id)}
-    owner_seen = {o["id"] for o in client.get(ORDERS, headers=shop.headers).json()["orders"]}
+    owner_seen = {
+        o["id"] for o in client.get(ORDERS, headers=shop.headers).json()["orders"]
+    }
     assert owner_seen == {str(recent.id), str(old.id)}
     r = client.post(f"{ORDERS}/{old.id}/no-show", headers=auth_header(person))
     assert r.status_code == 404
@@ -335,10 +421,15 @@ def test_the_window_edge_is_seven_days(client, db, flag_on, mails, monkeypatch):
     monkeypatch.setattr(order_access, "utc_now", lambda: now)
     shop = Shop(db)
     edge = timedelta(days=7)
-    inside = stored_order(db, shop, status="handed", closed_at=now - edge + timedelta(minutes=1))
+    inside = stored_order(
+        db, shop, status="handed", closed_at=now - edge + timedelta(minutes=1)
+    )
     stored_order(db, shop, status="handed", closed_at=now - edge - timedelta(minutes=1))
     person = _staff(client, db, shop, mails)
-    seen = {o["id"] for o in client.get(ORDERS, headers=auth_header(person)).json()["orders"]}
+    seen = {
+        o["id"]
+        for o in client.get(ORDERS, headers=auth_header(person)).json()["orders"]
+    }
     assert seen == {str(inside.id)}
 
 

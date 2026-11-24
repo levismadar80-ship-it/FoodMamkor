@@ -251,6 +251,7 @@ files = [
     "app/models/producer_staff.py",
     "app/schemas/producer_staff.py",
     "app/services/order_access.py",
+    "app/services/staff_membership.py",
     "app/services/staff_emails.py",
     "app/routers/producer_recipes.py",
     "app/routers/producers.py",

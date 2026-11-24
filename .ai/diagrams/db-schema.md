@@ -204,6 +204,21 @@ erDiagram
         timestamp created_at
     }
 
+    producer_staff {
+        uuid id PK
+        uuid producer_id FK "CASCADE; the business (MEH-3526)"
+        uuid user_id FK "nullable, CASCADE; set on accept. UNIQUE WHERE status='active'"
+        string invited_email "UNIQUE (producer_id, lower) among live rows"
+        string role "orders (CHECK)"
+        string token_hash "nullable; sha256 of the invite token, NULL after accept/revoke"
+        timestamp expires_at "invite + 7 days"
+        uuid invited_by FK "nullable, SET NULL"
+        string status "pending | active | revoked (CHECK); a withdrawn invite is deleted"
+        timestamp created_at
+        timestamp accepted_at "nullable"
+        timestamp revoked_at "nullable"
+    }
+
     product_orders {
         uuid id PK
         uuid producer_id FK
@@ -737,6 +752,8 @@ erDiagram
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
     producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
+    producers ||--o{ producer_staff : "order staff, max 5 live (MEH-3526)"
+    users |o--o{ producer_staff : "the staff member, once accepted"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
