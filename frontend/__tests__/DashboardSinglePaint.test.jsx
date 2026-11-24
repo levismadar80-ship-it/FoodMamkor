@@ -90,13 +90,39 @@ describe("owner dashboard home paints once (MEH-3817)", () => {
 
   it("a failed read counts as answered: its error card is in the first paint", async () => {
     render(<ProducerDashboardPage />);
-    await answer("/producers/me/analytics", new Error("network"));
-    await answer("/producers/me", PROFILE);
-    await answer("/producers/me/order-settings", new Error("network"));
-    expect(screen.queryByTestId("producer-overview")).toBeNull();
+    // The dashboard read alone was enough for the old page to paint.
     await answer("/producers/me/dashboard", DASHBOARD);
+    await answer("/producers/me/analytics", new Error("network"));
+    expect(screen.queryByTestId("producer-overview")).toBeNull();
+    await answer("/producers/me", PROFILE);
+    expect(screen.queryByTestId("producer-overview")).toBeNull();
+    await answer("/producers/me/order-settings", new Error("network"));
     expect(screen.getByTestId("producer-overview")).toBeTruthy();
     expect(screen.getByTestId("dashboard-analytics-error")).toBeTruthy();
+  });
+
+  it("retrying a failed profile keeps the page up (no trip back to the loading line)", async () => {
+    render(<ProducerDashboardPage />);
+    await answer("/producers/me/dashboard", DASHBOARD);
+    await answer("/producers/me", new Error("network"));
+    await answer("/producers/me/analytics", {});
+    await answer("/producers/me/order-settings", new Error("network"));
+    // Records every node React adds from here on, so a loading line that is
+    // up for a single render (and replaced by the next) is still seen.
+    const added = [];
+    const watch = new MutationObserver((records) => records.forEach((r) => added.push(...r.addedNodes)));
+    watch.observe(document.body, { childList: true, subtree: true, characterData: true });
+    const retry = screen.getByTestId("dashboard-profile-error").querySelector("button");
+    await act(async () => {
+      fireEvent.click(retry);
+    });
+    // The profile brings created_at, which makes the welcome decision run
+    // again; for one render it is not ready. The page must ride through it.
+    await answer("/producers/me", { ...PROFILE, created_at: new Date().toISOString() });
+    added.push(...watch.takeRecords().flatMap((r) => [...r.addedNodes]));
+    watch.disconnect();
+    expect(screen.getByTestId("producer-overview")).toBeTruthy();
+    expect(added.filter((n) => n.textContent?.includes("loading_data"))).toEqual([]);
   });
 
   it("retrying a failed section keeps the page up instead of going back to the loading line", async () => {

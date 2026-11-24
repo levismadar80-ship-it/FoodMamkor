@@ -111,6 +111,10 @@ export default function ProducerDashboardPage() {
   const [profileError, setProfileError] = useState(false);
   const [profileAttempt, setProfileAttempt] = useState(0);
   // MEH-3817: whether each read has answered at least once (see firstPaintReady).
+  // MEH-3817: latched once the page has painted, so a later dip in
+  // firstPaintReady (a retried profile resets welcome.ready for a render)
+  // never sends the page back to the loading line.
+  const [paintedOnce, setPaintedOnce] = useState(false);
   const [analyticsAnswered, setAnalyticsAnswered] = useState(false);
   const [profileAnswered, setProfileAnswered] = useState(false);
   // MEH-3817: the order settings decide the top slot's card (OrdersIntroCard),
@@ -289,6 +293,7 @@ export default function ProducerDashboardPage() {
   // created_at is in) opens the top slot, so it gates the paint as well:
   // without it the welcome card landed 50 ms after the paint, above every card.
   const firstPaintReady = profileAnswered && analyticsAnswered && ordersSettings !== undefined && welcome.ready;
+  if (data && firstPaintReady && !paintedOnce) setPaintedOnce(true);
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -322,7 +327,7 @@ export default function ProducerDashboardPage() {
   // four, see firstPaintReady). min-h-screen keeps what follows the page (the
   // phone's «התנתקות» row) below the screen while loading, so the page's
   // arrival does not push it down in view.
-  if (!data || !firstPaintReady) {
+  if (!data || !(firstPaintReady || paintedOnce)) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 min-h-screen text-center text-fg-muted">
         {t("loading_data")}
