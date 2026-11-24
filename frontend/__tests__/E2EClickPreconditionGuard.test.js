@@ -71,6 +71,30 @@ function tapMarkerBody(src) {
 }
 const MARKER_CLICK = /markerOf\([^;]*?\.click\(/gs;
 
+// MEH-3685: on /producer/dashboard/edit a save click goes through
+// clickSaveAfterEdit (e2e/flows/_save-after-edit.ts), which waits for the
+// unsaved banner's render. A bare `save(page).click()` / `saveBtn(...).click()`
+// can lose its click to that render.
+// Three ways a spec names a save button: a `save(…)`/`saveBtn(…)` locator, a
+// role name «שמרו…»/«שמירה…», or a testid ending `-save`. BLIND SPOT, stated so
+// the scan is not read as stronger than it is: a save locator stored in a
+// variable first (`const s = saveBtn(page); await s.click()`) passes unseen.
+const SAVE_CLICK = /(?:\bsave(?:Btn)?\(|name:\s*\/?\^?\(?["']?(?:שמרו|שמירה)|-save["'])[^;]*?\.click\(/s;
+const EDIT_PAGE = /producer\/dashboard\/edit/;
+// Cards that do not report dirty to the page: no banner, nothing to wait for.
+const SAVE_EXEMPT = {
+  "dashboard-locations.spec.ts": "LocationsEditor.jsx never calls reportDirty — no unsaved banner mounts",
+  "dashboard-products.spec.ts": "the product form («שמרו שינויים») is not a reportDirty card — no unsaved banner mounts",
+};
+
+function saveClickOffenders(file, src) {
+  if (!EDIT_PAGE.test(src) || SAVE_EXEMPT[path.basename(file)]) return [];
+  return code(src)
+    .split(";")
+    .filter((stmt) => SAVE_CLICK.test(`${stmt};`))
+    .map((stmt) => `${path.relative(ROOT, file)}: ${stmt.trim().slice(0, 140)}`);
+}
+
 describe("E2E click preconditions (MEH-3486 · MEH-3488)", () => {
   it("self-test: the city pattern sees the old forms, passes the new, and survives a glob string", () => {
     const f = "x.spec.ts";
@@ -95,6 +119,30 @@ describe("E2E click preconditions (MEH-3486 · MEH-3488)", () => {
     const users = all.filter((f) => /pickCity\(/.test(fs.readFileSync(f, "utf8")));
     expect(users.length, "control: pickCity has no callers — the scan is looking in the wrong place").toBeGreaterThanOrEqual(6); // MEH-3656: 8 → 7, manual/register-producer lost its CATEGORY walk with the story step. MEH-3719: 7 → 6, admin-producer-form-licence lost its /register/producer block with the licence field
     expect(offenders, "use pickCity() from e2e/flows/_pick-city.ts").toEqual([]);
+  });
+
+  it("self-test: the save pattern sees both locator names, passes the helper, and skips other pages", () => {
+    const f = "x.spec.ts";
+    const onEdit = (s) => `await page.goto("/producer/dashboard/edit#delivery");\n${s}`;
+    expect(saveClickOffenders(f, onEdit(`await saveBtn(page).click();`))).toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await saveBtn(page, "license").click();`))).toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await save(page).click();`))).toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();`)), "a save found by its Hebrew name").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await body(page).getByRole("button", { name: /^(שמירה|בשמירה…)$/ }).click();`)), "a regex name").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await page.getByTestId("offer-save").click();`)), "a -save testid").toHaveLength(1);
+    expect(saveClickOffenders(f, onEdit(`await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));`))).toHaveLength(0);
+    expect(saveClickOffenders(f, onEdit(`await clickSaveAfterEdit(page, saveBtn(page));`))).toHaveLength(0);
+    expect(saveClickOffenders(f, onEdit(`await expect(saveBtn(page)).toBeDisabled();`))).toHaveLength(0);
+    expect(saveClickOffenders(f, `await page.goto("/admin");\nawait saveBtn(page).click();`), "another page has no banner").toHaveLength(0);
+    expect(saveClickOffenders("manual/dashboard-locations.spec.ts", onEdit(`await saveBtn(page).click();`)), "exempt file").toHaveLength(0);
+  });
+
+  it("an edit-page save is clicked only through clickSaveAfterEdit (MEH-3685)", () => {
+    const all = specs(FLOWS).filter((f) => !f.endsWith("_save-after-edit.ts"));
+    const users = all.filter((f) => /clickSaveAfterEdit\(/.test(fs.readFileSync(f, "utf8")));
+    expect(users.length, "control: clickSaveAfterEdit has no callers — the scan is looking in the wrong place").toBeGreaterThanOrEqual(4);
+    const offenders = all.flatMap((f) => saveClickOffenders(f, fs.readFileSync(f, "utf8")));
+    expect(offenders, "use clickSaveAfterEdit() from e2e/flows/_save-after-edit.ts").toEqual([]);
   });
 
   it("the map specs click a marker only inside tapMarker", () => {
