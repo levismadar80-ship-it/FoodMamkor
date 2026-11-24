@@ -51,7 +51,7 @@ class EmailEvent(Base):
     # unique constraint is what makes a retry a no-op.
     svix_id = Column(String(64), nullable=False, unique=True)
     event_type = Column(String(40), nullable=False)
-    # The `kind` tag send_email put on the email ("order_new", ...), or
+    # The `kind` tag send_email put on the email ("order_new_order", ...), or
     # "other" for an untagged one.
     kind = Column(String(40), nullable=False, default="other")
     user_id = Column(
@@ -59,7 +59,7 @@ class EmailEvent(Base):
     )
     recipient_domain = Column(String(255), nullable=True)
     resend_email_id = Column(String(64), nullable=True)
-    # Bounce "type/subType" or the suppression/failure type — short, no text
+    # Bounce "type/subType" or the suppression type — short, no text
     # from the receiving server (it can quote the address).
     detail = Column(String(80), nullable=True)
     created_at = Column(DateTime, nullable=False, default=utc_now)

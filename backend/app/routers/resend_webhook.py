@@ -27,7 +27,7 @@ import resend
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -35,7 +35,7 @@ from app.database import get_db
 from app.models.email_events import EMAIL_EVENT_TYPES, EmailEvent
 from app.models.models import User
 from app.rate_limit import limiter
-from app.services.email import DEFAULT_KIND, _KIND_RE
+from app.services.email import DEFAULT_KIND, KIND_RE
 
 logger = logging.getLogger(__name__)
 
@@ -46,26 +46,61 @@ router = APIRouter(prefix="/webhook", tags=["webhook"])
 _MAX_BODY_BYTES = 64 * 1024
 
 
-def _verify(body: str, request: Request) -> dict[str, Any]:
+def _verify(raw: bytes, request: Request) -> dict[str, Any]:
     """The parsed payload, or 401. The SDK checks the timestamp window
-    (5 minutes) and every `v1,` signature in constant time."""
+    (5 minutes) and every `v1,` signature in constant time. A signed body
+    that is not a JSON object comes back as {} (acknowledged, not stored)."""
     try:
-        return dict(
-            resend.Webhooks.verify(
-                {
-                    "payload": body,
-                    "headers": {
-                        "id": request.headers.get("svix-id", ""),
-                        "timestamp": request.headers.get("svix-timestamp", ""),
-                        "signature": request.headers.get("svix-signature", ""),
-                    },
-                    "webhook_secret": settings.resend_webhook_secret,
-                }
-            )
+        body = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        logger.warning("[RESEND-WEBHOOK] rejected: body is not UTF-8")
+        raise HTTPException(status_code=401, detail="החתימה לא תקינה") from exc
+    try:
+        payload = resend.Webhooks.verify(
+            {
+                "payload": body,
+                "headers": {
+                    "id": request.headers.get("svix-id", ""),
+                    "timestamp": request.headers.get("svix-timestamp", ""),
+                    "signature": request.headers.get("svix-signature", ""),
+                },
+                "webhook_secret": settings.resend_webhook_secret,
+            }
         )
     except ValueError as exc:
         logger.warning("[RESEND-WEBHOOK] rejected: %s", str(exc)[:120])
         raise HTTPException(status_code=401, detail="החתימה לא תקינה") from exc
+    return dict(payload) if isinstance(payload, dict) else {}
+
+
+def _obj(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _kind(tags: Any) -> str:
+    """The `kind` tag. Resend reports tags as {name: value}; accept the
+    [{name, value}] form we send too, in case the event echoes it."""
+    if isinstance(tags, dict):
+        value = tags.get("kind")
+    elif isinstance(tags, list):
+        value = next(
+            (_obj(t).get("value") for t in tags if _obj(t).get("name") == "kind"),
+            None,
+        )
+    else:
+        value = None
+    kind = value if isinstance(value, str) else ""
+    return kind if KIND_RE.fullmatch(kind) else DEFAULT_KIND
+
+
+def _address(data: dict[str, Any]) -> str:
+    """The first recipient, bare: "Name <a@b.co.il>" → "a@b.co.il"."""
+    recipients = data.get("to")
+    first = recipients[0] if isinstance(recipients, list) and recipients else ""
+    address = str(first).strip()
+    if "<" in address and address.endswith(">"):
+        address = address[address.rindex("<") + 1 : -1].strip()
+    return address
 
 
 def _domain(address: str) -> str | None:
@@ -74,36 +109,37 @@ def _domain(address: str) -> str | None:
 
 
 def _detail(event_type: str, data: dict[str, Any]) -> str | None:
-    """Bounce «type/subType», or a suppression / failure type. Never the
-    receiving server's message, which can quote the address."""
+    """Bounce «type/subType», or the suppression type. Never the receiving
+    server's message, which can quote the address."""
     if event_type == "email.bounced":
-        bounce = data.get("bounce") or {}
+        bounce = _obj(data.get("bounce"))
         parts = [str(bounce.get("type") or ""), str(bounce.get("subType") or "")]
         return "/".join(p for p in parts if p)[:80] or None
     if event_type == "email.suppressed":
-        return str((data.get("suppressed") or {}).get("type") or "")[:80] or None
+        return str(_obj(data.get("suppressed")).get("type") or "")[:80] or None
     return None
 
 
-def _row(svix_id: str, payload: dict[str, Any], db: Session) -> EmailEvent:
-    data = payload.get("data") or {}
-    recipients = data.get("to") or []
-    address = str(recipients[0]).strip() if recipients else ""
-    kind = str((data.get("tags") or {}).get("kind") or "")
+def _fields(svix_id: str, payload: dict[str, Any], db: Session) -> dict[str, Any]:
+    data = _obj(payload.get("data"))
+    address = _address(data)
     user_id = None
     if address:
-        user_id = (
-            db.query(User.id).filter(func.lower(User.email) == address.lower()).scalar()
+        # .first(), not .scalar(): users.email is unique case-sensitively, so
+        # two accounts can differ only in case (MEH-3839 review).
+        match = (
+            db.query(User.id).filter(func.lower(User.email) == address.lower()).first()
         )
-    return EmailEvent(
-        svix_id=svix_id[:64],
-        event_type=payload["type"],
-        kind=kind if _KIND_RE.fullmatch(kind) else DEFAULT_KIND,
-        user_id=user_id,
-        recipient_domain=_domain(address),
-        resend_email_id=str(data.get("email_id") or "")[:64] or None,
-        detail=_detail(payload["type"], data),
-    )
+        user_id = match[0] if match else None
+    return {
+        "svix_id": svix_id[:64],
+        "event_type": payload["type"],
+        "kind": _kind(data.get("tags")),
+        "user_id": user_id,
+        "recipient_domain": _domain(address),
+        "resend_email_id": str(data.get("email_id") or "")[:64] or None,
+        "detail": _detail(payload["type"], data),
+    }
 
 
 @router.post("/resend")
@@ -123,14 +159,20 @@ async def resend_events(request: Request, db: Session = Depends(get_db)) -> Resp
     if len(raw) > _MAX_BODY_BYTES:
         raise HTTPException(status_code=413, detail="הבקשה גדולה מדי")
 
-    payload = _verify(raw.decode("utf-8", "replace"), request)
+    payload = _verify(raw, request)
     if payload.get("type") not in EMAIL_EVENT_TYPES:
         return Response(status_code=200)
 
-    db.add(_row(request.headers.get("svix-id", ""), payload, db))
-    try:
-        db.commit()
-    except IntegrityError:
-        # The same delivery again (Svix retries with the same id).
-        db.rollback()
+    # DO NOT log the payload or the exception text here — both can hold the
+    # recipient's address (MEH-3839).
+    fields = _fields(request.headers.get("svix-id", ""), payload, db)
+    # The same delivery again (Svix retries with the same id) inserts nothing.
+    # Only that conflict is skipped: any other database error is a 500, so
+    # Svix retries and the event is not lost.
+    db.execute(
+        pg_insert(EmailEvent)
+        .values(**fields)
+        .on_conflict_do_nothing(index_elements=["svix_id"])
+    )
+    db.commit()
     return Response(status_code=200)

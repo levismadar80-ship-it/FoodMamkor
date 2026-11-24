@@ -54,11 +54,11 @@ _SENTRY_TASK = "email_send"
 # counted per kind of email. Resend accepts ASCII letters, digits, `_` and `-`;
 # anything else would make the send fail, so it goes out as "other" instead.
 DEFAULT_KIND = "other"
-_KIND_RE = re.compile(r"^[a-z0-9_-]{1,40}$")
+KIND_RE = re.compile(r"^[a-z0-9_-]{1,40}$")
 
 
 def _kind_tag(kind: str | None) -> list[dict[str, str]]:
-    value = kind if kind and _KIND_RE.fullmatch(kind) else DEFAULT_KIND
+    value = kind if kind and KIND_RE.fullmatch(kind) else DEFAULT_KIND
     return [{"name": "kind", "value": value}]
 
 

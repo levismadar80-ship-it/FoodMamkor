@@ -46,7 +46,7 @@ def _event(event_type="email.bounced", to="owner@farm.example.co.il", **data):
             "from": "noreply@mehamakor.co.il",
             "to": [to],
             "subject": "הזמנה חדשה מחכה לאישור",
-            "tags": {"kind": "order_new"},
+            "tags": {"kind": "order_new_order"},
             **data,
         },
     }
@@ -87,7 +87,7 @@ def test_a_signed_bounce_is_stored_against_the_owner(client, db, secret):
     assert r.status_code == 200
     [row] = _rows(db)
     assert row.event_type == "email.bounced"
-    assert row.kind == "order_new"
+    assert row.kind == "order_new_order"
     assert row.user_id == owner.id  # matched case-insensitively
     assert row.recipient_domain == "farm.example.co.il"
     assert row.detail == "Permanent/General"
@@ -114,6 +114,43 @@ def test_a_replayed_old_delivery_is_refused(client, db, secret):
     r = _post(client, _event(), ts=int(time.time()) - 3600)
     assert r.status_code == 401
     assert _rows(db) == []
+
+
+def test_tags_in_the_list_form_we_send_are_read_too(client, db, secret):
+    body = _event("email.clicked", tags=[{"name": "kind", "value": "weekly_summary"}])
+    assert _post(client, body).status_code == 200
+    [row] = _rows(db)
+    assert row.kind == "weekly_summary"
+
+
+def test_a_signed_event_with_odd_shapes_is_kept_not_a_500(client, db, secret):
+    body = _event("email.bounced", tags="x", bounce="Permanent", to=None)
+    body = body.replace('"to": [null]', '"to": "nobody"')
+    assert _post(client, body).status_code == 200
+    [row] = _rows(db)
+    assert (row.kind, row.detail, row.recipient_domain) == ("other", None, None)
+
+
+def test_a_signed_body_that_is_not_an_object_is_acknowledged(client, db, secret):
+    assert _post(client, "[1, 2]").status_code == 200
+    assert _rows(db) == []
+
+
+def test_a_display_name_recipient_stores_only_the_domain(client, db, secret):
+    _post(client, _event("email.delivered", to="Dana <dana@shop.example.co.il>"))
+    [row] = _rows(db)
+    assert row.recipient_domain == "shop.example.co.il"
+
+
+def test_two_accounts_differing_only_in_case_do_not_break_the_hook(
+    client, db, secret
+):
+    make_user(db, email="twin@farm.example.co.il")
+    make_user(db, email="TWIN@farm.example.co.il")
+    r = _post(client, _event("email.delivered", to="twin@farm.example.co.il"))
+    assert r.status_code == 200
+    [row] = _rows(db)
+    assert row.user_id is not None
 
 
 def test_the_same_delivery_twice_is_stored_once(client, db, secret):
