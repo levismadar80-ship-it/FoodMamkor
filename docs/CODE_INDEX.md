@@ -65,6 +65,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/admin_whatsapp.py` | Admin-only read view of outbound WhatsApp messages that did NOT reach the recipient — 'failed' (Meta-side error) and 'window_expired' (24h customer-service … |
 | `routers/alerts.py` | MEH-54: Favorite alert preferences + push notification triggers. |
 | `routers/auth.py` | — אין כותרת — |
+| `routers/auth_google_code.py` | POST /auth/google/code — our own Google button's one server step: swap the code from Google's popup for a verified Google ID token. |
 | `routers/auth_register_producer.py` | The two routes that create a business account: POST /auth/register/producer (email and password, or an upgrade of a signed-in consumer) and POST … |
 | `routers/billing.py` | Read-only billing summaries (MEH-3181): a business sees what it got through the site this month; the admin sees who passed the results threshold. … |
 | `routers/business_suggestions.py` | Let a visitor suggest a business that is not on Mehamakor yet, and turn that suggestion into an ordinary outreach lead the team works by hand. … |
@@ -83,6 +84,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/holiday_mode.py` | — אין כותרת — |
 | `routers/marketing.py` | Marketing-facing endpoints: homepage stats, newsletter signup, contact form. |
 | `routers/menu_import.py` | The owner uploads a menu (photos or a PDF), gets product rows back to review, and publishes the rows she approved. MEH-3430. |
+| `routers/my_orders_any.py` | MEH-3698 — whether «ההזמנות שלי» has anything to show the caller: a product order, a group buy or a surprise bag. … |
 | `routers/organizers.py` | The public face of a markets / events organizer (kind='organizer', ADR-036): its page (/organizers/{slug}) and the slug list the sitemap reads. … |
 | `routers/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner (or the admin, for a business) sends free text and gets a draft of the page fields back. |
 | `routers/page_freshness.py` | POST /page-freshness/confirm — the «כן, הכול נכון» button behind the monthly email. … |
@@ -137,6 +139,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
 | `schemas/group_buys_requests.py` | Group buys, category requests and business name-change requests. |
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
+| `schemas/my_orders_any.py` | The answer of GET /users/me/orders/any (MEH-3698): whether «ההזמנות שלי» has anything to show the caller. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
 | `schemas/owner_detach.py` | Request body for the admin's «ניתוק בעלים» (MEH-3256, grill retro D9). |
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
@@ -209,6 +212,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/form_fill_windows.py` | The hand-over windows of an order-setup draft (MEH-3752): keep a window only when the text names its day and states its hours (a clock time, an hour number, … |
 | `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
+| `services/google_code_exchange.py` | Swap the one-time authorization code from our own Google button (GIS code client, popup, redirect_uri "postmessage") for a Google-signed ID token, and accept … |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
 | `services/group_buy_capacity.py` | What a group buy may still take — people, units, an open/closed switch — and who is told when a place frees (MEH-3592). |
 | `services/group_buy_delist.py` | When an admin takes a business off the site, cancel its live group buys and tell their participants (MEH-2498). |
@@ -349,6 +353,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `business-chat-prompts.js` | The suggested questions in the chat opened from a business page, built from THAT page's data (MEH-3505). … |
 | `business-chat.js` | Open the site chat for ONE business from that business's page (MEH-3489). The page has no floating chat button (MEH-1168), so a button inside the page asks … |
 | `business-features.js` | Single owner of the tools a business gets on mehamakor — what exists, which group it belongs to, and which file implements it. … |
+| `buyer-order.js` | The buyer's side of one on-site order: read it, cancel it, accept the business's proposed change, and decide which approved sentences the status page shows … |
 | `card-image-priority.js` | How a grid card's photo loads, by its position in the grid. One owner, so /producers and the category/region landing grids agree. |
 | `category-label.js` | The one place a category's shown name is chosen: the locale's 'category_names.<slug>' message when the category has a known slug, else the DB name. … |
 | `category-registry.js` | Single source of truth for every category's presentation data — the map-PIN style (colour + pin glyph + the /map legend rows) AND the line-art glyph used on … |
@@ -442,6 +447,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `menu-image.js` | Shrink a menu photo in the browser before it is sent (MEH-3430). A phone photo is 3–6 MB; … |
 | `middleware-exists.js` | Existence checks the middleware runs so a missing recipe or an unservable category × region page answers a REAL 404 instead of a streamed 200 (their … |
 | `money.js` | The one place that turns agorot (what the API stores) into shekels (what people read). Prices travel as whole agorot. |
+| `my-orders-merge.js` | MEH-3698 — turn the three buyer lists (product orders, group buys, surprise bags) into the one «ההזמנות שלי» list: one row shape, a kind per row, split into … |
+| `my-orders-nav-cache.js` | MEH-3698 — the session cache key of the «ההזמנות שלי» menu gate, and the one call that drops it after an order, a group-buy join or a bag reservation. |
 | `nav-links.js` | The one place that builds "navigate there" links (Waze + Google Maps) — from a map point, or from a text address when there is no point. … |
 | `nav-registry.js` | MEH-1703 chunk 1 — one declaration per navigation item, covering the four nav surfaces (desktop pill, desktop avatar dropdown, mobile bottom pill, mobile … |
 | `next-delivery.js` | The date of a business's next delivery to a city — «המשלוח הבא: יום שלישי 24.11» (MEH-3485) — from the city's delivery days and the business's weekly order … |
@@ -455,9 +462,9 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
 | `order-setup-draft.js` | Put a «ספרו לנו איך אתם מקבלים הזמנות» draft (MEH-3752) into the three order-setup cards: the settings numbers, the weekly hand-over windows and the products … |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
-| `order-status.js` | The buyer's side of one on-site order: read it, cancel it, accept the business's proposed change, and decide which approved sentences the status page shows … |
+| `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |
-| `order-window.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
+| `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
 | `owner-preview.js` | One rule for "an owner or admin is opening an item that may not be public yet" (MEH-2977 follow-up). … |
 | `page-fill.js` | «ספרו לנו על העסק» (MEH-3483): turn the server's draft of the page fields into preview rows, and the rows the owner kept into the writes that save them. |
 | `pagination.js` | Pagination helpers (MEH-23). Pure functions — no React, no DOM. |
@@ -481,8 +488,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer-points.js` | Derive a producer's map-able points from its own data — the single answer to "where is this business on the map?", shared by the marker layer and the /map … |
 | `producer-route.js` | Single source of truth for "is this the public producer detail page?" — BOTH surfaces that render it: the '/producer/[id]' leaf (excluding the … |
 | `producer-status.js` | Producer status — render-only labels and color tokens. DB emits raw codes (draft / pending / approved / rejected / inactive — see … |
-| `product-order.js` | The ONE place that decides the order products are shown in, for the public business page and the owner's dashboard alike (MEH-3055). … |
-| `product-ordering.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
+| `product-display-order.js` | The ONE place that decides the order products are shown in, for the public business page and the owner's dashboard alike (MEH-3055). … |
 | `product-orders.js` | The one place on-site ordering's business-side fetches, list groups and money/time formatting live, so the dashboard screens never re-derive them. |
 | `product-price.js` | What a product's price is per (MEH-2936): «80₪ לבקבוק», «35₪–60₪ לק״ג», and for 'unit' just the price, so a product that never chose a unit reads exactly as … |
 | `product-variants.js` | The pure rules the business page and the order cart share about a product's sizes or flavours: the cart key of a line, the variant a line means, the «מ-X ₪» … |
@@ -537,13 +543,13 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-experiences-nav-gate.js` | MEH-1918 — decide whether the "חוויות" link appears in the nav. It appears only once the surface has real supply, so a reader who follows it never lands on a … |
 | `use-favorite-producers.js` | — אין כותרת — |
 | `use-focus-return.js` | — אין כותרת — |
-| `use-google-sign-in.js` | <reference path="../types/browser-globals.d.ts" /> |
-| `use-gsi-redraw-on-resize.js` | — אין כותרת — |
-| `use-gsi-reveal.js` | Keep Google's sign-in button invisible while Google draws it, and show it once, when it has settled — so it doesn't flicker. |
+| `use-google-code-sign-in.js` | Sign-in for our own Google button (MEH-3690): open Google's popup (GIS code client), swap the one-time code at POST /auth/google/code, and hand the caller the … |
+| `use-google-sign-in.js` | The one place that adds Google's GSI <script>: loadGsiScript() for our own Google button, and preloadGsiWhenIdle() so the library is ready before a sign-in … |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
-| `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. It appears for a signed-in person while on-site ordering is switched on in the server … |
+| `use-israel-today.js` | Today's date on the Israel clock that follows the clock: a page left open across midnight re-renders with the new day, so a bag listed as «מחר» becomes «היום» … |
+| `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. MEH-3698: it appears only for a signed-in person who has something to see there — an … |
 | `use-order-cart.js` | The buyer's picks on one business page, held by ProducerDetail so the product rows and the order bar read the same state. |
 | `use-orders-tab.js` | Whether the dashboard shows the «הזמנות» tab, and its counter (orders waiting for an answer). |
 | `use-rescue-reservation.js` | — אין כותרת — |
@@ -858,6 +864,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/Dialog.jsx` | — אין כותרת — |
 | `ui/EmptyState.jsx` | — אין כותרת — |
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |
+| `ui/GoogleButton.jsx` | Our own «להמשיך עם Google» button (MEH-3690). Drawn by us, so it is on screen with the page or the modal — Google's rendered button arrived about a second … |
 | `ui/Heading.jsx` | Render h1-h4 with the project's font tokens so pages stop repeating inline 'font-headline-* text-* font-bold' triplets. Net-new atom. |
 | `ui/InlineMessage.jsx` | The one look for a form-level or page-level message that appears in place: a submit error, «נשמר», a load error in a row. … |
 | `ui/Input.jsx` | — אין כותרת — |
@@ -948,8 +955,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/state/useMapFilters.js` | — אין כותרת — |
 | `[locale]/map/state/useMapSync.js` | — אין כותרת — |
 | `[locale]/map/state/useProducersFeed.js` | — אין כותרת — |
-| `[locale]/my-group-buys/MyGroupBuysClient.jsx` | «הקבוצות שלי»: the group buys the signed-in person joined, so she can get back to one without the email link. Running ones first. |
-| `[locale]/my-orders/MyOrdersClient.jsx` | «ההזמנות שלי»: the signed-in buyer's on-site orders, newest first. Each row opens the order's existing status page. |
+| `[locale]/my-orders/MyOrdersClient.jsx` | «ההזמנות שלי»: everything the signed-in buyer ordered on the site — product orders, group buys and surprise bags — in one list, split into «פעילות» and … |
+| `[locale]/my-orders/MyOrdersRow.jsx` | MEH-3698 — one row of «ההזמנות שלי»: what it is (a tag), the business, the date and the status, linking to the item's own page. |
 | `[locale]/newsletter/confirm/ConfirmClient.jsx` | — אין כותרת — |
 | `[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx` | — אין כותרת — |
 | `[locale]/order/[id]/OrderBusinessLinks.jsx` | MEH-3755 — on the buyer's order page: the business's name as a link to its page, its contact button (the channel it chose), and Waze / Google Maps for the … |
@@ -982,7 +989,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/dashboard/ChangesRequestedBanner.jsx` | Surface the admin's completion request ("נשאר להשלים") to the owner when a request-changes was sent (MEH-1011) so she knows exactly what to fix before … |
 | `[locale]/producer/dashboard/DashboardLayoutClient.jsx` | Shared shell for the producer dashboard hub (MEH-964 Phase 1). Hosts the ONE UX auth gate for the whole /producer/dashboard/* subtree + the persistent tab nav … |
 | `[locale]/producer/dashboard/RejectedBanner.jsx` | The rejected → resubmit loop, owner side (MEH-2210 chunk B). Shows WHAT did not pass, keyed on the admin's structured reason code, with a deep link to the … |
-| `[locale]/producer/dashboard/edit/LocationHoursField.jsx` | The opening-hours picker of one location in the owner's LocationsEditor: seven day rows (א׳–ש׳), each with an open toggle and up to three time ranges. … |
+| `[locale]/producer/dashboard/edit/HoursCard.jsx` | The one «שעות» card on the owner's edit page: opening hours for each location, the weekly order window, and dated exceptions (holidays), as three sections of … |
+| `[locale]/producer/dashboard/edit/LocationHoursField.jsx` | The opening-hours picker of one location, in the owner's «שעות» card (HoursCard, MEH-3790) and the admin LocationsEditor: seven day rows (א׳–ש׳), each with an … |
 | `[locale]/producer/dashboard/edit/LocationsEditor.jsx` | Owner CRUD for producer_locations (branch / pickup / market_stand) in the dashboard — the write UI for the map's per-location pins. … |
 | `[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx` | «מקבלים הזמנות עד»: a weekday select + a time input, for a row that has its own order cutoff — a pickup point (MEH-3512) or a delivery zone (MEH-3511). … |
 | `[locale]/producer/dashboard/edit/OrderWindowEditor.jsx` | Weekly ORDER-acceptance window editor for the producer dashboard — 7 day rows (א׳–ש׳), a per-day toggle plus open/close time inputs, and a "clear all" action … |

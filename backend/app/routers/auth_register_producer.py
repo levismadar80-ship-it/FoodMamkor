@@ -258,7 +258,7 @@ async def register_producer(
         # is_producer stays True even if an admin manually clears producer_id,
         # preventing silent re-registration without an explicit admin reset.
         if user.producer_id or user.is_producer:
-            raise HTTPException(status_code=409, detail="כבר יש לך עסק רשום בחשבון זה")
+            raise HTTPException(status_code=409, detail="כבר יש עסק רשום בחשבון זה")
 
         producer = Producer(
             name=data.producer_name,
@@ -795,7 +795,7 @@ def register_producer_oauth(
     if user.producer_id or getattr(user, "is_producer", False):
         raise HTTPException(
             status_code=409,
-            detail="יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
+            detail="כבר יש עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
         )
 
     # MEH-138 + MEH-375: backfill the Google avatar only when the

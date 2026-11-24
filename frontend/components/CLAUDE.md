@@ -37,6 +37,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
 | Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
+| 44×44 hit area on a small control without moving the layout (`::before`) | `.tap-area` in `app/globals.css` | `TapArea44` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
 | Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
@@ -49,6 +50,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | A form field's label with a «?» that opens its explanation inline under it (dashboard forms, MEH-3740) | `FieldHelpLabel.jsx` | — |
 | «fill this form from text» box over a dashboard form (one engine, `form` = the field map) | `FormFillBox.jsx` | — |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
+| «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |

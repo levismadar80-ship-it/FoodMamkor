@@ -470,12 +470,14 @@ test.describe("overview — completeness card", () => {
   });
 
   // MT:MEH-1106:5 — drift D4: the six-way href partition as it stands today.
+  // MEH-3790: hours moved out of the location form into the «שעות» card, so
+  // the hours step links to `#hours`, not a second `#locations`.
   test("each checklist step deep-links to the editor that owns it", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false, locations: [], city: null, phone: null, whatsapp: null, primary_contact_method: null }));
     const items = checklist(page).getByRole("listitem");
     await expect(items).toHaveCount(7);
     const hrefs = await items.locator("a").evaluateAll((as) => as.map((a) => new URL((a as HTMLAnchorElement).href).hash));
-    expect(hrefs.sort()).toEqual(["#locations", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products", "#owner-story"].sort());
+    expect(hrefs.sort()).toEqual(["#hours", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products", "#owner-story"].sort());
   });
 
   // MT:MEH-1106:6 — delivery-only satisfies the location step without coordinates.

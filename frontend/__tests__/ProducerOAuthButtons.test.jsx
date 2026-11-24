@@ -11,7 +11,7 @@ import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
  * the Apple event wiring at :110-124. Both third-party SDKs are replaced at
  * the seam the component already exposes:
  *
- *   - Google: `useGoogleSignIn` is mocked to CAPTURE the credential callback
+ *   - Google: `useGoogleCodeSignIn` is mocked to CAPTURE the credential callback
  *     the component hands it (:76-78). Invoking that callback is exactly what
  *     GSI does after a successful sign-in, so the test drives the real
  *     `finish("google", …)` path with no window.google stub at all.
@@ -53,16 +53,16 @@ const envMock = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/env", () => envMock);
 
-// Capture what the component registers with GSI; the hook is called on every
-// render, so `callback` is always the latest closure.
-const gsi = vi.hoisted(() => ({ clientId: undefined, callback: null, onReady: null }));
-vi.mock("@/lib/use-google-sign-in", () => ({
-  // MEH-2319: the component reads the page language for renderButton.
-  gsiLang: () => "he",
-  useGoogleSignIn: (clientId, callback, onReady) => {
+// Capture what the component hands our Google button's hook (MEH-3690); the
+// hook is called on every render, so `callback` is always the latest closure.
+// `callback({ credential })` stands for "the code swap returned this ID token".
+const gsi = vi.hoisted(() => ({ clientId: undefined, callback: null, onError: null, start: null }));
+vi.mock("@/lib/use-google-code-sign-in", () => ({
+  useGoogleCodeSignIn: (clientId, { onIdToken, onError }) => {
     gsi.clientId = clientId;
-    gsi.callback = callback;
-    gsi.onReady = onReady;
+    gsi.callback = ({ credential }) => onIdToken(credential);
+    gsi.onError = onError;
+    return { start: gsi.start, busy: false };
   },
 }));
 
@@ -118,7 +118,8 @@ beforeEach(() => {
   toastMock.error.mockClear();
   toastMock.success.mockClear();
   gsi.callback = null;
-  gsi.onReady = null;
+  gsi.onError = null;
+  gsi.start = vi.fn();
   gsi.clientId = undefined;
   localStorage.clear();
   window.AppleID = { auth: { init: vi.fn(), signIn: vi.fn() } };
@@ -136,15 +137,16 @@ describe("ProducerOAuthButtons — render gate (:133-152)", () => {
     expect(gsi.clientId).toBe("");
   });
 
-  it("google only: heading + google slot, no Apple button", () => {
+  it("google only: heading + our Google button, no Apple button", () => {
     setEnv({ apple: "" });
     mount();
     expect(screen.getByText(T("producer_quick_signup"))).toBeInTheDocument();
+    expect(screen.getByTestId("producer-google-button")).toHaveTextContent(T("google_continue"));
     expect(screen.queryByRole("button", { name: T("apple_continue_f") })).toBeNull();
     expect(gsi.clientId).toBe("test-google");
   });
 
-  it("apple only: Apple button present, GSI hook receives an empty client id", () => {
+  it("apple only: Apple button present, the Google hook receives an empty client id", () => {
     setEnv({ google: "" });
     mount();
     expect(screen.getByRole("button", { name: T("apple_continue_f") })).toBeInTheDocument();
@@ -157,6 +159,20 @@ describe("ProducerOAuthButtons — render gate (:133-152)", () => {
     expect(screen.getByRole("button", { name: T("apple_continue_f") })).toBeInTheDocument();
     expect(screen.getByText(T("or"))).toBeInTheDocument();
     expect(screen.getByText(T("producer_only_email_name"))).toBeInTheDocument();
+  });
+
+  it("our Google button opens Google's popup (MEH-3690)", () => {
+    mount();
+    fireEvent.click(screen.getByTestId("producer-google-button"));
+    expect(gsi.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("a failed code swap shows the server's reason (MEH-3690)", () => {
+    const { onError } = mount();
+    gsi.onError({ response: { data: { detail: "ההתחברות עם Google לא הושלמה. נסו שוב." } } });
+    expect(onError).toHaveBeenCalledWith("ההתחברות עם Google לא הושלמה. נסו שוב.");
+    gsi.onError(null);
+    expect(onError).toHaveBeenLastCalledWith(T("google_error"));
   });
 
   it("the Apple button hands off to the SDK's signIn()", () => {

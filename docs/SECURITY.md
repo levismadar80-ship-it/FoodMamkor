@@ -516,6 +516,26 @@ response as the new access token.
   sites, logout deletion
 - `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
 
+### ✅ 8b-2. Google sign-in: the code swap (MEH-3690, November 2026)
+
+Our own Google button opens Google's popup (GIS code client) and gets a
+one-time code. `POST /auth/google/code` swaps it at
+`oauth2.googleapis.com/token` with `GOOGLE_CLIENT_SECRET` and returns the ID
+token; the browser then posts that token to `/auth/google` (or the
+registration / owner-invite / account-delete route) exactly as before.
+
+- **The token is verified twice:** in the swap
+  (`services/google_code_exchange.py`: issuer, audience = our client id,
+  expiry, plus `email_verified`) and again by the route that signs in.
+- **No state, no cookie:** the swap writes nothing and sets no cookie. It
+  returns the token in the JSON body only, which CORS keeps from other sites,
+  so Google's suggested `X-Requested-With` check would add nothing here.
+- **Nothing sensitive is logged:** only Google's `error` code on a refusal,
+  never the code, the secret, the access token or the ID token. Google's
+  access and refresh tokens are dropped.
+- **10/minute per IP** (`@limiter.limit`), the same as `/auth/google`.
+- Without the secret the route answers 503 with a Hebrew message.
+
 ### ✅ 8c. Dependency audits + Dependabot (MEH-330 → MEH-336, April–May 2026)
 
 Supply-chain CVE gate — pip-audit (backend) + npm audit (frontend) run

@@ -19,8 +19,8 @@ from _test_meh3263_order_route__common import (  # noqa: F401
 from test_group_buys_api import _make_group_buy, _producer_user
 from tests.conftest import auth_header
 
-OWN_ORDER_DETAIL = "אי אפשר להזמין מבית העסק שלך"
-OWN_GROUP_DETAIL = "אי אפשר להצטרף לקבוצת הרכישה של בית העסק שלך"
+OWN_ORDER_DETAIL = "אי אפשר להזמין מבית עסק בבעלות החשבון הזה"
+OWN_GROUP_DETAIL = "אי אפשר להצטרף לקבוצת הרכישה של בית עסק בבעלות החשבון הזה"
 
 
 def _verified(db, user):

@@ -108,6 +108,7 @@ graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
     SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 10/hour (MEH-1635)<br/>routers/auth_register_producer.py (MEH-3293)<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
+    SignUp --> OAuthGC[POST /auth/google/code<br/>🌐 code → id_token, MEH-3690]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
 
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
@@ -155,7 +156,8 @@ graph TD
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
     Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
     Events --> GbCapacity[PATCH /group-buys/{id}/commit · POST + DELETE /group-buys/{id}/waitlist<br/>🔑 signed in — MEH-3592: quantity edit, waitlist of a full group (MEH-3691: not the group's own business)<br/>PATCH /group-buys/{id}/settings<br/>owner or admin — caps + stop/reopen joins,<br/>pickup window (MEH-3597), allergens + own branch (MEH-3610)]
-    Events --> GbMine[GET /users/me/group-buys<br/>🔑 signed in — MEH-3609: «הקבוצות שלי», own commits only, public businesses only, no-store]
+    Events --> GbMine[GET /users/me/group-buys<br/>🔑 signed in — MEH-3609: «הקבוצות שלי» → since MEH-3698 one of the three lists on /my-orders, own commits only, public businesses only, no-store]
+    Events --> OrdersAny[GET /users/me/orders/any<br/>🔑 signed in — MEH-3698: any order, group buy or bag to list? one EXISTS read for the menu gate, no-store]
 ```
 
 ## 5. Admin surface (role=admin)
@@ -267,6 +269,7 @@ graph LR
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
+    Buyer --> History[GET /rescue/orders/history<br/>🔑 own reservations, any day, newest first, max 50<br/>+ producer_name, no pickup_code — «ההזמנות שלי» MEH-3698]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
