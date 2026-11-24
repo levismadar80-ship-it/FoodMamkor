@@ -12,7 +12,7 @@ import {
   serializeOrderWindow,
   invalidOrderDayIndices,
   emptyOrderDay,
-} from "@/lib/order-window";
+} from "@/lib/order-window-editor";
 
 const WINDOW = {
   sunday: { open: "09:00", close: "14:00" },

@@ -5,7 +5,7 @@ Purpose:  The owner sets the order of her products and sorts them into
           "her order" and as group chips.
 Touches:  DB products.position / products.group_id, producers.product_groups.
 Does NOT: create, edit or delete products (routers/producer_me.py), or render
-          anything — ordering for display is lib/product-order.js.
+          anything — ordering for display is lib/product-display-order.js.
 Related:  app/schemas/product_organize.py · app/limits.py MAX_PRODUCT_GROUPS ·
           alembic b7d4e2a9c615
 History:  MEH-3055 (creation); MEH-3472 (logic moved to
