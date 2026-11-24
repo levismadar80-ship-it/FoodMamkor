@@ -193,12 +193,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
-      {mode === "create" && (
-        <FormFillBox form="recipe" title={t("fill.title")} intro={t("fill.intro")} onDraft={onDraft} />
-      )}
-      {/* The up-front notice is create-only: the edit PATCH is not gated. */}
+      {/* The up-front notice is create-only: the edit PATCH is not gated.
+          It comes before the fill box too (MEH-3138: above the first field). */}
       {(unverifiedHits > 0 || (emailUnverified && mode === "create")) && (
         <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />
+      )}
+      {mode === "create" && (
+        <FormFillBox form="recipe" title={t("fill.title")} intro={t("fill.intro")} onDraft={onDraft} />
       )}
 
       {/* MEH-2015: the literal span in `label` is GONE — Input's required
