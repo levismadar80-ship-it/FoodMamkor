@@ -56,7 +56,10 @@ function LocationHoursRow({ loc, showName, onDirty, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
-  const dirty = value !== stored;
+  // Trimmed on both sides: the save sends the trimmed value, so stray
+  // whitespace must not leave the row dirty after a good save.
+  const dirty = value.trim() !== stored.trim();
+  const nameId = `hours-location-name-${loc.id}`;
 
   // A re-read of the list (after this row's save, or another edit) brings the
   // stored value; take it, unless the owner is mid-edit.
@@ -85,9 +88,14 @@ function LocationHoursRow({ loc, showName, onDirty, onSaved }) {
   };
 
   return (
-    <div className="space-y-2" data-testid={`hours-location-${loc.id}`}>
+    <div
+      className="space-y-2"
+      data-testid={`hours-location-${loc.id}`}
+      role={showName ? "group" : undefined}
+      aria-labelledby={showName ? nameId : undefined}
+    >
       {showName && (
-        <p className="text-sm font-medium text-text">
+        <p id={nameId} className="text-sm font-medium text-text">
           {loc.label || loc.city || tKind(loc.kind)}
         </p>
       )}
@@ -111,12 +119,15 @@ function LocationHoursRow({ loc, showName, onDirty, onSaved }) {
         <Button onClick={save} disabled={saving || !dirty || !valid} variant="primary" size="sm">
           {saving ? tSave("saving") : tSave("save_cta")}
         </Button>
-        {saved && !dirty && !error && (
-          <span role="status" className="flex items-center gap-1 text-xs text-primary">
-            <CheckCircle size={16} weight="fill" aria-hidden="true" />
-            {t("saved")}
-          </span>
-        )}
+        {/* Always mounted, so a screen reader announces the text when it appears. */}
+        <span role="status" className="flex items-center gap-1 text-xs text-primary">
+          {saved && !dirty && !error && (
+            <>
+              <CheckCircle size={16} weight="fill" aria-hidden="true" />
+              {t("saved")}
+            </>
+          )}
+        </span>
       </div>
     </div>
   );

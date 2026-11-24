@@ -160,7 +160,8 @@ const GROUP_MEMBERS = {
   // field — counting it would show every existing business as 2/4 instead of
   // 2/3 and nudge them to maintain hours they never asked for (the exact
   // GBP-staleness risk the ticket cites). It still belongs to the location
-  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally
+  // (MEH-3790: to its section inside the «שעות» card).
   // MEH-2058: "location" was a member of this group before its card (the
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see

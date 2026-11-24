@@ -128,6 +128,19 @@ describe("«שעות» card — saving one location's hours", () => {
     expect(props.onHoursSaved).not.toHaveBeenCalled();
   });
 
+  it("a value that differs only by surrounding spaces is not a change", () => {
+    mount({ locations: [{ ...LOC_A, opening_hours: "Sun 08:00-14:00  " }] });
+    const row = screen.getByTestId("hours-location-1");
+    fireEvent.click(within(row).getByTestId("hours-field-change"));
+    expect(within(row).getByRole("button", { name: /save_cta/ })).toBeDisabled();
+  });
+
+  it("many locations: each row is a group named after its location", () => {
+    mount({ locations: [LOC_A, LOC_B] });
+    expect(screen.getByRole("group", { name: "החנות" })).toBe(screen.getByTestId("hours-location-1"));
+    expect(screen.getByRole("group", { name: "עכו" })).toBe(screen.getByTestId("hours-location-2"));
+  });
+
   it("an unsaved change is reported to the page's banner as «hours»", async () => {
     const props = mount();
     fireEvent.click(screen.getByTestId("hours-field-change"));

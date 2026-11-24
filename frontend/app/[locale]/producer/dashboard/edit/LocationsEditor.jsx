@@ -652,7 +652,8 @@ function LocationForm({
         (initial.label || "").trim() ||
           (initial.phone || "").trim() ||
           (initial.pickup_note || "").trim() ||
-          (initial.opening_hours || "").trim(),
+          // MEH-3790: hours are not in this form on the owner page.
+          (showHours && (initial.opening_hours || "").trim()),
       ) || (initial.location_precision || "exact") !== "exact",
   );
   const labelRef = useRef(null);
