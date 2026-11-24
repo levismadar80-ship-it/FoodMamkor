@@ -161,7 +161,7 @@ def test_empty_list_stays_empty_list():
     """NOT collapsed to None.
 
     The two are indistinguishable to every reader measured — the frontend goes
-    through `ownerQuestionLabels` (frontend/lib/resolvedQuestions.js), whose
+    through `ownerQuestionLabels` (frontend/lib/resolved-questions.js), whose
     `(producer?.custom_questions || [])` read yields no rows for either — but
     collapsing them would still change what the column stores, on a path this
     ticket has no reason to touch.

@@ -222,7 +222,7 @@ class ProducerOrderWindow(Base):
     services/product_order_slots.py cuts these into concrete slots.
 
     `weekday` is 0 = Sunday ... 6 = Saturday — the convention of
-    `producers.order_window` and lib/orderWindow.js, NOT `date.weekday()`.
+    `producers.order_window` and lib/order-window-status.js, NOT `date.weekday()`.
 
     Not the same fact as `producers.order_window` (when the owner ANSWERS
     orders, MEH-1543): a row here is when she HANDS one over. A date closed in

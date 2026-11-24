@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   orderWindow
+ * Module:   order-window-status
  * Purpose:  Derive the CURRENT order-acceptance status from a producer's
  *           weekly `order_window` (MEH-1543) — open / closing_soon / closed,
  *           plus when the window next changes — and compress the weekly map

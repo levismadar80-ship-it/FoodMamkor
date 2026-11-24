@@ -5,11 +5,11 @@
  *           so a date the UI offers is a date the server will accept.
  * Touches:  Nothing — pure Intl, no I/O, no network.
  * Does NOT: own clock-time decisions (day-of-week / hour-of-day). Those are
- *           `lib/orderWindow.js` (`israelNowParts`) and
+ *           `lib/order-window-status.js` (`israelNowParts`) and
  *           `components/OpeningHours.jsx (deleted in MEH-2810)` (`todayIndex`). This module is the
  *           *date* primitive only.
  * Related:  backend/app/utils/clock.py (`israel_today` — the server half of
- *           this same clock), frontend/lib/orderWindow.js:57 (the Intl idiom).
+ *           this same clock), frontend/lib/order-window-status.js:57 (the Intl idiom).
  * History:  MEH-1983 (creation — extracted from components/OfferBadge.jsx so
  *           the two vacation-date pickers stop using the UTC date).
  */
@@ -25,7 +25,7 @@ const ISO_DATE_LEN = 10;
  * (`backend/app/utils/clock.py`), so any client that uses the UTC date will,
  * in that window, offer the owner a date the server then rejects.
  *
- * REUSES: frontend/lib/orderWindow.js:57 — same Asia/Jerusalem Intl idiom.
+ * REUSES: frontend/lib/order-window-status.js:57 — same Asia/Jerusalem Intl idiom.
  *
  * @param {Date} [now] injectable clock, so boundary cases are testable.
  * @returns {string} `YYYY-MM-DD` in Israel local terms.

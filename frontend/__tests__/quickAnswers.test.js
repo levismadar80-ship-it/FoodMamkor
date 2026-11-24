@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import he from "../messages/he.json";
-import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
 
 // MEH-1302 — Quick Answers. Two layers under test:
 //   1. pure answer logic (buildDeliveryAnswer / hasDeliverySection) — every branch

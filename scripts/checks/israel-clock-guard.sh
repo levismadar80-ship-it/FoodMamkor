@@ -79,7 +79,7 @@ SCAN_DIR="${1:-frontend}"
 # line for a missing path would exempt any file later created at it.
 SANCTIONED_OWNERS=(
   "frontend/lib/israel-date.js"          # the DATE primitive (israelToday)
-  "frontend/lib/orderWindow.js"          # the CLOCK-TIME parts (israelNowParts)
+  "frontend/lib/order-window-status.js"          # the CLOCK-TIME parts (israelNowParts)
   "frontend/lib/friday-mode.js"          # pre-existing owner (MEH-1983 §1)
   "frontend/lib/established-year.js"     # pre-existing owner (MEH-1983 §1)
 )
@@ -146,7 +146,7 @@ while IFS=: read -r file line _; do
   [ -n "$file" ] || continue
   is_excluded "$file" && continue
   suppressed "$file" "$line" && continue
-  report "$file" "$line" 'A second private implementation of the Israel-clock primitive. lib/israel-date.js owns the DATE (israelToday) and lib/orderWindow.js owns the CLOCK-TIME parts (israelNowParts) — import one of them instead of building a formatter here.'
+  report "$file" "$line" 'A second private implementation of the Israel-clock primitive. lib/israel-date.js owns the DATE (israelToday) and lib/order-window-status.js owns the CLOCK-TIME parts (israelNowParts) — import one of them instead of building a formatter here.'
 done < <(grep -rnE 'timeZone:[[:space:]]*"Asia/Jerusalem"' "$SCAN_DIR" \
            --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
            --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=out 2>/dev/null)

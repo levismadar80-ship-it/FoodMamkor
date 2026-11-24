@@ -11,7 +11,7 @@
  * Does NOT: edit the weekly window (OrderWindowEditor.jsx) or store hours
  *           (LocationsEditor) — the override is order-axis only (ruling א).
  *           It does not derive "open now"; the public page owns that
- *           (lib/orderWindow.js). Past dates are not editable here: they are
+ *           (lib/order-window-status.js). Past dates are not editable here: they are
  *           dropped on load and therefore on the next save (ruling ג).
  * Related:  frontend/lib/special-hours.js (rows ⇄ payload, issues, chips),
  *           edit/OrderWindowEditor.jsx (the row/save/dirty pattern this
@@ -21,11 +21,12 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
+import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { nextOrderRange } from "@/lib/order-window";
 import {
   MAX_SPECIAL_DATES,
@@ -44,6 +45,8 @@ import Input from "@/components/ui/Input";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
+  const tClosed = useTranslations("dashboard.producer.closed_day_orders");
+  const locale = useLocale();
   const tHoliday = useTranslations("holidays");
   // Range mechanics and the save/revert buttons REUSE the order-window copy —
   // same nouns, same verbs, and one place to fix them.
@@ -177,6 +180,15 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
+      // MEH-3770: orders she already accepted on a date she just closed.
+      // Only dates newly closed in this save, from today on: a note edit does
+      // not re-warn about a date she closed (and saw the warning for) before.
+      const isClosed = (entry) => Array.isArray(entry?.ranges) && entry.ranges.length === 0;
+      const wasClosed = serializeSpecialHours(seedRows) || {};
+      const closedDates = Object.entries(current || {})
+        .filter(([day, entry]) => isClosed(entry) && day >= today && !isClosed(wasClosed[day]))
+        .map(([day]) => day);
+      if (closedDates.length > 0) warnClosedDayOrders({ dates: closedDates }, { t: tClosed, locale });
     } catch (error) {
       setErrorMsg(detailToMessage(error?.response?.data?.detail) || tRange("save_error"));
     } finally {

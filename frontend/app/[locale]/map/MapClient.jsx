@@ -14,7 +14,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producer-points";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";

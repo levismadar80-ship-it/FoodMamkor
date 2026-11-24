@@ -5,8 +5,8 @@ import { cloneElement, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
-import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
-import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
+import { ownerQuestionLabels } from "@/lib/resolved-questions";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
@@ -294,7 +294,7 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
   // the category stock set no longer renders. One derivation, shared with the
-  // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
+  // dashboard preview (lib/resolved-questions.js), so the two cannot drift.
   const waQuestions = ownerQuestionLabels(producer, {
     // An owner's own «[עיר]» placeholder keeps its pre-2602 reading (the
     // business city) unless the visitor has told us hers.

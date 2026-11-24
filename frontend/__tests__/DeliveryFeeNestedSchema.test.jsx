@@ -173,7 +173,7 @@ describe("MEH-1942 gap — closed by MEH-2602", () => {
   it("a lone area that overrides the producer rate wins: 0 against 25 reads «חינם»", () => {
     // MEH-1942 pinned the opposite (the component consulted per-area fees only
     // when they VARIED, so one area at 0 still showed the producer's 25).
-    // MEH-2602 moved the card and DeliveryBlock onto lib/deliveryFee.js, where
+    // MEH-2602 moved the card and DeliveryBlock onto lib/delivery-fee.js, where
     // areas that all agree state the fee — the case the MEH-1942 DoD asked for.
     const p = parseProducer({
       delivery_fee: 25,
