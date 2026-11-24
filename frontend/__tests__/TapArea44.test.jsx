@@ -8,8 +8,9 @@
  *      small box to 44px and leave a big one alone.
  *   2. Each shared control that was measured under 44px on staging (24/11
  *      screenChecks sweep) renders with that utility.
- * The size itself is measured in a real browser by e2e/_screen-checks.mjs
- * (MEH-3816), which counts a ::before hit area.
+ * Checking a class is the fallback MEH-3531 allows where nothing runs the
+ * layout; the size itself was measured in Chromium with screenChecks
+ * (MEH-3816, PR #5288), which counts a ::before hit area — see PR #5293.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
