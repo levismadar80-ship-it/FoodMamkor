@@ -72,7 +72,7 @@ export const BUSINESS_FEATURES = [
   { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/PricingCard.jsx"] },
   { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
   { id: "vacation_mode", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx"] },
-  { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producerPoints.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
+  { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producer-points.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
   { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/PickupScheduleField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx"] },
   { id: "draft_claim", group: "page", status: "live", tile: { icon: "PencilSimple" }, codeRef: ["backend/app/routers/producer_claim.py", "frontend/components/admin/ClaimLinkPanel.jsx"] },
   { id: "ai_writer", group: "page", status: "live", codeRef: ["backend/app/services/bio_generator.py", "frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx"] },
@@ -182,6 +182,9 @@ export const DASHBOARD_SUBPAGES = {
   // Reached in 1 tap from anywhere in the dashboard: the «צפייה בדף» link in
   // the tab row points here while the business is unapproved.
   "/producer/dashboard/preview": "/producer/dashboard",
+  // MEH-3746: the order form as a buyer sees it — a view of the orders tab,
+  // reached from the link beside its title.
+  "/producer/dashboard/orders/preview": "/producer/dashboard/orders",
   // MEH-3200: the «מה חדש» release archive — not a tool, a page about the
   // site itself. Reached from the home's top card and fixed row (1 tap).
   "/producer/dashboard/whats-new": "/producer/dashboard",

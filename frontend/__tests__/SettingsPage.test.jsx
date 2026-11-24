@@ -159,7 +159,7 @@ vi.mock("next-intl", () => ({
 
 // MEH-628: lib now requires a translator `t` as second arg; mock accepts
 // (failures, t) / (key, t) and returns a passthrough string regardless.
-vi.mock("@/lib/passwordMessages", () => ({
+vi.mock("@/lib/password-messages", () => ({
   firstFailureMessage: (_failures, _t) => "test-failure",
   failureMessage: (_key, _t) => "test-failure",
 }));

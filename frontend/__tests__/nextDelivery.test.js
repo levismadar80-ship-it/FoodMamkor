@@ -9,9 +9,9 @@
  * seeded random sweep: same seed, same cases, every run.
  */
 import { describe, it, expect } from "vitest";
-import { nextDeliveryDate } from "@/lib/nextDelivery";
+import { nextDeliveryDate } from "@/lib/next-delivery";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import { ORDER_DAY_KEYS } from "@/lib/orderWindow";
+import { ORDER_DAY_KEYS } from "@/lib/order-window-status";
 
 // Israel 2026: summer time ends Sun 25/10 02:00, starts Fri 27/03 02:00.
 const at = (iso) => new Date(iso);

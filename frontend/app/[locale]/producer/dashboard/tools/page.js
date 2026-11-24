@@ -48,6 +48,15 @@ const H2 = "font-headline-md text-lg font-bold text-text mb-4";
 const GRID = "grid grid-cols-1 md:grid-cols-3 gap-4";
 const CARD = "bg-surface border border-border rounded-lg p-5 hover:border-primary transition";
 
+// MEH-3753: the line on the «הזדמנויות» card, per producer status. Approved
+// has none; an unknown status has none rather than a guess.
+const LOCKED_LINE_KEY = {
+  draft: "quick_links.locked_until_approved",
+  pending: "quick_links.locked_until_approved",
+  rejected: "quick_links.locked_rejected",
+  inactive: "quick_links.locked_inactive",
+};
+
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
@@ -129,9 +138,14 @@ export default function ProducerDashboardToolsPage() {
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
   const rescueOn = rescueBagsEnabled();
-  const lockedLine = producer.status === "pending" && (
+  // MEH-3753: the server refuses group buys and bags to every status but
+  // approved (group_buys.py, rescue_writes.py), so every one of them gets a
+  // line, each the one that is true for it: draft / pending wait for an
+  // approval, rejected has to fix and resubmit, inactive is paused.
+  const lockedKey = LOCKED_LINE_KEY[producer.status];
+  const lockedLine = lockedKey && (
     <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
-      {t("quick_links.locked_until_approved")}
+      {t(lockedKey)}
     </p>
   );
 

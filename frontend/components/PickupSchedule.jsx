@@ -8,8 +8,8 @@
  *           26.11») — from the point's fields, not from its label (MEH-3512).
  * Does NOT: render the point's name, hours, phone or nav links
  *           (DeliveryBlock.jsx PickupRow does), or compute the date
- *           (lib/nextDelivery.js does).
- * Related:  components/NextDeliveryLine.jsx, lib/nextDelivery.js cutoffOfRow.
+ *           (lib/next-delivery.js does).
+ * Related:  components/NextDeliveryLine.jsx, lib/next-delivery.js cutoffOfRow.
  * History:  MEH-3512 (creation).
  *
  * States: nothing set → renders nothing, so a point saved before the fields
@@ -19,7 +19,7 @@
  */
 import { useTranslations } from "next-intl";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
-import { cutoffOfRow } from "@/lib/nextDelivery";
+import { cutoffOfRow } from "@/lib/next-delivery";
 import { TERMS_LINE } from "@/components/AreaTermsRow";
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];

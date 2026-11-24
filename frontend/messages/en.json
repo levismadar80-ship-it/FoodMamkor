@@ -1045,7 +1045,9 @@
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
-        "day_conflict_remove": "Remove «{name}» from the order"
+        "day_conflict_remove": "Remove «{name}» from the order",
+        "preview_send": "Sending is off in the preview",
+        "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale."
       }
     },
     "card": {
@@ -1514,6 +1516,34 @@
       "approaching": "{name} is approaching",
       "aria": "Holiday notice",
       "close_aria": "Close"
+    },
+    "faq": {
+      "items": {
+        "what": {
+          "q": "What is a group buy?",
+          "a": "Several people order together from a business and get a lower price. Once enough people join, the group price unlocks."
+        },
+        "pay": {
+          "q": "When do I pay, and to whom?",
+          "a": "Nothing is paid now, and nothing is ever paid through Mehamakor. You arrange payment directly with the business when you coordinate the order."
+        },
+        "miss": {
+          "q": "What if the group doesn't reach its goal?",
+          "a": "Your commitment is cancelled automatically and you owe nothing. We'll email you."
+        },
+        "cancel": {
+          "q": "How do I leave, and until when?",
+          "a": "On the group's page, with «Cancel my commitment», until the deadline. In the last 24 hours you can't leave if that would drop the group below its goal."
+        },
+        "pickup": {
+          "q": "Where and when is pickup?",
+          "a": "The time and place are on the group's page and in the email when the group reaches its goal. A reminder email goes out before pickup."
+        },
+        "mine": {
+          "q": "Where do I see my group buys?",
+          "a": "In the account menu, under «My group buys»."
+        }
+      }
     }
   },
   "map": {
@@ -1636,6 +1666,7 @@
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
       "full_profile": "Full profile",
+      "business_page": "Business page",
       "fulfillment": {
         "delivery": "Delivery",
         "pickup": "Self-pickup",
@@ -5324,6 +5355,8 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "locked_rejected": "Opens once you fix and resubmit, and your business is approved",
+        "locked_inactive": "Closed while your business is inactive",
         "groups": {
           "offer_heading": "Offer to customers",
           "reviews_heading": "Customer reviews",
@@ -5919,6 +5952,8 @@
       "manage_events": {
         "heading": "My events",
         "pending_note": "Your events will appear on the site once your business is approved.",
+        "rejected_note": "Your events will appear on the site once you fix and resubmit, and your business is approved.",
+        "inactive_note": "Your business is inactive right now, so your events don't appear on the site. Contact us to reactivate it.",
         "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
@@ -6189,12 +6224,22 @@
             "orders": "Orders",
             "last": "Last order"
           }
-        }
+        },
+        "preview_link": "How customers see it",
+        "preview_banner": "Preview: this is how customers see the order. You can't send from here.",
+        "preview_no_products": "No product is open for ordering yet, so customers won't see a way to order here.",
+        "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
+        "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
+        "preview_fix_link": "Go to the orders tab"
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
         "helper": "Every week your page had views, we'll send you a short email with the numbers.",
         "label": "Get the weekly summary"
+      },
+      "closed_day_orders": {
+        "warning": "{count, plural, one {One order you already accepted falls} other {# orders you already accepted fall}} on days you closed: {list}. They stay valid, so let your customers know.",
+        "action": "To orders"
       }
     },
     "page_preview": {
@@ -7293,6 +7338,34 @@
       "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
       "calendar_title": "Surprise bag pickup: {business_name}"
+    },
+    "faq": {
+      "items": {
+        "contents": {
+          "q": "What's in the bag?",
+          "a": "Whatever is left that day, so it changes. The bag's page says what it usually holds."
+        },
+        "allergens": {
+          "q": "What about allergens?",
+          "a": "The business lists on the bag's page which allergens it may contain. If none are listed, ask before pickup."
+        },
+        "pay": {
+          "q": "Do I pay in advance?",
+          "a": "No. You pay the business at pickup."
+        },
+        "cancel": {
+          "q": "Until when can I cancel?",
+          "a": "For free, until the time shown on the bag's page and in the reservation email. After that the reservation stands."
+        },
+        "no_show": {
+          "q": "What if I don't pick it up?",
+          "a": "The business marks the bag as not collected. Two no-shows within 30 days block reserving new bags."
+        },
+        "mine": {
+          "q": "Where do I see my reservation?",
+          "a": "On the bag's page and in the reservation email, with the pickup code."
+        }
+      }
     }
   },
   "holidays": {

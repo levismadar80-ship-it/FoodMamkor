@@ -22,7 +22,7 @@ import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import PasswordField from "@/components/ui/PasswordField";
 import PasswordInput from "@/components/PasswordInput";
-import { firstFailureMessage } from "@/lib/passwordMessages";
+import { firstFailureMessage } from "@/lib/password-messages";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import { loginHrefBackHere } from "@/lib/safe-redirect";

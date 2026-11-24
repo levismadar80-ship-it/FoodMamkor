@@ -3,9 +3,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, LinkBreak } from "@phosphor-icons/react";
+import { LinkBreak } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
+import PreviewBanner from "@/components/ui/PreviewBanner";
 import { PreviewModeProvider } from "@/lib/preview-mode";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import StatusPage from "@/components/StatusPage";
@@ -72,14 +73,9 @@ export default function DraftPreviewClient({ token }) {
 
   return (
     <div className="max-w-6xl mx-auto" data-testid="draft-preview">
-      <p
-        role="status"
-        data-testid="draft-preview-banner"
-        className="flex items-start gap-2 bg-green-50 border border-primary/30 rounded-md px-4 py-3 mx-4 mt-4 mb-2 text-sm text-text text-start"
-      >
-        <Eye size={18} aria-hidden="true" className="shrink-0 mt-0.5 text-primary" />
-        <span>{t("banner")}</span>
-      </p>
+      <PreviewBanner data-testid="draft-preview-banner" className="mx-4 mt-4 mb-2">
+        {t("banner")}
+      </PreviewBanner>
       <PreviewModeProvider>
         <ProducerDetail initialProducer={producer} />
       </PreviewModeProvider>

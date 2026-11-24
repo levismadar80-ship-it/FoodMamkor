@@ -38,6 +38,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import (
+    ai_budget,
     ai_text,
     chat_business_context,
     chat_db_tools,
@@ -318,6 +319,10 @@ def _live_data_context(
     latest = next(
         (m["content"] for m in reversed(api_messages) if m["role"] == "user"), ""
     )
+    # MEH-3498: the intent call is a second Haiku call, so it spends its own
+    # unit; above the ceiling chat answers without live data.
+    if not ai_budget.allow("fast"):
+        return None
     categories = chat_db_tools.list_category_slugs()
     decision = chat_intent_router.classify(client, latest, categories)
     if decision.route != chat_intent_router.ROUTE_DB or not decision.tool:
@@ -420,9 +425,13 @@ def chat(
     if client is None:
         # Fail-open friendly message — UI keeps working.
         return ChatResponse(reply=OFFLINE_REPLY)
-    if not _global_chat_allowed():
-        # MEH-3010: site-wide daily cap reached — same reply, no model call.
-        logger.warning("chat global daily cap reached (%s)", GLOBAL_DAILY_LIMIT)
+    # MEH-3010: the chat's own site-wide daily cap; MEH-3498: the AI ceiling
+    # shared with the owner tools (ai_budget logs its own refusal). This is
+    # the unit for the reply call; the intent call spends a second one in
+    # _live_data_context, so a message costs up to two. Same reply, no
+    # model call.
+    if not _global_chat_allowed() or not ai_budget.allow("fast"):
+        logger.warning("chat daily cap reached (chat %s)", GLOBAL_DAILY_LIMIT)
         return ChatResponse(reply=OFFLINE_REPLY)
 
     # Trim to the last MAX_HISTORY_TURNS turns. A "turn" here = one

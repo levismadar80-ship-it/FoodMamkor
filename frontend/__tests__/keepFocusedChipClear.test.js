@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 
 // MEH-2569: the helper moved out of HomeProducersGrid and is now shared with
 // /producers. jsdom has no layout, so the boxes and computed styles are stubbed.

@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { hasFullCookieConsent } from "@/lib/cookie-consent";
 
 const GSI_BASE = "https://accounts.google.com/gsi/client";
 
@@ -31,6 +32,66 @@ let initializedClientId = null;
 // happened to mount. Holding the ref lets the owner update its own handler
 // without re-registering anything with GSI.
 let ownerRef = null;
+
+// MEH-3744: one place that adds the script tag, for the hook and the preload.
+function appendGsiScript() {
+  const script = document.createElement("script");
+  script.src = gsiSrc();
+  script.async = true;
+  document.body.appendChild(script);
+  return script;
+}
+
+/**
+ * Load the GSI script ahead of need, once the page has finished loading and
+ * the browser is idle — so a sign-in modal opened later draws Google's button
+ * at once instead of after a ~1 s download (MEH-3744). Loads only: no
+ * initialize(), no One Tap; useGoogleSignIn finds the tag and waits for it.
+ * Skipped for a signed-in visitor (a token in localStorage, as auth-context
+ * keeps it), when Google is not configured, and without full cookie consent:
+ * a guest who has not agreed to third-party cookies makes no request to Google
+ * until she opens the modal herself (same gate as lib/analytics.js).
+ * A tag that fails to load (blocker, offline) is removed, so the next modal
+ * open adds its own and retries — a dead tag would leave no button at all.
+ *
+ * @param {string|null|undefined} clientId
+ * @returns {() => void} cancels a preload that has not started yet
+ */
+let preloadStarted = false;
+
+export function preloadGsiWhenIdle(clientId) {
+  if (!clientId || typeof window === "undefined" || preloadStarted) return () => {};
+  let signedIn = false;
+  try { signedIn = Boolean(window.localStorage.getItem("token")); } catch { /* storage blocked: treat as guest */ }
+  if (signedIn || !hasFullCookieConsent()) return () => {};
+  preloadStarted = true;
+
+  let idleId = 0;
+  let timer = 0;
+  const load = () => {
+    if (window.google?.accounts?.id || document.querySelector(`script[src^="${GSI_BASE}"]`)) return;
+    const script = appendGsiScript();
+    script.addEventListener("error", () => script.remove(), { once: true });
+  };
+  const whenIdle = () => {
+    if (typeof window.requestIdleCallback === "function") idleId = window.requestIdleCallback(load, { timeout: 4000 });
+    else timer = window.setTimeout(load, 2000);
+  };
+  if (document.readyState === "complete") whenIdle();
+  else window.addEventListener("load", whenIdle, { once: true });
+
+  return () => {
+    window.removeEventListener("load", whenIdle);
+    if (idleId) window.cancelIdleCallback?.(idleId);
+    if (timer) window.clearTimeout(timer);
+    preloadStarted = false;
+  };
+}
+
+/** Test seam: forget that a preload was started (module state). */
+export function resetGsiPreloadForTests() {
+  preloadStarted = false;
+}
 
 /**
  * Singleton hook for Google Sign-In (GSI). Fixes the two-owner problem
@@ -124,14 +185,16 @@ export function useGoogleSignIn(clientId, callback, onReady) {
     const existing = document.querySelector(`script[src^="${GSI_BASE}"]`);
     if (existing) {
       existing.addEventListener("load", init, { once: true });
-      return release;
+      // MEH-3744: with the preload, the tag can still be loading when this
+      // mount goes away; a late init() must not run for a closed modal.
+      return () => {
+        existing.removeEventListener("load", init);
+        release();
+      };
     }
 
-    const script = document.createElement("script");
-    script.src = gsiSrc();
-    script.async = true;
+    const script = appendGsiScript();
     script.onload = init;
-    document.body.appendChild(script);
 
     return () => {
       release();

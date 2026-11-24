@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   nextDelivery
+ * Module:   next-delivery
  * Purpose:  The date of a business's next delivery to a city — «המשלוח הבא:
  *           יום שלישי 24.11» (MEH-3485) — from the city's delivery days and
  *           the business's weekly order window.
@@ -8,7 +8,7 @@
  * Does NOT: render or translate (components/NextDeliveryLine.jsx does), and
  *           does not read special_hours (a holiday closure is not a delivery
  *           rule the data states).
- * Related:  lib/orderWindow.js `getSingleOrderCutoff` (MEH-1646: a cutoff is
+ * Related:  lib/order-window-status.js `getSingleOrderCutoff` (MEH-1646: a cutoff is
  *           stated only when exactly one order day is open), lib/israel-date.js.
  * History:  MEH-3485 (creation); MEH-3512 (a row's own cutoff — a pickup
  *           point's «מזמינים עד» — wins over the business order window).
@@ -23,7 +23,7 @@
  *   - no date for a city with no delivery day, or a business on vacation.
  */
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import { getSingleOrderCutoff, israelNowParts, toMinutes } from "@/lib/orderWindow";
+import { getSingleOrderCutoff, israelNowParts, toMinutes } from "@/lib/order-window-status";
 import { israelToday } from "@/lib/israel-date";
 
 const DAYS_IN_WEEK = 7;

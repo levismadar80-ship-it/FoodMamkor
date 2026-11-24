@@ -4,7 +4,7 @@ the server (MEH-3485, never by the model), product groups (MEH-3055), the
 price unit in the page's words («למארז»), and the business's public events,
 workshops and open group buys.
 
-`next_delivery` is checked against frontend/lib/nextDelivery.js's rule with
+`next_delivery` is checked against frontend/lib/next-delivery.js's rule with
 the clock frozen; activities go through the site's own «public» queries, so a
 hidden one stays out.
 """

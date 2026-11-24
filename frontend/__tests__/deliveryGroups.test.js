@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import { groupDeliveryAreas } from "@/lib/delivery-groups";
 
 // MEH-1305 A — dispatch-day pivot. Every branch of groupDeliveryAreas.
 

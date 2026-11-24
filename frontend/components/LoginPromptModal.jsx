@@ -8,6 +8,8 @@ import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { trackEvent } from "@/lib/analytics";
 import LoginPromptGoogle from "@/components/LoginPromptGoogle";
+import { preloadGsiWhenIdle } from "@/lib/use-google-sign-in";
+import { env } from "@/lib/env";
 
 /**
  * LoginPromptModal — lightweight modal that nudges guests toward /login
@@ -101,6 +103,11 @@ export default function LoginPromptModal({
   useEffect(() => {
     if (open) trackEvent("login_prompt_shown", { reason });
   }, [open, reason]);
+
+  // MEH-3744: a closed modal sits beside every guest's save / reserve button.
+  // Load Google's script while the page is idle, so the button in the modal
+  // draws at once when it opens instead of after a ~1 s download.
+  useEffect(() => preloadGsiWhenIdle(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID), []);
 
   // Capture trigger before CTA-focus effect runs (effect order matters).
   useFocusReturn(open);

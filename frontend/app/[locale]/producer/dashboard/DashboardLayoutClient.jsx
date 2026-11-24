@@ -323,13 +323,13 @@ export default function ProducerDashboardLayout({ children }) {
               }
               aria-label={t("view_page")}
               data-testid="dashboard-view-page"
-              // MEH-2429: icon-only below sm (min 44px target, name via
-              // aria-label + title); the visible label returns at sm+.
-              title={t("view_page")}
-              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-touch px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+              // MEH-3745: below sm the label sits under the icon like the tabs
+              // beside it (MEH-2429 had dropped it; a bare eye was not read as
+              // "my page"). sm+ keeps the inline row.
+              className="sm:ms-auto shrink-0 inline-flex flex-col sm:flex-row whitespace-nowrap items-center justify-center gap-0.5 sm:gap-1.5 min-w-touch px-1 sm:px-3 py-2 sm:py-3 text-xs sm:text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
               <Eye size={20} aria-hidden="true" />
-              <span className="hidden sm:inline">{t("view_page")}</span>
+              <span data-testid="dashboard-view-page-label">{t("view_page")}</span>
             </Link>
           )}
         </div>

@@ -29,7 +29,7 @@ import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
  *           endpoints are INTERCEPTED (see the MEH-1968 block below): the
  *           client-side `GET /api/producers` and `GET /api/categories`. The
  *           clock is FIXED per test via `page.clock.setFixedTime` — the
- *           order-window rows are time-derived (lib/orderWindow.js), and a
+ *           order-window rows are time-derived (lib/order-window-status.js), and a
  *           spec that reads the wall clock is green for two reasons.
  * Data:     Phase 0 (04/09): `app/[locale]/producers/page.jsx` SSR-fetches the
  *           first page but is FAIL-OPEN — `fetchPage` catches and returns
@@ -132,7 +132,7 @@ const scope = (page: Page) => page.locator("#main-content");
 // order-window fixture below is written against THIS instant — a window is
 // "open now" or "closed now" by construction, never by the runner's wall clock.
 const FIXED_NOW = new Date("2026-09-02T00:00:00.000Z");
-const FIXED_DAY_KEY = "wednesday"; // lib/orderWindow.js ORDER_DAY_KEYS[3]
+const FIXED_DAY_KEY = "wednesday"; // lib/order-window-status.js ORDER_DAY_KEYS[3]
 
 // ── copy ────────────────────────────────────────────────────────────────────
 const P_HE = he.producers;

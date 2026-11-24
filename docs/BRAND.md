@@ -62,7 +62,7 @@ The **tagline** is specced for: footer brand line, `/about` narrative. **Not the
 - Magazine, not marketplace
 - הדף הבסיסי חינם. מחירון גלוי מהיום הראשון, גבייה מבית עסק רק אחרי סף תוצאות; מותרת עמלה על הזמנות (אירוע בתשלום, שקית הצלה, רכישה). כסף לעולם לא משפיע על דירוג/חשיפה/תגים/אימות, גם עם סימון — see docs/decisions/ADR-042-revenue-model-v3.md + docs/PRICING.md
 - Manual approval for every business
-- Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
+- Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. A business without a license, cooked food included, is approved without the מאומת badge (Sapir 17/11, confirmed 24/11, MEH-3743)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
 - No `"יצרן"` / `"יצרנית"` in UI — מונחים per ADR-024: `"בית עסק"` (ישות) · `"בעלי עסקים"` (גנרי) · `"בעלת/בעל עסק"` (ספציפיים)
 - No `"marketplace"` / `"פלטפורמת מסחר"` copy anywhere

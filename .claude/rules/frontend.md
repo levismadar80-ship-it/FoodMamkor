@@ -45,13 +45,16 @@ Formatting, links and validation each have ONE owner. Import it; a second
 `toLocaleDateString`, `wa.me/` builder or phone regex is the bug. When none
 fits, extend the owner. `SharedHelpersTableGuard.test.js` fails when a file or
 export named here no longer exists. A WhatsApp URL built outside `utils.js` fails
-`scripts/checks/whatsapp-link-owner-guard.sh` (MEH-3603).
+`scripts/checks/whatsapp-link-owner-guard.sh` (MEH-3603). A function name
+defined in more files than `duplicate-name-baseline.txt` allows fails
+`scripts/checks/duplicate-name-guard.sh` (MEH-3715).
 
 | Need | Owner (`frontend/lib/`) | Exports |
 |---|---|---|
 | Print a date | `format-date.js` | `formatDate`, `formatEventDate` |
 | "Today" in Israel time | `israel-date.js` | `israelToday` |
 | Price, price range | `utils.js` | `formatPrice`, `formatPriceRange` |
+| Agorot ↔ shekels (API prices are agorot) | `money.js` | `formatAgorot`, `agorotToShekels`, `shekelsToAgorot` |
 | Phone: normalise · validate | `utils.js` · `validators.js` | `normalizePhone` · `validateIsraeliPhone` |
 | Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
 | WhatsApp link | `utils.js` | `getWhatsAppHref`, `getWhatsAppChatHref` (no prefilled text) |
