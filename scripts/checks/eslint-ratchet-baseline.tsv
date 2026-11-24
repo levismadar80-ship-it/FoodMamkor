@@ -235,6 +235,8 @@ frontend/app/[locale]/producer/dashboard/ChangesRequestedBanner.jsx	design-syste
 frontend/app/[locale]/producer/dashboard/DashboardLayoutClient.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	eqeqeq	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-button	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx	design-system/no-html-button	3
 frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx	design-system/no-html-checkbox	1
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx	design-system/no-html-button	7
@@ -317,7 +319,7 @@ frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-b
 frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/share/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-button	1
-frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	4
+frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	5
 frontend/app/[locale]/producer/dashboard/tools/page.js	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	jsx-a11y/no-redundant-roles	1
