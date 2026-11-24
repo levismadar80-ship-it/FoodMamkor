@@ -109,7 +109,8 @@ export default function OrderPreviewClient() {
       </PreviewBanner>
       {step && step !== "loading" && <MissingStepLine step={step} />}
       <PreviewModeProvider ownerOrderMenu>
-        <ProducerDetail fetchPath={`/producers/${producerId}`} />
+        {/* MEH-3777: «→ הזמנות» above is the way back; no second «→ חזרה». */}
+        <ProducerDetail fetchPath={`/producers/${producerId}`} hideHistoryBack />
       </PreviewModeProvider>
     </div>
   );
