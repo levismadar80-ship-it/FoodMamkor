@@ -940,7 +940,7 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
       // Asserted against the config rather than a copied literal: a paraphrase
       // in the component would pass a hardcoded string but not this.
-      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלכם.");
     });
 
     it("renders label only — no empty line — for a badge with no tooltip", () => {

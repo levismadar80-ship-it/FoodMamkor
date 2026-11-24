@@ -238,7 +238,7 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
       "rgb(46, 104, 83)",
     );
 
-    // "יש לך כבר חשבון?" → /login
+    // "כבר יש חשבון?" → /login
     const loginLink = page.getByTestId("register-login-link");
     await expect(loginLink).toBeVisible();
     await expect(loginLink).toHaveAttribute("href", /\/login$/);

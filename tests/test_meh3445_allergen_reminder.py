@@ -1,6 +1,6 @@
 """
 Module:   test_meh3445_allergen_reminder
-Purpose:  MEH-3445 — «מה מחכה לך» counts this business's published products
+Purpose:  MEH-3445 — «מה מחכה לטיפול» counts this business's published products
           with no allergen declaration (`attention.products_no_allergens`).
 Touches:  GET /producers/me/dashboard.
 Related:  backend/app/services/owner_attention.py _products_no_allergens.

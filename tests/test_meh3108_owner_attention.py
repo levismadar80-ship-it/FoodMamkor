@@ -1,4 +1,4 @@
-"""MEH-3108 — «מה מחכה לך» on the dashboard home: GET /producers/me/dashboard
+"""MEH-3108 — «מה מחכה לטיפול» on the dashboard home: GET /producers/me/dashboard
 carries `attention` with what is waiting for the owner.
 
 - reviews with no reply (hidden ones don't count — they are not on the page)

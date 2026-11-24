@@ -14,7 +14,7 @@
  *           this line (Sapir's table). Renders nothing until the read lands,
  *           and nothing when it fails: a missing summary is not an error the
  *           owner can act on.
- * Related:  app/[locale]/producer/dashboard/page.js (mounts it under «מה מחכה לך»).
+ * Related:  app/[locale]/producer/dashboard/page.js (mounts it under «מה מחכה לטיפול»).
  * History:  MEH-3194 (creation).
  */
 

@@ -90,7 +90,7 @@ import ReservistOwnedCard from "./ReservistOwnedCard";
 import OrderWindowEditor from "./OrderWindowEditor";
 // MEH-2264: per-date overrides above the weekly window (own file, same reason).
 import SpecialHoursEditor from "./SpecialHoursEditor";
-// MEH-3035 chunk 2: «איך משלמים לך?» (producers.payment_info).
+// MEH-3035 chunk 2: «איך משלמים לעסק?» (producers.payment_info).
 import PaymentInfoEditor from "./PaymentInfoEditor";
 import { paymentAnswer } from "@/lib/payment-info";
 import { upcomingSpecialCount } from "@/lib/special-hours";

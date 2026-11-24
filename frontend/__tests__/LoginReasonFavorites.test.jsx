@@ -56,7 +56,7 @@ beforeEach(() => {
 
 describe("/login reason line (MEH-3120)", () => {
   it("copy row 10 is word for word", () => {
-    expect(he.auth.login.reason_favorites).toBe("כדי לראות את המועדפים שלך, צריך להיכנס.");
+    expect(he.auth.login.reason_favorites).toBe("כדי לראות את המועדפים, צריך להיכנס.");
   });
 
   it.each(["/favorites", "/he/favorites", "/en/favorites", "/he/favorites?tab=events"])(
