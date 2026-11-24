@@ -11,6 +11,13 @@
  *           Does NOT cover a raw text <input> (owned by
  *           `__tests__/HandWrittenRatchet.test.js`) or a raw <img>
  *           (`@next/next/no-img-element`, already gated) — one owner per fact.
+ *           `no-html-button` counts EVERY raw <button>; ButtonPrimitiveGuard
+ *           keeps its narrower job (a raw button wearing the primary / danger /
+ *           outlined recipe, per file). When the codemod brings those files to
+ *           zero, that guard's ALLOWED list empties and it can be retired.
+ * Blind spots (known, accepted): a non-literal `type` (`type={t}`) is not a
+ *           checkbox or radio to these rules; a member-expression tag
+ *           (`<motion.button>`) is not a raw element.
  * Related:  frontend/components/CLAUDE.md «Shared components» (the owner table
  *           each message points at); eslint.config.mjs (wiring + ui/ exemption).
  * History:  MEH-3829 (creation, parent MEH-3826).
@@ -73,13 +80,6 @@ const inputOfType = (types) => (node) => {
 const FIELD_TAGS = new Set(["input", "textarea", "select", "Input", "Textarea", "Select"]);
 const LABEL_PROPS = ["label", "aria-label", "aria-labelledby"];
 
-/** Every `htmlFor="x"` literal in the file, so `id="x"` counts as labelled. */
-function labelTargets(sourceCode) {
-  const ids = new Set();
-  for (const m of sourceCode.text.matchAll(/htmlFor=\{?["'`]([^"'`]+)["'`]/g)) ids.add(m[1]);
-  return ids;
-}
-
 function insideLabel(node) {
   for (let p = node.parent; p; p = p.parent) {
     if (p.type === "JSXElement" && tagName(p.openingElement) === "label") return true;
@@ -97,8 +97,19 @@ const noPlaceholderAsLabel = {
     },
   },
   create(context) {
-    let targets = null;
+    // Collected from the AST (not the file text, so a comment or string that
+    // says htmlFor does not count), and reported at the end of the file,
+    // because a <label htmlFor> may come after its field.
+    const literalTargets = new Set();
+    let dynamicTarget = false;
+    const pending = [];
     return {
+      JSXAttribute(node) {
+        if (!node.name || node.name.name !== "htmlFor") return;
+        const v = literal(node);
+        if (v) literalTargets.add(v);
+        else dynamicTarget = true;
+      },
       JSXOpeningElement(node) {
         const tag = tagName(node);
         if (!FIELD_TAGS.has(tag) || !attr(node, "placeholder")) return;
@@ -106,12 +117,17 @@ const noPlaceholderAsLabel = {
         if (LABEL_PROPS.some((p) => attr(node, p))) return;
         if (node.attributes.some((a) => a.type === "JSXSpreadAttribute")) return; // props may carry the label
         if (insideLabel(node.parent)) return;
-        const id = literal(attr(node, "id"));
-        if (id) {
-          targets ??= labelTargets(context.sourceCode);
-          if (targets.has(id)) return;
+        pending.push(node);
+      },
+      "Program:exit"() {
+        for (const node of pending) {
+          const idAttr = attr(node, "id");
+          const id = literal(idAttr);
+          if (id && literalTargets.has(id)) continue;
+          // id={x} next to htmlFor={x}: cannot be matched statically, so not reported.
+          if (idAttr && !id && dynamicTarget) continue;
+          context.report({ node, messageId: "only" });
         }
-        context.report({ node, messageId: "only" });
       },
     };
   },

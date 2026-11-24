@@ -70,11 +70,14 @@ tester.run("no-placeholder-as-label", rule("no-placeholder-as-label"), {
     "<><label htmlFor='n'>שם</label><input id='n' placeholder='דנה' /></>",
     "<input {...props} placeholder='דנה' />",
     "<input type='submit' placeholder='x' />",
+    "<><input id='n' placeholder='דנה' /><label htmlFor='n'>שם</label></>",
+    "<><label htmlFor={fid}>שם</label><input id={fid} placeholder='דנה' /></>",
   ],
   invalid: [
     bad("<input placeholder='חיפוש' />", "only"),
     bad("<Textarea placeholder='כתבו כאן' />", "only"),
     bad("<><label htmlFor='other'>x</label><input id='n' placeholder='דנה' /></>", "only"),
+    bad("<>{/* htmlFor='n' */}<input id='n' placeholder='דנה' /></>", "only"),
   ],
 });
 
@@ -94,10 +97,18 @@ describe("wired through the repo's eslint.config.mjs", () => {
     return res.messages.map((m) => m.ruleId).filter((r) => r?.startsWith("design-system/"));
   };
 
-  it("the owner components/ui/Button.jsx is exempt from no-html-button", async () => {
-    expect(await rulesIn("components/ui/Button.jsx")).not.toContain("design-system/no-html-button");
+  it.each([
+    ["components/ui/Button.jsx", "design-system/no-html-button"],
+    ["components/ui/OfferCard.jsx", "design-system/no-html-heading"],
+    ["components/ui/Select.jsx", "design-system/no-html-select"],
+    ["components/ui/Textarea.jsx", "design-system/no-html-textarea"],
+  ])("the owner %s is exempt from %s", async (file, ruleId) => {
+    expect(await rulesIn(file)).not.toContain(ruleId);
   });
 
+  // Footer.jsx is the real-file anchor: it holds raw buttons and headings on
+  // 24/11. When the codemod moves them, point this case at another file that
+  // still has both (the ratchet baseline lists them).
   it("a page component with raw buttons and headings is counted (Footer.jsx)", async () => {
     const found = await rulesIn("components/Footer.jsx");
     expect(found).toContain("design-system/no-html-button");

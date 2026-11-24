@@ -542,6 +542,13 @@ and `ui/Button.jsx` are the action-radius rule._
 Components are composed from the tokens above; see the `components` block in the
 front matter for the normative token bindings.
 
+A page builds from the shared owner in `frontend/components/ui/`, never from a
+raw basic element. ESLint marks a raw `<button>`, `<select>`, `<textarea>`,
+checkbox, radio, `<h1>`–`<h3>` or `<a>` outside `ui/`, a field whose only name
+is its placeholder, and a read-only or always-disabled field (MEH-3829, modelled
+on Atlassian's design-system lint rules); `npm run lint:ratchet` lets each
+count only go down. The owner table is `frontend/components/CLAUDE.md`.
+
 - **Buttons:** `button-primary` is forest green (`primary`) with white
   (`surface`) text, `rounded-full` (see Shapes), `label-md` type. Hover goes **darker**
   (`primary-dark`), never lighter and never with a shadow.

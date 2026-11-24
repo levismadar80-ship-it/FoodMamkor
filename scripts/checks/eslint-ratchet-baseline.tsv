@@ -76,7 +76,6 @@ frontend/app/[locale]/admin/producers/AdminProducersToolbar.jsx	no-restricted-sy
 frontend/app/[locale]/admin/producers/AdminReviewChecklist.jsx	design-system/no-html-button	2
 frontend/app/[locale]/admin/producers/AdminReviewChecklist.jsx	design-system/no-html-checkbox	1
 frontend/app/[locale]/admin/producers/GooglePlaceLink.jsx	design-system/no-html-button	4
-frontend/app/[locale]/admin/producers/GooglePlaceLink.jsx	design-system/no-placeholder-as-label	1
 frontend/app/[locale]/admin/producers/ProducerDecisionModal.jsx	design-system/no-html-button	4
 frontend/app/[locale]/admin/producers/ProducerDecisionModal.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/admin/producers/ProducerDecisionModal.jsx	design-system/no-html-radio	1
@@ -268,14 +267,13 @@ frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx	eqeqeq	1
 frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx	design-system/no-html-checkbox	1
 frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx	design-system/no-html-button	3
 frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx	design-system/no-html-textarea	1
-frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx	design-system/no-placeholder-as-label	4
+frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx	design-system/no-placeholder-as-label	3
 frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/edit/cards/KashrutCard.jsx	design-system/no-html-select	1
 frontend/app/[locale]/producer/dashboard/edit/cards/KashrutCard.jsx	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/producer/dashboard/edit/cards/LogoCard.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx	design-system/no-html-select	2
 frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx	design-system/no-html-textarea	1
-frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx	design-system/no-placeholder-as-label	1
 frontend/app/[locale]/producer/dashboard/edit/page.js	design-system/no-html-button	2
 frontend/app/[locale]/producer/dashboard/edit/page.js	design-system/no-html-heading	3
 frontend/app/[locale]/producer/dashboard/edit/page.js	react-hooks/refs	1
@@ -294,7 +292,6 @@ frontend/app/[locale]/producer/dashboard/google-profile/page.js	design-system/no
 frontend/app/[locale]/producer/dashboard/group-buys/page.js	design-system/no-html-button	3
 frontend/app/[locale]/producer/dashboard/group-buys/page.js	design-system/no-html-heading	3
 frontend/app/[locale]/producer/dashboard/group-buys/page.js	design-system/no-html-textarea	2
-frontend/app/[locale]/producer/dashboard/group-buys/page.js	design-system/no-placeholder-as-label	1
 frontend/app/[locale]/producer/dashboard/group-buys/page.js	no-restricted-syntax	1
 frontend/app/[locale]/producer/dashboard/group-buys/page.js	react-hooks/immutability	1
 frontend/app/[locale]/producer/dashboard/insights/page.js	design-system/no-html-anchor	1
@@ -369,7 +366,6 @@ frontend/components/AccountDeleteCard.jsx	design-system/no-html-button	3
 frontend/components/AccountDeleteCard.jsx	design-system/no-html-heading	2
 frontend/components/AccountSheet.jsx	design-system/no-html-button	3
 frontend/components/AccountSheet.jsx	react-hooks/set-state-in-effect	1
-frontend/components/AddressSearch.jsx	design-system/no-placeholder-as-label	1
 frontend/components/AddressSearch.jsx	react-hooks/set-state-in-effect	1
 frontend/components/AlertPrefsPanel.jsx	design-system/no-html-button	3
 frontend/components/AlertPrefsPanel.jsx	design-system/no-html-heading	1
@@ -404,7 +400,6 @@ frontend/components/CitiesAutocomplete.jsx	jsx-a11y/no-static-element-interactio
 frontend/components/CitiesAutocomplete.jsx	react-hooks/purity	1
 frontend/components/CitiesAutocomplete.jsx	react-hooks/refs	2
 frontend/components/CitySearch.jsx	design-system/no-html-button	1
-frontend/components/CitySearch.jsx	design-system/no-placeholder-as-label	1
 frontend/components/ClosingCtaBand.jsx	design-system/no-html-heading	1
 frontend/components/CookieBanner.jsx	design-system/no-html-button	2
 frontend/components/CookieBanner.jsx	react-hooks/set-state-in-effect	1
@@ -416,7 +411,6 @@ frontend/components/DeliveryBlock.jsx	eqeqeq	5
 frontend/components/DeliveryDayRow.jsx	design-system/no-html-button	3
 frontend/components/DeliveryWaitlistForm.jsx	design-system/no-html-button	2
 frontend/components/DeliveryWaitlistForm.jsx	design-system/no-html-checkbox	1
-frontend/components/DeliveryWaitlistForm.jsx	design-system/no-placeholder-as-label	1
 frontend/components/DeliveryWaitlistForm.jsx	react-hooks/set-state-in-effect	1
 frontend/components/EditAccordionCard.jsx	design-system/no-html-button	1
 frontend/components/EditAccordionCard.jsx	design-system/no-html-heading	1
@@ -461,7 +455,6 @@ frontend/components/Header.jsx	jsx-a11y/interactive-supports-focus	1
 frontend/components/Header.jsx	react-hooks/set-state-in-effect	2
 frontend/components/HeroSearch.jsx	@next/next/no-img-element	1
 frontend/components/HeroSearch.jsx	design-system/no-html-button	2
-frontend/components/HeroSearch.jsx	design-system/no-placeholder-as-label	1
 frontend/components/HeroSearch.jsx	react-hooks/set-state-in-effect	4
 frontend/components/HistoryBackLink.jsx	design-system/no-html-button	1
 frontend/components/HolidayBanner.jsx	design-system/no-html-button	1
@@ -548,7 +541,6 @@ frontend/components/ProductOrganizer.jsx	react-hooks/set-state-in-effect	1
 frontend/components/ProductsSection.jsx	design-system/no-html-button	13
 frontend/components/ProductsSection.jsx	design-system/no-html-heading	1
 frontend/components/ProductsSection.jsx	design-system/no-html-textarea	2
-frontend/components/ProductsSection.jsx	design-system/no-placeholder-as-label	2
 frontend/components/ProductsSection.jsx	eqeqeq	9
 frontend/components/ProductsSection.jsx	no-restricted-syntax	2
 frontend/components/ProductsSection.jsx	react-hooks/set-state-in-effect	1
@@ -559,7 +551,6 @@ frontend/components/RecipeForm.jsx	design-system/no-html-button	2
 frontend/components/RecipeForm.jsx	design-system/no-html-checkbox	1
 frontend/components/RecipeForm.jsx	design-system/no-html-heading	1
 frontend/components/RecipeForm.jsx	design-system/no-html-textarea	3
-frontend/components/RecipeForm.jsx	design-system/no-placeholder-as-label	2
 frontend/components/RecipeStatusBadge.jsx	no-restricted-syntax	3
 frontend/components/RegisterNameCheck.jsx	jsx-a11y/no-redundant-roles	1
 frontend/components/RegistrationCta.jsx	design-system/no-html-anchor	2
@@ -588,7 +579,6 @@ frontend/components/ReviewReportMenu.jsx	design-system/no-html-radio	1
 frontend/components/ReviewsSection.jsx	design-system/no-html-button	5
 frontend/components/ReviewsSection.jsx	design-system/no-html-heading	1
 frontend/components/ReviewsSection.jsx	design-system/no-html-textarea	2
-frontend/components/ReviewsSection.jsx	design-system/no-placeholder-as-label	1
 frontend/components/ReviewsSection.jsx	react-hooks/refs	1
 frontend/components/ReviewsSection.jsx	react-hooks/set-state-in-effect	3
 frontend/components/SaveButton.jsx	design-system/no-html-button	1
@@ -644,7 +634,6 @@ frontend/components/admin/DraftProductsPanel.jsx	design-system/no-html-heading	2
 frontend/components/admin/OwnerInvitePanel.jsx	design-system/no-html-anchor	1
 frontend/components/admin/OwnerInvitePanel.jsx	design-system/no-html-checkbox	1
 frontend/components/admin/OwnerInvitePanel.jsx	design-system/no-html-heading	1
-frontend/components/admin/OwnerInvitePanel.jsx	design-system/no-placeholder-as-label	1
 frontend/components/admin/OwnerInvitePanel.jsx	design-system/no-readonly-or-disabled-inputs	1
 frontend/components/admin/ProducerForm.jsx	design-system/no-html-anchor	1
 frontend/components/admin/ProducerForm.jsx	design-system/no-html-button	5

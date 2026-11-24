@@ -237,6 +237,18 @@ spent; this directory is for guards that would otherwise need a new one.
 
 ---
 
+## `eslint-ratchet.mjs` — ESLint findings that only go down (MEH-3160)
+
+Not a `.sh`, so the dispatcher does not run it: it needs `node_modules` and runs
+in the frontend lint job through `npm run lint:ratchet`. It gates only the rule
+ids or `prefix/`es in its `GATED` list (the repo's `no-restricted-syntax`
+selectors, React hooks, Next, dead code, unsafe regex; since MEH-3829 also
+`design-system/` and `jsx-a11y/`). Each rule's total in
+`eslint-ratchet-baseline.tsv` may not rise. `--update-baseline` rewrites the
+rows and refuses a higher total unless `--allow-increase` is given, for a new
+rule born at today's count. Every run first requires ESLint to report one known
+baseline finding (the control), so a dead ESLint cannot pass as zero.
+
 ## Not every file here is a guard — `console-sweep.mjs` (MEH-1966)
 
 `console-sweep.mjs` is a **diagnostic tool**, not a guard, and the dispatcher

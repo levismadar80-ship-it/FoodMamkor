@@ -196,7 +196,9 @@ export default [
       ...Object.fromEntries(Object.keys(designSystem.rules).map((r) => [`design-system/${r}`, "warn"])),
     },
   },
-  // The owners themselves are where the raw elements belong.
+  // The owners themselves are where the raw elements belong. Only the
+  // no-html-* rules are off here: an owner must still give its field a label
+  // and must not ship a read-only one.
   {
     files: ["components/ui/**"],
     rules: Object.fromEntries(
