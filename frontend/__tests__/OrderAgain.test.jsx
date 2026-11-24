@@ -123,6 +123,12 @@ describe("the «להזמין שוב» button on the order page", () => {
     expect(track).toHaveBeenCalledWith("order_again_clicked", { status: "handed", lines: 3 });
   });
 
+  it("click on a cancelled order with one line: the event carries that order's status and count (MEH-3794)", () => {
+    show({ status: "cancelled", items: [breadLine] });
+    fireEvent.click(screen.getByTestId("order-again"));
+    expect(track).toHaveBeenCalledWith("order_again_clicked", { status: "cancelled", lines: 1 });
+  });
+
   it("with a review link the review stays the main button and «להזמין שוב» is outlined", () => {
     show({ review_url: "https://mehamakor.co.il/p/ruti?rt=abc" });
     expect(screen.getByTestId("order-again").className).not.toBe(screen.getByTestId("order-write-review").className);
