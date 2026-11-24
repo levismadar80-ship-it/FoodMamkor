@@ -67,8 +67,8 @@ wrong around it is never seen. This spec throttles Chromium (CDP: 400 ms RTT,
 1.6 Mbps, CPU x4) and, on home, /producers, /events, /experiences and
 /group-buys: scrolls to the last card, opens it, and checks in every animation
 frame that the footer is never in view under the loader; then Back must return
-to the same offset (±100 px; a list too short to scroll is annotated, not
-checked). Control: the loader must paint on at least one list, or the throttle
+to the same offset (±100 px, on every list, including one too short to
+scroll, which must come back to the top). Control: the loader must paint on at least one list, or the throttle
 did not take effect. Chromium only.
 
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)

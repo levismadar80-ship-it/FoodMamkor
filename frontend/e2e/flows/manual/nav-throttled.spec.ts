@@ -34,7 +34,6 @@ const LISTS: List[] = [
 ];
 
 const RESTORE_TOLERANCE_PX = 100;
-const MIN_SCROLL_PX = 150; // below this, (b) cannot tell "restored" from "reset"
 const SAMPLE_CAP_FRAMES = 1800; // a stop for the sampler only; nothing is timed by it
 
 async function throttle(page: Page) {
@@ -73,6 +72,7 @@ async function readSamples(page: Page) {
 
 test.describe("navigation on a slow phone (MEH-3810)", () => {
   test("scroll → open a card → back, on every list", async ({ page, browserName }) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: CDP throttling is Chromium-only
     test.skip(browserName !== "chromium", "CDP network and CPU throttling exist only in Chromium");
     test.setTimeout(240_000);
     await throttle(page);
@@ -112,20 +112,14 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
 
         await page.goBack();
         await expect(cards.last()).toBeVisible({ timeout: 60_000 });
-        if (before >= MIN_SCROLL_PX) {
-          await expect
-            .poll(() => page.evaluate(() => scrollY), {
-              message: `${list.name}: Back did not return to ${before}px`,
-              timeout: 30_000,
-            })
-            .toBeGreaterThanOrEqual(before - RESTORE_TOLERANCE_PX);
-          expect(await page.evaluate(() => scrollY)).toBeLessThanOrEqual(before + RESTORE_TOLERANCE_PX);
-        } else {
-          test.info().annotations.push({
-            type: "scroll-restore not checked",
-            description: `${list.name}: the list is too short to scroll (${before}px); only (a) was checked`,
-          });
-        }
+        // Unconditional: a list too short to scroll has before ≈ 0 and must
+        // come back to ≈ 0, which is still a real check (MEH-3520 ratchet).
+        await expect
+          .poll(async () => Math.abs((await page.evaluate(() => scrollY)) - before), {
+            message: `${list.name}: Back did not return to ${before}px (±${RESTORE_TOLERANCE_PX})`,
+            timeout: 30_000,
+          })
+          .toBeLessThanOrEqual(RESTORE_TOLERANCE_PX);
       });
     }
 
