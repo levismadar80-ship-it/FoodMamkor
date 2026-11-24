@@ -440,7 +440,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         .first()
     )
     if existing:
-        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
+        raise HTTPException(
+            status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת"
+        )
     capacity.refuse_unless_room(gb, current_count, current_units, 1, data.quantity)
     # MEH-3592: a waitlisted visitor who joins leaves the waitlist.
     capacity.drop_from_waitlist(db, group_buy_id, current_user.id)
@@ -477,7 +479,7 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     db.commit()
     db.refresh(commit)
-    return {"detail": "הצטרפת בהצלחה", "status": gb.status, "commits_count": new_count}
+    return {"detail": "ההצטרפות נקלטה", "status": gb.status, "commits_count": new_count}
 
 
 @router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)

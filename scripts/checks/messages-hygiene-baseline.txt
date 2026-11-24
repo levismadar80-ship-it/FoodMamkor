@@ -165,6 +165,7 @@ duplicate	2	כשרות
 duplicate	2	כתובת
 duplicate	2	לא הגיע
 duplicate	2	לא הגיעו
+duplicate	2	לא הוגדר
 duplicate	2	לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית
 duplicate	2	לא הצלחנו לטעון את המוצרים
 duplicate	2	לא הצלחנו ליצור קישור
@@ -384,7 +385,6 @@ duplicate	3	כניסה לחשבון
 duplicate	3	כניסה למהמקור
 duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
-duplicate	3	לא הוגדר
 duplicate	3	להשלמת העמוד
 duplicate	3	לכל הנתונים
 duplicate	3	לנסות שוב

@@ -54,7 +54,7 @@ DASHBOARD_URL = f"{settings.frontend_url}/producer/dashboard"
 # differ only in what they omit.
 _LINKS = (
     "\n"
-    "ככה העמוד שלך נראה ללקוחות:\n"
+    "ככה עמוד העסק נראה ללקוחות:\n"
     f"{PAGE_URL}\n"
     "\n"
     "לעדכון פרטים, תמונות ומוצרים — לוח הבקרה:\n"
@@ -81,8 +81,8 @@ def test_body_carries_community_block_and_link_when_url_is_set(invite_url):
     assert _producer_approved_body("מאפיית שקד", SLUG) == (
         "היי,\n"
         "\n"
-        'העסק שלך "מאפיית שקד" אושר במהמקור! '
-        "העמוד שלך כבר מופיע באתר.\n"
+        'העסק "מאפיית שקד" אושר במהמקור! '
+        "עמוד העסק כבר מופיע באתר.\n"
         f"{_LINKS}"
         "\n"
         "פתחנו קבוצת עדכונים בוואטסאפ לבתי עסק שאושרו במהמקור — שווקים ואירועים "
@@ -107,8 +107,8 @@ def test_body_omits_the_whole_block_when_url_is_empty(invite_url):
     assert body == (
         "היי,\n"
         "\n"
-        'העסק שלך "מאפיית שקד" אושר במהמקור! '
-        "העמוד שלך כבר מופיע באתר.\n"
+        'העסק "מאפיית שקד" אושר במהמקור! '
+        "עמוד העסק כבר מופיע באתר.\n"
         f"{_LINKS}"
         "\n"
         "צוות מהמקור"

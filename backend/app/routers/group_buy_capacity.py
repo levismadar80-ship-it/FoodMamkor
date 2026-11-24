@@ -176,7 +176,9 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         .first()
     )
     if joined:
-        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
+        raise HTTPException(
+            status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת"
+        )
     waiting = (
         db.query(GroupBuyWaitlist.id)
         .filter(
@@ -186,7 +188,7 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         .first()
     )
     if waiting:
-        raise HTTPException(status_code=400, detail="כבר נרשמת לרשימת ההמתנה")
+        raise HTTPException(status_code=400, detail="ההרשמה לרשימת ההמתנה כבר קיימת")
     if capacity.waitlist_count(db, gb.id) >= capacity.WAITLIST_MAX:
         raise HTTPException(status_code=409, detail="רשימת ההמתנה מלאה")
     db.add(
@@ -195,7 +197,7 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         )
     )
     db.commit()
-    return {"detail": "נרשמת לרשימת ההמתנה"}
+    return {"detail": "ההרשמה לרשימת ההמתנה נקלטה"}
 
 
 @router.delete("/{group_buy_id}/waitlist", response_model=None)
