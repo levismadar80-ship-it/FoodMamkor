@@ -5,6 +5,11 @@
 
 ## Unreleased
 
+- **24/11 — שורת הצ'יפים לא קורסת בדפדפן בלי `scrollTo` (PR #5251).**
+  - **למה:** ב-Sentry ‏(JAVASCRIPT-NEXTJS-14) נרשמה שגיאה `scrollTo is not a function` בדף /producers. היה אירוע אחד, כנראה של סורק עם מנוע ישן. ספיר אישרה לתקן.
+  - **הסיבה:** ב-`frontend/components/ChipScrollRow.jsx` הקריאה הייתה `scrollRef.current?.scrollTo(...)`. ה-`?.` בודק שהאלמנט קיים, אבל לא שיש לו את הפונקציה.
+  - **התיקון:** בשלושת המקומות שבהם השורה גוללת, כשאין `scrollTo` או `scrollBy` הקוד קובע את `scrollLeft` ישירות. זה תקף לקיבוע בטעינה, לגלגלת העכבר ולחצים ב-`frontend/hooks/useScrollAffordance.js`. דפדפן שיש לו את הפונקציות מקבל בדיוק את אותן קריאות כמו קודם.
+  - **בדיקה:** ‏`frontend/__tests__/ChipScrollRowNoScrollApi.test.jsx` נכשל על הקוד הישן עם אותה שגיאה ש-Sentry רשם, ועובר עכשיו. ‏E2E על ה-head: ‏1630 רצו, 0 כשלים ו-0 flaky.
 - **24/11 — נתוני דמו לכל מצב שהאתר יכול להציג, ותיקון בדיקת הסינון באדמין שנשברה בעקבותיהם (PR #5219, נכנס ברכבת 3, #5244; PR #5249).**
   - **למה:** ספיר ביקשה למחוק את נתוני הבדיקה הישנים ב-staging ולבנות אותם מחדש כמו שנהוג בתעשייה, עם עסק דמו לכל מצב באתר. כך כל מסך אפשר לבדוק על נתונים אמיתיים.
   - **הזריעה (#5219):** ‏`backend/scripts/_seed_every_state.py`, שנקרא מ-`seed_demo_business.py`, יוצר שורה לכל ערך סטטוס: עסקים בטיוטה, ממתינים, נדחים ומושהים, וגם משתמשים חסומים ולא מאומתים. ‏`backend/scripts/check_seed_coverage.py` משווה את הנתונים לטבלה ב-`docs/SEED_COVERAGE.md`. ‏`tests/test_meh3761_state_values_match_checks.py` בודק שכל ערך שנזרע עומד ב-CHECK של המסד.

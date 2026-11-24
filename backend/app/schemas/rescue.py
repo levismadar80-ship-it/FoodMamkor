@@ -304,6 +304,8 @@ class RescueOrderCreatedOut(RescueOrderOut):
     """
 
     price_agorot: int
+    # MEH-3702: the Israel pickup date, so the screen can say «מחר».
+    date: date_type
     cancel_until: UtcDatetimeOut
     pickup_start: UtcDatetimeOut
     pickup_end: UtcDatetimeOut
@@ -378,6 +380,8 @@ class RescueOwnerOrderOut(BaseModel):
 
     id: UUID
     offer_id: UUID
+    # MEH-3702: the Israel pickup date — today's and tomorrow's rows share the list.
+    date: date_type
     qty: int
     pickup_code: str
     status: RescueOrderStatus
@@ -402,6 +406,7 @@ class RescueOwnerOfferOut(BaseModel):
     """
 
     id: UUID
+    date: date_type  # MEH-3702
     qty_total: int
     qty_left: int
     status: str

@@ -13,6 +13,8 @@
 
 import api from "@/lib/api";
 import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
+import { eventWhen } from "@/lib/event-when";
+import { israelToday } from "@/lib/israel-date";
 import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
@@ -61,6 +63,22 @@ export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
   return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
 }
 
+/**
+ * MEH-3702: a bag is for today or for tomorrow on the Israel clock (the API
+ * lists no other day). "tomorrow" only when the date is exactly the next
+ * Israel day; anything else, including a missing date, reads as "today", so
+ * a row from an older API never gains a wrong «מחר». REUSES:
+ * lib/event-when.js `eventWhen` (the same Israel-day arithmetic).
+ *
+ * @param {string|null|undefined} date `YYYY-MM-DD`
+ * @param {string} [today] `YYYY-MM-DD`, injectable for tests
+ * @returns {"today"|"tomorrow"}
+ */
+export function bagDay(date, today = israelToday()) {
+  if (typeof date !== "string" || !today) return "today";
+  return eventWhen(date, today) === "tomorrow" ? "tomorrow" : "today";
+}
+
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */
 export function walkingMinutes(distanceKm) {
   if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) return null;
@@ -107,6 +125,22 @@ export function israelTime(iso) {
     // guard-ok: formats one instant as HH:MM; derives no "today" or "open now".
     timeZone: "Asia/Jerusalem",
   }).format(d);
+}
+
+/**
+ * The free-cancel deadline as the screen says it: «18:30» when it is today,
+ * «מחר ב-18:30» when it falls on the next Israel day (MEH-3702 — a bag for
+ * tomorrow usually has its deadline tomorrow, and a bare time reads as today).
+ *
+ * @param {string|null|undefined} iso the `cancel_until` instant
+ * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @returns {string|null}
+ */
+export function rescueCancelText(iso, t) {
+  const time = israelTime(iso);
+  if (!time || !iso) return time;
+  const day = bagDay(israelToday(new Date(iso)));
+  return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
 }
 
 /**
