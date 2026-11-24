@@ -42,7 +42,22 @@ function sheet(inPreview) {
   );
 }
 
-const OwnerPreview = ({ children }) => <PreviewModeProvider ownerOrderMenu>{children}</PreviewModeProvider>;
+// MEH-3764: the cart hook reads «להזמין שוב» copy, so it renders inside next-intl.
+const Intl = ({ children }) => (
+  <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+    {children}
+  </NextIntlClientProvider>
+);
+const OwnerPreview = ({ children }) => (
+  <Intl>
+    <PreviewModeProvider ownerOrderMenu>{children}</PreviewModeProvider>
+  </Intl>
+);
+const PreviewOnly = ({ children }) => (
+  <Intl>
+    <PreviewModeProvider>{children}</PreviewModeProvider>
+  </Intl>
+);
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -113,7 +128,7 @@ describe("useOrderCart inside the owner's preview", () => {
   // call the owner route (fresh review).
   it("preview mode without ownerOrderMenu reads nothing", async () => {
     const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }), {
-      wrapper: PreviewModeProvider,
+      wrapper: PreviewOnly,
     });
     await wait(50);
     expect(api.get).not.toHaveBeenCalled();
@@ -131,7 +146,7 @@ describe("useOrderCart inside the owner's preview", () => {
   });
 
   it("outside the preview a business that takes no orders reads nothing (control)", async () => {
-    const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }));
+    const { result } = renderHook(() => useOrderCart({ id: PRODUCER, takes_site_orders: false }), { wrapper: Intl });
     await wait(50);
     expect(api.get).not.toHaveBeenCalled();
     expect(result.current.menu).toBeNull();

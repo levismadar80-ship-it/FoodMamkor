@@ -103,6 +103,12 @@ updates:
       - dependency-name: "@types/react"
         update-types:
           - "version-update:semver-major"
+      # tailwindcss 3->4 is an engine swap (CSS-first config, @tailwindcss/postcss),
+      # not a bump: a manual migration, deferred post-launch (MEH-1913). Without
+      # this the v4 PR comes back every Monday (#2132, #5188). MEH-3750.
+      - dependency-name: "tailwindcss"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - "dependencies"
       - "meh-330"

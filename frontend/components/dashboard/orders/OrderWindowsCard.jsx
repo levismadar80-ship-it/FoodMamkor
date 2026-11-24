@@ -11,13 +11,16 @@
  *           a different fact, edit/OrderWindowEditor.jsx). It only reads it
  *           once, to prefill an empty week (approved stage-4 design).
  * Related:  lib/order-window-editor.js (daysFromOrderWindow), lib/hours.js (DAY_KEYS)
- * History:  MEH-3316 (creation; stage 4 of MEH-3216)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216) · MEH-3752 (the lead
+ *           carries a «?»; an order-setup draft replaces the rows, saved
+ *           with the usual button)
  */
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, Plus, X } from "@phosphor-icons/react";
 
+import FieldHelpLabel from "@/components/FieldHelpLabel";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
@@ -26,6 +29,7 @@ import { detailToMessage } from "@/lib/errors";
 import { DAY_KEYS } from "@/lib/hours";
 import { daysFromOrderWindow } from "@/lib/order-window-editor";
 import { saveWindows } from "@/lib/product-orders";
+import { draftWindows } from "@/lib/order-setup-draft";
 
 const HHMM_LENGTH = 5;
 const MAX_WINDOWS = 28;
@@ -75,13 +79,29 @@ function WindowRow({ row, onChange, onRemove }) {
   );
 }
 
-/** @param {{ windows: any[], orderWindow: any, collapsed?: boolean, onSaved?: (windows: any[]) => void }} props — collapsed: see OrderSettingsCard; onSaved: the week as saved */
-export default function OrderWindowsCard({ windows, orderWindow, collapsed = false, onSaved = undefined }) {
+/**
+ * @param {{ windows: any[], orderWindow: any, collapsed?: boolean, onSaved?: (windows: any[]) => void, draft?: Record<string, unknown> | null }} props
+ *   collapsed: see OrderSettingsCard · onSaved: the week as saved · draft: an
+ *   order-setup draft (MEH-3752); one with windows replaces the rows.
+ */
+export default function OrderWindowsCard({ windows, orderWindow, collapsed = false, onSaved = undefined, draft = null }) {
   const t = useTranslations("dashboard.producer.orders.windows");
   const tHours = useTranslations("dashboard.producer.order_window");
-  const prefilled = windows.length === 0 ? prefillFrom(orderWindow) : [];
+  const tHelp = useTranslations("dashboard.producer.orders.help");
+  const [prefilled, setPrefilled] = useState(() => (windows.length === 0 ? prefillFrom(orderWindow) : []));
   const [rows, setRows] = useState(() => (prefilled.length ? prefilled : rowsFrom(windows)));
   const [state, setState] = useState(/** @type {{ busy?: boolean, error?: string|null, saved?: boolean }} */ ({}));
+  // A new draft with windows replaces the rows while rendering, once per draft.
+  const [applied, setApplied] = useState(/** @type {any} */ (null));
+  if (draft && draft !== applied) {
+    setApplied(draft);
+    const drafted = draftWindows(draft);
+    if (drafted) {
+      setRows(drafted);
+      setPrefilled([]); // the rows are the draft's now, not the hours'
+      setState({});
+    }
+  }
 
   const update = (/** @type {number} */ index, /** @type {any} */ row) => setRows((old) => old.map((item, i) => (i === index ? row : item)));
   const remove = (/** @type {number} */ index) => setRows((old) => old.filter((_, i) => i !== index));
@@ -108,7 +128,7 @@ export default function OrderWindowsCard({ windows, orderWindow, collapsed = fal
         <h2 className="font-bold text-lg text-text">{t("title")}</h2>
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
       </summary>
-      <p className="text-sm text-fg-muted">{t("lead")}</p>
+      <FieldHelpLabel label={t("lead")} help={tHelp("windows")} testId="order-help-windows" />
       {prefilled.length > 0 && <InlineMessage tone="info">{t("prefilled")}</InlineMessage>}
       {rows.length === 0 && <p className="text-sm text-fg-muted">{t("empty")}</p>}
       <ul className="space-y-3">
