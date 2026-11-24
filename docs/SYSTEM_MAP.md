@@ -111,6 +111,11 @@ inventory.
 3. **Per-IP rate limits behind one address.** Limits are per IP and held in
    memory. Many real users behind one NAT, or the whole CI run, share one
    bucket and get 429s on ordinary reads.
+   Server-side reads from Vercel share one egress address too: a business
+   page on its slug route (`/{slug}`) reads `/events`, `/experiences` and
+   `/group-buys` by `producer_id` on the server (MEH-3819), cached 60 s per
+   business. Under a crawl across many slugs these can hit the 120/min limit;
+   the page then falls back to reading the lists in the browser.
 4. **Server-rendered pages on Vercel.** Almost every public page renders on
    each request, about 140 ms of CPU each. Traffic raises cost linearly; there
    is no cache to absorb a spike. The exceptions are ISR pages such as `/` and
