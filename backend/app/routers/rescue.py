@@ -96,6 +96,7 @@ from app.schemas.rescue import (
 from app.schemas.rescue_schedule import (  # MEH-3703
     RescueScheduleIn,
     RescueScheduleRow,
+    weekday_bit,
 )
 from app.sentry import capture_background_exception
 from app.services.rescue_schedule import (  # MEH-3703
@@ -861,11 +862,14 @@ def _my_location(db: Session, user: User, location_id: UUID) -> ProducerLocation
     these routes sit behind require_producer, which an admin does not pass."""
     location = (
         db.query(ProducerLocation)
-        .filter(ProducerLocation.id == location_id)
+        .filter(
+            ProducerLocation.id == location_id,
+            ProducerLocation.producer_id == user.producer_id,
+        )
         .with_for_update()
         .first()
     )
-    if location is None or location.producer_id != user.producer_id:
+    if location is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="נקודת האיסוף לא נמצאה"
         )
@@ -989,18 +993,27 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
     cancel_whole_offer, the dashboard's «ביטול», so its buyers get the same
     email. If someone reserved that bag, the first call answers 409 and the
     dashboard asks; the second sends `cancel_reserved=true`. The bag is read
-    under its row lock, so a reservation cannot slip in between."""
+    under its row lock, so a reservation cannot slip in between. Only a day
+    on the routine's weekdays is touched."""
     location = _my_location(db, current_user, location_id)
+    routine = stored_routine(location)
+    # Only a day the routine covers can hold a routine bag; a bag published by
+    # hand on another day is cancelled from its own card, never by a skip.
+    covered = routine is not None and bool(routine.weekdays & weekday_bit(day))
     bag = (
-        db.query(RescueOffer)
-        .filter(
-            RescueOffer.producer_location_id == location.id,
-            RescueOffer.date == day,
-            RescueOffer.status == "active",
-            RescueOffer.pickup_end > utc_now(),
+        None
+        if not covered
+        else (
+            db.query(RescueOffer)
+            .filter(
+                RescueOffer.producer_location_id == location.id,
+                RescueOffer.date == day,
+                RescueOffer.status == "active",
+                RescueOffer.pickup_end > utc_now(),
+            )
+            .with_for_update()
+            .first()
         )
-        .with_for_update()
-        .first()
     )
     if bag is not None and not cancel_reserved:
         reserved = (
@@ -1026,8 +1039,8 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
         offer, buyer_ids = cancel_whole_offer(
             db,
             user=current_user,
-            offer_id=bag.id,
-            lock=_offer_for_update,  # type: ignore[arg-type]
+            offer_id=bag.id,  # type: ignore[arg-type]
+            lock=_offer_for_update,
         )
         try:
             _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)

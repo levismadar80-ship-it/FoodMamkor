@@ -19,10 +19,14 @@ Shown red against a broken build (PR body):
   - the reserved check dropped             -> test_skipping_a_reserved_bag_asks_first
   - require_producer on save again         -> test_an_unverified_owner_cannot_save
   - the paid-tool check dropped from the job -> test_a_closed_paid_tool_publishes_nothing
+  - the job reading the routine it loaded   -> test_a_skip_written_after_the_load_still_counts
+  - a skip cancelling any bag that day      -> test_a_skip_off_the_routine_days_leaves_a_hand_bag
 """
 
 # ruff: noqa: F811 — fixtures reused from test_rescue.py are injected by name.
 from datetime import date, datetime, timedelta
+
+from sqlalchemy import text
 
 import pytest
 from conftest import auth_header, make_producer, make_user
@@ -245,6 +249,20 @@ class TestPublish:
         assert len(_bags(db, healthy)) == 2
         assert _bags(db, shop["location"]) == []
 
+    def test_a_skip_written_after_the_load_still_counts(self, db, shop):
+        """A skip committed by another request while the run was going: the
+        session still holds the old routine, and the run must re-read it."""
+        _set(db, shop["location"])
+        db.execute(
+            text(
+                "UPDATE producer_locations SET rescue_schedule = "
+                "jsonb_set(rescue_schedule, '{skip_dates}', :days) WHERE id = :id"
+            ),
+            {"days": f'["{(THU + DAY).isoformat()}"]', "id": shop["location"].id},
+        )
+        assert publish_due(db, today=THU, now=THU_MORNING, in_pilot=_pilot) == 1
+        assert [b.date for b in _bags(db, shop["location"])] == [THU]
+
 
 class TestSkip:
     def test_a_day_past_two_weeks_is_refused(self, db, shop):
@@ -439,6 +457,28 @@ class TestRoutes:
         assert bag.status == "cancelled"
         order = db.query(RescueOrder).filter(RescueOrder.offer_id == bag.id).one()
         assert order.status == "cancelled"
+
+    def test_a_skip_off_the_routine_days_leaves_a_hand_bag(
+        self, client, db, shop, morning
+    ):
+        base = f"/producers/me/rescue/locations/{shop['location'].id}/schedule"
+        not_tomorrow = EVERY_DAY & ~weekday_bit(morning + DAY)
+        client.put(
+            base,
+            json=self._body(weekdays=not_tomorrow),
+            headers=auth_header(shop["owner"]),
+        )
+        hand = _bags(db, shop["location"])[0]  # today's routine bag, moved to tomorrow
+        hand.date = morning + DAY
+        hand.pickup_start += DAY
+        hand.pickup_end += DAY
+        hand.cancel_until += DAY
+        db.commit()
+        tomorrow = (morning + DAY).isoformat()
+        r = client.put(f"{base}/skips/{tomorrow}", headers=auth_header(shop["owner"]))
+        assert r.status_code == 200, r.text
+        db.refresh(hand)
+        assert hand.status == "active"
 
     def test_an_inexact_point_is_refused(self, client, db, shop, rescue_on):
         shop["location"].location_precision = "approximate"

@@ -23,7 +23,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app import pricing
@@ -163,15 +162,23 @@ def publish_due(
         query = query.filter(ProducerLocation.id == location_id)
     published = 0
     for location in query.all():
-        routine = stored(location)
-        if routine is None or routine.paused or not can_host(db, location, in_pilot):
-            continue
-        # One savepoint per point: a row the database refuses is logged and
-        # skipped, and every other business still gets its bags this run.
+        # One savepoint per point: anything that goes wrong at one point is
+        # logged and skipped, and every other business still gets its bags.
         try:
             with db.begin_nested():
+                # Re-read under the point's row lock: a skip or save committed
+                # since the list was loaded must count (the skip route holds
+                # the same lock while it writes).
+                db.refresh(location, with_for_update=True)
+                routine = stored(location)
+                if (
+                    routine is None
+                    or routine.paused
+                    or not can_host(db, location, in_pilot)
+                ):
+                    continue
                 published += _publish_point(db, location, routine, today, now)
-        except SQLAlchemyError:
+        except Exception:  # noqa: BLE001 — one point must never stop the run
             log.exception("[RESCUE-SCHEDULE] publish failed location=%s", location.id)
     db.commit()
     return published
