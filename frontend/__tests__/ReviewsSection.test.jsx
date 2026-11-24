@@ -964,6 +964,17 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
     expect(row.className).not.toMatch(GAP);
   });
 
+  // MEH-3819: the section mounts with the page, before /reviews answers. At
+  // zero reviews the invite row is drawn in its final form at once, so the
+  // read's answer does not move it.
+  it("0 reviews, guest, read still pending: the row already has no hairline and no top gap", () => {
+    apiMock.get.mockImplementation(() => new Promise(() => {}));
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = screen.getByTestId("reviews-write-hint");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
   it("0 reviews, signed in, not contacted: the contact row has no hairline and no top gap", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([]);

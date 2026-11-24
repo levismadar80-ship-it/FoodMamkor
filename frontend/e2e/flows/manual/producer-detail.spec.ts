@@ -986,9 +986,10 @@ test.describe("manual › /producer/[id] — main-column content", () => {
     );
     const root = await openProducer(page, target.id);
 
-    // Real scroll, not `scrollIntoViewIfNeeded()` — `#reviews` is zero-height
-    // until ReviewsSection mounts, and that call no-ops on a zero-height
+    // Real scroll, not `scrollIntoViewIfNeeded()` — `#reviews` was zero-height
+    // until ReviewsSection mounted, and that call no-ops on a zero-height
     // target (measured 04/09: `scrollY: 0` after it, section never mounted).
+    // Since MEH-3819 the section mounts with the page; the real scroll stays.
     //
     // MEH-2323 (02/11): measured ONCE, the top went stale — sections that
     // mount after first paint (ProducerActivities above #reviews) push the

@@ -24,6 +24,7 @@ vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({
 }));
 // MEH-2534: page.js now imports ProducerGone, which uses the locale-aware Link.
 vi.mock("@/i18n/navigation", () => ({ Link: () => null }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import ProducerSlugPage, {
   generateMetadata,
@@ -31,6 +32,7 @@ import ProducerSlugPage, {
 // MEH-1119: isSlugShaped moved to lib/slug.js (out of the page's export surface).
 import { isSlugShaped } from "@/lib/slug";
 import { serverFetch } from "@/lib/server-fetch";
+import * as Sentry from "@sentry/nextjs";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -156,5 +158,29 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
     const fallback = await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
     // The browser reads them itself (useProducerActivities); the page still renders.
     expect(detail(fallback).props.initialActivities).toBeNull();
+  });
+
+  // MEH-3819: the lists must not cost the page its first byte — one short try
+  // each, no retry — and a 429 (the shared egress IP under a crawl) is not
+  // reported per page, while a 500 is.
+  it("reads each list once with a 2.5 s timeout, and reports a 500 but not a 429", async () => {
+    const list = (data) => ({ ok: true, json: async () => data });
+    const run = async (status) => {
+      serverFetch.mockReset();
+      Sentry.captureException.mockClear();
+      serverFetch
+        .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
+        .mockResolvedValueOnce(list([]))
+        .mockResolvedValueOnce({ ok: false, status, json: async () => ({}) })
+        .mockResolvedValueOnce(list([]));
+      await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
+    };
+    await run(500);
+    for (const call of serverFetch.mock.calls.slice(1)) {
+      expect(call[2]).toEqual({ timeoutMs: 2500, retries: 0 });
+    }
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    await run(429);
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

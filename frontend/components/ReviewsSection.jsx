@@ -540,7 +540,10 @@ export default function ReviewsSection({
   // MEH-3053: at zero reviews (no heading, no summary, no list) the invite row
   // is the first thing in the section. Its hairline + mt-8 then framed an
   // empty 80px band under the products list; the section's mt-12 is the gap.
-  const inviteFirst = !loading && total === 0 && reviews.length === 0;
+  // MEH-3819: not gated on the read. The section mounts with the page now, and
+  // at zero reviews its empty state is drawn at once; waiting for `!loading`
+  // drew the invite with mt-8 + hairline first and moved it when the read ended.
+  const inviteFirst = total === 0 && reviews.length === 0;
 
   return (
     <section ref={sectionRef} className="mt-12">

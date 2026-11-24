@@ -29,7 +29,7 @@ const ProducerDetailLoose = ProducerDetailSchema.loose();
 
 /**
  * Owns the producer-page network surface — initial producer fetch,
- * recently-viewed localStorage write, events list, and similar-producers
+ * recently-viewed localStorage write, and similar-producers
  * carousel feed. Verbatim extraction from ProducerDetail.jsx:90-98 +
  * :133-136 + :138-144 + :147-158, with effect declaration order
  * preserved so the network call sequence is unchanged.

@@ -1,7 +1,8 @@
 /**
  * MEH-3819 — the business page's events, experiences and group buys are read
  * together: `ready` turns true only once all three answered (a failed read is
- * an empty list), and a server-seeded page reads none of them in the browser.
+ * an empty list). A server-seeded page paints at once and refreshes the lists
+ * once after mount; the state changes only when an answer differs.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
@@ -53,11 +54,40 @@ describe("useProducerActivities (MEH-3819)", () => {
     });
   });
 
-  it("server-seeded: ready at once, and nothing is read in the browser", () => {
+  it("server-seeded: ready at once with the server's lists, before any read answers", () => {
     const initial = { events: [], experiences: [{ id: "x1" }], groupBuys: [] };
     const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
     expect(result.current).toEqual({ ...initial, ready: true });
-    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it("server-seeded and stale: the refresh replaces an event that is over and a changed join count", async () => {
+    const initial = { events: [{ id: "old" }], experiences: [], groupBuys: [{ id: "g1", commits_count: 2 }] };
+    const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
+    expect(api.get).toHaveBeenCalledTimes(3);
+    await answer("/events", []);
+    await answer("/experiences", []);
+    await answer("/group-buys", [{ id: "g1", commits_count: 3 }]);
+    expect(result.current).toEqual({ events: [], experiences: [], groupBuys: [{ id: "g1", commits_count: 3 }], ready: true });
+  });
+
+  it("server-seeded and fresh: the same answer keeps the same state object (no re-render, no move)", async () => {
+    const initial = { events: [{ id: "e1" }], experiences: [], groupBuys: [] };
+    const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
+    const before = result.current;
+    await answer("/events", [{ id: "e1" }]);
+    await answer("/experiences", []);
+    await answer("/group-buys", []);
+    expect(result.current).toBe(before);
+  });
+
+  it("server-seeded: a failed refresh keeps the server's list instead of hiding the section", async () => {
+    const initial = { events: [{ id: "e1" }], experiences: [], groupBuys: [{ id: "g1" }] };
+    const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
+    await answer("/events", new Error("429"));
+    await answer("/experiences", []);
+    await answer("/group-buys", new Error("network"));
+    expect(result.current.events).toEqual([{ id: "e1" }]);
+    expect(result.current.groupBuys).toEqual([{ id: "g1" }]);
   });
 
   it("a slow list does not hold the page: ready after the cap, the list lands later", async () => {
