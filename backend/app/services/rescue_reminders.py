@@ -26,7 +26,7 @@ import logging
 from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.email_outbox import EmailOutbox
 from app.models.models import ProducerLocation, RescueOffer, RescueOrder
@@ -66,7 +66,7 @@ def _day_start_utc(today: date) -> datetime:
     return _israel_utc(today, time.min)
 
 
-def _orders_query(db: Session, day: date, now: datetime):
+def _orders_query(db: Session, day: date, now: datetime) -> Query[RescueOrder]:
     return (
         db.query(RescueOrder)
         .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
