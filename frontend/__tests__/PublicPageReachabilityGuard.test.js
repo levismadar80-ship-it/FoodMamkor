@@ -124,6 +124,8 @@ const ROUTES = {
   "/order/[id]": { kind: "noindex" },
   "/owner-invite": { kind: "noindex" },
   "/owner-invite/[token]": { kind: "noindex" },
+  "/staff-invite": { kind: "noindex" }, // MEH-3526
+  "/staff-invite/[token]": { kind: "noindex" },
   "/recommend": { kind: "noindex" },
   "/register": { kind: "noindex" },
   "/register/organizer": { kind: "noindex" },

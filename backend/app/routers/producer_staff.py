@@ -52,7 +52,7 @@ from app.schemas.producer_staff import (
     StaffOfOut,
 )
 from app.services.account_guards import is_super_admin
-from app.services.order_access import _has_owner, active_staff_row
+from app.services.order_access import _business_has_owner, active_staff_row
 from app.services.staff_emails import send_staff_invite_email
 
 logger = structlog.get_logger(__name__)
@@ -75,14 +75,13 @@ _WRONG_ADDRESS = (
 _ADMIN_ACCOUNT = "חשבון ניהול לא יכול להצטרף לצוות של בית עסק."
 _HAS_BUSINESS = "לחשבון הזה יש בית עסק משלו, ולכן אי אפשר לצרף אותו כעובד."
 _STAFF_ELSEWHERE = (
-    "החשבון הזה כבר מטפל בהזמנות של בית עסק אחר. "
-    "אפשר לעזוב שם קודם, בהגדרות החשבון."
+    "החשבון הזה כבר מטפל בהזמנות של בית עסק אחר. אפשר לעזוב שם קודם, בהגדרות החשבון."
 )
 _NO_OWNER = "לבית העסק הזה אין כרגע בעלים, ולכן אי אפשר להצטרף."
 _NOT_STAFF = "החשבון הזה לא בצוות של אף בית עסק."
 
 
-def _now() -> datetime:
+def _staff_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -126,7 +125,7 @@ def _counted(rows: list[ProducerStaff], now: datetime) -> int:
     return sum(1 for row in rows if not _expired(row, now))
 
 
-def _mint(row: ProducerStaff, now: datetime) -> str:
+def _mint_staff_token(row: ProducerStaff, now: datetime) -> str:
     """A fresh secret replaces the old one, so a resend kills the earlier link."""
     token = secrets.token_urlsafe(32)
     row.token_hash = _hash_token(token)  # type: ignore[assignment]
@@ -143,7 +142,7 @@ def list_staff(
     db: Session = Depends(get_db),
 ) -> StaffListOut:
     producer_id = _owner_producer_id(user)
-    now = _now()
+    now = _staff_now()
     response.headers["Cache-Control"] = "no-store"
     rows = _live_rows(db, producer_id)
     return StaffListOut(staff=[_member_out(r, now) for r in rows], max_staff=MAX_STAFF)
@@ -171,7 +170,7 @@ def invite_staff(  # noqa: PLR0913 — FastAPI-injected parameters
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).with_for_update().one()
     )
-    now = _now()
+    now = _staff_now()
     rows = _live_rows(db, producer_id)
     row = next((r for r in rows if r.invited_email.lower() == email), None)
     if row is not None and row.status == "active":
@@ -190,7 +189,7 @@ def invite_staff(  # noqa: PLR0913 — FastAPI-injected parameters
     elif _expired(row, now):
         # Sending a lapsed invite again makes it count again.
         enforce_cap(_counted(rows, now), "staff")
-    token = _mint(row, now)
+    token = _mint_staff_token(row, now)
     business, test_cause = producer.name, bool(producer.is_test)
     db.commit()
     db.refresh(row)
@@ -236,10 +235,10 @@ def remove_staff(
 def _revoke(row: ProducerStaff) -> None:
     row.status = "revoked"  # type: ignore[assignment]
     row.token_hash = None  # type: ignore[assignment]
-    row.revoked_at = _now()  # type: ignore[assignment]
+    row.revoked_at = _staff_now()  # type: ignore[assignment]
 
 
-def _refuse_account(db: Session, user: User) -> None:
+def _refuse_staff_account(db: Session, user: User) -> None:
     """Allow-list, like the owner invite: only a plain consumer account joins."""
     if user.role == "admin" or is_super_admin(user):
         raise HTTPException(status_code=403, detail=_ADMIN_ACCOUNT)
@@ -253,7 +252,7 @@ def _refuse_account(db: Session, user: User) -> None:
         raise HTTPException(status_code=409, detail=_STAFF_ELSEWHERE)
 
 
-def _live_invite(db: Session, token: str, now: datetime) -> ProducerStaff | None:
+def _live_staff_invite(db: Session, token: str, now: datetime) -> ProducerStaff | None:
     return (
         db.query(ProducerStaff)
         .filter(
@@ -275,19 +274,23 @@ def accept_staff_invite(
 ) -> StaffOfOut:
     """Join a business's order staff. Single use: the conditional UPDATE's
     row count is the lock, so of two simultaneous accepts exactly one wins."""
-    now = _now()
-    row = _live_invite(db, body.token, now)
+    now = _staff_now()
+    row = _live_staff_invite(db, body.token, now)
     if row is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     if row.invited_email.lower() != (user.email or "").strip().lower():
         raise HTTPException(status_code=403, detail=_WRONG_ADDRESS)
     # Lock the account so one person cannot accept two invites at once.
     locked = (
-        db.query(User).filter(User.id == user.id).with_for_update().populate_existing().one()
+        db.query(User)
+        .filter(User.id == user.id)
+        .with_for_update()
+        .populate_existing()
+        .one()
     )
-    _refuse_account(db, locked)
+    _refuse_staff_account(db, locked)
     producer_id = row.producer_id
-    if not _has_owner(db, producer_id):
+    if not _business_has_owner(db, producer_id):
         raise HTTPException(status_code=409, detail=_NO_OWNER)
     claim = (
         update(ProducerStaff)
@@ -331,4 +334,3 @@ def leave_staff(
     _revoke(row)
     db.commit()
     return Response(status_code=204)
-

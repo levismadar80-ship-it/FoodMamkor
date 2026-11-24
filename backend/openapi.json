@@ -21778,6 +21778,127 @@
         "title": "SearchOut",
         "type": "object"
       },
+      "StaffAcceptIn": {
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "StaffAcceptIn",
+        "type": "object"
+      },
+      "StaffInviteIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "StaffInviteIn",
+        "type": "object"
+      },
+      "StaffListOut": {
+        "properties": {
+          "max_staff": {
+            "title": "Max Staff",
+            "type": "integer"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffMemberOut"
+            },
+            "title": "Staff",
+            "type": "array"
+          }
+        },
+        "required": [
+          "staff",
+          "max_staff"
+        ],
+        "title": "StaffListOut",
+        "type": "object"
+      },
+      "StaffMemberOut": {
+        "properties": {
+          "accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expired": {
+            "title": "Expired",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "active"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "status",
+          "expired",
+          "created_at"
+        ],
+        "title": "StaffMemberOut",
+        "type": "object"
+      },
+      "StaffOfOut": {
+        "description": "Which business this account handles orders for (`/auth/me`).",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "name"
+        ],
+        "title": "StaffOfOut",
+        "type": "object"
+      },
       "StaticPageOut": {
         "properties": {
           "body": {
@@ -22228,6 +22349,16 @@
           "role": {
             "title": "Role",
             "type": "string"
+          },
+          "staff_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StaffOfOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "whatsapp_ready": {
             "default": false,
@@ -35218,6 +35349,119 @@
         ]
       }
     },
+    "/producers/me/staff": {
+      "get": {
+        "operationId": "list_staff_producers_me_staff_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Staff",
+        "tags": [
+          "producer-staff"
+        ]
+      },
+      "post": {
+        "description": "Invite an address, or send a pending invite again with a new link.\n\nThe answer never depends on whether the address has an account here.",
+        "operationId": "invite_staff_producers_me_staff_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffInviteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMemberOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Invite Staff",
+        "tags": [
+          "producer-staff"
+        ]
+      }
+    },
+    "/producers/me/staff/{staff_id}": {
+      "delete": {
+        "description": "Withdraw an invite or remove a member. Their next request is refused.",
+        "operationId": "remove_staff_producers_me_staff__staff_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "staff_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Staff Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Remove Staff",
+        "tags": [
+          "producer-staff"
+        ]
+      }
+    },
     "/producers/me/submit-for-review": {
       "post": {
         "description": "The owner declares her profile ready and hands it to the admin queue.\n\nThis is the ONLY transition out of `draft` (MEH-2100). All three producer\ncreation sites now write `draft`, so before this call the business is\ninvisible to the review queue by construction — and the \"בסקירה\" banner\nplus the 3-business-day SLA both start HERE rather than at signup, which\nis the whole point of the ticket.\n\nDraft-only, mirroring the MEH-1236 request-review 409 directly above: a\nbusiness already `pending` is in the queue (nothing to do), and one that\nis approved / rejected / inactive has been decided. A silent 200 on those\nwould tell the owner something happened when nothing did.\n\nThe gate is SERVER-SIDE and reads the SAME helper the dashboard checklist\nand the MEH-1818 nudge read (`submission_missing_items`), so the three can\nnever drift into different definitions of \"ready\". A client that ignores\nthe disabled CTA still gets 422 — the button state is an affordance, not\nthe rule.\n\nThe 422 body uses the MEH-1943 `{code, message, params}` shape, which buys\ntwo things at once: `detailToMessage` (frontend/lib/errors.js:151) renders\n`message` with no client change, and `params.missing` carries the\nmachine-readable codes the checklist highlights.\n\nNOT gated here, deliberately: the producer LICENSE (MEH-971's\nlicense_pending path must still be able to reach the queue with a NULL\nlicense — it is an approve-time question) and OPENING HOURS (recommended,\nnot required — Google precedent). Both remain enforced where they belong;\nsee submission_gate.py's \"Does NOT\" header.",
@@ -37515,6 +37759,53 @@
         ]
       }
     },
+    "/staff-invites/accept": {
+      "post": {
+        "description": "Join a business's order staff. Single use: the conditional UPDATE's\nrow count is the lock, so of two simultaneous accepts exactly one wins.",
+        "operationId": "accept_staff_invite_staff_invites_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffAcceptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffOfOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Accept Staff Invite",
+        "tags": [
+          "producer-staff"
+        ]
+      }
+    },
     "/stats": {
       "get": {
         "operationId": "get_stats_stats_get",
@@ -38394,6 +38685,26 @@
         "summary": "Save Item",
         "tags": [
           "saved"
+        ]
+      }
+    },
+    "/users/me/staff-membership": {
+      "delete": {
+        "description": "The staff member leaves. Their access ends with this request.",
+        "operationId": "leave_staff_users_me_staff_membership_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Leave Staff",
+        "tags": [
+          "producer-staff"
         ]
       }
     },

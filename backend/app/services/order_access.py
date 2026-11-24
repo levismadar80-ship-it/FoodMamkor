@@ -10,7 +10,7 @@ Does NOT: grant anything outside the order-handling routes of
           `/producers/me` profile and every other owner route keep
           `require_producer`. Does not invite or revoke (routers/producer_staff.py).
 Related:  routers/product_order_business.py (the only caller of
-          `require_order_access`), routers/producer_owner_invite.py `_has_owner`
+          `require_order_access`), routers/producer_owner_invite.py `_business_has_owner`
           (the owner predicate reused here), models/producer_staff.py.
 History:  MEH-3526 (creation).
 """
@@ -45,7 +45,7 @@ class OrderAccess:
     is_owner: bool
 
 
-def _has_owner(db: Session, producer_id: Any) -> bool:
+def _business_has_owner(db: Session, producer_id: Any) -> bool:
     return db.query(User.id).filter(User.producer_id == producer_id).first() is not None
 
 
@@ -60,7 +60,7 @@ def active_staff_row(db: Session, user_id: Any) -> ProducerStaff | None:
         .filter(ProducerStaff.user_id == user_id, ProducerStaff.status == "active")
         .first()
     )
-    if row is None or not _has_owner(db, row.producer_id):
+    if row is None or not _business_has_owner(db, row.producer_id):
         return None
     return row
 
@@ -87,7 +87,9 @@ def require_order_access(
         return OrderAccess(user.producer_id, user, True)  # type: ignore[arg-type]
     row = active_staff_row(db, user.id)
     if row is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=NO_ORDER_ACCESS)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=NO_ORDER_ACCESS
+        )
     return OrderAccess(row.producer_id, user, False)  # type: ignore[arg-type]
 
 

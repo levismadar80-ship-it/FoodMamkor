@@ -216,7 +216,7 @@ def test_of_two_accepts_on_one_link_exactly_one_wins(client, db, flag_on, mails,
         invited_email=person.email,
         status="pending",
     )
-    monkeypatch.setattr(staff_module, "_live_invite", lambda db, t, now: stale)
+    monkeypatch.setattr(staff_module, "_live_staff_invite", lambda db, t, now: stale)
     monkeypatch.setattr(staff_module, "active_staff_row", lambda db, uid: None)
     second = client.post(ACCEPT, json={"token": token}, headers=auth_header(person))
     assert second.status_code == 404

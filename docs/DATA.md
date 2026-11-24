@@ -1461,6 +1461,22 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template;
                                                      not sent for a held page (that email says the page is visible). /accept-existing follows the same rule.
 ```
+### Order staff (`app/routers/producer_staff.py`) — MEH-3526
+
+Table `producer_staff` (migration `c6e8a0b2d4f5`, expand-only, a new table: `EXPECTED_TABLES` +1): `id` · `producer_id` (FK CASCADE) · `user_id` (FK CASCADE, NULL until accepted) · `invited_email` · `role` (`'orders'`, CHECK) · `token_hash` (sha256 hex, NULL after accept) · `expires_at` (7 days) · `invited_by` (FK SET NULL) · `status` (`pending · active · revoked`, CHECK) · `created_at` · `accepted_at` · `revoked_at`. One active membership per user (partial unique on `user_id WHERE status='active'`); one live row per (business, lower(email)). Cap 5 per business in `limits.py` (`staff`), pending invites included until they expire. The permission is read from this table on every request (`services/order_access.py` `require_order_access`), never from the JWT; it applies to the eight routes of `product_order_business.py` that list and move orders, and to nothing else. Staff see open orders and those closed in the last 7 days. `/auth/me` carries `staff_of: {producer_id, name} | null`.
+
+```
+GET    /producers/me/staff                       owner — the list + max_staff
+POST   /producers/me/staff                       owner — 10/hour. {email}. Same answer whether the address has an account or not; 409 Hebrew at the cap,
+                                                 for the owner's own address, or an address already on the team. An expired invite is minted again.
+DELETE /producers/me/staff/{id}                  owner — revokes (pending or active). 404 for another business's row.
+POST   /staff-invites/accept                     signed in, verified email equal to the invited one — 10/hour. {token}. One conditional UPDATE, rowcount
+                                                 checked; 409 for an owner, staff elsewhere, or a business with no owner. Answers {producer_id, name}.
+DELETE /users/me/staff-membership                the staff member leaves.
+```
+
+The invite page is `frontend/app/[locale]/staff-invite/`, on the `/claim` token flow: first load moves the token into the tab's sessionStorage and replaces the address with `/staff-invite`; `noindex`, `no-referrer`; Sentry, Speed Insights and Clarity scrub or skip `/staff-invite/<x>`.
+
 ### Producers (`app/routers/producers.py`, `producer_me.py` + `producer_me_analytics.py`, `producer_me_review.py`, `producer_me_locations.py`)
 
 ```
