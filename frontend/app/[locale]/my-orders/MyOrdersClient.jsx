@@ -77,7 +77,7 @@ async function readAll() {
 }
 
 /** @param {{ title: string, rows: any[], testId: string }} props */
-function Section({ title, rows, testId }) {
+function OrdersSection({ title, rows, testId }) {
   if (rows.length === 0) return null;
   return (
     <section className="mb-6" data-testid={testId}>
@@ -136,8 +136,8 @@ export default function MyOrdersClient() {
               <Button variant="outlined" size="sm" onClick={retry}>{tRoot("error.retry")}</Button>
             </div>
           )}
-          <Section title={t("section_active")} rows={merged.active} testId="my-orders-active" />
-          <Section title={t("section_past")} rows={merged.past} testId="my-orders-past" />
+          <OrdersSection title={t("section_active")} rows={merged.active} testId="my-orders-active" />
+          <OrdersSection title={t("section_past")} rows={merged.past} testId="my-orders-past" />
         </>
       )}
     </main>

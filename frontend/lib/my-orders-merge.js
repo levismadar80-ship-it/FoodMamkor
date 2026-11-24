@@ -36,7 +36,7 @@ const ORDER_CLOSED = new Set(["handed", "declined", "cancelled", "expired", "no_
  */
 
 /** @param {string} day "YYYY-MM-DD" @returns {number} noon UTC that day */
-function dayMs(day) {
+function rescueDayNoonMs(day) {
   return new Date(`${day}T12:00:00Z`).getTime();
 }
 
@@ -82,7 +82,7 @@ function bagRow(b, now, today) {
     kind: "bag", id: b.id, href, business: b.producer_name,
     status: b.cancelled_by_business ? "cancelled_by_business" : b.status,
     when: b.date,
-    sortAt: active ? new Date(b.pickup_start).getTime() : dayMs(b.date),
+    sortAt: active ? new Date(b.pickup_start).getTime() : rescueDayNoonMs(b.date),
     active,
   };
 }
