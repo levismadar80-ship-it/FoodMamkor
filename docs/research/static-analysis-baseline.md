@@ -120,7 +120,7 @@ _Run: `npm run knip` from `frontend/`_
 | `OLD_TO_NEW` | constant | `lib/i18n-key-map.js:6` |
 | `CATEGORY_STYLES` | constant | `lib/map-categories.js:28` |
 | `DEFAULT_CATEGORY_STYLE` | constant | `lib/map-categories.js:37` |
-| `PASSWORD_FAILURE_MESSAGES` | constant | `lib/passwordMessages.js:18` |
+| `PASSWORD_FAILURE_MESSAGES` | constant | `lib/password-messages.js:18` |
 | `PRODUCER_STATUS_LABELS` | constant | `lib/producer-status.js:8` |
 | `PRODUCER_STATUS_COLORS` | constant | `lib/producer-status.js:18` |
 | `getVapidPublicKey` | function | `lib/push.js:15` |

@@ -10,7 +10,7 @@
  *           (MEH-1334 / MEH-1546). It also never says anything about what the
  *           business will DO with a message: that claim is unobservable to us
  *           and is forbidden by BRAND.md §7 / ADR-031 (see MEH-1652 below).
- * Related:  frontend/lib/orderWindow.js (getOrderWindowStatus +
+ * Related:  frontend/lib/order-window-status.js (getOrderWindowStatus +
  *           getOrderWindowRanges — read-only here),
  *           components/ProducerHeader.jsx (the status branch this complements),
  *           components/OpeningHours.jsx (deleted in MEH-2810) (the card container this block matches).
@@ -88,7 +88,7 @@ import {
   getUpcomingSpecialDates,
   israelNowParts,
   normalizeDayEntries,
-} from "@/lib/orderWindow";
+} from "@/lib/order-window-status";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { formatDate } from "@/lib/format-date";
 
@@ -103,7 +103,7 @@ function formatSpecialDate(isoDate, locale) {
   return formatDate(isoDate, locale, "dayMonth");
 }
 
-// MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is
+// MEH-1875: index-aligned with lib/order-window-status.js ORDER_DAY_KEYS, so index 0 is
 // Sunday on every axis. REUSES: components/DeliveryBlock.jsx:13 (same
 // dayIndex → label-key mapping); the labels themselves are a separate, compact
 // set ("ראשון") because "יום ראשון–יום חמישי" reads badly as a merged range.
@@ -168,7 +168,7 @@ function openDaysOf(orderWindow) {
  * home at all between MEH-1691 and this ticket.
  *
  * SSR-safe with NO mounted guard, unlike OrderWindowCtaNote above: it renders
- * getOrderWindowRanges, which is clock-free (lib/orderWindow.js:218 — it reads
+ * getOrderWindowRanges, which is clock-free (lib/order-window-status.js:218 — it reads
  * only the stored map, never `new Date()`). Verified in Phase 0. That is what
  * makes the block safe to render on the server pass, and it is the reason the
  * schedule and the status are two different components rather than one.

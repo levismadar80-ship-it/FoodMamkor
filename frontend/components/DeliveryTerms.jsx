@@ -6,7 +6,7 @@
  *           ימי עסקים», «מינימום 150₪», and a zone's own «מקבלים הזמנות עד
  *           יום שני 12:00». One component for the business-wide lines (under
  *           the fee line) and a zone row's sublines.
- * Does NOT: decide inheritance beyond the delivery time (lib/deliveryTime.js
+ * Does NOT: decide inheritance beyond the delivery time (lib/delivery-time.js
  *           the caller), render the fee (DeliveryBlock's fee line / AreaRow), or
  *           compute the next delivery date (NextDeliveryLine).
  * Related:  components/DeliveryBlock.jsx, components/NationwideZones.jsx.
@@ -17,8 +17,8 @@
  */
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
-import { deliveryTimeMessage } from "@/lib/deliveryTime";
-import { cutoffOfRow } from "@/lib/nextDelivery";
+import { deliveryTimeMessage } from "@/lib/delivery-time";
+import { cutoffOfRow } from "@/lib/next-delivery";
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 

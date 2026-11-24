@@ -38,7 +38,7 @@ import "leaflet/dist/leaflet.css";
 
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
-import { primaryPoint } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producer-points";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonBlock } from "@/components/Skeleton";
 

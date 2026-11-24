@@ -75,6 +75,7 @@ import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import LocationsEditor from "./LocationsEditor";
+import GoogleProfileHubTile from "@/components/dashboard/google-profile/GoogleProfileHubTile";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
@@ -95,7 +96,7 @@ import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
@@ -109,6 +110,7 @@ import {
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
+import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
@@ -226,7 +228,7 @@ function EditPageInner() {
   const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
-  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  // WhatsAppQuestionChips does (lib/resolved-questions.js explains why).
   const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
@@ -775,10 +777,23 @@ function EditPageInner() {
                 marker={tile.marker}
                 statusLine={tile.statusLine}
                 previews={tile.previews}
-                onClick={() => enterGroup(g)}
+                // MEH-3762: one tap to a form — the group's first missing
+                // card (or its only card) opens as the group opens.
+                // Routed through the pending-anchor relay too, so the group-change
+                // effect scrolls the opened card into view (the hub's scroll
+                // offset would otherwise leave a 3rd/4th card below the fold).
+                onClick={() => {
+                  const key = autoOpenKeyFor(g, membersOf(g), cardFilled);
+                  setOpenKey(key);
+                  if (key && KEY_TO_GROUP[key] === g) pendingAnchorRef.current = key;
+                  enterGroup(g);
+                }}
               />
             );
-          })}
+          }).flatMap((tile, i) =>
+            // MEH-3723: «הפרופיל בגוגל» right after «קשר»; never an organizer.
+            visibleGroupKeys[i] === "contact" && !isOrganizer ? [tile, <GoogleProfileHubTile key="google-profile" />] : [tile]
+          )}
         </div>
       </div>
 

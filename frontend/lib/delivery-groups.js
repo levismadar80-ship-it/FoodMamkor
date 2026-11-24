@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   deliveryGroups
+ * Module:   delivery-groups
  * Purpose:  Pivot a producer's delivery_areas by dispatch day (MEH-1305 A) so
  *           a shared "יוצאים בימי שישי" is stated ONCE instead of repeating on
  *           every city row (the differentiator — the per-city minimum — was

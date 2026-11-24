@@ -31,7 +31,7 @@ node .ds-sync/package-validate.mjs ./ds-bundle
 ## Why the pre-bundle (prebuild.mjs) exists — do not remove it
 
 The converter's own esbuild can't bundle this app's source directly:
-- JSX lives in `.js` files (`lib/highlightMatch.js`, `lib/auth-context.js`) — the
+- JSX lives in `.js` files (`lib/highlight-match.js`, `lib/auth-context.js`) — the
   converter's loader map has no `.js`→jsx. prebuild sets `loader['.js']='jsx'`.
 - Next internals pull node built-ins (`gzip-size`→fs/stream/zlib). prebuild stubs
   all node built-ins + `server-only`/`next/headers` to empty modules.

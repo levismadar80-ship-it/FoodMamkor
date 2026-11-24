@@ -42,11 +42,11 @@ vi.mock("@/app/[locale]/producer/[id]/hooks/useLazyReviews", () => ({
 
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 
-function arrive({ canGoBack, search = "" }) {
+function arrive({ canGoBack, search = "", hideHistoryBack = false }) {
   window.history.replaceState(null, "", `/producer/p1${search}`);
   Object.defineProperty(window, "navigation", { configurable: true, value: { canGoBack } });
   state.producer = { id: "p1", name: "מאפיית הגבעה", images: [], categories: [{ id: "bakery", name: "מאפים" }] };
-  render(<ProducerDetail />);
+  render(<ProducerDetail hideHistoryBack={hideHistoryBack} />);
   return within(screen.getByTestId("producer-breadcrumb-block"));
 }
 
@@ -91,5 +91,12 @@ describe("business page: breadcrumb on desktop, «→ חזרה» on a phone (MEH
     arrive({ canGoBack: false });
     const cls = classesOf(screen.getByTestId("producer-breadcrumb-block"));
     expect(cls.filter((c) => /^m[bty]?-/.test(c))).toEqual([]);
+  });
+
+  // MEH-3777: the owner's order preview shows «→ הזמנות» above the page.
+  it("a caller with its own back link: no «→ חזרה», even from inside the site", () => {
+    const block = arrive({ canGoBack: true, hideHistoryBack: true });
+    expect(block.queryByTestId("history-back")).toBeNull();
+    expect(desktopOnly(block.getByTestId("breadcrumb-nav"))).toBe(true);
   });
 });

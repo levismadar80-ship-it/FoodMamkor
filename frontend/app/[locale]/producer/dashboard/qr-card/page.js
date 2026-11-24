@@ -118,8 +118,8 @@ export default function QrCardPage() {
       </style>
       {/* Screen-only: neither the way back, the picker nor the hint belongs on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
-        {/* MEH-2882 PR 1: the QR card lives in «כלים» → «שיתוף» now. */}
-        <BackLink href="/producer/dashboard/tools#share" label={t("back")} />
+        {/* MEH-3749: the QR card lives on the «שיתוף» page (was «כלים» → #share). */}
+        <BackLink href="/producer/dashboard/share" label={t("back")} />
         <div role="group" aria-label={t("formats.label")} className="flex flex-wrap gap-2 mt-3">
           {PRINT_FORMATS.map((f) => (
             <button

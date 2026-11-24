@@ -13,7 +13,7 @@
 // row counts as having coords. Chunk 5a removed producerPoints()'s fallback to
 // Producer.lat/lng, so the rows are now the ONLY source: coordinates that live
 // solely in the columns no longer count, here or on the map.
-import { producerPoints } from "./producerPoints.js";
+import { producerPoints } from "./producer-points.js";
 // MEH-2142: the same resolver the public page uses, so "does she have hours?"
 // and "which hours do we show?" cannot answer differently. Reading the column
 // alone here would mark every business whose hours live on her primary

@@ -9,7 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
-import { firstFailureMessage } from "@/lib/passwordMessages";
+import { firstFailureMessage } from "@/lib/password-messages";
 import { OwnerInvitePublicSchema } from "@/lib/api-responses";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
