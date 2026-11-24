@@ -19,6 +19,7 @@ import useIsraelToday from "@/lib/use-israel-today";
 import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
 import Input from "@/components/ui/Input";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect"; // MEH-3823
 
 
 /**
@@ -30,6 +31,8 @@ import Input from "@/components/ui/Input";
  * Related:  backend GET /producers/me/rescue/orders · POST /rescue/orders/{id}/handed
  *           · POST /rescue/orders/{id}/no-show · PUT /producers/me/rescue/typical-items
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
+ *           · MEH-3823 (allergens folded, «שווי הסל», publish first, 24-hour
+ *           times, each cancel link names its bag)
  */
 
 const DAY_MS = 86_400_000; // MEH-3702: one calendar day, for the publish date
@@ -86,9 +89,12 @@ export default function RescueTab() {
   // never persist.
   const [allergens, setAllergens] = useState([]);
   const [form, setForm] = useState(
-    /** @type {{ qty_total: number | string, price: number | string, from: string, to: string, cancelMin: number | string }} */ ({
+    /** @type {{ qty_total: number | string, price: number | string, worth: number | string, from: string, to: string, cancelMin: number | string }} */ ({
       qty_total: 4,
       price: 15,
+      // MEH-3823: «שווי הסל», optional. Empty sends no value, and buyers see
+      // no struck price (worthAgorot shows one only above the price).
+      worth: "",
       from: "18:00",
       to: "20:00",
       cancelMin: 30,
@@ -321,6 +327,7 @@ export default function RescueTab() {
         pickup_start: iso(form.from),
         pickup_end: iso(form.to),
         cancel_until: cancel,
+        ...(Number(form.worth) > 0 ? { value_min_agorot: Math.round(Number(form.worth) * 100) } : {}),
       });
       setNotice("publish", t("published"), false);
       await load();
@@ -431,158 +438,15 @@ export default function RescueTab() {
   // front, and gets no form. Pending reads «we are reviewing»; any other
   // non-approved status (draft, rejected, suspended) gets the server's line.
   const gated = producerStatus !== null && producerStatus !== "approved" && producerStatus !== "unknown";
-  return (
-    <div data-testid="rescue-tab" className="space-y-6">
-      {gated &&
-        (producerStatus === "pending" ? (
-          <div data-testid="rescue-pending-banner" role="status" className="bg-warning-50 border border-warning-200 rounded-md px-4 py-3">
-            <p className="font-semibold text-warning-800">{t("pending_title")}</p>
-            <p className="font-body-sm text-sm text-warning-800">{t("pending_body")}</p>
-          </div>
-        ) : (
-          <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">
-            {t("not_approved")}
-          </p>
-        ))}
-      <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
-        {["reserved", "handed", "no_show"].map((k) => (
-          <div key={k} className="border border-border rounded-md px-3 py-3 text-center">
-            <p className="font-headline-md text-2xl font-black text-text" data-testid={`rescue-counter-${k}`}>
-              {counters[k]}
-            </p>
-            <p className="font-body-sm text-sm text-fg-muted">{t(`counter.${k}`)}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* MEH-2921 (d): the code box is for handing a bag over. A business
-          that cannot publish and has no open order has nothing to hand over. */}
-      {orders !== null && (!gated || counters.reserved > 0 || notice?.at === AT.code) && (
-      <div className="space-y-2" data-notice-scope="code" data-testid="rescue-code-box">
-        <div className="flex gap-2">
-          <Input inline size="sm"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            inputMode="numeric"
-            maxLength={4}
-            dir="ltr"
-            placeholder={t("code_placeholder")}
-            aria-label={t("code_label")}
-            data-testid="rescue-code-input"
-            className="flex-1 text-center tracking-[0.3em]"
-          />
-          <Button
-            type="button"
-            onClick={handByCode}
-            data-testid="rescue-code-submit"
-            variant="primary"
-          >
-            {t("hand_over")}
-          </Button>
-        </div>
-        {noticeAt(AT.code)}
-      </div>
-      )}
-
-      <section data-notice-scope="orders">
-        <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title")}</h3>
-        {orders === null && <p className="font-body-sm text-sm text-fg-muted">{t("loading")}</p>}
-        {orders !== null && todayOrders.length === 0 && (
-          <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-empty">
-            {t("orders_empty")}
-          </p>
-        )}
-        <ul className="space-y-2">
-          {sortedOrders.map((o) => orderRow(o))}
-        </ul>
-        {noticeAt(AT.orders)}
-      </section>
-
-      {/* MEH-3702: tomorrow's reservations, once there is a bag for tomorrow. */}
-      {(tomorrowOrders.length > 0 || tomorrowBags) && (
-        <section data-testid="rescue-orders-tomorrow">
-          <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title_tomorrow")}</h3>
-          {tomorrowOrders.length === 0 && (
-            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-tomorrow-empty">
-              {t("orders_empty_tomorrow")}
-            </p>
-          )}
-          <ul className="space-y-2">{sortedTomorrow.map((o) => orderRow(o, true))}</ul>
-        </section>
-      )}
-
-      {cancellable.length > 0 && (
-        <section className="space-y-3" data-notice-scope="cancel" data-testid="rescue-offer-cancel-box">
-          {cancellable.map((o, i) => {
-            const open = openOn(o.id);
-            // MEH-3702: tomorrow's bags come after today's, under their own line.
-            const firstTomorrow =
-              bagDay(o.date, day) === "tomorrow" && (i === 0 || bagDay(cancellable[i - 1].date, day) !== "tomorrow");
-            const dayLine = firstTomorrow ? (
-              <p key={`day-${o.id}`} className="font-body-sm text-sm font-bold text-text" data-testid="rescue-offers-tomorrow-title">
-                {t("offers_title_tomorrow")}
-              </p>
-            ) : null;
-            const item = askingOffer === o.id ? (
-              <div
-                key={o.id}
-                role="group"
-                aria-labelledby={`rescue-offer-cancel-title-${o.id}`}
-                data-testid="rescue-offer-cancel-ask"
-                className="border border-border rounded-md px-4 py-3 space-y-3 bg-surface-card"
-              >
-                <p id={`rescue-offer-cancel-title-${o.id}`} className="font-body-sm text-base font-bold text-text">
-                  {t(bagDay(o.date, day) === "tomorrow" ? "cancel_offer_title_tomorrow" : "cancel_offer_title")}
-                </p>
-                <p className="font-body-sm text-sm text-text">
-                  {open === 0
-                    ? t("cancel_offer_none")
-                    : open === 1
-                      ? t("cancel_offer_one")
-                      : t("cancel_offer_many", { n: open })}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    loading={cancellingOffer === o.id}
-                    onClick={() => cancelOffer(o.id)}
-                    data-testid="rescue-offer-cancel-yes"
-                  >
-                    {t("cancel_offer_yes")}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="sm"
-                    disabled={cancellingOffer === o.id}
-                    onClick={() => setAskingOffer(null)}
-                    data-testid="rescue-offer-cancel-no"
-                  >
-                    {t("cancel_offer_no")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                key={o.id}
-                variant="text"
-                size="sm"
-                onClick={() => {
-                  clearNotice();
-                  setAskingOffer(o.id);
-                }}
-                data-testid="rescue-offer-cancel"
-                className="underline"
-              >
-                {t("cancel_offer")}
-              </Button>
-            );
-            return dayLine ? [dayLine, item] : item;
-          })}
-          {noticeAt(AT.cancel)}
-        </section>
-      )}
-
+  // Waits for both lists, so the order does not jump once they arrive.
+  const publishFirst = orders !== null && offers.length === 0 && orders.length === 0;
+  // MEH-2935 + MEH-3823: «what is in the bag» then the publish form, one
+  // block. It comes first for a business with nothing out today or tomorrow
+  // (a new business, or a quiet day): publishing is then the only thing to
+  // do here. The API lists only today's and tomorrow's bags, so «never
+  // published» is read as «nothing out now».
+  const setupBlock = (
+    <>
       {/* MEH-2935: what is in the bag and its allergens come BEFORE the publish
           buttons — buyers see them before they reserve, so they are filled first. */}
       <section className="border border-border rounded-md px-4 py-4 space-y-2" data-notice-scope="items" data-testid="rescue-items-section">
@@ -599,14 +463,23 @@ export default function RescueTab() {
         {/* MEH-2752: what this business declares about ITS bag. Before this,
             every bag showed one fixed sentence naming four allergens — a
             statement about food nobody had made. */}
-        <div className="mt-3">
-          <p id="rescue-allergens-heading" className="font-body-sm text-sm text-text font-medium">
-            {t("allergens_title")}
-          </p>
-          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
+        {/* MEH-3823 (the Too Good To Go pattern): fifteen chips are optional
+            work, so they sit behind a closed disclosure. Buyers always see a
+            fixed «ask at pickup» line whatever is marked here. */}
+        <details className="mt-3" data-testid="rescue-allergens-disclosure">
+          <summary className="cursor-pointer font-body-sm text-sm text-text font-medium" data-testid="rescue-allergens-summary">
+            <span id="rescue-allergens-heading">{t("allergens_toggle")}</span>
+            {allergens.length > 0 && (
+              <span className="text-fg-muted font-normal" data-testid="rescue-allergens-count">
+                {" · "}
+                {t("allergens_count", { count: allergens.length })}
+              </span>
+            )}
+          </summary>
+          <p className="font-body-sm text-sm text-fg-muted mt-2 mb-2">{t("allergens_help")}</p>
           {/* MEH-3610: the picker is shared with the group buy. */}
           <AllergenPicker value={allergens} onChange={setAllergens} labelledBy="rescue-allergens-heading" testId="rescue-allergen" groupTestId="rescue-allergens-group" />
-        </div>
+        </details>
 
         <Button
           type="button"
@@ -693,30 +566,44 @@ export default function RescueTab() {
                 className="w-full mt-1"
               />
             </label>
-            <label className="font-body-sm text-sm min-w-0">
-              {t("field.from")}
-              {/* MEH-2730: iOS Safari draws a time input wider than its grid
-                  column (it overflowed the card on Sapir's iPhone); min-w-0
-                  on both the grid item and the input lets it shrink. */}
+            <label className="font-body-sm text-sm col-span-2">
+              {t("field.worth")}
               <Input inline size="xs"
-                type="time"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={form.worth}
+                onChange={(e) => setForm({ ...form, worth: e.target.value })}
+                data-testid="rescue-publish-worth"
+                className="w-full mt-1"
+              />
+              <span className="block text-xs text-fg-muted mt-1">{t("field.worth_help")}</span>
+            </label>
+            {/* MEH-3823: hour and minute selects, not <input type="time">,
+                which shows AM/PM on an iPhone set to English. min-w-0 keeps
+                the row inside its column on iOS (MEH-2730). */}
+            <div className="font-body-sm text-sm min-w-0" role="group" aria-labelledby="rescue-publish-from-label">
+              <span id="rescue-publish-from-label">{t("field.from")}</span>
+              <TimeOfDaySelect
                 value={form.from}
-                onChange={(e) => setForm({ ...form, from: e.target.value })}
-                data-testid="rescue-publish-from"
-                className="block w-full min-w-0 mt-1"
+                onChange={(v) => setForm({ ...form, from: v })}
+                hourLabel={t("field.from_hour")}
+                minuteLabel={t("field.from_minute")}
+                testId="rescue-publish-from"
+                className="mt-1"
               />
-            </label>
-            <label className="font-body-sm text-sm min-w-0">
-              {t("field.to")}
-              {/* MEH-2730: min-w-0 for iOS, see the «from» field above. */}
-              <Input inline size="xs"
-                type="time"
+            </div>
+            <div className="font-body-sm text-sm min-w-0" role="group" aria-labelledby="rescue-publish-to-label">
+              <span id="rescue-publish-to-label">{t("field.to")}</span>
+              <TimeOfDaySelect
                 value={form.to}
-                onChange={(e) => setForm({ ...form, to: e.target.value })}
-                data-testid="rescue-publish-to"
-                className="block w-full min-w-0 mt-1"
+                onChange={(v) => setForm({ ...form, to: v })}
+                hourLabel={t("field.to_hour")}
+                minuteLabel={t("field.to_minute")}
+                testId="rescue-publish-to"
+                className="mt-1"
               />
-            </label>
+            </div>
             <label className="font-body-sm text-sm col-span-2">
               {t("field.cancel")}
               <select
@@ -753,7 +640,184 @@ export default function RescueTab() {
           {noticeAt(AT.publish)}
         </section>
       )}
+    </>
+  );
+  return (
+    <div data-testid="rescue-tab" className="space-y-6">
+      {gated &&
+        (producerStatus === "pending" ? (
+          <div data-testid="rescue-pending-banner" role="status" className="bg-warning-50 border border-warning-200 rounded-md px-4 py-3">
+            <p className="font-semibold text-warning-800">{t("pending_title")}</p>
+            <p className="font-body-sm text-sm text-warning-800">{t("pending_body")}</p>
+          </div>
+        ) : (
+          <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">
+            {t("not_approved")}
+          </p>
+        ))}
+      {publishFirst && setupBlock}
+      <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
+        {["reserved", "handed", "no_show"].map((k) => (
+          <div key={k} className="border border-border rounded-md px-3 py-3 text-center">
+            <p className="font-headline-md text-2xl font-black text-text" data-testid={`rescue-counter-${k}`}>
+              {counters[k]}
+            </p>
+            <p className="font-body-sm text-sm text-fg-muted">{t(`counter.${k}`)}</p>
+          </div>
+        ))}
+      </div>
 
+      {/* MEH-2921 (d): the code box is for handing a bag over. A business
+          that cannot publish and has no open order has nothing to hand over. */}
+      {orders !== null && (!gated || counters.reserved > 0 || notice?.at === AT.code) && (
+      <div className="space-y-2" data-notice-scope="code" data-testid="rescue-code-box">
+        <div className="flex gap-2">
+          <Input inline size="sm"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            inputMode="numeric"
+            maxLength={4}
+            dir="ltr"
+            placeholder={t("code_placeholder")}
+            aria-label={t("code_label")}
+            data-testid="rescue-code-input"
+            className="flex-1 text-center tracking-[0.3em]"
+          />
+          <Button
+            type="button"
+            onClick={handByCode}
+            data-testid="rescue-code-submit"
+            variant="primary"
+          >
+            {t("hand_over")}
+          </Button>
+        </div>
+        {noticeAt(AT.code)}
+      </div>
+      )}
+
+      <section data-notice-scope="orders">
+        <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title")}</h3>
+        {orders === null && <p className="font-body-sm text-sm text-fg-muted">{t("loading")}</p>}
+        {orders !== null && todayOrders.length === 0 && (
+          <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-empty">
+            {t("orders_empty")}
+          </p>
+        )}
+        <ul className="space-y-2">
+          {sortedOrders.map((o) => orderRow(o))}
+        </ul>
+        {noticeAt(AT.orders)}
+      </section>
+
+      {/* MEH-3702: tomorrow's reservations, once there is a bag for tomorrow. */}
+      {(tomorrowOrders.length > 0 || tomorrowBags) && (
+        <section data-testid="rescue-orders-tomorrow">
+          <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title_tomorrow")}</h3>
+          {tomorrowOrders.length === 0 && (
+            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-orders-tomorrow-empty">
+              {t("orders_empty_tomorrow")}
+            </p>
+          )}
+          <ul className="space-y-2">{sortedTomorrow.map((o) => orderRow(o, true))}</ul>
+        </section>
+      )}
+
+      {cancellable.length > 0 && (
+        <section className="space-y-3" data-notice-scope="cancel" data-testid="rescue-offer-cancel-box">
+          {cancellable.map((o, i) => {
+            const open = openOn(o.id);
+            // MEH-3702: tomorrow's bags come after today's, under their own line.
+            const isTomorrow = bagDay(o.date, day) === "tomorrow";
+            const firstTomorrow = isTomorrow && (i === 0 || bagDay(cancellable[i - 1].date, day) !== "tomorrow");
+            // MEH-3823: today's run gets its own line too, so no cancel link
+            // reads as part of the orders list above it.
+            const firstToday = !isTomorrow && i === 0;
+            const dayLine = firstTomorrow ? (
+              <p key={`day-${o.id}`} className="font-body-sm text-sm font-bold text-text" data-testid="rescue-offers-tomorrow-title">
+                {t("offers_title_tomorrow")}
+              </p>
+            ) : firstToday ? (
+              <p key={`day-${o.id}`} className="font-body-sm text-sm font-bold text-text" data-testid="rescue-offers-today-title">
+                {t("offers_title_today")}
+              </p>
+            ) : null;
+            const item = askingOffer === o.id ? (
+              <div
+                key={o.id}
+                role="group"
+                aria-labelledby={`rescue-offer-cancel-title-${o.id}`}
+                data-testid="rescue-offer-cancel-ask"
+                className="border border-border rounded-md px-4 py-3 space-y-3 bg-surface-card"
+              >
+                <p id={`rescue-offer-cancel-title-${o.id}`} className="font-body-sm text-base font-bold text-text">
+                  {t(bagDay(o.date, day) === "tomorrow" ? "cancel_offer_title_tomorrow" : "cancel_offer_title")}
+                </p>
+                <p className="font-body-sm text-sm text-text">
+                  {open === 0
+                    ? t("cancel_offer_none")
+                    : open === 1
+                      ? t("cancel_offer_one")
+                      : t("cancel_offer_many", { n: open })}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    loading={cancellingOffer === o.id}
+                    onClick={() => cancelOffer(o.id)}
+                    data-testid="rescue-offer-cancel-yes"
+                  >
+                    {t("cancel_offer_yes")}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    disabled={cancellingOffer === o.id}
+                    onClick={() => setAskingOffer(null)}
+                    data-testid="rescue-offer-cancel-no"
+                  >
+                    {t("cancel_offer_no")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // MEH-3823: the link stood alone under «ההזמנות של מחר» and did
+              // not say which bag it cancels. Each row now names its pickup
+              // window and how many bags it holds.
+              <div key={o.id} className="flex items-center justify-between gap-3 flex-wrap" data-testid="rescue-offer-cancel-row">
+                <span className="font-body-sm text-sm text-text" data-testid="rescue-offer-cancel-label">
+                  {t("cancel_offer_row", {
+                    from: israelTime(o.pickup_start) || "",
+                    until: israelTime(o.pickup_end) || "",
+                    count: o.qty_total,
+                  })}
+                </span>
+                <Button
+                  variant="text"
+                  size="sm"
+                  onClick={() => {
+                    clearNotice();
+                    setAskingOffer(o.id);
+                  }}
+                  aria-label={t("cancel_offer_aria", {
+                    from: israelTime(o.pickup_start) || "",
+                    until: israelTime(o.pickup_end) || "",
+                  })}
+                  data-testid="rescue-offer-cancel"
+                  className="underline"
+                >
+                  {t("cancel_offer")}
+                </Button>
+              </div>
+            );
+            return dayLine ? [dayLine, item] : item;
+          })}
+          {noticeAt(AT.cancel)}
+        </section>
+      )}
+
+      {orders !== null && !publishFirst && setupBlock}
 
       {/* MEH-2703: only once the window closed and something was not
           collected; before that a bag may still be reserved or picked up. */}

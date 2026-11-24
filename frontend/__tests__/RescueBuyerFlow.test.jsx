@@ -541,7 +541,7 @@ describe("the business-page section — reserve and confirm", () => {
       render(<RescueSection producer={PRODUCER} />);
       const terms = await screen.findByTestId("rescue-section-terms");
       expect(terms.textContent).toBe("ביטול חינם עד 10:30");
-      expect(terms.textContent).not.toContain("אי-הגעות");
+      expect(terms.textContent).not.toContain("לא נאספו");
     });
   });
 
@@ -569,7 +569,7 @@ describe("the business-page section — reserve and confirm", () => {
     fetchOffers.mockResolvedValue([offer({ allergens: null })]);
     render(<RescueSection producer={PRODUCER} />);
     const line = await screen.findByTestId("rescue-section-allergens-none");
-    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים. שאלו לפני האיסוף.");
+    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים.");
     // The old fixed sentence warned every buyer about four allergens that may
     // not be in the bag. It must not come back.
     const box = screen.getByTestId("rescue-section-allergens");
@@ -654,7 +654,7 @@ describe("the business-page section — reserve and confirm", () => {
     expect((await screen.findByTestId("rescue-confirmation-price")).textContent).toContain("15");
     const terms = screen.getByTestId("rescue-confirmation-terms");
     expect(terms.textContent).toContain("ביטול חינם עד");
-    expect(terms.textContent).toContain("שתי אי-הגעות = חסימה");
+    expect(terms.textContent).toContain("אחרי שני סלים שלא נאספו, השריון נעצר");
   });
 
   it("there is no countdown anywhere in the confirmation", async () => {
@@ -723,7 +723,7 @@ describe("every error the API actually returns", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
     expect(plain("rescue.errors.blocked")).toBe(
-      "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו",
+      "שני סלים לא נאספו, ולכן השריון נעצר. כדי לשריין שוב, כתבו לנו",
     );
   });
 
@@ -1172,7 +1172,7 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
   it("the confirmation keeps the no-show rule and drops the time", () => {
     render(<RescueConfirmation order={order({ cancel_until: past() })} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-terms").textContent).toBe(
-      "אי אפשר לבטל · שתי אי-הגעות = חסימה",
+      "אי אפשר לבטל · אחרי שני סלים שלא נאספו, השריון נעצר",
     );
   });
 });

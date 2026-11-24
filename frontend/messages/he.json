@@ -7221,7 +7221,8 @@
       "soon": "עוד שעה",
       "left_short": "{count, plural, one {נשאר 1} two {נשארו 2} other {נשארו #}}",
       "pickup_tomorrow": "איסוף מחר {from}–{until}",
-      "cancel_at_tomorrow": "מחר ב-{time}"
+      "cancel_at_tomorrow": "מחר ב-{time}",
+      "worth_and_price": "שווי {worth}, משלמים {price}"
     },
     "section": {
       "title": "סל הפתעה",
@@ -7236,18 +7237,20 @@
       "allergens_declared": "מכיל: {list} · לפי הצהרת בית העסק",
       "allergens_undeclared": "בית העסק לא ציין אלרגנים. שאלו לפני האיסוף.",
       "business_cancelled": "בית העסק ביטל את הסל של היום, ולכן השריון שלכם בוטל. אין צורך להגיע.",
-      "business_cancelled_tomorrow": "בית העסק ביטל את הסל של מחר, ולכן השריון שלכם בוטל. אין צורך להגיע."
+      "business_cancelled_tomorrow": "בית העסק ביטל את הסל של מחר, ולכן השריון שלכם בוטל. אין צורך להגיע.",
+      "allergens_undeclared_short": "בית העסק לא ציין אלרגנים.",
+      "allergens_ask": "יש אלרגיה? כדאי לשאול בבית העסק באיסוף."
     },
     "confirm": {
       "title": "שמרנו לכם סל",
       "say_at_counter": "אומרים את הקוד בקופה",
       "pay": "לשלם בקופה: {price} ₪",
-      "terms": "ביטול חינם עד {cancel_until} · שתי אי-הגעות = חסימה",
+      "terms": "ביטול חינם עד {cancel_until} · אחרי שני סלים שלא נאספו, השריון נעצר",
       "step_reserved": "שוריין",
       "step_collect": "לאיסוף",
       "step_done": "נמסר",
       "cancel": "לבטל את השריון",
-      "terms_no_cancel": "אי אפשר לבטל · שתי אי-הגעות = חסימה",
+      "terms_no_cancel": "אי אפשר לבטל · אחרי שני סלים שלא נאספו, השריון נעצר",
       "cancel_ask_title": "לבטל את השריון?",
       "cancel_ask_body": "הסל יחזור לרשימה ומישהו אחר יוכל לשריין אותו.",
       "cancel_yes": "כן, לבטל",
@@ -7274,7 +7277,7 @@
     "login_prompt_message": "כדי לשריין סל צריך להיכנס לחשבון.",
     "errors": {
       "unverified": "יש לאמת את כתובת המייל תחילה.",
-      "blocked": "השריונים חסומים אחרי שתי אי-הגעות. <contact>כתבו לנו</contact>",
+      "blocked": "שני סלים לא נאספו, ולכן השריון נעצר. כדי לשריין שוב, <contact>כתבו לנו</contact>",
       "sold_out": "הסל הזה נגמר. יש עוד סלים באזור.",
       "max_two": "אפשר לשריין עד שני סלים.",
       "sign_in": "צריך להתחבר כדי לשריין סל.",
@@ -7327,7 +7330,13 @@
         "cancel": "ביטול חינם עד",
         "cancel_half_hour": "חצי שעה לפני האיסוף",
         "cancel_hour": "שעה לפני האיסוף",
-        "cancel_two_hours": "שעתיים לפני האיסוף"
+        "cancel_two_hours": "שעתיים לפני האיסוף",
+        "worth": "שווי הסל (₪)",
+        "worth_help": "כמה הסל היה עולה במחיר מלא. לא חובה. הקונים יראו את השווי מחוק ליד המחיר.",
+        "from_hour": "איסוף מ-, שעה",
+        "from_minute": "איסוף מ-, דקות",
+        "to_hour": "עד, שעה",
+        "to_minute": "עד, דקות"
       },
       "items_title": "מה בדרך כלל בסל",
       "items_help": "מפרידים בפסיקים. זה מה שהלקוחות רואים לפני שהם משריינים סל.",
@@ -7363,7 +7372,12 @@
       "offers_title_tomorrow": "הסלים של מחר",
       "orders_title_tomorrow": "ההזמנות של מחר",
       "orders_empty_tomorrow": "אין עדיין הזמנות למחר.",
-      "cancel_offer_title_tomorrow": "לבטל את הסל של מחר?"
+      "cancel_offer_title_tomorrow": "לבטל את הסל של מחר?",
+      "allergens_toggle": "אלרגנים בסל · לא חובה",
+      "allergens_count": "{count, plural, one {סומן אחד} other {סומנו #}}",
+      "offers_title_today": "הסלים של היום",
+      "cancel_offer_row": "איסוף {from}–{until} · {count, plural, one {סל אחד} other {# סלים}}",
+      "cancel_offer_aria": "לבטל את הסל, איסוף {from}–{until}"
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",

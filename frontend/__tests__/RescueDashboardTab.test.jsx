@@ -802,7 +802,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     for (const id of ["rescue-publish-from", "rescue-publish-to"]) {
       const input = screen.getByTestId(id);
       expect(input.className).toContain("min-w-0");
-      expect(input.closest("label").className).toContain("min-w-0");
+      expect(input.closest('[role="group"]').className).toContain("min-w-0");
     }
   });
 });

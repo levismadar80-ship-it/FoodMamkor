@@ -282,9 +282,14 @@ export default function RescueSection({ producer }) {
                 </p>
               ) : (
                 <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                  {t("section.allergens_undeclared")}
+                  {t("section.allergens_undeclared_short")}
                 </p>
               )}
+              {/* MEH-3823: always, whatever was declared — a surprise bag
+                  changes daily (the Too Good To Go line). */}
+              <p className="mt-1.5" data-testid="rescue-section-allergens-ask">
+                {t("section.allergens_ask")}
+              </p>
             </details>
             {/* MEH-3586: the bag's own page — map, how pickup works, the
                 cancel rule. Next: the whole card becomes this link and the

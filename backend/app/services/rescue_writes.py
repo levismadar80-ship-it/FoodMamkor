@@ -61,7 +61,7 @@ from app.utils.clock import israel_today, utc_now
 # The router's `_offer_for_update`, passed in (see the module docstring).
 OfferLock = Callable[[Session, UUID], RescueOffer]
 
-BLOCKED_DETAIL = "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
+BLOCKED_DETAIL = "שני סלים לא נאספו, ולכן השריון נעצר. כדי לשריין שוב, כתבו לנו"
 
 # How many times to retry a colliding pickup code before giving up. The code
 # is unique per OFFER and an offer holds at most 20 bags, so a collision is

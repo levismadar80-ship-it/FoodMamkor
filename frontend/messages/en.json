@@ -7225,7 +7225,8 @@
       "soon": "within the hour",
       "left_short": "{count, plural, one {1 left} other {# left}}",
       "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
-      "cancel_at_tomorrow": "tomorrow at {time}"
+      "cancel_at_tomorrow": "tomorrow at {time}",
+      "worth_and_price": "Worth {worth}, you pay {price}"
     },
     "section": {
       "title": "Rescue bag",
@@ -7240,18 +7241,20 @@
       "allergens_declared": "Contains: {list} · as declared by the business",
       "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
       "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come.",
-      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come."
+      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come.",
+      "allergens_undeclared_short": "The business did not list allergens.",
+      "allergens_ask": "Have an allergy? Ask the business at pickup."
     },
     "confirm": {
       "title": "Your bag is reserved",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
-      "terms": "Free cancellation until {cancel_until} · two no-shows = blocked",
+      "terms": "Free cancellation until {cancel_until} · after two bags not collected, reserving pauses",
       "step_reserved": "Reserved",
       "step_collect": "To collect",
       "step_done": "Handed over",
       "cancel": "Cancel the reservation",
-      "terms_no_cancel": "No cancellation · two no-shows = blocked",
+      "terms_no_cancel": "No cancellation · after two bags not collected, reserving pauses",
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
@@ -7278,7 +7281,7 @@
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "unverified": "Please verify your email address first.",
-      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
+      "blocked": "Two bags were not collected, so reserving is paused. To reserve again, <contact>write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -7331,7 +7334,13 @@
         "cancel": "Free cancellation until",
         "cancel_half_hour": "Half an hour before pickup",
         "cancel_hour": "An hour before pickup",
-        "cancel_two_hours": "Two hours before pickup"
+        "cancel_two_hours": "Two hours before pickup",
+        "worth": "Bag worth (₪)",
+        "worth_help": "What the bag would cost at full price. Optional. Buyers see it struck through beside the price.",
+        "from_hour": "Pickup from, hour",
+        "from_minute": "Pickup from, minutes",
+        "to_hour": "Until, hour",
+        "to_minute": "Until, minutes"
       },
       "items_title": "What's usually in the bag",
       "items_help": "Separate with commas. This is what customers see before they reserve a bag.",
@@ -7367,7 +7376,12 @@
       "offers_title_tomorrow": "Tomorrow's bags",
       "orders_title_tomorrow": "Tomorrow's reservations",
       "orders_empty_tomorrow": "No reservations for tomorrow yet.",
-      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?"
+      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?",
+      "allergens_toggle": "Allergens in the bag · optional",
+      "allergens_count": "{count, plural, one {one marked} other {# marked}}",
+      "offers_title_today": "Today's bags",
+      "cancel_offer_row": "Pickup {from}–{until} · {count, plural, one {one bag} other {# bags}}",
+      "cancel_offer_aria": "Cancel the bag, pickup {from}–{until}"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
