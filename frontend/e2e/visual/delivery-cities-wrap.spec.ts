@@ -117,7 +117,7 @@ for (const viewport of [
         test.skip(true, "No producer on the backend to borrow an id from (parity.spec.ts precedent)");
         return;
       }
-      await page.goto(`/producer/${borrowedId}`);
+      await page.goto(`/producer/${borrowedId}?preview=1`);
       const listEl = page.getByTestId("delivery-cities");
       await listEl.scrollIntoViewIfNeeded();
       await expect(listEl.locator("li")).toHaveCount(15, { timeout: 20_000 });

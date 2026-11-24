@@ -31,6 +31,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Field look + label shell behind those three (don't use directly in a page) | `ui/field.jsx` | — |
 | Centred modal (focus trap: `hooks/useDialogFocus.js`) | `ui/Dialog.jsx` | `DialogContractGuard` |
 | Error / «נשמר» message inside a page or form | `ui/InlineMessage.jsx` | `InlineMessageGuard` |
+| Green «this is a preview» strip with the eye, above a page shown as someone else sees it | `ui/PreviewBanner.jsx` | — |
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
@@ -55,6 +56,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
 | A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
+| «שאלות נפוצות» under a hub list, with FAQPage JSON-LD | `HubFaq.jsx` (questions per list: `lib/hub-faq.js`) | `HubFaq` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |

@@ -1,7 +1,7 @@
 // @ts-check
-import { primaryPoint } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producer-points";
 import { isPriceLabel } from "@/lib/utils";
-import { hasDeliverySection } from "@/lib/quickAnswers";
+import { hasDeliverySection } from "@/lib/quick-answers";
 import { parseHasLocation } from "../components/ProducerSections";
 
 /**

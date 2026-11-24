@@ -113,7 +113,7 @@ def hour_stated(hhmm: str, source: str) -> bool:
     )
 
 
-def _hours_stated(weekday: int, start: str, end: str, source: str) -> bool:
+def _window_hours_stated(weekday: int, start: str, end: str, source: str) -> bool:
     if hour_stated(start, source) and hour_stated(end, source):
         return True
     return any(
@@ -148,7 +148,7 @@ def _one(raw: object, source: str) -> dict[str, Any] | None:
         return None
     weekday, start, end, fulfilment = shape
     named = bool(_hand_over_days(weekday, source))
-    if not (named and _hours_stated(weekday, start, end, source)):
+    if not (named and _window_hours_stated(weekday, start, end, source)):
         return None
     try:  # the same check as a manual save: ends after it starts
         OrderWindowIn(
@@ -164,7 +164,7 @@ def _one(raw: object, source: str) -> dict[str, Any] | None:
     }
 
 
-def windows(raw: object, limit: int, source: str) -> list[dict[str, Any]]:
+def drafted_windows(raw: object, limit: int, source: str) -> list[dict[str, Any]]:
     """The windows the text backs, in the model's order, that save together:
     a window that would overlap an earlier one of its day and kind is left out."""
     kept: list[dict[str, Any]] = []

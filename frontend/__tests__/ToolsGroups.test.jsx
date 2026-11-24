@@ -76,11 +76,12 @@ beforeEach(() => {
 });
 
 describe("«כלים» grouped by task (MEH-3669)", () => {
-  it("shows the groups in order: offer → reviews → content → share", async () => {
+  // MEH-3749: «שיתוף» is a tile in the content group now, not a section.
+  it("shows the groups in order: offer → reviews → content", async () => {
     render(<ToolsPage />);
     await screen.findByTestId("tools-grid");
     const h2 = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.content_heading`, "share.quiet_label"]);
+    expect(h2).toEqual([`${G}.offer_heading`, `${G}.reviews_heading`, `${G}.content_heading`]);
   });
 
   it("«אירועים» is closed by default and holds no tool link (many × closed)", async () => {
@@ -128,11 +129,13 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const section = await screen.findByTestId("tools-group-reviews");
     expect(hrefs(section)).toEqual(["/producer/dashboard/reviews"]);
     expect(within(section).getByTestId("request-review-stub")).toBeInTheDocument();
-    // MEH-3641: the Google profile tile shares the content group with recipes.
+    // MEH-3723: the Google profile tile moved to the edit tab; recipes stay.
+    // MEH-3749: the «שיתוף» tile joins them, for an approved business.
     expect(hrefs(screen.getByTestId("tools-group-content"))).toEqual([
       "/producer/dashboard/recipes",
-      "/producer/dashboard/google-profile",
+      "/producer/dashboard/share",
     ]);
+    expect(screen.queryByTestId("tools-google-profile-tile")).toBeNull();
   });
 
   it("a pending business has no reviews group, and «הזדמנויות» carries the locked line (0 items)", async () => {
@@ -141,8 +144,37 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     const card = await screen.findByTestId("tool-group-opportunities");
     expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
     expect(screen.queryByTestId("tools-group-reviews")).toBeNull();
-    // MEH-3641: a pending business can already prepare its Google profile.
-    expect(hrefs(screen.getByTestId("tools-group-content"))).toContain("/producer/dashboard/google-profile");
+  });
+
+  // MEH-3753: a draft is refused group buys and bags like a pending business,
+  // so it gets the line too — a draft owner used to tap in with no warning.
+  it("a draft business also sees the locked line", async () => {
+    state.status = "draft";
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toBeInTheDocument();
+  });
+
+  // Each unapproved status gets the line that is true for it: a draft or a
+  // pending business waits for approval; a rejected one has to fix and
+  // resubmit; a paused one is closed until it is active again.
+  it.each([
+    ["draft", "dashboard.producer.quick_links.locked_until_approved"],
+    ["pending", "dashboard.producer.quick_links.locked_until_approved"],
+    ["rejected", "dashboard.producer.quick_links.locked_rejected"],
+    ["inactive", "dashboard.producer.quick_links.locked_inactive"],
+  ])("a %s business sees %s", async (status, key) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).getByTestId("tool-locked-line")).toHaveTextContent(key);
+  });
+
+  it.each([["approved"], [undefined]])("no locked line when the status is %s", async (status) => {
+    state.status = status;
+    render(<ToolsPage />);
+    const card = await screen.findByTestId("tool-group-opportunities");
+    expect(within(card).queryByTestId("tool-locked-line")).toBeNull();
   });
 
   it("a closed group shows «חדש» when one of its tools is new", async () => {
@@ -179,6 +211,7 @@ describe("«כלים» grouped by task (MEH-3669)", () => {
     expect(spokes).toEqual(expect.arrayContaining([
       "/producer/dashboard/events", "/producer/dashboard/experiences", "/producer/dashboard/group-buys",
       "/producer/dashboard/rescue", "/producer/dashboard/reviews", "/producer/dashboard/recipes",
+      "/producer/dashboard/share",
     ]));
     for (const spoke of spokes) {
       NAV.pathname = spoke;

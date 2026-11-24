@@ -33207,6 +33207,33 @@
         ]
       }
     },
+    "/producers/me/order-menu/preview": {
+      "get": {
+        "description": "MEH-3746: the caller's own order menu, exactly as a buyer would get it,\nBEFORE ordering is switched on — the public route 404s until then, so the\nowner could not see what her settings do. No `takes_orders()` gate here:\nonly her own business is read (no id is taken from the request), and a\nbusiness that never saved settings gets the defaults, unsaved. Read only:\nthe preview cannot place an order (MEH-3691 refuses an owner's order).",
+        "operationId": "get_my_order_menu_preview_producers_me_order_menu_preview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMenuOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Menu Preview",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/me/order-settings": {
       "get": {
         "description": "The business's ordering settings; the defaults (off) if never saved.",

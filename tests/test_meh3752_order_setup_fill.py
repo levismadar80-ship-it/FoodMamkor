@@ -52,7 +52,7 @@ def _answer(**over):
 
 
 def _draft(data, source=TEXT):
-    return form_filler.to_draft(form_filler.load_map("order_setup"), data, source, {})
+    return form_filler.form_to_draft(form_filler.load_map("order_setup"), data, source, {})
 
 
 def _patch(monkeypatch, answer):

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   producerPoints
+ * Module:   producer-points
  * Purpose:  Derive a producer's map-able points from its own data — the single
  *           answer to "where is this business on the map?", shared by the marker
  *           layer and the /map viewport filter so the two can never disagree.

@@ -2,7 +2,7 @@
 "use client";
 
 import PromotedServiceChips from "@/components/PromotedServiceChips";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 
 /**
  * Module:   ServiceChipRow

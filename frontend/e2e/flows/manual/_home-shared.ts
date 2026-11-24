@@ -25,7 +25,7 @@ import { SERVICE_CHIP_KEYS } from "../../../lib/map-chips.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { DELIVERY_DAYS } from "../../../lib/delivery-days.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
-import { ORDER_DAY_KEYS } from "../../../lib/orderWindow.js";
+import { ORDER_DAY_KEYS } from "../../../lib/order-window-status.js";
 // @ts-expect-error TS7016 — JS data module, no .d.ts
 import { REGIONS } from "../../../data/regions.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
@@ -334,10 +334,10 @@ export function producer(
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
     // every row satisfies both for 1,439 minutes a day. NOT the last one: close
-    // is exclusive (orderWindow.js `minutes < r.closeMin`), so at 23:59 Israel
+    // is exclusive (order-window-status.js `minutes < r.closeMin`), so at 23:59 Israel
     // every row reads closed and the chip leaves the DOM — the 21:59 UTC red on
     // PR #4811. A test that asserts this chip freezes the clock (MEH-2767).
-    // Day keys come from lib/orderWindow.js, not from literals.
+    // Day keys come from lib/order-window-status.js, not from literals.
     order_window: Object.fromEntries(
       (ORDER_DAY_KEYS as string[]).map((d) => [d, [{ open: "00:00", close: "23:59" }]]),
     ),

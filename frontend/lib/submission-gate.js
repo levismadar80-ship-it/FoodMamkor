@@ -16,7 +16,7 @@
  * Related:  backend/app/services/submission_gate.py (the authority — the code
  *           strings below are its contract, returned in
  *           `detail.params.missing`), components/producer/DraftSubmitBanner.jsx
- *           (the only consumer), lib/producerPoints.js (the location rule this
+ *           (the only consumer), lib/producer-points.js (the location rule this
  *           reuses rather than re-derives).
  * History:  MEH-2100 (creation).
  *
@@ -29,7 +29,7 @@
  * either side reds rather than silently splitting the two.
  */
 
-import { producerPoints } from "./producerPoints.js";
+import { producerPoints } from "./producer-points.js";
 import { isDefaultDescription } from "./producer-completeness.js";
 
 // The machine-readable codes. These MUST match

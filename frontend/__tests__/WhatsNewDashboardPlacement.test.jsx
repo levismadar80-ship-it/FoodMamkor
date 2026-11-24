@@ -71,6 +71,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Leaf: (p) => <span {...p} />,
   // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
   Check: (p) => <span {...p} />,
+  // MEH-3745: a completeness link row ends with a caret.
+  CaretLeft: (p) => <span {...p} />,
   ArrowRight: (p) => <span {...p} />,
   // MEH-964 1C: ActivityPulse references WhatsappLogo + Eye in its rows array
   // on every render (the count gate only hides them from the DOM).

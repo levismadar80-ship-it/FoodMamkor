@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import { Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
+import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
@@ -143,6 +144,7 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const locale = useLocale();
   const tSignup = useTranslations("auth.register.producer.success");
   const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
@@ -240,6 +242,11 @@ export default function ProducerDashboardPage() {
       // error-path showToast.error below). Vacation carries the return date.
       if (state === "on_vacation") {
         showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
+        // MEH-3770: orders she already accepted on the days she is away.
+        warnClosedDayOrders(
+          { from: israelToday(), until: vacationUntil || null, openEnded: !vacationUntil },
+          { t: (key, values) => t(`closed_day_orders.${key}`, values), locale },
+        );
       } else {
         showToast.success(t("availability.saved"));
       }
@@ -737,7 +744,7 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
           שיתוף» are one-time / occasional jobs, so they live in «כלים» →
-          «שיתוף» (tools/page.js#share), not on the daily home. Home keeps the
+          «שיתוף» (share/page.js, MEH-3749), not on the daily home. Home keeps the
           one short «הלינק שלי» card above. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old

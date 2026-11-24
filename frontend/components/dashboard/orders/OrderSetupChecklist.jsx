@@ -12,12 +12,13 @@
  *           everything was already done on arrival (0 steps left). When the
  *           last step is done here, it says «הכל מוכן» instead.
  * Related:  app/[locale]/producer/dashboard/orders/page.js · lib/product-orders.js isSetUp
- * History:  MEH-3216 (creation; the business was not told what is missing)
+ * History:  MEH-3216 (creation; the business was not told what is missing);
+ *           MEH-3745 (rows look like links: green text + caret)
  */
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle, Circle } from "@phosphor-icons/react";
+import { CaretLeft, CheckCircle, Circle } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 
 const EDIT_HREF = "/producer/dashboard/edit";
@@ -146,12 +147,20 @@ export default function OrderSetupChecklist({
                     className="shrink-0 text-fg-muted"
                   />
                 )}
-                <span className={step.done ? "text-fg-muted" : ""}>
+                <span className={step.done ? "text-fg-muted" : "text-primary font-medium"}>
                   {t(step.key)}
                 </span>
                 <span className="sr-only">
                   {tDone(step.done ? "checklist_done" : "checklist_todo")}
                 </span>
+                {/* MEH-3745: a row read as a radio button, not a link (Sapir
+                    23/11, phone). The caret at the end says "this opens". */}
+                <CaretLeft
+                  size={16}
+                  aria-hidden="true"
+                  data-testid="row-caret"
+                  className={`ms-auto shrink-0 ltr:rotate-180 ${step.done ? "text-fg-muted" : "text-primary"}`}
+                />
               </Go>
             </li>
           );

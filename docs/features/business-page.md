@@ -3,7 +3,7 @@
 **מה הוא עושה.** המסך הציבורי של בית עסק: גלריה וסיפור, מוצרים, שעות פתיחה, אזורי משלוח, ערוץ יצירת קשר, תגים, ביקורות, ומה שבית העסק מפעיל (קבוצת רכישה, אירוע, מתכון, שקית). זה המסך שכל שאר האתר מוביל אליו.
 
 **Routes**
-* `frontend/app/[locale]/producer/[id]/` — הדף לפי מזהה.
+* `frontend/app/[locale]/producer/[id]/` — הדף לפי מזהה. לבית עסק שיש לו slug, הכתובת הזאת היא הפניה קבועה (308) לכתובת שלו, `/{slug}` או `/en/{slug}`, עם ה-query (MEH-3708). ה-308 נוצר ב-`frontend/middleware.js`, והדף עצמו מפנה גם הוא למקרים שה-middleware מדלג עליהם. עם `?preview=1` הדף נשאר בכתובת המזהה, והטסטים שמחליפים את נתוני הדף משתמשים בזה.
 * `frontend/app/[locale]/[slug]/` — אותו דף לפי slug; זו הכתובת הקנונית כשיש slug.
 * `frontend/app/[locale]/p/[slug]/` — קישור קצר.
 * `frontend/app/[locale]/business-gone/` — בית עסק שהוסר.
@@ -14,13 +14,13 @@
 * `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה. הלוגו של העסק (MEH-3611, `frontend/components/BusinessLogo.jsx`) ליד השם; בעסק בלי תמונות הוא בכותרת הצבעונית (`frontend/components/ImageGallery.jsx`).
 * `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, והקישור של בית העסק לערוץ או לקבוצת WhatsApp, שנקרא בשם שלו («ערוץ וואטסאפ» / «קבוצת וואטסאפ») ולא «עדכונים», כי הפעמון היחיד בדף הוא עדכונים ממהמקור (MEH-3585). גם דף המארגן מציג אותו (MEH-3459), בלי שאלות מוכנות — הן בסעיף «שאלות נפוצות» של דף העסק (MEH-3460); השומר `frontend/__tests__/ContactCardOneOwnerGuard.test.js`.
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
-* `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460). כשיש בסעיף תשובה אחת בלבד בתוך הדף (משלוח או תשלום), היא פתוחה מההתחלה. שתיים או יותר סגורות עד לחיצה (MEH-3666).
+* `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quick-answers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460). כשיש בסעיף תשובה אחת בלבד בתוך הדף (משלוח או תשלום), היא פתוחה מההתחלה. שתיים או יותר סגורות עד לחיצה (MEH-3666).
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים. הכותרת הקטנה «המוצר המוביל» מופיעה רק כשיש לידו עוד מוצר אחד לפחות. בעסק עם מוצר אחד הכרטיס נשאר, בלי הכותרת (MEH-3666).
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון. בגיליון כפתור שיתוף שמוביל ישר למוצר (`?product=<id>`, MEH-3622).
 * `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. מוצר שבית העסק לא אמר עליו כלום על אלרגנים לא מציג שורת אלרגנים; המשפט «יש לכם רגישות למזון? שאלו את בית העסק לפני ההזמנה.» מופיע פעם אחת מעל רשימת המוצרים, רק כשיש מוצר כזה (MEH-3585). כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
 * `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
-* `frontend/components/PickupSchedule.jsx` — מתחת לנקודת איסוף: ימי האיסוף, שעת סגירת ההזמנה של הנקודה, ו«האיסוף הבא» (MEH-3512, החישוב ב-`frontend/lib/nextDelivery.js`).
-* `frontend/components/DeliveryTerms.jsx` · `frontend/components/NationwideZones.jsx` · `frontend/lib/deliveryTime.js` — זמן המשלוח בימי עסקים, המינימום ושעת סגירת ההזמנות לעיר, לאזור ולעסק, והאזורים בתנאים אחרים של עסק ארצי (MEH-3511). הטסט `frontend/__tests__/DeliveryTermsMeh3511.test.jsx`.
+* `frontend/components/PickupSchedule.jsx` — מתחת לנקודת איסוף: ימי האיסוף, שעת סגירת ההזמנה של הנקודה, ו«האיסוף הבא» (MEH-3512, החישוב ב-`frontend/lib/next-delivery.js`).
+* `frontend/components/DeliveryTerms.jsx` · `frontend/components/NationwideZones.jsx` · `frontend/lib/delivery-time.js` — זמן המשלוח בימי עסקים, המינימום ושעת סגירת ההזמנות לעיר, לאזור ולעסק, והאזורים בתנאים אחרים של עסק ארצי (MEH-3511). הטסט `frontend/__tests__/DeliveryTermsMeh3511.test.jsx`.
 * `frontend/components/AreaTermsRow.jsx` — שורה ברשימת המשלוחים: הערים שכל התנאים שלהן זהים בשורה אחת (אזור מוצג בשמו ואחריו הערים), והתנאים פעם אחת בשורה אחת עם «·» (MEH-3511, ספיר 20/11).
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
@@ -49,6 +49,7 @@
 * `frontend/__tests__/QuestionChipsSection.test.jsx` · `frontend/__tests__/quickAnswers.test.js` — «שאלות נפוצות» כסעיף בגוף הדף, בלי שאלת משלוח כשיש סעיף משלוח, ובלי «איך מזמינים?» (MEH-3460). תשובה אחת פתוחה, שתיים סגורות (MEH-3666).
 * `frontend/__tests__/ProducerSectionsProducts.test.jsx` — הכותרת «המוצר המוביל» רק כשיש לידו מוצר נוסף (MEH-3666).
 * `frontend/__tests__/SlugPageTestBusinessNoindex.test.jsx` · `tests/test_meh2952_is_test_exclusion.py` — עסק בדיקה (`is_test`) נפתח בכתובת הישירה עם `noindex` ובלי JSON-LD, ועסק רגיל נשאר בר-אינדוקס (MEH-2952 חלק 3).
+* `frontend/__tests__/ProducerIdRedirect.test.js` — ‏`/producer/<id>` של עסק עם slug: ‏308 ל-`/{slug}` ול-`/en/{slug}`, ה-query נשמר, slug בעברית מקודד, בלי slug הדף נשאר, עסק חסר נשאר 404 (MEH-3708).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

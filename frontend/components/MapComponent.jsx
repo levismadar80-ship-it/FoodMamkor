@@ -18,7 +18,7 @@ import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
-import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producer-points";
 import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
 // MEH-3066: business name beside its pin when zoomed in (own module, §16).
 import { bindPinLabel, installPinLabels, isPrimaryLocation } from "@/lib/map-pin-labels";

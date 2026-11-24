@@ -84,7 +84,7 @@ def test_the_schema_holds_every_ai_field_and_nothing_else():
 def test_numbers_the_text_does_not_write_are_dropped():
     fmap = form_filler.load_map("recipe")
     data = _answer(prep_time_min=20, cook_time_min=60, servings=0)
-    draft = form_filler.to_draft(fmap, data, "אופים שעה. לשים 10 דקות.", {})
+    draft = form_filler.form_to_draft(fmap, data, "אופים שעה. לשים 10 דקות.", {})
     assert draft["prep_time_min"] is None  # 20 is not in the text
     assert draft["cook_time_min"] == 60  # «שעה»
     assert draft["servings"] is None  # out of range
@@ -95,13 +95,13 @@ def test_a_number_counts_only_beside_its_unit():
     fmap = form_filler.load_map("recipe")
     source = "2 ביצים, 500 גרם קמח. אופים 35 דקות."
     data = _answer(prep_time_min=2, cook_time_min=120, servings=2)
-    draft = form_filler.to_draft(fmap, data, source, {})
+    draft = form_filler.form_to_draft(fmap, data, source, {})
     assert (draft["prep_time_min"], draft["cook_time_min"], draft["servings"]) == (
         None,
         None,
         None,
     )
-    draft = form_filler.to_draft(fmap, _answer(cook_time_min=35), source, {})
+    draft = form_filler.form_to_draft(fmap, _answer(cook_time_min=35), source, {})
     assert draft["cook_time_min"] == 35
 
 
@@ -116,21 +116,21 @@ def test_hours_and_servings_in_the_ways_recipes_write_them():
         ("יוצאות 24 עוגיות", "servings", 24),
     ]
     for source, key, value in cases:
-        draft = form_filler.to_draft(fmap, _answer(**{key: value}), source, {})
+        draft = form_filler.form_to_draft(fmap, _answer(**{key: value}), source, {})
         assert draft[key] == value, source
     # «חצי שעה» is 30, not an hour.
-    draft = form_filler.to_draft(fmap, _answer(cook_time_min=60), "חצי שעה בתנור", {})
+    draft = form_filler.form_to_draft(fmap, _answer(cook_time_min=60), "חצי שעה בתנור", {})
     assert draft["cook_time_min"] is None
 
 
 def test_lists_become_one_item_per_line():
     fmap = form_filler.load_map("recipe")
-    draft = form_filler.to_draft(
+    draft = form_filler.form_to_draft(
         fmap, _answer(ingredients=["  קמח ", "", 3]), RECIPE, {}
     )
     assert draft["ingredients"] == "קמח"
     assert (
-        form_filler.to_draft(fmap, _answer(ingredients=[]), RECIPE, {})["ingredients"]
+        form_filler.form_to_draft(fmap, _answer(ingredients=[]), RECIPE, {})["ingredients"]
         is None
     )
 
@@ -138,7 +138,7 @@ def test_lists_become_one_item_per_line():
 def test_a_claim_the_text_does_not_make_is_dropped():
     fmap = form_filler.load_map("recipe")
     data = _answer(description="עוגה רכה. היא כשרה למהדרין.")
-    draft = form_filler.to_draft(fmap, data, RECIPE, {})
+    draft = form_filler.form_to_draft(fmap, data, RECIPE, {})
     assert "כשר" not in draft["description"]
 
 
@@ -146,7 +146,7 @@ def test_choices_are_only_the_listed_options():
     fmap = form_filler.load_map("recipe")
     options = [("id-a", "חמאה"), ("id-b", "קמח")]
     data = _answer(product_ids=[2, 2, 9, 0, -1, True])
-    draft = form_filler.to_draft(fmap, data, RECIPE, {"product_ids": options})
+    draft = form_filler.form_to_draft(fmap, data, RECIPE, {"product_ids": options})
     assert draft["product_ids"] == ["id-b"]
 
 

@@ -16,7 +16,8 @@ Does NOT: assign `status` — product_order_state.apply_transition is the only
 Related:  app/services/product_order_state.py (the moves),
           app/services/product_order_create.py (creation),
           app/routers/product_order_buyer.py, product_order_business.py
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3768 (a business
+          leaving the site: its unaccepted orders are closed by the system)
 """
 
 import secrets
@@ -36,6 +37,7 @@ from app.services.product_order_clock import active_deadline
 from app.services.product_order_menu import offered_slots
 from app.services.product_order_state import (
     Actor,
+    SYSTEM,
     InvalidTransition,
     apply_transition,
 )
@@ -330,3 +332,56 @@ def business_simple_move(
     _move(db, order, to_status, actor, note)
     clear_proposal(order)
     return order
+
+
+# MEH-3768: the on-site orders a business leaving the site never accepted are
+# closed by the system; the buyer is owed the «closed» WhatsApp
+# (product_order_outbox.on_status: system + a note that is not the account
+# deletion's). The ones it accepted stay open, to be handed over.
+DELISTED_ORDER_NOTE = "בית העסק הוסר מהאתר"
+UNACCEPTED_ORDER_STATUSES = ("pending", "change_proposed")
+ACCEPTED_ORDER_STATUSES = ("confirmed", "ready")
+
+
+def _unaccepted(db: Session, producer_id: Any) -> Any:
+    return db.query(ProductOrder).filter(
+        ProductOrder.producer_id == producer_id,
+        ProductOrder.status.in_(UNACCEPTED_ORDER_STATUSES),
+    )
+
+
+def count_unaccepted_orders(db: Session, producer_id: Any) -> int:
+    """MEH-3768: the admin's pre-block count (booking_cancellations
+    count_open_bookings) reads the same set the delist cancels."""
+    return int(_unaccepted(db, producer_id).count())
+
+
+def release_unaccepted_orders(db: Session, producer_id: Any) -> tuple[int, bool]:
+    """MEH-3768: cancel, as the system, the business's orders it never
+    accepted; return (how many, whether accepted ones are still open).
+    Row-locked, so a business confirming at the same moment waits and then
+    finds the order closed. Does not commit (booking_cancellations' caller)."""
+    # REUSES: services/product_order_privacy.py::release_buyer_orders
+    # The business row first, in the mode order creation takes it
+    # (product_order_create._locked_business): an order being written now
+    # commits before this read, or waits and then finds the business gone.
+    db.query(Producer).filter(Producer.id == producer_id).with_for_update(
+        key_share=True
+    ).first()
+    # By id, so two multi-row lockers (release_buyer_orders) meet in one order.
+    orders = (
+        _unaccepted(db, producer_id).order_by(ProductOrder.id).with_for_update().all()
+    )
+    for order in orders:
+        apply_transition(db, order, "cancelled", SYSTEM, DELISTED_ORDER_NOTE)
+        clear_proposal(order)
+    kept = (
+        db.query(ProductOrder.id)
+        .filter(
+            ProductOrder.producer_id == producer_id,
+            ProductOrder.status.in_(ACCEPTED_ORDER_STATUSES),
+        )
+        .first()
+        is not None
+    )
+    return len(orders), kept

@@ -61,7 +61,7 @@ def _patch(monkeypatch, answer):
 
 
 def _draft(data, source=POST):
-    return form_filler.to_draft(form_filler.load_map("event"), data, source, {})
+    return form_filler.form_to_draft(form_filler.load_map("event"), data, source, {})
 
 
 def _owner(db):
