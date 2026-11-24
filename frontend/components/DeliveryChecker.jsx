@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
-import { daysOfRow, cutoffOfRow } from "@/lib/nextDelivery";
+import { daysOfRow, cutoffOfRow } from "@/lib/next-delivery";
 import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
 import { formatPrice } from "@/lib/utils";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";

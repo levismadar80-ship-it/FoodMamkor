@@ -42,7 +42,7 @@ ALCOHOL_NIGHT_ENDS = time(7, 0)
 
 class WindowLike(Protocol):
     # 0 = Sunday ... 6 = Saturday, the convention of `producers.order_window`
-    # and lib/orderWindow.js ("index 0 means Sunday on every axis").
+    # and lib/order-window-status.js ("index 0 means Sunday on every axis").
     weekday: int
     start_time: time
     end_time: time

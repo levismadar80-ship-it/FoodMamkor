@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent, within } from "@testing-library/react";
 import HeroSearch from "@/components/HeroSearch";
-import { highlightMatch } from "@/lib/highlightMatch";
+import { highlightMatch } from "@/lib/highlight-match";
 
 // MEH-1685 ACs 1-3 — hero autocomplete polish:
 //   AC1 inverted highlight (typed prefix regular, untyped continuation bold)

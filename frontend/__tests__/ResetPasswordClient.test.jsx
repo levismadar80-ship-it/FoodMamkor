@@ -20,7 +20,7 @@ import ResetPasswordClient from "@/app/[locale]/reset-password/ResetPasswordClie
  *
  * `lib/api` is mocked at the module boundary. `PasswordInput` is replaced by a
  * plain input (it owns its own network calls and is covered elsewhere) — the
- * same seam RegisterOAuthRedirect.test.jsx uses. `lib/passwordMessages` and
+ * same seam RegisterOAuthRedirect.test.jsx uses. `lib/password-messages` and
  * `lib/validators` are the REAL pure modules, so the 422 case drives the actual
  * failure→key mapping. Translator is a scoped bare-key one; messages are
  * asserted by i18n key, not Hebrew copy.
