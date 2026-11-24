@@ -83,6 +83,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/holiday_mode.py` | — אין כותרת — |
 | `routers/marketing.py` | Marketing-facing endpoints: homepage stats, newsletter signup, contact form. |
 | `routers/menu_import.py` | The owner uploads a menu (photos or a PDF), gets product rows back to review, and publishes the rows she approved. MEH-3430. |
+| `routers/my_orders_any.py` | MEH-3698 — whether «ההזמנות שלי» has anything to show the caller: a product order, a group buy or a surprise bag. … |
 | `routers/organizers.py` | The public face of a markets / events organizer (kind='organizer', ADR-036): its page (/organizers/{slug}) and the slug list the sitemap reads. … |
 | `routers/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner (or the admin, for a business) sends free text and gets a draft of the page fields back. |
 | `routers/page_freshness.py` | POST /page-freshness/confirm — the «כן, הכול נכון» button behind the monthly email. … |
@@ -137,6 +138,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
 | `schemas/group_buys_requests.py` | Group buys, category requests and business name-change requests. |
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
+| `schemas/my_orders_any.py` | The answer of GET /users/me/orders/any (MEH-3698): whether «ההזמנות שלי» has anything to show the caller. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
 | `schemas/owner_detach.py` | Request body for the admin's «ניתוק בעלים» (MEH-3256, grill retro D9). |
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
@@ -442,6 +444,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `menu-image.js` | Shrink a menu photo in the browser before it is sent (MEH-3430). A phone photo is 3–6 MB; … |
 | `middleware-exists.js` | Existence checks the middleware runs so a missing recipe or an unservable category × region page answers a REAL 404 instead of a streamed 200 (their … |
 | `money.js` | The one place that turns agorot (what the API stores) into shekels (what people read). Prices travel as whole agorot. |
+| `my-orders-merge.js` | MEH-3698 — turn the three buyer lists (product orders, group buys, surprise bags) into the one «ההזמנות שלי» list: one row shape, a kind per row, split into … |
+| `my-orders-nav-cache.js` | MEH-3698 — the session cache key of the «ההזמנות שלי» menu gate, and the one call that drops it after an order, a group-buy join or a bag reservation. |
 | `nav-links.js` | The one place that builds "navigate there" links (Waze + Google Maps) — from a map point, or from a text address when there is no point. … |
 | `nav-registry.js` | MEH-1703 chunk 1 — one declaration per navigation item, covering the four nav surfaces (desktop pill, desktop avatar dropdown, mobile bottom pill, mobile … |
 | `next-delivery.js` | The date of a business's next delivery to a city — «המשלוח הבא: יום שלישי 24.11» (MEH-3485) — from the city's delivery days and the business's weekly order … |
@@ -543,7 +547,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
-| `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. It appears for a signed-in person while on-site ordering is switched on in the server … |
+| `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. MEH-3698: it appears only for a signed-in person who has something to see there — an … |
 | `use-order-cart.js` | The buyer's picks on one business page, held by ProducerDetail so the product rows and the order bar read the same state. |
 | `use-orders-tab.js` | Whether the dashboard shows the «הזמנות» tab, and its counter (orders waiting for an answer). |
 | `use-rescue-reservation.js` | — אין כותרת — |
@@ -948,8 +952,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/state/useMapFilters.js` | — אין כותרת — |
 | `[locale]/map/state/useMapSync.js` | — אין כותרת — |
 | `[locale]/map/state/useProducersFeed.js` | — אין כותרת — |
-| `[locale]/my-group-buys/MyGroupBuysClient.jsx` | «הקבוצות שלי»: the group buys the signed-in person joined, so she can get back to one without the email link. Running ones first. |
-| `[locale]/my-orders/MyOrdersClient.jsx` | «ההזמנות שלי»: the signed-in buyer's on-site orders, newest first. Each row opens the order's existing status page. |
+| `[locale]/my-orders/MyOrdersClient.jsx` | «ההזמנות שלי»: everything the signed-in buyer ordered on the site — product orders, group buys and surprise bags — in one list, split into «פעילות» and … |
+| `[locale]/my-orders/MyOrdersRow.jsx` | MEH-3698 — one row of «ההזמנות שלי»: what it is (a tag), the business, the date and the status, linking to the item's own page. |
 | `[locale]/newsletter/confirm/ConfirmClient.jsx` | — אין כותרת — |
 | `[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx` | — אין כותרת — |
 | `[locale]/order/[id]/OrderBusinessLinks.jsx` | MEH-3755 — on the buyer's order page: the business's name as a link to its page, its contact button (the channel it chose), and Waze / Google Maps for the … |
