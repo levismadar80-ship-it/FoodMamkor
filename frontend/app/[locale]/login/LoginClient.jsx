@@ -12,7 +12,7 @@ import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import PasskeyRecoveryPanel from "@/components/PasskeyRecoveryPanel"; // MEH-3305
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
-import { oauthTermsKey } from "@/lib/oauthTermsKey";
+import { oauthTermsKey } from "@/lib/oauth-terms-key";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { safeInternalRedirect } from "@/lib/safe-redirect";

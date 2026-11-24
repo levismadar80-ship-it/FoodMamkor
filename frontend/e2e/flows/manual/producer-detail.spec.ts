@@ -232,7 +232,10 @@ function shareUrlFor(origin: string, p: Producer): string {
 }
 
 async function openProducer(page: Page, id: string): Promise<Locator> {
-  await page.goto(`/producer/${id}`);
+  // MEH-3708: an id with a slug 308s to /{slug}, which SSR-seeds the page;
+  // ?preview=1 keeps the id page and its client detail fetch, which the
+  // request recorders below count.
+  await page.goto(`/producer/${id}?preview=1`);
   const root = scope(page).getByTestId("producer-detail-root");
   // Count gate first: the strict checks below would throw rather than wait if a
   // transition copy ever landed inside the landmark.

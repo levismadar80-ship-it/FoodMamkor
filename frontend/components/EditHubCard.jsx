@@ -11,11 +11,12 @@
  *           next-step marker.
  * Does NOT: own navigation, URL state, or any card logic — the page
  *           (producer/dashboard/edit/page.js) passes onClick (router.push into
- *           the group) and composes every prop. Purely a styled <button>.
+ *           the group) and composes every prop. A styled <button>, or a <Link> when `href` is given (MEH-3723).
  * Related:  components/EditAccordionCard.jsx (the spoke card + PreviewThumbs/
  *           Chips primitives reused here); app/[locale]/producer/dashboard/
  *           edit/page.js (GROUPS config, group state, previews map).
  * History:  MEH-1408 (creation — edit-tab hub-and-spoke, shell-only).
+ *           MEH-3723 (optional `href`: a tile that opens its own page).
  *
  * RTL: logical properties only; the drill-in caret uses CaretRight +
  * rtl:rotate-180 (the MEH-1355/MEH-938 forward-indicator convention) so it
@@ -23,7 +24,12 @@
  */
 
 import { CaretRight } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
 
+/**
+ * @param {{ title: string, marker?: import("react").ReactNode, statusLine?: string,
+ *   previews?: import("react").ReactNode[], onClick?: () => void, href?: string, testId?: string }} props
+ */
 export default function EditHubCard({
   title,
   // MEH-1132 next-step gold dot, rendered beside the title when the group holds
@@ -35,15 +41,14 @@ export default function EditHubCard({
   // — MEH-1158 primitives, composed by the page from the fetched profile.
   previews = [],
   onClick,
+  // MEH-3723: a tile that opens a page of its own (the Google profile tool)
+  // passes href instead of onClick and renders as a link.
+  href,
   testId,
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={testId}
-      className="w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
-    >
+  const className = "w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition";
+  const content = (
+    <>
       <span className="min-w-0">
         <span className="block text-base font-bold text-text">
           {title}
@@ -76,6 +81,15 @@ export default function EditHubCard({
         aria-hidden="true"
         className="shrink-0 text-fg-muted rtl:rotate-180"
       />
+    </>
+  );
+  return href ? (
+    <Link href={href} data-testid={testId} className={className}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} data-testid={testId} className={className}>
+      {content}
     </button>
   );
 }

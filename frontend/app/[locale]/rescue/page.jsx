@@ -4,6 +4,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import HubShell from "@/components/HubShell";
 import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
+import HubFaq from "@/components/HubFaq";
+import { HUB_FAQ } from "@/lib/hub-faq";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import { buildAlternates } from "@/lib/i18n-seo";
@@ -66,6 +68,8 @@ export default async function RescuePage({ params }) {
       <div className={`${HUB_CONTENT_CLASS} pt-4 pb-16`}>
         <RescueList />
       </div>
+      {/* MEH-3737: common questions under the list, with FAQPage JSON-LD. */}
+      <HubFaq faq={HUB_FAQ.rescue} locale={locale} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 // (components/ProducerCard.jsx, components/HeroSearch.jsx).
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { highlightMatch } from "@/lib/highlightMatch";
+import { highlightMatch } from "@/lib/highlight-match";
 
 const html = (node) => render(<span>{node}</span>).container.innerHTML;
 

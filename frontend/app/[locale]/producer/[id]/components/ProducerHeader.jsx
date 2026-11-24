@@ -15,10 +15,10 @@ import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import { useAuth } from "@/lib/auth-context";
 import { watchFavorited } from "@/lib/watch-favorited";
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
-import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { getOrderWindowStatus } from "@/lib/order-window-status";
 import { useUserLocation } from "@/lib/user-location";
 import { formatDistance, haversineKm } from "@/lib/distance";
-import { primaryPoint, producerPoints } from "@/lib/producerPoints";
+import { primaryPoint, producerPoints } from "@/lib/producer-points";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { parseHasLocation } from "./ProducerSections";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";

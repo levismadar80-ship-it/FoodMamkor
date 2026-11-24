@@ -46,6 +46,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("@phosphor-icons/react", () => ({
   ChatText: (p) => <span {...p} />,
+  CaretLeft: (p) => <span {...p} />, // MEH-3745: completeness link rows
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,

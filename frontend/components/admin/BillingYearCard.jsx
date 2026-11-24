@@ -2,7 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatPrice } from "@/lib/utils";
+import { formatAgorot } from "@/lib/money";
 
 /**
  * Module:   BillingYearCard
@@ -17,12 +17,9 @@ import { formatPrice } from "@/lib/utils";
  */
 
 /** @param {number} agorot */
-const shekels = (agorot) => formatPrice(Math.round(agorot) / 100);
-
-/** @param {number} agorot */
 const amountOf = (agorot) =>
   function Amount() {
-    return <span dir="ltr">{shekels(agorot)}</span>;
+    return <span dir="ltr">{formatAgorot(agorot)}</span>;
   };
 
 const FULL = 100;

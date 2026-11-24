@@ -1,103 +1,97 @@
-// Lightweight node test for producerCompleteness — no test runner needed.
-//   $ node frontend/lib/producer-completeness.test.mjs
-import assert from "node:assert/strict";
-import { producerCompleteness } from "./producer-completeness.js";
+// Moved from lib/producer-completeness.test.mjs (MEH-3714): that file was
+// excluded from vitest and never ran in CI.
+import { it, expect } from "vitest";
+import { producerCompleteness, COMPLETENESS_FIELDS as F } from "@/lib/producer-completeness";
 
 const FULL = {
   city: "תל אביב",
   lat: 32.08,
   lng: 34.78,
+  // MEH-1938: coords come from the primary location row.
+  locations: [{ kind: "branch", is_primary: true, lat: 32.08, lng: 34.78, precision: "exact" }],
   phone: "0501234567",
   instagram: "@foo",
   categories: [{ id: "c1", name: "ירקות" }],
   images: ["https://example.com/a.jpg"],
-  // MEH-1002: 6th field — tagline (short_description) OR long story (description).
+  // MEH-1002: tagline (short_description) OR long story (description).
   short_description: "גבינות עיזים מהחווה",
+  has_physical_location: true,
+  opening_hours: "Sun-Thu 09:00-18:00",
 };
 
-let passed = 0;
-let failed = 0;
-function it(name, fn) {
-  try {
-    fn();
-    console.log("  ✓", name);
-    passed++;
-  } catch (err) {
-    console.log("  ✗", name, "—", err.message);
-    failed++;
-  }
-}
 
-console.log("producerCompleteness");
+// --- producerCompleteness ---
 
 it("fully populated → green, no missing", () => {
   const r = producerCompleteness(FULL);
-  assert.equal(r.priority, "green");
-  assert.deepEqual(r.missing, []);
+  expect(r.priority).toBe("green");
+  expect(r.missing).toEqual([]);
 });
 
 it("missing city → red", () => {
   const r = producerCompleteness({ ...FULL, city: null });
-  assert.equal(r.priority, "red");
-  assert.ok(r.missing.includes("עיר"));
+  expect(r.priority).toBe("red");
+  expect(r.missing).toContain(F.city);
 });
 
-it("missing lat → red", () => {
-  const r = producerCompleteness({ ...FULL, lat: null });
-  assert.equal(r.priority, "red");
-  assert.ok(r.missing.includes("קואורדינטות"));
+// MEH-1938 chunk 5a: coords come only from a producer_locations row; the
+// old lat/lng columns no longer count.
+it("no location row → red, flags coords", () => {
+  const r = producerCompleteness({ ...FULL, locations: [] });
+  expect(r.priority).toBe("red");
+  expect(r.missing).toContain(F.coords);
 });
 
-it("missing lng → red", () => {
-  const r = producerCompleteness({ ...FULL, lng: null });
-  assert.equal(r.priority, "red");
+it("lat/lng columns alone do not satisfy coords", () => {
+  const r = producerCompleteness({ ...FULL, locations: [], lat: 32.08, lng: 34.78 });
+  expect(r.missing).toContain(F.coords);
 });
 
 it("missing both phone and instagram → red", () => {
   const r = producerCompleteness({ ...FULL, phone: null, instagram: null });
-  assert.equal(r.priority, "red");
-  assert.ok(r.missing.includes("פרטי קשר (טלפון/אינסטגרם)"));
+  expect(r.priority).toBe("red");
+  expect(r.missing).toContain(F.contact);
 });
 
 it("only phone present → green (instagram optional)", () => {
   const r = producerCompleteness({ ...FULL, instagram: null });
-  assert.equal(r.priority, "green");
+  expect(r.priority).toBe("green");
 });
 
 it("only instagram present → green (phone optional)", () => {
   const r = producerCompleteness({ ...FULL, phone: null });
-  assert.equal(r.priority, "green");
+  expect(r.priority).toBe("green");
 });
 
 it("missing only categories → yellow", () => {
   const r = producerCompleteness({ ...FULL, categories: [] });
-  assert.equal(r.priority, "yellow");
-  assert.deepEqual(r.missing, ["קטגוריה"]);
+  expect(r.priority).toBe("yellow");
+  expect(r.missing).toEqual([F.category]);
 });
 
 it("missing only images → yellow", () => {
   const r = producerCompleteness({ ...FULL, images: [] });
-  assert.equal(r.priority, "yellow");
-  assert.deepEqual(r.missing, ["תמונה"]);
+  expect(r.priority).toBe("yellow");
+  expect(r.missing).toEqual([F.image]);
 });
 
 it("missing categories AND city → red (city wins)", () => {
   const r = producerCompleteness({ ...FULL, city: null, categories: [] });
-  assert.equal(r.priority, "red");
-  assert.deepEqual(r.missing, ["עיר", "קטגוריה"]);
+  expect(r.priority).toBe("red");
+  expect(r.missing).toEqual([F.city, F.category]);
 });
 
 // MEH-1002: "תיאור קצר" — OR of short_description / description, yellow-tier.
 it("short_description null + description absent → yellow, flags תיאור קצר", () => {
   const r = producerCompleteness({ ...FULL, short_description: null });
-  assert.equal(r.priority, "yellow");
-  assert.deepEqual(r.missing, ["תיאור קצר"]);
+  expect(r.priority).toBe("yellow");
+  expect(r.missing).toEqual([F.short_desc]);
 });
 
 it("whitespace-only short_description (no description) → still missing", () => {
   const r = producerCompleteness({ ...FULL, short_description: "   " });
-  assert.equal(r.priority, "yellow");
-  assert.ok(r.missing.includes("תיאור קצר"));
+  expect(r.priority).toBe("yellow");
+  expect(r.missing).toContain(F.short_desc);
 });
 
 it("only long description filled → תיאור קצר not missing (OR semantics)", () => {
@@ -106,14 +100,14 @@ it("only long description filled → תיאור קצר not missing (OR semantics
     short_description: null,
     description: "סיפור העסק המלא שלנו",
   });
-  assert.equal(r.priority, "green");
-  assert.deepEqual(r.missing, []);
+  expect(r.priority).toBe("green");
+  expect(r.missing).toEqual([]);
 });
 
 it("only short_description filled → green (tagline alone satisfies)", () => {
   const r = producerCompleteness({ ...FULL, description: null });
-  assert.equal(r.priority, "green");
-  assert.deepEqual(r.missing, []);
+  expect(r.priority).toBe("green");
+  expect(r.missing).toEqual([]);
 });
 
 it("missing description never turns the profile red (yellow-tier only)", () => {
@@ -123,7 +117,7 @@ it("missing description never turns the profile red (yellow-tier only)", () => {
     short_description: undefined,
     description: undefined,
   });
-  assert.equal(r.priority, "yellow");
+  expect(r.priority).toBe("yellow");
 });
 
 it("undefined images / categories → treated as empty", () => {
@@ -132,10 +126,8 @@ it("undefined images / categories → treated as empty", () => {
     images: undefined,
     categories: undefined,
   });
-  assert.equal(r.priority, "yellow");
-  assert.ok(r.missing.includes("תמונה"));
-  assert.ok(r.missing.includes("קטגוריה"));
+  expect(r.priority).toBe("yellow");
+  expect(r.missing).toContain(F.image);
+  expect(r.missing).toContain(F.category);
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);

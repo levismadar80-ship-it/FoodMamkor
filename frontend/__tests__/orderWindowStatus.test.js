@@ -14,7 +14,7 @@ import {
   getSingleOrderCutoff,
   israelNowParts,
   CLOSING_SOON_MINUTES,
-} from "@/lib/orderWindow";
+} from "@/lib/order-window-status";
 
 // 2026-07-26 is a Sunday.
 const SUNDAY = (hhmmZ) => new Date(`2026-07-26T${hhmmZ}:00Z`);

@@ -40,7 +40,7 @@ left in v1" vs "what's planned for v2".
 | `/producers/diet/[dietSlug]` | SEO landing page: businesses by diet (vegan, gluten-free …) |
 | `/[slug]` | Business page (canonical vanity URL): about, products, order/contact, delivery checker, reviews, events, recipes, mini-map |
 | `/[slug]/recipes/[recipe_id]` | A business's recipe, with servings scaler and ingredient checklist |
-| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`) |
+| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`). A business with a slug answers a 308 to `/{slug}` (MEH-3708); `?preview=1` keeps the id page |
 | `/p/[slug]` | Redirect stub to `/[slug]`, noindex |
 | `/business-gone` | Shown (via middleware rewrite) for a deleted business URL |
 | `/events` | Events hub tab: markets, farm days, workshops; date chips |
@@ -88,18 +88,20 @@ left in v1" vs "what's planned for v2".
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
 | `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
-| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
+| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The business name links to its page, with its contact button, and a confirmed pickup gets Waze / Google Maps to the address (MEH-3755). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
+| `/producer/dashboard/orders/preview` | «איך זה נראה ללקוחות»: her business page in preview mode with her own order menu, so she sees the order form a buyer gets (slots, cancel line, minimum) even before ordering is on; sending and the WhatsApp code are off (MEH-3746) |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
 | `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches, «מה להכין» on the today list, «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
-| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content, share); «אירועים» and «הזדמנויות» open in place (MEH-3669) |
+| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749) |
+| `/producer/dashboard/share` | «שיתוף»: the QR card and «ערכת שיתוף», approved business only, opened from «כלים» (MEH-3749) |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
 | `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
 | `/producer/dashboard/events` | Manage events |

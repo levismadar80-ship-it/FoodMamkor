@@ -127,13 +127,13 @@ self_test() {
   run_case "generated lib file"            CLEAN "frontend/lib/generated/routes.js" ''
   run_case "package __init__"              CLEAN "backend/app/services/__init__.py" ''
   run_case "nothing added"                 CLEAN "" ''
-  # Anchored to a real repo file: highlightMatch.js is the kind of module this
+  # Anchored to a real repo file: highlight-match.js is the kind of module this
   # exists for (MEH-3608 deleted its unused twin). A missing anchor fails loudly.
-  if [ -r frontend/lib/highlightMatch.js ]; then
-    run_case "real helper, empty Reuse:" WARN  "frontend/lib/highlightMatch.js" $'Skills: none fit\n**Reuse:**\n'
-    run_case "real helper, answered"     CLEAN "frontend/lib/highlightMatch.js" $'Reuse: none fit — searched CODE_INDEX\n'
+  if [ -r frontend/lib/highlight-match.js ]; then
+    run_case "real helper, empty Reuse:" WARN  "frontend/lib/highlight-match.js" $'Skills: none fit\n**Reuse:**\n'
+    run_case "real helper, answered"     CLEAN "frontend/lib/highlight-match.js" $'Reuse: none fit — searched CODE_INDEX\n'
   else
-    cases=$(( cases + 1 )); echo "  [XX] anchor frontend/lib/highlightMatch.js is gone — pick another real helper"; status=1
+    cases=$(( cases + 1 )); echo "  [XX] anchor frontend/lib/highlight-match.js is gone — pick another real helper"; status=1
   fi
   # The real diff reader, on a throw-away repo: an ADDED module counts, a
   # MODIFIED one does not (a wrong --diff-filter would flip one of these).
