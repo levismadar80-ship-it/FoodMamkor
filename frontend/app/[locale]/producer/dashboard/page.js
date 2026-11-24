@@ -391,11 +391,15 @@ export default function ProducerDashboardPage() {
           set inactive / rejected / back to pending, and both public routes
           404 anything not approved — a live link here would open a 404. (The
           layout's «צפייה בדף» eye → /producer/{id} still works for the owner.) */}
-      {slug && isApproved && (
+      {/* MEH-3783: a business has the tab bar's «צפייה בעמוד» eye on every
+          dashboard page (DashboardLayoutClient), so a second link here was
+          the same action twice (Shopify keeps one eye in the nav). The eye
+          is hidden for an organizer, so this stays her one way to her page. */}
+      {slug && isApproved && isOrganizer && (
         <LocaleLink
           // MEH-2460: an organizer's public page is /organizers/{slug}
           // (MEH-2461); /{slug} is the business route and 404s it.
-          href={isOrganizer ? `/organizers/${slug}` : `/${slug}`}
+          href={`/organizers/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"

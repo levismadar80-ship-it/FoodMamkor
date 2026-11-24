@@ -310,26 +310,14 @@ export const NAV_ITEMS = Object.freeze([
       headerMenu: { labelKey: "my_orders.title", audience: "auth" },
       accountSheet: { labelKey: "my_orders.title", audience: "auth" },
     },
-    /** MEH-3525: only while on-site ordering is on (lib/use-my-orders-nav-gate.js). */
+    /** MEH-3698: only for someone with an order, a group buy or a bag (lib/use-my-orders-nav-gate.js). */
     dataGate: "orders-on",
     note:
-      "Signed-in only, like `favorites`. Shown while the server's on-site " +
-      "ordering answers (PRODUCT_ORDERS_ENABLED); Wolt, Etsy and Airbnb keep " +
-      "the buyer's order history in the account menu the same way.",
-  },
-  {
-    id: "myGroupBuys",
-    kind: "link",
-    href: "/my-group-buys",
-    surfaces: {
-      headerMenu: { labelKey: "my_group_buys.title", audience: "auth" },
-      accountSheet: { labelKey: "my_group_buys.title", audience: "auth" },
-    },
-    note:
-      "MEH-3609: signed-in only, like `favorites`, with no data gate: a gate " +
-      "would cost a request on every page load (testing.md, MEH-2972). " +
-      "Groupon («My Groupons») and Kickstarter («Backed projects») keep the " +
-      "list in the account menu the same way.",
+      "Signed-in only, like `favorites`. MEH-3698: one list for product " +
+      "orders, group buys and surprise bags (it replaced `myGroupBuys`), " +
+      "shown only to someone who has at least one — one request, " +
+      "GET /users/me/orders/any. Airbnb (Trips), Wolt and Too Good To Go " +
+      "keep one order history in the account menu the same way.",
   },
   {
     id: "settings",

@@ -117,7 +117,7 @@ const ROUTES = {
   "/freshness/confirm": { kind: "noindex" },
   "/login": { kind: "noindex" },
   "/messages": { kind: "noindex" },
-  "/my-group-buys": { kind: "noindex" }, // MEH-3609: signed-in only
+  "/my-group-buys": { kind: "redirect" }, // MEH-3698: → /my-orders (MEH-3609 page)
   "/my-orders": { kind: "noindex" }, // MEH-3525: signed-in only
   "/newsletter/confirm": { kind: "noindex" }, // MEH-3300
   "/newsletter/unsubscribe": { kind: "noindex" },

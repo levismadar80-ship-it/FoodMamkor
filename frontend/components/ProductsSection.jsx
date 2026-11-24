@@ -44,7 +44,7 @@ import { priceLabelText } from "@/lib/utils"; // MEH-3076
 import EmptyState from "@/components/ui/EmptyState";
 import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
-import { orderProducts } from "@/lib/product-order";
+import { orderProducts } from "@/lib/product-display-order";
 import Input from "@/components/ui/Input";
 import ProductDescriptionSuggest from "@/components/ProductDescriptionSuggest"; // MEH-3479
 import Button from "@/components/ui/Button";

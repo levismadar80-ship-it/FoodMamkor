@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   order-status
+ * Module:   buyer-order
  * Purpose:  The buyer's side of one on-site order: read it, cancel it, accept
  *           the business's proposed change, and decide which approved
  *           sentences the status page shows for each status.
