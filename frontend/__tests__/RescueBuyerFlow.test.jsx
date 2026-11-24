@@ -173,6 +173,23 @@ let RescueList;
 let RescueHomeModule;
 let RescueConfirmation;
 
+/**
+ * Runs `fn` with Date frozen at 10:00 Israel (08:00 UTC, winter) and the list
+ * mock rebuilt on that clock. On the real clock the default cutoff
+ * (now + 30 min) is already tomorrow from 23:30 Israel, so a test that wants
+ * the bare «today» time went red at that hour (MEH-3704 CI, 21:39 UTC).
+ */
+async function atTenInIsrael(fn) {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    vi.setSystemTime(new Date("2026-12-10T08:00:00Z"));
+    fetchOffers.mockResolvedValue([offer()]);
+    await fn();
+  } finally {
+    vi.useRealTimers();
+  }
+}
+
 beforeEach(async () => {
   vi.clearAllMocks();
   flagOn = true;
@@ -520,10 +537,12 @@ describe("the business-page section — reserve and confirm", () => {
   // Sapir 6/11: the no-show rule is too much on the card; it stays on the
   // confirmation, where it applies (asserted in "reserve swaps the CTA…").
   it("keeps only the free-cancel cutoff under the CTA, without the no-show rule", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    const terms = await screen.findByTestId("rescue-section-terms");
-    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
-    expect(terms.textContent).not.toContain("אי-הגעות");
+    await atTenInIsrael(async () => {
+      render(<RescueSection producer={PRODUCER} />);
+      const terms = await screen.findByTestId("rescue-section-terms");
+      expect(terms.textContent).toBe("ביטול חינם עד 10:30");
+      expect(terms.textContent).not.toContain("אי-הגעות");
+    });
   });
 
   it("folds the allergens under «אלרגנים», closed until tapped", async () => {
@@ -1143,9 +1162,11 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
   });
 
   it("before the cutoff the line still gives the time (control)", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    const terms = await screen.findByTestId("rescue-section-terms");
-    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+    await atTenInIsrael(async () => {
+      render(<RescueSection producer={PRODUCER} />);
+      const terms = await screen.findByTestId("rescue-section-terms");
+      expect(terms.textContent).toBe("ביטול חינם עד 10:30");
+    });
   });
 
   it("the confirmation keeps the no-show rule and drops the time", () => {

@@ -3,7 +3,7 @@
 
 /**
  * Module:   LinkEverywhere
- * Purpose:  MEH-3331 — «הקישור שלך בכל מקום»: four places a business puts its
+ * Purpose:  MEH-3331 — «קישור אחד לכל מקום»: four places a business puts its
  *           page link once (Instagram bio, Facebook page button, Google
  *           profile, WhatsApp Business profile). Each row: where, one how-to
  *           line, a copy button with a tracked link, and «עשיתי».
