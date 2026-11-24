@@ -236,7 +236,7 @@ frontend/lib/constants.js
 frontend/lib/dates.js
 frontend/lib/env.server.js
 frontend/lib/filter-url.js
-frontend/lib/fulfillmentTags.js
+frontend/lib/fulfillment-tags.js
 frontend/lib/listing-supply.js
 frontend/lib/producer-description-placeholders.js
 frontend/lib/qr.js
@@ -250,4 +250,4 @@ frontend/lib/use-home-page.js
 frontend/lib/use-test-business-ids.js
 frontend/lib/use-user-city.js
 frontend/lib/use-visual-viewport-box.js
-frontend/lib/useRescueReservation.js
+frontend/lib/use-rescue-reservation.js

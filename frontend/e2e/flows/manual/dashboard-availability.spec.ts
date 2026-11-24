@@ -14,6 +14,11 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/producers/me/billing/summary", (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
+  // MEH-3770: saving a vacation reads the accepted orders (warnClosedDayOrders →
+  // loadAcceptedOrders) to warn about orders on the closed days. None here.
+  await page.route("**/producers/me/product-orders**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ orders: [], total: 0 }) }),
+  );
 });
 
 /**

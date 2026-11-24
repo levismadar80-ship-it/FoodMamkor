@@ -473,6 +473,7 @@ duplicate	5	אודות
 duplicate	5	אישור
 duplicate	5	גראס פד
 duplicate	5	חזרה לדף הבית
+duplicate	5	חזרה לכלים
 duplicate	5	כותרת
 duplicate	5	למה מקומי?
 duplicate	5	נדחה
@@ -489,7 +490,6 @@ duplicate	6	אשרי
 duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
-duplicate	6	חזרה לכלים
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
 duplicate	6	עריכה

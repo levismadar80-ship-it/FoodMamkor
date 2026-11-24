@@ -28,6 +28,8 @@ from app.services.job_heartbeat import (
     REGISTRATION_REMINDER_TZ,
     GROUP_BUY_PICKUP_REMINDER_CRON,
     GROUP_BUY_PICKUP_REMINDER_TZ,
+    RESCUE_REMINDER_CRON,
+    RESCUE_REMINDER_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -576,6 +578,31 @@ def _run_group_buy_pickup_reminder_job() -> None:
         db.close()
 
 
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier day.
+@heartbeat(
+    "rescue-morning-reminder-daily",
+    cron_monitor_config(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_morning_reminder_job() -> None:
+    """MEH-3702: queue today's reminder emails. Fresh session per run; any
+    exception is swallowed so the scheduler thread never dies. Nothing stamps
+    an order as reminded, so this runs once a day and never on an interval."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_morning_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_morning_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] daily run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_morning_reminder")
+        log.error("[RESCUE-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
@@ -953,6 +980,19 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # watchdog's guards, for the same reason it has them: max_instances=1 +
     # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
     # a brief pause runs it late instead of skipping a window.
+    # MEH-3702: the rescue morning reminder, 08:00 Israel, pilot-gated. A
+    # 3h grace runs it late after a deploy pause; a later restart skips the
+    # day (no stamp, so never a second run on the same day).
+    if settings.rescue_bags_enabled:
+        followup_scheduler.add_job(
+            _run_rescue_morning_reminder_job,
+            CronTrigger.from_crontab(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+            id="meh_3702_rescue_morning_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
     from app.services.rescue_digest import digest_enabled as _digest_enabled
 
     if settings.rescue_bags_enabled and _digest_enabled():

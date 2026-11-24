@@ -74,8 +74,10 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import GoogleProfileHubTile from "@/components/dashboard/google-profile/GoogleProfileHubTile";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
@@ -95,7 +97,7 @@ import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
@@ -109,6 +111,7 @@ import {
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
+import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
@@ -226,13 +229,10 @@ function EditPageInner() {
   const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
-  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  // WhatsAppQuestionChips does (lib/resolved-questions.js explains why).
   const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
-  // MEH-1823: the offer feature owns one namespace shared by the dashboard
-  // card and the public badge, so the four type labels have a single source.
-  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
   // MEH-1773: point-of-decision explainer for the order-window card. The
@@ -352,41 +352,10 @@ function EditPageInner() {
       });
   }, [user, authLoading, router]);
 
-  // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [anyDirty]);
-
-  // MEH-1100 guard 2: in-app navigation. The App Router exposes no
-  // route-change events, so intercept anchor clicks at capture phase while
-  // dirty — this covers the tab nav, header, and BottomNav links alike.
-  // New-tab clicks (target=_blank / modifier keys) don't leave the page and
-  // pass through; same-path clicks (e.g. anchors) are ignored.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const onClick = (e) => {
-      if (e.defaultPrevented || e.button !== 0) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const anchor = e.target.closest?.("a[href]");
-      if (!anchor || anchor.target === "_blank") return;
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#")) return;
-      const url = new URL(anchor.href, window.location.href);
-      if (url.origin === window.location.origin && url.pathname === window.location.pathname) return;
-      if (!window.confirm(t("unsaved_guard.confirm"))) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [anyDirty, t]);
+  // MEH-1100: the refresh / tab-close prompt and the in-app link confirm,
+  // while any card is dirty. MEH-3785 moved both into a hook the offer page
+  // shares.
+  useUnsavedGuard(anyDirty, t("unsaved_guard.confirm"));
 
   // MEH-1116 + MEH-1408: URL-hash deep link — #<anchor> auto-selects the card's
   // GROUP, expands the card, and scrolls to it; on load (once the profile has
@@ -775,10 +744,23 @@ function EditPageInner() {
                 marker={tile.marker}
                 statusLine={tile.statusLine}
                 previews={tile.previews}
-                onClick={() => enterGroup(g)}
+                // MEH-3762: one tap to a form — the group's first missing
+                // card (or its only card) opens as the group opens.
+                // Routed through the pending-anchor relay too, so the group-change
+                // effect scrolls the opened card into view (the hub's scroll
+                // offset would otherwise leave a 3rd/4th card below the fold).
+                onClick={() => {
+                  const key = autoOpenKeyFor(g, membersOf(g), cardFilled);
+                  setOpenKey(key);
+                  if (key && KEY_TO_GROUP[key] === g) pendingAnchorRef.current = key;
+                  enterGroup(g);
+                }}
               />
             );
-          })}
+          }).flatMap((tile, i) =>
+            // MEH-3723: «הפרופיל בגוגל» right after «קשר»; never an organizer.
+            visibleGroupKeys[i] === "contact" && !isOrganizer ? [tile, <GoogleProfileHubTile key="google-profile" />] : [tile]
+          )}
         </div>
       </div>
 
@@ -914,7 +896,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, tags (the offer left for «כלים», MEH-3785)
               (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
@@ -981,28 +963,10 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1823 — the owner's single typed offer. MEH-2433 moved it from
-            the location group (after delivery) to here, beside her prices:
-            that is where an owner looks for a discount. Summary shows the live
-            offer sentence, or "no active offer" — the empty state is a real
-            state here, not a placeholder. */}
-        <EditAccordionCard
-          anchorId="offer"
-          title={tOffer("card_title")}
-          summary={
-            profile.active_offer
-              ? tOffer(`types.${profile.active_offer.offer_type}`)
-              : tOffer("type_none")
-          }
-          open={openKey === "offer"}
-          onToggle={() => toggleKey("offer")}
-        >
-          <OffersCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-3785: «הטבה» moved to its own page, /producer/dashboard/offer,
+            reached from «כלים» › «להציע ללקוחות» (Shopify keeps discounts apart
+            from products). */}
+
 
         {/* MEH-2729 — ONE «תגים» card for what the business declares about
             itself: «תזונה» (MEH-1508 — whole-catalog vegan / vegetarian +

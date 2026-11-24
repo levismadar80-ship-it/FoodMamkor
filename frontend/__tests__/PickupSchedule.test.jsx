@@ -10,7 +10,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import PickupSchedule from "@/components/PickupSchedule";
-import { nextDeliveryDate, cutoffOfRow } from "@/lib/nextDelivery";
+import { nextDeliveryDate, cutoffOfRow } from "@/lib/next-delivery";
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })), post: vi.fn() },

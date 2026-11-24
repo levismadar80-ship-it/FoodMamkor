@@ -73,7 +73,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   // MEH-2433: five groups, in the order Sapir approved 27/10 (owner-dashboard
   // audit, finding 12). Asserting the ORDER, not just presence: the point of
   // the change was that products stopped being buried.
-  it("renders the 5 group tiles as the default hub view, in the approved order", async () => {
+  it("renders the 5 group tiles + the Google profile tile as the default hub view, in the approved order", async () => {
     mount();
     await screen.findByTestId("edit-hub");
 
@@ -81,7 +81,12 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     const tiles = [...screen.getByTestId("edit-hub").querySelectorAll('[data-testid^="hub-card-"]')].map(
       (el) => el.getAttribute("data-testid").replace("hub-card-", ""),
     );
-    expect(tiles).toEqual(["profile", "products", "location", "contact", "trust"]);
+    // MEH-3723: «הפרופיל בגוגל» sits right after «קשר» (Sapir 22/11) and
+    // opens its own page — a link, not a group.
+    expect(tiles).toEqual(["profile", "products", "location", "contact", "google-profile", "trust"]);
+    expect(screen.getByTestId("hub-card-google-profile").getAttribute("href")).toBe(
+      "/producer/dashboard/google-profile",
+    );
     expect(screen.getByTestId("hub-card-products")).toHaveTextContent(tHub.hub_group_products);
     // Group panels are mounted but hidden until entered.
     expect(screen.getByTestId("group-profile")).not.toBeVisible();
@@ -89,6 +94,21 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     // The hub tile carries the locked Hebrew group name.
     expect(screen.getByTestId("hub-card-location")).toHaveTextContent(
       tHub.hub_group_location,
+    );
+  });
+
+  // MEH-3723: the tool was open to a pending business in «כלים» (MEH-3641);
+  // it stays open to her from the edit hub.
+  it("a pending business also gets the Google profile tile", async () => {
+    api.get.mockImplementation((url) =>
+      url === "/producers/me"
+        ? Promise.resolve({ data: { ...PROFILE, status: "pending" } })
+        : Promise.resolve({ data: [] }),
+    );
+    mount();
+    await screen.findByTestId("edit-hub");
+    expect(screen.getByTestId("hub-card-google-profile").getAttribute("href")).toBe(
+      "/producer/dashboard/google-profile",
     );
   });
 
@@ -228,7 +248,8 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   it.each([
     ["profile", ["images", "categories", "bio", "owner-story", "business-name"]],
     // MEH-2729: one «תגים» card in place of dietary-scope + grass-fed.
-    ["products", ["products", "pricing", "offer", "tags"]],
+    // MEH-3785: the offer moved to its own page under «כלים».
+    ["products", ["products", "pricing", "tags"]],
     ["location", ["locations", "delivery", "order-window", "special-hours"]],
     ["contact", ["contact-channels", "questions", "payment-info"]], // MEH-3035
     ["trust", ["trust"]],
@@ -243,7 +264,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
 
   // The three anchors MEH-2433 moved or registered: each must route to the
   // products group, not to its old home (location / trust) or nowhere.
-  it.each(["offer", "tags", "dietary-scope", "grass-fed"])(
+  it.each(["tags", "dietary-scope", "grass-fed"])(
     "MEH-2433: a #%s deep link opens the products group",
     async (anchor) => {
       window.location.hash = `#${anchor}`;

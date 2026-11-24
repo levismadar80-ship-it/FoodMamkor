@@ -45,6 +45,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { useNewTools } from "@/hooks/useWhatsNew";
+import { dashboardTabForHref } from "@/lib/business-features";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -68,6 +69,8 @@ const TABS = [
       "/producer/dashboard/rescue",
       "/producer/dashboard/reviews", // MEH-3107
       "/producer/dashboard/google-profile", // MEH-3641
+      "/producer/dashboard/share", // MEH-3749
+      "/producer/dashboard/offer", // MEH-3785
     ],
   },
 ];
@@ -241,6 +244,9 @@ export default function ProducerDashboardLayout({ children }) {
   const isActive = (tab) => tabIsActive(tab, pathname);
   const tabs = tabsFor(user, orders.visible);
   const isOrganizer = user.producer_kind === "organizer";
+  // MEH-3723: the dot goes on the tab that holds the new tool (registry
+  // `dashboard.home`), not always «כלים». An organizer's tools are none of them.
+  const newToolTabs = new Set(isOrganizer ? [] : [...newTools].map(dashboardTabForHref));
 
   return (
     <div>
@@ -276,7 +282,7 @@ export default function ProducerDashboardLayout({ children }) {
                 <TabIcon tab={tab} active={active} count={tab.key === "orders" ? orders.pending : 0} />
                 <span className="inline-flex items-center gap-1">
                   {t(tab.key)}
-                  {tab.key === "tools" && newTools.size > 0 && (
+                  {newToolTabs.has(tab.key) && (
                     <span data-testid="new-tool-dot" className="w-2 h-2 rounded-full bg-primary inline-block shrink-0">
                       <span className="sr-only">{" "}{tNewTool("dot")}</span>
                     </span>

@@ -11,7 +11,7 @@ import { Link } from "@/i18n/navigation";
  *           the «או» divider that follows it (MEH-3661: extracted so /register
  *           and the «רוצה לשמור?» modal render the same words, not a copy).
  * Does NOT: choose which string — the caller passes the auth.login key
- *           (lib/oauthTermsKey.js picks it from the configured providers).
+ *           (lib/oauth-terms-key.js picks it from the configured providers).
  * Related:  app/[locale]/register/RegisterClient.jsx,
  *           components/LoginPromptGoogle.jsx.
  * History:  MEH-3661 (extracted from RegisterClient, MEH-2577).

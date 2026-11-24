@@ -14,13 +14,19 @@ import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
 import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
-import { israelTime, shekels, worthAgorot } from "@/lib/rescue";
+import { bagDay, rescueCancelText, israelTime, shekels, worthAgorot } from "@/lib/rescue";
 import StruckPrice from "@/components/ui/StruckPrice";
 
 const STATE_KEY = {
   sold_out: "offer_page.state_sold_out",
   cancelled: "offer_page.state_cancelled",
   ended: "offer_page.state_ended",
+};
+// MEH-3702: tomorrow's bag names its day. «נסגרו» only happens on the day.
+const STATE_KEY_TOMORROW = {
+  ...STATE_KEY,
+  sold_out: "offer_page.state_sold_out_tomorrow",
+  cancelled: "offer_page.state_cancelled_tomorrow",
 };
 
 /**
@@ -29,18 +35,20 @@ const STATE_KEY = {
  *           how many are left, the reserve button and the free-cancel line —
  *           or, once reserved, the same confirmation and code the business
  *           page shows. On a phone a sticky bar repeats price and button.
- * Does NOT: hold reservation state (lib/useRescueReservation.js) or invent a
+ * Does NOT: hold reservation state (lib/use-rescue-reservation.js) or invent a
  *           discount: the worth is the business's own low estimate, shown
  *           only when it is above the price (worthAgorot).
  *           A reserved bag also gets «הוספה ליומן» for the pickup window
  *           (the shared AddToCalendarButton, MEH-3616).
  * History:  MEH-3586 (creation) · MEH-3570 (not-a-party line under the button) · MEH-3636 (add to calendar)
+ *           · MEH-3702 (tomorrow's bag: its states and the business-cancel notice)
  *
- * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/useRescueReservation").default> }} props
+ * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/use-rescue-reservation").default> }} props
  */
 export default function RescueOfferAction({ offer, reservation }) {
   const t = useTranslations("rescue");
-  const { order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed, cancelled, businessCancelled, reserve, cancel } = reservation;
+  const { order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed, cancelled, businessCancelled, businessCancelledDay, reserve, cancel } = reservation;
+  const tomorrow = bagDay(offer.date) === "tomorrow";
   // REUSES: components/RegistrationOverlays.jsx useInView — the phone bar
   // comes up only once the card's own button has scrolled away (the event
   // page rule), so the two buttons are never on screen together.
@@ -78,7 +86,7 @@ export default function RescueOfferAction({ offer, reservation }) {
 
   const price = shekels(offer.price_agorot);
   const until = israelTime(offer.pickup_end);
-  const cancelUntil = israelTime(offer.cancel_until);
+  const cancelUntil = rescueCancelText(offer.cancel_until, t); // MEH-3702
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
   const button = (label, testId) => (
     <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid={testId} variant="primary" size="lg" className="w-full">
@@ -97,7 +105,7 @@ export default function RescueOfferAction({ offer, reservation }) {
         nextPath={typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/rescue"}
       />
       {cancelled && <Notice testId="rescue-cancelled-notice">{t("section.cancelled")}</Notice>}
-      {businessCancelled && <Notice testId="rescue-business-cancelled">{t("section.business_cancelled")}</Notice>}
+      {businessCancelled && <Notice testId="rescue-business-cancelled">{t(businessCancelledDay === "tomorrow" ? "section.business_cancelled_tomorrow" : "section.business_cancelled")}</Notice>}
 
       <PriceRow offer={offer} price={price} t={t} />
 
@@ -117,7 +125,7 @@ export default function RescueOfferAction({ offer, reservation }) {
         </>
       ) : (
         <InlineMessage tone="info" variant="box" className="rounded-md px-3 py-2 grid gap-1" data-testid="rescue-offer-unavailable">
-          <span className="text-text">{t(STATE_KEY[offer.state])}</span>
+          <span className="text-text">{t((tomorrow ? STATE_KEY_TOMORROW : STATE_KEY)[offer.state])}</span>
           <Link href="/rescue" className="text-primary font-semibold underline">{t("offer_page.other_bags")}</Link>
         </InlineMessage>
       )}

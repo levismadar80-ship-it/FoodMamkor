@@ -35,7 +35,7 @@ import {
 // MEH-2131: the SHIPPED Asia/Jerusalem order-window evaluator (MEH-1546), not
 // a second one written for this ticket. See openNowChipVisible below for why
 // the client is allowed to read a clock here at all.
-import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { getOrderWindowStatus } from "@/lib/order-window-status";
 
 // The HOME row. MEH-2130: `pickup_points` joins it here — the pair
 // משלוח + איסוף עצמי now reads the same on home, /producers and /map.
@@ -158,7 +158,7 @@ export const GATED_AXIS_PREDICATES = {
  *                   sit on a later page, so the zero-result half does not run.
  * @param now        `Date`, or `null` when the clock is not yet readable — the
  *                   SSR pass and the FIRST client render must agree, and
- *                   `getOrderWindowStatus` is time-dependent (orderWindow.js
+ *                   `getOrderWindowStatus` is time-dependent (order-window-status.js
  *                   says so at the top). `null` ⇒ coverage gate only, which is
  *                   exactly the pre-MEH-2131 answer, so hydration cannot
  *                   mismatch; the caller supplies a real Date after mount.
@@ -173,7 +173,7 @@ export function openNowChipVisible({
 
   // MEH-2264: an override-only producer has declared something too — but only
   // a NON-EMPTY map counts. The validator stores `{}` as-is, and `{}` yields no
-  // status (orderWindow.js hasAnyOverride), so it must not inflate coverage.
+  // status (order-window-status.js hasAnyOverride), so it must not inflate coverage.
   const declared = producers.filter(
     (p) => p?.order_window || Object.keys(p?.special_hours || {}).length > 0,
   ).length;
@@ -187,7 +187,7 @@ export function openNowChipVisible({
   return producers.some((p) => {
     const status = getOrderWindowStatus(p?.order_window, now, p?.special_hours);
     // "closing_soon" is still OPEN — it is a warning band, not a state change
-    // (orderWindow.js CLOSING_SOON_MINUTES). Excluding it would hide the chip
+    // (order-window-status.js CLOSING_SOON_MINUTES). Excluding it would hide the chip
     // in the last hour of every window, which is the hour it matters most.
     return status?.state === "open" || status?.state === "closing_soon";
   });

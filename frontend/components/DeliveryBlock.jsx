@@ -7,16 +7,16 @@ import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
-import { groupDeliveryAreas } from "@/lib/deliveryGroups";
-import { resolveDeliveryFee } from "@/lib/deliveryFee";
-import { getSingleOrderCutoff } from "@/lib/orderWindow";
+import { groupDeliveryAreas } from "@/lib/delivery-groups";
+import { resolveDeliveryFee } from "@/lib/delivery-fee";
+import { getSingleOrderCutoff } from "@/lib/order-window-status";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
 import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
 import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
 import NationwideZones from "@/components/NationwideZones"; // MEH-3511
 import AreaTermsRow, { LIST_CARD } from "@/components/AreaTermsRow"; // MEH-3511
-import { cutoffOfRow, daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
+import { cutoffOfRow, daysOfRow, sharedCutoff } from "@/lib/next-delivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -31,7 +31,7 @@ import FactLine from "@/components/ui/FactLine";
 const NAV_CIRCLE =
   "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
 
-// Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
+// Index-aligned with lib/order-window-status.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
 const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
@@ -536,7 +536,7 @@ export default function DeliveryBlock({
   // — NOT from the row object handed back by groupDeliveryAreas.
   //
   // That helper rebuilds each row with an explicit four-field literal
-  // (deliveryGroups.js:30-35: id, city, min_order, delivery_day), so any field
+  // (delivery-groups.js:30-35: id, city, min_order, delivery_day), so any field
   // added to delivery_areas is dropped on the way through. Reading
   // `row.delivery_fee` therefore yields undefined and every row silently falls
   // back to the producer rate — rows still render, with the wrong number, and

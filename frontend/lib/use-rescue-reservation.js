@@ -5,12 +5,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
 import { isUnverifiedEmailError } from "@/lib/errors";
-import { cancelErrorKey, cancelOrder, fetchMyOrders, rescueBagsEnabled, reserveBag, reserveErrorKey } from "@/lib/rescue";
+import {
+  bagDay,
+  cancelErrorKey,
+  cancelOrder,
+  fetchMyOrders,
+  rescueBagsEnabled,
+  reserveBag,
+  reserveErrorKey,
+} from "@/lib/rescue";
 
 export const UNVERIFIED_KEY = "errors.unverified";
 
 /**
- * Module:   useRescueReservation
+ * Module:   use-rescue-reservation
  * Purpose:  The buyer's side of one business's surprise bag — reserve, read
  *           the reservation back after a reload, cancel, and settle a 409 by
  *           asking the server what happened. One copy, used by the bag block
@@ -22,7 +30,8 @@ export const UNVERIFIED_KEY = "errors.unverified";
  *           app/[locale]/rescue/[offerId]/RescueOfferPage.jsx, lib/rescue.js
  * History:  MEH-3586 (moved out of RescueSection unchanged: MEH-2680 read-back,
  *           MEH-2700 guest prompt, MEH-2737 cancel, MEH-2738 business cancel,
- *           MEH-3225 unverified email, MEH-3130 login modal)
+ *           MEH-3225 unverified email, MEH-3130 login modal) · MEH-3702 (which
+ *           day's bag the business cancelled: `businessCancelledDay`)
  *
  * `offerId` (the bag page): read back only orders on THAT bag. A business
  * with two pickup points can have two bags a day, and the page of bag B must
@@ -43,6 +52,8 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
   const [cancelled, setCancelled] = useState(false);
   // MEH-2738: the business cancelled today's bag, and hers with it.
   const [businessCancelled, setBusinessCancelled] = useState(false);
+  // MEH-3702: «היום» or «מחר» in that notice — the cancelled bag's own day.
+  const [businessCancelledDay, setBusinessCancelledDay] = useState(/** @type {"today"|"tomorrow"} */ ("today"));
   const onCancelledRef = useRef(onCancelled);
   onCancelledRef.current = onCancelled;
 
@@ -71,8 +82,10 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
         );
         const live = here.filter((row) => row.status !== "cancelled");
         const hit = live.find((row) => row.status === "reserved") || live[live.length - 1];
-        if (!hit && here.some((row) => row.cancelled_by_business)) {
+        const byBusiness = here.find((row) => row.cancelled_by_business);
+        if (!hit && byBusiness) {
           setOrder(null);
+          setBusinessCancelledDay(bagDay(byBusiness.date));
           setBusinessCancelled(true);
           return;
         }
@@ -143,6 +156,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
     }
     if (row.cancelled_by_business) {
       setOrder(null);
+      setBusinessCancelledDay(bagDay(row.date));
       setBusinessCancelled(true);
       return true;
     }
@@ -185,6 +199,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
     setReviewed,
     cancelled,
     businessCancelled,
+    businessCancelledDay,
     reserve,
     cancel,
   };

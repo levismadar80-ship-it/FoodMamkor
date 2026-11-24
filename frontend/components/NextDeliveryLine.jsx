@@ -4,7 +4,7 @@
  * Module:   NextDeliveryLine
  * Purpose:  «המשלוח הבא: יום שלישי 24.11» under a delivery day heading, and
  *           «המשלוח הבא לחיפה: …» under the «מגיעים אלייך?» answer (MEH-3485).
- * Does NOT: decide the date — lib/nextDelivery.js does, from the city's days,
+ * Does NOT: decide the date — lib/next-delivery.js does, from the city's days,
  *           the order window and the vacation state.
  * Related:  components/DeliveryBlock.jsx, components/DeliveryChecker.jsx.
  * History:  MEH-3485 (creation); MEH-3512 (`cutoff` — a pickup point's own
@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { nextDeliveryDate } from "@/lib/nextDelivery";
+import { nextDeliveryDate } from "@/lib/next-delivery";
 import { isOnVacation } from "@/lib/availability";
 import { formatDate } from "@/lib/format-date";
 

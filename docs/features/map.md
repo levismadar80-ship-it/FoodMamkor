@@ -14,7 +14,7 @@
 * `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, כשהסיכה היא נקודת איסוף או דוכן (MEH-3756): ימי איסוף, הוראות איסוף, Waze ו-Google לנקודה מדויקת, וכפתור «לדף בית העסק». טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
 * `frontend/components/MapBottomSheet.jsx` — הגיליון התחתון.
 * `frontend/app/[locale]/map/state/useProducersFeed.js` — הזנת הנתונים, עם אימות Zod.
-* `frontend/lib/producerPoints.js` — מאיפה מגיעה נקודה לכל בית עסק.
+* `frontend/lib/producer-points.js` — מאיפה מגיעה נקודה לכל בית עסק.
 * `frontend/components/MiniMap.jsx` — המפה הקטנה בעמוד בית העסק (ובאירוע / חוויה / הרשמה), והמסך המלא שלה.
 * `frontend/lib/use-visual-viewport-box.js` — מצמיד את המסך המלא של המפה הקטנה לחלון הנראה, כדי שכפתור הסגירה לא ייצא מהמסך בדף מוגדל באייפון (MEH-3509).
 
@@ -27,5 +27,6 @@
 * `frontend/e2e/flows/07-gps-button.spec.ts` · `frontend/e2e/flows/43-minimap-buttons-over-tiles.spec.ts`
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 * `frontend/__tests__/CategoryPinGroupColours.test.jsx` · `frontend/__tests__/useMapFilters.legendGroups.test.js` — צבע לקבוצה, אייקון לקטגוריה, מקרא של 6 קבוצות (MEH-3076).
+* `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והשם המתועתק `byshvl-lpy-hzmnh` שהחזית מסתמכת עליו (MEH-3738).
 
 **מזהי רישום שזה מכסה.** `map_precision`, `multi_locations` (הצד הציבורי).

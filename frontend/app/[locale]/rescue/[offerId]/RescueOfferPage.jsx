@@ -15,9 +15,9 @@ import ShareButton from "@/components/ShareButton";
 import RatingCompact from "@/components/ui/RatingCompact";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
-import { fetchOffer, israelTime } from "@/lib/rescue";
+import { bagDay, fetchOffer, israelTime } from "@/lib/rescue";
 import { producerPath } from "@/lib/producer-path";
-import useRescueReservation from "@/lib/useRescueReservation";
+import useRescueReservation from "@/lib/use-rescue-reservation";
 
 import RescueOfferAction from "./RescueOfferAction";
 import RescueOfferDetails from "./RescueOfferDetails";
@@ -28,7 +28,7 @@ import RescueOfferDetails from "./RescueOfferDetails";
  *           out like the event page — cover, title and business row, a side
  *           card with price and the reserve button (under the title on a
  *           phone), and the details below.
- * Does NOT: decide what a reservation does — lib/useRescueReservation.js, the
+ * Does NOT: decide what a reservation does — lib/use-rescue-reservation.js, the
  *           same hook the business page's bag block uses.
  * Related:  ./RescueOfferAction.jsx, ./RescueOfferDetails.jsx,
  *           backend/app/routers/rescue.py get_offer
@@ -126,7 +126,7 @@ export default function RescueOfferPage({ offerId }) {
               first thing a buyer decides on, and on a phone the «where»
               section starts below the fold. */}
           <PickupLine
-            label={t("offer_page.pickup_title")}
+            label={t(bagDay(offer.date) === "tomorrow" ? "offer_page.pickup_title_tomorrow" : "offer_page.pickup_title")}
             text={`${israelTime(offer.pickup_start)}–${israelTime(offer.pickup_end)}`}
             testId="rescue-offer-pickup"
             className="mb-4"
