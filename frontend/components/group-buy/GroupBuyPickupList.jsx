@@ -73,15 +73,15 @@ export default function GroupBuyPickupList({ gb }) {
 
   return (
     <div className="mt-4 pt-4 border-t border-border" data-testid="group-buy-pickups">
-      <button
-        type="button"
+      <Button
+        variant="text"
+        size="sm"
         onClick={toggle}
         aria-expanded={open}
-        className="text-sm font-medium text-primary hover:underline min-h-touch"
         data-testid="group-buy-pickups-toggle"
       >
         {t("title")}
-      </button>
+      </Button>
       {open && (
         <div className="mt-2 space-y-2">
           {error && <InlineMessage>{error}</InlineMessage>}
