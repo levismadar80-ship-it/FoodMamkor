@@ -18,6 +18,7 @@ import logging
 import re
 
 from app.config import ai_fast_request_kwargs
+from app.services import ai_budget
 from app.services.menu_reader import (
     _get_client,
 )  # REUSES: one Anthropic client, http_client lock
@@ -71,7 +72,7 @@ def wrap(tag: str, value: str) -> str:
 def ask(prompt: str, *, tag: str, max_tokens: int = 600) -> str | None:
     """The model's text, or None when it could not be asked or stopped early."""
     client = _get_client()
-    if client is None:
+    if client is None or not ai_budget.allow("fast"):  # MEH-3498
         return None
     try:
         response = client.messages.create(
