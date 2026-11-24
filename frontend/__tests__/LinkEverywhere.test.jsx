@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import LinkEverywhere, { LINK_PLACES } from "@/components/producer/LinkEverywhere";
 import ShareVisitsLine from "@/components/producer/ShareVisitsLine";
 
-// MEH-3331 — «הקישור שלך בכל מקום» rows and the insights share-visits line.
+// MEH-3331 — «קישור אחד לכל מקום» rows and the insights share-visits line.
 // Toggle states per row: unticked / ticked, persisted per business, and the
 // card survives storage that throws. Count states for the line: absent / 0
 // (hidden) / 1 / many.

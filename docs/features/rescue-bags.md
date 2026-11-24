@@ -20,6 +20,8 @@
 * `backend/app/services/rescue_writes.py` — מה שמסכי הסלים כותבים: פרסום סל, ביטול, שריון, מסירה, אי-הגעה, ביטול של קונה, ביקורת, סלים שנתרמו וניקוי חסימה. ה-router מעביר את נעילת השורה (`_offer_for_update`), את השעון ואת בדיקת עיר הפיילוט, ושולח את המיילים בעצמו (MEH-3554).
 * `frontend/components/rescue/RescueSection.jsx` — מתחת לכפתור «לשריין» שורה שמציינת מול איזה בית עסק עושים את העסקה ושמהמקור לא צד לה (`frontend/components/public/NotAPartyLine.jsx`, MEH-3570).
 * `frontend/components/rescue/RescueList.jsx` — רשימת הסלים של היום בלשונית «הזדמנויות». בזמן טעינה: שלד של שלוש שורות; כשאין סלים: `EmptyState` עם אייקון סל, כותרת, שורת משנה והתראה, כמו בקבוצות הרכישה (MEH-3626). שומר: `frontend/__tests__/RescueBuyerFlow.test.jsx`.
+* מיון הרשימה (MEH-3704): «לפי שעת האיסוף» (ברירת המחדל, הסדר של השרת), «הכי קרוב» (רק כשיש מיקום שמור, ואז הרשימה נשלחת עם lat/lng), «הכי זול», «הדירוג הכי גבוה». הבקרה מופיעה רק משני סלים. הסדר ב-`frontend/lib/rescue-sort.js`.
+* `frontend/components/rescue/ShareCodeButton.jsx` — «לשלוח לחבר שיאסוף» באישור השריון, כל עוד הסל משוריין: קוד, בית העסק, החלון, הכתובת ומה אומרים בקופה. גיליון השיתוף של הטלפון, ובלעדיו ווטסאפ (MEH-3704). השריון לא עובר לאדם אחר: מי שאומר את הקוד אוסף. שומר: `frontend/__tests__/RescueShareSort.test.jsx`.
 * `frontend/app/[locale]/rescue/[offerId]/RescueOfferAction.jsx` — הכרטיס בדף הסל. מתחת לכפתור «לשריין» אותה שורה: מול איזה בית עסק העסקה ושמהמקור לא צד לה (MEH-3570).
 * `frontend/lib/use-rescue-reservation.js` — שריון, קריאה חוזרת אחרי טעינה, ביטול. אותו hook בדף העסק ובדף הסל (MEH-3586).
 * `frontend/components/offer-detail/AllergenSection.jsx` + `frontend/components/offer-detail/PickupLine.jsx` — בלוק האלרגנים ושורת שעת האיסוף בדף הסל, אותם רכיבים כמו בדף קבוצת הרכישה (MEH-3610).

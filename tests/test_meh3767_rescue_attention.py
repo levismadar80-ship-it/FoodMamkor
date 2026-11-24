@@ -1,6 +1,6 @@
 """
 Module:   test_meh3767_rescue_attention
-Purpose:  MEH-3767 — «מה מחכה לך» counts this business's live rescue bags
+Purpose:  MEH-3767 — «מה ממתין לטיפול» counts this business's live rescue bags
           (`attention.live_rescue_offers`), which replaced the home's
           always-on rescue card.
 Touches:  GET /producers/me/dashboard.
