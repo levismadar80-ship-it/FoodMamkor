@@ -121,7 +121,6 @@ function useDraftedProducts(draft, products, replace, failedText) {
     for (const id of pending) {
       try {
         // One at a time: the same route and checks as a tap on the switch.
-        // eslint-disable-next-line no-await-in-loop
         replace(await saveProductOrdering(products?.find((p) => String(p.id) === id), { is_orderable: true }));
       } catch (err) {
         failed[id] = detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || failedText;
