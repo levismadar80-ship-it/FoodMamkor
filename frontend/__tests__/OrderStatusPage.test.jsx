@@ -18,7 +18,7 @@ import api from "@/lib/api";
 import OrderStatusClient, { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
 import { generateMetadata } from "@/app/[locale]/order/[id]/page";
 import { redactClaimPath } from "@/lib/claim-token";
-import { buyerRef, statusView, tokenFromHash } from "@/lib/order-status";
+import { buyerRef, statusView, tokenFromHash } from "@/lib/buyer-order";
 
 const ID = "0a000000-0000-4000-8000-00000000000a";
 const PRODUCER = "7e57a6f0-0000-4000-8000-000000000007";

@@ -10,7 +10,7 @@
  *           PUT {basePath}/products/{id}/group — basePath /producers/me (owner)
  *           or /admin/producers/{id} (admin, MEH-3472).
  * Does NOT: create, edit or delete products (ProductsSection.jsx), and does not
- *           decide display order — lib/product-order.js does, for both the
+ *           decide display order — lib/product-display-order.js does, for both the
  *           public page and this list.
  * Placement (rule 37, delegated by Sapir 13/11 17:00Z): in the products card,
  *           under the product list, because ordering and grouping are about
@@ -27,7 +27,7 @@ import { ArrowDown, ArrowUp, DotsSixVertical, Trash } from "@phosphor-icons/reac
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
-import { orderProducts } from "@/lib/product-order";
+import { orderProducts } from "@/lib/product-display-order";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -56,7 +56,7 @@ function move(list, from, to) {
 
 /**
  * MEH-3477: lay the list out group by group in the groups' order, ungrouped
- * last — the public page's layout (lib/product-order.js). Stable, so the
+ * last — the public page's layout (lib/product-display-order.js). Stable, so the
  * order inside each group is the list's own.
  * @param {Product[]} list
  * @param {Group[]} groups

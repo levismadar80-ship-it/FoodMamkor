@@ -11,7 +11,7 @@
  *           (ProductsSection.jsx). A product with no price cannot be opened
  *           for ordering; the server says so in Hebrew and the row shows it.
  *           Renders NOTHING for a business with no products (0 items).
- * Related:  lib/product-ordering.js, OrderSettingsCard.jsx (same fold)
+ * Related:  lib/orderable-products.js, OrderSettingsCard.jsx (same fold)
  * History:  MEH-3216 gaps (creation)
  */
 
@@ -22,7 +22,7 @@ import { CaretDown } from "@phosphor-icons/react";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Switch from "@/components/ui/Switch";
 import { detailToMessage } from "@/lib/errors";
-import { loadProductsOrdering, saveProductOrdering } from "@/lib/product-ordering";
+import { loadProductsOrdering, saveProductOrdering } from "@/lib/orderable-products";
 
 /** @param {{ id: string, label: string, checked: boolean, busy: boolean, onChange: (on: boolean) => void }} props */
 function SwitchLine({ id, label, checked, busy, onChange }) {

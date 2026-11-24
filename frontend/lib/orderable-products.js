@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   product-ordering
+ * Module:   orderable-products
  * Purpose:  The business's own products as the «הזמנות» tab switches them
  *           (open for ordering on the site, sold out), and the prep list of
  *           the «היום» tab.

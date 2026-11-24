@@ -6,12 +6,12 @@
  * Purpose:  The buyer's status page for one on-site order: where it stands,
  *           when and where to collect it, the pickup code, what to pay, and
  *           the two things she can do — cancel, or accept a proposed change.
- * Touches:  lib/order-status.js (POST /product-orders/status…). Reads the
+ * Touches:  lib/buyer-order.js (POST /product-orders/status…). Reads the
  *           token from `#t=` once and keeps it in memory only.
  * Does NOT: take payment (paid directly to the business, ADR-042 §5), or show
  *           the buyer's own phone or address. A missing, wrong or expired
  *           link, or ordering switched off, is the site's 404.
- * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
+ * Related:  app/[locale]/order/[id]/page.js, lib/buyer-order.js
  * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»); MEH-3620 («כתבו ביקורת» once handed);
  *           MEH-3755 (business link, contact, nav — OrderBusinessLinks.jsx)
  */
@@ -27,7 +27,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
-import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
+import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
