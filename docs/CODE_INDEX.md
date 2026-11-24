@@ -211,6 +211,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/farmer_declaration.py` | Server-side gate + record for the grower declaration («גידלתי בחלקתי בלבד») at producer registration, apart from the licensing declaration (declared_at / … |
 | `services/form_fill_windows.py` | The hand-over windows of an order-setup draft (MEH-3752): keep a window only when the text names its day and states its hours (a clock time, an hour number, … |
 | `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
+| `services/freshness_month_numbers.py` | Last calendar month's numbers for the one monthly owner email on the 1st (MEH-3194, Sapir 24/11: one monthly touch, value before any bill): bookings through … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
 | `services/google_code_exchange.py` | Swap the one-time authorization code from our own Google button (GIS code client, popup, redirect_uri "postmessage") for a Google-signed ID token, and accept … |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
