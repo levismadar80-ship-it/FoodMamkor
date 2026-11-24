@@ -7203,7 +7203,12 @@
       "empty_title": "עדיין אין סלי הפתעה היום",
       "empty_title_city": "עדיין אין סלי הפתעה ב{city} היום",
       "empty_subtitle": "שווה לבדוק שוב אחר הצהריים",
-      "count": "{count, plural, one {סל אחד} two {שני סלים} other {# סלים}}"
+      "count": "{count, plural, one {סל אחד} two {שני סלים} other {# סלים}}",
+      "sort_label": "מיון",
+      "sort_time": "לפי שעת האיסוף",
+      "sort_near": "הכי קרוב",
+      "sort_cheap": "הכי זול",
+      "sort_rating": "הדירוג הכי גבוה"
     },
     "row": {
       "left": "{count, plural, one {נשאר סל אחד} two {נשארו שני סלים} other {נשארו # סלים}}",
@@ -7434,6 +7439,13 @@
           "a": "בדף הסל ובמייל השריון, עם קוד האיסוף."
         }
       }
+    },
+    "share": {
+      "button": "לשלוח לחבר שיאסוף",
+      "line_code_at": "הקוד לאיסוף הסל ב{business}: {code}",
+      "line_code": "הקוד לאיסוף הסל: {code}",
+      "line_say": "אומרים את הקוד בקופה ומקבלים את הסל",
+      "line_say_pay": "אומרים את הקוד בקופה ומשלמים שם {price} ₪"
     }
   },
   "holidays": {

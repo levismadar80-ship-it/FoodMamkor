@@ -40,6 +40,12 @@ import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
  *           seeds for the bags left)
  */
 
+/** The pickup point as one line, or null when the row is gone or has none. */
+function pickupAddress(offer) {
+  const p = offer?.producer;
+  return [p?.location_address, p?.location_city].filter(Boolean).join(", ") || null;
+}
+
 export default function RescueSection({ producer }) {
   const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
@@ -157,7 +163,14 @@ export default function RescueSection({ producer }) {
 
       {order ? (
         <div className="mt-3 space-y-4">
-          <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+          <RescueConfirmation
+            order={order}
+            onCancel={cancel}
+            cancelling={busy}
+            // MEH-3704: what the friend needs. The bag row can be gone (sold
+            // out), so the address is sent only when it is still listed.
+            place={{ name: producer?.name, address: pickupAddress(offer) }}
+          />
           {errorLine}
           {/* The review only appears once the business marked it handed; the
               API refuses it before that with a 409, so showing it earlier
