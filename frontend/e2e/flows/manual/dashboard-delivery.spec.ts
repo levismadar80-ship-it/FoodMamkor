@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
 import { REGIONS } from "../../../data/regions";
 
@@ -227,7 +228,7 @@ test.describe("delivery card — nationwide and the exclusion list", () => {
     await expect(saveBtn(page), "nothing changed yet — save must be disabled").toBeDisabled();
 
     await addCityByTyping(page, "ערד");
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     // The 3-second «נשמר» confirmation (cards.jsx setSaved + setTimeout 3000).
     await expect(saveBtn(page)).toHaveText("נשמר");
@@ -255,7 +256,7 @@ test.describe("delivery card — nationwide and the exclusion list", () => {
     await regionChip(page, new RegExp(`^${HAIFA_REGION.name}`)).click();
     await expect(body(page).getByText(CITIES_REQUIRED)).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
 
     expect(puts[0]).toMatchObject({ delivery_nationwide: false, delivery_excluded_cities: [] });
@@ -291,7 +292,7 @@ test.describe("delivery card — region quick-add chips", () => {
     await expect(cityChips(page)).toHaveCount(1 + SHARON.cities.length);
     for (const c of SHARON.cities) await expect(cityChip(page, c)).toBeVisible();
 
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     const rows = puts[0].delivery_areas as Array<{ city: string }>;
     expect(rows.map((r) => r.city).sort()).toEqual(["חיפה", ...SHARON.cities].sort());
@@ -352,7 +353,7 @@ test.describe("delivery card — structured delivery cost", () => {
     await openDelivery(page);
     await feeInput(page).fill("0");
     await freeAboveInput(page).fill("");
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     expect(puts[0]).toMatchObject({ delivery_fee: 0, free_delivery_above: null });
   });
@@ -369,7 +370,7 @@ test.describe("delivery card — structured delivery cost", () => {
     await expect(freeAboveInput(page)).toHaveCount(0);
     await expect(regionChips(page)).toHaveCount(0);
 
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     expect(puts[0]).toMatchObject({
       has_physical_location: true,
