@@ -496,7 +496,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       return;
     }
     // MEH-3821: loadProducers already brought this city's fallback with the
-    // empty result — don't read it again.
+    // empty result — don't read it again. `regionFallback` is deliberately not
+    // a dependency: it is this dedupe guard only, and the effect must run on a
+    // new result or city, not on its own write.
     if (regionFallback?.city === city) return;
     let cancelled = false;
     fetchRegionFallback(city).then((fallback) => {

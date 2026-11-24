@@ -72,4 +72,13 @@ describe("HomeProducersGrid refetch (MEH-3821)", () => {
     expect(screen.queryByTestId("skeleton-grid")).toBeNull();
     expect(screen.getAllByTestId("card")).toHaveLength(2);
   });
+
+  it("an empty result is not kept while the next one loads: its copy names the old filter", () => {
+    const empty = { producers: [], visibleProducers: [] };
+    const { rerender } = render(<HomeProducersGrid {...props(empty)} />);
+    expect(screen.queryByTestId("skeleton-grid")).toBeNull();
+    rerender(<HomeProducersGrid {...props({ ...empty, producersLoading: true })} />);
+    expect(screen.getByTestId("skeleton-grid")).toBeInTheDocument();
+    expect(screen.queryByTestId("home-producers-results")).toBeNull();
+  });
 });

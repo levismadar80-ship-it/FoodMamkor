@@ -251,6 +251,9 @@ export function HomeProducersGrid({
   // back down (≈ 0.4 CLS on a phone, after the tap's 500 ms grace).
   const [paintedOnce, setPaintedOnce] = useState(!producersLoading);
   if (!producersLoading && !paintedOnce) setPaintedOnce(true);
+  // An empty state is not kept: its copy names the old filter («no delivery to
+  // A» while B loads). It gives way to the skeleton, as before.
+  const showSkeleton = producersLoading && (!paintedOnce || producers.length === 0);
   // MEH-2537: focus under the sticky «סינון» — lib/keep-focused-chip-clear.js.
   return (
     // MEH-2712: pb-8 so the gap to the mini-map below is 56px on phones, not
@@ -473,7 +476,7 @@ export function HomeProducersGrid({
         onClear={onClearLocation}
       />
 
-      {producersLoading && !paintedOnce ? (
+      {showSkeleton ? (
         <SkeletonProducerGrid count={8} />
       ) : (
         <div
