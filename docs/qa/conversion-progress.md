@@ -230,6 +230,9 @@ gates**, and either alone keeps the network quiet:
   **mounts**. Observable: the DOM.
 - **inner** — `ReviewsSection`'s own IntersectionObserver (`ReviewsSection.jsx:301`,
   `threshold: 0.1`) decides whether it **fetches**. Observable: the network.
+- *Since MEH-3819 (24/11) the outer gate is gone (`useLazyReviews` deleted;
+  the section mounts with the page). Target B above is historical; only the
+  inner fetch gate remains.*
 
 With the outer gate defeated the component mounted immediately and the inner IO still
 held the fetch, so a network-only assertion stayed green on broken code. That is the

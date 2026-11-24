@@ -8,7 +8,7 @@ import { render, screen, within, cleanup } from "@testing-library/react";
 // rendered pixels are checked by the 390 / 1280 screenshots and mobile VRT.
 // Cells: arrival (direct / from inside the site / from the map) × (phone / desktop).
 
-const state = { producer: null };
+const state = { producer: null, activitiesReady: true };
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "p1" }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
@@ -28,16 +28,16 @@ vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerData", () => ({
   useProducerData: () => ({
     producer: state.producer,
     loading: false,
-    events: [],
     similarProducers: [],
     nearbyProducers: [],
   }),
 }));
+// MEH-3819: the activity lists are their own hook; answered and empty here.
+vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerActivities", () => ({
+  useProducerActivities: () => ({ events: [], experiences: [], groupBuys: [], ready: state.activitiesReady }),
+}));
 vi.mock("@/app/[locale]/producer/[id]/hooks/useStickyBar", () => ({
   useStickyBar: () => ({ inlineCTARef: { current: null }, isBarVisible: false }),
-}));
-vi.mock("@/app/[locale]/producer/[id]/hooks/useLazyReviews", () => ({
-  useLazyReviews: () => ({ reviewsContainerRef: { current: null }, reviewsVisible: false }),
 }));
 
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
@@ -56,6 +56,7 @@ const desktopOnly = (el) => classesOf(el).includes("hidden") && classesOf(el).in
 
 afterEach(() => {
   cleanup();
+  state.activitiesReady = true;
   delete window.navigation;
 });
 
@@ -98,5 +99,32 @@ describe("business page: breadcrumb on desktop, «→ חזרה» on a phone (MEH
     const block = arrive({ canGoBack: true, hideHistoryBack: true });
     expect(block.queryByTestId("history-back")).toBeNull();
     expect(desktopOnly(block.getByTestId("breadcrumb-nav"))).toBe(true);
+  });
+});
+
+// MEH-3819: the client route (/producer/<id>) paints once its events,
+// experiences and group buys answered, so they never land above the reviews a
+// moment later; a server-rendered page never trades its HTML for the loading line.
+describe("business page waits for its activity lists only on the client route (MEH-3819)", () => {
+  const producer = { id: "p1", name: "מאפיית הגבעה", images: [], categories: [] };
+
+  it("client route: the loading line until the lists answered, then the page", () => {
+    state.producer = producer;
+    state.activitiesReady = false;
+    const { rerender } = render(<ProducerDetail />);
+    expect(screen.getByText("producer.detail.loading_fresh")).toBeTruthy();
+    expect(screen.queryByTestId("producer-breadcrumb-block")).toBeNull();
+    state.activitiesReady = true;
+    rerender(<ProducerDetail />);
+    expect(screen.queryByText("producer.detail.loading_fresh")).toBeNull();
+    expect(screen.getByTestId("producer-breadcrumb-block")).toBeTruthy();
+  });
+
+  it("server-rendered page: painted at once, even before the lists answered", () => {
+    state.producer = producer;
+    state.activitiesReady = false;
+    render(<ProducerDetail initialProducer={producer} />);
+    expect(screen.queryByText("producer.detail.loading_fresh")).toBeNull();
+    expect(screen.getByTestId("producer-breadcrumb-block")).toBeTruthy();
   });
 });

@@ -982,7 +982,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/[id]/components/ReservistBadgeLine.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/ReviewExcerpt.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/StickyContactBar.jsx` | — אין כותרת — |
-| `[locale]/producer/[id]/hooks/useLazyReviews.js` | — אין כותרת — |
+| `[locale]/producer/[id]/hooks/useProducerActivities.js` | The business page's upcoming events, experiences and open group buys, read together so the page paints them in one go instead of inserting each list above the … |
 | `[locale]/producer/[id]/hooks/useProducerData.js` | — אין כותרת — |
 | `[locale]/producer/[id]/hooks/useStickyBar.js` | — אין כותרת — |
 | `[locale]/producer/[id]/lib/order-status.js` | Pure mapper + formatters behind the producer page's SINGLE status element — resolves which of the five precedence branches wins and formats the Israel-local … |
