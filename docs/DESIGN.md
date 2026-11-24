@@ -542,6 +542,13 @@ and `ui/Button.jsx` are the action-radius rule._
 Components are composed from the tokens above; see the `components` block in the
 front matter for the normative token bindings.
 
+A page builds from the shared owner in `frontend/components/ui/`, never from a
+raw basic element. ESLint marks a raw `<button>`, `<select>`, `<textarea>`,
+checkbox, radio, `<h1>`–`<h3>` or `<a>` outside `ui/`, a field whose only name
+is its placeholder, and a read-only or always-disabled field (MEH-3829, modelled
+on Atlassian's design-system lint rules); `npm run lint:ratchet` lets each
+count only go down. The owner table is `frontend/components/CLAUDE.md`.
+
 - **Buttons:** `button-primary` is forest green (`primary`) with white
   (`surface`) text, `rounded-full` (see Shapes), `label-md` type. Hover goes **darker**
   (`primary-dark`), never lighter and never with a shadow.
@@ -1024,6 +1031,15 @@ arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.
+
+When the control must keep its drawn size (an «i» button, a badge chip, a
+crumb, a back link: growing the box would move the line), give it the
+`.tap-area` utility (`app/globals.css`, MEH-3827): an invisible `::before`
+whose insets grow the hit area to 44 × 44 around the control and leave a
+bigger control alone. Used by `ui/BackLink`, `InfoTooltip`, `BadgeRow` and
+`Breadcrumb`. It does not work inside a scroller with `overflow` (the pseudo
+is clipped): use `min-h-touch` there, as the admin phone nav does.
+Neighbouring hit areas may overlap; the later element in the DOM takes the tap.
 
 **Documented exceptions.** These are deliberate and stay below a floor for a
 recorded reason — do not "fix" them:

@@ -64,6 +64,7 @@ import {
   ProducerNameCheckProducerNameCheckGetResponse,
   RandomProducerProducersRandomGetResponse,
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
+  GoogleCodeAuthGoogleCodePostResponse,
 } from "@/lib/generated/api.zod";
 
 /** @param {unknown} value */
@@ -194,3 +195,7 @@ export const OrderBusinessSchema = GetProducerProducersProducerIdGetResponse;
 
 // --- sign-up --------------------------------------------------------------
 export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResponse;
+
+// --- sign-in --------------------------------------------------------------
+// MEH-3690: our own Google button reads the ID token the code was swapped for.
+export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;

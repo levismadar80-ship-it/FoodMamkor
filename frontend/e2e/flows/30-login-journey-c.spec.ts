@@ -80,7 +80,7 @@ import { watchLoginSubmit } from "./_login-submit-diagnostics";
 // ./_settled-field.ts; the why is there.
 
 const LOGIN_TITLE = "כניסה למהמקור";
-const LOGIN_WELCOME = "טוב לראות אותך שוב";
+const LOGIN_WELCOME = "טוב שחזרתם";
 const FORGOT_LINK = "שכחת סיסמה?";
 const FORGOT_ACK = "✓ אם המייל קיים במערכת — ישלח קישור לאיפוס";
 /**
@@ -504,7 +504,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
    *
    * Locate by data-testid, never by copy. This control previously used
    * getByRole("link", { name: "אין לי חשבון" }) — a string that exists nowhere
-   * in the repo (the real copy is auth.login.no_account, «אין לך חשבון?», and
+   * in the repo (the real copy is auth.login.no_account, «אין עדיין חשבון?», and
    * the rendered label comes from a third key, register_cta). It timed out at
    * 20s on both projects, so the control never passed, so the recorder it
    * exists to validate was never actually validated. The docstring above

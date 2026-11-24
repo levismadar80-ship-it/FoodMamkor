@@ -47,6 +47,12 @@ export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3000}"
 # (e2e.yml, MEH-1778). Without it /auth/google answers 503 instead of the 401
 # that 32-register-journey-b-oauth B1 asserts. Not a secret.
 export GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com}"
+# MEH-3690: POST /auth/google/code answers 503 without a client secret, and B1
+# asserts the 401 Google's refusal produces. A placeholder, NOT the real secret:
+# Google refuses it (invalid_client) exactly as it refuses B1's fake code, so the
+# swap reaches Google and the route maps the refusal to its Hebrew 401. The real
+# secret never enters CI.
+export GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-e2e-placeholder-not-a-real-secret}"
 
 PY=.venv/bin/python
 "$PY" -m alembic upgrade head

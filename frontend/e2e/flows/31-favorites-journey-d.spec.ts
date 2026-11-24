@@ -118,7 +118,7 @@ const STUB_USER_ID = "00000000-0000-0000-0000-0000000000d1";
 /** Locked copy. Literals on purpose — reading these out of `messages/he.json`
  *  and comparing against a render OF that file is green whether the copy is
  *  right or wrong. Same call flows/29 and /30 made. */
-const GUEST_TOAST = "שמרתי — התחברו לראות את כל המועדפים שלך";
+const GUEST_TOAST = "שמרתי — התחברו לראות את כל המועדפים";
 const GUEST_TOAST_CTA = "התחברו";
 
 /**

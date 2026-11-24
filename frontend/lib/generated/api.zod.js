@@ -3748,6 +3748,15 @@ export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.union([/*#__PU
 
 
 /**
+ * Swap a Google authorization code for a verified Google ID token.
+ * @summary Google Code
+ */
+export const GoogleCodeAuthGoogleCodePostResponse = /*#__PURE__*/ zod.object({
+  "id_token": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.'))
+
+
+/**
  * @summary Login
  */
 export const loginAuthLoginPostResponseOneTokenTypeDefault = `bearer`;
@@ -9286,6 +9295,7 @@ export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "price_agorot": /*#__PURE__*/ zod.int(),
   "producer": /*#__PURE__*/ zod.object({
+  "avg_rating": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -9294,7 +9304,7 @@ export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
   "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
-}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4\'s row has no\nplace to put them and serializing them would publish more than the screen\nneeds.')),
+}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock or the contact details — serializing them would publish more than\nthe screen needs. The public rating is here since MEH-3704, because the\nlist sorts by it; it is the same number the business page already shows.')),
   "qty_left": /*#__PURE__*/ zod.int(),
   "qty_total": /*#__PURE__*/ zod.int(),
   "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),

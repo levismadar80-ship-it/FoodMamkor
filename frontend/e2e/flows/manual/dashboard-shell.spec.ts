@@ -374,7 +374,7 @@ test.describe("dashboard shell — access control", () => {
 
     // The whole point of MEH-1599: no navigation happened.
     expect(new URL(page.url()).pathname).toMatch(/\/producer\/dashboard$/);
-    await expect(denied).toContainText("אין לך גישה ללוח הבקרה");
+    await expect(denied).toContainText("אין גישה ללוח הבקרה");
     await expect(denied.getByRole("link", { name: "רשמו בית עסק" })).toBeVisible();
     await expect(denied.getByRole("link", { name: "חזרו לדף הבית" })).toBeVisible();
     // Exactly one denied state — the layout returns before children mount, so

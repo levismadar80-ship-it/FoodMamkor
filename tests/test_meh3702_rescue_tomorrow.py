@@ -48,11 +48,16 @@ def _today():
 
 
 def _tomorrow_offer(db, location, **over):
-    now = utc_now()
-    over.setdefault("date", _today() + DAY)
-    over.setdefault("pickup_start", now + DAY + timedelta(hours=1))
-    over.setdefault("pickup_end", now + DAY + timedelta(hours=3))
-    over.setdefault("cancel_until", now + DAY + timedelta(minutes=30))
+    """Tomorrow's bag, 18:00–20:00 Israel, free to cancel until 17:30.
+
+    Pinned to tomorrow's Israel clock: «now + 1 day + 30 min» crossed
+    midnight from 23:30 Israel, so the cutoff fell on the day after and the
+    confirmation email had no «מחר» (MEH-3704 CI, 21:30 UTC)."""
+    day = _today() + DAY
+    over.setdefault("date", day)
+    over.setdefault("pickup_start", _at(day, 18))
+    over.setdefault("pickup_end", _at(day, 20))
+    over.setdefault("cancel_until", _at(day, 17, 30))
     return _seed_offer(db, location, **over)
 
 
@@ -133,10 +138,21 @@ class TestPublish:
         self, client, db, shop, rescue_on
     ):
         """Edge case: tomorrow's date, today's window (an owner's device on
-        another clock). It would sit under «מחר» with a window long over."""
+        another clock). It would sit under «מחר» with a window long over.
+
+        The window starts an hour ago, so its start is on today's Israel date
+        at every hour. The default window (now + 1 h) falls on tomorrow from
+        23:00 Israel and made this test red then (MEH-3704 CI, 21:05 UTC)."""
+        now = utc_now()
         r = client.post(
             "/rescue/offers",
-            json=_offer_payload(shop["location"], date=(_today() + DAY).isoformat()),
+            json=_offer_payload(
+                shop["location"],
+                date=(_today() + DAY).isoformat(),
+                pickup_start=(now - timedelta(hours=1)).isoformat(),
+                pickup_end=(now + timedelta(hours=1)).isoformat(),
+                cancel_until=(now - timedelta(hours=2)).isoformat(),
+            ),
             headers=auth_header(shop["owner"]),
         )
         assert r.status_code == 422

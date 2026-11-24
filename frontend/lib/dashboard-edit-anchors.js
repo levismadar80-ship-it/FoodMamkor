@@ -84,7 +84,7 @@ export const ANCHOR_TO_KEY = {
   "reservist-owned": "ownerStory",
   // MEH-2475: an organizer's city (she has no locations editor).
   "organizer-city": "organizerCity",
-  // MEH-3035: «איך משלמים לך?» — in all three maps from birth (MEH-2262).
+  // MEH-3035: «איך משלמים לעסק?» — in all three maps from birth (MEH-2262).
   "payment-info": "paymentInfo",
 };
 

@@ -55,7 +55,7 @@ beforeEach(() => {
 describe("claim: ask for a new link", () => {
   it("approved copy, word for word (Sapir 14/11)", () => {
     expect(C.new_link).toBe("שלחו לי קישור חדש");
-    expect(C.new_link_sent).toBe("קיבלנו. נשלח אליך קישור חדש.");
+    expect(C.new_link_sent).toBe("קיבלנו. קישור חדש בדרך למייל.");
   });
 
   it("a bare /claim with no link has only «צרו קשר»: there is no business to ask for", () => {

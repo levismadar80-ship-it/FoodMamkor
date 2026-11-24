@@ -161,10 +161,12 @@ the E2E job looked "mostly green with 6 known reds" while providing **zero**
 authenticated coverage. Fixed under MEH-999 (26/07)._
 
 ## Gotchas
-- **Google Sign-In singleton** (MEH-274): `google.accounts.id.initialize()`
-  must run exactly once per page load. The fix lives in
-  `frontend/lib/use-google-sign-in.js`; double-init breaks login in
-  Playwright headless mode silently.
+- **Google sign-in in a spec** (MEH-3690): our own button opens Google's
+  popup through the GIS code client, which no runner can click through.
+  Stub it with `flows/_google-code-stub.ts` (`stubGoogleCodeClient` before
+  `goto`, then `sendGoogleCode`); `stubCodeSwap` answers the code swap when
+  the spec's subject is what comes after it. The old `google.accounts.id`
+  singleton (MEH-274) is gone with Google's rendered button.
 - **`.test` TLD trap** (MEH-353): test fixtures must use `@example.com`,
   not `@e2e.test` — Pydantic email-validator rejects `.test` (RFC 6761).
 - **CI rate-limit budget**: shared GitHub Actions runner IPs burn the
