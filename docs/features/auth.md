@@ -36,5 +36,6 @@
 * `frontend/__tests__/GsiButtonRedrawOnResize.test.jsx` — כפתור Google עוקב אחרי רוחב המסך (MEH-3687).
 * `frontend/__tests__/GsiReveal.test.jsx` — כפתור Google מוסתר עד שהוא מתייצב, ומוצג פעם אחת; טעינה מראש לאורחות בלבד (MEH-3744).
 * `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
+* `frontend/__tests__/AuthHydrationNoFallback.test.jsx` — ההגדרה הראשונה של מצב ההתחברות לא מחזירה דף שעדיין בהידרציה למסך הטעינה (`startTransition` ב-`frontend/lib/auth-context.js`, MEH-3828).
 
 **מזהי רישום שזה מכסה.** `social_signup`.

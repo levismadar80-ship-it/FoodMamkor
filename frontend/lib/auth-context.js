@@ -82,7 +82,10 @@ export function AuthProvider({ children }) {
   // and show the fallback — the route loader (app/[locale]/loading.js) — then
   // mount the page again: a full-page flash and ≈ 1.0 CLS about 5 s in on a
   // slow phone. A transition lets hydration finish first (react.dev/errors/421).
-  // DO NOT set auth state here outside startTransition — MEH-3828.
+  // The cost: consumers see `loading` until every boundary under the provider
+  // has hydrated (a chunk that fails rejects to its error boundary, so this
+  // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
+  // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
   const loadSession = () => {
     const token = localStorage.getItem("token");
     if (token) {

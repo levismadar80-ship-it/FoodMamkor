@@ -62,12 +62,25 @@ function AuthLine() {
 const ServerChunk = () => <span>map</span>;
 // The client chunk that has not arrived yet (a pending dynamic import).
 const PendingChunk = lazy(() => new Promise(() => {}));
+// A chunk the test lets arrive, to see the auth state commit afterwards.
+const arrival = {};
+const LateChunk = lazy(
+  () =>
+    new Promise((resolve) => {
+      arrival.resolve = () => resolve({ default: ServerChunk });
+    }),
+);
+function UserLine() {
+  const { user } = useAuth();
+  return <span data-testid="user-line">{user ? user.name : "none"}</span>;
+}
 
 const page = (Chunk) => (
   <AuthProvider>
     <Suspense fallback={<p data-testid="route-loader">LOADER</p>}>
       <h1>business page</h1>
       <AuthLine />
+      <UserLine />
       <Chunk />
     </Suspense>
   </AuthProvider>
@@ -82,8 +95,11 @@ afterEach(() => {
   apiGet.mockReset();
 });
 
-/** @param {() => void} [arrange] */
-async function hydrateAndWatch(arrange) {
+/**
+ * @param {() => void} [arrange]
+ * @param {any} [ClientChunk]
+ */
+async function hydrateAndWatch(arrange, ClientChunk = PendingChunk) {
   const container = document.createElement("div");
   container.innerHTML = renderToString(page(ServerChunk));
   document.body.appendChild(container);
@@ -96,7 +112,7 @@ async function hydrateAndWatch(arrange) {
   });
   mo.observe(container, { childList: true, subtree: true, characterData: true });
   await act(async () => {
-    root = hydrateRoot(container, page(PendingChunk), { onRecoverableError: () => {} });
+    root = hydrateRoot(container, page(ClientChunk), { onRecoverableError: () => {} });
   });
   await act(async () => {
     await new Promise((r) => setTimeout(r, 20));
@@ -120,5 +136,20 @@ describe("auth bootstrap during hydration (MEH-3828)", () => {
     expect(apiGet).toHaveBeenCalledWith("/auth/me");
     expect(inserted.some((t) => t.includes("LOADER"))).toBe(false);
     expect(container.textContent).toContain("business page");
+  });
+
+  it("once the chunk arrives, the auth state commits: ready, with the user", async () => {
+    const { container, inserted } = await hydrateAndWatch(() => {
+      localStorage.setItem("token", "jwt");
+      apiGet.mockResolvedValueOnce({ data: { id: "u1", name: "דנה" } });
+    }, LateChunk);
+    expect(inserted.some((t) => t.includes("LOADER"))).toBe(false);
+    await act(async () => {
+      arrival.resolve();
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    const q = (id) => container.querySelector(`[data-testid="${id}"]`)?.textContent;
+    expect(q("auth-line")).toBe("ready");
+    expect(q("user-line")).toBe("דנה");
   });
 });
