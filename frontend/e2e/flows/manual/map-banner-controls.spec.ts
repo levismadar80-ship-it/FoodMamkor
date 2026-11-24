@@ -148,3 +148,54 @@ test.describe("manual › /map canvas fits the viewport and the OSM attribution 
     }
   }
 });
+
+// MEH-3820: on a slow phone the map used to move ~6 s into the load (0.118
+// CLS): its top padding was a guessed bar height corrected after mount, and the
+// banner's strip was reserved only after hydration. The server HTML now lays the
+// map out exactly where the hydrated page keeps it. The "before" box is read
+// with every JS chunk refused, so it is the server HTML plus the inline scripts
+// only (the CSS still loads), which is what a slow phone shows first.
+test.describe("manual › /map does not move when the page hydrates (MEH-3820)", () => {
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name === "desktop", "the banner reserve and the in-flow bar are the mobile shell's");
+  });
+
+  const mapBox = (page: Page) =>
+    page.locator("[data-map-banner-reserve]").evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: Math.round(r.top), height: Math.round(r.height), padBottom: Math.round(parseFloat(getComputedStyle(el).paddingBottom)) };
+    });
+
+  for (const vp of [VIEWPORTS[0], VIEWPORTS[2]]) {
+    test(`${vp.width}x${vp.height} banner up: the map's box is the same before and after hydration`, async ({ page, browser }) => {
+      const cold = await browser.newPage({ viewport: vp });
+      await cold.route(/\/_next\/static\/chunks\/.*\.js(\?|$)/, (r) => r.abort());
+      await cold.route(/tile\.openstreetmap\.org\//, (r) => r.fulfill({ status: 204, body: "" }));
+      await cold.goto("/map");
+      await expect(cold.getByTestId("cookie-banner")).toBeVisible();
+      const before = await mapBox(cold);
+      const bannerH = Math.round((await box(cold.getByTestId("cookie-banner"))).height);
+      await cold.close();
+      expect(before.padBottom, "the server HTML does not reserve the banner's strip").toBeGreaterThanOrEqual(bannerH);
+
+      await page.setViewportSize(vp);
+      await openMap(page, false);
+      const after = await mapBox(page);
+      expect(Math.abs(after.top - before.top), `map top moved on hydration (${before.top} -> ${after.top})`).toBeLessThanOrEqual(1);
+      expect(Math.abs(after.height - before.height), `map height changed on hydration (${before.height} -> ${after.height})`).toBeLessThanOrEqual(1);
+      expect(Math.abs(after.padBottom - before.padBottom), "the banner reserve changed on hydration").toBeLessThanOrEqual(1);
+    });
+  }
+
+  test("banner up but hidden under the open sheet: no strip is reserved", async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await openMap(page, false);
+    expect((await mapBox(page)).padBottom).toBeGreaterThan(0);
+    // useMapFilters.js sets this class while a business is picked, and
+    // globals.css hides the banner under it. Set directly: the subject is the
+    // reserve's reaction to the hidden banner, not how a business is picked.
+    await page.evaluate(() => document.body.classList.add("sheet-open"));
+    await expect(page.getByTestId("cookie-banner")).toBeHidden();
+    await expect.poll(async () => (await mapBox(page)).padBottom).toBe(0);
+  });
+});

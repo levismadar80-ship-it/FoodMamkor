@@ -19,11 +19,7 @@ import {
   hasFullCookieConsent,
   setCookieConsent,
 } from "@/lib/cookie-consent";
-
-// MEH-3820: reads the banner just above it (the script's previous sibling).
-// Skipped when the visitor already answered (lib/prehydration-flags-inline.js
-// hides that copy). No value is spliced into the code.
-const PUBLISH_HEIGHT_SCRIPT = `(function(){try{var d=document.documentElement,b=document.currentScript&&document.currentScript.previousElementSibling;if(b&&!d.hasAttribute("data-cookie-answered")&&b.offsetHeight>0)d.style.setProperty("--cookie-banner-h",b.offsetHeight+"px")}catch(e){}})();`;
+import { COOKIE_BANNER_HEIGHT_SCRIPT } from "@/lib/cookie-banner-height-inline";
 
 /**
  * Cookie consent — compact bottom bar.
@@ -145,7 +141,7 @@ export default function CookieBanner() {
         paint, so /map reserves the banner's strip from the start instead of
         shrinking the map ~5 s in on a slow phone, when the effect above runs.
         Rendered only until mount (server + hydration render alike). */}
-    {!mounted && <script dangerouslySetInnerHTML={{ __html: PUBLISH_HEIGHT_SCRIPT }} />}
+    {!mounted && <script dangerouslySetInnerHTML={{ __html: COOKIE_BANNER_HEIGHT_SCRIPT }} />}
     </>
   );
 }

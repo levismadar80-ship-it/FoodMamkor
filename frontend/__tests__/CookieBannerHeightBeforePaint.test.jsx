@@ -33,7 +33,9 @@ function parseServerHtml(bannerHeight) {
   host.innerHTML = renderToString(tree());
   document.body.appendChild(host);
   const script = host.querySelector("script");
-  if (script) {
+  // Every case below needs the script: without it they would pass for nothing.
+  expect(script).not.toBeNull();
+  {
     const banner = script.previousElementSibling;
     Object.defineProperty(banner, "offsetHeight", { configurable: true, value: bannerHeight });
     Object.defineProperty(document, "currentScript", { configurable: true, get: () => script });

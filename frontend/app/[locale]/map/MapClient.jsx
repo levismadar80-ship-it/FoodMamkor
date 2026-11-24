@@ -71,9 +71,11 @@ const MOBILE_HEADER_OFFSET_PX = 64;
 // MEH-945 / MEH-2148: the strip the mobile map wrapper reserves at its bottom
 // while the cookie banner shows: the nav clearance, CookieBanner's 8px gap,
 // 16px of air, and the banner's live height. Named because two properties
-// carry it (paddingBottom and --map-pane-reserve, MEH-2517).
-const MOBILE_BANNER_RESERVE =
-  "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))";
+// carry it (paddingBottom and --map-pane-reserve, MEH-2517). MEH-3820: the
+// length itself is defined once, as --map-banner-reserve in app/globals.css,
+// which also applies it before hydration; this inline copy covers a banner
+// re-opened from the footer, and is the same value by construction.
+const MOBILE_BANNER_RESERVE = "var(--map-banner-reserve)";
 
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
