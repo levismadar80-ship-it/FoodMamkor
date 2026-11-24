@@ -19,16 +19,16 @@
 | API routes (actor actions) | 334 | 319 | 10 | 5 | 0 |
 | — negative cell of gated routes (401/403) | 250 | 169 | 0 | 81 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
-| Business tools | 54 | 52 | 1 | 1 | 0 |
+| Business tools | 54 | 51 | 1 | 2 | 0 |
 | Pages — public | 62 | 52 | 0 | 10 | 0 |
 | Pages — dashboard | 24 | 20 | 0 | 4 | 0 |
 | Pages — admin | 22 | 19 | 0 | 3 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 38 | 1 | 6 | 0 |
 | Mandatory extra rows (§B.3) | 25 | 23 | 1 | 1 | 0 |
 
-Pages opened by a CI-run Playwright spec: **41 / 108** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
+Pages opened by a CI-run Playwright spec: **42 / 108** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 111** (route positive 5 · route negative 81 · tools 1 · pages 17 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 112** (route positive 5 · route negative 81 · tools 2 · pages 17 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -445,11 +445,11 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `social_signup` | page | live | — | `tests/_test_api__p06.py:79` (14/14 routes in file) | `frontend/__tests__/AuthPagesAuthedRedirect.test.jsx:4` | n/a | covered |
 | `wa_approval` | page | live | — | `tests/_test_meh2952_send_layer__common.py:31` (imports module) | n/a | n/a | covered |
 | `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:82` (imports module) | n/a | n/a | covered |
-| `vanity_link` | found | live | — | n/a | `frontend/__tests__/Dashboard1025Banner.test.jsx:14` | `frontend/e2e/flows/22-register-personas.spec.ts:215` | covered |
+| `vanity_link` | found | live | — | n/a | GAP | n/a | GAP |
 | `discovery` | found | live | — | n/a | `frontend/__tests__/DietLandingPage.test.jsx:88` | GAP | covered |
 | `similar_businesses` | found | live | — | n/a | `frontend/__tests__/OrderCartRows.test.jsx:78` | n/a | covered |
 | `share_cards` | found | live | — | n/a | `frontend/__tests__/ReviewCardLayout.test.jsx:3` | n/a | covered |
-| `qr_code` | found | live | `/producer/dashboard/share` | n/a | `frontend/__tests__/BusinessQr.test.js:9` | GAP | covered |
+| `qr_code` | found | live | `/producer/dashboard/share` | n/a | `frontend/__tests__/BusinessQr.test.js:9` | `frontend/e2e/flows/manual/dashboard-vanity-share.spec.ts:100` | covered |
 | `google_profile` | found | live | `/producer/dashboard/google-profile` | `tests/test_meh3641_owner_google_profile.py:91` (4/4 routes in file) | `frontend/__tests__/GoogleProfileTool.test.jsx:11` | GAP | covered |
 | `structured_data` | found | live | — | n/a | `frontend/__tests__/BusinessQr.test.js:8` | n/a | covered |
 | `primary_cta` | contact | live | — | n/a | `frontend/__tests__/ContactCard.test.jsx:72` | n/a | covered |
@@ -580,8 +580,8 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/producer/dashboard/rescue/counter-card` | GAP | `frontend/__tests__/RescueCounterCardLink.test.jsx:19` | covered |
 | `/producer/dashboard/rescue` | GAP | `frontend/__tests__/RescueCounterCardLink.test.jsx:18` | covered |
 | `/producer/dashboard/reviews` | GAP | `frontend/__tests__/DashboardReviewsPage.test.jsx:10` | covered |
-| `/producer/dashboard/share` | GAP | `frontend/__tests__/DashboardSharePlacement.test.jsx:15` | covered |
-| `/producer/dashboard/tools` | `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:163` | `frontend/__tests__/DashboardSharePlacement.test.jsx:14` | covered |
+| `/producer/dashboard/share` | `frontend/e2e/flows/manual/dashboard-vanity-share.spec.ts:100` | `frontend/__tests__/DashboardSharePlacement.test.jsx:16` | covered |
+| `/producer/dashboard/tools` | `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:163` | `frontend/__tests__/DashboardSharePlacement.test.jsx:15` | covered |
 | `/producer/dashboard/whats-new` | GAP | `frontend/__tests__/WhatsNew.test.jsx:46` | covered |
 
 ### Admin
