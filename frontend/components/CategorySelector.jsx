@@ -99,6 +99,8 @@ const REST_DESC_SLUGS = new Set([
   "chocolate",
   // MEH-3401: «קפה» — its slug is the transliteration, not a fixed-table token.
   "kph",
+  // MEH-3738: «בישול לפי הזמנה», created from the admin like coffee.
+  "byshvl-lpy-hzmnh",
   "honey",
   "fish",
 ]);

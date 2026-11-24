@@ -43,6 +43,7 @@ import {
   HandSoap,
   FlowerLotus,
   CoffeeBean,
+  BowlFood,
 } from "@phosphor-icons/react";
 
 /* ---------- vendored line shell (Tabler MIT, viewBox 24, normalized) ----------
@@ -193,4 +194,6 @@ export const CATEGORY_GLYPHS = {
   candles: Candle,
   // MEH-3401: roasteries only, so the bean, not a café cup.
   kph: CoffeeBean,
+  // MEH-3738: cooked to order — a served bowl, apart from «מוצרים מוכנים»'s pot.
+  "byshvl-lpy-hzmnh": BowlFood,
 };

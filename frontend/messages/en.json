@@ -634,7 +634,8 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee"
+    "kph": "Coffee",
+    "byshvl-lpy-hzmnh": "Cooked to order"
   },
   "seo": {
     "home": {
@@ -1340,6 +1341,9 @@
       "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
       "pickup_place_label": "Pickup place",
       "cancel_until_short": "You can leave until {date}",
+      "member_next_open": "We'll email you when the group reaches its goal. If it doesn't by {date}, your commitment is cancelled and you owe nothing.",
+      "member_next_funded_pickup": "The group reached its goal. Pickup: {when}.",
+      "member_my_groups": "All my group buys",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
       "calendar_title": "Pickup: {title}"
@@ -3856,7 +3860,8 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans"
+        "kph": "Coffee beans",
+        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -5191,7 +5196,6 @@
       },
       "help_row": {
         "title": "Need help?",
-        "body": "Write to us and we'll get back to you within 3 business days.",
         "cta": "Contact the team"
       },
       "whats_new": {
@@ -5332,7 +5336,9 @@
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
         "menu_cta": "Upload a menu",
         "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
-        "allergens_cta": "Mark them"
+        "allergens_cta": "Mark them",
+        "rescue": "{count, plural, one {Surprise bags open today} other {# surprise-bag offers open today}}",
+        "rescue_cta": "Manage"
       },
       "status": {
         "pending": {
@@ -8121,6 +8127,13 @@
     "write_review": "Write a review",
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
+  },
+  "order_again": {
+    "button": "Order again",
+    "added_all": "We added the items from last time to your order",
+    "added_some": "We added what can be ordered now. Not available right now: {names}",
+    "none_available": "The items from last time are not available right now",
+    "not_taking": "This business is not taking orders on the site right now"
   },
   "product_variants": {
     "from": "From ",

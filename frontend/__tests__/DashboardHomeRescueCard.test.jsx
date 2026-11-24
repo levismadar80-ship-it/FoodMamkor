@@ -1,8 +1,8 @@
 /**
- * MEH-2884 (dashboard placement audit item 7): with the rescue-bags pilot on,
- * an approved business gets a short entry to the rescue tool on the dashboard
- * home, right after the availability switch. Existing strings (the «כלים»
- * tile's), same flag. Off / pending / organizer → nothing on home.
+ * MEH-2884 (dashboard placement audit item 7) put an always-on rescue card on
+ * the dashboard home; MEH-3767 took it off. Live bags are now a row of «מה
+ * מחכה לך» (OwnerAttentionCard.test.jsx), the tool stays in «כלים». So in
+ * every cell — pilot on/off, approved/pending, organizer — no card on home.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -131,7 +131,7 @@ const analytics = {
   conversion_rate: 0,
 };
 
-describe("rescue entry on the dashboard home (MEH-2884 item 7)", () => {
+describe("no rescue card on the dashboard home (MEH-3767, was MEH-2884 item 7)", () => {
   beforeEach(() => {
     statusRef.current = "approved";
     kindRef.current = "producer";
@@ -142,18 +142,12 @@ describe("rescue entry on the dashboard home (MEH-2884 item 7)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("pilot on, approved: one card into /producer/dashboard/rescue, right after the availability switch", async () => {
+  it("pilot on, approved: no always-on card on home (MEH-3767)", async () => {
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
     render(<ProducerDashboardPage />);
-    const card = await screen.findByTestId("home-rescue-card");
-    expect(card.getAttribute("href")).toBe("/producer/dashboard/rescue");
-    expect(card).toHaveTextContent("quick_links.rescue.title");
-    const availability = document.getElementById("availability-heading");
-    expect(availability, "availability card").not.toBeNull();
-    expect(
-      Boolean(availability.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING),
-      "after the switch",
-    ).toBe(true);
+    await screen.findByTestId("overview-kpi-strip");
+    expect(screen.queryByTestId("home-rescue-card")).toBeNull();
+    expect(document.querySelector('a[href="/producer/dashboard/rescue"]')).toBeNull();
   });
 
   it("pilot off: no card", async () => {
