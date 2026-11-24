@@ -807,6 +807,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer/ShareKitSection.jsx` | — אין כותרת — |
 | `producer/ShareVisitsLine.jsx` | MEH-3331 — one line on the insights page: how many visits came through links the owner shared (share kit, link-everywhere) in the last 30 days. … |
 | `producer/ToolGroupCard.jsx` | One «כלים» card for a group of tools (MEH-3669): «אירועים» holds events + experiences, «הזדמנויות» group buys + surprise bags — the same split the bottom nav … |
+| `producer/VanityLinkCard.jsx` | «הלינק שלי» — the business's short public link with «העתקה» and «שתפו» (the phone's own share sheet). |
 | `producer/WeeklySummaryToggle.jsx` | The owner's on/off for the weekly summary email, at the bottom of «תובנות» (MEH-3212). … |
 | `producer/WhatsNewCard.jsx` | «חדש במהמקור» — the top-of-home card that shows the newest release lines until the owner closes it or opens the archive (MEH-3200, placement א׳ chosen by … |
 | `producer/WhatsNewRow.jsx` | The fixed «מה חדש במהמקור» row above «צריכים עזרה?» on the dashboard home — the permanent way into the release archive, with a dot while the newest release is … |
