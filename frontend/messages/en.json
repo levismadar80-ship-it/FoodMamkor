@@ -5811,7 +5811,6 @@
         "note_placeholder": "For example: Rosh Hashana eve",
         "invalid_date": "Invalid or duplicate date",
         "save_success": "Special hours saved",
-        "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "payment_info": {

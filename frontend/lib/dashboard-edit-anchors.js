@@ -9,7 +9,8 @@
  *           "{done}/{total}" and not every registered card is a step.
  * Related:  app/[locale]/producer/dashboard/edit/page.js (sole consumer),
  *           __tests__/DashboardEditAnchorRegistry.test.js (the guard)
- * History:  MEH-2262 (extracted from page.js so the registry can be asserted)
+ * History:  MEH-2262 (extracted from page.js so the registry can be asserted);
+ *           MEH-3790 (the «שעות» card; orderWindow + specialHours open it)
  *
  * THE INVARIANT, because it is not visible from any single map:
  *   the resolver reads the hash through ANCHOR_TO_KEY, looks the key up in
@@ -48,11 +49,10 @@ export const ANCHOR_TO_KEY = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
-  // MEH-2142: `hours` is gone from all four registries below. The
-  // business-level opening-hours card was removed — store hours are a
-  // per-location fact now, edited in LocationsEditor. A stale #hours deep link
-  // (an old email, a bookmark) therefore falls through to the default group
-  // rather than resolving to a card that no longer exists.
+  // MEH-3790: `hours` is back — the one «שעות» card (HoursCard.jsx), holding
+  // each location's opening hours, the order window and special hours. MEH-2142
+  // had removed it when store hours moved into the location form.
+  hours: "hours",
   "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
@@ -114,6 +114,9 @@ export const KEY_TO_ANCHOR = {
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
+  hours: "hours",
+  // MEH-3790: a section of the «שעות» card now; the section carries this id,
+  // so the link scrolls to it inside the open card (OPEN_KEY_FOR).
   orderWindow: "order-window",
   // MEH-2264: sits directly under the order window it overrides.
   specialHours: "special-hours",
@@ -156,6 +159,8 @@ export const KEY_TO_GROUP = {
   // registered here so a #locations deep link resolves to the right group.
   locations: "location",
   delivery: "location",
+  // MEH-3790: opt-in like orderWindow, so not a GROUP_MEMBERS entry either.
+  hours: "location",
   orderWindow: "location",
   // MEH-2264: same group as the order window it overrides; NOT a
   // GROUP_MEMBERS entry, for exactly orderWindow's reason above.
@@ -182,6 +187,11 @@ export const KEY_TO_GROUP = {
 // The accordion open-state key a card key maps to. The trust group renders ONE
 // accordion card (anchorId "trust") composing the license + kashrut bodies, so
 // both card keys open that single card; scroll still targets the inner
-// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged).
-export const OPEN_KEY_FOR = (key) =>
-  key === "license" || key === "kashrut" ? "trust" : key;
+// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged). MEH-3790: the
+// order window and special hours are sections of the one «שעות» card, the
+// same shape.
+export const OPEN_KEY_FOR = (key) => {
+  if (key === "license" || key === "kashrut") return "trust";
+  if (key === "orderWindow" || key === "specialHours") return "hours";
+  return key;
+};
