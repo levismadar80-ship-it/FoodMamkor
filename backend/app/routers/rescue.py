@@ -99,6 +99,8 @@ from app.schemas.rescue_schedule import (  # MEH-3703
 )
 from app.sentry import capture_background_exception
 from app.services.rescue_schedule import (  # MEH-3703
+    can_host,
+    cancelled_days_in_reach,
     publish_due,
     save_routine,
     set_skip,
@@ -853,25 +855,32 @@ def set_typical_items(
 
 
 def _my_location(db: Session, user: User, location_id: UUID) -> ProducerLocation:
-    """The caller's own pickup point (or any, for an admin); 404 otherwise, so
-    another business's point is indistinguishable from a missing one."""
-    location = db.query(ProducerLocation).filter(ProducerLocation.id == location_id).first()
-    if location is None or (
-        user.role != "admin" and location.producer_id != user.producer_id
-    ):
+    """The caller's own pickup point, locked for this write (two quick skips
+    must not overwrite each other's list); 404 otherwise, so another
+    business's point is indistinguishable from a missing one. Owners only:
+    these routes sit behind require_producer, which an admin does not pass."""
+    location = (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.id == location_id)
+        .with_for_update()
+        .first()
+    )
+    if location is None or location.producer_id != user.producer_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="נקודת האיסוף לא נמצאה"
         )
     return location
 
 
-def _schedule_row(location: ProducerLocation) -> RescueScheduleRow:
+def _schedule_row(db: Session, location: ProducerLocation) -> RescueScheduleRow:
     return RescueScheduleRow(
         producer_location_id=location.id,
         label=location.label,
         address=location.address,
         city=location.city,
         exact=location.location_precision == "exact",
+        publishing=can_host(db, location, city_in_pilot),
+        closed_days=cancelled_days_in_reach(db, location.id, israel_today()),
         schedule=stored_routine(location),
     )
 
@@ -898,20 +907,20 @@ def list_my_schedules(
         .order_by(ProducerLocation.is_primary.desc(), ProducerLocation.created_at)
         .all()
     )
-    return [_schedule_row(p) for p in points]
+    return [_schedule_row(db, p) for p in points]
 
 
 @me_router.put(
     "/producers/me/rescue/locations/{location_id}/schedule",
     response_model=RescueScheduleRow,
-    dependencies=[Depends(require_rescue_enabled)],
+    dependencies=[Depends(require_rescue_enabled), Depends(capabilities.bags_open)],
 )
 @limiter.limit("30/minute")
 def save_my_schedule(
     request: Request,
     location_id: UUID,
     body: RescueScheduleIn,
-    current_user: User = Depends(require_producer),
+    current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ) -> RescueScheduleRow:
     """Set or change the routine, then publish any day already in reach."""
@@ -936,7 +945,7 @@ def save_my_schedule(
         location_id=location.id,  # type: ignore[arg-type]
     )
     db.refresh(location)
-    return _schedule_row(location)
+    return _schedule_row(db, location)
 
 
 @me_router.delete(
@@ -956,7 +965,7 @@ def delete_my_schedule(
     location.rescue_schedule = None  # type: ignore[assignment]
     db.commit()
     db.refresh(location)
-    return _schedule_row(location)
+    return _schedule_row(db, location)
 
 
 @me_router.put(
@@ -965,42 +974,80 @@ def delete_my_schedule(
     dependencies=[Depends(require_rescue_enabled)],
 )
 @limiter.limit("30/minute")
-def skip_my_day(
+def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs background_tasks
     request: Request,
     location_id: UUID,
     day: date,
+    background_tasks: BackgroundTasks,
+    cancel_reserved: bool = False,
     current_user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> RescueScheduleRow:
     """Skip one day, so the routine does not publish it.
 
-    A day whose bag is already up keeps it: the dashboard then cancels that
-    bag through POST /rescue/offers/{id}/cancel, the same «ביטול» that emails
-    its buyers. Skip first, cancel second, so the next run cannot put the bag
-    back between the two."""
+    A day whose bag is already up loses it in the same transaction, through
+    cancel_whole_offer, the dashboard's «ביטול», so its buyers get the same
+    email. If someone reserved that bag, the first call answers 409 and the
+    dashboard asks; the second sends `cancel_reserved=true`. The bag is read
+    under its row lock, so a reservation cannot slip in between."""
     location = _my_location(db, current_user, location_id)
+    bag = (
+        db.query(RescueOffer)
+        .filter(
+            RescueOffer.producer_location_id == location.id,
+            RescueOffer.date == day,
+            RescueOffer.status == "active",
+            RescueOffer.pickup_end > utc_now(),
+        )
+        .with_for_update()
+        .first()
+    )
+    if bag is not None and not cancel_reserved:
+        reserved = (
+            db.query(RescueOrder.id)
+            .filter(RescueOrder.offer_id == bag.id, RescueOrder.status == "reserved")
+            .first()
+        )
+        if reserved is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="יש הזמנות לסל של היום הזה",
+            )
     try:
         set_skip(location, day, skip=True, today=israel_today())
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
-    db.commit()
+    if bag is None:
+        db.commit()
+    else:
+        # Commits the skip together with the cancel.
+        offer, buyer_ids = cancel_whole_offer(
+            db,
+            user=current_user,
+            offer_id=bag.id,
+            lock=_offer_for_update,  # type: ignore[arg-type]
+        )
+        try:
+            _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)
+        except Exception as exc:  # the cancel is committed; a mail never undoes it
+            capture_background_exception(exc, task="rescue_business_cancel_email")
     db.refresh(location)
-    return _schedule_row(location)
+    return _schedule_row(db, location)
 
 
 @me_router.delete(
     "/producers/me/rescue/locations/{location_id}/schedule/skips/{day}",
     response_model=RescueScheduleRow,
-    dependencies=[Depends(require_rescue_enabled)],
+    dependencies=[Depends(require_rescue_enabled), Depends(capabilities.bags_open)],
 )
 @limiter.limit("30/minute")
 def unskip_my_day(
     request: Request,
     location_id: UUID,
     day: date,
-    current_user: User = Depends(require_producer),
+    current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ) -> RescueScheduleRow:
     """Take a skip back. A day whose bag was already cancelled stays without
@@ -1021,4 +1068,4 @@ def unskip_my_day(
         location_id=location.id,  # type: ignore[arg-type]
     )
     db.refresh(location)
-    return _schedule_row(location)
+    return _schedule_row(db, location)

@@ -23,15 +23,12 @@ import { ListMySchedulesProducersMeRescueSchedulesGetResponse as SchedulesOut } 
 import { israelToday } from "@/lib/israel-date";
 import { detailToMessage } from "@/lib/errors";
 import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
-import { RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY } from "@/lib/rescue";
+import { DAY_MS, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, RESCUE_SKIP_DAYS_AHEAD } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 import WeekdayChips from "@/components/ui/WeekdayChips";
 
-const DAY_MS = 86_400_000;
-// Days a business may skip ahead (SKIP_DAYS_AHEAD in the backend schema).
-const SKIP_DAYS_AHEAD = 14;
 // Tomorrow is the strip's; the list starts the day after.
 const FIRST_LISTED = 2;
 const DEFAULTS = { weekdays: 0, pickup_start: "18:00", pickup_end: "20:00", cancel_minutes: 30, qty: 4, price: 15, paused: false };
@@ -44,7 +41,7 @@ const DEFAULTS = { weekdays: 0, pickup_start: "18:00", pickup_end: "20:00", canc
 export function upcomingDays(mask, today) {
   const base = Date.parse(`${today}T12:00:00Z`);
   const out = [];
-  for (let n = FIRST_LISTED; n <= SKIP_DAYS_AHEAD; n += 1) {
+  for (let n = FIRST_LISTED; n <= RESCUE_SKIP_DAYS_AHEAD; n += 1) {
     const d = new Date(base + n * DAY_MS);
     const weekday = d.getUTCDay();
     if (mask & (1 << weekday)) out.push({ day: israelToday(d), weekday }); // noon UTC: the same Israel day

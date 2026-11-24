@@ -27,7 +27,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -190,6 +190,20 @@ def _check_offer_day(body: RescueOfferCreate, today: date) -> None:
         )
 
 
+# MEH-3703: one publisher at a time, by hand or by the weekly routine. The
+# "no active bag yet" check and the insert are two statements; without one
+# lock a hand publish and the hourly job could both pass the check.
+PUBLISH_LOCK_KEY = "rescue-schedule-publish"
+
+
+def lock_offer_publishing(db: Session) -> None:
+    """Take the transaction-scoped lock every bag insert waits on."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"),
+        {"k": PUBLISH_LOCK_KEY},
+    )
+
+
 def publish_offer(
     db: Session,
     *,
@@ -242,6 +256,7 @@ def publish_offer(
 
     _check_offer_day(body, today)
 
+    lock_offer_publishing(db)
     # One active bag per point per day: `qty_left` is per OFFER, so a second
     # row for the same evening would show the same business twice with two
     # separate stock counts and two codes per buyer.

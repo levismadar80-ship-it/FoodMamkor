@@ -10,8 +10,9 @@
  *
  * Shown red against a broken build (PR body):
  *   - tomorrow's weekday bit off by one        -> "shows a point whose routine covers tomorrow…"
- *   - a skip that leaves tomorrow's bag up      -> "skipping tomorrow cancels a bag already up"
- *   - the question skipped when someone reserved -> "asks first when tomorrow's bag has reservations"
+ *   - the server's 409 not turned into a question -> "asks first when tomorrow's bag has reservations"
+ *   - «כן» sent without cancel_reserved            -> "asks first when tomorrow's bag has reservations"
+ *   - a point that cannot publish still promised  -> "shows a point whose routine covers tomorrow…"
  *   - the price sent in shekels                 -> "saves the routine in agorot"
  *   - tomorrow listed on the page too           -> "lists the routine days from the day after tomorrow"
  */
@@ -55,6 +56,8 @@ function row(over = {}, schedule = {}) {
     address: "הנשיא 1",
     city: "חיפה",
     exact: true,
+    publishing: true,
+    closed_days: [],
     schedule: {
       weekdays: 127,
       pickup_start: "18:00",
@@ -84,12 +87,14 @@ describe("which points the strip shows", () => {
     expect(tomorrowOf(THU)).toEqual({ day: FRI, bit: FRIDAY });
   });
 
-  it("shows a point whose routine covers tomorrow, and not one that skips the weekday or is paused", () => {
+  it("shows a point whose routine covers tomorrow, and not one that skips the weekday, is paused, cannot publish or was cancelled", () => {
     const rows = [
       row({ producer_location_id: "fri" }, { weekdays: FRIDAY }),
       row({ producer_location_id: "thu" }, { weekdays: 16 }),
       row({ producer_location_id: "paused" }, { paused: true }),
       row({ producer_location_id: "none", schedule: null }),
+      row({ producer_location_id: "unapproved", publishing: false }),
+      row({ producer_location_id: "cancelled", closed_days: [FRI] }),
     ];
     expect(tomorrowRows(rows, THU).map((r) => r.producer_location_id)).toEqual(["fri"]);
   });
@@ -103,14 +108,14 @@ describe("which points the strip shows", () => {
 describe("the strip", () => {
   it("renders nothing when no point publishes tomorrow (0 points)", async () => {
     get.mockResolvedValue({ data: [row({}, { weekdays: 16 })] });
-    const { container } = render(<Strip today={THU} offers={[]} orders={[]} onChanged={() => {}} />);
+    const { container } = render(<Strip today={THU} onChanged={() => {}} />);
     await waitFor(() => expect(get).toHaveBeenCalled());
     expect(container.querySelector("[data-testid='rescue-schedule-strip']")).toBeNull();
   });
 
   it("one point: tomorrow's bag in one line, without the place", async () => {
     get.mockResolvedValue({ data: [row()] });
-    render(<Strip today={THU} offers={[]} orders={[]} onChanged={() => {}} />);
+    render(<Strip today={THU} onChanged={() => {}} />);
     const line = await screen.findByTestId("rescue-schedule-line");
     expect(line.textContent).toContain("בלוח של מחר: 4 סלים ב-15 ₪");
     expect(line.textContent).not.toContain("הסניף בכרמל");
@@ -119,48 +124,45 @@ describe("the strip", () => {
 
   it("many points: each line names its place", async () => {
     get.mockResolvedValue({ data: [row(), row({ producer_location_id: L2, label: "הדוכן בשוק" })] });
-    render(<Strip today={THU} offers={[]} orders={[]} onChanged={() => {}} />);
+    render(<Strip today={THU} onChanged={() => {}} />);
     const lines = await screen.findAllByTestId("rescue-schedule-line");
     expect(lines.map((l) => l.textContent.split(",")[0])).toEqual(["הסניף בכרמל", "הדוכן בשוק"]);
   });
 
-  it("skipping tomorrow with no bag up only records the skip", async () => {
+  it("skipping tomorrow is one call; the server cancels a bag already up", async () => {
     get.mockResolvedValue({ data: [row()] });
     const onChanged = vi.fn();
-    render(<Strip today={THU} offers={[]} orders={[]} onChanged={onChanged} />);
+    render(<Strip today={THU} onChanged={onChanged} />);
     fireEvent.click(await screen.findByTestId("rescue-schedule-skip"));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
-    expect(put).toHaveBeenCalledWith(`/producers/me/rescue/locations/${L1}/schedule/skips/${FRI}`);
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(put.mock.calls[0][0]).toBe(`/producers/me/rescue/locations/${L1}/schedule/skips/${FRI}`);
+    expect(put.mock.calls[0][2]).toBeUndefined(); // no cancel_reserved on the first try
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("skipping tomorrow cancels a bag already up, after the skip", async () => {
+  it("asks first when tomorrow's bag has reservations (closed, then open, then yes)", async () => {
     get.mockResolvedValue({ data: [row()] });
-    const bag = { id: "b1", producer_location_id: L1, date: FRI, status: "active" };
+    const reserved = { response: { status: 409, data: { detail: "יש הזמנות לסל של היום הזה" } } };
+    put.mockRejectedValueOnce(reserved).mockRejectedValueOnce(reserved); // the server refuses until confirmed
     const onChanged = vi.fn();
-    render(<Strip today={THU} offers={[bag]} orders={[]} onChanged={onChanged} />);
-    fireEvent.click(await screen.findByTestId("rescue-schedule-skip"));
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/offers/b1/cancel"));
-    expect(put.mock.invocationCallOrder[0]).toBeLessThan(post.mock.invocationCallOrder[0]);
-  });
-
-  it("asks first when tomorrow's bag has reservations (closed, then open)", async () => {
-    get.mockResolvedValue({ data: [row()] });
-    const bag = { id: "b1", producer_location_id: L1, date: FRI, status: "active" };
-    const orders = [{ id: "o1", offer_id: "b1", status: "reserved" }];
-    render(<Strip today={THU} offers={[bag]} orders={orders} onChanged={() => {}} />);
+    render(<Strip today={THU} onChanged={onChanged} />);
     expect(screen.queryByTestId("rescue-schedule-ask")).toBeNull();
     fireEvent.click(await screen.findByTestId("rescue-schedule-skip"));
-    expect(screen.getByTestId("rescue-schedule-ask").textContent).toContain(s.skip_has_orders);
-    expect(put).not.toHaveBeenCalled();
+    expect((await screen.findByTestId("rescue-schedule-ask")).textContent).toContain(s.skip_has_orders);
+    expect(onChanged).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("rescue-schedule-skip-no"));
     expect(screen.queryByTestId("rescue-schedule-ask")).toBeNull();
-    expect(put).not.toHaveBeenCalled();
+    expect(put).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("rescue-schedule-skip"));
+    fireEvent.click(await screen.findByTestId("rescue-schedule-skip-yes"));
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    expect(put.mock.calls[2][2]).toEqual({ params: { cancel_reserved: true } });
   });
 
   it("a skipped tomorrow offers «לבטל את הדילוג», which removes the skip", async () => {
     get.mockResolvedValue({ data: [row({}, { skip_dates: [FRI] })] });
-    render(<Strip today={THU} offers={[]} orders={[]} onChanged={() => {}} />);
+    render(<Strip today={THU} onChanged={() => {}} />);
     expect((await screen.findByTestId("rescue-schedule-line")).textContent).toBe(s.strip_skipped);
     fireEvent.click(screen.getByTestId("rescue-schedule-unskip"));
     await waitFor(() => expect(del).toHaveBeenCalledWith(`/producers/me/rescue/locations/${L1}/schedule/skips/${FRI}`));

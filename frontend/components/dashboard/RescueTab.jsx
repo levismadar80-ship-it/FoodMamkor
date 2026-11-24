@@ -11,7 +11,7 @@ import { israelWallClockToIso } from "@/lib/dates";
 import AllergenPicker from "@/components/AllergenPicker"; // MEH-3610
 import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
-import { bagDay, israelTime, leftoverGroupUrl, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, shekels } from "@/lib/rescue";
+import { bagDay, DAY_MS, israelTime, leftoverGroupUrl, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import RescueScheduleStrip from "@/components/dashboard/RescueScheduleStrip"; // MEH-3703
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
@@ -32,7 +32,6 @@ import Input from "@/components/ui/Input";
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 
-const DAY_MS = 86_400_000; // MEH-3702: one calendar day, for the publish date
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 
@@ -449,7 +448,7 @@ export default function RescueTab() {
       </div>
 
       {/* MEH-3703: tomorrow's routine bag, and «לדלג על מחר», under the counters. */}
-      {!gated && <RescueScheduleStrip offers={offers} orders={orders || []} onChanged={load} />}
+      {!gated && <RescueScheduleStrip onChanged={load} />}
 
       {/* MEH-2921 (d): the code box is for handing a bag over. A business
           that cannot publish and has no open order has nothing to hand over. */}

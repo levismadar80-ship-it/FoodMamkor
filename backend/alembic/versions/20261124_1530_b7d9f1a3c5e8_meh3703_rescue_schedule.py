@@ -4,7 +4,7 @@ Revision ID: b7d9f1a3c5e8
 Revises: d6a8b0c2e4f5
 Create Date: 2026-11-24 15:30:00.000000+00:00
 
-MEH-3703. Expand-only (ADR-007). Awaiting Sapir's OK before any apply.
+MEH-3703. Expand-only (ADR-007). Approved by Sapir 24/11/2026.
 
 - producer_locations.rescue_schedule: JSONB NULL. A pickup point's weekly
   surprise-bag routine, set once by the business:
@@ -13,7 +13,7 @@ MEH-3703. Expand-only (ADR-007). Awaiting Sapir's OK before any apply.
    "cancel_minutes": minutes before pickup_start that a buyer may still cancel,
    "qty": 1..20, "price_agorot", "value_min_agorot", "value_max_agorot",
    "paused": bool, "skip_dates": ["YYYY-MM-DD", …]}
-  The shape is validated by schemas/rescue.py RescueSchedule on every write;
+  The shape is validated by schemas/rescue_schedule.py RescueScheduleStored on every write;
   the CHECK here holds only that the value is an object.
 - NULL = no routine, which is every existing row: nothing publishes and nothing
   reads differently.

@@ -23,9 +23,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
+from app import pricing
 from app.models.models import Producer, ProducerLocation, RescueOffer
 from app.schemas.rescue_schedule import (
     SKIP_DAYS_AHEAD,
@@ -33,14 +34,12 @@ from app.schemas.rescue_schedule import (
     RescueScheduleStored,
     weekday_bit,
 )
-from app.services.rescue_reads import reserve_days
+from app.services.capabilities import billing_state, paid_tools_open
+from app.services.rescue_reads import RESERVE_CLOSES_BEFORE_END, reserve_days
+from app.services.rescue_writes import lock_offer_publishing
 from app.utils.clock import ISRAEL_TZ
 
 log = logging.getLogger(__name__)
-
-# One run at a time across workers: the "no offer yet" check and the insert
-# are two statements, and two runs between them would publish the day twice.
-_LOCK_KEY = "rescue-schedule-publish"
 
 
 def _israel_utc(day: date, hhmm: str) -> datetime:
@@ -64,7 +63,9 @@ def stored(location: ProducerLocation) -> RescueScheduleStored | None:
         return None
 
 
-def _bag_for(location: ProducerLocation, routine: RescueScheduleStored, day: date) -> RescueOffer:
+def _bag_for(
+    location: ProducerLocation, routine: RescueScheduleStored, day: date
+) -> RescueOffer:
     start = _israel_utc(day, routine.pickup_start)
     return RescueOffer(
         producer_location_id=location.id,
@@ -91,16 +92,41 @@ def _due_days(routine: RescueScheduleStored, today: date) -> list[date]:
     ]
 
 
-def _can_host(location: ProducerLocation, in_pilot: Callable[[str | None], bool]) -> bool:
-    """The rules publish_offer applies to a hand-published bag, read as
-    yes/no: an approved business, an exact address, a pilot town."""
+def can_host(
+    db: Session, location: ProducerLocation, in_pilot: Callable[[str | None], bool]
+) -> bool:
+    """The rules a hand-published bag passes, read as yes/no: an approved
+    business, an exact address, a pilot town, and the paid tool open (the
+    `bags_open` gate; always open while billing is off)."""
     producer: Producer | None = location.producer
     return bool(
         producer is not None
         and producer.status == "approved"
         and location.location_precision == "exact"
         and in_pilot(location.city)  # type: ignore[arg-type]
+        and (
+            not pricing.billing_is_on()
+            or paid_tools_open(billing_state(db, producer.id))
+        )
     )
+
+
+def cancelled_days_in_reach(db: Session, location_id: Any, today: date) -> list[date]:
+    """The days in reach (today, tomorrow) that have a bag that is not up: a
+    cancelled one. The routine never republishes them."""
+    first, last = reserve_days(today)
+    rows = (
+        db.query(RescueOffer.date)
+        .filter(
+            RescueOffer.producer_location_id == location_id,
+            RescueOffer.date >= first,
+            RescueOffer.date <= last,
+            RescueOffer.status != "active",
+        )
+        .distinct()
+        .all()
+    )
+    return sorted(day for (day,) in rows)
 
 
 def _has_offer(db: Session, location_id: Any, day: date) -> bool:
@@ -108,7 +134,9 @@ def _has_offer(db: Session, location_id: Any, day: date) -> bool:
     cancelled by hand must not come back on the next run."""
     return (
         db.query(RescueOffer.id)
-        .filter(RescueOffer.producer_location_id == location_id, RescueOffer.date == day)
+        .filter(
+            RescueOffer.producer_location_id == location_id, RescueOffer.date == day
+        )
         .first()
         is not None
     )
@@ -125,7 +153,7 @@ def publish_due(
     """Publish every scheduled day that has no bag yet; commits. Returns how
     many bags were published. Safe to run again: a day with any offer is left
     alone. `location_id` limits the run to one point (a save on the page)."""
-    db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"), {"k": _LOCK_KEY})
+    lock_offer_publishing(db)
     query = (
         db.query(ProducerLocation)
         .options(selectinload(ProducerLocation.producer))
@@ -136,30 +164,74 @@ def publish_due(
     published = 0
     for location in query.all():
         routine = stored(location)
-        if routine is None or routine.paused or not _can_host(location, in_pilot):
+        if routine is None or routine.paused or not can_host(db, location, in_pilot):
             continue
-        for day in _due_days(routine, today):
-            bag = _bag_for(location, routine, day)
-            # A window already over, or one whose reserve cut-off passed, is
-            # not offered: nobody could take it.
-            if bag.pickup_end <= now or _has_offer(db, location.id, day):
-                continue
-            db.add(bag)
-            published += 1
+        # One savepoint per point: a row the database refuses is logged and
+        # skipped, and every other business still gets its bags this run.
+        try:
+            with db.begin_nested():
+                published += _publish_point(db, location, routine, today, now)
+        except SQLAlchemyError:
+            log.exception("[RESCUE-SCHEDULE] publish failed location=%s", location.id)
     db.commit()
     return published
 
 
-def save_routine(location: ProducerLocation, body: RescueScheduleIn, today: date) -> None:
+def _publish_point(
+    db: Session,
+    location: ProducerLocation,
+    routine: RescueScheduleStored,
+    today: date,
+    now: datetime,
+) -> int:
+    count = 0
+    for day in _due_days(routine, today):
+        bag = _bag_for(location, routine, day)
+        # Not offered: a window whose reserve cut-off passed (nobody could
+        # take it), or one a clock change folded to nothing (an hour that does
+        # not exist that night).
+        if (
+            bag.pickup_end <= bag.pickup_start
+            or bag.pickup_end <= now + RESERVE_CLOSES_BEFORE_END
+            or _has_offer(db, location.id, day)
+        ):
+            continue
+        db.add(bag)
+        db.flush()
+        count += 1
+    return count
+
+
+def _raw_skips(location: ProducerLocation) -> list[date]:
+    """The skipped days of a routine that no longer validates, so a save that
+    replaces it does not silently bring those days back."""
+    raw = location.rescue_schedule
+    out: list[date] = []
+    values: list[Any] = (
+        list(raw.get("skip_dates") or []) if isinstance(raw, dict) else []
+    )
+    for value in values:
+        try:
+            out.append(date.fromisoformat(str(value)))
+        except ValueError:
+            continue
+    return out
+
+
+def save_routine(
+    location: ProducerLocation, body: RescueScheduleIn, today: date
+) -> None:
     """Write the routine, keeping the skipped days that are still ahead."""
     old = stored(location)
-    skips = [d for d in (old.skip_dates if old else []) if d >= today]
+    skips = [d for d in (old.skip_dates if old else _raw_skips(location)) if d >= today]
     location.rescue_schedule = RescueScheduleStored(  # type: ignore[assignment]
         **body.model_dump(), skip_dates=skips
     ).model_dump(mode="json")
 
 
-def set_skip(location: ProducerLocation, day: date, *, skip: bool, today: date) -> RescueScheduleStored:
+def set_skip(
+    location: ProducerLocation, day: date, *, skip: bool, today: date
+) -> RescueScheduleStored:
     """Add or remove one skipped day; past days are dropped on every write.
     Raises ValueError for a day outside today … today + SKIP_DAYS_AHEAD or a
     point with no routine."""
@@ -176,4 +248,3 @@ def set_skip(location: ProducerLocation, day: date, *, skip: bool, today: date) 
     routine.skip_dates = sorted(skips)
     location.rescue_schedule = routine.model_dump(mode="json")  # type: ignore[assignment]
     return routine
-

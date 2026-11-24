@@ -355,9 +355,12 @@ class ProducerLocation(Base):
     pickup_note = Column(Text, nullable=True)
     # MEH-3703: the weekly surprise-bag routine at this point — weekdays,
     # window, qty, price, paused, skipped dates. Its shape is
-    # schemas/rescue.py RescueSchedule; services/rescue_schedule.py publishes
+    # schemas/rescue_schedule.py RescueScheduleStored; services/rescue_schedule.py publishes
     # from it. NULL = no routine. A column, not a table (revision docstring).
-    rescue_schedule = Column(JSONB, nullable=True)
+    # none_as_null: Python None must write SQL NULL, not the JSON value null,
+    # which the CHECK (an object or NULL) refuses — a DELETE of the routine
+    # would otherwise fail.
+    rescue_schedule = Column(JSONB(none_as_null=True), nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -394,6 +397,11 @@ class ProducerLocation(Base):
         CheckConstraint(
             "location_precision IN ('exact', 'approximate')",
             name="producer_location_precision",
+        ),
+        # MEH-3703, mirrored from revision b7d9f1a3c5e8.
+        CheckConstraint(
+            "rescue_schedule IS NULL OR jsonb_typeof(rescue_schedule) = 'object'",
+            name="producer_locations_rescue_schedule_check",
         ),
     )
 

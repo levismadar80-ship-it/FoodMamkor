@@ -26,6 +26,9 @@ ALL_WEEKDAYS = 127
 SKIP_DAYS_AHEAD = 14
 # 12 hours: the longest «cancel up to N before pickup» a business is offered.
 MAX_CANCEL_MINUTES = 12 * 60
+# ₪10,000. A bound, so an absurd price is a 422 at save and never an
+# integer overflow in the hourly job (the columns are INTEGER).
+MAX_AGOROT = 1_000_000
 _HHMM = r"^([01][0-9]|2[0-3]):[0-5][0-9]$"
 
 
@@ -42,9 +45,9 @@ class RescueScheduleIn(BaseModel):
     pickup_end: str = Field(pattern=_HHMM)
     cancel_minutes: StrictInt = Field(default=60, ge=0, le=MAX_CANCEL_MINUTES)
     qty: StrictInt = Field(ge=1, le=RESCUE_MAX_QTY_PER_OFFER)
-    price_agorot: StrictInt = Field(ge=0)
-    value_min_agorot: StrictInt | None = Field(default=None, ge=0)
-    value_max_agorot: StrictInt | None = Field(default=None, ge=0)
+    price_agorot: StrictInt = Field(ge=0, le=MAX_AGOROT)
+    value_min_agorot: StrictInt | None = Field(default=None, ge=0, le=MAX_AGOROT)
+    value_max_agorot: StrictInt | None = Field(default=None, ge=0, le=MAX_AGOROT)
     paused: bool = False
 
     @model_validator(mode="after")
@@ -64,7 +67,9 @@ class RescueScheduleIn(BaseModel):
 class RescueScheduleStored(RescueScheduleIn):
     """The column's JSON: the routine plus the days the business skipped."""
 
-    skip_dates: list[date_type] = Field(default_factory=list, max_length=SKIP_DAYS_AHEAD + 2)
+    skip_dates: list[date_type] = Field(
+        default_factory=list, max_length=SKIP_DAYS_AHEAD + 2
+    )
 
 
 class RescueScheduleRow(BaseModel):
@@ -75,4 +80,10 @@ class RescueScheduleRow(BaseModel):
     address: str | None = None
     city: str | None = None
     exact: bool
+    # False when the routine cannot publish right now (business not approved,
+    # town outside the pilot, paid tool closed): the strip then promises nothing.
+    publishing: bool = False
+    # Days the routine will not publish although they are on it: a bag there
+    # was cancelled (by hand or by a skip), and a cancelled day never comes back.
+    closed_days: list[date_type] = Field(default_factory=list)
     schedule: RescueScheduleStored | None = None

@@ -8184,6 +8184,7 @@ export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PU
  * Stop the routine. Bags already published stay, as a pause leaves them.
  * @summary Delete My Schedule
  */
+export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponsePublishingDefault = false;
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesDefault = 60;
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesMin = 0;
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesMax = 720;
@@ -8192,14 +8193,17 @@ export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteR
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePickupEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePickupStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePriceAgorotMin = 0;
+export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePriceAgorotMax = 1000000;
 
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneQtyMax = 20;
 
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneSkipDatesMax = 16;
 
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMaxAgorotOneMin = 0;
+export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMaxAgorotOneMax = 1000000;
 
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMinAgorotOneMin = 0;
+export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMinAgorotOneMax = 1000000;
 
 export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneWeekdaysMax = 127;
 
@@ -8208,19 +8212,21 @@ export const deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteR
 export const DeleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "closed_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date())),
   "exact": /*#__PURE__*/ zod.boolean(),
   "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "publishing": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponsePublishingDefault),
   "schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "cancel_minutes": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesMin)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesMax)), deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneCancelMinutesDefault),
   "paused": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePausedDefault),
   "pickup_end": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePickupEndRegExp)),
   "pickup_start": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePickupStartRegExp)),
-  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePriceAgorotMin)),
+  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePriceAgorotMin)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOnePriceAgorotMax)),
   "qty": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneQtyMax)),
   "skip_dates": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date()).check(/*#__PURE__*/ zod.maxLength(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneSkipDatesMax))),
-  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMaxAgorotOneMin)),/*#__PURE__*/ zod.null()])),
-  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMinAgorotOneMin)),/*#__PURE__*/ zod.null()])),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMaxAgorotOneMin)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMaxAgorotOneMax)),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMinAgorotOneMin)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneValueMinAgorotOneMax)),/*#__PURE__*/ zod.null()])),
   "weekdays": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(deleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteResponseScheduleOneWeekdaysMax))
 }).check(/*#__PURE__*/ zod.describe('The column\'s JSON: the routine plus the days the business skipped.')),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One pickup point on the settings page: its routine, or none.'))
@@ -8230,6 +8236,7 @@ export const DeleteMyScheduleProducersMeRescueLocationsLocationIdScheduleDeleteR
  * Set or change the routine, then publish any day already in reach.
  * @summary Save My Schedule
  */
+export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponsePublishingDefault = false;
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesDefault = 60;
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesMin = 0;
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesMax = 720;
@@ -8238,14 +8245,17 @@ export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutRespon
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePickupEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePickupStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePriceAgorotMin = 0;
+export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePriceAgorotMax = 1000000;
 
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneQtyMax = 20;
 
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneSkipDatesMax = 16;
 
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMaxAgorotOneMin = 0;
+export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMaxAgorotOneMax = 1000000;
 
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMinAgorotOneMin = 0;
+export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMinAgorotOneMax = 1000000;
 
 export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneWeekdaysMax = 127;
 
@@ -8254,19 +8264,21 @@ export const saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutRespon
 export const SaveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "closed_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date())),
   "exact": /*#__PURE__*/ zod.boolean(),
   "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "publishing": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponsePublishingDefault),
   "schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "cancel_minutes": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesMin)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesMax)), saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneCancelMinutesDefault),
   "paused": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePausedDefault),
   "pickup_end": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePickupEndRegExp)),
   "pickup_start": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePickupStartRegExp)),
-  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePriceAgorotMin)),
+  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePriceAgorotMin)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOnePriceAgorotMax)),
   "qty": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneQtyMax)),
   "skip_dates": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date()).check(/*#__PURE__*/ zod.maxLength(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneSkipDatesMax))),
-  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMaxAgorotOneMin)),/*#__PURE__*/ zod.null()])),
-  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMinAgorotOneMin)),/*#__PURE__*/ zod.null()])),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMaxAgorotOneMin)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMaxAgorotOneMax)),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMinAgorotOneMin)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneValueMinAgorotOneMax)),/*#__PURE__*/ zod.null()])),
   "weekdays": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(saveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutResponseScheduleOneWeekdaysMax))
 }).check(/*#__PURE__*/ zod.describe('The column\'s JSON: the routine plus the days the business skipped.')),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One pickup point on the settings page: its routine, or none.'))
@@ -8277,6 +8289,7 @@ export const SaveMyScheduleProducersMeRescueLocationsLocationIdSchedulePutRespon
  * one: a cancel told its buyers, and a bag that reappears would confuse them.
  * @summary Unskip My Day
  */
+export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponsePublishingDefault = false;
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesDefault = 60;
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesMin = 0;
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesMax = 720;
@@ -8285,14 +8298,17 @@ export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDele
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePickupEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePickupStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePriceAgorotMin = 0;
+export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePriceAgorotMax = 1000000;
 
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneQtyMax = 20;
 
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneSkipDatesMax = 16;
 
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMaxAgorotOneMin = 0;
+export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMaxAgorotOneMax = 1000000;
 
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMinAgorotOneMin = 0;
+export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMinAgorotOneMax = 1000000;
 
 export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneWeekdaysMax = 127;
 
@@ -8301,19 +8317,21 @@ export const unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDele
 export const UnskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "closed_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date())),
   "exact": /*#__PURE__*/ zod.boolean(),
   "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "publishing": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponsePublishingDefault),
   "schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "cancel_minutes": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesMin)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesMax)), unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneCancelMinutesDefault),
   "paused": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePausedDefault),
   "pickup_end": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePickupEndRegExp)),
   "pickup_start": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePickupStartRegExp)),
-  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePriceAgorotMin)),
+  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePriceAgorotMin)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOnePriceAgorotMax)),
   "qty": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneQtyMax)),
   "skip_dates": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date()).check(/*#__PURE__*/ zod.maxLength(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneSkipDatesMax))),
-  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMaxAgorotOneMin)),/*#__PURE__*/ zod.null()])),
-  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMinAgorotOneMin)),/*#__PURE__*/ zod.null()])),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMaxAgorotOneMin)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMaxAgorotOneMax)),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMinAgorotOneMin)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneValueMinAgorotOneMax)),/*#__PURE__*/ zod.null()])),
   "weekdays": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(unskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDeleteResponseScheduleOneWeekdaysMax))
 }).check(/*#__PURE__*/ zod.describe('The column\'s JSON: the routine plus the days the business skipped.')),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One pickup point on the settings page: its routine, or none.'))
@@ -8322,12 +8340,14 @@ export const UnskipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayDele
 /**
  * Skip one day, so the routine does not publish it.
  *
- * A day whose bag is already up keeps it: the dashboard then cancels that
- * bag through POST /rescue/offers/{id}/cancel, the same «ביטול» that emails
- * its buyers. Skip first, cancel second, so the next run cannot put the bag
- * back between the two.
+ * A day whose bag is already up loses it in the same transaction, through
+ * cancel_whole_offer, the dashboard's «ביטול», so its buyers get the same
+ * email. If someone reserved that bag, the first call answers 409 and the
+ * dashboard asks; the second sends `cancel_reserved=true`. The bag is read
+ * under its row lock, so a reservation cannot slip in between.
  * @summary Skip My Day
  */
+export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponsePublishingDefault = false;
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesDefault = 60;
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesMin = 0;
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesMax = 720;
@@ -8336,14 +8356,17 @@ export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutRes
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePickupEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePickupStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePriceAgorotMin = 0;
+export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePriceAgorotMax = 1000000;
 
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneQtyMax = 20;
 
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneSkipDatesMax = 16;
 
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMaxAgorotOneMin = 0;
+export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMaxAgorotOneMax = 1000000;
 
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMinAgorotOneMin = 0;
+export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMinAgorotOneMax = 1000000;
 
 export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneWeekdaysMax = 127;
 
@@ -8352,19 +8375,21 @@ export const skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutRes
 export const SkipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "closed_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date())),
   "exact": /*#__PURE__*/ zod.boolean(),
   "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "publishing": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponsePublishingDefault),
   "schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "cancel_minutes": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesMin)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesMax)), skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneCancelMinutesDefault),
   "paused": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePausedDefault),
   "pickup_end": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePickupEndRegExp)),
   "pickup_start": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePickupStartRegExp)),
-  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePriceAgorotMin)),
+  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePriceAgorotMin)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOnePriceAgorotMax)),
   "qty": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneQtyMax)),
   "skip_dates": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date()).check(/*#__PURE__*/ zod.maxLength(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneSkipDatesMax))),
-  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMaxAgorotOneMin)),/*#__PURE__*/ zod.null()])),
-  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMinAgorotOneMin)),/*#__PURE__*/ zod.null()])),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMaxAgorotOneMin)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMaxAgorotOneMax)),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMinAgorotOneMin)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneValueMinAgorotOneMax)),/*#__PURE__*/ zod.null()])),
   "weekdays": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(skipMyDayProducersMeRescueLocationsLocationIdScheduleSkipsDayPutResponseScheduleOneWeekdaysMax))
 }).check(/*#__PURE__*/ zod.describe('The column\'s JSON: the routine plus the days the business skipped.')),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One pickup point on the settings page: its routine, or none.'))
@@ -8453,6 +8478,7 @@ export const MyPilotLocationsProducersMeRescuePilotLocationsGetResponse = /*#__P
  * Every pickup point of this business, with its routine or none.
  * @summary List My Schedules
  */
+export const listMySchedulesProducersMeRescueSchedulesGetResponsePublishingDefault = false;
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesDefault = 60;
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesMin = 0;
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesMax = 720;
@@ -8461,14 +8487,17 @@ export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePaus
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePickupEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePickupStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePriceAgorotMin = 0;
+export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePriceAgorotMax = 1000000;
 
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneQtyMax = 20;
 
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneSkipDatesMax = 16;
 
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMaxAgorotOneMin = 0;
+export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMaxAgorotOneMax = 1000000;
 
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMinAgorotOneMin = 0;
+export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMinAgorotOneMax = 1000000;
 
 export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneWeekdaysMax = 127;
 
@@ -8477,19 +8506,21 @@ export const listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneWeek
 export const ListMySchedulesProducersMeRescueSchedulesGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "closed_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date())),
   "exact": /*#__PURE__*/ zod.boolean(),
   "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "publishing": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMySchedulesProducersMeRescueSchedulesGetResponsePublishingDefault),
   "schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "cancel_minutes": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesMin)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesMax)), listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneCancelMinutesDefault),
   "paused": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePausedDefault),
   "pickup_end": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePickupEndRegExp)),
   "pickup_start": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.regex(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePickupStartRegExp)),
-  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePriceAgorotMin)),
+  "price_agorot": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePriceAgorotMin)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOnePriceAgorotMax)),
   "qty": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneQtyMax)),
   "skip_dates": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.iso.date()).check(/*#__PURE__*/ zod.maxLength(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneSkipDatesMax))),
-  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMaxAgorotOneMin)),/*#__PURE__*/ zod.null()])),
-  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMinAgorotOneMin)),/*#__PURE__*/ zod.null()])),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMaxAgorotOneMin)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMaxAgorotOneMax)),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMinAgorotOneMin)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneValueMinAgorotOneMax)),/*#__PURE__*/ zod.null()])),
   "weekdays": /*#__PURE__*/ zod.int().check(/*#__PURE__*/ zod.gte(1)).check(/*#__PURE__*/ zod.lte(listMySchedulesProducersMeRescueSchedulesGetResponseScheduleOneWeekdaysMax))
 }).check(/*#__PURE__*/ zod.describe('The column\'s JSON: the routine plus the days the business skipped.')),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('One pickup point on the settings page: its routine, or none.'))

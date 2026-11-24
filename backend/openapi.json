@@ -20688,6 +20688,7 @@
             "type": "string"
           },
           "price_agorot": {
+            "maximum": 1000000.0,
             "minimum": 0.0,
             "title": "Price Agorot",
             "type": "integer"
@@ -20701,6 +20702,7 @@
           "value_max_agorot": {
             "anyOf": [
               {
+                "maximum": 1000000.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -20713,6 +20715,7 @@
           "value_min_agorot": {
             "anyOf": [
               {
+                "maximum": 1000000.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -20764,6 +20767,14 @@
             ],
             "title": "City"
           },
+          "closed_days": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "title": "Closed Days",
+            "type": "array"
+          },
           "exact": {
             "title": "Exact",
             "type": "boolean"
@@ -20783,6 +20794,11 @@
             "format": "uuid",
             "title": "Producer Location Id",
             "type": "string"
+          },
+          "publishing": {
+            "default": false,
+            "title": "Publishing",
+            "type": "boolean"
           },
           "schedule": {
             "anyOf": [
@@ -20828,6 +20844,7 @@
             "type": "string"
           },
           "price_agorot": {
+            "maximum": 1000000.0,
             "minimum": 0.0,
             "title": "Price Agorot",
             "type": "integer"
@@ -20850,6 +20867,7 @@
           "value_max_agorot": {
             "anyOf": [
               {
+                "maximum": 1000000.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -20862,6 +20880,7 @@
           "value_min_agorot": {
             "anyOf": [
               {
+                "maximum": 1000000.0,
                 "minimum": 0.0,
                 "type": "integer"
               },
@@ -35190,7 +35209,7 @@
         ]
       },
       "put": {
-        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up keeps it: the dashboard then cancels that\nbag through POST /rescue/offers/{id}/cancel, the same «ביטול» that emails\nits buyers. Skip first, cancel second, so the next run cannot put the bag\nback between the two.",
+        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up loses it in the same transaction, through\ncancel_whole_offer, the dashboard's «ביטול», so its buyers get the same\nemail. If someone reserved that bag, the first call answers 409 and the\ndashboard asks; the second sends `cancel_reserved=true`. The bag is read\nunder its row lock, so a reservation cannot slip in between.",
         "operationId": "skip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__put",
         "parameters": [
           {
@@ -35211,6 +35230,16 @@
               "format": "date",
               "title": "Day",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cancel_reserved",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cancel Reserved",
+              "type": "boolean"
             }
           }
         ],
