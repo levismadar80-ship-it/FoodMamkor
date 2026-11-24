@@ -355,6 +355,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `claim-token.js` | Keep bearer tokens that arrive in a URL out of every URL after the first one — the owner-claim token (MEH-2321) and, since MEH-2974, the owner-INVITE token. … |
 | `client-messages.js` | MEH-2233: which message namespaces the ROOT client provider ships. |
 | `clipboard.js` | The one way to copy text on the site. It tries the Clipboard API, then the old textarea + execCommand path, and always answers true/false. … |
+| `closed-day-orders.js` | After the owner saves a vacation or a closed date, warn her about the orders she already accepted on those days, with the first few listed and a way to the … |
 | `cloudinary.js` | Cloudinary URL helper — injects f_auto,q_auto so images ship as WebP/AVIF with automatic quality. Safe for non-Cloudinary URLs (returned unchanged). |
 | `color-tokens.js` | MEH-3169: the design colour tokens as hex strings, for the JS places a Tailwind class cannot reach — canvas drawing, SVG attributes, Leaflet options and … |
 | `constants.js` | — אין כותרת — |
