@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Module:   product-order
+ * Module:   product-display-order
  * Purpose:  The ONE place that decides the order products are shown in, for
  *           the public business page and the owner's dashboard alike
  *           (MEH-3055). Two surfaces, one rule — never re-sort elsewhere.

@@ -8,7 +8,7 @@ order is pinned on the relationship: `position` first, unplaced products last.
 The rows are inserted in the OPPOSITE order of their positions, with an
 unplaced product first, so insertion (heap) order cannot pass for the owner's
 order. Products with no position keep no promised order among themselves —
-the frontend keeps API order for them (frontend/lib/product-order.js:29) — so
+the frontend keeps API order for them (frontend/lib/product-display-order.js:29) — so
 only "after every placed product" is asserted for them.
 """
 
