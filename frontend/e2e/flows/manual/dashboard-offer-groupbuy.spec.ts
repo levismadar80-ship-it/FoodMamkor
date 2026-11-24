@@ -124,9 +124,17 @@ test.describe("offer card — the custom type", () => {
   // MEH-3785: the way in is the «כלים» tile, one tap from the tab.
   test("the «הטבה» tile in «כלים» opens the offer page", async ({ page }) => {
     await stubEdit(page);
+    // «כלים» also mounts the request-a-review card for an approved business,
+    // which reads the review link; unstubbed, the fake token draws a 401
+    // (run 45349726596, the unstubbed-call guard).
+    await page.route("**/producers/me/review-link", (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: "https://mehamakor.co.il/p/e2e?rt=e2e-review-invite" }) }));
     await page.goto("/producer/dashboard/tools");
     const tile = page.getByTestId("tools-offer-tile");
     await expect(tile).toBeVisible({ timeout: 15_000 });
+    // The grid's group cards and the review card render after their reads, so
+    // the tile can move under the pointer (MEH-3449).
+    await layoutSettled(tile);
     await tile.click();
     await expect(page).toHaveURL(/\/producer\/dashboard\/offer$/);
     await expect(typeSelect(page)).toBeVisible();
