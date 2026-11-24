@@ -74,6 +74,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/events.py` | Events feature — sits on top of producers. |
 | `routers/experiences.py` | Public + authenticated routes for the experiences (community workshops) feature. |
 | `routers/favorites.py` | — אין כותרת — |
+| `routers/form_fill.py` | One route for every «fill the form from text» box on the owner dashboard (MEH-3740): POST /producers/me/ai-fill/{form} returns a draft of that form. … |
 | `routers/google_rating.py` | Serve the quiet public "Google rating" trust line for a producer — live star rating + review count fetched per-request from Google, only for producers an … |
 | `routers/group_buy_capacity.py` | The MEH-3592 group-buy routes: a participant changes her quantity, a visitor joins or leaves the waitlist of a full group, and the business changes its caps … |
 | `routers/group_buy_mine.py` | «הקבוצות שלי» (MEH-3609): the signed-in person's own group buys, so she can get back to one without the email link. |
@@ -130,6 +131,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/delivery_time.py` | One rule for «מגיע תוך 3–5 ימי עסקים» wherever it is stored (the business, a delivery zone — MEH-3511): whole business days within bounds, and the shorter end … |
 | `schemas/events.py` | Events, organisers and the event filters. |
 | `schemas/experiences.py` | Workshops (experiences) and their registrations. |
+| `schemas/form_fill.py` | The shared «fill the form from text» route (MEH-3740): the owner's free text in, a draft of one dashboard form out. Nothing is saved. |
 | `schemas/google_profile.py` | Response shapes for the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641). |
 | `schemas/group_buy_counts.py` | The public per-status count behind the /group-buys status tabs, so a tab with nothing in it is not drawn (MEH-3128). |
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
@@ -204,6 +206,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/experience_notifications.py` | Email notifications for the experiences moderation flow. |
 | `services/experience_sessions.py` | MEH-3441 (stage 2 of MEH-3264) — a recurring workshop's dates. An owner lists dates (date + time); … |
 | `services/farmer_declaration.py` | Server-side gate + record for the grower declaration («גידלתי בחלקתי בלבד») at producer registration, apart from the licensing declaration (declared_at / … |
+| `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
 | `services/group_buy_capacity.py` | What a group buy may still take — people, units, an open/closed switch — and who is told when a place frees (MEH-3592). |
@@ -485,6 +488,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `quick-answers.js` | Pure answer descriptors for the producer contact card's "Quick Answers" (MEH-1302) — turn the producer's already-public delivery and contact data into a small … |
 | `rating-gate.js` | MEH-1864 — rating data gate. |
 | `recently-viewed.js` | Recently-viewed producers — localStorage helpers (MEH-11). |
+| `recipe-draft.js` | Put a «יש לכם מתכון כתוב?» draft (MEH-3740) into the recipe form's state: a field the draft fills replaces the form's value, a field it leaves empty keeps … |
 | `recipe-lines.js` | MEH-2540: one recipe line-splitter for the page and its JSON-LD. |
 | `recipe-scale.js` | Scale the amount at the start of a free-text ingredient line when the reader changes the number of servings (MEH-3121; NYT Cooking / Allrecipes do the same). |
 | `region-pages.js` | Single owner of the category x region landing pages (MEH-2790) — the threshold, the path shape, and the region lookup. … |
@@ -625,9 +629,11 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `FadeInSection.jsx` | — אין כותרת — |
 | `FarmerDeclarationCheckbox.jsx` | The grower line («גידלתי בחלקתי בלבד») as a checkbox, for a business that moves into ירקות/פירות after registration. |
 | `FavoriteButton.jsx` | — אין כותרת — |
+| `FieldHelpLabel.jsx` | A form field's label with a small «?» beside it that opens a one-line explanation of the field under the label (MEH-3740). … |
 | `FilterSheet.jsx` | — אין כותרת — |
 | `Footer.jsx` | MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with localeDetection off an /en reader landed on the Hebrew page. |
 | `FooterSlot.jsx` | MEH-731: locale-stripping usePathname (returns "/map" on /he/map and en/map) so the '=== "/map"' check below fires under next-intl [locale] routing — … |
+| `FormFillBox.jsx` | «יש לכם מתכון כתוב?» (MEH-3740): the owner pastes text she already has and the form fills itself as a draft. … |
 | `FridayDeliveryStrip.jsx` | — אין כותרת — |
 | `GalleryViewAllButton.jsx` | The «כל התמונות (n)» pill on a cover photo that opens the shared Lightbox at the first image. … |
 | `GoogleAuthButton.jsx` | <reference path="../types/browser-globals.d.ts" /> |

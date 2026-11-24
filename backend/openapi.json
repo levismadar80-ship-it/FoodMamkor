@@ -4546,6 +4546,44 @@
         "title": "ForgotPasswordRequest",
         "type": "object"
       },
+      "FormFillOut": {
+        "description": "Field key -> value. A field the text does not state is null, or an\nempty list for a list field; the form decides which keys it reads.",
+        "properties": {
+          "draft": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Draft",
+            "type": "object"
+          },
+          "form": {
+            "title": "Form",
+            "type": "string"
+          }
+        },
+        "required": [
+          "form",
+          "draft"
+        ],
+        "title": "FormFillOut",
+        "type": "object"
+      },
       "GoogleAuthRequest": {
         "properties": {
           "id_token": {
@@ -32317,6 +32355,63 @@
           }
         ],
         "summary": "Update My Producer",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/ai-fill/{form}": {
+      "post": {
+        "operationId": "fill_my_form_producers_me_ai_fill__form__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "form",
+            "required": true,
+            "schema": {
+              "title": "Form",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Fill My Form",
         "tags": [
           "producer-management"
         ]

@@ -1195,6 +1195,21 @@
       "errors": {
         "upload_image_failed": "Image upload failed",
         "rejected_default": "Content does not meet our criteria"
+      },
+      "help": {
+        "title": "The name shown at the top of the recipe and in site search.",
+        "description": "A sentence or two: what is special about the recipe and why to make it.",
+        "ingredients": "One ingredient per line, with the amount.",
+        "instructions": "One step per line, in order.",
+        "prep_time_min": "Minutes of hands-on work, without cooking or rising time.",
+        "cook_time_min": "Minutes in the oven or on the stove.",
+        "servings": "How many people the recipe serves, or how many pieces it makes.",
+        "image_url": "A photo of the finished dish. Daylight works best.",
+        "product_ids": "Your products used in the recipe. They appear under the recipe with a link to your page."
+      },
+      "fill": {
+        "title": "Have a written recipe?",
+        "intro": "Paste the recipe as it is, and we'll make a draft from it. Nothing is saved without your approval."
       }
     },
     "dashboard": {
