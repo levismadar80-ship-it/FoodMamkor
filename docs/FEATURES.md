@@ -100,7 +100,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
-| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749) |
+| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, bring in customers, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749), in its own group «להביא לקוחות» (MEH-3787) |
 | `/producer/dashboard/share` | «שיתוף»: the QR card and «ערכת שיתוף», approved business only, opened from «כלים» (MEH-3749) |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
 | `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
