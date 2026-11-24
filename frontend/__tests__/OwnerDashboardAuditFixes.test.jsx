@@ -118,6 +118,11 @@ describe("dashboard tab bar at phone width (MEH-2429 §10)", () => {
     const view = screen.getByTestId("dashboard-view-page");
     expect(view).toHaveAttribute("aria-label", nav.view_page);
     expect(view).toHaveAttribute("href", "/producer/p-1");
+    // MEH-3745: a bare eye was not read as "my page" — the word shows on a
+    // phone too, under the icon like the tabs beside it.
+    const label = screen.getByTestId("dashboard-view-page-label");
+    expect(label).toHaveTextContent(nav.view_page);
+    expect(label.className).not.toMatch(/\bhidden\b/);
   });
 
   // MEH-2916 (pilot A4): the same link, for a business that is not approved

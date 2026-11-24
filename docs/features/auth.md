@@ -16,6 +16,7 @@
 * `frontend/lib/safe-redirect.js` — יעד חזרה בטוח אחרי התחברות.
 * `frontend/components/LoginPromptModal.jsx` + `frontend/components/LoginPromptGoogle.jsx` — החלונית «רוצה לשמור?» שאורחת רואה בשמירה / עדכונים / ביקורת / שריון סל / הצטרפות לקבוצת רכישה (MEH-3679): Google בתוך החלונית (נשארים בדף, והפעולה נגמרת לבד דרך `frontend/lib/pending-action.js`), ו«היכנסו» ל-/login (MEH-3661).
 * `frontend/lib/use-gsi-redraw-on-resize.js` — מצייר מחדש את כפתור Google ברוחב החדש כשרוחב המסך משתנה, ב-`frontend/components/GoogleAuthButton.jsx` וב-`frontend/components/ProducerOAuthButtons.jsx` (MEH-3687).
+* `frontend/lib/use-gsi-reveal.js` — מסתיר את כפתור Google עד שהציור שלו מתייצב, ומציג אותו פעם אחת, בלי הבהוב (MEH-3744). `preloadGsiWhenIdle` ב-`frontend/lib/use-google-sign-in.js` טוען את הסקריפט של Google מראש, מ-`frontend/components/LoginPromptModal.jsx`: רק לאורחת שאישרה את כל העוגיות (`hasFullCookieConsent`, כמו האנליטיקס). בלי אישור, הבקשה ל-Google יוצאת רק כשהיא פותחת את החלונית בעצמה.
 * `frontend/lib/post-auth-return.js` — הדף שממנו לקוחה נרשמה באימייל, כדי שקישור האימות יחזיר אותה אליו (24 שעות, localStorage, MEH-3661).
 * `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
 * `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי מייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).
@@ -33,6 +34,7 @@
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
 * `frontend/__tests__/LoginPromptModalGoogle.test.jsx` · `frontend/__tests__/VerifyEmailReturnsToOrigin.test.jsx` · `frontend/__tests__/PostAuthReturn.test.js` — Google בחלונית, החזרה לדף אחרי אימות, ואירועי המדידה (MEH-3661). `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` — הצטרפות לקבוצת רכישה אחרי Google בחלונית (MEH-3679).
 * `frontend/__tests__/GsiButtonRedrawOnResize.test.jsx` — כפתור Google עוקב אחרי רוחב המסך (MEH-3687).
+* `frontend/__tests__/GsiReveal.test.jsx` — כפתור Google מוסתר עד שהוא מתייצב, ומוצג פעם אחת; טעינה מראש לאורחות בלבד (MEH-3744).
 * `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
 
 **מזהי רישום שזה מכסה.** `social_signup`.

@@ -8,6 +8,7 @@ import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
+import { useGsiReveal } from "@/lib/use-gsi-reveal";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
@@ -55,6 +56,9 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   useGoogleSignIn(clientId, handleCredentialResponse, drawButton);
   // MEH-3687: the width above is fixed at draw time; redraw when the screen narrows.
   useGsiRedrawOnResize(buttonRef, drawButton);
+  // MEH-3744: Google draws the button in stages (temporary copy → iframe with
+  // a blank label → final label). Hidden until it settles, then shown once.
+  const ready = useGsiReveal(buttonRef);
 
   if (!clientId) return null;
 
@@ -62,5 +66,14 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   // paints it — the late iframe pushed the form below it down 40px (CLS 0.03
   // per element on /login, /register, /favorites). ProducerOAuthButtons
   // already reserves its own container the same way.
-  return <div ref={buttonRef} className="w-full min-h-10" data-testid="google-auth-slot" data-gsi-slot="" />;
+  return (
+    <div
+      ref={buttonRef}
+      className={`w-full min-h-10 transition-opacity duration-150 motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      aria-hidden={ready ? undefined : true}
+      data-testid="google-auth-slot"
+      data-gsi-slot=""
+      data-gsi-ready={ready ? "" : undefined}
+    />
+  );
 }

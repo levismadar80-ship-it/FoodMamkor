@@ -29,6 +29,14 @@ import { israelToday } from "@/lib/israel-date";
 import { SkeletonList } from "@/components/Skeleton";
 import RegistrationsList from "@/components/RegistrationsList";
 
+// MEH-3753: the not-live note above the events list, per producer status.
+const NOT_LIVE_NOTE_KEY = {
+  draft: "pending_note",
+  pending: "pending_note",
+  rejected: "rejected_note",
+  inactive: "inactive_note",
+};
+
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
   const today = israelToday();
@@ -112,9 +120,12 @@ export default function ManageEventsPage() {
 
       {/* MEH-2784: events of an unapproved business are hidden from the public
           (events.py:241), and nothing here said so. */}
-      {user?.producer_status === "pending" && (
+      {/* MEH-3753: every status but approved is hidden, each with the note
+          that is true for it (a rejected or paused business is not waiting
+          for an approval). */}
+      {NOT_LIVE_NOTE_KEY[user?.producer_status] && (
         <p data-testid="events-pending-note" role="status" className="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-md px-4 py-3 mb-4">
-          {t("pending_note")}
+          {t(NOT_LIVE_NOTE_KEY[user.producer_status])}
         </p>
       )}
       {items === null ? (

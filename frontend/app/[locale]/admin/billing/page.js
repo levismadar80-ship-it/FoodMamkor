@@ -7,12 +7,12 @@ import { Receipt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { AdminBillingOverviewAdminBillingOverviewGetResponse as OverviewOut } from "@/lib/generated/api.zod";
 import InlineMessage from "@/components/ui/InlineMessage";
-import { formatPrice } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import { SkeletonTiles } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
 import BillingYearCard from "@/components/admin/BillingYearCard";
 import BillingCsvButton from "@/components/admin/BillingCsvButton";
+import { formatAgorot } from "@/lib/money";
 
 /**
  * Module:   admin/billing/page
@@ -45,13 +45,10 @@ const monthName = (label, locale) =>
     year: "numeric",
   });
 
-/** @param {number} agorot */
-const shekels = (agorot) => formatPrice(Math.round(agorot) / 100);
-
 /** An amount inside a sentence, kept left-to-right. @param {number} agorot */
 const amountOf = (agorot) =>
   function Amount() {
-    return <span dir="ltr">{shekels(agorot)}</span>;
+    return <span dir="ltr">{formatAgorot(agorot)}</span>;
   };
 
 const CARD = "rounded-lg border border-border bg-surface p-4";
@@ -139,7 +136,7 @@ function MonthCard({ data }) {
             dir="ltr"
             data-testid="admin-billing-would-pay"
           >
-            {shekels(data.would_pay_total_agorot)}
+            {formatAgorot(data.would_pay_total_agorot)}
           </dd>
         </div>
       </dl>

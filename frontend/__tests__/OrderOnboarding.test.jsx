@@ -88,6 +88,22 @@ describe("OrderSetupChecklist", () => {
     expect(screen.getByText(t.checklist.enabled)).toBeTruthy();
   });
 
+  // MEH-3745: a row read as a radio button (Sapir 23/11). Each line is a
+  // link with a caret at its end, and the missing ones are in the link colour.
+  it("every line is a link with a caret; a missing line is green", () => {
+    render(wrap(<OrderSetupChecklist settings={settings({ business_id_number: "512345678" })} windowsCount={0} orderableCount={0} />));
+    for (const key of ["business_id", "windows", "product", "enabled"]) {
+      const row = screen.getByTestId(`order-setup-${key}`);
+      expect(row.querySelector("a [data-testid='row-caret']")).not.toBeNull();
+    }
+    expect(screen.getByText(t.checklist.windows).className).toMatch(/\btext-primary\b/);
+    expect(screen.getByText(t.checklist.business_id).className).not.toMatch(/\btext-primary\b/);
+    // A done line's caret is grey too, so green means "still to do" only.
+    const caret = (key) => screen.getByTestId(`order-setup-${key}`).querySelector("[data-testid='row-caret']");
+    expect(caret("business_id").getAttribute("class")).toMatch(/\btext-fg-muted\b/);
+    expect(caret("windows").getAttribute("class")).toMatch(/\btext-primary\b/);
+  });
+
   it("0 missing on arrival: renders nothing", () => {
     const { container } = render(wrap(<OrderSetupChecklist settings={settings(SET)} windowsCount={1} orderableCount={1} />));
     expect(container.textContent).toBe("");

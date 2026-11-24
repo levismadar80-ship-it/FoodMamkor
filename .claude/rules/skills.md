@@ -35,12 +35,13 @@ it to the harness via symlinks under `.claude/skills/`.
 
 | Path | Role | Git mode | Count |
 |---|---|---|---|
-| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | **77** |
-| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | **77** |
+| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | **83** |
+| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | **83** |
 | `.claude/skills/<name>` | Real directory, or a symlink anywhere but `../../.agents/skills/<name>` — **fails Repo guards** (`[NOT-CANONICAL]`, MEH-1055) | — | **0** |
 
-_Counts re-measured 2026-11-23 (MEH-3730, `last30days` added): 77 / 77 / 0, and
-`skills-lock.json` locks **77**, exactly the `.agents/skills/` set. They read
+_Counts re-measured 2026-11-24 (MEH-3747, the six outreach / social skills
+added): 83 / 83 / 0, and `skills-lock.json` locks **83**, exactly the
+`.agents/skills/` set. They read 77 / 77 / 0 on 2026-11-23 (MEH-3730), and
 76 / 76 / 0 on 2026-11-09 (MEH-1055), and 72 / 72 / 3 on
 2026-08-03 (MEH-1861), when four skills were real, unlocked directories; the
 correction below records that state._
@@ -178,7 +179,7 @@ MEH-401 precedent._
 `approved_local_unlocked` is a deliberate escape hatch for skills that
 have been manually audited but whose source repo / SHA256 aren't yet
 declared in `skills-lock.json`. **No allowlist entry carries it today**
-(2026-11-23: all 77 read `approved`, and all 77 are locked). Until MEH-1055
+(2026-11-24: all 83 read `approved`, and all 83 are locked). Until MEH-1055
 four entries sat in this state while labelled `approved`, so the clock never
 started; Pass 2b of `audit-skills.sh` — run by `skills-layout-guard.sh` in the
 required Repo guards — now fails on that (`[UNLOCKED]`), and on this verdict

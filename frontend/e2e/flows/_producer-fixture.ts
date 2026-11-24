@@ -221,10 +221,12 @@ export async function assertDetailRendered(
   // crash naming the wrong cause.
   const probeOrigin = /^https?:\/\//.test(page.url()) ? new URL(page.url()).origin : "";
   if (producer.slug) {
+    // MEH-3708: without ?preview=1 a slugged id 308s to /{slug}, and the probe
+    // would report the slug page's status under the id route's name.
     siblingRoute = await page.request
-      .get(`${probeOrigin}/producer/${producer.id}`)
-      .then((r) => `GET /producer/${producer.id} → HTTP ${r.status()}`)
-      .catch((e) => `GET /producer/${producer.id} → probe failed: ${String(e)}`);
+      .get(`${probeOrigin}/producer/${producer.id}?preview=1`)
+      .then((r) => `GET /producer/${producer.id}?preview=1 → HTTP ${r.status()}`)
+      .catch((e) => `GET /producer/${producer.id}?preview=1 → probe failed: ${String(e)}`);
 
     // THE decisive datum. middleware.js:47-48 returns `res.ok` from exactly this
     // endpoint, so ANY non-2xx — 404, 500, 429 — rewrites to /__mm_not_found__
