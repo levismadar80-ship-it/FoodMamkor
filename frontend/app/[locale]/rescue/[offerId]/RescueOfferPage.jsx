@@ -16,6 +16,7 @@ import RatingCompact from "@/components/ui/RatingCompact";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { bagDay, fetchOffer, israelTime } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 import { producerPath } from "@/lib/producer-path";
 import useRescueReservation from "@/lib/use-rescue-reservation";
 
@@ -38,6 +39,7 @@ import RescueOfferDetails from "./RescueOfferDetails";
  * @param {{ offerId: string }} props
  */
 export default function RescueOfferPage({ offerId }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   const [offer, setOffer] = useState(/** @type {any} */ (undefined));
   const [failed, setFailed] = useState(false);
@@ -126,7 +128,7 @@ export default function RescueOfferPage({ offerId }) {
               first thing a buyer decides on, and on a phone the «where»
               section starts below the fold. */}
           <PickupLine
-            label={t(bagDay(offer.date) === "tomorrow" ? "offer_page.pickup_title_tomorrow" : "offer_page.pickup_title")}
+            label={t(bagDay(offer.date, day) === "tomorrow" ? "offer_page.pickup_title_tomorrow" : "offer_page.pickup_title")}
             text={`${israelTime(offer.pickup_start)}–${israelTime(offer.pickup_end)}`}
             testId="rescue-offer-pickup"
             className="mb-4"

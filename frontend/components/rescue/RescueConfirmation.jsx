@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 
 import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 
 /**
  * Module:   RescueConfirmation
@@ -23,6 +24,7 @@ import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
  *           cutoff the terms say it can no longer be cancelled)
  */
 export default function RescueConfirmation({ order, onCancel, cancelling = false }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // MEH-2737: the cancel link asks before it acts — one stray tap used to
   // give the bag away with no way back.
@@ -76,7 +78,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
       {from && until && (
         <p className="font-body-sm text-sm text-text mt-1" data-testid="rescue-confirmation-window">
           {/* MEH-3702: a bag for tomorrow says so; today's keeps the bare window. */}
-          {t(bagDay(order.date) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })}
+          {t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })}
         </p>
       )}
 
