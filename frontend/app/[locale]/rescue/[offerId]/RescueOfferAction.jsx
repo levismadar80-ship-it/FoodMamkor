@@ -57,11 +57,17 @@ export default function RescueOfferAction({ offer, reservation }) {
   const buttonRef = useRef(null);
   const available = !order && offer.state === "available";
   const buttonInView = useInView(buttonRef, available);
+  const pickupLine = [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null;
 
   if (order) {
     return (
       <div className="space-y-4" data-testid="rescue-offer-reserved">
-        <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+        <RescueConfirmation
+          order={order}
+          onCancel={cancel}
+          cancelling={busy}
+          place={{ name: offer.producer?.name, address: pickupLine }} // MEH-3704
+        />
         {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
           <AddToCalendarButton
             testId="rescue-offer-add-to-calendar"
@@ -70,7 +76,7 @@ export default function RescueOfferAction({ offer, reservation }) {
               start: offer.pickup_start,
               end: offer.pickup_end,
               title: t("offer_page.calendar_title", { business_name: offer.producer?.name ?? "" }),
-              location: [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null,
+              location: pickupLine,
               // The bag page is public, but the pickup code is not: no URL,
               // so the calendar entry never carries anything secret.
             }}
