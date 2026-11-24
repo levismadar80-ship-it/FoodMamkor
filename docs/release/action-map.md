@@ -596,7 +596,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` â
 | `/admin/audit-log` | GAP | `frontend/__tests__/AdminAuditLogPage.test.jsx:16` | covered |
 | `/admin/billing` | GAP | `frontend/__tests__/AdminBillingPage.test.jsx:37` | covered |
 | `/admin/category-requests` | GAP | GAP | GAP |
-| `/admin/content` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:853` | `frontend/__tests__/AdminContentCategoryDelete.test.jsx:3` | covered |
+| `/admin/content` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:859` | `frontend/__tests__/AdminContentCategoryDelete.test.jsx:3` | covered |
 | `/admin/copy` | GAP | GAP | GAP |
 | `/admin/experiences` | GAP | `frontend/__tests__/AdminExperiencesPage.test.jsx:5` | covered |
 | `/admin/group-buys` | GAP | `frontend/__tests__/AdminGroupBuysTransitions.test.jsx:13` | covered |
@@ -610,7 +610,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` â
 | `/admin/producers` | `frontend/e2e/flows/33-admin-producers-tab.spec.ts:94` | `frontend/__tests__/AdminApproveWithoutLicense.test.jsx:3` | covered |
 | `/admin/recipes` | `frontend/e2e/flows/20-admin-recipes-queue.spec.ts:58` | GAP | covered |
 | `/admin/reports` | `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:558` | `frontend/__tests__/AdminReportsPage.test.jsx:3` | covered |
-| `/admin/reviews` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:765` | `frontend/__tests__/AdminReviewDelete.test.jsx:3` | covered |
+| `/admin/reviews` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:771` | `frontend/__tests__/AdminReviewDelete.test.jsx:3` | covered |
 | `/admin/settings` | `frontend/e2e/flows/30-admin-panel-tabs.spec.ts:143` | GAP | covered |
 | `/admin/users` | `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:589` | `frontend/__tests__/AdminUsersDeleteAction.test.jsx:3` | covered |
 | `/admin/whatsapp-failures` | GAP | `frontend/__tests__/AdminWhatsappFailuresStuck.test.jsx:12` | covered |
