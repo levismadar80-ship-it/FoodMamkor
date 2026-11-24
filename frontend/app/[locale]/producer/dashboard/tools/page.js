@@ -25,7 +25,8 @@
  *           MEH-1428 chunk 2 (RequestReviewCard under the grid, approved only);
  *           MEH-3641 (the «הפרופיל שלכם בגוגל» tile); MEH-3723 (that tile moved
  *           to the edit tab); MEH-3749 (the «שיתוף» section became a tile; its
- *           page is share/page.js).
+ *           page is share/page.js); MEH-3787 (that tile got its own group,
+ *           «להביא לקוחות»).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -212,6 +213,25 @@ export default function ProducerDashboardToolsPage() {
             <RequestReviewCard />
           </section>
         )}
+        {/* MEH-3787: «שיתוף» is how a business brings customers in, not
+            content, so it gets a group of its own (Sapir 24/11), as Shopify
+            keeps Marketing apart from Content. The gate is the tile's: with
+            no tile there is no heading. */}
+        {approved && profile && profile.kind !== "organizer" && (
+          <section data-testid="tools-group-reach" className="mt-8">
+            <h2 className={H2}>{t("quick_links.groups.reach_heading")}</h2>
+            <div className={GRID}>
+              {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of
+                  their own (Sapir 23/11); this tile is its one entry. The line
+                  is two existing tool names, so no new copy. */}
+              <Link href="/producer/dashboard/share" data-testid="tools-share-tile" className={CARD}>
+                <ShareNetwork size={24} className="text-primary mb-2" aria-hidden="true" />
+                <p className="font-headline-md text-lg font-bold mb-1">{tShare("quiet_label")}</p>
+                <p className="text-sm text-fg-muted">{`${tFeat("qr_code.tile_title")} · ${tFeat("share_cards.tile_title")}`}</p>
+              </Link>
+            </div>
+          </section>
+        )}
         {/* MEH-590: producer recipes. MEH-3723: «הפרופיל בגוגל» moved to the
             edit tab's hub (GoogleProfileHubTile), next to the business details
             it checks. */}
@@ -223,17 +243,6 @@ export default function ProducerDashboardToolsPage() {
               <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
               <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
             </Link>
-            {/* MEH-3749: the QR card and «ערכת שיתוף» moved to a page of their
-                own (Sapir 23/11); this tile is its one entry. Same gates the
-                section had: approved business, never an organizer. The line is
-                two existing tool names, so no new copy. */}
-            {approved && profile && profile.kind !== "organizer" && (
-              <Link href="/producer/dashboard/share" data-testid="tools-share-tile" className={CARD}>
-                <ShareNetwork size={24} className="text-primary mb-2" aria-hidden="true" />
-                <p className="font-headline-md text-lg font-bold mb-1">{tShare("quiet_label")}</p>
-                <p className="text-sm text-fg-muted">{`${tFeat("qr_code.tile_title")} · ${tFeat("share_cards.tile_title")}`}</p>
-              </Link>
-            )}
           </div>
         </section>
       </div>
