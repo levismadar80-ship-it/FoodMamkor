@@ -190,7 +190,7 @@ A thread reports a bug it measured on staging or a preview (to Sapir, in a
 card, in a PR) only from the result of `verifyFinding` in
 `frontend/e2e/_verify-finding.mjs`. That function runs a known-bug control and
 a known-clean control first, then 3 runs, and calls the finding `confirmed`
-only if all 3 show the bug and each one saved a screenshot. Any other verdict
+only if all 3 show the bug and each saved its own screenshot file. Any other verdict
 is reported with its label, «חשד, לא מאומת». Measure after `waitForStable`
 (counted in frames), not after a fixed wait. Click through `clickInView`,
 which throws instead of letting Playwright scroll to the element first.

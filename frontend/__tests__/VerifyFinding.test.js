@@ -20,17 +20,19 @@ const controls = {
   clean: async () => clean,
 };
 const withShot = (m, i) => ({ ...m, screenshot: `/tmp/run-${i}.png` });
+// Screenshots in these cases are paths only; the on-disk check is its own case.
+const onDisk = () => true;
 
 describe("verifyFinding", () => {
   it("confirmed only when every run shows the bug and leaves a screenshot", async () => {
-    const r = await verifyFinding({ name: "back-scroll", controls, isBug, scenario: async (i) => withShot(broken, i) });
+    const r = await verifyFinding({ name: "back-scroll", controls, isBug, screenshotExists: onDisk, scenario: async (i) => withShot(broken, i) });
     expect(r.verdict).toBe("confirmed");
     expect(r.label).toBe(VERIFIED_LABEL);
     expect(r.runs).toHaveLength(3);
   });
 
   it("not-reproduced when no run shows the bug", async () => {
-    const r = await verifyFinding({ name: "back-scroll", controls, isBug, scenario: async (i) => withShot(clean, i) });
+    const r = await verifyFinding({ name: "back-scroll", controls, isBug, screenshotExists: onDisk, scenario: async (i) => withShot(clean, i) });
     expect(r.verdict).toBe("not-reproduced");
     expect(r.label).toBe(UNVERIFIED_LABEL);
   });
@@ -38,6 +40,7 @@ describe("verifyFinding", () => {
   it("inconsistent when the runs disagree — the shape of a one-off reading", async () => {
     const r = await verifyFinding({
       name: "back-scroll",
+      screenshotExists: onDisk,
       controls,
       isBug,
       scenario: async (i) => withShot(i === 0 ? broken : clean, i),
@@ -50,6 +53,7 @@ describe("verifyFinding", () => {
   it("no-evidence when every run shows the bug but one left no screenshot", async () => {
     const r = await verifyFinding({
       name: "back-scroll",
+      screenshotExists: onDisk,
       controls,
       isBug,
       scenario: async (i) => (i === 2 ? broken : withShot(broken, i)),
@@ -62,6 +66,7 @@ describe("verifyFinding", () => {
     let ran = 0;
     const r = await verifyFinding({
       name: "back-scroll",
+      screenshotExists: onDisk,
       controls: { bug: async () => clean, clean: async () => clean },
       isBug,
       scenario: async (i) => {
@@ -71,12 +76,14 @@ describe("verifyFinding", () => {
     });
     expect(r.verdict).toBe("instrument-failed");
     expect(r.reason).toBe("control.bug answered clean, expected bug");
+    expect(r.label).toBe(UNVERIFIED_LABEL);
     expect(ran).toBe(0);
   });
 
   it("instrument-failed when the clean control reads as a bug", async () => {
     const r = await verifyFinding({
       name: "back-scroll",
+      screenshotExists: onDisk,
       controls: { bug: async () => broken, clean: async () => broken },
       isBug,
       scenario: async (i) => withShot(broken, i),
@@ -88,6 +95,7 @@ describe("verifyFinding", () => {
   it("instrument-failed when a run throws — the 24/11 off-screen click", async () => {
     const r = await verifyFinding({
       name: "back-scroll",
+      screenshotExists: onDisk,
       controls,
       isBug,
       scenario: async (i) => {
@@ -99,25 +107,67 @@ describe("verifyFinding", () => {
     expect(r.reason).toMatch(/^run 1 threw: clickInView/);
   });
 
+  it("no-evidence when the runs reuse one screenshot path", async () => {
+    const r = await verifyFinding({
+      name: "back-scroll",
+      controls,
+      isBug,
+      screenshotExists: onDisk,
+      scenario: async () => ({ ...broken, screenshot: "/tmp/same.png" }),
+    });
+    expect(r.verdict).toBe("no-evidence");
+  });
+
+  it("no-evidence when a screenshot path was never written (the real disk check)", async () => {
+    const r = await verifyFinding({
+      name: "back-scroll",
+      controls,
+      isBug,
+      scenario: async (i) => ({ ...broken, screenshot: `/nonexistent/meh3814-run-${i}.png` }),
+    });
+    expect(r.verdict).toBe("no-evidence");
+    expect(r.label).toBe(UNVERIFIED_LABEL);
+  });
+
+  it("instrument-failed, not a raw throw, when a control throws or isBug throws on it", async () => {
+    const thrown = await verifyFinding({
+      name: "back-scroll",
+      controls: { bug: async () => Promise.reject(new Error("goto timed out")), clean: controls.clean },
+      isBug,
+      scenario: async (i) => withShot(broken, i),
+    });
+    expect(thrown.verdict).toBe("instrument-failed");
+    expect(thrown.reason).toBe("control.bug threw: goto timed out");
+    const badIsBug = await verifyFinding({
+      name: "back-scroll",
+      controls,
+      isBug: (m) => m.missing.field,
+      scenario: async (i) => withShot(broken, i),
+    });
+    expect(badIsBug.verdict).toBe("instrument-failed");
+    expect(badIsBug.label).toBe(UNVERIFIED_LABEL);
+  });
+
   it("refuses fewer than 3 runs and a missing control", async () => {
     await expect(verifyFinding({ name: "x", runs: 1, controls, isBug, scenario: async () => broken })).rejects.toThrow(/runs must be/);
     await expect(verifyFinding({ name: "x", controls: { bug: controls.bug }, isBug, scenario: async () => broken })).rejects.toThrow(
       /controls.bug and controls.clean/,
     );
+    await expect(verifyFinding({ controls, isBug, scenario: async () => broken })).rejects.toThrow(/name is required/);
   });
 });
 
 // A fake page whose value comes from a list, one entry per read.
-function pageReading(values) {
+function pageReading(values, { hidden = false } = {}) {
   let reads = 0;
   let frames = 0;
   return {
     evaluate: async (fn) => {
-      // The frame wait is the only call whose function takes no argument and
-      // mentions requestAnimationFrame.
+      // The frame wait is the only call that mentions requestAnimationFrame;
+      // it answers true when the page is hidden.
       if (String(fn).includes("requestAnimationFrame")) {
         frames++;
-        return undefined;
+        return hidden;
       }
       return values[Math.min(reads++, values.length - 1)];
     },
@@ -139,6 +189,17 @@ describe("waitForStable", () => {
     expect(page.frames).toBe(5);
   });
 
+  it("counts an undefined value like any other, not as already settled", async () => {
+    const page = pageReading([undefined, undefined, undefined]);
+    await expect(waitForStable(page, () => undefined, undefined, { frames: 3 })).resolves.toBeUndefined();
+    expect(page.reads).toBe(3);
+  });
+
+  it("throws instead of hanging when the page is hidden", async () => {
+    const page = pageReading([1, 1, 1], { hidden: true });
+    await expect(waitForStable(page, () => 1, undefined, { frames: 3 })).rejects.toThrow(/page is hidden/);
+  });
+
   it("throws when the value never settles", async () => {
     const page = pageReading(Array.from({ length: 50 }, (_, i) => i));
     await expect(waitForStable(page, () => window.scrollY, undefined, { frames: 3, maxFrames: 20 })).rejects.toThrow(
@@ -147,12 +208,17 @@ describe("waitForStable", () => {
   });
 });
 
-function fakeClick({ box, viewport = { width: 390, height: 844 }, scrollY = 1200 }) {
+function fakeClick({ box, viewport = { width: 390, height: 844 }, scrollY = 1200, trialScrollsTo }) {
   let clicked = 0;
-  const page = { viewportSize: () => viewport, evaluate: async () => scrollY };
+  let y = scrollY;
+  const page = { viewportSize: () => viewport, evaluate: async () => y };
   const locator = {
     boundingBox: async () => box,
-    click: async () => {
+    click: async (opts) => {
+      if (opts?.trial) {
+        if (trialScrollsTo !== undefined) y = trialScrollsTo;
+        return;
+      }
       clicked++;
     },
   };
@@ -174,6 +240,18 @@ describe("clickInView", () => {
 
   it("throws without clicking when the element is above the viewport", async () => {
     const f = fakeClick({ box: { x: 16, y: -40, width: 358, height: 300 } });
+    await expect(clickInView(f.page, f.locator)).rejects.toThrow(/not fully in the viewport/);
+    expect(f.clicks()).toBe(0);
+  });
+
+  it("throws without clicking when the element is in view but getting to it scrolls (under the BottomNav)", async () => {
+    const f = fakeClick({ box: { x: 16, y: 760, width: 358, height: 60 }, trialScrollsTo: 1290 });
+    await expect(clickInView(f.page, f.locator)).rejects.toThrow(/scrolled the page \(1200 → 1290\)/);
+    expect(f.clicks()).toBe(0);
+  });
+
+  it("throws without clicking when the element overflows the viewport sideways", async () => {
+    const f = fakeClick({ box: { x: 200, y: 200, width: 358, height: 100 } });
     await expect(clickInView(f.page, f.locator)).rejects.toThrow(/not fully in the viewport/);
     expect(f.clicks()).toBe(0);
   });

@@ -32,6 +32,8 @@
  *     when the click would scroll the page.
  */
 
+import { existsSync } from "node:fs";
+
 export const VERIFIED_LABEL = "מאומת";
 export const UNVERIFIED_LABEL = "חשד, לא מאומת";
 
@@ -59,11 +61,14 @@ const MIN_RUNS = 3;
  *   scenario: (run: number) => Promise<M>,
  *   isBug: (measured: M) => boolean,
  *   screenshotOf?: (measured: M) => string | undefined,
+ *   screenshotExists?: (path: string) => boolean,
  * }} spec
  */
 export async function verifyFinding(spec) {
   const { name, runs = MIN_RUNS, controls, scenario, isBug } = spec;
   const screenshotOf = spec.screenshotOf ?? ((m) => m?.screenshot);
+  const screenshotExists = spec.screenshotExists ?? existsSync;
+  if (typeof name !== "string" || !name) throw new Error("verifyFinding: name is required");
   if (!Number.isInteger(runs) || runs < MIN_RUNS) {
     throw new Error(`verifyFinding: runs must be an integer ≥ ${MIN_RUNS}, got ${runs}`);
   }
@@ -74,13 +79,14 @@ export async function verifyFinding(spec) {
   const control = {};
   for (const [kind, expectBug] of [["bug", true], ["clean", false]]) {
     let measured;
+    let sawBug;
     try {
       measured = await controls[kind]();
+      sawBug = Boolean(isBug(measured));
     } catch (error) {
       control[kind] = { ok: false, error: String(error?.message ?? error) };
-      return finish(name, "instrument-failed", control, [], `control.${kind} threw`);
+      return finish(name, "instrument-failed", control, [], `control.${kind} threw: ${control[kind].error}`);
     }
-    const sawBug = Boolean(isBug(measured));
     control[kind] = { ok: sawBug === expectBug, sawBug, measured };
     if (sawBug !== expectBug) {
       return finish(name, "instrument-failed", control, [], `control.${kind} answered ${sawBug ? "bug" : "clean"}, expected ${expectBug ? "bug" : "clean"}`);
@@ -101,8 +107,11 @@ export async function verifyFinding(spec) {
   const bugs = results.filter((r) => r.bug).length;
   if (bugs === 0) return finish(name, "not-reproduced", control, results, `0 of ${runs} runs showed the bug`);
   if (bugs < runs) return finish(name, "inconsistent", control, results, `${bugs} of ${runs} runs showed the bug`);
-  if (results.some((r) => !r.screenshot)) {
-    return finish(name, "no-evidence", control, results, `${runs} of ${runs} runs showed the bug, but a run left no screenshot`);
+  // One file per run, and each one really on disk: a reused or never-written
+  // path is not a screenshot of that run.
+  const shots = results.map((r) => r.screenshot);
+  if (shots.some((s) => !s || !screenshotExists(s)) || new Set(shots).size !== runs) {
+    return finish(name, "no-evidence", control, results, `${runs} of ${runs} runs showed the bug, but not every run saved its own screenshot`);
   }
   return finish(name, "confirmed", control, results, `${runs} of ${runs} runs showed the bug, each with a screenshot`);
 }
@@ -115,6 +124,8 @@ function finish(name, verdict, control, runs, reason) {
 /**
  * Read `fn(arg)` in the page once per animation frame until it returns the
  * same value (JSON-equal) for `frames` reads in a row; return that value.
+ * Not `layoutSettled` (flows/_layout-settled.ts): that one watches an
+ * element's box and needs frames + 1 reads; this one watches any value.
  * Throws when it has not settled after `maxFrames` reads, naming the last two
  * values, so a value that never settles is reported, not measured.
  *
@@ -129,28 +140,37 @@ function finish(name, verdict, control, runs, reason) {
  * @returns {Promise<V>}
  */
 export async function waitForStable(page, fn, arg, { frames = 10, maxFrames = 600 } = {}) {
+  const UNSET = Symbol("unset");
   let last;
-  let lastKey;
+  let lastKey = UNSET;
   let same = 0;
   for (let read = 0; read < maxFrames; read++) {
     const value = await page.evaluate(fn, arg);
-    const key = JSON.stringify(value);
+    const key = JSON.stringify(value) ?? "undefined";
     same = key === lastKey ? same + 1 : 0;
     if (same >= frames - 1) return value;
     const previous = lastKey;
     last = value;
     lastKey = key;
     if (read === maxFrames - 1) {
-      throw new Error(`waitForStable: not stable after ${maxFrames} frames (last ${previous} → ${JSON.stringify(last)})`);
+      throw new Error(`waitForStable: not stable after ${maxFrames} frames (last ${String(previous)} → ${JSON.stringify(last)})`);
     }
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve())));
+    // rAF never fires on a hidden page; fail by name instead of hanging.
+    const hidden = await page.evaluate(() =>
+      document.visibilityState === "hidden" ? true : new Promise((resolve) => requestAnimationFrame(() => resolve(false))),
+    );
+    if (hidden) throw new Error("waitForStable: the page is hidden, so no frame will come");
   }
   throw new Error(`waitForStable: maxFrames must be ≥ 1, got ${maxFrames}`);
 }
 
 /**
- * Click `locator` only if it is fully inside the viewport, so the click does
- * not scroll the page first. Returns the scroll position at the moment of the
+ * Click `locator` only if it is fully inside the viewport and the click does
+ * not scroll the page first. Being in the viewport is not enough: an element
+ * under the sticky header or the BottomNav is in view, yet Playwright scrolls
+ * to get past what covers it. So a trial click runs first (Playwright's own
+ * actionability checks, including that scroll, without clicking), and any
+ * change of scrollY during it throws. Returns the scroll position at the moment of the
  * click, which is the "before" a measurement compares against.
  *
  * Playwright scrolls an element into view before clicking it. A probe that
@@ -175,6 +195,13 @@ export async function clickInView(page, locator) {
     );
   }
   const scrollYAtClick = await page.evaluate(() => window.scrollY);
+  await locator.click({ trial: true });
+  const afterTrial = await page.evaluate(() => window.scrollY);
+  if (afterTrial !== scrollYAtClick) {
+    throw new Error(
+      `clickInView: getting to the element scrolled the page (${scrollYAtClick} → ${afterTrial}); something covers it (sticky header, BottomNav). Pick another element.`,
+    );
+  }
   await locator.click();
   return { scrollYAtClick };
 }
