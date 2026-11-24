@@ -24,7 +24,8 @@ test.beforeEach(async ({ page }) => {
  *           real-browser stand-in for the vitest click case quarantined in
  *           __tests__/Dashboard1DStates.test.jsx (MEH-2876: the click hung the
  *           vitest worker three times). Sapir 10/11: quarantine + prove the
- *           page in a browser.
+ *           page in a browser. MEH-3767: the card moved from the home to
+ *           «שיתוף» (/producer/dashboard/share), so the specs open that page.
  * Touches:  no backend. Auth + the three dashboard reads are stubbed with a
  *           profile complete enough to unlock the share card (MEH-964 gate).
  * Does NOT: test the copy / QR / analytics cards — Dashboard1DStates owns those.
@@ -96,7 +97,7 @@ const sharedState = (page: Page) =>
 test.describe("dashboard «שתפו» (MEH-2827 PR 8)", () => {
   test("with a share sheet: opens it with /p/{slug} as url, copies nothing", async ({ page }) => {
     await stub(page, { share: "ok" });
-    await page.goto("/he/producer/dashboard");
+    await page.goto("/he/producer/dashboard/share");
     await page.getByTestId("vanity-share").click({ timeout: 20_000 });
     await expect.poll(async () => (await sharedState(page)).shared).toHaveLength(1);
     const url = await shownUrl(page);
@@ -108,7 +109,7 @@ test.describe("dashboard «שתפו» (MEH-2827 PR 8)", () => {
 
   test("without a share sheet: copies the /p/{slug} link", async ({ page }) => {
     await stub(page, { share: "none" });
-    await page.goto("/he/producer/dashboard");
+    await page.goto("/he/producer/dashboard/share");
     await page.getByTestId("vanity-share").click({ timeout: 20_000 });
     await expect.poll(async () => (await sharedState(page)).copied).toHaveLength(1);
     const { shared, copied } = await sharedState(page);
@@ -118,7 +119,7 @@ test.describe("dashboard «שתפו» (MEH-2827 PR 8)", () => {
 
   test("a share sheet that fails (not a cancel): falls back to copying the link", async ({ page }) => {
     await stub(page, { share: "refused" });
-    await page.goto("/he/producer/dashboard");
+    await page.goto("/he/producer/dashboard/share");
     await page.getByTestId("vanity-share").click({ timeout: 20_000 });
     await expect.poll(async () => (await sharedState(page)).copied).toHaveLength(1);
     const { shared, copied } = await sharedState(page);

@@ -69,6 +69,8 @@ def _common(order: ProductOrder) -> dict[str, Any]:
         "slot_end": _aware(order.slot_end),  # type: ignore[arg-type]
         "items": [
             {
+                "product_id": line.product_id,  # MEH-3764
+                "variant_id": line.variant_id,
                 "name": line.name,
                 "variant_name": line.variant_name,  # MEH-3617
                 "qty": line.qty,

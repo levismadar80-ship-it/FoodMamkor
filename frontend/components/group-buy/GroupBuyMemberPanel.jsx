@@ -16,7 +16,8 @@ import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
-import { cancelUntilText } from "@/lib/group-buy-pickup"; // MEH-3610
+import { cancelUntilText, pickupWindowText } from "@/lib/group-buy-pickup"; // MEH-3610 · MEH-3734
+import { Link } from "@/i18n/navigation";
 
 const QTY_MIN = 1;
 const QTY_MAX = 100;
@@ -34,6 +35,19 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
   const room = typeof gb.units_left === "number" ? current + gb.units_left : QTY_MAX;
   const max = Math.min(QTY_MAX, room);
   const changed = Number(qty) !== current;
+  // MEH-3734: what happens next, in one line under the confirmation.
+  // A delivery-only group shows no pickup time, as on the page (MEH-3597).
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const pickupWhen = deliveryOnly ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  // Funded without a pickup time: the page header already says «צרו קשר עם…»,
+  // so the card adds nothing rather than repeat it (review, MEH-3734).
+  const next = !joinable
+    ? null
+    : gb.status === "funded"
+      ? pickupWhen && t("member_next_funded_pickup", { when: pickupWhen })
+      : cancelUntil && t("member_next_open", { date: cancelUntil });
+  // A cancelled or closed group has nothing left to pay for (edge-case audit).
+  const stillOn = gb.status === "open" || gb.status === "funded";
 
   const save = async () => {
     setError("");
@@ -62,6 +76,11 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
           </span>
         )}
       </div>
+      {next && (
+        <p className="text-sm text-text text-center" data-testid="group-buy-member-next">{next}</p>
+      )}
+      {/* MEH-3734: the page's approved pay line, repeated where she now looks. */}
+      {stillOn && <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>}
       {joinable && full && (
         <p className="text-sm text-fg-muted text-center" data-testid="group-buy-full-member">{t("full_member")}</p>
       )}
@@ -88,15 +107,21 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
       {joinable && <GroupBuyLineTotal gb={gb} quantity={qty} />}
       {error && <InlineMessage>{error}</InlineMessage>}
       {joinable && (
-        <button
-          type="button"
+        // MEH-3734: leaving is a real button, not grey text («לא יודעת איך לבטל»).
+        <Button
+          variant="outlined"
+          size="md"
           onClick={onCancel}
           disabled={cancelling}
-          className="w-full text-sm text-fg-muted hover:text-error transition text-center"
+          className="w-full"
+          data-testid="group-buy-member-cancel"
         >
           {cancelling ? t("cancelling") : t("cancel_cta")}
-        </button>
+        </Button>
       )}
+      <Link href="/my-group-buys" className="block text-sm text-primary underline text-center" data-testid="group-buy-my-groups">
+        {t("member_my_groups")}
+      </Link>
       {/* MEH-3597: the leave rule lives in the page's «ביטול» section. */}
     </div>
   );

@@ -82,7 +82,7 @@ export const BUSINESS_FEATURES = [
   { id: "onboarding_emails", group: "page", status: "live", codeRef: ["backend/app/services/pending_nudge.py"] },
 
   // ── found ───────────────────────────────────────────────────────────────
-  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/app/[locale]/producer/dashboard/page.js"] },
+  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/components/producer/VanityLinkCard.jsx"] },
   { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CategoriesCard.jsx"] },
   { id: "similar_businesses", group: "found", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
