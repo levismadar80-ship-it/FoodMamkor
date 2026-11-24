@@ -729,7 +729,7 @@ erDiagram
         timestamp sent_at "indexed (user,producer,channel,sent_at)"
     }
 
-    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702)"
+    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702); rescue_schedule JSONB = the weekly routine the hourly job publishes from (MEH-3703)"
     rescue_offers ||--o{ rescue_orders : "reservations"
     rescue_orders ||--o| rescue_reviews : "one review each"
     users ||--o{ rescue_orders : "reserves"

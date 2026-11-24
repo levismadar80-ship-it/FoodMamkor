@@ -7428,6 +7428,38 @@
           "a": "On the bag's page and in the reservation email, with the pickup code."
         }
       }
+    },
+    "schedule": {
+      "title": "Weekly surprise-bag schedule",
+      "lead": "Pick the days and hours once, and the bag goes up on its own the day before. On a day with nothing left, skip it.",
+      "back": "Back to surprise bags",
+      "loading": "Loading…",
+      "failed": "We couldn't load the schedule. Try again in a moment.",
+      "no_points": "To set a schedule you need a pickup point with an exact address.",
+      "no_points_cta": "Add an address",
+      "point_not_exact": "This point has no exact address, so bags can't be published here.",
+      "days_label": "Which days",
+      "none_picked": "Pick at least one day",
+      "paused": "Pause the schedule",
+      "paused_help": "While paused, no new bags go up. Bags already up stay.",
+      "save": "Save schedule",
+      "saved": "Saved. Bags will go up on their own on the days you picked.",
+      "remove": "Remove schedule",
+      "removed": "Schedule removed. Bags already up stay.",
+      "upcoming_title": "Coming days",
+      "upcoming_help": "Tap a day to skip it or bring it back.",
+      "day_skipped": "Skipped",
+      "strip_on": "Tomorrow's schedule: {qty} bags at {price}, {from}–{to}",
+      "strip_on_at": "{place}, tomorrow's schedule: {qty} bags at {price}, {from}–{to}",
+      "strip_skipped": "Tomorrow is skipped, no bag",
+      "strip_skipped_at": "{place}: tomorrow is skipped, no bag",
+      "skip_tomorrow": "Skip tomorrow",
+      "unskip_tomorrow": "Undo skip",
+      "skip_has_orders": "Tomorrow already has reservations. Skipping cancels the bag and emails the buyers.",
+      "skip_yes": "Skip and cancel",
+      "skip_no": "Not now",
+      "setup_link": "Publish like this every week",
+      "edit_link": "Weekly schedule"
     }
   },
   "holidays": {
@@ -7894,6 +7926,10 @@
         "tip": "A discounted bag with what is left at the end of the day. The customer orders on the site and collects from you with a pickup code.",
         "tile_title": "Surprise bags",
         "tile_line": "For what is left at the end of the day, at a discount"
+      },
+      "rescue_schedule": {
+        "label": "A weekly surprise-bag schedule",
+        "tip": "Pick the days and hours once and the bag goes up on its own. On a day with nothing left, skip it."
       },
       "verified_badge": {
         "label": "A \"verified\" badge after a manual licence check",

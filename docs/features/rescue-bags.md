@@ -4,6 +4,8 @@
 
 **היום ומחר (MEH-3702).** בית עסק מפרסם סל להיום או למחר, ולקוחה משריינת אותו מאותו רגע. החלון אחד, `reserve_days` ב-`backend/app/services/rescue_reads.py`, והפרסום, הרשימה, דף הסל, השריון והרשימות של בית העסק קוראים כולם ממנו. מי ששריינה ביום קודם מקבלת ביום האיסוף ב-08:00 מייל תזכורת עם הקוד, החלון והביטול (`backend/app/services/rescue_reminders.py`, דרך תור המיילים). מי ששריינה ביום האיסוף עצמו לא מקבלת תזכורת. התזכורת נשלחת פעם אחת ביום גם אם המשימה רצה פעמיים. סל שהאיסוף שלו נגמר לפני 08:00 לא מקבל תזכורת. השרת מסרב לסל של מחר עם שעות של היום, ולחלון איסוף שכבר נגמר.
 
+**לוח קבוע (MEH-3703).** בית עסק קובע פעם אחת לכל נקודת איסוף: באילו ימים, באילו שעות, כמה סלים ובאיזה מחיר. הלוח נשמר ב-`producer_locations.rescue_schedule` (JSONB), ומשימה שרצה כל שעה (‏5 דקות אחרי השעה) מפרסמת סל רגיל ב-`rescue_offers` לכל יום בלוח שבחלון השריון (היום ומחר) ואין בו עדיין סל. יום שבית העסק ביטל בו סל ביד לא חוזר, כי כל סל באותו יום, גם מבוטל, חוסם פרסום. שמירה של הלוח מפרסמת מיד. ביום בלי עודפים מדלגים: שורה מתחת למונים בלשונית הסלים («לדלג על מחר»), ורשימת שבועיים בדף הלוח. דילוג על מחר כשהסל כבר עלה גם מבטל אותו דרך אותו «ביטול» של הכרטיס, ושואל קודם אם יש שריונים. סל מהלוח לא שולח התראה לעוקבים. השעות הן שעון הקיר בישראל, ו-zoneinfo מחשב את ההיסט לכל תאריך, כך שמעבר לשעון קיץ לא מזיז את האיסוף.
+
 **Flags — זה הפיצ'ר היחיד באתר שמאחורי flag.**
 * חזית: `NEXT_PUBLIC_RESCUE_BAGS_ENABLED`, נקרא דרך `frontend/lib/rescue.js` ‏(`rescueBagsEnabled()`).
 * שרת: `rescue_bags_enabled` ב-`backend/app/config.py`.
@@ -13,6 +15,7 @@
 * `frontend/app/[locale]/rescue/`
 * `frontend/app/[locale]/rescue/[offerId]/` — דף משלו לכל סל: מחיר מול שווי, איסוף, מפה, מה בדרך כלל בסל, אלרגנים, איך זה עובד, ביטול, שריון. קורא `GET /rescue/offers/{id}`, שמחזיר גם סל שאזל / בוטל / נסגר עם `state` (MEH-3586). השורה ב-`/rescue` והכרטיס בבית פותחים אותו. «הוראות איסוף» של נקודת האיסוף (`producer_locations.pickup_note`, נערכות עם הכתובת במיקומים) מופיעות שם מתחת לכתובת, כשיש (MEH-3593).
 * `frontend/app/[locale]/producer/dashboard/rescue/` ‏(+ `counter-card`)
+* `frontend/app/[locale]/producer/dashboard/rescue/schedule/` — הלוח הקבוע (MEH-3703)
 
 **קבצים מרכזיים**
 * `backend/app/routers/rescue.py` · `backend/app/routers/rescue_pilot.py` — אילו נקודות איסוף של העסק ביישוב פיילוט, לפני הטופס (MEH-2921)
@@ -26,6 +29,8 @@
 * `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי הפיילוט ב-`/admin/analytics` (`GET /admin/rescue/metrics`, MEH-3524); כשהפיילוט כבוי לא מוצג כלום.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
 * `backend/app/services/rescue_reminders.py` — תזכורת הבוקר של יום האיסוף, 08:00 שעון ישראל, פעם ביום (MEH-3702).
+* `backend/app/services/rescue_schedule.py` · `backend/app/schemas/rescue_schedule.py` — הלוח הקבוע: שמירה, דילוג, והפרסום של כל שעה (MEH-3703).
+* `frontend/components/dashboard/RescueScheduleStrip.jsx` · `frontend/components/dashboard/RescueScheduleForm.jsx` — השורה מתחת למונים ודף הלוח (MEH-3703).
 
 **טסטים**
 * `tests/test_rescue.py` · `tests/test_rescue_pilot.py` · `tests/test_rescue_migration.py`
@@ -35,6 +40,7 @@
 * `tests/test_meh2679_rescue_utc_times.py` · `tests/test_meh2808_rescue_bag_window.py` — חלון האיסוף.
 * `frontend/__tests__/AdminRescueMetrics.test.jsx` — מספרי הפיילוט באדמין.
 * `tests/test_meh3702_rescue_tomorrow.py` — סל של מחר: פרסום, שריון, רשימות, המייל «מחר», ותזכורת הבוקר (MEH-3702).
+* `tests/test_meh3703_rescue_schedule.py` · `frontend/__tests__/RescueSchedule.test.jsx` — הלוח הקבוע: ימים, דילוג, ביטול ביד שלא חוזר, מעבר שעון, בעלות, והשורה והדף (MEH-3703).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית רשימת הסלים (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 

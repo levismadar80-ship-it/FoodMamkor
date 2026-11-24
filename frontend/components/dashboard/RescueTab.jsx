@@ -11,8 +11,9 @@ import { israelWallClockToIso } from "@/lib/dates";
 import AllergenPicker from "@/components/AllergenPicker"; // MEH-3610
 import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
-import { bagDay, israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
+import { bagDay, israelTime, leftoverGroupUrl, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import RescueScheduleStrip from "@/components/dashboard/RescueScheduleStrip"; // MEH-3703
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { useOptionalAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -32,21 +33,15 @@ import Input from "@/components/ui/Input";
  */
 
 const DAY_MS = 86_400_000; // MEH-3702: one calendar day, for the publish date
-const MAX_QTY = 20;
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
-// Minutes before pickup_start that free cancellation ends, and the message key.
-const CANCEL_CUTOFFS = [
-  [30, "half_hour"],
-  [60, "hour"],
-  [120, "two_hours"],
-];
 
 // MEH-2730: the boxes a message can belong to (see `notice` below).
 const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish", items: "items", leftover: "leftover" };
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  const tSchedule = useTranslations("rescue.schedule"); // MEH-3703
   const emailUnverified = useOptionalAuth()?.user?.email_verified === false; // MEH-2918
   const [unverifiedHits, setUnverifiedHits] = useState(0);
   const tShare = useTranslations("share");
@@ -453,6 +448,9 @@ export default function RescueTab() {
         ))}
       </div>
 
+      {/* MEH-3703: tomorrow's routine bag, and «לדלג על מחר», under the counters. */}
+      {!gated && <RescueScheduleStrip offers={offers} orders={orders || []} onChanged={load} />}
+
       {/* MEH-2921 (d): the code box is for handing a bag over. A business
           that cannot publish and has no open order has nothing to hand over. */}
       {orders !== null && (!gated || counters.reserved > 0 || notice?.at === AT.code) && (
@@ -673,7 +671,7 @@ export default function RescueTab() {
               <Input inline size="xs"
                 type="number"
                 min={1}
-                max={MAX_QTY}
+                max={RESCUE_MAX_QTY}
                 value={form.qty_total}
                 onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
                 data-testid="rescue-publish-qty"
@@ -723,7 +721,7 @@ export default function RescueTab() {
                 data-testid="rescue-publish-cancel"
                 className="w-full border border-border rounded-sm px-2 py-1 mt-1 bg-surface-card text-text focus-ring"
               >
-                {CANCEL_CUTOFFS.map(([minutes, key]) => (
+                {RESCUE_CANCEL_CUTOFFS.map(([minutes, key]) => (
                   <option key={minutes} value={minutes}>
                     {t(`field.cancel_${key}`)}
                   </option>
@@ -749,6 +747,14 @@ export default function RescueTab() {
             {t("publish_tomorrow", { n: Number(form.qty_total) || 0, price: shekels(Number(form.price) * 100) ?? form.price })}
           </Button>
           {noticeAt(AT.publish)}
+          {/* MEH-3703: the same bag every week, set once on its own page. */}
+          <LocaleLink
+            href="/producer/dashboard/rescue/schedule"
+            data-testid="rescue-schedule-setup-link"
+            className="inline-flex items-center min-h-touch text-sm font-medium text-primary underline underline-offset-2 focus-ring rounded-sm"
+          >
+            {tSchedule("setup_link")}
+          </LocaleLink>
         </section>
       )}
 

@@ -40,6 +40,17 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE = 422;
 
+/** Bags in one offer: RESCUE_MAX_QTY_PER_OFFER in backend/app/models/rescue.py. */
+export const RESCUE_MAX_QTY = 20;
+/** Minutes before pickup_start that free cancellation ends, and the
+ *  `rescue.dashboard.field.cancel_*` key. Shared by the one-off publish form
+ *  and the weekly routine (MEH-3703). */
+export const RESCUE_CANCEL_CUTOFFS = /** @type {const} */ ([
+  [30, "half_hour"],
+  [60, "hour"],
+  [120, "two_hours"],
+]);
+
 export function rescueBagsEnabled() {
   return process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true";
 }
