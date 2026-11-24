@@ -93,6 +93,12 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
           const r = el.getBoundingClientRect();
           scrollTo(0, Math.max(0, scrollY + r.top - innerHeight / 2));
         });
+        // A card taller than the lower half of the screen sticks out below
+        // it, and Playwright's click would scroll it in first, so the place
+        // the reader leaves from is not the place `before` read (group buys
+        // on a phone: 11 px read, 241 px left from, 24/11). Let Playwright
+        // make its move now, before the offset is read.
+        await card.scrollIntoViewIfNeeded();
         await layoutSettled(card);
         const before = await page.evaluate(() => scrollY);
         const fromUrl = page.url();
