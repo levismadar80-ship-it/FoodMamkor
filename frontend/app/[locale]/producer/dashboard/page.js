@@ -20,6 +20,7 @@ import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
 import MonthValueLine from "@/components/producer/MonthValueLine";
 import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
+import { loadSettings } from "@/lib/product-orders";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import SupportContactSheet from "@/components/SupportContactSheet";
@@ -109,6 +110,18 @@ export default function ProducerDashboardPage() {
   const [analyticsAttempt, setAnalyticsAttempt] = useState(0);
   const [profileError, setProfileError] = useState(false);
   const [profileAttempt, setProfileAttempt] = useState(0);
+  // MEH-3817: whether each read has answered at least once (see firstPaintReady).
+  // MEH-3817: latched once the page has painted, so a later dip in
+  // firstPaintReady (a retried profile resets welcome.ready for a render)
+  // never sends the page back to the loading line.
+  const [paintedOnce, setPaintedOnce] = useState(false);
+  const [analyticsAnswered, setAnalyticsAnswered] = useState(false);
+  const [profileAnswered, setProfileAnswered] = useState(false);
+  // MEH-3817: the order settings decide the top slot's card (OrdersIntroCard),
+  // so they are read before the first paint too. undefined = not answered yet.
+  const [ordersSettings, setOrdersSettings] = useState(
+    /** @type {{ ok: boolean, value?: any } | undefined} */ (undefined),
+  );
   const [vacationUntil, setVacationUntil] = useState("");
   // MEH-999: reveal the return-date field the moment vacation is *selected*
   // (before the POST), breaking the chicken-and-egg where the field only
@@ -142,7 +155,8 @@ export default function ProducerDashboardPage() {
     setAnalyticsError(false);
     api.get("/producers/me/analytics")
       .then((r) => setAnalytics(r.data))
-      .catch(() => { setAnalytics(null); setAnalyticsError(true); });
+      .catch(() => { setAnalytics(null); setAnalyticsError(true); })
+      .finally(() => setAnalyticsAnswered(true));
   }, [user, authLoading, analyticsAttempt]);
 
   useEffect(() => {
@@ -150,8 +164,24 @@ export default function ProducerDashboardPage() {
     setProfileError(false);
     api.get("/producers/me")
       .then((r) => setProfile(r.data))
-      .catch(() => { setProfile(null); setProfileError(true); });
+      .catch(() => { setProfile(null); setProfileError(true); })
+      .finally(() => setProfileAnswered(true));
   }, [user, authLoading, profileAttempt]);
+
+  // Keyed on the id, not the user object: a fresh object per render would
+  // re-read forever, each answer being a new object.
+  const userId = user?.id;
+  const isProducerUser = user?.role === "producer";
+  useEffect(() => {
+    if (authLoading || !userId || !isProducerUser) return undefined;
+    let live = true;
+    loadSettings()
+      .then((value) => live && setOrdersSettings({ ok: true, value }))
+      .catch(() => live && setOrdersSettings({ ok: false }));
+    return () => {
+      live = false;
+    };
+  }, [userId, isProducerUser, authLoading]);
 
   // MEH-291 Phase 3 — unified 4-value availability enum. Replaces the
   // old toggleAvailability + setAvailabilityStatus pair. Backend
@@ -250,6 +280,20 @@ export default function ProducerDashboardPage() {
   const [slotOpenedWithAnalytics, setSlotOpenedWithAnalytics] = useState(
     /** @type {boolean | null} */ (null),
   );
+  // MEH-3817: the page paints once, when its four reads have answered (data,
+  // or an error). Painting on the first answer and growing as the others
+  // landed pushed the cards down by up to 0.6 CLS on a slow phone: the profile
+  // brings «לצפייה בעמוד», the banners and the checklist above the numbers,
+  // the numbers replace a one-line loading text, and the order settings put
+  // the orders intro card above «מה מחכה לך». The reads run in
+  // parallel, so this waits for the slowest one, not for their sum. The
+  // «answered» flags are never reset, so retrying a failed section never sends
+  // the whole page back to the loading line.
+  // The welcome decision (localStorage, read in an effect once the profile's
+  // created_at is in) opens the top slot, so it gates the paint as well:
+  // without it the welcome card landed 50 ms after the paint, above every card.
+  const firstPaintReady = profileAnswered && analyticsAnswered && ordersSettings !== undefined && welcome.ready;
+  if (data && firstPaintReady && !paintedOnce) setPaintedOnce(true);
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -279,10 +323,13 @@ export default function ProducerDashboardPage() {
       </div>
     );
   }
-  // Loading text only while the request is genuinely in flight.
-  if (!data) {
+  // Loading text only while a request is genuinely in flight (MEH-3817: all
+  // four, see firstPaintReady). min-h-screen keeps what follows the page (the
+  // phone's «התנתקות» row) below the screen while loading, so the page's
+  // arrival does not push it down in view.
+  if (!data || !(firstPaintReady || paintedOnce)) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
+      <div className="max-w-5xl mx-auto px-4 py-16 min-h-screen text-center text-fg-muted">
         {t("loading_data")}
       </div>
     );
@@ -433,7 +480,7 @@ export default function ProducerDashboardPage() {
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
         ) : (
           // MEH-3216: on-site ordering, once, before «חדש במהמקור».
-          <OrdersIntroCard fallback={<WhatsNewCard />} />
+          <OrdersIntroCard fallback={<WhatsNewCard />} settings={ordersSettings} />
         ))}
       <OwnerAttentionCard attention={data?.attention} isOrganizer={isOrganizer} />
 
