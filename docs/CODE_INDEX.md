@@ -261,6 +261,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/producer_insights.py` | The counting rules behind the business dashboard's numbers — page views, search appearances, WhatsApp clicks, other contact clicks and new followers — in ONE … |
 | `services/producer_listing.py` | Producer listing query builder. |
 | `services/producer_me_writes.py` | The owner PUT /producers/me write helpers — delivery areas, the active offer, the second phone, the gallery rules, the per-producer advisory lock, the … |
+| `services/producer_owner_update.py` | The owner's save of her own business card (PUT /producers/me): the writable-field set, the delivery/offer/category writes, and the admin pings that follow a … |
 | `services/producer_queries.py` | Producer query helpers — pure ORM utilities used by the producers router. |
 | `services/producer_recipe_moderation.py` | Claude Haiku pre-check on producer-submitted recipes before they enter the admin queue (MEH-589 chunk 2/4). |
 | `services/producer_risk.py` | Anthropic-Haiku-backed signup risk score (0-100) + one-sentence Hebrew reasoning, written to producers.risk_score / producers.risk_reasoning asynchronously … |

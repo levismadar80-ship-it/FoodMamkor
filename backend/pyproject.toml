@@ -450,6 +450,7 @@ files = [
     "app/services/form_fill_windows.py",
     "app/routers/form_fill.py",
     "app/schemas/form_fill.py",
+    "app/services/producer_owner_update.py",  # MEH-3841
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

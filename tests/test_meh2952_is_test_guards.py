@@ -202,7 +202,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         "blocking the only owner hides a live business — a state transition, "
         "test row or not (MEH-2871)",
     ),
-    "backend/app/routers/producer_me.py": (1, "the owner's own dashboard"),
+    "backend/app/services/producer_owner_update.py": (
+        1,
+        "the owner's own dashboard (moved from routers/producer_me.py, MEH-3841)",
+    ),
     "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
     "backend/app/services/product_order_outbox.py": (
