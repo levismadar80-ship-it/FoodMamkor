@@ -9,7 +9,7 @@
  *           client-only (see the SSR note below).
  * Does NOT: fetch, render, or decide colour/copy — the component owns that.
  *           It also does not SERIALIZE the editor model; that is the
- *           dashboard's lib/order-window.js (MEH-1544), a deliberately
+ *           dashboard's lib/order-window-editor.js (MEH-1544), a deliberately
  *           separate module on the write path.
  * Related:  frontend/lib/hours.js (DAY_KEYS + the Asia/Jerusalem idiom this
  *           mirrors), backend/app/schemas/schemas.py (_order_window_validator

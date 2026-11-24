@@ -65,7 +65,6 @@ js:shekels 2
 js:shortDate 3
 js:splitAroundAmount 2
 js:toHHMM 2
-js:toMinutes 2
 js:toRad 2
 js:writeCache 4
 py:_agorot 2
