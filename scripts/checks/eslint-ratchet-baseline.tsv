@@ -199,7 +199,6 @@ frontend/app/[locale]/map/state/useMapFilters.js	react-hooks/set-state-in-effect
 frontend/app/[locale]/map/state/useMapSync.js	sonarjs/no-unused-vars	2
 frontend/app/[locale]/map/state/useProducersFeed.js	react-hooks/exhaustive-deps	1
 frontend/app/[locale]/messages/page.js	design-system/no-html-heading	2
-frontend/app/[locale]/my-group-buys/MyGroupBuysClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/my-orders/MyOrdersClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/order/[id]/OrderStatusClient.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/organizers/[slug]/page.js	design-system/no-html-heading	1
