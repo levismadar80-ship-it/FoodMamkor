@@ -5212,6 +5212,15 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_14": {
+            "i0": "Before you open orders, you can see how the order form looks to customers. If something is missing, it says what to add.",
+            "i1": "Paste text and get a draft of a recipe, an event or your order settings. Every field has a «?» with a short explanation.",
+            "i2": "Surprise bags can now be listed for tomorrow too, and customers get a reminder on the morning of pickup day.",
+            "i3": "When you set a vacation or a closed day that has orders you already accepted, a message shows them.",
+            "i4": "The card for asking customers for a review now also appears at the top of the «Reviews» page.",
+            "i5": "The link to your page and your QR code are now in one place, «Share», in the «Tools» tab.",
+            "i6": "New category: «Cooked to order», for platters, salads and Shabbat meals."
+          },
           "v1_5_11": {
             "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",
             "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",

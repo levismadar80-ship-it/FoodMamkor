@@ -40,5 +40,6 @@
 * `frontend/__tests__/GoogleCodeSignIn.test.jsx` — הכפתור שלנו מופיע לפני שהסקריפט נטען, לחיצה פותחת את החלון, הקוד מוחלף, וסגירת החלון אינה שגיאה (MEH-3690).
 * `frontend/__tests__/GsiPreload.test.jsx` — טעינה מראש לאורחות בלבד (MEH-3744).
 * `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
+* `frontend/__tests__/AuthHydrationNoFallback.test.jsx` — ההגדרה הראשונה של מצב ההתחברות לא מחזירה דף שעדיין בהידרציה למסך הטעינה (`startTransition` ב-`frontend/lib/auth-context.js`, MEH-3828).
 
 **מזהי רישום שזה מכסה.** `social_signup`.
