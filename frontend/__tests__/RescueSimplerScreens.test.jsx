@@ -194,8 +194,9 @@ describe("each cancel link names its bag", () => {
     expect(screen.getByTestId("rescue-offers-today-title").textContent).toBe(D.offers_title_today);
     const label = screen.getByTestId("rescue-offer-cancel-label").textContent;
     expect(label).toContain("סל אחד");
-    expect(label).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}/);
-    expect(screen.getByTestId("rescue-offer-cancel").getAttribute("aria-label")).toMatch(/^לבטל את הסל, איסוף \d{2}:\d{2}–\d{2}:\d{2}$/);
+    // The window is isolated left-to-right, or RTL text shows it reversed.
+    expect(label).toMatch(/\u2066\d{2}:\d{2}–\d{2}:\d{2}\u2069/);
+    expect(screen.getByTestId("rescue-offer-cancel").getAttribute("aria-label")).toMatch(/^לבטל את הסל, איסוף \u2066\d{2}:\d{2}–\d{2}:\d{2}\u2069$/);
   });
 
   it("many bags: one labelled row each", async () => {

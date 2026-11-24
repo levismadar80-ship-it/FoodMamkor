@@ -364,6 +364,9 @@ export default function RescueTab() {
     // MEH-3702: today's first, so «הסלים של מחר» heads one run of rows.
     .sort((a, b) => Number(bagDay(a.date, day) === "tomorrow") - Number(bagDay(b.date, day) === "tomorrow"));
   const tomorrowBags = offers.some((o) => o.status === "active" && bagDay(o.date, day) === "tomorrow");
+  // MEH-3823: «18:00–20:00» inside Hebrew text reverses to «20:00–18:00»
+  // unless it is isolated left-to-right (LRI … PDI).
+  const pickupWindow = (o) => `\u2066${israelTime(o.pickup_start) || ""}–${israelTime(o.pickup_end) || ""}\u2069`;
   const openOn = (offerId) =>
     (orders || []).filter((o) => o.offer_id === offerId && o.status === "reserved").length;
   // MEH-2702: the group for the town of the point bags are published from,
@@ -787,11 +790,7 @@ export default function RescueTab() {
               // window and how many bags it holds.
               <div key={o.id} className="flex items-center justify-between gap-3 flex-wrap" data-testid="rescue-offer-cancel-row">
                 <span className="font-body-sm text-sm text-text" data-testid="rescue-offer-cancel-label">
-                  {t("cancel_offer_row", {
-                    from: israelTime(o.pickup_start) || "",
-                    until: israelTime(o.pickup_end) || "",
-                    count: o.qty_total,
-                  })}
+                  {t("cancel_offer_row", { window: pickupWindow(o), count: o.qty_total })}
                 </span>
                 <Button
                   variant="text"
@@ -800,10 +799,7 @@ export default function RescueTab() {
                     clearNotice();
                     setAskingOffer(o.id);
                   }}
-                  aria-label={t("cancel_offer_aria", {
-                    from: israelTime(o.pickup_start) || "",
-                    until: israelTime(o.pickup_end) || "",
-                  })}
+                  aria-label={t("cancel_offer_aria", { window: pickupWindow(o) })}
                   data-testid="rescue-offer-cancel"
                   className="underline"
                 >

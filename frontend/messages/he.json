@@ -7376,8 +7376,8 @@
       "allergens_toggle": "אלרגנים בסל · לא חובה",
       "allergens_count": "{count, plural, one {סומן אחד} other {סומנו #}}",
       "offers_title_today": "הסלים של היום",
-      "cancel_offer_row": "איסוף {from}–{until} · {count, plural, one {סל אחד} other {# סלים}}",
-      "cancel_offer_aria": "לבטל את הסל, איסוף {from}–{until}"
+      "cancel_offer_row": "איסוף {window} · {count, plural, one {סל אחד} other {# סלים}}",
+      "cancel_offer_aria": "לבטל את הסל, איסוף {window}"
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",
@@ -7409,7 +7409,7 @@
       "cancel_title": "ביטול",
       "cancel_body": "אפשר לבטל בחינם עד {time}. אחרי זה השריון נשאר בתוקף.",
       "cancel_passed": "מועד הביטול החינמי עבר, כך ששריון מעכשיו נשאר בתוקף.",
-      "no_show": "מי שלא מגיע לאסוף פעמיים נחסם משריונים.",
+      "no_show": "אחרי שני סלים שלא נאספו, השריון נעצר. לא מגיעים? כדאי לבטל, כדי שהסל יגיע למישהו אחר.",
       "business_link": "לדף של {name}",
       "state_sold_out": "הסל הזה אזל להיום.",
       "state_cancelled": "בית העסק ביטל את הסל של היום.",
