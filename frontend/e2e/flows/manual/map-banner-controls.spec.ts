@@ -157,6 +157,7 @@ test.describe("manual › /map canvas fits the viewport and the OSM attribution 
 // only (the CSS still loads), which is what a slow phone shows first.
 test.describe("manual › /map does not move when the page hydrates (MEH-3820)", () => {
   test.beforeEach(({}, info) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the Playwright project, which the product cannot move: the reserve exists only in the phone shell
     test.skip(info.project.name === "desktop", "the banner reserve and the in-flow bar are the mobile shell's");
   });
 
