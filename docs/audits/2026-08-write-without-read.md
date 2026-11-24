@@ -83,7 +83,7 @@
 |---|---|---|---|---|---|
 | `showErrorToast` | `lib/errors.js:163` | 0 | 0 | 5 | **wire או delete** — עוזר להצגת שגיאה שאף מסך לא קורא לו. או שהוא הדפוס המיועד ואף אחד לא חובר אליו, או שהוא נעקף ע"י `showToast.error` ישירות. להכריע ולבצע. |
 | `useFirstVisit` | `lib/useFirstVisit.js:9` | 0 | 0 | 1 | **delete** — הוק שכל תוכן הקובץ הוא הוא. אין קורא. אם נועד ל-onboarding שלא נבנה, למחוק ולפתוח כרטיס כשיידרש. |
-| `invalidDayIndices` | `lib/hours-serialize.js:98` | 0 | 0 | 4 | **wire** — התאום שלו `invalidOrderDayIndices` (`lib/order-window.js:148`) **כן** בשימוש פנימי. ולידציית שעות פתיחה כנראה חסרה את מה שולידציית חלון ההזמנות מקבלת. לבדוק לפני מחיקה. |
+| `invalidDayIndices` | `lib/hours-serialize.js:98` | 0 | 0 | 4 | **wire** — התאום שלו `invalidOrderDayIndices` (`lib/order-window-editor.js:148`) **כן** בשימוש פנימי. ולידציית שעות פתיחה כנראה חסרה את מה שולידציית חלון ההזמנות מקבלת. לבדוק לפני מחיקה. |
 
 הפקודה שאימתה את שלושתם (0 שורות שאינן ההגדרה או טסט):
 
@@ -109,9 +109,9 @@ cd frontend && grep -rn "\bshowErrorToast\b" --include=*.js --include=*.jsx . \
 | `CATEGORY_QUESTIONS` | `lib/categoryQuestions.js:9` | 1 |
 | `DEFAULT_QUESTIONS` | `lib/categoryQuestions.js:85` | 2 |
 | `CategorySchema` | `lib/api-schemas.js:23` | 1 |
-| `DEFAULT_ORDER_OPEN` | `lib/order-window.js:31` | 1 |
-| `DEFAULT_ORDER_CLOSE` | `lib/order-window.js:32` | 1 |
-| `emptyOrderRange` | `lib/order-window.js:47` | 2 |
+| `DEFAULT_ORDER_OPEN` | `lib/order-window-editor.js:31` | 1 |
+| `DEFAULT_ORDER_CLOSE` | `lib/order-window-editor.js:32` | 1 |
+| `emptyOrderRange` | `lib/order-window-editor.js:47` | 2 |
 | `emptyRange` | `lib/hours-serialize.js:39` | 2 |
 | `HOLIDAYS` | `lib/holidays.js:7` | 4 |
 | `OLD_TO_NEW` | `lib/i18n-key-map.js:6` | 1 |

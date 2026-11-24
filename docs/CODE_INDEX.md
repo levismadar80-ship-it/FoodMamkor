@@ -351,6 +351,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `business-chat-prompts.js` | The suggested questions in the chat opened from a business page, built from THAT page's data (MEH-3505). … |
 | `business-chat.js` | Open the site chat for ONE business from that business's page (MEH-3489). The page has no floating chat button (MEH-1168), so a button inside the page asks … |
 | `business-features.js` | Single owner of the tools a business gets on mehamakor — what exists, which group it belongs to, and which file implements it. … |
+| `buyer-order.js` | The buyer's side of one on-site order: read it, cancel it, accept the business's proposed change, and decide which approved sentences the status page shows … |
 | `card-image-priority.js` | How a grid card's photo loads, by its position in the grid. One owner, so /producers and the category/region landing grids agree. |
 | `category-label.js` | The one place a category's shown name is chosen: the locale's 'category_names.<slug>' message when the category has a known slug, else the DB name. … |
 | `category-registry.js` | Single source of truth for every category's presentation data — the map-PIN style (colour + pin glyph + the /map legend rows) AND the line-art glyph used on … |
@@ -459,9 +460,9 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
 | `order-setup-draft.js` | Put a «ספרו לנו איך אתם מקבלים הזמנות» draft (MEH-3752) into the three order-setup cards: the settings numbers, the weekly hand-over windows and the products … |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
-| `order-status.js` | The buyer's side of one on-site order: read it, cancel it, accept the business's proposed change, and decide which approved sentences the status page shows … |
+| `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |
-| `order-window.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
+| `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
 | `owner-preview.js` | One rule for "an owner or admin is opening an item that may not be public yet" (MEH-2977 follow-up). … |
 | `page-fill.js` | «ספרו לנו על העסק» (MEH-3483): turn the server's draft of the page fields into preview rows, and the rows the owner kept into the writes that save them. |
 | `pagination.js` | Pagination helpers (MEH-23). Pure functions — no React, no DOM. |
@@ -485,8 +486,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer-points.js` | Derive a producer's map-able points from its own data — the single answer to "where is this business on the map?", shared by the marker layer and the /map … |
 | `producer-route.js` | Single source of truth for "is this the public producer detail page?" — BOTH surfaces that render it: the '/producer/[id]' leaf (excluding the … |
 | `producer-status.js` | Producer status — render-only labels and color tokens. DB emits raw codes (draft / pending / approved / rejected / inactive — see … |
-| `product-order.js` | The ONE place that decides the order products are shown in, for the public business page and the owner's dashboard alike (MEH-3055). … |
-| `product-ordering.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
+| `product-display-order.js` | The ONE place that decides the order products are shown in, for the public business page and the owner's dashboard alike (MEH-3055). … |
 | `product-orders.js` | The one place on-site ordering's business-side fetches, list groups and money/time formatting live, so the dashboard screens never re-derive them. |
 | `product-price.js` | What a product's price is per (MEH-2936): «80₪ לבקבוק», «35₪–60₪ לק״ג», and for 'unit' just the price, so a product that never chose a unit reads exactly as … |
 | `product-variants.js` | The pure rules the business page and the order cart share about a product's sizes or flavours: the cart key of a line, the variant a line means, the «מ-X ₪» … |

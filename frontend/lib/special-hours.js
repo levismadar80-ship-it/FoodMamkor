@@ -9,7 +9,7 @@
  * Does NOT: derive "open now" or which override is in force — that is the
  *           public page's lib/order-window-status.js (`getOrderWindowStatus`,
  *           `getUpcomingSpecialDates`). Nothing here renders.
- * Related:  frontend/lib/order-window.js (range helpers REUSED verbatim, so
+ * Related:  frontend/lib/order-window-editor.js (range helpers REUSED verbatim, so
  *           a valid range means the same thing on both editors),
  *           frontend/lib/holidays.js (holidaysOn — the suggestion-chip source,
  *           per Sapir's 05/09 ruling; dates computed since MEH-3017),
@@ -20,7 +20,7 @@
 
 import { israelToday } from "@/lib/israel-date";
 import { holidaysOn } from "@/lib/holidays";
-import { canAddOrderRange, emptyOrderRange, orderDayIssues } from "@/lib/order-window";
+import { canAddOrderRange, emptyOrderRange, orderDayIssues } from "@/lib/order-window-editor";
 
 export const MAX_SPECIAL_NOTE_LENGTH = 200;
 // Mirrors `_MAX_SPECIAL_DATES` in the backend validator.
