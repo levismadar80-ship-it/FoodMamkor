@@ -83,16 +83,16 @@ beforeEach(() => {
   ROUTER.replace.mockClear();
 });
 
-describe("home — the view link renders from the profile's slug (MEH-2880)", () => {
-  it("an approved, complete business sees the view-public link, with the real dashboard payload", async () => {
+describe("home — no second page link and no share surface (MEH-2880 · MEH-3767 · MEH-3783)", () => {
+  it("an approved, complete business sees no view-public link on home (the tab bar's eye is the one)", async () => {
     render(<ProducerDashboardPage />);
-    const view = await screen.findByTestId("view-public-link");
-    expect(view.getAttribute("href")).toBe("/arugot-noam");
+    await screen.findByTestId("producer-overview");
+    expect(screen.queryByTestId("view-public-link")).toBeNull();
   });
 
   it("no share surface on home: no «הלינק שלי», no QR card, no «ערכת שיתוף» (MEH-3767)", async () => {
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("view-public-link");
+    await screen.findByTestId("producer-overview");
     expect(screen.queryByTestId("vanity-share")).toBeNull();
     expect(screen.queryByTestId("business-qr-card")).toBeNull();
     expect(screen.queryByTestId("share-kit-section")).toBeNull();

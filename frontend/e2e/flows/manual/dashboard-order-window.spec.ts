@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
-import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window";
+import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window-editor";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
  *           MT:MEH-1884:6-7 — see the drift block: the surfaces those rows
  *           describe no longer exist.
  * Related:  app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx ·
- *           lib/order-window.js (the rules the editor mirrors; imported here
+ *           lib/order-window-editor.js (the rules the editor mirrors; imported here
  *           so the expectations derive from the code, not from the doc)
  * History:  MEH-1249 chunk 11e.
  *
@@ -38,7 +38,7 @@ test.beforeEach(async ({ page }) => {
  *      blocks, and what it puts on the wire.
  *   2. `order_window` is a JSONB with a backend validator
  *      (backend/app/schemas/schemas.py `_order_window_validator`) that
- *      lib/order-window.js mirrors by declaration; the PUT contract is the
+ *      lib/order-window-editor.js mirrors by declaration; the PUT contract is the
  *      same one chunks 11c/11d capture.
  *   3. Reaching "three ranges on Sunday" honestly means PUTting to the shared
  *      staging backend CI points at — forbidden (Sapir 13/07).
@@ -60,7 +60,7 @@ test.beforeEach(async ({ page }) => {
  * D3 · MT:MEH-1884:6-7 describe a grey hint under the hours card's subtitle for
  *      a business that never saved hours. No consumer of that copy exists.
  * D4 · MT:MEH-1869:1 says the second range opens "13:00–15:00" after a
- *      09:00–13:00 range. The rule is lib/order-window.js `nextOrderRange` —
+ *      09:00–13:00 range. The rule is lib/order-window-editor.js `nextOrderRange` —
  *      asserted from that function, whatever its duration constant is.
  */
 
