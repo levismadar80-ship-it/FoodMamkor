@@ -86,6 +86,7 @@ NOT_FOR_CHAT: dict[str, str] = {
     "nav_buttons": _ON_THE_PAGE,
     "editor_pick": "editorial choice, not something a visitor or business requests",
     "review_request": _DASHBOARD,
+    "rescue_schedule": _DASHBOARD,  # MEH-3703: the weekly bag routine
     "views": _OWNER_INSIGHT,
     "search_impressions": _OWNER_INSIGHT,
     "contact_clicks": _OWNER_INSIGHT,

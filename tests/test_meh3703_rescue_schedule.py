@@ -359,6 +359,23 @@ class TestRoutes:
         assert shop["location"].rescue_schedule["skip_dates"] == []
         assert all(b.status == "active" for b in _bags(db, shop["location"]))
 
+    def test_no_token_is_refused_on_every_verb(self, client, shop, rescue_on):
+        loc = shop["location"].id
+        day = (rescue_module.israel_today() + timedelta(days=3)).isoformat()
+        r = client.get("/producers/me/rescue/schedules")
+        assert r.status_code == 401
+        r = client.put(
+            f"/producers/me/rescue/locations/{loc}/schedule", json=self._body()
+        )
+        assert r.status_code == 401
+        r = client.delete(f"/producers/me/rescue/locations/{loc}/schedule")
+        assert r.status_code == 401
+        r = client.put(f"/producers/me/rescue/locations/{loc}/schedule/skips/{day}")
+        assert r.status_code == 401
+        r = client.delete(f"/producers/me/rescue/locations/{loc}/schedule/skips/{day}")
+        assert r.status_code == 401
+        assert shop["location"].rescue_schedule is None
+
     def test_an_admin_is_not_an_owner_here(self, client, db, shop, rescue_on):
         admin = make_user(db, email="admin3703@example.com", role="admin")
         url = f"/producers/me/rescue/locations/{shop['location'].id}/schedule"
