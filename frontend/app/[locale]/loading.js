@@ -3,6 +3,7 @@
 
 import { useTranslations } from "next-intl";
 import BrandLoader from "@/components/BrandLoader";
+import { useScrollTopOnArrival } from "@/lib/route-memory";
 
 // MEH-2878: a CLIENT component on purpose. As a server component this file
 // called getTranslations("a11y") with no locale — loading.js gets no params —
@@ -22,6 +23,9 @@ import BrandLoader from "@/components/BrandLoader";
 export default function Loading() {
   // MEH-876: announce the loading state to assistive tech.
   const t = useTranslations("a11y");
+  // Open the coming page at its top, not at the list's scroll position — where
+  // only the footer was in view while the page loaded (lib/route-memory.js).
+  useScrollTopOnArrival();
   // MEH-2754: the wrapper is at least one screen tall. The loader alone is
   // 40vh (.brand-loader min-height), which on a phone left the site footer in
   // the first screen while the page streamed; when the real page arrived the

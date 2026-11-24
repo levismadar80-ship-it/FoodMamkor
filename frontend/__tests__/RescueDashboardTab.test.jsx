@@ -13,6 +13,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
+import { israelToday } from "@/lib/israel-date";
+import { israelWallClockToIso } from "@/lib/dates";
 
 function lookup(key) {
   return key.split(".").reduce((o, k) => (o == null ? o : o[k]), heMessages);
@@ -251,6 +253,20 @@ describe("publishing", () => {
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     await waitFor(() => expect(post).toHaveBeenCalled());
     expect(post.mock.calls[0][1].producer_location_id).toBe("loc1");
+  });
+
+  // MEH-3702: «18:00» is 18:00 in Israel whatever the device's zone (the
+  // runner is UTC, so the old setHours build sent 18:00 UTC = 20:00 Israel).
+  it("sends the hours and the day on the Israel clock", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const body = post.mock.calls[0][1];
+    const today = israelToday();
+    expect(body.date).toBe(today);
+    expect(body.pickup_start).toBe(israelWallClockToIso(`${today}T18:00`));
+    expect(body.pickup_end).toBe(israelWallClockToIso(`${today}T20:00`));
   });
 
   it("skips an approximate point (the server refuses it) and uses an exact one", async () => {

@@ -100,12 +100,13 @@ class TestMine:
         yesterday = _seed_offer(
             db, shop["location"], date=israel_today() - timedelta(days=1)
         )
-        tomorrow = _seed_offer(
-            db, shop["location"], date=israel_today() + timedelta(days=1)
+        # MEH-3702: tomorrow is now listed; the day after is the next one out.
+        later = _seed_offer(
+            db, shop["location"], date=israel_today() + timedelta(days=2)
         )
         for offer_id, code, status in (
             (yesterday.id, "9999", "reserved"),
-            (tomorrow.id, "8888", "reserved"),
+            (later.id, "8888", "reserved"),
             (today.id, "7777", "no_show"),
         ):
             db.add(

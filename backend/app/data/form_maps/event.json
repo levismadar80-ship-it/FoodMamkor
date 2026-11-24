@@ -1,0 +1,29 @@
+{
+  "form": "event",
+  "subject": "a post or a message about an event (a market, a harvest day, a tasting) that a small Israeli food business is holding",
+  "fields": [
+    {"key": "title", "type": "text", "max": 300, "ai": true,
+     "prompt": "the event's name, in Hebrew, as the text gives it"},
+    {"key": "description", "type": "text", "max": 2000, "ai": true, "claims": true,
+     "prompt": "two or three plain Hebrew sentences: what happens, who it suits, what to bring; only from the text"},
+    {"key": "category", "type": "enum", "values": ["שוק", "קטיף", "טעימות", "אחר"], "ai": true,
+     "prompt": "one of: שוק (a market), קטיף (picking or harvest), טעימות (a tasting), אחר (anything else); null if unclear"},
+    {"key": "event_date", "type": "date", "ai": true,
+     "prompt": "the day it takes place, YYYY-MM-DD; work out a weekday or «מחר» from today's date; null if the text gives no day"},
+    {"key": "event_time", "type": "time", "ai": true,
+     "prompt": "the start time, HH:MM in 24 hours; null if not given"},
+    {"key": "end_time", "type": "time", "ai": true,
+     "prompt": "the end time, HH:MM in 24 hours; null if not given"},
+    {"key": "location", "type": "text", "max": 300, "ai": true,
+     "prompt": "the address or the name of the place, as written"},
+    {"key": "city", "type": "city", "ai": true,
+     "prompt": "the Israeli city or town, in Hebrew, as written; null if not given"},
+    {"key": "price", "type": "int", "min": 0, "max": 100000, "ai": true,
+     "units": ["₪", "ש״ח", "ש\"ח", "ש''ח", "שח", "שקלים", "שקל", "NIS"], "zero_words": ["בחינם", "חינם", "ללא תשלום", "אין תשלום", "ללא עלות", "כניסה חופשית"],
+     "prompt": "the price per participant in shekels; 0 only if the text says it is free; null if not given"},
+    {"key": "max_participants", "type": "int", "min": 1, "max": 10000, "ai": true,
+     "units": ["משתתפים", "משתתפות", "מקומות", "אנשים", "איש"],
+     "prompt": "how many people can take part, only if the text gives a number"},
+    {"key": "image_url", "type": "image", "ai": false}
+  ]
+}

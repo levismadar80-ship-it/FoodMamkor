@@ -4546,6 +4546,60 @@
         "title": "ForgotPasswordRequest",
         "type": "object"
       },
+      "FormFillOut": {
+        "description": "Field key -> value. A field the text does not state is null, or an\nempty list for a list field; the form decides which keys it reads.",
+        "properties": {
+          "draft": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Draft",
+            "type": "object"
+          },
+          "form": {
+            "title": "Form",
+            "type": "string"
+          }
+        },
+        "required": [
+          "form",
+          "draft"
+        ],
+        "title": "FormFillOut",
+        "type": "object"
+      },
       "GoogleAuthRequest": {
         "properties": {
           "id_token": {
@@ -19430,6 +19484,11 @@
             "title": "Created At",
             "type": "string"
           },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "handed_at": {
             "anyOf": [
               {
@@ -19512,6 +19571,7 @@
           "status",
           "created_at",
           "price_agorot",
+          "date",
           "cancel_until",
           "pickup_start",
           "pickup_end",
@@ -20051,6 +20111,11 @@
             "title": "Created At",
             "type": "string"
           },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "handed_at": {
             "anyOf": [
               {
@@ -20123,6 +20188,7 @@
           "status",
           "created_at",
           "price_agorot",
+          "date",
           "cancel_until",
           "pickup_start",
           "pickup_end"
@@ -20214,6 +20280,11 @@
       "RescueOwnerOfferOut": {
         "description": "One of today's bags as the business's dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business's own report, capped at\n`leftover` by the API.",
         "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -20252,6 +20323,7 @@
         },
         "required": [
           "id",
+          "date",
           "qty_total",
           "qty_left",
           "status",
@@ -20281,6 +20353,11 @@
           "created_at": {
             "format": "date-time",
             "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
             "type": "string"
           },
           "handed_at": {
@@ -20337,6 +20414,7 @@
         "required": [
           "id",
           "offer_id",
+          "date",
           "qty",
           "pickup_code",
           "status",
@@ -32604,6 +32682,63 @@
         ]
       }
     },
+    "/producers/me/ai-fill/{form}": {
+      "post": {
+        "operationId": "fill_my_form_producers_me_ai_fill__form__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "form",
+            "required": true,
+            "schema": {
+              "title": "Form",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Fill My Form",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/analytics": {
       "get": {
         "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - share_visits (MEH-3331): visits through a link the owner shared, same shape\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
@@ -35021,7 +35156,7 @@
     },
     "/producers/me/rescue/offers": {
       "get": {
-        "description": "Today's bags across this business's pickup points, with what was left.\n\nToday only, by the Israel clock, like the orders list beside it.",
+        "description": "Today's and tomorrow's bags across this business's pickup points, with\nwhat was left.\n\nThe same two days, by the Israel clock, as the orders list beside it.",
         "operationId": "list_my_offers_producers_me_rescue_offers_get",
         "responses": {
           "200": {
@@ -35111,7 +35246,7 @@
     },
     "/producers/me/rescue/orders": {
       "get": {
-        "description": "Today's reservations across this business's pickup points.\n\nToday only, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
+        "description": "Today's and tomorrow's reservations across this business's pickup\npoints, today's first (MEH-3702).\n\nToday and tomorrow, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
         "operationId": "list_my_orders_producers_me_rescue_orders_get",
         "responses": {
           "200": {
@@ -36750,7 +36885,7 @@
     },
     "/rescue/offers": {
       "get": {
-        "description": "Today's bags that still have stock. Public — no auth.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
+        "description": "Today's and tomorrow's bags that still have stock (MEH-3702). Public.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
         "operationId": "list_offers_rescue_offers_get",
         "parameters": [
           {
@@ -36838,7 +36973,7 @@
         ]
       },
       "post": {
-        "description": "Publish today's bags at one pickup point.\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
+        "description": "Publish a bag for today or tomorrow at one pickup point (MEH-3702).\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
         "operationId": "create_offer_rescue_offers_post",
         "requestBody": {
           "content": {
@@ -36885,7 +37020,7 @@
     },
     "/rescue/offers/{offer_id}": {
       "get": {
-        "description": "One of today's bags, for its own page (MEH-3586). Public — no auth.\n\nA sold-out, cancelled or closed bag still answers, with `state` saying\nwhy; another day's bag, a test or unapproved business, or a town outside\nthe pilot answers 404 — the same set the list never shows.",
+        "description": "One of today's or tomorrow's bags, for its own page (MEH-3586). Public.\n\nA sold-out, cancelled or closed bag still answers, with `state` saying\nwhy; another day's bag, a test or unapproved business, or a town outside\nthe pilot answers 404 — the same set the list never shows.",
         "operationId": "get_offer_rescue_offers__offer_id__get",
         "parameters": [
           {
@@ -37025,7 +37160,7 @@
     },
     "/rescue/orders/mine": {
       "get": {
-        "description": "The caller's own live reservations on today's bags (MEH-2680).\n\nOnly the caller's rows, only today's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
+        "description": "The caller's own live reservations on today's and tomorrow's bags\n(MEH-2680, MEH-3702).\n\nOnly the caller's rows, only today's and tomorrow's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
         "operationId": "list_my_reservations_rescue_orders_mine_get",
         "responses": {
           "200": {

@@ -1,6 +1,7 @@
 """
 Module:   rescue
-Purpose:  The rescue-bags pilot API — a business publishes today's bags, a
+Purpose:  The rescue-bags pilot API — a business publishes today's or
+          tomorrow's bags (MEH-3702), a
           buyer reserves one and gets a 4-digit code, the business marks it
           handed or not-collected, and two no-shows in 30 days stop the buyer
           reserving again.
@@ -94,6 +95,8 @@ from app.sentry import capture_background_exception
 from app.services.rescue_business_emails import queue_business_reservation_email
 from app.services.rescue_emails import (
     ReservationEmail,
+    day_word,
+    israel_date,
     israel_hhmm,
     send_business_cancel_email,
     send_cancel_email,
@@ -242,7 +245,7 @@ def create_offer(
     current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ) -> RescueOfferOut | RescueOffer:
-    """Publish today's bags at one pickup point.
+    """Publish a bag for today or tomorrow at one pickup point (MEH-3702).
 
     NOT VALIDATED, and it is worth knowing why: the spec asks that
     `pickup_end` be at least 15 minutes before the business closes. There is
@@ -311,7 +314,7 @@ def list_offers(
     lng: float | None = Query(default=None, ge=-180, le=180),
     db: Session = Depends(get_db),
 ) -> list[RescueOfferPublicOut] | list[dict[str, Any]]:
-    """Today's bags that still have stock. Public — no auth.
+    """Today's and tomorrow's bags that still have stock (MEH-3702). Public.
 
     Sold-out and cancelled offers are omitted rather than greyed out: the list
     is "what you can still get tonight", and chunk 4 has no empty-stock state.
@@ -333,7 +336,7 @@ def get_offer(
     offer_id: UUID,
     db: Session = Depends(get_db),
 ) -> RescueOfferDetailOut | dict[str, Any]:
-    """One of today's bags, for its own page (MEH-3586). Public — no auth.
+    """One of today's or tomorrow's bags, for its own page (MEH-3586). Public.
 
     A sold-out, cancelled or closed bag still answers, with `state` saying
     why; another day's bag, a test or unapproved business, or a town outside
@@ -410,6 +413,7 @@ def _queue_business_cancel_emails(
             email,
             producer.name or "",
             test_cause=bool(producer.is_test),  # MEH-2952
+            tomorrow=day_word(offer.date, israel_today()) == "מחר",  # type: ignore[arg-type]  # MEH-3702
         )
 
 
@@ -424,9 +428,10 @@ def list_my_reservations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[RescueMyOrderOut] | list[dict[str, Any]]:
-    """The caller's own live reservations on today's bags (MEH-2680).
+    """The caller's own live reservations on today's and tomorrow's bags
+    (MEH-2680, MEH-3702).
 
-    Only the caller's rows, only today's offers (Israel date), only
+    Only the caller's rows, only today's and tomorrow's offers (Israel date), only
     `reserved` / `handed` — a no-show or a buyer's own cancel has no code
     left to say and nothing to review. Carries the same fields as the
     reservation response, so the confirmation renders from either without a
@@ -469,6 +474,7 @@ def _queue_reservation_email(
     if not user.email or producer is None:
         return
     address = ", ".join(p for p in (location.address, location.city) if p)
+    today = israel_today()
     background_tasks.add_task(
         send_reservation_email,
         user.email,  # type: ignore[arg-type]
@@ -488,6 +494,13 @@ def _queue_reservation_email(
                 else None
             ),
             pickup_note=_pickup_note(offer),
+            # MEH-3702: tomorrow's bag says «מחר», and so does its cutoff.
+            pickup_day=day_word(offer.date, today) or "היום",  # type: ignore[arg-type]
+            cancel_day=(
+                ""
+                if israel_date(offer.cancel_until) == today  # type: ignore[arg-type]
+                else day_word(israel_date(offer.cancel_until), today)  # type: ignore[arg-type]
+            ),
         ),
         # MEH-2952: a test business or a test buyer → dropped and logged.
         test_cause=bool(producer.is_test or user.is_test),
@@ -537,7 +550,9 @@ def create_order(
     # it into a 500: the buyer would read that as "not reserved" and retry.
     try:
         _queue_reservation_email(background_tasks, current_user, offer, order)
-        queue_business_reservation_email(background_tasks, db, offer, order)  # MEH-3313
+        queue_business_reservation_email(  # MEH-3313
+            background_tasks, db, offer, order, today=israel_today()
+        )
     except Exception as exc:  # noqa: BLE001 — fail-open by design (MEH-2715)
         capture_background_exception(exc, task="rescue_reservation_email")
         logger.error("rescue reservation email not queued: %s", type(exc).__name__)
@@ -682,9 +697,10 @@ def list_my_orders(
     current_user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> list[RescueOwnerOrderOut] | list[dict[str, Any]]:
-    """Today's reservations across this business's pickup points.
+    """Today's and tomorrow's reservations across this business's pickup
+    points, today's first (MEH-3702).
 
-    Today only, by the Israel clock: the dashboard is a counter tool, and a
+    Today and tomorrow, by the Israel clock: the dashboard is a counter tool, and a
     bag from last week is not something anyone hands over. Cancelled rows are
     included — a business that sees four codes and three people should be able
     to tell which one cancelled rather than wonder.
@@ -712,9 +728,10 @@ def list_my_offers(
     current_user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> list[RescueOwnerOfferOut] | list[dict[str, Any]]:
-    """Today's bags across this business's pickup points, with what was left.
+    """Today's and tomorrow's bags across this business's pickup points, with
+    what was left.
 
-    Today only, by the Israel clock, like the orders list beside it.
+    The same two days, by the Israel clock, as the orders list beside it.
     """
     if not current_user.producer_id:
         raise HTTPException(

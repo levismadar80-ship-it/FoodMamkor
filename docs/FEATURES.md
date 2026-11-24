@@ -103,6 +103,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749) |
 | `/producer/dashboard/share` | «שיתוף»: the QR card and «ערכת שיתוף», approved business only, opened from «כלים» (MEH-3749) |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
+| `/producer/dashboard/offer` | «הטבה»: the business's one offer to customers, from «כלים» › «להציע ללקוחות» (MEH-3785; was a card in the edit tab) |
 | `/producer/dashboard/google-profile` | «הפרופיל שלכם בגוגל»: Google Business Profile guide, owner self-link of the profile, live check that name, phone and website match (MEH-3641) |
 | `/producer/dashboard/events` | Manage events |
 | `/producer/dashboard/events/new` | Create an event |
