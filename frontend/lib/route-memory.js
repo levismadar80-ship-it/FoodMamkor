@@ -3,14 +3,16 @@
 
 /**
  * Module:   route-memory
- * Purpose:  Two small facts about client-side navigation that the page
- *           components cannot learn on their own:
+ * Purpose:  Small facts about client-side navigation that the page
+ *           components cannot learn on their own, and one use of them:
  *           1. useRevealSkip() — has the reader already been on this route in
  *              this tab? Entrance animations (fade + slide) play on the first
  *              visit only; coming BACK to a list shows it as it was.
  *           2. consumeHistoryReturn() — is this mount a return through the
  *              browser history (back / forward / reload), as opposed to a fresh
  *              arrival through a link (e.g. the logo)?
+ *           3. useScrollTopOnArrival() — a route loading fallback opens at the
+ *              top of the page after a link click (MEH-3800).
  * History:  MEH-2714 — on the homepage, back from a business card replayed the
  *           card entrance (cards at opacity 0 for ~0.5s), which read as "the
  *           whole page rendered again"; and a scroll position stashed by an
@@ -21,8 +23,12 @@
  * fresh, a client-side navigation keeps it. That is exactly the boundary we
  * want — a reload is a new visit, a back-navigation is not.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+
+// A loading fallback is also rendered on the server; React 18 warns about a
+// layout effect there (same pattern as components/ui/Tooltip.jsx).
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const leftPaths = new Set();
 let popPath = null;
@@ -107,4 +113,36 @@ export function consumeHistoryReturn() {
   }
   documentEntryConsumed = true;
   return false;
+}
+
+/**
+ * For a route loading fallback (every app/[locale] loading.js): put the window at
+ * the top when the fallback mounts after a link click.
+ *
+ * Why: the App Router scrolls to the new page only when the PAGE commits, not
+ * when its loading fallback shows. So after scrolling a list and tapping a
+ * card, the fallback (one screen tall, MEH-2754) rendered at the OLD scroll
+ * position — 900 px down on a 1.9-screen document — and the reader saw only the
+ * header and the site footer until the page arrived (staging, 24/11: 0.4 s on
+ * the business page, 0.8 s on an event page). The big sites (Airbnb, Wolt,
+ * Etsy) open the coming page at its top straight away.
+ *
+ * It does NOT scroll:
+ *  - on a back/forward step to this path — the browser (and the homepage's
+ *    MEH-2714 restore) owns that position;
+ *  - on the document's first route before any client navigation (a reload or
+ *    a direct visit), where the browser restores the reload position itself.
+ * A layout effect, so the jump happens before the fallback is painted.
+ */
+export function useScrollTopOnArrival() {
+  useIsomorphicLayoutEffect(() => {
+    const here = window.location.pathname;
+    if (popPath !== null && popPath === here) return;
+    if (here === entryPath && leftPaths.size === 0) return;
+    if (window.scrollY === 0) return;
+    // The two-number form: every engine has it, and with no `scroll-behavior`
+    // on the root (globals.css) it is instant. An options object with
+    // `behavior: "instant"` throws on some old engines — the MEH-3780 class.
+    window.scrollTo(0, 0);
+  }, []);
 }

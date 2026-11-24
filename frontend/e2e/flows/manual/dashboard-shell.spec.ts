@@ -722,15 +722,16 @@ test.describe("dashboard shell — tools tab", () => {
   // one tool, so it is a plain link to group buys. MEH-3641 added «הפרופיל
   // שלכם בגוגל» to the content group; MEH-3723 moved it to «עריכה», after «קשר».
   // MEH-3749: the «שיתוף» tile (its own page) joins the content group.
-  test("closed, the grid links four tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
+  // MEH-3785: the «הטבה» tile (its own page) joins «להציע ללקוחות».
+  test("closed, the grid links five tools; opening «אירועים» adds events and experiences, and the two removed cards stay gone", async ({
     page,
   }) => {
     await stubSession(page);
     const grid = await openTools(page);
 
-    await expect(grid.getByRole("link")).toHaveCount(4);
+    await expect(grid.getByRole("link")).toHaveCount(5);
     await grid.getByTestId("tool-group-events").getByRole("button").click();
-    await expect(grid.getByRole("link")).toHaveCount(6);
+    await expect(grid.getByRole("link")).toHaveCount(7);
 
     for (const href of [
       "/producer/dashboard/events",
@@ -741,6 +742,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/reviews",
       // MEH-3749: the share page (QR card + share kit).
       "/producer/dashboard/share",
+      // MEH-3785: the offer page.
+      "/producer/dashboard/offer",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
