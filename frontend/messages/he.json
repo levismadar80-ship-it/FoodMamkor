@@ -5848,7 +5848,6 @@
         "note_placeholder": "לדוגמה: ערב ראש השנה",
         "invalid_date": "תאריך לא תקין או כפול",
         "save_success": "השעות המיוחדות נשמרו",
-        "summary_empty": "לא הוגדר",
         "summary_set": "{count, plural, one {תאריך אחד} two {שני תאריכים} other {# תאריכים}}"
       },
       "payment_info": {
