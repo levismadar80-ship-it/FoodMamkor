@@ -124,6 +124,9 @@ export function StarRow({ value, size = 16, ariaLabel }) {
   );
 }
 
+// Reviews the list opens with ("הצג עוד" adds 3 more); also the loading rows (MEH-3819).
+const INITIAL_VISIBLE = 3;
+
 // MEH-1337: Google-style distribution — one row per star, 5★ first. Shown
 // only from DISTRIBUTION_MIN visible reviews (fewer has nothing to distribute).
 // Counts are the server's `rating_counts` over EVERY visible review, never
@@ -334,7 +337,7 @@ export default function ReviewsSection({
   const [page, setPage] = useState(1);
   // Reviews render 3-at-a-time; "הצג עוד" reveals +3 and appends the next
   // server page when the local buffer runs out (replaces the old carousel).
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);
   const [body, setBody] = useState("");
@@ -587,8 +590,12 @@ export default function ReviewsSection({
       )}
 
       {/* Reviews list */}
-      {loading ? (
-        <SkeletonList count={2} label={t("loading")} />
+      {/* MEH-3819: the section now mounts with the page, so its loading rows
+          stand in for the list in place: one row per review that will show
+          (up to the 3 the list opens with), and none for a business with no
+          reviews — its empty state is drawn at once, and the read confirms it. */}
+      {loading && total > 0 ? (
+        <SkeletonList count={Math.min(total, INITIAL_VISIBLE)} label={t("loading")} />
       ) : reviews.length === 0 ? (
         isOwner ? (
           <>

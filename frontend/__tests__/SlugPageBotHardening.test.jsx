@@ -117,9 +117,44 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
       params: { slug: "meshek-tamar", locale: "he" },
     });
     expect(jsx).toBeTruthy();
-    expect(serverFetch).toHaveBeenCalledTimes(1);
+    // MEH-3819: the producer first, then its three activity lists.
+    expect(serverFetch).toHaveBeenCalledTimes(4);
     expect(String(serverFetch.mock.calls[0][0])).toContain(
       "/producers/by-slug/meshek-tamar",
     );
+  });
+
+  // MEH-3819: the page arrives with its events, experiences and group buys,
+  // so they are not inserted above the reviews a moment after it paints.
+  it("hands the server-read activity lists to the page, or null when one read fails", async () => {
+    const list = (data) => ({ ok: true, json: async () => data });
+    serverFetch
+      .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
+      .mockResolvedValueOnce(list([{ id: "e1" }]))
+      .mockResolvedValueOnce(list([]))
+      .mockResolvedValueOnce(list([{ id: "g1" }]));
+    const detail = (jsx) => jsx.props.children.find((c) => c?.props?.initialProducer);
+    const page = await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
+    expect(detail(page).props.initialActivities).toEqual({
+      events: [{ id: "e1" }],
+      experiences: [],
+      groupBuys: [{ id: "g1" }],
+    });
+    const urls = serverFetch.mock.calls.slice(1).map((c) => String(c[0]));
+    expect(urls).toEqual([
+      expect.stringContaining("/events?producer_id=p-1"),
+      expect.stringContaining("/experiences?producer_id=p-1"),
+      expect.stringContaining("/group-buys?producer_id=p-1"),
+    ]);
+
+    serverFetch.mockReset();
+    serverFetch
+      .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
+      .mockResolvedValueOnce(list([]))
+      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+      .mockResolvedValueOnce(list([]));
+    const fallback = await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
+    // The browser reads them itself (useProducerActivities); the page still renders.
+    expect(detail(fallback).props.initialActivities).toBeNull();
   });
 });

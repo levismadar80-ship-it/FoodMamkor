@@ -106,15 +106,23 @@ function GroupBuyRow({ gb }) {
   );
 }
 
-export default function ProducerActivities({ producerId, events = [], sectionRefs }) {
+/**
+ * @param {{ producerId: string, events?: any[], experiences?: any[], groupBuys?: any[], sectionRefs?: any }} props
+ */
+export default function ProducerActivities({ producerId, events = [], experiences: givenExperiences, groupBuys: givenGroupBuys, sectionRefs }) {
   const t = useTranslations("producer.detail.sections");
-  const [groupBuys, setGroupBuys] = useState([]);
-  const [experiences, setExperiences] = useState([]);
+  // MEH-3819: the page reads the lists (useProducerActivities) so they paint
+  // with it; this component reads them itself only when it is given none.
+  const given = givenExperiences !== undefined && givenGroupBuys !== undefined;
+  const [ownGroupBuys, setGroupBuys] = useState([]);
+  const [ownExperiences, setExperiences] = useState([]);
+  const groupBuys = given ? givenGroupBuys : ownGroupBuys;
+  const experiences = given ? givenExperiences : ownExperiences;
   const [showAll, setShowAll] = useState(false);
   const [showAllGroupBuys, setShowAllGroupBuys] = useState(false);
 
   useEffect(() => {
-    if (!producerId) return undefined;
+    if (!producerId || given) return undefined;
     let cancelled = false;
     const id = encodeURIComponent(producerId);
     api
@@ -132,7 +140,7 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
     return () => {
       cancelled = true;
     };
-  }, [producerId]);
+  }, [producerId, given]);
 
   const entries = useMemo(() => {
     const list = [

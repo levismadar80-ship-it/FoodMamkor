@@ -81,7 +81,6 @@ frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx
 frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx
 frontend/app/[locale]/producer/[id]/components/ReviewExcerpt.jsx
 frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx
-frontend/app/[locale]/producer/[id]/hooks/useLazyReviews.js
 frontend/app/[locale]/producer/[id]/hooks/useProducerData.js
 frontend/app/[locale]/producer/[id]/hooks/useStickyBar.js
 frontend/app/[locale]/producer/[id]/lib/section-nav.js

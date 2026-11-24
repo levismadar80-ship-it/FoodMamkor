@@ -27,8 +27,8 @@ import ProducerSections from "./components/ProducerSections";
 import StickyContactBar from "./components/StickyContactBar";
 import OrderBar from "@/components/public/OrderBar";
 import { useOrderCart } from "@/lib/use-order-cart";
-import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
+import { useProducerActivities } from "./hooks/useProducerActivities";
 import { useStickyBar } from "./hooks/useStickyBar";
 import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/producer-format";
 import { getSectionNavItems } from "./lib/section-nav";
@@ -57,9 +57,9 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
  * page (the owner's order preview, «→ הזמנות»), so the phone's «→ חזרה»
  * would be a second back link (MEH-3777).
  *
- * @param {{ initialProducer?: object | null, fetchPath?: string | null, hideHistoryBack?: boolean }} props
+ * @param {{ initialProducer?: object | null, initialActivities?: { events: any[], experiences: any[], groupBuys: any[] } | null, fetchPath?: string | null, hideHistoryBack?: boolean }} props
  */
-export default function ProducerDetail({ initialProducer = null, fetchPath = null, hideHistoryBack = false }) {
+export default function ProducerDetail({ initialProducer = null, initialActivities = null, fetchPath = null, hideHistoryBack = false }) {
   const params = useParams();
   const { user } = useAuth();
   const t = useTranslations();
@@ -75,16 +75,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
 
-  const { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
+  const { producer, loading, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
     params,
     fetchPath,
     initialProducer,
   });
+  // MEH-3819: events, experiences and group buys, read together. The client
+  // route (/producer/<id>, no server data) reads them alongside the producer
+  // by the id in the URL, and waits for them before painting (below).
+  const activities = useProducerActivities({
+    producerId: producer?.id ?? (initialProducer || fetchPath ? null : params?.id),
+    initial: initialActivities,
+  });
+  const events = activities.events;
   // MEH-1207: ProducerSections still registers its section elements here (its
   // sectionRefs prop is unchanged); the anchor-nav addresses sections by id.
   const sectionRefs = useRef({});
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
-  const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
   // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
   // order bar. Reads the menu only for a business that takes orders.
   const orderCart = useOrderCart(producer);
@@ -123,7 +130,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     });
   }, [producer]);
 
-  if (loading) {
+  // MEH-3819: the client route paints once its activity lists answered too,
+  // so they never land above the reviews and delivery a moment later. A
+  // server-rendered page (initialProducer) never waits here: it would trade
+  // its server HTML for the loading line.
+  if (loading || (!initialProducer && producer && !activities.ready)) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.loading_fresh")}
@@ -297,9 +308,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <ProducerSections
             producer={producer}
             events={events}
+            experiences={activities.experiences}
+            groupBuys={activities.groupBuys}
             sectionRefs={sectionRefs}
-            reviewsContainerRef={reviewsContainerRef}
-            reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
             onReviewsTotalChange={setReviewsCount}
             orderCart={orderCart}

@@ -162,16 +162,16 @@ function ProductDietPills({ product, t }) {
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * The events list (and its show-all state) moved to ProducerActivities
- * (MEH #2659), merged with experiences. The reviews wrapper accepts
- * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
- * observation point remains identical to the source.
+ * (MEH #2659), merged with experiences. The reviews section mounts with the
+ * page and fetches once in view (MEH-3819; it used to mount only near the
+ * screen, via the retired useLazyReviews).
  */
 export default function ProducerSections({
   producer,
   events,
+  experiences,
+  groupBuys,
   sectionRefs,
-  reviewsContainerRef,
-  reviewsVisible,
   isOwner = false,
   onReviewsTotalChange,
   orderCart = null,
@@ -761,7 +761,13 @@ export default function ProducerSections({
 
       {/* Events + experiences (one list) and open group buys — MEH-2602,
           reshaped under MEH #2659. */}
-      <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
+      <ProducerActivities
+        producerId={producer.id}
+        events={events}
+        experiences={experiences}
+        groupBuys={groupBuys}
+        sectionRefs={sectionRefs}
+      />
 
       {/* MEH-3585 (Sapir 21/11): the rescue bag moved here from above
           «מוצרים». The catalogue — what this business always makes — comes
@@ -791,19 +797,21 @@ export default function ProducerSections({
         className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
-          reviewsContainerRef.current = el;
         }}
       >
-        {reviewsVisible && (
-          <ReviewsSection
-            producerId={producer.id}
-            avgRating={producer.avg_rating ?? 0}
-            reviewCount={producer.reviews_count ?? 0}
-            isOwner={isOwner}
-            onTotalChange={onReviewsTotalChange}
-            producerName={producer.name}
-          />
-        )}
+        {/* MEH-3819: mounted with the page, so its heading, summary and
+            loading rows hold their place; it was mounted only near the screen
+            (useLazyReviews), growing from nothing under a reader who landed
+            on #reviews (≈ 0.4 CLS on a phone). The FETCH stays lazy:
+            ReviewsSection reads /reviews only once it is in view. */}
+        <ReviewsSection
+          producerId={producer.id}
+          avgRating={producer.avg_rating ?? 0}
+          reviewCount={producer.reviews_count ?? 0}
+          isOwner={isOwner}
+          onTotalChange={onReviewsTotalChange}
+          producerName={producer.name}
+        />
       </div>
 
       {/* MEH-1490: quiet Google-rating trust line — detached from the native

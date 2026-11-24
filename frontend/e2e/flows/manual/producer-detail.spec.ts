@@ -823,9 +823,11 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
     ).toBeGreaterThan(0);
 
     // SECOND precondition, and it selects the fixture rather than merely
-    // asserting it afterwards: `useLazyReviews` observes with
-    // `rootMargin: "300px"`, so on a page where `#reviews` starts inside that
-    // band the section is SUPPOSED to load at once and the row cannot be
+    // asserting it afterwards: the reviews gate used to observe with
+    // `rootMargin: "300px"` (useLazyReviews, retired by MEH-3819; the 300px
+    // margin is kept as a safe band over the inner IO's threshold), so on a
+    // page where `#reviews` starts inside that band the section is SUPPOSED
+    // to load at once and the row cannot be
     // measured at all. Zero reviews does not imply a tall page — measured
     // 04/09 on the CI catalog, the first zero-review business put `#reviews`
     // at 935 on a 900px desktop fold, i.e. inside the band, and the assertion
@@ -901,32 +903,23 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
       `this row can only be measured when #reviews starts beyond the 300px rootMargin; it is at ${Math.round(reviewsTop)} on a ${viewportHeight}px fold, so the page is too short to tell a lazy gate from an eager one`,
     ).toBeGreaterThan(viewportHeight + 300);
 
-    // TWO named checks, not one — because the reviews request is protected by
-    // TWO independent gates and either one alone would keep the network quiet:
-    //   outer: useLazyReviews (rootMargin 300px) decides whether ReviewsSection
-    //          MOUNTS at all — its observable is the DOM.
-    //   inner: ReviewsSection's own IO (ReviewsSection.jsx:301, threshold 0.1)
-    //          decides whether it FETCHES — its observable is the network.
-    // Measured 04/09: with the outer gate defeated (`useState(true)`) the
-    // network assertion alone still passed, because the inner IO held the
-    // fetch. That is the `||`-shaped pass condition testing.md warns about —
-    // one cue silently carrying the whole assertion — so each gate gets its
-    // own check and its own failure message.
+    // MEH-3819: the section MOUNTS with the page (it holds its place, so a
+    // reader landing on #reviews is not pushed around while it grows); only the
+    // FETCH is lazy — ReviewsSection's own IO (threshold 0.1). Until then there
+    // were two gates (useLazyReviews mounted it near the screen), and each had
+    // its own check; the mount check now asserts the opposite, on purpose.
     expect(
       await root.locator("#reviews").evaluate((el) => el.childElementCount),
-      "outer gate: the reviews section must not be MOUNTED while it is below the fold",
-    ).toBe(0);
+      "the reviews section is mounted with the page, below the fold, holding its place",
+    ).toBeGreaterThan(0);
     expect(
       reviewRequests,
-      "inner gate: reviews must not be FETCHED while the section is below the fold",
+      "reviews must not be FETCHED while the section is below the fold",
     ).toEqual([]);
 
-    // NOT `scrollIntoViewIfNeeded()`: `#reviews` is a ZERO-HEIGHT wrapper until
-    // ReviewsSection mounts (it is the IO observation point), and on a
-    // zero-height target that call returns having scrolled nothing — measured
-    // 04/09, `scrollY: 0` after it on both projects, so the section never
-    // mounted and the test read as "reviews never loaded". A real scroll is
-    // the only instrument that moves this page.
+    // A real scroll, not `scrollIntoViewIfNeeded()`: until MEH-3819 `#reviews`
+    // was a zero-height wrapper and that call scrolled nothing (measured 04/09).
+    // The plain scroll is kept: it does not depend on the wrapper's height.
     await page.evaluate((y) => window.scrollTo(0, y), reviewsTop - 100);
     await expect
       .poll(() => reviewRequests.length, {

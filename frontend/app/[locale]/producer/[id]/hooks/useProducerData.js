@@ -37,18 +37,20 @@ const ProducerDetailLoose = ProducerDetailSchema.loose();
  * Effects fire in this order (same as pre-refactor):
  *   1. Producer fetch (gated on !initialProducer)
  *   2. pushRecentlyViewed(producer.id)
- *   3. /events?producer_id=<id>
- *   4. /producers?category=<id>&exclude=<id>&limit=3
+ *   3. /producers?category=<id>&exclude=<id>&limit=3
  *
- * The two IntersectionObserver effects from the same source file
- * (StickyBar + LazyReviews) do NOT live here — see useStickyBar +
- * useLazyReviews. They depend on producer.id but not on the data this
- * hook returns, so cross-hook ordering shifts are functionally inert.
+ * The events list moved to useProducerActivities (MEH-3819), read with the
+ * experiences and group buys so the three paint together.
+ *
+ * The IntersectionObserver effect from the same source file (StickyBar)
+ * does NOT live here — see useStickyBar. (LazyReviews was retired by
+ * MEH-3819: the reviews section mounts with the page.) It depends on
+ * producer.id but not on the data this hook returns, so cross-hook ordering
+ * shifts are functionally inert.
  */
 export function useProducerData({ params, fetchPath, initialProducer }) {
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
-  const [events, setEvents] = useState([]);
   const [similarProducers, setSimilarProducers] = useState([]);
   // MEH-1146 chunk C: discovery loop — more businesses in the same area (city).
   const [nearbyProducers, setNearbyProducers] = useState([]);
@@ -126,14 +128,6 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
     pushRecentlyViewed(producer.id);
   }, [producer?.id]);
 
-  useEffect(() => {
-    if (!producer?.id) return;
-    api
-      .get(`/events?producer_id=${producer.id}`)
-      .then((r) => setEvents(r.data || []))
-      .catch(() => setEvents([]));
-  }, [producer?.id]);
-
   // MEH-102: fetch similar producers (same first category, excluding self)
   useEffect(() => {
     if (!producer?.id || !producer?.categories?.length) return;
@@ -171,5 +165,5 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
     );
   }, []);
 
-  return { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount };
+  return { producer, loading, similarProducers, nearbyProducers, setReviewsCount };
 }
