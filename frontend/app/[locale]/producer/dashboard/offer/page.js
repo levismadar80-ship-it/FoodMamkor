@@ -14,10 +14,11 @@
  * Related:  tools/page.js (the tile that links here); lib/business-features.js
  *           (`offer` → dashboard.home "tools").
  * History:  MEH-3785 (moved out of עריכה › מוצרים ומחירים; Shopify keeps
- *           discounts in their own admin section, apart from products).
+ *           discounts in their own admin section, apart from products; the
+ *           unsaved-edit guard came with it, hooks/useUnsavedGuard.js).
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -25,6 +26,7 @@ import { useAuth } from "@/lib/auth-context";
 import Button from "@/components/ui/Button";
 import BackLink from "@/components/ui/BackLink";
 import { OffersCard } from "../edit/cards/OffersCard";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 /** The owner profile, with a retry. `null` while loading. */
 function useProfile() {
@@ -59,6 +61,12 @@ export default function ProducerDashboardOfferPage() {
     if (profile?.kind === "organizer") router.replace("/producer/dashboard/tools");
   }, [profile, router]);
 
+  // The card reports an unsaved edit; leaving with one asks first, as the
+  // edit tab did when the card lived there (MEH-1100, review of MEH-3785).
+  const [dirty, setDirty] = useState(false);
+  const reportDirty = useCallback((/** @type {string} */ _key, /** @type {boolean} */ isDirty) => setDirty(isDirty), []);
+  useUnsavedGuard(dirty, t("unsaved_guard.confirm"));
+
   if (authLoading || !user || user.role !== "producer") return null;
 
   return (
@@ -79,6 +87,7 @@ export default function ProducerDashboardOfferPage() {
           <OffersCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={/** @type {any} */ (reportDirty)}
           />
         </div>
       )}

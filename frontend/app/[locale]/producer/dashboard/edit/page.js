@@ -74,6 +74,7 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import LocationsEditor from "./LocationsEditor";
 import GoogleProfileHubTile from "@/components/dashboard/google-profile/GoogleProfileHubTile";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
@@ -351,41 +352,10 @@ function EditPageInner() {
       });
   }, [user, authLoading, router]);
 
-  // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [anyDirty]);
-
-  // MEH-1100 guard 2: in-app navigation. The App Router exposes no
-  // route-change events, so intercept anchor clicks at capture phase while
-  // dirty — this covers the tab nav, header, and BottomNav links alike.
-  // New-tab clicks (target=_blank / modifier keys) don't leave the page and
-  // pass through; same-path clicks (e.g. anchors) are ignored.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const onClick = (e) => {
-      if (e.defaultPrevented || e.button !== 0) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const anchor = e.target.closest?.("a[href]");
-      if (!anchor || anchor.target === "_blank") return;
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#")) return;
-      const url = new URL(anchor.href, window.location.href);
-      if (url.origin === window.location.origin && url.pathname === window.location.pathname) return;
-      if (!window.confirm(t("unsaved_guard.confirm"))) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [anyDirty, t]);
+  // MEH-1100: the refresh / tab-close prompt and the in-app link confirm,
+  // while any card is dirty. MEH-3785 moved both into a hook the offer page
+  // shares.
+  useUnsavedGuard(anyDirty, t("unsaved_guard.confirm"));
 
   // MEH-1116 + MEH-1408: URL-hash deep link — #<anchor> auto-selects the card's
   // GROUP, expands the card, and scrolls to it; on load (once the profile has

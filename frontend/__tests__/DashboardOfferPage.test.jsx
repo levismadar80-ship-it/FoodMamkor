@@ -42,8 +42,15 @@ vi.mock("@/components/producer/BusinessQrCard", () => ({ default: () => null }))
 vi.mock("@/components/producer/ShareKitSection", () => ({ default: () => null }));
 vi.mock("@/lib/rescue", () => ({ rescueBagsEnabled: () => false }));
 vi.mock("@/hooks/useWhatsNew", () => ({ useNewTools: () => new Set() }));
+// The stub's button stands in for an edit: the real card reports dirty
+// through reportDirty (OffersCard.jsx), which is all the page reads.
 vi.mock("@/app/[locale]/producer/dashboard/edit/cards/OffersCard", () => ({
-  OffersCard: ({ profile }) => <div data-testid="offers-card-stub">{profile.name}</div>,
+  OffersCard: ({ profile, reportDirty }) => (
+    <div data-testid="offers-card-stub">
+      {profile.name}
+      <button type="button" data-testid="stub-make-dirty" onClick={() => reportDirty?.("offer", true)} />
+    </div>
+  ),
 }));
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a) } }));
@@ -104,5 +111,33 @@ describe("the offer page (MEH-3785)", () => {
     state.profileFails = false;
     fireEvent.click(within(alert).getByRole("button"));
     expect(await screen.findByTestId("offers-card-stub")).toBeTruthy();
+  });
+});
+
+// Review of MEH-3785: on the edit tab the MEH-1100 guard asked before an
+// unsaved offer was left behind; the page of its own keeps that.
+describe("an unsaved offer is not lost silently (MEH-3785)", () => {
+  it("clean: the back link leaves with no question", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<OfferPage />);
+    await screen.findByTestId("offers-card-stub");
+    const back = screen.getByRole("link");
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    back.dispatchEvent(ev);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it("dirty: the back link asks first, and «cancel» keeps her on the page", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<OfferPage />);
+    await screen.findByTestId("offers-card-stub");
+    fireEvent.click(screen.getByTestId("stub-make-dirty"));
+    const back = screen.getByRole("link");
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    back.dispatchEvent(ev);
+    expect(confirm).toHaveBeenCalledWith("dashboard.producer.unsaved_guard.confirm");
+    expect(ev.defaultPrevented).toBe(true);
+    confirm.mockRestore();
   });
 });
