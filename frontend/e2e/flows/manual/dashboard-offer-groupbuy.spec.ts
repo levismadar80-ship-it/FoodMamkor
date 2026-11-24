@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
-import { clickSaveAfterEdit } from "../_save-after-edit";
+import { layoutSettled } from "../_layout-settled";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -27,7 +27,8 @@ test.beforeEach(async ({ page }) => {
  *           (MT:MEH-1898:5-6 — /producer/[id], home, /producers), mobile
  *           (:8), or the server's 422 for an unknown offer_type (:9 —
  *           backend/tests). The group-buy form is never submitted here.
- * Related:  app/[locale]/producer/dashboard/edit/cards.jsx (OffersCard :2019,
+ * Related:  app/[locale]/producer/dashboard/offer/page.js (MEH-3785);
+ *           the edit tab's cards module (OffersCard, formerly :2019,
  *           OFFER_TYPES :2007, MAX_OFFER_HEADLINE :2016) ·
  *           app/[locale]/producer/dashboard/group-buys/page.js
  * History:  MEH-1249 chunk 11i.
@@ -51,12 +52,8 @@ test.beforeEach(async ({ page }) => {
  *      right; the field itself is `dir="ltr"` so the number reads LTR beside
  *      it. Asserted as "the adornment renders and the input is LTR", not as a
  *      pixel side.
- * D3 · `#offer` is a DEAD deep link: ANCHOR_TO_KEY (page.js:100-116) has no
- *      `offer` entry, though KEY_TO_ANCHOR (:184) and KEY_TO_GROUP (:223) know
- *      the key. The mirror of chunk 11g's business-name finding, added to the
- *      same card (MEH-2262). One test asserts the correct behaviour under
- *      test.fail(); the rest open the card through `?group=products`
- *      (`?group=location` until MEH-2433 moved the offer).
+ * D3 · (retired, MEH-3785) the `#offer` deep link — the offer left the edit
+ *      page for /producer/dashboard/offer, reached from «כלים».
  * D4 · MT:MEH-992 opens the form via «+ קבוצת רכישה חדשה». That toggle renders
  *      only when at least one group buy exists (page.js:340); with none, the
  *      empty state's «+ צרו קבוצה ראשונה» is the way in. The 0-items path is
@@ -108,8 +105,6 @@ async function stubEdit(page: Page, opts: { profile?: Record<string, unknown>; w
 // ── MT:MEH-1898 — the offer card ───────────────────────────────────────────
 
 test.describe("offer card — the custom type", () => {
-  const card = (page: Page) => page.getByTestId("accordion-offer");
-  const body = (page: Page) => page.locator('#offer [role="region"]');
   const typeSelect = (page: Page) => page.getByTestId("offer-type-select");
   const threshold = (page: Page) => page.getByTestId("offer-threshold-input");
   const unit = (page: Page) => page.getByTestId("offer-unit-select");
@@ -119,23 +114,30 @@ test.describe("offer card — the custom type", () => {
   const headlineError = (page: Page) => page.getByTestId("offer-headline-error");
   const REQUIRED = "להטבה בניסוח חופשי חייבת להיות כותרת";
 
-  /** Opens the products group and the card by hand (drift D3 / MEH-2262). MEH-2433 moved the offer from the location group to products. */
+  /** MEH-3785: the offer has its own page under «כלים» (it was a card in the edit page's products group). */
   async function openOffer(page: Page) {
-    await page.goto("/producer/dashboard/edit?group=products");
-    await expect(page.getByTestId("group-products"), "control: the products group never rendered — every assertion here is void").toBeVisible({ timeout: 15_000 });
-    await card(page).click();
-    await expect(body(page)).toBeVisible();
+    await page.goto("/producer/dashboard/offer");
+    await expect(page.getByTestId("offer-page"), "control: the offer page never rendered — every assertion here is void").toBeVisible({ timeout: 15_000 });
+    await expect(typeSelect(page)).toBeVisible();
   }
 
-  // The deep-link contract: ANCHOR_TO_KEY (page.js:100-116) has no `offer` entry while
-  // KEY_TO_ANCHOR (:184) and KEY_TO_GROUP (:223) know the key — the mirror of the
-  // business-name gap. Correct behaviour asserted; expected to fail until fixed.
-  // MEH-2433: the card now lives in the products group; the hash resolves it there.
-  test("#offer opens the offer card through the products group", async ({ page }) => {
+  // MEH-3785: the way in is the «כלים» tile, one tap from the tab.
+  test("the «הטבה» tile in «כלים» opens the offer page", async ({ page }) => {
     await stubEdit(page);
-    await page.goto("/producer/dashboard/edit#offer");
-    await expect(card(page)).toBeVisible({ timeout: 15_000 });
-    await expect(card(page)).toHaveAttribute("aria-expanded", "true");
+    // «כלים» also mounts the request-a-review card for an approved business,
+    // which reads the review link; unstubbed, the fake token draws a 401
+    // (run 45349726596, the unstubbed-call guard).
+    await page.route("**/producers/me/review-link", (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: "https://mehamakor.co.il/p/e2e?rt=e2e-review-invite" }) }));
+    await page.goto("/producer/dashboard/tools");
+    const tile = page.getByTestId("tools-offer-tile");
+    await expect(tile).toBeVisible({ timeout: 15_000 });
+    // The grid's group cards and the review card render after their reads, so
+    // the tile can move under the pointer (MEH-3449).
+    await layoutSettled(tile);
+    await tile.click();
+    await expect(page).toHaveURL(/\/producer\/dashboard\/offer$/);
+    await expect(typeSelect(page)).toBeVisible();
   });
 
   // MT:MEH-1898:1 — drift D1: six options, «אין הטבה פעילה» first, the five types after it, custom last.
@@ -194,7 +196,11 @@ test.describe("offer card — the custom type", () => {
     await typeSelect(page).selectOption("custom");
     await headline(page).fill("קופון 10% על ההזמנה הבאה");
     await expires(page).fill("2026-12-31");
-    await clickSaveAfterEdit(page, save(page));
+    // No unsaved banner on this page (the card reports dirty to nobody), so the
+    // gate is the button itself: enabled, then still (MEH-3449).
+    await expect(save(page)).toBeEnabled();
+    await layoutSettled(save(page));
+    await save(page).click();
     await expect.poll(() => writes.length, { message: "the PUT never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({
       active_offer: { offer_type: "custom", threshold_value: null, threshold_unit: null, headline: "קופון 10% על ההזמנה הבאה", expires_at: "2026-12-31" },
