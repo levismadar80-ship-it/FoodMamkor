@@ -76,6 +76,8 @@ backend/app/services/admin_producer_emails.py	singular-address	 שלך
 backend/app/services/admin_producer_emails.py	singular-address	 שלך
 backend/app/services/admin_producer_emails.py	singular-address	 שלך
 backend/app/services/admin_producer_emails.py	singular-address	 שלך
+backend/app/services/auth_emails.py	singular-address	 ידך
+backend/app/services/auth_emails.py	singular-address	 ידך
 backend/app/services/auth_emails.py	singular-address	 לך
 backend/app/services/auth_emails.py	singular-address	 לך
 backend/app/services/auth_emails.py	singular-address	 לך
@@ -157,8 +159,12 @@ frontend/messages/he.json	singular-address	 איתך
 frontend/messages/he.json	singular-address	 אליך
 frontend/messages/he.json	singular-address	 אליך
 frontend/messages/he.json	singular-address	 אליך
+frontend/messages/he.json	singular-address	 באזורך
+frontend/messages/he.json	singular-address	 באזורך
 frontend/messages/he.json	singular-address	 בשבילך
 frontend/messages/he.json	singular-address	 בשבילך
+frontend/messages/he.json	singular-address	 חשבונך
+frontend/messages/he.json	singular-address	 ידך
 frontend/messages/he.json	singular-address	 לך
 frontend/messages/he.json	singular-address	 לך
 frontend/messages/he.json	singular-address	 לך
@@ -208,6 +214,7 @@ frontend/messages/he.json	singular-address	 לך
 frontend/messages/he.json	singular-address	 משלך
 frontend/messages/he.json	singular-address	 משלך
 frontend/messages/he.json	singular-address	 משלך
+frontend/messages/he.json	singular-address	 עבורך
 frontend/messages/he.json	singular-address	 עליך
 frontend/messages/he.json	singular-address	 עליך
 frontend/messages/he.json	singular-address	 שלך
@@ -317,3 +324,5 @@ frontend/messages/he.json	singular-address	 שלך
 frontend/messages/he.json	singular-address	 שלך
 frontend/messages/he.json	singular-address	 שלך
 frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	"סיסמתך
+frontend/messages/he.json	singular-address	"סיסמתך

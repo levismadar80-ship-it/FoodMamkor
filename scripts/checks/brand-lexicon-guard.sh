@@ -153,9 +153,12 @@ RULES=(
   # string) was dropped before awk saw it. The `:` before the content is
   # what lets that line through; awk then matches `^` on the content itself.
   # Final kaf «ך» only ever ends a word, so no end boundary is needed.
+  # The suffixed forms «עבורך», «חשבונך», «סיסמתך», «באזורך», «ידך» (as in
+  # «על ידך») were added after the MEH-3812 review found three of them left
+  # in he.json; a general «…ך» suffix would hit «דרך», «ערך», «צריך».
   # Verbs in the singular past («פרסמת», «שמרת») are NOT checked: «ת» ends too
   # many unrelated words («משמרת», «מקבלת») for a pattern to tell them apart.
-  $'singular-address\t(^|[[:space:]"(:>}-])(ו)?(שלך|משלך|לך|אותך|בשבילך|אצלך|עליך|ממך|איתך|אליך|בך)\t-\t'
+  $'singular-address\t(^|[[:space:]"(:>}-])(ו)?(שלך|משלך|לך|אותך|בשבילך|אצלך|עליך|ממך|איתך|אליך|בך|עבורך|חשבונך|סיסמתך|באזורך|ידך)\t-\t'
   # «אימייל» — the site says «מייל» (Sapir delegated the call 21/11, decided on
   # what Israeli services write: btl.gov.il «כתובת המייל», iec.co.il «חשבונית
   # במייל»; MEH-3665). Every prefix form («האימייל», «לאימייל») contains it.
@@ -447,7 +450,7 @@ HEAD
 }
 
 self_test() {
-  local tmp pass=0 total=28 got
+  local tmp pass=0 total=29 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
@@ -512,6 +515,7 @@ export const A = () => <p>מתכון מקדם את המוצרים שלך. שתפ
 export const B = () => <p>"ולך יש לוח בקרה משלך"</p>;
 export const C = () => <p>הלך המלך הולך</p>;
 export const D = () => <p>המוצרים של העסק, ובחרו מה מתאים לכם</p>;
+export const E = () => <p>מקום שמרכז עבורך אוכל. סיסמתך קצרה</p>;
 YOU
   # Case 28: column 0 inside an email body, the shape of
   # backend/app/services/auth_emails.py (a triple-quoted value string).
@@ -625,6 +629,10 @@ PY2
   [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /You\.jsx$/ && $2 == 4' | grep -c .)" -eq 0 ] \
     && { pass=$((pass+1)); echo "  ok 27  neutral wording and the plural «לכם» are not hits"; } \
     || echo "  FAIL 27  neutral or plural wording was flagged"
+  _has $'frontend/components/You.jsx\tsingular-address\t עבורך' \
+    && _has $'frontend/components/You.jsx\tsingular-address\t סיסמתך' \
+    && { pass=$((pass+1)); echo "  ok 29  the suffixed forms «עבורך», «סיסמתך» are caught (MEH-3812 review)"; } \
+    || echo "  FAIL 29  «עבורך» or «סיסמתך» was NOT caught"
   [ "$(printf '%s\n' "$rec" | awk -F'\t' '$1 ~ /mail3\.py$/ && $2 == 2 && $3 == "singular-address"' | grep -c .)" -eq 1 ] \
     && { pass=$((pass+1)); echo "  ok 28  «שלך» at column 0 of an email body is caught"; } \
     || echo "  FAIL 28  «שלך» at column 0 was NOT caught (the grep pre-filter dropped it)"
