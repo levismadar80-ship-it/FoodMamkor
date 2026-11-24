@@ -95,7 +95,7 @@ def test_a_test_account_change_is_marked_test(client, db, sends):
 
 
 def _joined(sends):
-    return [s for s in sends if s["subject"].startswith("מהמקור — הצטרפת לקבוצה")]
+    return [s for s in sends if s["subject"].startswith("מהמקור — ההצטרפות לקבוצה")]
 
 
 def test_a_join_below_the_goal_is_confirmed(client, db, sends):
@@ -110,7 +110,7 @@ def test_a_join_below_the_goal_is_confirmed(client, db, sends):
     mails = _joined(sends)
     assert [m["to"] for m in mails] == ["joiner3591@test.com"]
     body = mails[0]["body"]
-    assert "הכמות שביקשת: 2." in body
+    assert "הכמות שנבחרה: 2." in body
     assert "הצטרפו 1 מתוך 3" in body
     assert f"/group-buys/{gb.id}" in body
     # The random group id in the link can hold a digit run the phone regex

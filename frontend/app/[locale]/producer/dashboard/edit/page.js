@@ -64,7 +64,6 @@ import {
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import WhatsThis from "@/components/WhatsThis";
 import EditAccordionCard, {
   EditAccordionKindContext,
   PreviewThumbs,
@@ -87,9 +86,8 @@ import TagsCard, { activeTagCount } from "./TagsCard";
 import ReservistOwnedCard from "./ReservistOwnedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
-import OrderWindowEditor from "./OrderWindowEditor";
+import HoursCard from "./HoursCard";
 // MEH-2264: per-date overrides above the weekly window (own file, same reason).
-import SpecialHoursEditor from "./SpecialHoursEditor";
 // MEH-3035 chunk 2: «איך משלמים לעסק?» (producers.payment_info).
 import PaymentInfoEditor from "./PaymentInfoEditor";
 import { paymentAnswer } from "@/lib/payment-info";
@@ -163,7 +161,8 @@ const GROUP_MEMBERS = {
   // field — counting it would show every existing business as 2/4 instead of
   // 2/3 and nudge them to maintain hours they never asked for (the exact
   // GBP-staleness risk the ticket cites). It still belongs to the location
-  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally
+  // (MEH-3790: to its section inside the «שעות» card).
   // MEH-2058: "location" was a member of this group before its card (the
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see
@@ -235,12 +234,6 @@ function EditPageInner() {
   const tName = useTranslations("dashboard.producer.name_change");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
-  // MEH-1773: point-of-decision explainer for the order-window card. The
-  // ContactChannelsCard hook of the same name (:1202) is scoped to that
-  // component and not reachable from here.
-  // REUSES: frontend/app/[locale]/producer/dashboard/edit/page.js:1202 — same
-  // top-level whats_this namespace, same WhatsThis component (MEH-1115).
-  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
   // MEH-3788: «ספרו לנו על העסק» is for a page that is still empty (no
@@ -293,6 +286,7 @@ function EditPageInner() {
   const [productsCount, setProductsCount] = useState(null);
   // MEH-2937: LocationsEditor reports its live list here (null until it loads).
   const [liveLocations, setLiveLocations] = useState(null);
+  const [locationsRefresh, setLocationsRefresh] = useState(0); // MEH-3790
 
   // MEH-2207: the LIVE primary contact channel, as selected in the contact
   // card's form — not the saved value. Seeded from the profile so the notice
@@ -660,6 +654,7 @@ function EditPageInner() {
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
+    hours: t("completeness.fields.hours"),
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
@@ -672,7 +667,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "paymentInfo", "organizerCity",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "hours", "orderWindow", "specialHours", "questions", "paymentInfo", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1053,7 +1048,7 @@ function EditPageInner() {
           open={openKey === "locations"}
           onToggle={() => toggleKey("locations")}
         >
-          <LocationsEditor onLocationsChange={setLiveLocations} />
+          <LocationsEditor onLocationsChange={setLiveLocations} hoursElsewhere refreshKey={locationsRefresh} />
         </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
@@ -1085,79 +1080,23 @@ function EditPageInner() {
         </EditAccordionCard>
 
 
-        {/* MEH-2142 — the business-level opening-hours card stood here and was
-            REMOVED. Store hours are a per-location fact: the owner edits them
-            on each location in LocationsEditor (the "פרטים נוספים" section of
-            the locations card, same group), and the public page prefers her
-            primary location's value. Asking for the same fact twice, in two
-            cards, is what made owners fill it in twice and still not know which
-            one the site showed. `Producer.opening_hours` stays as a read
-            fallback and is no longer owner-writable (producer_me.py). */}
-
-        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in, and the only
-            "when" card left in this group. */}
-        <EditAccordionCard
-          anchorId="order-window"
-          title={t("order_window.heading")}
-          summary={
-            cardFilled.orderWindow
-              ? t("order_window.summary_set", {
-                  count: Object.keys(profile.order_window || {}).length,
-                })
-              : t("order_window.summary_empty")
-          }
-          open={openKey === "orderWindow"}
-          onToggle={() => toggleKey("orderWindow")}
-        >
-          {/* MEH-1773: "חלון הזמנות" and the "זמינות" card on the dashboard
-              landing page both read as "when am I open", so owners could not
-              tell them apart. This names the distinction at the point of
-              editing — the recurring weekly schedule — and its twin sits on
-              the availability card (dashboard/page.js) saying the other half:
-              a manual, temporary exception. */}
-          <WhatsThis
-            content={tWhat("order_window")}
-            className="mb-1"
-            testId="whats-this-order-window"
-          />
-          <OrderWindowEditor
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
-        {/* MEH-2264 — per-date overrides ABOVE the weekly window ("ערב ראש
-            השנה 09:00–13:00", "כיפור: סגור"). Opt-in like its sibling, and
-            deliberately its own card: a date list and a weekly grid are two
-            different mental models, and MEH-1830's finding was that the time
-            cluster is already confusing when things share a card. The
-            WhatsThis reuses the card's subtitle string on purpose (rule 22 —
-            approved copy, no second sentence to approve). */}
-        <EditAccordionCard
-          anchorId="special-hours"
-          title={t("special_hours.heading")}
-          summary={
-            cardFilled.specialHours
-              ? t("special_hours.summary_set", {
-                  count: upcomingSpecialCount(profile.special_hours),
-                })
-              : t("special_hours.summary_empty")
-          }
-          open={openKey === "specialHours"}
-          onToggle={() => toggleKey("specialHours")}
-        >
-          <WhatsThis
-            content={t("special_hours.subtitle")}
-            className="mb-1"
-            testId="whats-this-special-hours"
-          />
-          <SpecialHoursEditor
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-3790 — one «שעות» card: each location's opening hours (moved
+            out of the location form), the weekly order window and dated
+            exceptions. Sapir 24/11, reversing MEH-2142's per-form hours and
+            MEH-2264's separate holiday card. */}
+        <HoursCard
+          profile={profile}
+          locations={currentLocations}
+          open={openKey === "hours"}
+          onToggle={() => toggleKey("hours")}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+          onHoursSaved={() => setLocationsRefresh((n) => n + 1)}
+          onGoToLocations={() => {
+            setOpenKey("locations");
+            document.getElementById("locations")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </div>
 
       {/* ===== GROUP: contact — contact-channels, questions ===== */}

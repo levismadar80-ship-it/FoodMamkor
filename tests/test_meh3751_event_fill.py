@@ -222,3 +222,35 @@ def test_no_key_is_the_hebrew_503(client, db, monkeypatch):
     user = _owner(db)
     r = client.post(URL, json={"text": POST}, headers=auth_header(user))
     assert r.status_code == 503
+
+
+def _nodes(node):
+    """Every dict in a JSON schema, depth first."""
+    if isinstance(node, dict):
+        yield node
+        for v in node.values():
+            yield from _nodes(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _nodes(v)
+
+
+def test_no_form_schema_mixes_an_enum_with_a_type_list():
+    # MEH-3825: the event schema sent {"type": ["string","null"], "enum": [..., null]}
+    # and the API answered 400 (BadRequestError) on every call on staging, so the
+    # event fill always fell back to «לא הצלחנו לקרוא». Every enum that works in
+    # production is {"type": "string", "enum": [...]}; nullable goes through anyOf.
+    checked = []
+    for form in form_filler.forms():
+        for node in _nodes(form_filler.schema(form_filler.load_map(form))):
+            if "enum" in node:
+                checked.append(form)
+                assert isinstance(node.get("type"), str), (form, node)
+                assert None not in node["enum"], (form, node)
+    assert "event" in checked  # the category enum was actually walked
+
+
+def test_the_category_can_still_be_null():
+    prop = form_filler.schema(form_filler.load_map("event"))["properties"]["category"]
+    assert {"type": "null"} in prop["anyOf"]
+    assert {"type": "string", "enum": ["שוק", "קטיף", "טעימות", "אחר"]} in prop["anyOf"]

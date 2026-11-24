@@ -114,7 +114,7 @@ _LEGACY_MARK_DAYS: tuple[int, ...] = (1,)
 # her first person to the team voice, and the sign-off is the team's.
 # Changing a character requires Sapir's sign-off.
 
-_SUBJECT = "עוד צעד קטן — והעסק שלך עובר לבדיקה"
+_SUBJECT = "עוד צעד קטן — והעסק עובר לבדיקה"
 
 # MEH-2111: the day-3 and day-7 subjects, approved verbatim by Sapir 17/08 in
 # the ticket description. `[מספר]` is the placeholder AS SHE WROTE IT, and the
