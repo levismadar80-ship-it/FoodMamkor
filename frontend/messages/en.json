@@ -1046,7 +1046,8 @@
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
         "day_conflict_remove": "Remove «{name}» from the order",
-        "preview_send": "Sending is off in the preview"
+        "preview_send": "Sending is off in the preview",
+        "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale."
       }
     },
     "card": {
@@ -6191,7 +6192,11 @@
           }
         },
         "preview_link": "How customers see it",
-        "preview_banner": "Preview: this is how customers see the order. You can't send from here."
+        "preview_banner": "Preview: this is how customers see the order. You can't send from here.",
+        "preview_no_products": "No product is open for ordering yet, so customers won't see a way to order here.",
+        "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
+        "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
+        "preview_fix_link": "Go to the orders tab"
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
