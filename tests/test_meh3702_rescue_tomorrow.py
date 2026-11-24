@@ -222,7 +222,7 @@ class TestReserveTomorrow:
         sent = []
         monkeypatch.setattr(
             "app.services.rescue_emails.send_email",
-            lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False, kind=None: (
                 sent.append({"body": body, "html": html})
             ),
         )
@@ -249,7 +249,7 @@ class TestTomorrowEmails:
         sent = []
         monkeypatch.setattr(
             f"app.services.{module}.send_email",
-            lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False, kind=None: (
                 sent.append(body)
             ),
         )

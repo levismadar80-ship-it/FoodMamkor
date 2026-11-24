@@ -107,6 +107,10 @@ class Settings(BaseSettings):
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.co.il domain, copy the API key.
     resend_api_key: str = ""
+    # MEH-3839: the signing secret (whsec_…) of the Resend webhook that
+    # reports delivered / bounced / complained / clicked. Unset → the webhook
+    # answers 503 and stores nothing; sending is unaffected.
+    resend_webhook_secret: str = ""
     # MEH-453: extracted from email.py module constant. Override per env via
     # EMAIL_FROM_ADDRESS in Railway.
     #

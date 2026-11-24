@@ -276,6 +276,18 @@ erDiagram
         timestamp created_at "deleted after 30 days"
     }
 
+    email_events {
+        uuid id PK
+        string svix_id UK "Resend retries with the same id"
+        string event_type "email.delivered, bounced, clicked, ... (MEH-3839)"
+        string kind "the tag send_email put on it, or other"
+        uuid user_id FK "nullable, SET NULL"
+        string recipient_domain "never the full address"
+        string resend_email_id
+        string detail "bounce type/subType; never server text"
+        timestamp created_at "deleted after 30 days"
+    }
+
     product_order_items {
         uuid id PK
         uuid order_id FK "CASCADE"

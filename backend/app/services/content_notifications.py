@@ -43,7 +43,7 @@ def notify_recipe_approved(
         f"לצפייה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="recipe_approved")
 
 
 def notify_recipe_changes_requested(
@@ -58,7 +58,7 @@ def notify_recipe_changes_requested(
         f"לעריכה: {_link('/producer/dashboard/recipes')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="recipe_changes")
 
 
 def notify_recipe_rejected(
@@ -73,7 +73,7 @@ def notify_recipe_rejected(
         f"{_link('/producer/dashboard/recipes')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="recipe_rejected")
 
 
 # --- Kashrut (admin_kashrut.py) ---
@@ -96,7 +96,7 @@ def notify_kashrut_approved(
         f"לצפייה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="kashrut_approved")
 
 
 def notify_kashrut_rejected(
@@ -114,7 +114,7 @@ def notify_kashrut_rejected(
         f"{_link('/producer/dashboard/edit#kashrut')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="kashrut_rejected")
 
 
 # --- Reviews (reviews.py) ---
@@ -131,7 +131,7 @@ def notify_owner_new_review(
         f"לביקורת: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="review_new")
 
 
 def notify_reviewer_reply(
@@ -144,4 +144,4 @@ def notify_reviewer_reply(
         f"לקריאת התגובה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body, test_cause=test_cause)
+    send_email(to_email, subject, body, test_cause=test_cause, kind="review_reply")

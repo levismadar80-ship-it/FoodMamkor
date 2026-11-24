@@ -46,9 +46,14 @@ logger = logging.getLogger(__name__)
 
 
 def _send_email(
-    to_email: str, subject: str, body: str, test_cause: bool = False
+    to_email: str,
+    subject: str,
+    body: str,
+    test_cause: bool = False,
+    kind: str | None = None,
 ) -> None:
-    send_email(to_email, subject, body, test_cause=test_cause)
+    # MEH-3839: `kind` is the tag Resend reports back with each delivery event.
+    send_email(to_email, subject, body, test_cause=test_cause, kind=kind)
 
 
 def _group_buy_url(group_buy_id: str) -> str:
@@ -84,7 +89,9 @@ def notify_producer_funded(
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(producer_email, subject, body, test_cause=test_cause)
+    _send_email(
+        producer_email, subject, body, test_cause=test_cause, kind="group_buy_funded"
+    )
 
 
 def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
@@ -355,7 +362,9 @@ def notify_producer_late_joiner(  # noqa: PLR0913 — plain data for a Backgroun
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(producer_email, subject, body, test_cause=test_cause)
+    _send_email(
+        producer_email, subject, body, test_cause=test_cause, kind="group_buy_joined"
+    )
 
 
 def notify_waitlist_place(

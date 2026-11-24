@@ -43,7 +43,7 @@ def provider(monkeypatch):
     ("sent" once it runs out), and records every address it was handed."""
     state = {"script": [], "to": []}
 
-    def _send(to, subject, body, html=None, reply_to=None):
+    def _send(to, subject, body, html=None, reply_to=None, kind=None):
         state["to"].append(to)
         return state["script"].pop(0) if state["script"] else "sent"
 
@@ -622,7 +622,7 @@ def test_a_stop_during_the_email_tick_ends_the_batch_after_the_row_in_flight(
     for n in range(3):
         _queue_one(db, to=f"r{n}@example.com")
 
-    def _send_then_sigterm(to, subject, body, html=None, reply_to=None):
+    def _send_then_sigterm(to, subject, body, html=None, reply_to=None, kind=None):
         provider["to"].append(to)
         outbox.STOP.set()  # what worker._stop does on SIGTERM
         return "sent"

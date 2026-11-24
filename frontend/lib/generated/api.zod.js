@@ -10255,6 +10255,12 @@ export const ConfirmUserPhoneOtpUsersMeVerifyPhoneConfirmPostResponse = /*#__PUR
 
 
 /**
+ * @summary Resend Events
+ */
+export const ResendEventsWebhookResendPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Respond to Meta's subscription challenge.
  *
  * Meta hits this URL once when the webhook is registered in the
