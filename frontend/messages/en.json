@@ -7229,7 +7229,12 @@
       "empty_title": "No rescue bags yet today",
       "empty_title_city": "No rescue bags in {city} yet today",
       "empty_subtitle": "Worth checking again this afternoon",
-      "count": "{count, plural, one {one bag} other {# bags}}"
+      "count": "{count, plural, one {one bag} other {# bags}}",
+      "sort_label": "Sort",
+      "sort_time": "By pickup time",
+      "sort_near": "Closest",
+      "sort_cheap": "Cheapest",
+      "sort_rating": "Highest rated"
     },
     "row": {
       "left": "{count, plural, one {one left} other {# left}}",
@@ -7460,6 +7465,13 @@
           "a": "On the bag's page and in the reservation email, with the pickup code."
         }
       }
+    },
+    "share": {
+      "button": "Send to a friend",
+      "line_code_at": "Pickup code for the bag at {business}: {code}",
+      "line_code": "Bag pickup code: {code}",
+      "line_say": "Say the code at the counter to collect the bag",
+      "line_say_pay": "Say the code at the counter and pay {price} ₪ there"
     }
   },
   "holidays": {

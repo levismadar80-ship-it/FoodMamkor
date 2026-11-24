@@ -5,7 +5,6 @@ about_business.cta	4	button
 about_why_local.cta	5	button
 account.sheet.biz_cta	4	button
 admin.producers.product_import.approve_all_cta	4	button
-auth.register.consumer.cta_producer	5	button
 dashboard.producer.changes_requested.resubmit_cta	4	button
 dashboard.producer.description_card.assist_cta	4	button
 dashboard.producer.images.add_cta	6	button
