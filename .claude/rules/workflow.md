@@ -605,6 +605,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     `hebrew-content-writer` and `clarify`.
     A PR that adds a component, hook or helper module also carries `Reuse:`
     (what existing code it checked first, MEH-3612); `reuse-line-guard.sh` warns.
+    A new primitive (overlay, positioning, form handling, date or calendar,
+    email rendering, auth glue) also names on that line the maintained
+    open-source library it checked, with license, size and RTL support, or
+    why none fits (Sapir 24/11, MEH-3801).
 
     | Task | Skills |
     |---|---|
