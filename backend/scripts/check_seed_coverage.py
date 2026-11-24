@@ -227,6 +227,85 @@ SEEDED_SURFACES = [
 ]
 
 # ---------------------------------------------------------------------------
+# MEH-3761: one demo row in every status the site can show (Sapir, plan MEH-3630:
+# «מידע איכותי מכל אפשרות שיכולה להיות באתר»), seeded by
+# scripts/_seed_every_state.py. One surface per (column, value), named after
+# the value, so a state that loses its demo row turns this gate red. The
+# values are the ones docs/STATE_MACHINES.md lists for each column; a new
+# value there needs a row in the seed and a line here.
+# ---------------------------------------------------------------------------
+_STATE_VALUES = {
+    ("producers", "status"): ("draft", "pending", "approved", "rejected", "inactive"),
+    ("experiences", "status"): ("pending", "approved", "rejected", "changes_requested"),
+    ("registrations", "status"): ("registered", "waitlisted", "cancelled"),
+    ("rescue_offers", "status"): ("active", "cancelled"),
+    ("rescue_orders", "status"): ("reserved", "handed", "no_show", "cancelled"),
+    ("group_buys", "status"): ("open", "funded", "fulfilled", "cancelled"),
+    ("producer_recipes", "moderation_status"): (
+        "pending",
+        "approved",
+        "rejected",
+        "needs_revision",
+    ),
+    ("producer_reviews", "ai_moderation_status"): ("FLAGGED",),
+    ("producer_reviews", "reply_ai_moderation_status"): ("FLAGGED",),
+    ("reports", "status"): ("open", "resolved", "dismissed"),
+    ("category_requests", "status"): ("pending", "approved", "rejected"),
+    ("producer_name_change_requests", "status"): ("pending", "approved", "rejected"),
+    ("kashrut_badge_requests", "status"): (
+        "pending",
+        "approved",
+        "rejected",
+        "revoked",
+    ),
+    ("outreach_leads", "status"): (
+        "new",
+        "contacted",
+        "replied",
+        "registered",
+        "declined",
+    ),
+    ("billable_events", "status"): ("counted", "voided"),
+}
+SEEDED_SURFACES += [
+    {
+        "surface": f"state/{table}.{column}={value}",
+        "table": table,
+        "where": f"{column} = '{value}'",
+    }
+    for (table, column), values in _STATE_VALUES.items()
+    for value in values
+]
+SEEDED_SURFACES += [
+    {"surface": "state/users.is_blocked", "table": "users", "where": "is_blocked"},
+    {
+        "surface": "state/users.unverified",
+        "table": "users",
+        "where": "NOT email_verified",
+    },
+    {
+        "surface": "state/producer_reviews.is_hidden",
+        "table": "producer_reviews",
+        "where": "is_hidden",
+    },
+    {
+        "surface": "state/experiences.cancelled_by_host",
+        "table": "experiences",
+        "where": "NOT is_active",
+    },
+    {
+        "surface": "state/experiences.past",
+        "table": "experiences",
+        "where": "event_date < CURRENT_DATE",
+    },
+    {
+        "surface": "state/group_buys.open_past_deadline",
+        "table": "group_buys",
+        "where": "status = 'open' AND deadline < now()",
+    },
+]
+
+# ---------------------------------------------------------------------------
 # Tables the gate does NOT require a row in. Every mapped table must appear
 # either here or in SEEDED_SURFACES — that is what makes a NEW model turn the
 # PR red rather than silently joining an unchecked majority. Reasons are
@@ -282,10 +361,6 @@ EXEMPT_TABLES = {
     # visitor asks to wait; the demo group is never full.
     "group_buy_waitlist": f"consumer action on a full group buy (MEH-3592); {_SEEDED_MAY_BE_EMPTY}",
     "favorite_alerts": "consumer action — item 11 (out of scope)",
-    "reports": "admin queue — item 12 (out of scope)",
-    "category_requests": "admin queue — item 12 (out of scope)",
-    "outreach_leads": "admin queue — item 12 (out of scope)",
-    "producer_name_change_requests": "admin queue (out of scope)",
     # MEH-1399 audit record — one row per checklist item an admin actually
     # ticked. Its own model says "an UNCHECKED item is the ABSENCE of a row,
     # not a row with a false flag" (models.py:2324), so a seed row here would
@@ -311,15 +386,6 @@ EXEMPT_TABLES = {
     "static_pages": "CMS content, seeded separately when it exists",
     "retired_slugs": "MEH-2528 tombstones — written only when a public business is deleted or renamed; the demo seed deletes nothing",
     "saved_items": "MEH-2556 a user's saved recipes/events/experiences — runtime user action, like favorites clicks",
-    # MEH-2644 rescue-bags pilot — dark behind rescue_bags_enabled; a seed row
-    # would show an offer/order no owner posted and no visitor reserved.
-    "rescue_offers": "MEH-2644 rescue-bags pilot — dark behind a flag; offers are posted by an owner at runtime",
-    "rescue_orders": "MEH-2644 rescue-bags pilot — a visitor's reservation, runtime only",
-    "registrations": "MEH-2763 on-site sign-up — a visitor's name/phone/email, runtime only",
-    # MEH-3179: written only by services/billing_ledger.py when a real booking
-    # is stored, fulfilled or handed. The bookings it counts (registrations,
-    # rescue_orders) are runtime-only above, so the seed has nothing to count.
-    "billable_events": "MEH-3179 billing ledger — one row per booking a visitor made, written at runtime by billing_ledger; the tables it counts from are runtime only too",
     # MEH-3180: a business with no row is in the launch state (every tool
     # open), and nothing writes a row until billing starts.
     "business_billing": "MEH-3180 billing state per business — no row means the launch state; a row is written only once billing starts, so a full seed leaves it empty",
