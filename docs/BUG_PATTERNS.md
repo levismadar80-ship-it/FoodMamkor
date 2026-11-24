@@ -106,8 +106,14 @@ call site for `initialize()` — in the hook. No component may call it directly.
 
 **Regression spec:** `frontend/e2e/flows/09-login-console-clean.spec.ts`
 
-**Rule:** Any new component that renders a Google Sign-In button must use
-`useGoogleSignIn`, never `window.google.accounts.id.initialize()` directly.
+**Superseded by MEH-3690 (24/11/2026):** the site no longer renders Google's
+button or calls `google.accounts.id.initialize()` at all, so this bug cannot
+recur. Every Google sign-in is our own button (`frontend/components/ui/GoogleButton.jsx`)
+with its own code client per mount (`frontend/lib/use-google-code-sign-in.js`),
+which has no shared callback to go stale. `useGoogleSignIn` is deleted.
+
+**Rule:** a new Google sign-in uses `useGoogleCodeSignIn` and `GoogleButton`;
+never `window.google.accounts.id.initialize()` / `renderButton()`.
 
 ---
 

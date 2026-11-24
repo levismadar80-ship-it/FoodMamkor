@@ -4641,6 +4641,36 @@
         "title": "GoogleAuthResponse",
         "type": "object"
       },
+      "GoogleCodeRequest": {
+        "description": "MEH-3690: the one-time code from Google's popup (GIS code client).",
+        "properties": {
+          "code": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "GoogleCodeRequest",
+        "type": "object"
+      },
+      "GoogleCodeResponse": {
+        "description": "MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.",
+        "properties": {
+          "id_token": {
+            "title": "Id Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleCodeResponse",
+        "type": "object"
+      },
       "GooglePlaceIdIn": {
         "properties": {
           "google_place_id": {
@@ -28249,6 +28279,57 @@
           }
         },
         "summary": "Google Auth",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/google/code": {
+      "post": {
+        "description": "Swap a Google authorization code for a verified Google ID token.",
+        "operationId": "google_code_auth_google_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Google refused the code or the token failed verification"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "Google's token endpoint could not be reached"
+          },
+          "503": {
+            "description": "Google sign-in is not configured on this server"
+          }
+        },
+        "summary": "Google Code",
         "tags": [
           "auth"
         ]
