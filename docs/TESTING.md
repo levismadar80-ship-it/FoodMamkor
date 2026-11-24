@@ -60,6 +60,23 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
 5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
 
+### Load guard — every flows test checks the page while it loads (MEH-3809)
+
+`frontend/e2e/flows/_load-guard.ts`, installed by the shared `page` fixture in
+`_cloudinary-stub.ts`, fails a passing test when, during the test, a page:
+
+- threw an uncaught error (`pageerror`) or logged a `console.error` that is not
+  in `CONSOLE_ALLOW` (each entry carries a reason and a card);
+- logged a React hydration mismatch (never allowlistable);
+- shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
+  right after a click or key press excluded; same limit as `lighthouserc.cjs`).
+
+CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
+page whose observer never reported fails the test, so a dead probe cannot read
+green. A spec that provokes errors on purpose opts out with
+`test.use({ loadGuard: "off" })` and a comment saying why. The guard's own
+self-test is `flows/00-load-guard-selftest.spec.ts`.
+
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
 
 `frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").

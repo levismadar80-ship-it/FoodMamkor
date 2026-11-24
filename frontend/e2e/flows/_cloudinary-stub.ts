@@ -14,7 +14,8 @@
  *           through) · frontend/e2e/CLAUDE.md (MEH-1968 stub-vs-mock taxonomy)
  * History:  MEH-1925 (creation, bandwidth-cut chunk); MEH-2957 (also installs
  *           _unstubbed-me-guard — an unstubbed /producers/me call from a
- *           fake-token spec now fails the test with its URL).
+ *           fake-token spec now fails the test with its URL); MEH-3809 (also
+ *           installs _load-guard — page errors, hydration, CLS > 0.1).
  *
  * ── WHY TWO INTERCEPTION TARGETS, NOT ONE ───────────────────────────────────
  * A naive `page.route("**\/res.cloudinary.com/**", ...)` only catches requests
@@ -69,6 +70,7 @@
 import { appendFileSync } from "node:fs";
 import { test as base, expect, type Page, type Locator, type Route } from "@playwright/test";
 import { guardUnstubbedMe } from "./_unstubbed-me-guard";
+import { installLoadGuard, enforceLoadGuard, type LoadGuardMode } from "./_load-guard";
 // REUSES: lib/cloudinary.js — host match, not substring (CodeQL alert #32).
 import { isCloudinaryUrl } from "../../lib/cloudinary";
 
@@ -104,8 +106,14 @@ async function fulfillPlaceholder(route: Route): Promise<void> {
 // `page` is deliberately NOT declared in the extend generic: an empty generic is
 // how Playwright is told this OVERRIDES the built-in fixture rather than
 // declaring a new one that shadows it.
-export const test = base.extend({
-  page: async ({ page }, use, testInfo) => {
+// MEH-3809: `loadGuard` is a new option fixture; `page` is still not declared
+// in the generic, so it still overrides the built-in one.
+export const test = base.extend<{ loadGuard: LoadGuardMode }>({
+  loadGuard: ["on", { option: true }],
+  page: async ({ page, loadGuard, browserName }, use, testInfo) => {
+    // MEH-3809: installed before any navigation, so the first document's
+    // layout shifts and errors are seen. See _load-guard.ts.
+    const loadState = loadGuard === "on" ? await installLoadGuard(page) : null;
     // MEH-2957: registered first, so every page.route a spec adds wins over it —
     // it only sees a /producers/me call nobody stubbed. See _unstubbed-me-guard.ts.
     await guardUnstubbedMe(page, testInfo.file.replace(/^.*\/e2e\//, "e2e/"));
@@ -126,6 +134,7 @@ export const test = base.extend({
       else await route.continue();
     });
     await use(page);
+    if (loadState) await enforceLoadGuard(page, loadState, testInfo, browserName);
   },
 });
 
