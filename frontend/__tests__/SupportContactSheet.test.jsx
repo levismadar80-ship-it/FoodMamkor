@@ -83,9 +83,13 @@ describe("the dashboard help row promises the same reply time as /contact", () =
   // Reads the message catalog, not source: the promise lives only in copy.
   // Every "N ימי עסקים" in a string, so a second, different number is caught too.
   const days = (s) => [...s.matchAll(/(\d+)\s*ימי עסקים/g)].map((m) => m[1]);
-  it("both name the same number of business days, once", () => {
+  it("any reply time on the row is the one /contact names", () => {
     const contact = days(he.contact.response_sla);
     expect(contact).toHaveLength(1);
-    expect(days(he.dashboard.producer.help_row.body)).toEqual(contact);
+    // MEH-3767 dropped the row's body line; whatever line of the row still names
+    // a reply time must name the same one.
+    for (const line of Object.values(he.dashboard.producer.help_row)) {
+      for (const n of days(line)) expect(n).toBe(contact[0]);
+    }
   });
 });

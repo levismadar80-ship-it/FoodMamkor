@@ -73,6 +73,10 @@ REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
 # MEH-3610: the group-buy pickup reminder, the same evening hour.
 GROUP_BUY_PICKUP_REMINDER_CRON = "0 17 * * *"
 GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier
+# day, 08:00 on the Israel clock. Once a day: see services/rescue_reminders.py.
+RESCUE_REMINDER_CRON = "0 8 * * *"
+RESCUE_REMINDER_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -144,6 +148,9 @@ UNMONITORED_SLUGS = frozenset(
         # MEH-3610: the pickup reminder before a funded group's pickup. No
         # Sentry monitor (plan limit, MEH-3332).
         "group-buy-pickup-reminder-daily",
+        # MEH-3702: the rescue bag morning reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "rescue-morning-reminder-daily",
     }
 )
 
