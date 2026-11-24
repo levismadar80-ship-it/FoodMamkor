@@ -32,6 +32,12 @@
  *     Googlebot UA alike). Google renders JS and reads it; Lighthouse reads
  *     <head> only. That is why the SEO line is 0.85, not 0.9 — staging
  *     /events scores 0.86 once robots.txt is skipped.
+ * MEH-3748 (23/11, v1.5.12/13 red): / weighed 1,424,116 bytes. Two cuts, no visible
+ * change: the home «הצגה במפה» link prefetched static /map in full (76,656 B),
+ * now on touch only; and the hero photo got a 1.75x step (w_1320, 131,681 B
+ * JPEG XL instead of w_1600's 171,419 B) — Lighthouse's phone is DPR 1.75.
+ * Expected ~1,307,700 bytes against the 1,331,200-byte line (23 KB margin);
+ * the next post-deploy run is the measurement.
  * LCP 5–6 s is MEH-2233 (in progress) — when it lands, tighten the warn
  * lines here. Byte budgets sit ~10% above the heaviest page so normal growth
  * fits and a new heavy dependency does not.
@@ -53,7 +59,87 @@ const PAGES = ["/", "/producers", "/map", "/events", "/about"];
 // measures the same thing on both.
 const isProduction = /^https:\/\/mehamakor\.co\.il$/.test(base);
 
+// MEH-3748: /events is noindex ON PURPOSE while its hub is known to be empty
+// (MEH-2369, lib/listing-supply.js hubRobots), and a noindex page loses the
+// is-crawlable weight of the SEO score (0.69 measured on v1.5.12/13). The same
+// count decides the sitemap (hubBelongsInSitemap), so the sitemap is the
+// product's own statement of intent: /events absent from it = noindex
+// expected. Only then does /events trade the SEO score for the SEO audits one
+// by one, minus is-crawlable. /events IN the sitemap, or a sitemap that could
+// not be read, keeps the full 0.85 line — so an unintended noindex stays red.
+const SEO_AUDITS_EXCEPT_CRAWLABLE = [
+  "document-title",
+  "http-status-code",
+  "link-text",
+  "crawlable-anchors",
+  "robots-txt",
+  "hreflang",
+  "canonical",
+  "image-alt",
+];
+
+/** @returns {boolean|null} true/false = /events is / is not in the sitemap; null = unknown */
+function eventsInSitemap(origin) {
+  const { execFileSync } = require("node:child_process");
+  try {
+    // Synchronous on purpose: LHCI loads this config with require().
+    const xml = execFileSync(
+      process.execPath,
+      ["-e", "fetch(process.argv[1]).then(r=>{if(!r.ok)process.exit(2);return r.text()}).then(t=>process.stdout.write(t),()=>process.exit(3))", origin + "/sitemap.xml"],
+      { encoding: "utf8", timeout: 20000 },
+    );
+    if (!xml.includes("<urlset")) return null;
+    return /<loc>[^<]*\/events\/?<\/loc>/.test(xml);
+  } catch {
+    return null;
+  }
+}
+
+function buildAssert(eventsNoindexExpected) {
+  const assertions = {
+    // error — regressions the diff causes
+    "total-byte-weight": ["error", { maxNumericValue: 1300 * 1024, aggregationMethod: "median" }],
+    "resource-summary:script:size": ["error", { maxNumericValue: 760 * 1024, aggregationMethod: "median" }],
+    "cumulative-layout-shift": ["error", { maxNumericValue: 0.1, aggregationMethod: "median" }],
+    "categories:accessibility": ["error", { minScore: 0.95, aggregationMethod: "median" }],
+    "categories:seo": ["error", { minScore: 0.85, aggregationMethod: "median" }],
+    "categories:best-practices": ["error", { minScore: 0.9, aggregationMethod: "median" }],
+    // warn — timing, too noisy on shared runners to fail a deploy
+    "categories:performance": ["warn", { minScore: 0.5, aggregationMethod: "median" }],
+    "largest-contentful-paint": ["warn", { maxNumericValue: 7000, aggregationMethod: "median" }],
+    "total-blocking-time": ["warn", { maxNumericValue: 1200, aggregationMethod: "median" }],
+  };
+  if (!eventsNoindexExpected) return { assertions };
+  const { "categories:seo": _seo, ...rest } = assertions;
+  const perAudit = Object.fromEntries(
+    // Off production robots-txt is skipped at collect (above); asserting it would fail on "did not run".
+    SEO_AUDITS_EXCEPT_CRAWLABLE.filter((id) => isProduction || id !== "robots-txt").map((id) => [id, ["error", { minScore: 1, aggregationMethod: "median" }]]),
+  );
+  return {
+    assertMatrix: [
+      { matchingUrlPattern: "^(?!.*/events/?$).*$", assertions },
+      {
+        matchingUrlPattern: "/events/?$",
+        assertions: {
+          ...rest,
+          ...perAudit,
+          // Streamed into <body> (header note above): Google reads it, Lighthouse does not.
+          "meta-description": ["warn", { minScore: 1, aggregationMethod: "median" }],
+        },
+      },
+    ],
+  };
+}
+
+const eventsListed = eventsInSitemap(base);
+const eventsNoindexExpected = eventsListed === false;
+console.log(
+  `lighthouserc: /events in sitemap = ${eventsListed === null ? "unknown" : eventsListed} → ` +
+    (eventsNoindexExpected ? "noindex expected, SEO audits one by one minus is-crawlable" : "full SEO line"),
+);
+
 module.exports = {
+  buildAssert,
   ci: {
     collect: {
       url: PAGES.map((p) => base + p),
@@ -64,21 +150,7 @@ module.exports = {
         ...(isProduction ? {} : { skipAudits: ["robots-txt", "is-crawlable"] }),
       },
     },
-    assert: {
-      assertions: {
-        // error — regressions the diff causes
-        "total-byte-weight": ["error", { maxNumericValue: 1300 * 1024, aggregationMethod: "median" }],
-        "resource-summary:script:size": ["error", { maxNumericValue: 760 * 1024, aggregationMethod: "median" }],
-        "cumulative-layout-shift": ["error", { maxNumericValue: 0.1, aggregationMethod: "median" }],
-        "categories:accessibility": ["error", { minScore: 0.95, aggregationMethod: "median" }],
-        "categories:seo": ["error", { minScore: 0.85, aggregationMethod: "median" }],
-        "categories:best-practices": ["error", { minScore: 0.9, aggregationMethod: "median" }],
-        // warn — timing, too noisy on shared runners to fail a deploy
-        "categories:performance": ["warn", { minScore: 0.5, aggregationMethod: "median" }],
-        "largest-contentful-paint": ["warn", { maxNumericValue: 7000, aggregationMethod: "median" }],
-        "total-blocking-time": ["warn", { maxNumericValue: 1200, aggregationMethod: "median" }],
-      },
-    },
+    assert: buildAssert(eventsNoindexExpected),
     upload: { target: "filesystem", outputDir: "./lhci-report" },
   },
 };
