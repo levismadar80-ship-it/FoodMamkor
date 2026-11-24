@@ -986,6 +986,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx` | Owner story editor: bio text and owner photo. |
 | `[locale]/producer/dashboard/edit/cards/PricingCard.jsx` | Price editor for the top product. |
 | `[locale]/producer/dashboard/edit/cards/ViewOnPageLink.jsx` | The «view on page» back-link shown inside an expanded edit card. |
+| `[locale]/producer/dashboard/orders/preview/OrderPreviewClient.jsx` | The owner's business page inside the dashboard, in preview mode, with her own order menu: she picks products and opens the order form to see what a buyer sees. |
 | `[locale]/producer/dashboard/preview/PreviewClient.jsx` | — אין כותרת — |
 | `[locale]/recommend/RecommendClient.jsx` | The public form a visitor uses to recommend a business that is not on Mehamakor yet. … |
 | `[locale]/register/RegisterClient.jsx` | — אין כותרת — |

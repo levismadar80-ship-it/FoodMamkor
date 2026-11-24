@@ -1045,7 +1045,8 @@
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
-        "day_conflict_remove": "Remove «{name}» from the order"
+        "day_conflict_remove": "Remove «{name}» from the order",
+        "preview_send": "Sending is off in the preview"
       }
     },
     "card": {
@@ -6188,7 +6189,9 @@
             "orders": "Orders",
             "last": "Last order"
           }
-        }
+        },
+        "preview_link": "How customers see it",
+        "preview_banner": "Preview: this is how customers see the order. You can't send from here."
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
