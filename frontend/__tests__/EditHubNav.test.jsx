@@ -248,7 +248,8 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   it.each([
     ["profile", ["images", "categories", "bio", "owner-story", "business-name"]],
     // MEH-2729: one «תגים» card in place of dietary-scope + grass-fed.
-    ["products", ["products", "pricing", "offer", "tags"]],
+    // MEH-3785: the offer moved to its own page under «כלים».
+    ["products", ["products", "pricing", "tags"]],
     ["location", ["locations", "delivery", "order-window", "special-hours"]],
     ["contact", ["contact-channels", "questions", "payment-info"]], // MEH-3035
     ["trust", ["trust"]],
@@ -263,7 +264,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
 
   // The three anchors MEH-2433 moved or registered: each must route to the
   // products group, not to its old home (location / trust) or nowhere.
-  it.each(["offer", "tags", "dietary-scope", "grass-fed"])(
+  it.each(["tags", "dietary-scope", "grass-fed"])(
     "MEH-2433: a #%s deep link opens the products group",
     async (anchor) => {
       window.location.hash = `#${anchor}`;

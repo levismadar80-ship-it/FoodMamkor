@@ -22,6 +22,7 @@
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
+import { useScrollTopOnArrival } from "@/lib/route-memory";
 
 // One per filter chip in the live row; widths only vary so it does not read as
 // a striped bar. Decorative — the grid below carries the status role.
@@ -32,6 +33,8 @@ const CHIP_WIDTHS = [64, 88, 72, 96, 60];
 // headers() and every /producers/** route would render per request (MEH-2878).
 export default function ProducersLoading() {
   const t = useTranslations("producers");
+  // The frame is drawn at the top of the page, so open it there (lib/route-memory.js).
+  useScrollTopOnArrival();
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-testid="producers-loading">
       <Breadcrumb
