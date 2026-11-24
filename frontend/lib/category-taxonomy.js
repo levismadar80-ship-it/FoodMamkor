@@ -15,6 +15,7 @@
  *           categoryGroupRow), it just has no group, glyph or English name.
  * Related:  backend/app/services/category_slug.py NAME_TO_SLUG (the 18 seeded
  *           slugs) · tests/test_meh3401_coffee_slug.py (coffee's "kph") ·
+ *           tests/test_meh3738_cooked_food_slug.py (cooked to order) ·
  *           __tests__/CategoryTaxonomyGuard.test.js (holds this list equal to
  *           the backend table and complete in every registry).
  * History:  MEH-3076 (creation, Sapir 21/11: «הכל לתקן ולעשות לפני השקה» —
@@ -51,6 +52,9 @@ export const CATEGORY_TAXONOMY = Object.freeze([
   { slug: "fish", name: "דגים", group: "meat" },
   // MEH-3401: created from the admin, so its slug is the transliteration.
   { slug: "kph", name: "קפה", group: "pantry" },
+  // MEH-3738: cooked to order (platters, salads, small catering). Created from
+  // the admin, so its slug is the transliteration (tests/test_meh3738_cooked_food_slug.py).
+  { slug: "byshvl-lpy-hzmnh", name: "בישול לפי הזמנה", group: "pantry" },
 ]);
 
 /** @param {CategoryGroup} group @returns {string[]} the slugs in that group. */
