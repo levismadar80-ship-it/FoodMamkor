@@ -125,7 +125,7 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
 //
 // `frontend/lib/hours-serialize.js` is deliberately LEFT in place even though
 // HoursEditor was its only UI consumer: it is a tested, reusable day-row
-// serializer that `lib/order-window.js` cites as the model for its own, and
+// serializer that `lib/order-window-editor.js` cites as the model for its own, and
 // deleting a library plus its suite is a cleanup this ticket has no AC for.
 // Knip will list it as unused — that is a warn-only signal and an accurate one.
 // ============================================================

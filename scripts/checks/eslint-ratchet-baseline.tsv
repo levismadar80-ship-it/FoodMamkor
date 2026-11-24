@@ -723,7 +723,7 @@ frontend/lib/nav-links.js	eqeqeq	2
 frontend/lib/page-fill.js	eqeqeq	1
 frontend/lib/places.js	eqeqeq	4
 frontend/lib/producer-status.js	no-restricted-syntax	4
-frontend/lib/product-order.js	eqeqeq	3
+frontend/lib/product-display-order.js	eqeqeq	3
 frontend/lib/rating-gate.js	eqeqeq	1
 frontend/lib/recently-viewed.js	eqeqeq	2
 frontend/lib/replay-prehydration-input.js	eqeqeq	1

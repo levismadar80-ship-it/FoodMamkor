@@ -20,7 +20,7 @@ import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import OrderSettingsCard, { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
 import api from "@/lib/api";
-import { prepList } from "@/lib/product-ordering";
+import { prepList } from "@/lib/orderable-products";
 
 const P1 = "11111111-1111-4111-8111-111111111111";
 const P2 = "22222222-2222-4222-8222-222222222222";
