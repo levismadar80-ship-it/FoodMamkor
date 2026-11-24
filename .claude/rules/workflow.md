@@ -614,6 +614,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     | Signup / registration / onboarding | `signup-flow-cro`, `onboarding-cro`, `form-cro` |
     | Metadata, landing pages, sitemap, JSON-LD | `seo-audit`, `schema-markup`, `ai-seo` |
     | Email flows | `email-sequence` |
+    | Mehamakor outreach to businesses, business pages, social replies, scripts, Instagram posts, reels (MEH-3757; these win over the generic `cold-email` / `social-content` / `copywriting`) | `mehamakor-daily-outreach`, `mehamakor-business-page`, `hebrew-human-comments`, `hebrew-spoken-script`, `mehamakor-instagram-posts`, `mehamakor-voice-reel` |
     | Pricing, plans, upgrade prompts | `pricing-strategy`, `paywall-upgrade-cro` |
     | Personal data, consent, terms, legal | `israeli-privacy-shield`, `israeli-ecommerce-compliance`, `hebrew-legal-research` |
     | RTL / i18n | `hebrew-rtl-best-practices`, `hebrew-i18n` |

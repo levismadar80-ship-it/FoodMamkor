@@ -36,9 +36,10 @@ with every feature PR and this table does not update itself.
 | 9 | Availability states | `full_this_week`, `on_vacation` + `vacation_until` | every seeded producer is `availability_state="accepting_orders"` | ❌ uncovered | 🟠 |
 | 10 | Analytics | `ProducerPageView`, `ProducerContactClick`, `SearchQuery` | not referenced | ❌ uncovered | 🟡 (out of scope) |
 | 11 | Favorites | `Favorite`, `FavoriteAlert` | not referenced | ❌ uncovered | 🟡 (out of scope) |
-| 12 | Admin queues | `Report`, `CategoryRequest`, `OutreachLead` | not referenced | ❌ uncovered | 🟡 (out of scope) |
+| 12 | Admin queues | `Report`, `CategoryRequest`, `OutreachLead`, `ProducerNameChangeRequest`, `KashrutBadgeRequest` | `_seed_every_state.py` (MEH-3761): every status of each queue | ✅ covered | — |
 | 13 | Misc | `story_card_url` (MEH-53), `HomeProduct*` (`ReferralClick` dropped, MEH-2393) | not referenced | ❌ uncovered | 🟡 (out of scope) |
 | 14 | Admin pre-approval review checklist | `AdminChecklistItem` | **the migration**, not a seed script — revision `d4a9c31e6f82` ends in a `bulk_insert` of 7 reference rows | ✅ covered | — |
+| 15 | Every status the site can show (MEH-3761) | every column in `docs/STATE_MACHINES.md` «Every status column» that has a live screen, plus blocked / unverified users, hidden reviews, a host-cancelled, a past and a full workshop, an open group buy past its deadline | `_seed_every_state.py::seed_every_state`, called from `seed_demo_business.py` main; one `state/<table>.<column>=<value>` surface per value in `check_seed_coverage.py` `_STATE_VALUES` | ✅ covered | — |
 | — | Admin review audit trail | `ProducerReviewCheck` | nothing, by design — a row is written when an admin ticks an item, so absence of a row IS the unchecked state | ⬜ exempt | — |
 
 🟡 rows are explicitly out of scope for the seed work this contract tracks

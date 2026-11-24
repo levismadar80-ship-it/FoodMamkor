@@ -22,6 +22,11 @@ when the line has moved.
   creates or moves an order, and every route in `routers/product_orders.py`
   answers 404 while `product_orders_enabled` is false. Add the machine here in
   the PR that mounts the first order route.
+  One move happens off any route: when a business is taken off the site,
+  `booking_cancellations.delist_business` calls
+  `product_order_actions.release_unaccepted_orders`, which moves its
+  `pending` and `change_proposed` orders to `cancelled` as the system
+  (MEH-3768); `confirmed` and `ready` stay open.
 - **Paid subscription.** `business_billing.state` has five values
   (launch / notice / active / page_only / unpaid) and no code writes it.
   `BILLING_PHASE` is `"launch"`, so every paid tool is open to everyone.

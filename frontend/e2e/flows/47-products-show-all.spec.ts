@@ -109,7 +109,7 @@ test.describe("MEH-3021 — long product list collapses", () => {
       (r) => new RegExp(`/api/producers/${producer.id}$`).test(new URL(r.url()).pathname),
       { timeout: 20_000 },
     );
-    await page.goto(`/producer/${producer.id}`);
+    await page.goto(`/producer/${producer.id}?preview=1`);
     expect((await payload).status(), "the stubbed long list was served").toBe(200);
 
     const toggle = page.getByTestId("products-toggle");
@@ -188,7 +188,7 @@ test.describe("MEH-3021 — long product list collapses", () => {
       (r) => new RegExp(`/api/producers/${producer.id}$`).test(new URL(r.url()).pathname),
       { timeout: 20_000 },
     );
-    await page.goto(`/producer/${producer.id}?product=e2e-meh3021-${SYNTHETIC}`);
+    await page.goto(`/producer/${producer.id}?preview=1&product=e2e-meh3021-${SYNTHETIC}`);
     const res = await payload;
     // Control: a non-200 here would leave the page with the real short list and
     // nothing for the deep link to open, so the sheet assertion below would be
@@ -224,7 +224,7 @@ test.describe("MEH-3055 — product group chips", () => {
         .map((p, i) => ({ ...p, group_id: i < 3 ? "e2e-g1" : "e2e-g2" }));
       await route.fulfill({ response: real, json: body });
     });
-    await page.goto(`/producer/${producer.id}`);
+    await page.goto(`/producer/${producer.id}?preview=1`);
 
     const chips = page.getByTestId("product-group-chip");
     await expect(chips).toHaveCount(3, { timeout: 20_000 }); // all + 2 groups, no «more»

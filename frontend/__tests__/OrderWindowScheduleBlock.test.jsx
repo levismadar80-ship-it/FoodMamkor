@@ -153,7 +153,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
   });
 
   it("is SSR-safe: the server pass already contains the schedule (no mounted guard)", () => {
-    // getOrderWindowRanges is clock-free (lib/orderWindow.js:218), which is why
+    // getOrderWindowRanges is clock-free (lib/order-window-status.js:218), which is why
     // this block needs no mounted guard while OrderWindowCtaNote does. If a
     // future edit adds one, the server string goes empty and this fails.
     const html = renderToString(

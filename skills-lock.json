@@ -385,6 +385,36 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "743dfdaee310736da99e7226ea4f9df6d3c454f5095686c60559975a4a42d24d"
+    },
+    "hebrew-human-comments": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "702c88e6cb8a861d047fb2cdd81c4cdf264b4b0952d7a71bf2145e91d4a0214d"
+    },
+    "hebrew-spoken-script": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "9ee31b2b6457171f52bc130b34ff273e0ad89961691b7267acd64da745c11dba"
+    },
+    "mehamakor-business-page": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "5ea34da46c305dfc378fbbd6b2b0f8c34998751c7bc9d914e4e2b4c2064fd136"
+    },
+    "mehamakor-daily-outreach": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "d635b2ea27e42de8a1e33d3c8c142c372434c492d579211696785efb902033de"
+    },
+    "mehamakor-instagram-posts": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "c9b221e5a05258bc7abcb9bf772688e753b3c270001cfb2dc4601fc2db65ba98"
+    },
+    "mehamakor-voice-reel": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "8c56dc3f924cf7e1f28bb5626690c5090952e73fd00967935368c87dd0788869"
     }
   }
 }

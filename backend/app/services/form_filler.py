@@ -101,7 +101,7 @@ def _fields_block(fmap: dict[str, Any], choices: Choices) -> str:
     return "\n".join(lines)
 
 
-def _text(value: object, field: dict[str, Any], source: str) -> str | None:
+def _field_text(value: object, field: dict[str, Any], source: str) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     limit = int(field["max"])
@@ -176,7 +176,7 @@ def _choices(
     return out[: int(field["max"])]
 
 
-def to_draft(
+def form_to_draft(
     fmap: dict[str, Any], data: dict[str, Any], source: str, choices: Choices
 ) -> Draft:
     """Model output → a draft whose every value the form can take as is."""
@@ -190,11 +190,11 @@ def to_draft(
         elif kind == "choices":
             draft[f["key"]] = _choices(raw, f, choices.get(f["key"], []))
         else:
-            draft[f["key"]] = _text(raw, f, source)
+            draft[f["key"]] = _field_text(raw, f, source)
     return draft
 
 
-def _ask(fmap: dict[str, Any], text: str, choices: Choices) -> dict[str, Any] | None:
+def _ask_model(fmap: dict[str, Any], text: str, choices: Choices) -> dict[str, Any] | None:
     client = _get_client()
     if client is None or not ai_budget.allow("fast"):  # MEH-3498
         return None
@@ -231,5 +231,5 @@ def fill(form: str, text: str, choices: Choices | None = None) -> Draft | None:
     API error, refusal, cut-off or bad JSON); the form stays manual."""
     fmap = load_map(form)
     choices = choices or {}
-    data = _ask(fmap, text, choices)
-    return None if data is None else to_draft(fmap, data, text, choices)
+    data = _ask_model(fmap, text, choices)
+    return None if data is None else form_to_draft(fmap, data, text, choices)

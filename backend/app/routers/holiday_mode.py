@@ -1,7 +1,8 @@
 from typing import Any
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.models import AdminSetting
 from app.rate_limit import limiter
 
@@ -10,7 +11,7 @@ router = APIRouter()
 
 @router.get("/holiday-mode", response_model=None)
 @limiter.limit("60/minute")
-def get_holiday_mode(request: Request) -> dict[str, Any]:
+def get_holiday_mode(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Return holiday-mode state for the frontend banner.
 
     MEH-247 — reads the same admin_settings keys the /admin/settings page
@@ -19,28 +20,17 @@ def get_holiday_mode(request: Request) -> dict[str, Any]:
     Prior to this fix the endpoint read different keys and returned a
     `{active, banner_text}` shape, so the banner never lit up.
     """
-    # TODO(MEH-407 follow-up): replace SessionLocal() with Depends(get_db).
-    # Phase 2.1 (split main.py) preserves the existing connection lifecycle
-    # verbatim — switching to Depends is a behavior change, deferred per the
-    # no-behavior-change contract on this PR (smell #5 in REFACTOR_PLAN.md).
-    db = None
-    try:
-        db = SessionLocal()
-        rows = (
-            db.query(AdminSetting)
-            .filter(
-                AdminSetting.key.in_(
-                    ["holiday_override_enabled", "holiday_override_key"]
-                )
-            )
-            .all()
+    # MEH-3714: session from Depends(get_db), like every other router (was
+    # a hand-opened SessionLocal() left over from the MEH-407 main.py split).
+    rows = (
+        db.query(AdminSetting)
+        .filter(
+            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
         )
-        kv: dict[Any, Any] = {r.key: r.value for r in rows}
-        return {
-            "enabled": (kv.get("holiday_override_enabled") or "false").lower()
-            == "true",
-            "key": kv.get("holiday_override_key") or None,
-        }
-    finally:
-        if db is not None:
-            db.close()
+        .all()
+    )
+    kv: dict[Any, Any] = {r.key: r.value for r in rows}
+    return {
+        "enabled": (kv.get("holiday_override_enabled") or "false").lower() == "true",
+        "key": kv.get("holiday_override_key") or None,
+    }

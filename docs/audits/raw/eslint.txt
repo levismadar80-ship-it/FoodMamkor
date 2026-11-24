@@ -5063,7 +5063,7 @@ Calling setState synchronously within an effect body causes cascading renders th
   16:9   warning  Identifier name 'q' is too short (< 2)              id-length
   36:10  warning  Use `.length > 0` when checking length is not zero  unicorn/explicit-length-check
 
-/home/user/FoodMamkor/frontend/lib/highlightMatch.js
+/home/user/FoodMamkor/frontend/lib/highlight-match.js
   14:25  warning  Prefer `String#replaceAll()` over `String#replace()`  unicorn/prefer-string-replace-all
   14:56  warning  `String.raw` should be used to avoid escaping `\`     unicorn/prefer-string-raw
   15:17  warning  Found non-literal argument to RegExp Constructor      security/detect-non-literal-regexp
@@ -5133,7 +5133,7 @@ Calling setState synchronously within an effect body causes cascading renders th
   32:9  warning  Identifier name 't' is too short (< 2)                                       id-length
   33:9  warning  Identifier name 'c' is too short (< 2)                                       id-length
 
-/home/user/FoodMamkor/frontend/lib/passwordMessages.js
+/home/user/FoodMamkor/frontend/lib/password-messages.js
   24:7   warning  `KNOWN_KEYS` should be a `Set`, and use `KNOWN_KEYS.has()` to check existence or non-existence  unicorn/prefer-set-has
   26:28  warning  Identifier name 't' is too short (< 2)                                                          id-length
   28:15  warning  `new Error()` is too unspecific for a type check. Use `new TypeError()` instead                 unicorn/prefer-type-error

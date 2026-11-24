@@ -3,7 +3,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Check, ArrowRight } from "@phosphor-icons/react";
+import { Check, ArrowRight, CaretLeft } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { useResendVerification } from "@/lib/use-resend-verification";
@@ -354,8 +354,15 @@ function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
             ) : (
               <Link href={r.href} className={ROW_LINK}>
                 <RowMark done={r.done} />
-                <span className={r.done ? "text-text" : "text-fg-muted"}>{text}</span>
+                <span className={r.done ? "text-text" : "text-primary font-medium"}>{text}</span>
                 {status}
+                {/* MEH-3745: hover is the only cue a row is a link, and a phone has no hover. */}
+                <CaretLeft
+                  size={14}
+                  aria-hidden="true"
+                  data-testid="row-caret"
+                  className={`ms-auto shrink-0 ltr:rotate-180 ${r.done ? "text-fg-muted" : "text-primary"}`}
+                />
               </Link>
             )}
           </li>

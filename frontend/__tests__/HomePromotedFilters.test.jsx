@@ -50,8 +50,11 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+// MEH-3748: the Link mock records the prefetch prop; useRouter exposes the
+// prefetch spy the intent hook calls.
+const navPrefetch = vi.hoisted(() => vi.fn());
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} data-prefetch={String(prefetch)} {...p}>{children}</a>, 
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: navPrefetch }),
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
@@ -369,5 +372,20 @@ describe("MEH-2598 — home «הצגה במפה» carries the active filters", (
   it("carries the active chips in the /map vocabulary (has_delivery, not home's ?delivery)", () => {
     render(<HomeProducersGrid {...props({ chips: { has_delivery: true, vegan: true } })} />);
     expect(screen.getByTestId("home-map-link").getAttribute("href")).toBe("/map?has_delivery=1&vegan=1");
+  });
+});
+
+describe("MEH-3748 — «הצגה במפה» is not prefetched on sight, only on touch", () => {
+  it("carries prefetch={false}: /map is static, a viewport prefetch pulled its whole payload (~76 KB)", () => {
+    render(<HomeProducersGrid {...props()} />);
+    expect(screen.getByTestId("home-map-link").getAttribute("data-prefetch")).toBe("false");
+  });
+
+  it("a touch prefetches the same href the link opens", () => {
+    navPrefetch.mockClear();
+    render(<HomeProducersGrid {...props({ chips: { vegan: true } })} />);
+    expect(navPrefetch).not.toHaveBeenCalled();
+    fireEvent.touchStart(screen.getByTestId("home-map-link"));
+    expect(navPrefetch).toHaveBeenCalledWith("/map?vegan=1");
   });
 });

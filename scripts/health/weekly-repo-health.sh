@@ -43,6 +43,20 @@ if v=$(uvx --quiet vulture==2.16 backend/app --min-confidence 80 2>&1; true); th
   echo "vulture: $total finding(s), baseline $(printf '%s\n' "$base" | grep -c .)"
 fi
 
+section "3b. Python functions nobody calls (vulture ≥ 60%, services + utils), new since the baseline"
+# MEH-3714: an orphan function scores 60%, so section 3 (80%) never sees one.
+# The whole app is scanned so callers in routers count; only services/utils
+# are reported, because a router handler at 60% is a decorated route.
+fbase=$(grep -v -e '^#' -e '^[[:space:]]*$' $H/vulture-functions-baseline.txt)
+if fv=$(uvx --quiet vulture==2.16 backend/app --min-confidence 60 2>&1; true); then
+  ffound=$(printf '%s\n' "$fv" | grep "unused function" | grep -E '^backend/app/(services|utils)/' | sed -E 's/:[0-9]+:/:/')
+  ftotal=$(printf '%s\n' "$fv" | grep -c "unused function" || true)
+  [ "$ftotal" -eq 0 ] && echo "ERROR: vulture reported no unused function anywhere in backend/app — section 3b is void (output: ${fv:0:200})"
+  printf '%s\n' "$ffound" | grep . | grep -vxF -f <(printf '%s\n' "$fbase") | sed 's/^/NEW: /'
+  printf '%s\n' "$fbase" | grep -vxF -f <(printf '%s\n' "$ffound" | grep .) | sed 's/^/GONE (remove from the baseline): /'
+  echo "vulture functions: $(printf '%s\n' "$ffound" | grep -c .) in services/utils, baseline $(printf '%s\n' "$fbase" | grep -c .)"
+fi
+
 section "4. Frontend dead code (knip ratchet baseline, CI blocks any rise)"
 awk -F'\t' '!/^#/ && NF==3 {s[$2]+=$3} END {for (k in s) printf "  %-16s %s\n", k, s[k]}' scripts/checks/lint-ratchet-baseline.tsv | LC_ALL=C sort
 echo "(grandfathered findings; a falling number is progress, a rise cannot merge)"

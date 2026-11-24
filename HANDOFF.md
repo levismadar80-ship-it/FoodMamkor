@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-24 — תצוגת חלון ההזמנה לבעלת העסק (PR #5221, #5222, #5233)
+
+**שורה אחת:** שלושת ה-PR-ים נכנסו ל-staging ברכבת 3 (#5244). בעלת עסק רואה את חלון ההזמנה כמו לקוחה עוד לפני שהיא מפעילה הזמנות, ורואה מה עוד חסר.
+
+**מה צריך לדעת לפני עבודה:**
+- **מצב תצוגה מקדימה:** ‏`PreviewModeProvider` (`frontend/lib/preview-mode.js`) מסמן את העץ. ‏`ownerOrderMenu` הוא הסכמה מפורשת, ורק `OrderPreviewClient` מפעיל אותה. תצוגת הטיוטה נפתחת בלי התחברות, ולכן היא לא קוראת את התפריט של הבעלים.
+- **רכיב חדש שמשתמש ב-`useOrderCart`:** בתוך תצוגה מקדימה הוא לא שולח הזמנה ולא מבקש קוד. ‏`OrderSheet` ו-`OrderSheetPhone` כבר נוהגים כך.
+- **פס «תצוגה מקדימה»:** רכיב אחד, `frontend/components/ui/PreviewBanner.jsx` (#5246). מסך תצוגה חדש משתמש בו ולא מעתיק את ה-`<p>`.
+- **קישור חזרה אחד בתצוגת ההזמנה (טלפון):** רק «→ הזמנות»; `ProducerDetail` מקבל `hideHistoryBack` ורק `OrderPreviewClient` מעביר אותו (#5248).
+- **timeout של `ts-check-files.test.js`** (120 שניות) קורה כש-runner עמוס. אם הוא נכשל, מריצים מחדש את ה-job. התיקון ב-#5242.
+
 ## 2026-11-22 — הרשמת לקוחה בלי לעזוב את הדף (PR #5123, #5158, #5159, #5144)
 
 **שורה אחת:** ארבעה PR-ים ב-staging. הלקוחה נכנסת עם Google בתוך החלונית ונשארת בדף, גם ב«רוצה לשמור?» וגם בהצטרפות לקבוצת רכישה.
