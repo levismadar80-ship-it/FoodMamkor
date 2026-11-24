@@ -20,6 +20,8 @@
  *           MEH-3342: a recipe under a renamed business's old slug → 301.
  */
 import { REGION_PAGE_MIN, getRegion, regionCities } from "./region-pages";
+import { isSlugShaped } from "./slug";
+import { isOwnerPreview } from "./owner-preview";
 
 const TIMEOUT_MS = 3000;
 /**
@@ -125,4 +127,66 @@ export async function regionCellExists(apiUrl, categorySlug, regionKey, report) 
   // Number("") is 0: a blank header is "unknown", never "zero" (MEH-1754).
   if (raw === null || raw.trim() === "" || !Number.isFinite(total)) return true;
   return total >= REGION_PAGE_MIN;
+}
+
+/**
+ * MEH-3708: the /producer/<id> lookup, which also learns where the business
+ * now lives. Returns false for an answered absence (404 / 422, the MEH-3024
+ * real 404), `{ slug }` when the business has a slug the caller may redirect
+ * to, and true otherwise (no slug, a body that is not JSON, or any backend
+ * fault — fail OPEN, the id page renders as before).
+ *
+ * The slug comes from our own backend, but it still decides a Location
+ * header, so the caller checks it with `isRedirectSlug` (the same shape gate
+ * the root [slug] route uses) before following it.
+ * @param {string} apiUrl
+ * @param {string} id — already decoded
+ * @param {(msg: string, err?: unknown) => void} report
+ * @returns {Promise<boolean | { slug: string }>}
+ */
+export async function producerIdTarget(apiUrl, id, report) {
+  const url = `${apiUrl}/producers/${encodeURIComponent(id)}`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (res.status === 404 || res.status === 422) return false;
+    if (!res.ok) {
+      report(`backend answered ${res.status} for ${url} — failing open`);
+      return true;
+    }
+    try {
+      const slug = (await res.json())?.slug;
+      return typeof slug === "string" && slug ? { slug } : true;
+    } catch {
+      return true;
+    }
+  } catch (err) {
+    report(`fetch threw for ${url} — failing open`, err);
+    return true;
+  }
+}
+
+/** MEH-3708: a permanent redirect that keeps the method (308, not 301). */
+export const PERMANENT_REDIRECT = 308;
+
+/**
+ * MEH-3708: the URL a /producer/<id> request goes to when the business has a
+ * slug — /{slug} (he, no prefix) or /{locale}/{slug}, the query kept (the URL
+ * is cloned). null when the id page should render instead:
+ *   - the slug is not one the root [slug] route would serve (a static route,
+ *     a dot, a slash — the shape gate is lib/slug.js isSlugShaped);
+ *   - ?preview=1 (lib/owner-preview.js): the id page renders from the client
+ *     fetch, which the fixture-backed VRT and flow specs stub.
+ * @param {any} nextUrl — request.nextUrl (cloned here, never mutated)
+ * @param {string | undefined} locale — the request's prefix, if any
+ * @param {string} slug
+ * @param {Set<string>} staticRoutes
+ * @returns {any} a URL, or null
+ */
+export function producerSlugUrl(nextUrl, locale, slug, staticRoutes) {
+  if (staticRoutes.has(slug.toLowerCase()) || !isSlugShaped(slug)) return null;
+  if (isOwnerPreview(nextUrl.searchParams)) return null;
+  const to = nextUrl.clone();
+  const prefix = locale ? `/${locale}` : "";
+  to.pathname = `${prefix}/${encodeURIComponent(slug)}`;
+  return to;
 }

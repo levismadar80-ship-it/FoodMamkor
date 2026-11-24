@@ -47,7 +47,7 @@ export default defineConfig({
     setupFiles: "./__tests__/setup.js",
     css: false,
     include: ["__tests__/**/*.test.{js,jsx,ts,tsx}"],
-    exclude: ["e2e/**", "lib/**/*.test.mjs"],
+    exclude: ["e2e/**"],
     // MEH-1912: worker pool, chosen from measurement rather than default.
     //
     // Profiling the full suite locally (4 cores, 282 files, 2418 tests) gave
