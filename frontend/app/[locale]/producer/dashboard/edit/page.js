@@ -250,12 +250,15 @@ function EditPageInner() {
   // inside «תיאור העסק» is the one entry. Latched: a save from the panel
   // fills the description, and the panel stays until the next visit so the
   // owner sees her save land instead of the panel vanishing under her.
-  const [showFill, setShowFill] = useState(false);
+  const [fillLatched, setFillLatched] = useState(false);
+  const fillDesc = (profile?.description || "").trim();
+  const pageEmpty = Boolean(profile) && (!fillDesc || isDefaultDescription(fillDesc));
+  // Read in the same render as the profile, so the panel does not pop in a
+  // commit later and push the tiles down; the latch only keeps it there.
+  const showFill = fillLatched || pageEmpty;
   useEffect(() => {
-    if (!profile) return;
-    const desc = (profile.description || "").trim();
-    if (!desc || isDefaultDescription(desc)) setShowFill(true);
-  }, [profile]);
+    if (pageEmpty) setFillLatched(true);
+  }, [pageEmpty]);
 
   // MEH-1116: accordion state — one card open at a time, all collapsed on load.
   const [openKey, setOpenKey] = useState(null);
