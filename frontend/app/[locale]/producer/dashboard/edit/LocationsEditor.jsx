@@ -61,6 +61,7 @@ import Button from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/Skeleton";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -541,23 +542,21 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
             {t("set_primary_cta")}
           </button>
         ) : null}
-        <button
-          type="button"
+        <IconButton
           onClick={onEdit}
-          aria-label={t("edit_aria")}
+          label={t("edit_aria")}
           className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-primary"
         >
           <Pencil size={18} />
-        </button>
-        <button
-          type="button"
+        </IconButton>
+        <IconButton
           onClick={onDelete}
           disabled={deleting}
-          aria-label={t("delete_aria")}
+          label={t("delete_aria")}
           className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
         >
           <Trash size={18} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );
@@ -799,14 +798,13 @@ function LocationForm({
     >
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-text">{heading}</h4>
-        <button
-          type="button"
+        <IconButton
           onClick={onCancel}
-          aria-label={t("cancel_cta")}
+          label={t("cancel_cta")}
           className="text-fg-muted hover:text-text"
         >
           <X size={16} weight="bold" />
-        </button>
+        </IconButton>
       </div>
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder

@@ -217,6 +217,9 @@ export default function ChecklistSettings({ preload } = {}) {
             }`}
           >
             <div className="flex items-start gap-2">
+              {/* MEH-3832: raw buttons on purpose. The arrows are 16px and 20px apart, so
+                  IconButton's 44px .tap-area zones would overlap and a tap on the lower
+                  part of «up» would run «down». A real fix gives each a 44px cell. */}
               <div className="flex flex-col gap-1 pt-1">
                 <button
                   type="button"

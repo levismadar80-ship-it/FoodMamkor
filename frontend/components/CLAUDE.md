@@ -40,6 +40,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
+| A button that is only an icon (close «×», kebab ⋮, +/−): `label` required, 44px hit area via `.tap-area`, the look stays the caller's `className` | `ui/IconButton.jsx` | ESLint `design-system/no-html-button` (ratchet) |
 | Days of the week as chips, Sunday first, on the shared mask (a product's days, a bag routine's days) | `ui/WeekdayChips.jsx` | — |
 | Checkbox with its label — the whole row is the 44px hit area (32px from md) | `ui/Checkbox.jsx` | ESLint `design-system/no-html-checkbox` (ratchet) |
 | Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |

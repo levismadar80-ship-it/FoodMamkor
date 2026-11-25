@@ -55,7 +55,9 @@ describe(".tap-area compiles to a 44px ::before hit area", () => {
     expect(before[1]).toContain("position: absolute");
     expect(before[1]).toContain(`inset-block: ${INSET}`);
     expect(before[1]).toContain(`inset-inline: ${INSET}`);
-    expect(css).toMatch(/\.tap-area\s*\{\s*position: relative;?\s*\}/);
+    // MEH-3832: the host rule is `:where(.tap-area)` (zero specificity), so a
+    // caller's absolute / fixed / sticky class still wins over `relative`.
+    expect(css).toMatch(/:where\(\.tap-area\)\s*\{\s*position: relative;?\s*\}/);
   });
 });
 
