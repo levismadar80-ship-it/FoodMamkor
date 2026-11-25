@@ -209,7 +209,7 @@ function nestedObjectShape(schema) {
   for (let depth = 0; depth < 8 && cur; depth += 1) {
     const type = cur.def?.type;
     if (type === "object") return Object.keys(cur.shape);
-    if (type === "optional" || type === "nullable" || type === "default") {
+    if (type === "optional" || type === "nullable" || type === "default" || type === "catch") {
       cur = cur.def.innerType;
       continue;
     }
