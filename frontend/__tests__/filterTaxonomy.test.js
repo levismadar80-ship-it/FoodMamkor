@@ -78,7 +78,7 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
       // non-empty `filter_axes.<key>.subtext` exists (false ⇒ FilterSheet falls
       // back to a BADGE_CONFIG tooltip).
       expect(typeof axis.hasSubtext, `${key}.hasSubtext`).toBe("boolean");
-      const sub = he.filter_axes[key].subtext;
+      const sub = he.filter_axes[key]?.subtext;
       expect(
         axis.hasSubtext ? typeof sub === "string" && sub.length > 0 : sub === undefined,
         `${key}.hasSubtext disagrees with he.json`,
