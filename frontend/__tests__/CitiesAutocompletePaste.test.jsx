@@ -55,7 +55,7 @@ describe("CitiesAutocomplete paste (MEH-3867)", () => {
 
     expect(paste("חדרה\nתל-מונד\nקרני שומרוןן")).toBe(false);
 
-    await screen.findByText("נוספו 2 ערים.");
+    await screen.findByText("נוספו שתי ערים.");
     expect(api.post).toHaveBeenCalledTimes(1);
     expect(api.post).toHaveBeenCalledWith("/cities/match", { names: ["חדרה", "תל-מונד", "קרני שומרוןן"] });
     expect(latest).toEqual(["חיפה", "חדרה", "תל מונד"]);
@@ -118,7 +118,7 @@ describe("CitiesAutocomplete paste (MEH-3867)", () => {
     api.post.mockResolvedValue({ data: { matched: ["חדרה", "עפולה"], unmatched: [] } });
     render(<Harness />);
     paste("חדרה, עפולה");
-    await screen.findByText("נוספו 2 ערים.");
+    await screen.findByText("נוספו שתי ערים.");
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "ח" } });
 
@@ -136,7 +136,7 @@ describe("CitiesAutocomplete paste — review cases (MEH-3867)", () => {
 
     paste("חדרה\nעפולה");
     paste("חיפה\nעכו");
-    await screen.findByText("נוספו 2 ערים.");
+    await screen.findByText("נוספו שתי ערים.");
     releaseA();
     await new Promise((r) => setTimeout(r, 0));
 
