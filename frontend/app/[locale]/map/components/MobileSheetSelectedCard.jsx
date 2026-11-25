@@ -5,6 +5,7 @@ import { MapPin, X } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
 import MapPickupPointPanel from "./MapPickupPointPanel";  // MEH-3756
+import MapRescueRow from "./MapRescueRow";  // MEH-3824
 
 // The gap between the card and the sheet's top edge, and what it adds to the
 // edge the map controls ride (card height + this gap, on both sides).
@@ -143,6 +144,10 @@ export default function MobileSheetSelectedCard({
             a pickup point / market stand also says when and how to collect
             there (MEH-3756). One card for all pins (Sapir 25/11). */}
         <MapPickupPointPanel producer={selectedProducer} location={selectedLocation} />
+        {/* MEH-3824: the bag today, when there is one (price, window, link). */}
+        <div className="empty:hidden px-2 pb-2">
+          <MapRescueRow producer={selectedProducer} />
+        </div>
         <button
           type="button"
           onClick={onClose}

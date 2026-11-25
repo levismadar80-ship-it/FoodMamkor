@@ -62,3 +62,72 @@ describe("FridayDeliveryStrip skeleton", () => {
     expect(screen.getByTestId("friday-delivery-strip")).toBeTruthy();
   });
 });
+
+// MEH-3860: the home server sends the nationwide list, so the first paint is
+// the real cards and a city with no Friday delivery never collapses the strip.
+describe("FridayDeliveryStrip with the server's list", () => {
+  beforeEach(() => getSpy.mockReset());
+  const farm = { id: 1, name: "Farm", slug: "farm" };
+
+  it("paints the cards at once, with no skeleton and no request", () => {
+    render(<FridayDeliveryStrip initialProducers={[farm]} />);
+    expect(screen.getByTestId("friday-delivery-strip")).toBeTruthy();
+    expect(screen.queryByTestId("friday-delivery-strip-skeleton")).toBeNull();
+    expect(getSpy).not.toHaveBeenCalled();
+  });
+
+  it("a city with none keeps the nationwide cards, without the city chip", async () => {
+    getSpy.mockResolvedValue({ data: [] });
+    render(<FridayDeliveryStrip initialProducers={[farm]} city="חיפה" />);
+    await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.getByTestId("friday-delivery-strip")).toBeTruthy();
+    expect(screen.queryByText("חיפה")).toBeNull();
+  });
+
+  it("a city with its own list shows it, with the city chip", async () => {
+    getSpy.mockResolvedValue({ data: [{ id: 2, name: "Dairy", slug: "dairy" }] });
+    render(<FridayDeliveryStrip initialProducers={[farm]} city="חיפה" />);
+    expect(await screen.findByText("Dairy")).toBeTruthy();
+    expect(screen.getByText("חיפה")).toBeTruthy();
+  });
+});
+
+describe("FridayDeliveryStrip with the server's list, city changes", () => {
+  beforeEach(() => getSpy.mockReset());
+
+  it("from a city with cards to a city with none: back to the nationwide cards, no stale chip", async () => {
+    getSpy.mockResolvedValueOnce({ data: [{ id: 2, name: "Dairy", slug: "dairy" }] });
+    const { rerender } = render(<FridayDeliveryStrip initialProducers={[{ id: 1, name: "Farm", slug: "farm" }]} city="חיפה" />);
+    expect(await screen.findByText("Dairy")).toBeTruthy();
+    getSpy.mockResolvedValueOnce({ data: [] });
+    rerender(<FridayDeliveryStrip initialProducers={[{ id: 1, name: "Farm", slug: "farm" }]} city="חדרה" />);
+    expect(await screen.findByText("Farm")).toBeTruthy();
+    expect(screen.queryByText("Dairy")).toBeNull();
+    expect(screen.queryByText("חיפה")).toBeNull();
+    expect(screen.queryByText("חדרה")).toBeNull();
+  });
+});
+
+describe("FridayDeliveryStrip when the server found none", () => {
+  beforeEach(() => getSpy.mockReset());
+
+  it("draws nothing and holds no slot while it asks the API", async () => {
+    const d = deferred();
+    getSpy.mockReturnValue(d.promise);
+    const onVis = vi.fn();
+    const { container } = render(<FridayDeliveryStrip initialProducers={[]} onVisibilityChange={onVis} />);
+    expect(container.innerHTML).toBe("");
+    expect(onVis).toHaveBeenLastCalledWith(false);
+    expect(getSpy).toHaveBeenCalledTimes(1);
+    await act(async () => d.resolve({ data: [] }));
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("shows the cards when the API has some the cached page did not", async () => {
+    getSpy.mockResolvedValue({ data: [{ id: 1, name: "Farm", slug: "farm" }] });
+    render(<FridayDeliveryStrip initialProducers={[]} />);
+    expect(await screen.findByTestId("friday-delivery-strip")).toBeTruthy();
+    expect(screen.queryByTestId("friday-delivery-strip-skeleton")).toBeNull();
+  });
+});

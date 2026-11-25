@@ -85,6 +85,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
         const byBusiness = here.find((row) => row.cancelled_by_business);
         if (!hit && byBusiness) {
           setOrder(null);
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the reservations fetch's callback, after the load
           setBusinessCancelledDay(bagDay(byBusiness.date));
           setBusinessCancelled(true);
           return;
@@ -156,6 +157,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
     }
     if (row.cancelled_by_business) {
       setOrder(null);
+      // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the reservations fetch's callback, after the load
       setBusinessCancelledDay(bagDay(row.date));
       setBusinessCancelled(true);
       return true;

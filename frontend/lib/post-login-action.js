@@ -25,6 +25,7 @@ export function enqueueFavoriteOnLogin(producerId) {
 export function readPendingAction() {
   if (typeof window === "undefined") return null;
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const raw = window.sessionStorage.getItem(KEY);
     if (!raw) return null;
     const [verb, payload] = raw.split(":", 2);

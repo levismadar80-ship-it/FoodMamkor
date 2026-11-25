@@ -26,6 +26,7 @@ const ORDERS_HREF = "/producer/dashboard/orders";
 
 function wasClosed() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the screen it feeds renders only after the client has auth, so nothing server-painted changes (measured 0 on the dashboard, MEH-3858)
     return window.localStorage.getItem(ORDERS_INTRO_KEY) === "1";
   } catch {
     return false;

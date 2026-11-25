@@ -23,6 +23,8 @@ import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
 // MEH-3066: business name beside its pin when zoomed in (own module, §16).
 import { bindPinLabel, installPinLabels, isPrimaryLocation } from "@/lib/map-pin-labels";
 import { COLOR } from "@/lib/color-tokens";
+import { chipIconComponent } from "@/lib/chip-icons";
+import { offerMarkFor } from "@/lib/map-offer-marks";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -141,9 +143,29 @@ function markerWrapClass(active) {
   return active ? `${MARKER_WRAP_CLASS} ${MARKER_FOCUSED_CLASS}` : MARKER_WRAP_CLASS;
 }
 
+// MEH-3824: while an offer switch is on, a matching business's pin carries
+// that switch's glyph (Sapir 25/11: only while it is on). Top corner, so it
+// never sits on the verified tick (bottom). Same divIcon raw-HTML exception
+// and physical `top`/`right` as the cluster count dot. Decorative: the switch
+// the visitor just turned on already names what the mark means. Drawn on the
+// primary pin AND on the secondary one, because a business without a branch is
+// shown by its pickup point / market stand alone (mapPinPoints).
+function offerMarkHtml(offerKey, { size = 20, glyph = 11, offset = 5 } = {}) {
+  const OfferIcon = offerKey ? chipIconComponent(offerKey) : null;
+  if (!OfferIcon) return "";
+  return `<div data-offer-mark="${offerKey}" aria-hidden="true" style="
+        position:absolute;top:-${offset}px;right:-${offset}px;z-index:1;
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${COLOR.primary};border:2px solid ${COLOR.surface};box-sizing:border-box;
+        box-shadow:0 1px 3px rgba(0,0,0,0.25);
+        display:flex;align-items:center;justify-content:center;
+        pointer-events:none;
+      ">${categoryGlyphSvg(OfferIcon, { size: glyph, weight: "bold" })}</div>`;
+}
+
 function createCategoryMarker(
   producer,
-  { active = false, hovered = false, approximate = false } = {},
+  { active = false, hovered = false, approximate = false, offerKey = null } = {},
 ) {
   // S5 FINAL: all markers are uniform 36px circles; state shows via border +
   // rings, not size (drops the old 28/32/36 size jump).
@@ -206,6 +228,8 @@ function createCategoryMarker(
       ">✓</div>`
     : "";
 
+  const offerMark = offerMarkHtml(offerKey);
+
   // Border: 2px primary default; selected (active) → 3px state-selected.
   // The hex stays inline (Leaflet divIcon = raw HTML string); #2E4A2E equals
   // the `state-selected` token (= primary-dark, MEH-763 #970) by design.
@@ -238,6 +262,7 @@ function createCategoryMarker(
         ${inner}
       </div>
       ${verifiedBadge}
+      ${offerMark}
     </div>`;
 
   return L.divIcon({
@@ -257,7 +282,7 @@ function createCategoryMarker(
 // the same divIcon raw-HTML exception documented above createCategoryMarker.
 function createSecondaryMarker(
   producer,
-  { active = false, hovered = false, approximate = false } = {},
+  { active = false, hovered = false, approximate = false, offerKey = null } = {},
 ) {
   // MEH-1569: 26px → 24px. Against the 36px primary pin (createCategoryMarker,
   // :100 — 36px since the MEH-763 S5 uniform-circle pass), 26px read as "almost
@@ -294,14 +319,17 @@ function createSecondaryMarker(
     size: 13,
   });
   const html = `
-    <div style="
-      width:${size}px;height:${size}px;border-radius:50%;
-      background:#fff;
-      border:${borderWidth}px ${borderStyle} ${categoryColor};
-      box-shadow:${boxShadow};
-      display:flex;align-items:center;justify-content:center;
-      transition:all 0.18s ease-out;
-    ">${glyph}</div>`;
+    <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:#fff;
+        border:${borderWidth}px ${borderStyle} ${categoryColor};
+        box-shadow:${boxShadow};
+        display:flex;align-items:center;justify-content:center;
+        transition:all 0.18s ease-out;
+      ">${glyph}</div>
+      ${offerMarkHtml(offerKey, { size: 16, glyph: 9, offset: 6 })}
+    </div>`;
   return L.divIcon({
     html,
     className: `${markerWrapClass(active)} mehamakor-marker-secondary`,
@@ -414,6 +442,9 @@ export default function MapComponent({
   // React state is already the single owner of "who is selected"; this prop
   // just mirrors it onto the map.
   focusedProducerId = null,
+  // MEH-3824: the offer switches that are on (lib/map-offer-marks). A matching
+  // business's pin carries the first one's mark; [] → no marks.
+  offerMarks = [],
 }) {
   const t = useTranslations("map.component");
   const containerRef = useRef(null); // DOM node for L.map()
@@ -423,6 +454,15 @@ export default function MapComponent({
   const pinLabelsRef = useRef(null); // MEH-3066: { refresh, remove }
   const hoveredIdRef = useRef(null);
   const activeIdRef = useRef(null);
+  // MEH-3824: read at icon-build time, like activeIdRef, so a rebuild after a
+  // refetch carries the marks without a new dependency on the marker effect.
+  const offerMarksRef = useRef(offerMarks);
+  // Synced in an effect, not during render (react-hooks/refs). It is declared
+  // before the marker effects below, and effects run in declaration order, so
+  // every rebuild or refresh reads the current switches.
+  useEffect(() => {
+    offerMarksRef.current = offerMarks;
+  });
   // MAP_IMPROVEMENTS bug #13 — reuse a single marker for "my location"
   // instead of stacking a fresh circleMarker on every click.
   const myLocationMarkerRef = useRef(null);
@@ -464,11 +504,19 @@ export default function MapComponent({
     const state = {
       active: activeIdRef.current === id,
       hovered: hoveredIdRef.current === id,
+      offerKey: offerMarkFor(entry.producer, offerMarksRef.current), // MEH-3824
     };
     entry.markers.forEach(({ marker, location }) => {
       marker.setIcon(createLocationIcon(entry.producer, location, state));
     });
   };
+  // MEH-3824: a switch turned on or off re-draws every pin's mark at once. The
+  // list is compared by its keys, so a new array with the same switches (every
+  // render of the parent) does nothing.
+  const offerMarksKey = offerMarks.join(",");
+  useEffect(() => {
+    markersRef.current.forEach((_, id) => refreshMarkerIcon(id));
+  }, [offerMarksKey]);
 
   // MEH-3054 (option ה׳): the selected business's points that mapPinPoints()
   // left out of the default one-pin view — its pickup / market_stand rows.
@@ -574,6 +622,7 @@ export default function MapComponent({
         // faded it along with everything else.
         active: activeIdRef.current === p.id,
         hovered: hoveredIdRef.current === p.id,
+        offerKey: offerMarkFor(p, offerMarksRef.current), // MEH-3824
       }),
       // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
       // sheet in MapClient (onProducerClickRef). ALL of a producer's markers

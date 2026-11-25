@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-93 send sites · 90 on a single channel.
+94 send sites · 91 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -103,6 +103,7 @@
 | `services/rescue_emails.py` | `send_cancel_email` | מייל | לקוחה |
 | `services/rescue_emails.py` | `send_reservation_email` | מייל | לקוחה |
 | `services/rescue_no_show.py` | `send_no_show_email` | מייל | לקוחה |
+| `services/staff_emails.py` | `send_staff_invite_email` | מייל | בית עסק / מנהלת |
 | `services/submission_confirmation.py` | `send_submission_confirmation` | מייל | בעלת העסק |
 | `services/weekly_owner_summary.py` | `send_weekly_summaries` | מייל | בעלת העסק |
 

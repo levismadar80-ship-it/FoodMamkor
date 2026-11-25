@@ -243,6 +243,23 @@ class RescueProducerSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RescueTodayOut(BaseModel):
+    """The business's next bag today, in its card on the map (MEH-3824).
+
+    Carried on `ProducerListOut.rescue_today` so the map needs no second
+    request. Only today's bags, only ones the list would also show (stock,
+    window still open for reserving, pilot town); the earliest pickup wins.
+    """
+
+    offer_id: UUID
+    location_id: UUID
+    price_agorot: int
+    value_min_agorot: int | None = None
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    qty_left: int
+
+
 class RescueOfferPublicOut(BaseModel):
     """One row of `GET /rescue/offers` — the offer, who is selling it, what is
     usually in it, and how far away it is.

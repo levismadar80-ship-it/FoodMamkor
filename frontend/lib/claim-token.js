@@ -16,6 +16,7 @@
  *           sentry.*.config.js · components/SpeedInsightsRedacted.jsx ·
  *           backend producer_claim.py · backend producer_owner_invite.py.
  * History:  MEH-2324 (creation). MEH-2974 (the owner-invite token).
+ *           MEH-3526 (the order-staff invite token).
  *
  * The link is a bearer credential: whoever holds it and is signed in can take
  * the draft. That is why it must not sit in a URL a third party records.
@@ -66,6 +67,16 @@ const OWNER_INVITE_PATH_ENCODED = new RegExp(
   "gi",
 );
 
+// MEH-3526: /staff-invite/<token>. Same `secrets.token_urlsafe(32)` shape
+// (producer_staff.py `_mint`), so REG_TOKEN's 40+ floor keeps the route's own
+// files out of the match. Whoever holds it and signs in with the invited
+// address handles that business's orders, with its customers' phones.
+const STAFF_INVITE_PATH = new RegExp(String.raw`(/staff-invite)/${REG_TOKEN}`, "g");
+const STAFF_INVITE_PATH_ENCODED = new RegExp(
+  String.raw`(%2F(?:[a-z]{2}%2F)?staff-invite)%2F${REG_TOKEN}`,
+  "gi",
+);
+
 // MEH-3377: /draft-preview/<jwt> and the API read behind it,
 // /producer-preview/<jwt>. Read-only, but it opens a page that is not public
 // yet, and the token stays in the address for as long as the page is open (a
@@ -87,6 +98,7 @@ const ORDER_LINK_TOKEN_ENCODED = /(%23t%3D)[\w-]{20,100}/gi;
 export function stashClaimToken(token) {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STORAGE_KEY) === token;
   } catch {
     return false;
@@ -95,6 +107,7 @@ export function stashClaimToken(token) {
 
 export function readClaimToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
@@ -116,6 +129,7 @@ export function clearClaimToken() {
 export function stashOwnerInviteToken(token) {
   try {
     window.sessionStorage.setItem(OWNER_INVITE_STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(OWNER_INVITE_STORAGE_KEY) === token;
   } catch {
     return false;
@@ -124,6 +138,7 @@ export function stashOwnerInviteToken(token) {
 
 export function readOwnerInviteToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(OWNER_INVITE_STORAGE_KEY);
   } catch {
     return null;
@@ -135,6 +150,37 @@ export function clearOwnerInviteToken() {
     window.sessionStorage.removeItem(OWNER_INVITE_STORAGE_KEY);
     // The sent-code note belongs to the link; it goes when the link does.
     window.sessionStorage.removeItem(OWNER_INVITE_CODE_SENT_KEY);
+  } catch {
+    // Storage unavailable: nothing was stored.
+  }
+}
+
+// MEH-3526 — the same three operations for the order-staff invite token, on
+// a key of its own for the reason OWNER_INVITE_STORAGE_KEY gives.
+const STAFF_INVITE_STORAGE_KEY = "mehamakor.staffInviteToken";
+
+export function stashStaffInviteToken(token) {
+  try {
+    window.sessionStorage.setItem(STAFF_INVITE_STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
+    return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY) === token;
+  } catch {
+    return false;
+  }
+}
+
+export function readStaffInviteToken() {
+  try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
+    return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearStaffInviteToken() {
+  try {
+    window.sessionStorage.removeItem(STAFF_INVITE_STORAGE_KEY);
   } catch {
     // Storage unavailable: nothing was stored.
   }
@@ -166,6 +212,7 @@ export function stashOwnerInviteCodeSent(token, email) {
 
 export function readOwnerInviteCodeSent(token) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const stored = JSON.parse(window.sessionStorage.getItem(OWNER_INVITE_CODE_SENT_KEY));
     if (!stored || typeof stored.email !== "string" || !stored.email) return null;
     const age = Date.now() - stored.sentAt;
@@ -186,6 +233,8 @@ export function redactClaimPath(value) {
     .replace(REG_PATH_ENCODED, "$1%2F[token]")
     .replace(OWNER_INVITE_PATH, "$1/[token]")
     .replace(OWNER_INVITE_PATH_ENCODED, "$1%2F[token]")
+    .replace(STAFF_INVITE_PATH, "$1/[token]")
+    .replace(STAFF_INVITE_PATH_ENCODED, "$1%2F[token]")
     .replace(DRAFT_PREVIEW_PATH, "$1/[token]")
     .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]")
     .replace(ORDER_LINK_TOKEN, "$1[token]")

@@ -34,6 +34,7 @@ function hasStorage() {
 function readRaw() {
   if (!hasStorage()) return [];
   try {
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);

@@ -36,6 +36,10 @@ import {
   Clock,
   Storefront,
   HandHeart,
+  Basket,
+  UsersThree,
+  CalendarBlank,
+  CookingPot,
 } from "@phosphor-icons/react";
 
 // key → Phosphor icon component. Keys mirror the attribute chip keys in
@@ -46,6 +50,12 @@ const CHIP_ICON_COMPONENTS = {
   has_delivery: Truck,
   pickup_points: Package,  // MEH-2046
   on_site: Storefront,  // MEH-2598
+  // MEH-3824: the offer switches — the glyphs the site already uses for each
+  // kind (Basket on the bag row, the rest as in the mocks Sapir picked).
+  rescue_today: Basket,
+  group_buy: UsersThree,
+  event: CalendarBlank,
+  experience: CookingPot,
   kosher: Certificate,
   vegan: Leaf,
   // MEH-2169: vegetarian + no_added_sugar had NO entry here, so both rendered
@@ -84,6 +94,15 @@ const CHIP_ICON_SIZE = 16;
  * the chip's text color (active white / inactive text) — no raw hex. The caller
  * wraps it in an aria-hidden span, so the label stays the accessible name.
  */
+/**
+ * MEH-3824: the Phosphor component itself, for a surface that renders the glyph
+ * to an HTML string (the map pin's offer mark, via lib/marker-glyph). null when
+ * the key has no glyph.
+ */
+export function chipIconComponent(key) {
+  return CHIP_ICON_COMPONENTS[key] ?? null;
+}
+
 export function chipIcon(key) {
   const Icon = CHIP_ICON_COMPONENTS[key];
   return Icon ? <Icon size={CHIP_ICON_SIZE} /> : null;

@@ -133,6 +133,7 @@ export default function FavoriteButton({
         // written when the hint is actually shown.
         if (onFavorited) {
           // The page's own feedback stands in for the toast.
+        // eslint-disable-next-line no-restricted-syntax -- read inside a click or submit handler, after the page is on screen
         } else if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast.success(t("saved_toast_first_time"), {

@@ -94,7 +94,7 @@ export default function RescueOfferAction({ offer, reservation }) {
 
   const price = shekels(offer.price_agorot);
   const until = israelTime(offer.pickup_end);
-  const cancelUntil = rescueCancelText(offer.cancel_until, t); // MEH-3702
+  const cancelUntil = rescueCancelText(offer.cancel_until, t, day); // MEH-3702
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
   const button = (label, testId) => (
     <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid={testId} variant="primary" size="lg" className="w-full">

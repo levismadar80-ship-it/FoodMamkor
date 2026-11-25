@@ -13,6 +13,7 @@ export const USER_CITY_CHANGED_EVENT = EVENT_NAME;
 
 function read() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the one reader for this key; its callers are listed in __tests__/SavedCityConsumersGuard.test.js
     return localStorage.getItem(STORAGE_KEY) || null;
   } catch {
     return null;
@@ -35,6 +36,7 @@ export function readUserCity() {
 export function seedCityFromProfile(profileCity) {
   if (!profileCity) return;
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the one reader for this key; its callers are listed in __tests__/SavedCityConsumersGuard.test.js
     if (localStorage.getItem(STORAGE_KEY)) return; // localStorage wins
     localStorage.setItem(STORAGE_KEY, profileCity);
   } catch {

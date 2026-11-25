@@ -53,6 +53,8 @@ _URL_TOKEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # /owner-invite/<token_urlsafe(32)> — the page, and /auth/owner-invite/…,
     # which this matches as a substring.
     (re.compile(r"/owner-invite/[\w-]{40,}"), "/owner-invite/[token]"),
+    # MEH-3526: /staff-invite/<token_urlsafe(32)> — the order-staff invite page.
+    (re.compile(r"/staff-invite/[\w-]{40,}"), "/staff-invite/[token]"),
     # /registration(s)/<token_urlsafe(32)> — the sign-up cancel link.
     (re.compile(r"(/registrations?)/[\w-]{40,}"), r"\1/[token]"),
     # MEH-3273: /register/producer/prefill/<token_urlsafe(32)> (returns lead
