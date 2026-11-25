@@ -46,7 +46,8 @@ function cityFold(name) {
   return String(name)
     .replace(/[\s\-־–—]+/g, " ")
     .trim()
-    .replace(/(^|\s)קריית(?=\s|$)/g, "$1קרית")
+    // Drop the second yod of «קריית»; a regex, not a string, since this is data, not copy.
+    .replace(/(?<=(?:^|\s)קרי)י(?=ת(?:\s|$))/g, "")
     .toLowerCase();
 }
 
