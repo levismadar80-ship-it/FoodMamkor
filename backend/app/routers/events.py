@@ -150,10 +150,11 @@ def public_event_feed_query(db: Session) -> OrmQuery[Event]:
     """The rows GET /events lists for a stranger with no filter: active, an
     approved non-test business, today (Israel) onward (MEH-3824).
 
-    `list_events` builds the same rows inline, because an admin or an owner
-    viewing their own page bypasses the business gate there. The map's
-    «אירועים» switch (services/offer_supply.py) reads this one, and
-    tests/test_meh3824_offer_filters.py pins that the two agree.
+    `/events/upcoming` and the map's «אירועים» switch
+    (services/offer_supply.py) build on this one. `list_events` keeps its
+    own, because an admin or an owner viewing their own page bypasses the
+    business gate there; tests/test_meh3824_offer_filters.py pins that the
+    two agree.
     """
     return (
         db.query(Event)
@@ -233,16 +234,10 @@ def upcoming_events(
     db: Session = Depends(get_db),
 ) -> list[EventOut]:
     events = (
-        db.query(Event)
+        # MEH-1161: home-page cards are pure-public — approved producers only
+        # (MEH-2952: no test businesses). The same rows as the map's switch.
+        public_event_feed_query(db)
         .options(joinedload(Event.producer))
-        # MEH-1161: home-page cards are pure-public — approved producers only.
-        .join(Producer, Event.producer_id == Producer.id)
-        .filter(
-            Event.is_active.is_(True),
-            Event.event_date >= israel_today(),
-            Producer.status == "approved",
-            not_test_producer(),  # MEH-2952
-        )
         .order_by(Event.event_date.asc(), Event.event_time.asc())
         .limit(limit)
         .all()

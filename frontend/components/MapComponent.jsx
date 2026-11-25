@@ -143,6 +143,26 @@ function markerWrapClass(active) {
   return active ? `${MARKER_WRAP_CLASS} ${MARKER_FOCUSED_CLASS}` : MARKER_WRAP_CLASS;
 }
 
+// MEH-3824: while an offer switch is on, a matching business's pin carries
+// that switch's glyph (Sapir 25/11: only while it is on). Top corner, so it
+// never sits on the verified tick (bottom). Same divIcon raw-HTML exception
+// and physical `top`/`right` as the cluster count dot. Decorative: the switch
+// the visitor just turned on already names what the mark means. Drawn on the
+// primary pin AND on the secondary one, because a business without a branch is
+// shown by its pickup point / market stand alone (mapPinPoints).
+function offerMarkHtml(offerKey, { size = 20, glyph = 11, offset = 5 } = {}) {
+  const OfferIcon = offerKey ? chipIconComponent(offerKey) : null;
+  if (!OfferIcon) return "";
+  return `<div data-offer-mark="${offerKey}" aria-hidden="true" style="
+        position:absolute;top:-${offset}px;right:-${offset}px;z-index:1;
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${COLOR.primary};border:2px solid ${COLOR.surface};box-sizing:border-box;
+        box-shadow:0 1px 3px rgba(0,0,0,0.25);
+        display:flex;align-items:center;justify-content:center;
+        pointer-events:none;
+      ">${categoryGlyphSvg(OfferIcon, { size: glyph, weight: "bold" })}</div>`;
+}
+
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, approximate = false, offerKey = null } = {},
@@ -208,22 +228,7 @@ function createCategoryMarker(
       ">✓</div>`
     : "";
 
-  // MEH-3824: while an offer switch is on, a matching business's pin carries
-  // that switch's glyph (Sapir 25/11: only while it is on). Top corner, so it
-  // never sits on the verified tick (bottom). Same divIcon raw-HTML exception
-  // and physical `top`/`right` as the cluster count dot above. Decorative: the
-  // switch the visitor just turned on already names what the mark means.
-  const OfferIcon = offerKey ? chipIconComponent(offerKey) : null;
-  const offerMark = OfferIcon
-    ? `<div data-offer-mark="${offerKey}" aria-hidden="true" style="
-        position:absolute;top:-5px;right:-5px;z-index:1;
-        width:20px;height:20px;border-radius:50%;
-        background:${COLOR.primary};border:2px solid ${COLOR.surface};box-sizing:border-box;
-        box-shadow:0 1px 3px rgba(0,0,0,0.25);
-        display:flex;align-items:center;justify-content:center;
-        pointer-events:none;
-      ">${categoryGlyphSvg(OfferIcon, { size: 11, weight: "bold" })}</div>`
-    : "";
+  const offerMark = offerMarkHtml(offerKey);
 
   // Border: 2px primary default; selected (active) → 3px state-selected.
   // The hex stays inline (Leaflet divIcon = raw HTML string); #2E4A2E equals
@@ -277,7 +282,7 @@ function createCategoryMarker(
 // the same divIcon raw-HTML exception documented above createCategoryMarker.
 function createSecondaryMarker(
   producer,
-  { active = false, hovered = false, approximate = false } = {},
+  { active = false, hovered = false, approximate = false, offerKey = null } = {},
 ) {
   // MEH-1569: 26px → 24px. Against the 36px primary pin (createCategoryMarker,
   // :100 — 36px since the MEH-763 S5 uniform-circle pass), 26px read as "almost
@@ -314,14 +319,17 @@ function createSecondaryMarker(
     size: 13,
   });
   const html = `
-    <div style="
-      width:${size}px;height:${size}px;border-radius:50%;
-      background:#fff;
-      border:${borderWidth}px ${borderStyle} ${categoryColor};
-      box-shadow:${boxShadow};
-      display:flex;align-items:center;justify-content:center;
-      transition:all 0.18s ease-out;
-    ">${glyph}</div>`;
+    <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:#fff;
+        border:${borderWidth}px ${borderStyle} ${categoryColor};
+        box-shadow:${boxShadow};
+        display:flex;align-items:center;justify-content:center;
+        transition:all 0.18s ease-out;
+      ">${glyph}</div>
+      ${offerMarkHtml(offerKey, { size: 16, glyph: 9, offset: 6 })}
+    </div>`;
   return L.divIcon({
     html,
     className: `${markerWrapClass(active)} mehamakor-marker-secondary`,

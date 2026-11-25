@@ -186,6 +186,19 @@ class TestFlagsMirrorTheirPublicList:
             False,
         )
 
+    def test_a_flag_belongs_to_its_own_business_on_a_shared_page(self, client, db):
+        # Both businesses come back in ONE page, so a flag computed for the page
+        # instead of per business would mark the second one too.
+        with_offers = _business(db, "קמח הגליל")
+        _group_buy(db, with_offers)
+        _event(db, with_offers)
+        _experience(db, with_offers)
+        without = _business(db, "סתם בית עסק")
+        page = {r["id"]: r for r in client.get("/producers", params={"city": CITY}).json()}
+        keys = ("has_open_group_buy", "has_upcoming_event", "has_listed_experience")
+        assert [page[str(with_offers.id)][k] for k in keys] == [True, True, True]
+        assert [page[str(without.id)][k] for k in keys] == [False, False, False]
+
 
 class TestTheFilters:
     def test_each_switch_keeps_only_its_businesses(self, client, db, shop, rescue_on):

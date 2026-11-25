@@ -189,10 +189,15 @@ export type Axis = { key: string; label: string };
  */
 const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
 export const AXES = Object.fromEntries(
-  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
+  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([k, a]) => {
     const copy = HE_AXES[k];
-    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
-    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
+    // MEH-3824: an axis named after a site section reads its label from that
+    // key (lib/chip-copy.js does the same).
+    const label = a.labelKey
+      ? (a.labelKey.split(".").reduce((n: unknown, p) => (n as Record<string, unknown> | undefined)?.[p], he) as string | undefined)
+      : copy?.label;
+    if (!label) throw new Error(`he.json label for axis ${k} is missing — the spec cannot name the chip`);
+    return [k, { ...a, label, subtext: copy?.subtext ?? null }];
   }),
 ) as Record<string, Axis>;
 
