@@ -53,6 +53,12 @@ function useProducersData() {
   // rendered "no businesses awaiting approval" when the API was down — real
   // businesses waiting, and nobody able to tell.
   const [loadError, setLoadError] = useState(false);
+  // MEH-3818: whether the first read has answered. Until then the page shows
+  // its table skeleton, not an empty table («אין עסקים») that fills a beat
+  // later and pushes the toolbar down under the SLA line (0.04 shift, and a
+  // false "nothing to approve" for that beat). Later reads keep the rows on
+  // screen, so a filter change does not blank the table.
+  const [firstLoadDone, setFirstLoadDone] = useState(false);
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
@@ -84,7 +90,8 @@ function useProducersData() {
     api
       .get("/admin/producers", { params })
       .then((r) => { setProducers(r.data); setLoadError(false); })
-      .catch(() => setLoadError(true));
+      .catch(() => setLoadError(true))
+      .finally(() => setFirstLoadDone(true));
   };
 
   useEffect(() => {
@@ -95,6 +102,7 @@ function useProducersData() {
   return {
     producers, setProducers,
     loadError,
+    firstLoadDone,
     producerSearch, setProducerSearch,
     producerStatus, setProducerStatus,
     incompleteOnly, setIncompleteOnly,
