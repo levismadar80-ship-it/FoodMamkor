@@ -33,6 +33,7 @@ export default function MapRescueRow({ producer }) {
   const price = shekels(bag.price_agorot);
   const worth = shekels(worthAgorot(bag));
   const href = rescueOfferPath({ id: bag.offer_id });
+  if (!href) return null;
 
   return (
     <Link

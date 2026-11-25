@@ -1,5 +1,5 @@
-"""MEH-3824 — the map shows a business's bag today: a badge on its pin and a
-row in its card. The map reads `rescue_today` off the producer list it already
+"""MEH-3824 — the map shows a business's bag today as a row in its card
+(no pin badge: Sapir 25/11). The map reads `rescue_today` off the producer list it already
 loads, so the field has to carry exactly the bags the bag list would offer
 today, the earliest first, and nothing while the pilot is off.
 """
@@ -67,6 +67,33 @@ class TestRescueTodayOnTheList:
         assert row["location_id"] == str(point.id)
         assert row["offer_id"] == str(offer.id)
 
+    def test_the_earliest_pickup_wins_across_points(
+        self, client, db, shop, rescue_on
+    ):
+        point = ProducerLocation(
+            producer_id=shop["producer"].id,
+            kind="pickup",
+            is_primary=False,
+            city="חיפה",
+            address="מסדה 5",
+            lat=32.80,
+            lng=34.99,
+            location_precision="exact",
+        )
+        db.add(point)
+        db.commit()
+        now = utc_now()
+        _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now + timedelta(hours=4),
+            pickup_end=now + timedelta(hours=6),
+        )
+        early = _seed_offer(db, point)  # +1h .. +3h
+        row = _listed(client, shop["producer"])["rescue_today"]
+        assert row["offer_id"] == str(early.id)
+        assert row["location_id"] == str(point.id)
+
     def test_tomorrows_bag_is_not_today(self, client, db, shop, rescue_on):
         now = utc_now()
         _seed_offer(
@@ -91,7 +118,7 @@ class TestRescueTodayOnTheList:
         self, client, db, shop, rescue_on
     ):
         # Reserving closes 15 minutes before the window ends (MEH-2726); the
-        # badge must not offer a bag the reserve button would refuse.
+        # map row must not offer a bag the reserve button would refuse.
         now = utc_now()
         _seed_offer(
             db,

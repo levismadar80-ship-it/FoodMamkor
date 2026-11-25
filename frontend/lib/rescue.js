@@ -74,7 +74,7 @@ export function rescueBagsEnabled() {
 export function rescueToday(producer) {
   if (!rescueBagsEnabled()) return null;
   const bag = producer?.rescue_today;
-  return bag && typeof bag.offer_id === "string" ? bag : null;
+  return bag && typeof bag.offer_id === "string" && bag.offer_id ? bag : null;
 }
 
 /**

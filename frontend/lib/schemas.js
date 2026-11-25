@@ -252,7 +252,7 @@ export const ProducerListSchema = z.object({
   // feed parses all-or-nothing, like the badge inputs above.
   rescue_today: z
     .object({
-      offer_id: z.string(),
+      offer_id: z.string().min(1),
       location_id: z.string().nullable().optional(),
       price_agorot: z.number(),
       value_min_agorot: z.number().nullable().optional(),

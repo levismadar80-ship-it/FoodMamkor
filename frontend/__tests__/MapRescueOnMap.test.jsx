@@ -64,12 +64,19 @@ describe("bags on the map — pilot on", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("a malformed bag drops the badge, never the business (the feed parses all-or-nothing)", () => {
+  it("a malformed bag drops the row, never the business (the feed parses all-or-nothing)", () => {
     const parsed = ProducerSchema.safeParse({ ...producer({ offer_id: 7 }), id: "p1" });
     expect(parsed.success).toBe(true);
     expect(parsed.data.rescue_today).toBeNull();
     const good = ProducerSchema.safeParse({ ...producer(bag()), id: "p1" });
     expect(good.data.rescue_today.offer_id).toBe(bag().offer_id);
+  });
+
+  it("an empty bag id renders no row instead of a link with no target", () => {
+    const parsed = ProducerSchema.safeParse({ ...producer(bag({ offer_id: "" })), id: "p1" });
+    expect(parsed.data.rescue_today).toBeNull();
+    const { container } = showRow(producer(bag({ offer_id: "" })));
+    expect(container.innerHTML).toBe("");
   });
 });
 
