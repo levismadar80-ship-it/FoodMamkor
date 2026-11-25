@@ -4168,7 +4168,12 @@
       "placeholder": "הקלידו שם עיר…",
       "commit_hint": "בחרו עיר מהרשימה כדי להוסיף",
       "region_added": "נוסף",
-      "region_remove_title": "הסרת ערי {region}"
+      "region_remove_title": "הסרת ערי {region}",
+      "paste_hint": "אפשר להדביק כמה ערים בבת אחת, מופרדות בפסיק או בשורה חדשה.",
+      "paste_added": "{count, plural, one {נוספה עיר אחת.} other {נוספו # ערים.}}",
+      "paste_unmatched": "לא מצאנו ברשימת היישובים: {cities}. אפשר לבדוק את הכתיב ולחפש בשדה.",
+      "paste_all_present": "כל הערים שהודבקו כבר ברשימה.",
+      "paste_error": "לא הצלחנו לבדוק את הרשימה. כדאי לנסות להדביק שוב."
     },
     "city_search": {
       "placeholder": "חפשו עיר…",

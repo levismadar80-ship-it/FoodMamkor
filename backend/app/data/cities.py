@@ -281,6 +281,28 @@ def alias_targets(value: str | None) -> list[str]:
     )
 
 
+def alias_sources(value: str | None) -> list[str]:
+    """MEH-3867: everyday or old names whose OFFICIAL name starts with `value`.
+
+    The reverse of `alias_targets`. The seeded data.gov table can hold a
+    locality under a name that `CITY_ALIASES` maps away from: production keeps
+    «נצרת עילית», which `canonical_city` answers as «נוף הגליל». A prefix
+    search for «נוף הגליל» ran against the stored «נצרת עילית» and found
+    nothing (measured on mehamakor.co.il/api/cities, 25/11), so the city's
+    current name was the one spelling that could not reach it. Adding the
+    stored names as patterns lets the row match; `canonical_city` still
+    renames it on the way out, so the answer is the current name.
+    """
+    key = city_key(value)
+    if not key:
+        return []
+    return sorted(
+        alias
+        for alias, canon in CITY_ALIASES.items()
+        if city_key(canon).startswith(key)
+    )
+
+
 def alias_like_patterns(value: str | None) -> list[str]:
     """MEH-2919 (C5): `alias_targets` as SQL LIKE prefixes.
 

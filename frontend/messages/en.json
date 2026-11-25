@@ -4168,7 +4168,12 @@
       "placeholder": "Type a city name…",
       "commit_hint": "Pick a city from the list to add it",
       "region_added": "Added",
-      "region_remove_title": "Remove {region} cities"
+      "region_remove_title": "Remove {region} cities",
+      "paste_hint": "You can paste several cities at once, separated by commas or new lines.",
+      "paste_added": "{count, plural, one {Added one city.} other {Added # cities.}}",
+      "paste_unmatched": "Not in our list of localities: {cities}. Check the spelling and search for them in the field.",
+      "paste_all_present": "All the pasted cities are already in the list.",
+      "paste_error": "We couldn't check the list. Try pasting it again."
     },
     "city_search": {
       "placeholder": "Search city…",

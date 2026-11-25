@@ -1932,6 +1932,50 @@
         "title": "CheckPasswordRequest",
         "type": "object"
       },
+      "CitiesMatchIn": {
+        "description": "The names as pasted, already split by the client.",
+        "properties": {
+          "names": {
+            "items": {
+              "maxLength": 100,
+              "type": "string"
+            },
+            "maxItems": 300,
+            "title": "Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "title": "CitiesMatchIn",
+        "type": "object"
+      },
+      "CitiesMatchOut": {
+        "description": "Known names in their canonical spelling, and the rest as typed.",
+        "properties": {
+          "matched": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched",
+            "type": "array"
+          },
+          "unmatched": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unmatched",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matched",
+          "unmatched"
+        ],
+        "title": "CitiesMatchOut",
+        "type": "object"
+      },
       "ConfirmIn": {
         "additionalProperties": false,
         "properties": {
@@ -30367,6 +30411,48 @@
           }
         },
         "summary": "List Cities",
+        "tags": [
+          "cities"
+        ]
+      }
+    },
+    "/cities/match": {
+      "post": {
+        "description": "MEH-3867: which pasted names are known cities, in one request.\n\nRead-only: nothing is written; the field adds the matched names to its own\nform. A name is matched on city_key after canonical_city, so aliases,\n«קרית»/«קריית», dashes and double spaces all reach the city. Order is the\npasted order; duplicates collapse; an unknown name comes back as typed\n(trimmed), never dropped.",
+        "operationId": "match_cities_cities_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CitiesMatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CitiesMatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Match Cities",
         "tags": [
           "cities"
         ]

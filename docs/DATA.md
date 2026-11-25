@@ -2231,7 +2231,19 @@ GET  /cities                     public — canonical cities table (data.gov.il 
                                  («גבעת עדה» → «בנימינה-גבעת עדה»); the alias
                                  pattern tolerates the data.gov hyphen spacing,
                                  and an alias-derived hit is ranked after every
-                                 direct prefix match
+                                 direct prefix match. MEH-3867: a space or dash
+                                 in the query matches any separator in the row
+                                 («תל-מונד» → «תל מונד»), and a city typed by its
+                                 current name reaches a row stored under the old
+                                 one («נוף הגליל» → «נצרת עילית»)
+POST /cities/match               public, 30/min, read-only — MEH-3867.
+                                 { names: [str ≤100] ≤300 } → { matched, unmatched }.
+                                 matched = known localities in the chip spelling
+                                 (city_key after canonical_city, against the
+                                 cities table, or the static list when unseeded),
+                                 pasted order, deduped; unmatched = the rest as
+                                 typed (trimmed). Backs the «paste a list» of
+                                 CitiesAutocomplete (components/cities-paste.js)
 ```
 
 ### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)

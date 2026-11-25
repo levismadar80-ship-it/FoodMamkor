@@ -4340,6 +4340,22 @@ export const ListCitiesCitiesGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3867: which pasted names are known cities, in one request.
+ *
+ * Read-only: nothing is written; the field adds the matched names to its own
+ * form. A name is matched on city_key after canonical_city, so aliases,
+ * «קרית»/«קריית», dashes and double spaces all reach the city. Order is the
+ * pasted order; duplicates collapse; an unknown name comes back as typed
+ * (trimmed), never dropped.
+ * @summary Match Cities
+ */
+export const MatchCitiesCitiesMatchPostResponse = /*#__PURE__*/ zod.object({
+  "matched": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "unmatched": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('Known names in their canonical spelling, and the rest as typed.'))
+
+
+/**
  * @summary Submit Contact
  */
 export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
