@@ -120,6 +120,30 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Admin outreach, mobile: the admin tab strip moves once at ~0.7 s (largest 0.107, mobile, PR #5280 head 6f45c4c).",
     card: "MEH-3870",
   },
+  {
+    // MEH-3875: staging f08f421 (run 45701938236), desktop, hard fail on both tries.
+    path: /^\/admin\/users$/,
+    ceiling: 0.18,
+    reason: "Admin users: the dashboard footer moves at ~1.8 s (largest 0.122, desktop, staging f08f421).",
+    card: "MEH-3875",
+  },
+  {
+    // MEH-3872: PR #5280 head a7e7572, mobile, flaky.
+    path: /^\/admin\/producers\/[^/]+\/edit$/,
+    ceiling: 0.23,
+    reason: "Admin business edit: the form moves once at ~0.6 s (largest 0.151, mobile, PR #5280).",
+    card: "MEH-3872",
+  },
+  {
+    // MEH-3871: business pages, a section above delivery / reviews / bio arrives
+    // late. Only the pages measured are listed; any other business page still
+    // fails at 0.1. ruach-hasadeh 0.571 (PR #5280 2e5e78a), beit-habad-sivan and
+    // sdot-zahav 0.101 (staging f08f421, section#section-bio).
+    path: /^\/(ruach-hasadeh|beit-habad-sivan|sdot-zahav)$/,
+    ceiling: 0.86,
+    reason: "Business page: a late block above the delivery, reviews or bio section pushes it down (largest 0.571, mobile).",
+    card: "MEH-3871",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
