@@ -59,14 +59,15 @@
 #   approved «מאשרת הכל») and --update-baseline dropped their 230 lines. What
 #   is left is kept on purpose:
 #     - nav.footer.brand_tagline — the slogan is locked by ADR-011.
-#     - admin.* and admin_extra.py — admin copy and scripts to a named owner.
+#     - admin.* and admin_extra.py (since MEH-3537 services/admin_user_writes.py)
+#       — admin copy and scripts to a named owner.
 #     - guides.customer_messages.* and onboarding_followup.py — sample
 #       messages a business sends to one named customer, quoted as examples
 #       (§9 exempts a message to a named person).
 #     - privacy.sections.data.items.ugc.label «על ידך» — privacy-policy text,
 #       left for a legal-text pass rather than a copy batch.
 #     - dev/components/page.jsx — the internal component gallery.
-backend/app/routers/admin_extra.py	singular-address	 שלך
+backend/app/services/admin_user_writes.py	singular-address	 שלך
 backend/app/routers/chat.py	singular-address	 שלך
 backend/app/routers/chat.py	singular-address	 שלך
 backend/app/routers/chat.py	singular-address	 שלך
