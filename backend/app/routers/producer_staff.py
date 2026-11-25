@@ -64,7 +64,7 @@ member_router = APIRouter(prefix="/users/me/staff-membership", tags=["producer-s
 INVITE_TTL = timedelta(days=7)
 _LIVE = ("pending", "active")
 
-_OWN_ADDRESS = "זו הכתובת של החשבון שלך. אפשר להזמין כתובת של מישהו אחר."
+_OWN_ADDRESS = "זו הכתובת של החשבון שלכם. אפשר להזמין כתובת של מישהו אחר."
 _ALREADY_STAFF = "הכתובת הזאת כבר בצוות של בית העסק."
 _NOT_FOUND = "לא מצאנו את העובד הזה בצוות."
 _LINK_INVALID = "הקישור לא תקף. אפשר לבקש מבית העסק לשלוח הזמנה חדשה."

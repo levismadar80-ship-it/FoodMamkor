@@ -22,8 +22,8 @@ def _subject(business: str) -> str:
 def _body(business: str, link: str) -> str:
     return (
         "שלום,\n\n"
-        f"{business} מזמינים אותך לעזור בטיפול בהזמנות שמגיעות דרך מהמקור.\n\n"
-        f"אחרי האישור אפשר להיכנס עם החשבון שלך, לראות את ההזמנות של {business} "
+        f"{business} מזמינים אתכם לעזור בטיפול בהזמנות שמגיעות דרך מהמקור.\n\n"
+        f"אחרי האישור אפשר להיכנס עם החשבון שלכם, לראות את ההזמנות של {business} "
         "ולעדכן אותן. אין גישה לשאר ההגדרות של בית העסק.\n\n"
         "[לאישור ההזמנה]\n"
         f"{link}\n\n"
@@ -50,8 +50,8 @@ def _html(business: str, link: str) -> str:
         <tr><td style="text-align:right;direction:rtl;padding:32px 24px;">
           {email_logo_html()}
           <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום,</h1>
-          <p {para}>{b} מזמינים אותך לעזור בטיפול בהזמנות שמגיעות דרך מהמקור.</p>
-          <p {para}>אחרי האישור אפשר להיכנס עם החשבון שלך, לראות את ההזמנות של {b} ולעדכן אותן. אין גישה לשאר ההגדרות של בית העסק.</p>
+          <p {para}>{b} מזמינים אתכם לעזור בטיפול בהזמנות שמגיעות דרך מהמקור.</p>
+          <p {para}>אחרי האישור אפשר להיכנס עם החשבון שלכם, לראות את ההזמנות של {b} ולעדכן אותן. אין גישה לשאר ההגדרות של בית העסק.</p>
           <div style="text-align:center;margin:12px 0 28px;">
             <a href="{href}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">לאישור ההזמנה</a>
           </div>
