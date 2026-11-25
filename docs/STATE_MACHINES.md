@@ -46,8 +46,8 @@ There is no soft-delete: deletion removes the row.
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
-| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
-| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
+| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` → `services/admin_user_writes.py` `change_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
+| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` → `services/admin_user_writes.py` `toggle_user_block` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | current password (MEH-3104); 5 wrong per account per hour, row lock (MEH-3425); OAuth and super-admin refused; other devices signed out (`token_version`) |
 | tokens invalidated | the user | logout-all, password change, password reset, email change (MEH-3425) | checked on every request in `auth.py` `get_current_user` |
@@ -92,7 +92,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
 | inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo keeps it `inactive` (MEH-3026: the licence is not checked), owner still linked (MEH-3268) |
-| approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `hide_business` | a co-owner who can sign in keeps it up |
+| approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `services/admin_user_writes.py` `toggle_user_block` → `hide_business` | a co-owner who can sign in keeps it up |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |
 
