@@ -34,6 +34,33 @@ beforeEach(() => {
 });
 
 describe("useProducerActivities (MEH-3819)", () => {
+  // MEH-3836: recipes are read by slug once the producer is in, and `ready`
+  // waits for them, so «מתכונים» is in the first paint.
+  it("waits for the recipes: slug unknown → not ready; recipes answered → ready with them", async () => {
+    const { result, rerender } = renderHook(({ slug }) => useProducerActivities({ producerId: "p-1", slug }), {
+      initialProps: { slug: null },
+    });
+    await answer("/events", []);
+    await answer("/experiences", []);
+    await answer("/group-buys", []);
+    expect(result.current.ready).toBe(false);
+    rerender({ slug: "bakery" });
+    expect(api.get.mock.calls.map((c) => c[0])).toContain("/producers/bakery/recipes");
+    expect(result.current.ready).toBe(false);
+    await answer("/producers/bakery/recipes", [{ id: "r1" }]);
+    expect(result.current.ready).toBe(true);
+    expect(result.current.recipes).toEqual([{ id: "r1" }]);
+  });
+
+  it("a business with no slug reads no recipes and does not wait for them", async () => {
+    const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", slug: "" }));
+    await answer("/events", []);
+    await answer("/experiences", []);
+    await answer("/group-buys", []);
+    expect(result.current.ready).toBe(true);
+    expect(api.get.mock.calls.some((c) => String(c[0]).includes("/recipes"))).toBe(false);
+  });
+
   it("is ready only once all three lists answered; a failed list is empty", async () => {
     const { result } = renderHook(() => useProducerActivities({ producerId: "p-1" }));
     expect(api.get.mock.calls.map((c) => c[0])).toEqual([
@@ -50,6 +77,7 @@ describe("useProducerActivities (MEH-3819)", () => {
       events: [{ id: "e1" }],
       experiences: [],
       groupBuys: [{ id: "g1" }],
+      recipes: [],
       ready: true,
     });
   });
@@ -57,7 +85,7 @@ describe("useProducerActivities (MEH-3819)", () => {
   it("server-seeded: ready at once with the server's lists, before any read answers", () => {
     const initial = { events: [], experiences: [{ id: "x1" }], groupBuys: [] };
     const { result } = renderHook(() => useProducerActivities({ producerId: "p-1", initial }));
-    expect(result.current).toEqual({ ...initial, ready: true });
+    expect(result.current).toEqual({ ...initial, recipes: [], ready: true });
   });
 
   it("server-seeded and stale: the refresh replaces an event that is over and a changed join count", async () => {
@@ -67,7 +95,7 @@ describe("useProducerActivities (MEH-3819)", () => {
     await answer("/events", []);
     await answer("/experiences", []);
     await answer("/group-buys", [{ id: "g1", commits_count: 3 }]);
-    expect(result.current).toEqual({ events: [], experiences: [], groupBuys: [{ id: "g1", commits_count: 3 }], ready: true });
+    expect(result.current).toEqual({ events: [], experiences: [], groupBuys: [{ id: "g1", commits_count: 3 }], recipes: [], ready: true });
   });
 
   it("server-seeded and fresh: the same answer keeps the same state object (no re-render, no move)", async () => {

@@ -5249,6 +5249,9 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_15": {
+            "i0": "Order staff: add up to 5 people to handle your orders. They see only the orders tab. Add them from the «Tools» tab."
+          },
           "v1_5_14": {
             "i0": "Before you open orders, you can see how the order form looks to customers. If something is missing, it says what to add.",
             "i1": "Paste text and get a draft of a recipe, an event or your order settings. Every field has a «?» with a short explanation.",
