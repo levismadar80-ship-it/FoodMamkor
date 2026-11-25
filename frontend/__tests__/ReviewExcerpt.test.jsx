@@ -15,10 +15,14 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 
 import ReviewExcerpt from "@/app/[locale]/producer/[id]/components/ReviewExcerpt";
+import { forgetReviewsReads } from "@/lib/reviews-page";
 
 const review = (body, i = 0) => ({ id: `r${i}`, stars: 5, body, created_at: "2026-07-01" });
 
-beforeEach(() => mockGet.mockReset());
+beforeEach(() => {
+  mockGet.mockReset();
+  forgetReviewsReads(); // MEH-3836: page-1 reads are joined across components
+});
 
 describe("ReviewExcerpt (MEH-1048 chunk 2)", () => {
   it("makes no fetch and renders nothing when reviews_count is 0", async () => {

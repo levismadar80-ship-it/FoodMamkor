@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
+import ReviewExcerpt from "@/app/[locale]/producer/[id]/components/ReviewExcerpt";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
 import { pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 
@@ -35,6 +36,7 @@ const { apiMock, authState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({ default: apiMock }));
+import { forgetReviewsReads } from "@/lib/reviews-page";
 // MEH-1285: the login prompt now uses Link from @/i18n/navigation
 // (locale-aware); stub it so next-intl's createNavigation isn't loaded
 // under jsdom.
@@ -83,6 +85,7 @@ beforeEach(() => {
   sessionStorage.removeItem("review_draft_stars_p-1");
   apiMock.get.mockReset();
   apiMock.put.mockReset();
+  forgetReviewsReads(); // MEH-3836: page-1 reads are joined across components
   global.IntersectionObserver = class {
     constructor(cb) {
       this.cb = cb;
@@ -684,6 +687,48 @@ describe("ReviewsSection — loading state (MEH-2606)", () => {
     render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
     // Zero reviews: no loading rows that would shrink to the one quiet line.
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+// MEH-3836: a business with reviews reads page 1 with the page, joined to the
+// header quote's read; a business with none still waits for the scroll.
+describe("ReviewsSection — when page 1 is read (MEH-3836)", () => {
+  const neverInView = class {
+    observe() {}
+    disconnect() {}
+  };
+
+  it("reviews → read at mount without the scroll, in one request shared with the header quote", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 2, pages: 1 } });
+    render(
+      <>
+        <ReviewExcerpt producerId="p-1" reviewsCount={2} />
+        <ReviewsSection producerId="p-1" isOwner={false} reviewCount={2} />
+      </>,
+    );
+    // The list's loading rows give way without the section ever being in view.
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    const pageOne = apiMock.get.mock.calls.filter(([url, cfg]) => url === "/producers/p-1/reviews" && cfg?.params?.page === 1);
+    expect(pageOne).toHaveLength(1);
+  });
+
+  it("no reviews → no read until the section is in view", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 0, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    await act(async () => {});
+    expect(apiMock.get).not.toHaveBeenCalled();
+  });
+
+  it("no reviews at mount, then a first one posted → still no read (the new row is not swapped for loading rows)", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 0, pages: 1 } });
+    const { rerender } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    await act(async () => {});
+    rerender(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={1} />);
+    await act(async () => {});
+    expect(apiMock.get).not.toHaveBeenCalled();
   });
 });
 
