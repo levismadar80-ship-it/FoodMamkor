@@ -186,6 +186,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         1,
         "the owner's publish gate (moved from routers/rescue.py, MEH-3554)",
     ),
+    "backend/app/services/rescue_schedule.py": (
+        1,
+        "can_host: the same owner publish gate, run by the weekly job (MEH-3703); "
+        "the public list still adds not_test_producer()",
+    ),
     "backend/app/services/rescue_reads.py": (
         1,
         "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",

@@ -147,6 +147,8 @@ and every transition re-reads the row under a lock.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
+| offer → active (created) | the business, by hand, or the hourly routine job for a day in its weekly schedule (MEH-3703) | `routers/rescue.py` `create_offer`; `services/rescue_schedule.py` `publish_due` | approved business, exact address, pilot town, paid tool open; the job skips a day that already has any offer, cancelled included, a skipped or paused day, and a window whose reserve cut-off passed |
+| active → cancelled | the business, also when it skips a scheduled day whose bag is up (MEH-3703) | `routers/rescue.py` `cancel_offer`; `skip_my_day` (same `cancel_whole_offer`) | before `pickup_end`; holders are mailed |
 | → reserved | buyer with a verified email | `routers/rescue.py` `create_order` | offer locked; business live; offer active, today or tomorrow (MEH-3702), inside the window; per-buyer cap; stock |
 | reserved → handed | the business / admin | `routers/rescue.py` | lock + re-read; ledger row counted; 409 on a bag dated after today (MEH-3805) |
 | reserved → no_show | the business | `routers/rescue.py` | after the pickup window ends |
