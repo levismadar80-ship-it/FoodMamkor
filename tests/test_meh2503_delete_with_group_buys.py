@@ -69,7 +69,7 @@ def _capture(monkeypatch):
     sent = []
     monkeypatch.setattr(
         "app.services.group_buy_notifications.send_email",
-        lambda to, subject, body, html=None, test_cause=False: sent.append(
+        lambda to, subject, body, html=None, test_cause=False, kind=None: sent.append(
             (to, subject, body)
         ),
     )

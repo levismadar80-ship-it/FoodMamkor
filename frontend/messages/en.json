@@ -5238,7 +5238,8 @@
             "i3": "When you set a vacation or a closed day that has orders you already accepted, a message shows them.",
             "i4": "The card for asking customers for a review now also appears at the top of the «Reviews» page.",
             "i5": "The link to your page and your QR code are now in one place, «Share», in the «Tools» tab.",
-            "i6": "New category: «Cooked to order», for platters, salads and Shabbat meals."
+            "i6": "New category: «Cooked to order», for platters, salads and Shabbat meals.",
+            "i7": "A fixed schedule for surprise bags: choose the days and times once, and the bag goes up on the site by itself. On a day with no food left over, skip it with one tap."
           },
           "v1_5_11": {
             "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",

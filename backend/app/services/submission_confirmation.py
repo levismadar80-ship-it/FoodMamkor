@@ -114,4 +114,11 @@ def send_submission_confirmation(
     """
     subject, body = build_submission_confirmation(business_name, submitted_at)
     # MEH-2952: `test_cause` — the submitting business is a test row.
-    send_email(to, subject, body, reply_to=SUPPORT_REPLY_TO, test_cause=test_cause)
+    send_email(
+        to,
+        subject,
+        body,
+        reply_to=SUPPORT_REPLY_TO,
+        test_cause=test_cause,
+        kind="submission_received",
+    )

@@ -230,9 +230,11 @@ def _wa(to: str, template: wt.WhatsAppTemplate, test: bool) -> Callable[[], str]
     return send
 
 
-def _mail(to: str, subject: str, body: str, test: bool) -> Callable[[], str]:
+def _mail(to: str, subject: str, body: str, test: bool, kind: str) -> Callable[[], str]:
     def send() -> str:
-        return email_service.send_email_result(to, subject, body, test_cause=test)
+        return email_service.send_email_result(
+            to, subject, body, test_cause=test, kind=kind
+        )
 
     return send
 
@@ -370,7 +372,7 @@ def _review_request(
     body = REVIEW_REQUEST_BODY.format(
         business_name=name, link=review_invite_url(producer)
     )
-    return _Message(_mail(str(buyer.email), subject, body, test))
+    return _Message(_mail(str(buyer.email), subject, body, test, "review_request"))
 
 
 def _compose(
@@ -399,7 +401,7 @@ def _compose(
         if row.channel == "email":
             address = owner.email if owner is not None else None
             return (
-                _Message(_mail(str(address), subject, body, test))
+                _Message(_mail(str(address), subject, body, test, f"order_{row.kind}"))
                 if address
                 else "no_address"
             )

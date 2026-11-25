@@ -456,7 +456,9 @@ def send_owner_invite_email(
             """
         ),
     )
-    send_email(email, subject, body, html=html_body, test_cause=test_cause)
+    send_email(
+        email, subject, body, html=html_body, test_cause=test_cause, kind="owner_invite"
+    )
 
 
 def send_owner_invite_code_email(

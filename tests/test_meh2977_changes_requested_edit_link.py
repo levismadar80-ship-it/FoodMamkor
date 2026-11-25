@@ -13,7 +13,7 @@ def test_changes_requested_mail_links_to_the_dashboard_edit_page(monkeypatch):
     sent: list[str] = []
     monkeypatch.setattr(
         experience_notifications, "_send_email",
-        lambda to, subject, body, test_cause=False: sent.append(body),
+        lambda to, subject, body, test_cause=False, kind=None: sent.append(body),
     )
     experience_notifications.notify_host_changes_requested(
         "her@example.com", "סדנת לחם", "exp-1", "נא להוסיף תמונה"

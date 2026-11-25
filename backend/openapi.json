@@ -39651,6 +39651,25 @@
         ]
       }
     },
+    "/webhook/resend": {
+      "post": {
+        "operationId": "resend_events_webhook_resend_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resend Events",
+        "tags": [
+          "webhook"
+        ]
+      }
+    },
     "/webhook/whatsapp": {
       "get": {
         "description": "Respond to Meta's subscription challenge.\n\nMeta hits this URL once when the webhook is registered in the\nDeveloper Console, sending three query params: `hub.mode=subscribe`,\n`hub.verify_token=<our static token>`, `hub.challenge=<random>`.\nA successful response echoes `hub.challenge` as plain-text 200.\n\nFail-closed: empty `whatsapp_verify_token` setting → 403 every time.\nThe Meta UI surfaces a clear error in that case, telling the operator\nto set the env var rather than letting any GET pass through.",

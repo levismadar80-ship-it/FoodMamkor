@@ -366,6 +366,7 @@ def send_due_followups(db: Session) -> dict[int, int]:
                     subject,
                     body,
                     test_cause=bool(p.is_test or user.is_test),
+                    kind=f"onboarding_{step}",
                 )
                 setattr(p, column_attr, datetime.now(timezone.utc))
                 db.commit()

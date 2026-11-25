@@ -10,7 +10,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3598_env_map.py -->
 
-49 Settings fields · 14 direct backend reads · 26 frontend (site) · 25 frontend (tests and tooling).
+50 Settings fields · 14 direct backend reads · 26 frontend (site) · 25 frontend (tests and tooling).
 
 ### שרת: שדות `Settings` (`backend/app/config.py`)
 
@@ -49,6 +49,7 @@
 | `RESCUE_BAGS_ENABLED` | `bool` | יש | MEH-2644: rescue-bags pilot. |
 | `RESCUE_DIGEST_ENABLED` | `bool` | יש | MEH-3605: the rescue pickup-code WhatsApp digest (MEH-2756). |
 | `RESEND_API_KEY` | `str` | ריק | Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports) Sign up at resend.com, verify mehamakor.co.il domain, copy the API key. |
+| `RESEND_WEBHOOK_SECRET` | `str` | ריק | MEH-3839: the signing secret (whsec_…) of the Resend webhook that reports delivered / bounced / complained / clicked. |
 | `SECRET_KEY` | `str` | יש | — |
 | `SUPER_ADMIN_EMAIL` | `str` | ריק | MEH-2890 (Sapir 10/11): the one account no admin can demote or delete. |
 | `VAPID_PRIVATE_KEY` | `str` | ריק | MEH-54: VAPID keys for Web Push notifications. |

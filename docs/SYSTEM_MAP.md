@@ -24,6 +24,7 @@ This page links to those and does not repeat their numbers.
                                  (Railway)      ├─▶ Cloudinary  (signed upload, delete)
                                                 └─▶ Google Places (rating, owner's profile tool)
                     WhatsApp ──webhook──▶ backend (delivery receipts, opt-out)
+                    Resend   ──webhook──▶ backend (delivered, bounced, clicked → email_events)
 ```
 
 | Component | What it is | Where |
@@ -56,6 +57,7 @@ This page links to those and does not repeat their numbers.
 | Backend | Google Places | a business's Google rating | the rating line disappears |
 | Backend | Google Places | the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): search, link check, live comparison; only the place_id is stored; 10/hour per route | the tool says «לא זמין» (503); nothing else depends on it |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
+| Resend (via Svix) | Backend | `POST /webhook/resend`, signature-checked, MEH-3839: delivery, bounce, spam-complaint, suppression and click events of the emails we sent | no new rows in `email_events`; email still goes out. Off (503, Resend keeps retrying) until `RESEND_WEBHOOK_SECRET` is set |
 | Grafana Cloud k6, or a GitHub runner (`.github/workflows/load-test.yml`, manual only, MEH-3564) | Staging backend | k6 load test (`scripts/load-test.js`); results kept in Grafana Cloud when `K6_CLOUD_TOKEN` is set | the run goes red; nothing else depends on it. Refuses any URL but the staging backend |
 | Scheduled Claude Code task «בדיקת בריאות שבועית לריפו» (Thursday 09:00 Israel, MEH-3615) | GitHub (read the repo) · Linear (cards) · Sapir (one Hebrew report) | runs `scripts/health/weekly-repo-health.sh`: orphan folders, due `Re-check:` dates, Python dead code, knip totals, expiry dates; one card per new finding | no report that week; nothing in the product depends on it |
 | GitHub Actions (`.github/workflows/staging-health.yml`) | GitHub commit statuses | `Staging health` on every open PR into staging, rule 41 (`scripts/ci/staging_health.py`) | posts failure («could not read staging runs»); a PR labeled `fixes-staging-red` gets green |
@@ -73,6 +75,7 @@ This page links to those and does not repeat their numbers.
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
 | An email the site owes (business approved / rejected / changes requested, event and workshop sign-up confirmations, MEH-3535) | Postgres, `email_outbox` | written in the same transaction as its cause (the approval email through `_persist_approval(before_commit=…)`, re-queued on its slug retry); address and words cleared the moment the row is sent, skipped or failed; the bare row deleted after 30 days by the retention purge |
+| What happened to each email we sent (delivered, bounced, marked as spam, suppressed, clicked), MEH-3839 | Postgres, `email_events` | written only by the Resend webhook; the recipient's domain and account id, never the address or the words; deleted after 30 days by the retention purge |
 | Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
