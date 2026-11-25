@@ -48,8 +48,10 @@ function returningVisitor(ids: string[]): Stored {
       // She contacted the first business (its page reads these after the load).
       [`wa_clicked_${ids[0]}`]: "1",
       [`contacted_${ids[0]}`]: "phone",
-      // Not seeded yet: Friday mode (Thu 18:00 to Fri 14:00, `friday_mode_override`)
-      // moves home 0.13 / 0.29 after the load. MEH-3860 fixes it and adds it back.
+      // Thursday 18:00 to Friday 14:00 every visitor is in Friday mode; the
+      // override puts this run there whatever the clock says. It moved home
+      // 0.13 / 0.29 after the load until MEH-3860.
+      friday_mode_override: "1",
     },
     session: {
       meh_group_buys_any: cache({ any: true }),
@@ -62,10 +64,24 @@ function returningVisitor(ids: string[]): Stored {
   };
 }
 
+/** Hours of the week that change what a page shows (Israel, winter time). */
+const CLOCKS: Array<[string, string]> = [
+  ["Thursday 19:00 (Friday mode)", "2026-11-26T19:00:00+02:00"],
+  ["Friday 10:00 (Friday mode, before Shabbat)", "2026-11-27T10:00:00+02:00"],
+  ["Saturday 12:00 (Shabbat)", "2026-11-28T12:00:00+02:00"],
+  ["Sunday 03:00 (night, everything closed)", "2026-11-29T03:00:00+02:00"],
+];
+const CLOCK_PAGES = ["/", "/producers", "/group-buys", "/events", "/producer"];
+
 // /favorites with no session token is the guest redirect to /login: what a
 // signed-out returning visitor gets there, so it is measured as such.
 // /rescue is left out: it is behind a flag and answers 404 where it is off.
 const PAGES = ["/", "/producers", "/group-buys", "/events", "/experiences", "/favorites", "/recommend", "/about"];
+
+/** "/producer" in CLOCK_PAGES stands for the first seeded business's page. */
+function clockTarget(path: string, ids: string[]) {
+  return path === "/producer" ? `/producer/${ids[0]}` : path;
+}
 
 async function loadShift(page: import("@playwright/test").Page, path: string, stored: Stored) {
   await page.addInitScript((s) => {
@@ -135,6 +151,23 @@ test.describe("MEH-3858 a returning visitor's stored state does not move the pag
       expect(r.seeded, "the stored state must be in place").not.toBeNull();
       expect(r.sum).toBeLessThanOrEqual(LIMIT);
     });
+  }
+
+  // MEH-3860: what depends on the hour (Friday mode, open now, a holiday, an
+  // order window) is painted by the server at ITS time and by the browser at
+  // the visitor's. The browser's clock is pinned to hours that change what a
+  // page shows, while the server keeps its own: any part the client re-decides
+  // from the clock after the load then moves here, whatever day CI runs.
+  for (const [label, at] of CLOCKS) {
+    for (const path of CLOCK_PAGES) {
+      test(`${path} at ${label}: layout shift over the load stays at or under ${LIMIT}`, async ({ page }) => {
+        await page.clock.setFixedTime(new Date(at));
+        const r = await loadShift(page, clockTarget(path, ids), returningVisitor(ids));
+        expect(r.observed).toBe(true);
+        expect(r.seeded).not.toBeNull();
+        expect(r.sum).toBeLessThanOrEqual(LIMIT);
+      });
+    }
   }
 
   test("business page: layout shift over the load stays at or under the limit", async ({ page }) => {

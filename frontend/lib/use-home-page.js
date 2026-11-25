@@ -2,7 +2,7 @@
 /* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, id-length */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +16,9 @@ import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-fil
 // MEH-2130: home's URL param name per axis comes from the taxonomy — the one
 // place `has_delivery ⇄ ?delivery=1` is declared.
 import { homeParamFor } from "@/lib/filter-taxonomy";
+
+// Server render has no layout effects (MEH-3860 Friday mode, below).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 // MEH-2130: the axes home's chip row renders, hydrates and serializes — ONE
 // list, derived from the taxonomy via CHIPS_CONFIG (the same array
@@ -197,11 +200,20 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [fridayMode, setFridayMode] = useState(false);
+  // MEH-3860: null = not known yet (server HTML and hydration); CSS on
+  // data-friday-mode shows the right hero line and strip slot meanwhile. It is
+  // decided in a layout effect, so the swap to the real strip lands before the
+  // next paint, and the <html> flag follows the clock while the page is open.
+  const [fridayMode, setFridayMode] = useState(/** @type {boolean | null} */ (null));
 
-  useEffect(() => {
-    setFridayMode(isFridayMode());
-    const tid = setInterval(() => setFridayMode(isFridayMode()), 60 * 1000);
+  useIsomorphicLayoutEffect(() => {
+    const sync = () => {
+      const on = isFridayMode();
+      document.documentElement.toggleAttribute("data-friday-mode", on);
+      setFridayMode(on);
+    };
+    sync();
+    const tid = setInterval(sync, 60 * 1000);
     return () => clearInterval(tid);
   }, []);
 
