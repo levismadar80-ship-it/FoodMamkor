@@ -96,8 +96,8 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
 
 type KnownCls = { path: RegExp; ceiling: number; reason: string; card: string };
 
-/** Pages that already shift above CLS_LIMIT, measured on PR #5280's E2E run
- *  (Chromium, desktop + mobile). `path` is matched against the pathname with
+/** Pages that already shift above CLS_LIMIT, measured on PR #5280's E2E runs
+ *  and the first staging runs after it (Chromium, desktop + mobile). `path` is matched against the pathname with
  *  no locale prefix and no query. `ceiling` is 1.5 × the largest value seen,
  *  so a page that gets worse still fails. Remove a row when its card is fixed;
  *  never add one to get a new shift green — a new shift gets a fix. */
@@ -135,13 +135,18 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     card: "MEH-3872",
   },
   {
-    // MEH-3871: business pages, a section above delivery / reviews / bio arrives
-    // late. Only the pages measured are listed; any other business page still
-    // fails at 0.1. ruach-hasadeh 0.571 (PR #5280 2e5e78a), beit-habad-sivan and
-    // sdot-zahav 0.101 (staging f08f421, section#section-bio).
-    path: /^\/(ruach-hasadeh|beit-habad-sivan|sdot-zahav)$/,
+    // MEH-3871: a late block above the delivery / reviews section. Only the
+    // pages measured are listed; any other business page still fails at 0.1.
+    path: /^\/ruach-hasadeh$/,
     ceiling: 0.86,
-    reason: "Business page: a late block above the delivery, reviews or bio section pushes it down (largest 0.571, mobile).",
+    reason: "Business page: a late block pushes the delivery or reviews section down (largest 0.571, mobile, PR #5280 2e5e78a).",
+    card: "MEH-3871",
+  },
+  {
+    // MEH-3871: same family, section#section-bio (staging f08f421, mobile).
+    path: /^\/(beit-habad-sivan|sdot-zahav)$/,
+    ceiling: 0.16,
+    reason: "Business page: a late block pushes the bio section down (largest 0.101, mobile, staging f08f421).",
     card: "MEH-3871",
   },
 ];
