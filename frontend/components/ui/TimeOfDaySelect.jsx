@@ -10,7 +10,8 @@
  *           which is how the rescue screenshots of MEH-3702 / MEH-3703 read.
  * Does NOT: own state, or know about days or time zones — the value is a
  *           wall-clock «HH:MM» string, as an <input type="time"> gives.
- * Related:  ui/Select.jsx (look). Used by dashboard/RescueTab.jsx.
+ * Related:  ui/Select.jsx (look). Used by dashboard/RescueTab.jsx and
+ *           dashboard/RescueScheduleForm.jsx.
  * History:  MEH-3823 (creation).
  *
  * A value off the minute step («18:07») is kept: its minute is added to the
