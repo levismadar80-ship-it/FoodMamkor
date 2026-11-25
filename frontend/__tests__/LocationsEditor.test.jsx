@@ -704,3 +704,49 @@ describe("pickup instructions (MEH-3593)", () => {
     expect(apiMock.put.mock.calls.at(-1)[1].pickup_note).toBeNull();
   });
 });
+
+// MEH-3790: on the owner's edit page opening hours live in the one «שעות» card
+// (HoursCard.jsx). The location form there neither shows the hours picker nor
+// sends `opening_hours`, so a form opened before an hours save cannot write the
+// old value back (the PUT is a partial update). The admin page passes nothing
+// and keeps both.
+describe("hours live elsewhere on the owner's page (MEH-3790)", () => {
+  const ROW = { id: 9, kind: "branch", city: "חיפה", label: "סניף", lat: 32.8, lng: 35, opening_hours: "Sun 09:00-12:00" };
+  const HOURS_LEGEND = "settings.locations.form.hours_label";
+
+  async function openEdit(props) {
+    apiMock.state.locations = [ROW];
+    apiMock.put.mockClear();
+    render(<LocationsEditor {...props} />);
+    await waitFor(() => screen.getByLabelText("settings.locations.edit_aria"));
+    fireEvent.click(screen.getByLabelText("settings.locations.edit_aria"));
+    await waitFor(() => screen.getByTestId("location-form"));
+  }
+
+  it("hoursElsewhere: no hours picker, and the saved body carries no opening_hours", async () => {
+    await openEdit({ hoursElsewhere: true });
+    expect(screen.queryByText(HOURS_LEGEND)).toBeNull();
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1));
+    const [url, body] = apiMock.put.mock.calls[0];
+    expect(url).toBe(`${LOCATIONS_URL}/9`);
+    expect(body).not.toHaveProperty("opening_hours");
+    expect(body.label).toBe("סניף");
+  });
+
+  it("default (admin): the picker shows and the stored hours go back unchanged", async () => {
+    await openEdit({});
+    expect(screen.getByText(HOURS_LEGEND)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1));
+    expect(apiMock.put.mock.calls[0][1].opening_hours).toBe("Sun 09:00-12:00");
+  });
+
+  it("a new refreshKey makes the list read again", async () => {
+    apiMock.state.locations = [ROW];
+    const { rerender } = render(<LocationsEditor hoursElsewhere refreshKey={0} />);
+    await waitFor(() => expect(locationGets()).toBe(1));
+    rerender(<LocationsEditor hoursElsewhere refreshKey={1} />);
+    await waitFor(() => expect(locationGets()).toBe(2));
+  });
+});

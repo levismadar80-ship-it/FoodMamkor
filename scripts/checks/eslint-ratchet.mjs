@@ -77,6 +77,10 @@ const GATED = [
   "sonarjs/code-eval",
   "security/detect-unsafe-regex",
   "security/detect-eval-with-expression",
+  // MEH-3829 (parent MEH-3826): a hand-written basic element outside
+  // components/ui/, and the jsx-a11y recommended set. Born at today's counts.
+  "design-system/",
+  "jsx-a11y/",
 ];
 
 export function isGated(ruleId) {

@@ -184,6 +184,20 @@ with a **control** that exercises a path known to produce output, runs first,
 and fails loudly saying every null in the run is void. Review question: if this
 probe were dead, what would it print?
 
+### A bug found by a probe is reported only through `verifyFinding` (MEH-3814)
+
+A thread reports a bug it measured on staging or a preview (to Sapir, in a
+card, in a PR) only from the result of `verifyFinding` in
+`frontend/e2e/_verify-finding.mjs`. That function runs a known-bug control and
+a known-clean control first, then 3 runs, and calls the finding `confirmed`
+only if all 3 show the bug and each saved its own screenshot file. Any other verdict
+is reported with its label, «חשד, לא מאומת». Measure after `waitForStable`
+(counted in frames), not after a fixed wait. Click through `clickInView`,
+which throws instead of letting Playwright scroll to the element first.
+Precedent, 24/11: a single sweep clicked an off-screen card. Playwright
+scrolled to it, and the card's own position (388/250) was reported as a lost
+scroll position (MEH-3810).
+
 ---
 
 ## The artifact that asserts coverage is the one least likely to be checked

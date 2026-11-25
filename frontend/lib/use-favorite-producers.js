@@ -17,7 +17,7 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 /**
  * MEH-2724 — the signed-in user's favorited producers for the homepage
- * «המועדפים שלך» strip, newest saved first. Reads the shared favorites cache
+ * «המועדפים שלכם» strip, newest saved first. Reads the shared favorites cache
  * (one GET /users/me/favorites per session, the same request the hearts
  * already make) and re-reads on every heart change. Signed out → [].
  *

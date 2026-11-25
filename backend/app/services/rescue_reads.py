@@ -11,7 +11,8 @@ Does NOT: decide whether the pilot is on, which towns are in it, or what day
           router module) and passes them in. Does NOT write: reserve, cancel,
           hand over and no-show stay in routers/rescue.py.
 Related:  backend/app/routers/rescue.py (the handlers that call this)
-History:  MEH-3541 (moved here unchanged from routers/rescue.py)
+History:  MEH-3541 (moved here unchanged from routers/rescue.py);
+          MEH-3698 (`my_reservation_history` for the one «ההזמנות שלי» list)
 """
 
 import math
@@ -197,6 +198,8 @@ def _public_row(
             "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
+            # MEH-3704: the list sorts by it; the bag page shows it (MEH-3586).
+            "avg_rating": producer.avg_rating or None,
         },
         "typical_items": list(typical[0] or []),
         "allergens": typical[1],
@@ -259,10 +262,9 @@ def offer_detail(
     exact = location.location_precision == "exact"
     out["lat"] = location.lat if exact else None
     out["lng"] = location.lng if exact else None
-    out["producer"]["avg_rating"] = producer.avg_rating or None
-    out["producer"]["reviews_count"] = producer.reviews_count or 0
     # MEH-3593: the point's own; withheld with the pin on an approximate point.
     out["pickup_note"] = location.pickup_note if exact else None
+    out["producer"]["reviews_count"] = producer.reviews_count or 0
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None
@@ -329,6 +331,62 @@ def my_reservations(db: Session, *, user_id: Any, today: date) -> list[dict[str,
         }
         for o in rows
     ]
+
+
+# MEH-3698: «ההזמנות שלי» lists at most this many bags, newest first. Orders
+# cap at 50 too (`product_order_buyer.list_own_orders`), so one list does not
+# hold one kind far longer than the other.
+HISTORY_MAX_ROWS = 50
+
+
+def my_reservation_history(db: Session, *, user_id: Any) -> list[dict[str, Any]]:
+    """Every reservation of the caller's, any day, newest first (MEH-3698).
+
+    For the one «ההזמנות שלי» list, not for the counter: no `pickup_code`
+    (the bag's own page shows it on the day), but the business name, which
+    `my_reservations` does not carry. A buyer's own cancel is included — the
+    list says «בוטלה», as it does for an order.
+    """
+    rows = (
+        db.query(RescueOrder)
+        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
+        .options(
+            selectinload(RescueOrder.offer)
+            .selectinload(RescueOffer.location)
+            .selectinload(ProducerLocation.producer)
+        )
+        .filter(RescueOrder.user_id == user_id)
+        .order_by(RescueOffer.date.desc(), RescueOrder.created_at.desc())
+        .limit(HISTORY_MAX_ROWS)
+        .all()
+    )
+    by_business = business_cancelled_ids(
+        db,
+        {
+            o.offer_id
+            for o in rows
+            if o.status == "cancelled" and o.offer.status == "cancelled"
+        },
+    )
+    return [_history_row(o, o.id in by_business) for o in rows]
+
+
+def _history_row(order: RescueOrder, by_business: bool) -> dict[str, Any]:
+    offer = order.offer
+    producer = offer.location.producer if offer.location else None
+    return {
+        "id": order.id,
+        "offer_id": order.offer_id,
+        "qty": order.qty,
+        "status": order.status,
+        "created_at": order.created_at,
+        "date": offer.date,
+        "pickup_start": offer.pickup_start,
+        "pickup_end": offer.pickup_end,
+        "producer_id": offer.location.producer_id,
+        "producer_name": (producer.name if producer else None) or "",
+        "cancelled_by_business": by_business,
+    }
 
 
 def business_cancelled_ids(db: Session, offer_ids: set[Any]) -> set[Any]:

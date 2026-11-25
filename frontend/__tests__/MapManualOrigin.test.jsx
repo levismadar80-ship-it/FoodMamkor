@@ -432,3 +432,20 @@ describe("MEH-2014 PR 2 — don't-regress guards (green before AND after)", () =
     expect(originLabels()).toHaveLength(0);
   });
 });
+
+// MEH-3820 — lives here because this file already renders the real /map shell.
+// On a slow phone the map was laid out under a GUESSED bar height (174px) and
+// moved up ~55px once the bar was measured: a 0.118 layout shift ~6 s in. The
+// bar is now in the column's flow and the map takes the rest, so nothing about
+// the map's position waits for a measurement.
+describe("MEH-3820 — the phone map does not wait for a measured bar height", () => {
+  it("the bar is in flow and the map below it carries no top padding", async () => {
+    await renderMap();
+    const bar = screen.getByTestId("map-mobile-bar");
+    const mapWrap = bar.nextElementSibling;
+    expect(bar.className).not.toMatch(/\babsolute\b/);
+    expect(mapWrap.style.paddingTop).toBe("");
+    expect(mapWrap.className).toContain("flex-1");
+    expect(screen.getByTestId("map-mobile-shell").className).toContain("flex-col");
+  });
+});

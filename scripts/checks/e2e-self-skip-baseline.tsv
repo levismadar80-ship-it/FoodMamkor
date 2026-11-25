@@ -21,7 +21,7 @@ frontend/e2e/flows/20-admin-recipes-queue.spec.ts	playwright/no-conditional-expe
 frontend/e2e/flows/20-admin-recipes-queue.spec.ts	playwright/no-conditional-in-test	1
 frontend/e2e/flows/20-admin-recipes-queue.spec.ts	playwright/no-skipped-test	2
 frontend/e2e/flows/21-account-menu-auth.spec.ts	playwright/no-skipped-test	6
-frontend/e2e/flows/22-register-personas.spec.ts	playwright/no-conditional-in-test	2
+frontend/e2e/flows/22-register-personas.spec.ts	playwright/no-conditional-in-test	1
 frontend/e2e/flows/22-register-personas.spec.ts	playwright/no-skipped-test	4
 frontend/e2e/flows/24-producer-locations.spec.ts	playwright/no-conditional-expect	1
 frontend/e2e/flows/24-producer-locations.spec.ts	playwright/no-conditional-in-test	7

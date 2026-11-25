@@ -86,7 +86,11 @@ def _json_type(field: dict[str, Any]) -> dict[str, object]:
     if kind == "choices":
         return {"type": "array", "items": {"type": "integer"}}
     if kind == "enum":
-        return {"type": ["string", "null"], "enum": [*field["values"], None]}
+        # MEH-3825: {"type": ["string","null"], "enum": [..., None]} was answered
+        # 400 by the API on every call (staging, 24/11). The shape every working
+        # enum here uses, made nullable through anyOf (supported per the docs).
+        string_enum = {"type": "string", "enum": list(field["values"])}
+        return {"anyOf": [string_enum, {"type": "null"}]}
     if kind == "windows":
         return form_fill_windows.json_type()
     return {"type": ["string", "null"]}

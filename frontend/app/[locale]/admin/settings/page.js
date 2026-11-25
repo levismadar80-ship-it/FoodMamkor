@@ -14,6 +14,18 @@ import { SkeletonForm } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
 
+// MEH-3818: how long the page holds its skeleton for the checklist and passkey
+// reads once its own settings have arrived. Past it, the page shows and a late
+// card fills in where it stands.
+export const SECTIONS_WAIT_MS = 2500;
+
+/** @param {string} url @param {(v: any) => void} set */
+const preloadInto = (url, set) =>
+  api
+    .get(url)
+    .then((res) => set({ data: res.data }))
+    .catch(() => set({ error: true }));
+
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
   const [settings, setSettings] = useState(null);
@@ -33,6 +45,20 @@ export default function AdminSettingsPage() {
   const [vacationSaving, setVacationSaving] = useState(false);
   const [vacationToast, setVacationToast] = useState(null);
   const [vacationError, setVacationError] = useState(null);
+  // MEH-3818: the two cards' first reads, made here with the page's own so the
+  // page appears once. Before, the checklist card opened as a one-line
+  // «טוענת…» and grew to ~1,650px a beat later, pushing every card below it
+  // down (0.55 layout shift on a slow phone). null = still reading.
+  const [checklistPreload, setChecklistPreload] = useState(null);
+  const [passkeyPreload, setPasskeyPreload] = useState(null);
+  const [waitedEnough, setWaitedEnough] = useState(false);
+
+  useEffect(() => {
+    preloadInto("/admin/checklist-items?include_inactive=true", setChecklistPreload);
+    preloadInto("/auth/passkey", setPasskeyPreload);
+    const cap = setTimeout(() => setWaitedEnough(true), SECTIONS_WAIT_MS);
+    return () => clearTimeout(cap);
+  }, []);
 
   useEffect(() => {
     api
@@ -69,7 +95,8 @@ export default function AdminSettingsPage() {
   }, []);
 
   if (loadError) return <div className="text-danger-600 text-sm">{t("settings.load_error")}</div>;
-  if (!settings) return <SkeletonForm fields={6} label={t("common.loading")} className="max-w-2xl" />;
+  const sectionsSettled = Boolean(checklistPreload && passkeyPreload) || waitedEnough;
+  if (!settings || !sectionsSettled) return <SkeletonForm fields={6} label={t("common.loading")} className="max-w-2xl" />;
 
   const update = (key, value) => {
     setSettings({ ...settings, [key]: value });
@@ -153,10 +180,10 @@ export default function AdminSettingsPage() {
           component — this file already carries a blanket max-lines-per-function
           disable, and a fifth stateful section here would make that disable
           load-bearing instead of historical. */}
-      <ChecklistSettings />
+      <ChecklistSettings preload={checklistPreload} />
 
       {/* MEH-3305: the signed-in admin's own passkeys + recovery codes. */}
-      <PasskeySettings />
+      <PasskeySettings preload={passkeyPreload} />
 
       {/* MEH-1566: the notifications section (admin_email / admin_whatsapp)
           was removed — both inputs wrote admin_settings keys that nothing ever

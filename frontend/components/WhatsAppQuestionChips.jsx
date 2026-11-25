@@ -144,7 +144,7 @@ function Disclosure({ question, children, defaultOpen = false }) {
 }
 
 // MEH-3035 chunk 3: «איך משלמים?» — what the business entered in its
-// dashboard («איך משלמים לך?»), as text under ONE Wallet line icon (design
+// dashboard («איך משלמים לעסק?»), as text under ONE Wallet line icon (design
 // option א, Sapir 13/11: per-method icons live only in the dashboard picker).
 // paymentAnswer (lib/payment-info.js) returns null when nothing usable is set.
 

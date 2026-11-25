@@ -26,16 +26,16 @@ vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerData", () => ({
   useProducerData: () => ({
     producer: state.producer,
     loading: false,
-    events: [],
     similarProducers: [],
     nearbyProducers: [],
   }),
 }));
+// MEH-3819: the activity lists are their own hook; answered and empty here.
+vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerActivities", () => ({
+  useProducerActivities: () => ({ events: [], experiences: [], groupBuys: [], ready: true }),
+}));
 vi.mock("@/app/[locale]/producer/[id]/hooks/useStickyBar", () => ({
   useStickyBar: () => ({ inlineCTARef: { current: null }, isBarVisible: false }),
-}));
-vi.mock("@/app/[locale]/producer/[id]/hooks/useLazyReviews", () => ({
-  useLazyReviews: () => ({ reviewsContainerRef: { current: null }, reviewsVisible: false }),
 }));
 
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";

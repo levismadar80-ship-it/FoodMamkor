@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { parseHours, computeStatus, toMinutes } from "@/lib/hours";
+import { parseHours, computeStatus, clockToMinutes } from "@/lib/hours";
 
 // MEH-845: unit coverage for the open/closed-now parser (MEH-826). computeStatus
 // reads the wall-clock in Asia/Jerusalem, so the clock is pinned with
@@ -105,11 +105,11 @@ describe("parseHours — several ranges per day (MEH-1870)", () => {
   });
 });
 
-describe("toMinutes", () => {
+describe("clockToMinutes", () => {
   it("converts HH:MM to minutes since midnight", () => {
-    expect(toMinutes("00:00")).toBe(0);
-    expect(toMinutes("09:30")).toBe(570);
-    expect(toMinutes("18:00")).toBe(1080);
+    expect(clockToMinutes("00:00")).toBe(0);
+    expect(clockToMinutes("09:30")).toBe(570);
+    expect(clockToMinutes("18:00")).toBe(1080);
   });
 });
 

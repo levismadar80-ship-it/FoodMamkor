@@ -9,6 +9,7 @@ import { Clock, MapPin } from "@phosphor-icons/react";
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
 import { bagDay, rescueCancelText, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 import useRescueReservation from "@/lib/use-rescue-reservation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
@@ -39,7 +40,14 @@ import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
  *           seeds for the bags left)
  */
 
+/** The pickup point as one line, or null when the row is gone or has none. */
+function pickupAddress(offer) {
+  const p = offer?.producer;
+  return [p?.location_address, p?.location_city].filter(Boolean).join(", ") || null;
+}
+
 export default function RescueSection({ producer }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
   // the bag and a product never name the same allergen differently.
@@ -155,7 +163,14 @@ export default function RescueSection({ producer }) {
 
       {order ? (
         <div className="mt-3 space-y-4">
-          <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+          <RescueConfirmation
+            order={order}
+            onCancel={cancel}
+            cancelling={busy}
+            // MEH-3704: what the friend needs. The bag row can be gone (sold
+            // out), so the address is sent only when it is still listed.
+            place={{ name: producer?.name, address: pickupAddress(offer) }}
+          />
           {errorLine}
           {/* The review only appears once the business marked it handed; the
               API refuses it before that with a 409, so showing it earlier
@@ -224,7 +239,7 @@ export default function RescueSection({ producer }) {
                   <Clock aria-hidden="true" size={14} className="shrink-0" />
                   {/* MEH-3585: say the day — the public list is today's bags
                       only, and a bare window reads as «every day». */}
-                  {t(bagDay(offer.date) === "tomorrow" ? "row.pickup_tomorrow" : "section.pickup_today", { from, until })}
+                  {t(bagDay(offer.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "section.pickup_today", { from, until })}
                 </span>
               )
             }
