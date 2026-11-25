@@ -88,6 +88,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
 | draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden; a missing licence does not block, MEH-3026) |
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
+| draft (ownerless) → pending or stays draft, and her own draft/pending row → deleted | admin moves a prepared draft to the owner who registered herself (MEH-3865) | `routers/admin_draft_merge.py` `merge_draft_into_owner` | draft ownerless, target draft/pending with one owner, no open orders; pending only if hers was pending and the merged page passes `submission_missing_items` |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |

@@ -15,6 +15,7 @@ import AdminReviewChecklist from "./AdminReviewChecklist";
 import { CopyClaimMessageButton, DraftOwnerBadge } from "./AdminDraftClaimActions";
 import { DraftMissing } from "./AdminDraftMissing";
 import { DraftLinkAge } from "./AdminDraftLinkAge";
+import { DraftTwinNotice } from "./AdminDraftTwin";
 import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -547,6 +548,8 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <DraftMissing producer={p} />
             {/* MEH-2496: ownerless drafts — when the latest link went out. */}
             <DraftLinkAge producer={p} />
+            {/* MEH-3865: an ownerless draft and an owner's own page look like one business. */}
+            <DraftTwinNotice producer={p} onMerged={handlers.onReload} />
             <AwaitingCompletionBadge producer={p} />
             <ResubmissionBadge producer={p} />
             <WaitingBadge producer={p} />
