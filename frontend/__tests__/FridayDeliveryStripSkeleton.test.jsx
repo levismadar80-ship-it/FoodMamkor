@@ -108,3 +108,26 @@ describe("FridayDeliveryStrip with the server's list, city changes", () => {
     expect(screen.queryByText("חדרה")).toBeNull();
   });
 });
+
+describe("FridayDeliveryStrip when the server found none", () => {
+  beforeEach(() => getSpy.mockReset());
+
+  it("draws nothing and holds no slot while it asks the API", async () => {
+    const d = deferred();
+    getSpy.mockReturnValue(d.promise);
+    const onVis = vi.fn();
+    const { container } = render(<FridayDeliveryStrip initialProducers={[]} onVisibilityChange={onVis} />);
+    expect(container.innerHTML).toBe("");
+    expect(onVis).toHaveBeenLastCalledWith(false);
+    expect(getSpy).toHaveBeenCalledTimes(1);
+    await act(async () => d.resolve({ data: [] }));
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("shows the cards when the API has some the cached page did not", async () => {
+    getSpy.mockResolvedValue({ data: [{ id: 1, name: "Farm", slug: "farm" }] });
+    render(<FridayDeliveryStrip initialProducers={[]} />);
+    expect(await screen.findByTestId("friday-delivery-strip")).toBeTruthy();
+    expect(screen.queryByTestId("friday-delivery-strip-skeleton")).toBeNull();
+  });
+});

@@ -117,7 +117,12 @@ export default function HomeClient({
           and hydration), a skeleton holds the strip's slot and CSS shows it
           only in Friday mode (data-friday-mode, set before the first paint).
           The loaded strip opens on the same skeleton, so nothing moves. */}
-      {Array.isArray(initialFriday) && initialFriday.length === 0 ? null : fridayMode === null ? (
+      {Array.isArray(initialFriday) && initialFriday.length === 0 ? (
+        // MEH-3860: the server found no Friday business. Nothing is drawn and
+        // no slot is held; the strip still asks the API once Friday mode is
+        // known, in case this cached page is older than a new one.
+        fridayMode && <FridayDeliveryStrip city={userCity} initialProducers={initialFriday} onVisibilityChange={setFridayVisible} />
+      ) : fridayMode === null ? (
         <div data-friday-only="">
           {Array.isArray(initialFriday) ? <FridayDeliveryStrip initialProducers={initialFriday} /> : <FridayStripSkeleton />}
         </div>

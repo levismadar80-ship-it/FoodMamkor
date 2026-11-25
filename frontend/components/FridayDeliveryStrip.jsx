@@ -96,11 +96,16 @@ const STRIP_MAX = 12;
  * `initialProducers` (MEH-3860): the nationwide list the home server fetched.
  * With it the strip paints its cards in the first HTML (no skeleton), and a
  * city with no Friday delivery keeps showing it instead of collapsing.
+ * An EMPTY list means the server found none when it rendered: the strip draws
+ * nothing and holds no slot, and still asks the API quietly, in case the
+ * cached page is older than a business that now delivers on Friday.
  */
 export default function FridayDeliveryStrip({ city, onVisibilityChange, initialProducers = null }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
-  const hasInitial = Array.isArray(initialProducers);
+  const hasInitial = Array.isArray(initialProducers) && initialProducers.length > 0;
+  // MEH-3860: the server rendered with none, so no skeleton (it would collapse).
+  const quiet = Array.isArray(initialProducers) && initialProducers.length === 0;
   // The last list the API answered, and the city it was for ("" = nationwide).
   const [fetched, setFetched] = useState(/** @type {{ city: string, list: object[] } | null} */ (null));
   // MEH-3001: the strip used to appear only after its fetch returned, pushing
@@ -146,12 +151,12 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange, initialP
   const visible = producers.length > 0;
   // MEH-3001: the skeleton holds the slot too, so a Holiday/Location banner
   // does not render beside it and then yield when the list arrives.
-  const holdsSlot = !loaded || visible;
+  const holdsSlot = (!loaded && !quiet) || visible;
   useEffect(() => {
     onVisibilityChange?.(holdsSlot);
   }, [holdsSlot, onVisibilityChange]);
 
-  if (!loaded) return <FridayStripSkeleton />;
+  if (!loaded) return quiet ? null : <FridayStripSkeleton />;
   if (!visible) return null;
 
   return (
