@@ -18,10 +18,14 @@
  * costs trust.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
+
+// MEH-3809: a cached answer lands before the first paint (as use-hub-nav-gate.js,
+// MEH-3049), so the Header's held place never paints and then goes.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const CACHE_KEY = "meh_events_upcoming_any";
 const TTL_MS = 60 * 60 * 1000; // 1h — supply moves in days, not seconds.
@@ -103,7 +107,7 @@ export function useEventsNavGate() {
 export function useEventsNavGateState() {
   const [state, setState] = useState({ visible: false, settled: false });
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     let alive = true;
 
     const cached = readCache();

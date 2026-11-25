@@ -629,7 +629,7 @@ function NavLink({ href, label, active, onClick, pending = false }) {
   // `invisible` keeps it out of the tab order and the accessibility tree.
   if (pending) {
     return (
-      <span aria-hidden="true" data-testid="nav-link-pending" className="invisible inline-flex items-center min-h-touch px-3 text-base font-medium">
+      <span aria-hidden="true" data-testid="nav-link-pending" className={`invisible inline-flex items-center min-h-touch px-3 text-base ${active ? "font-semibold" : "font-medium"}`}>
         {label}
       </span>
     );

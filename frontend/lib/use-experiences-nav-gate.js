@@ -21,10 +21,14 @@
  * network request per session.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
+
+// MEH-3809: a cached answer lands before the first paint (as use-hub-nav-gate.js,
+// MEH-3049), so the Header's held place never paints and then goes.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Below this many upcoming public experiences the link stays hidden.
@@ -123,7 +127,7 @@ export function useExperiencesNavGate() {
 export function useExperiencesNavGateState() {
   const [state, setState] = useState({ visible: false, settled: false });
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     let alive = true;
 
     const cached = readCache();
