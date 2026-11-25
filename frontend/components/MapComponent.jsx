@@ -218,7 +218,7 @@ function createCategoryMarker(
     ? `<div data-offer-mark="${offerKey}" aria-hidden="true" style="
         position:absolute;top:-5px;right:-5px;z-index:1;
         width:20px;height:20px;border-radius:50%;
-        background:${COLOR.primary};border:2px solid #fff;box-sizing:border-box;
+        background:${COLOR.primary};border:2px solid ${COLOR.surface};box-sizing:border-box;
         box-shadow:0 1px 3px rgba(0,0,0,0.25);
         display:flex;align-items:center;justify-content:center;
         pointer-events:none;

@@ -59,8 +59,12 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
       const axis = FILTER_AXES[key];
       // MEH-2748: the label is in messages, not on the axis.
       expect(axis.label, `${key}.label must not be stored in code`).toBeUndefined();
-      expect(typeof he.filter_axes[key]?.label, `${key}.label`).toBe("string");
-      expect(he.filter_axes[key].label.length, `${key}.label empty`).toBeGreaterThan(0);
+      // MEH-3824: an axis named after a site section reads that key (labelKey).
+      const label = axis.labelKey
+        ? axis.labelKey.split(".").reduce((node, part) => node?.[part], he)
+        : he.filter_axes[key]?.label;
+      expect(typeof label, `${key}.label`).toBe("string");
+      expect(label.length, `${key}.label empty`).toBeGreaterThan(0);
       expect(SCOPES, `${key}.scope`).toContain(axis.scope);
       expect(EVIDENCE, `${key}.evidence`).toContain(axis.evidence);
       expect(GROUPS, `${key}.group`).toContain(axis.group);

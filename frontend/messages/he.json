@@ -6913,7 +6913,6 @@
       "group_service": "שירות ואמון",
       "apply": "הצגת {count} בתי עסק",
       "clear": "ניקוי הכל",
-      "group_offers": "הזדמנויות",
       "group_happenings": "אירועים וסדנאות"
     }
   },
@@ -7751,18 +7750,6 @@
     "no_added_sugar": {
       "label": "ללא סוכר מוסף",
       "subtext": "עסקים עם מוצרים ללא סוכר מוסף בקטלוג"
-    },
-    "rescue_today": {
-      "label": "סלי הפתעה"
-    },
-    "group_buy": {
-      "label": "קבוצות רכישה"
-    },
-    "event": {
-      "label": "אירועים"
-    },
-    "experience": {
-      "label": "חוויות"
     }
   },
   "map_category_chips": {

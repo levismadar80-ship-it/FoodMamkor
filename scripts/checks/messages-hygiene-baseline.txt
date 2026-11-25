@@ -38,6 +38,7 @@ duplicate	2	אינסטגרם (שם משתמש)
 duplicate	2	איסוף
 duplicate	2	איסוף ומשלוח
 duplicate	2	איפוס סיסמה
+duplicate	2	אירועים וסדנאות
 duplicate	2	אירועים קרובים
 duplicate	2	אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף
 duplicate	2	אישור הרשמה

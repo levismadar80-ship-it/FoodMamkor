@@ -61,6 +61,10 @@
  *                attached at render time by lib/use-chip-copy.js. Text-only
  *                (Emoji-LOCK v2; the Phosphor leading glyph comes from
  *                lib/chip-icons.js).
+ *   labelKey   — optional message key used INSTEAD of `filter_axes.<key>.label`,
+ *                for an axis whose name is already a section of the site
+ *                (MEH-3824: «סלי הפתעה» is the nav's own key, so a rename of
+ *                the section renames the switch). No `filter_axes` entry then.
  *   scope      — business | any-product | facility (.claude/rules/labels.md).
  *   evidence   — self-declared | admin-verified | system.
  *   hasSubtext — whether `filter_axes.<key>.subtext` exists in messages. When
@@ -94,11 +98,12 @@ export const FILTER_AXES = {
   // each other (services/offer_supply.py), and each reads the public list it
   // mirrors. `gateMin: 1` — one business with a bag today is worth a switch;
   // none means the switch is not drawn (Sapir: «אם לא קיימים סלים שלא יוצגו
-  // המתגים»). Labels are the site's existing words (Sapir approved 25/11).
+  // המתגים»). Labels are the site's own section names (`labelKey`, Sapir approved 25/11).
   rescue_today: {
     scope: "business",
     evidence: "system",
     hasSubtext: false,
+    labelKey: "nav.footer.rescue",
     group: "offers",
     surfaces: ["map"],
     gate: "count",
@@ -108,6 +113,7 @@ export const FILTER_AXES = {
     scope: "business",
     evidence: "system",
     hasSubtext: false,
+    labelKey: "nav.footer.group_buys",
     group: "offers",
     surfaces: ["map"],
     gate: "count",
@@ -117,6 +123,7 @@ export const FILTER_AXES = {
     scope: "business",
     evidence: "system",
     hasSubtext: false,
+    labelKey: "nav.events",
     group: "happenings",
     surfaces: ["map"],
     gate: "count",
@@ -126,6 +133,7 @@ export const FILTER_AXES = {
     scope: "business",
     evidence: "system",
     hasSubtext: false,
+    labelKey: "nav.experiences",
     group: "happenings",
     surfaces: ["map"],
     gate: "count",

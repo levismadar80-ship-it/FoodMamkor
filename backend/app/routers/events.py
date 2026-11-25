@@ -14,6 +14,7 @@ from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from sqlalchemy.orm import Query as OrmQuery
 from sqlalchemy.orm import Session, joinedload, object_session
 
 from app.limits import enforce_cap
@@ -145,7 +146,7 @@ def _producer_phone(db: Session, producer_id: UUID) -> str | None:
 # ============================================================
 
 
-def public_event_feed_query(db: Session) -> Any:
+def public_event_feed_query(db: Session) -> OrmQuery[Event]:
     """The rows GET /events lists for a stranger with no filter: active, an
     approved non-test business, today (Israel) onward (MEH-3824).
 

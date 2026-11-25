@@ -21,6 +21,7 @@
 >   - MEH-3660: `GET`/`PUT /producers/me` carry `owner_email_verified` (businesses), and the business submit gate (`POST /producers/me/submit-for-review`, `POST /producers/me/request-review`) adds `email_verified` to the 422 `missing` list when the owner has not confirmed her email. Details: `docs/DATA.md` → MEH-3660.
 >   - MEH-2852: the write routes that make a public page appear, change or disappear (business approve / edit / hide / reject / delete, owner `PUT /producers/me`, events, group buys, admin experience + recipe moderation) queue an IndexNow ping after the commit — production only, no response change. Full list: `docs/DATA.md` → "IndexNow".
 >   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
+>   - MEH-3824: `GET /producers` takes `rescue_today` / `group_buy` / `event` / `experience` (OR between them) and returns `has_open_group_buy` / `has_upcoming_event` / `has_listed_experience`, each read from the query that kind's public list runs (`services/offer_supply.py`). Feeds the map's offer switches in «סינון».
 
 ## 1. Registered routers at a glance
 
