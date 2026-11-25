@@ -22,6 +22,8 @@ import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
+import { useListReturn } from "@/lib/use-list-return";
+import { SORT_DEFAULT, SORT_DISTANCE, sortValuesFor, initSortFromParams, sortRequestParams } from "@/lib/producers-sort";
 import {
   buildChipParams,
   visibleAxisChips,      // MEH-2767: the one chip gate (was MEH-1934 + MEH-2131)
@@ -55,43 +57,6 @@ import { cardImagePriority } from "@/lib/card-image-priority";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
-
-// MEH-1483: the backend-driven sort axis (?sort=). "newest" is the default —
-// omitted from the request so the default listing stays byte-identical to
-// today's created_at-DESC order; "rating" maps to the backend's avg_rating
-// nulls-last ordering. Two options only (over-engineering guard).
-const SORT_DEFAULT = "newest";
-const SORT_VALUES = ["newest", "rating"];
-// MEH-1864: "rating" is only a legal axis once the catalog actually has
-// reviewed businesses (RATING_SORT_THRESHOLD, lib/rating-gate.js). Below the
-// threshold the option is not rendered, and a hand-typed ?sort=rating degrades
-// to the default here — the backend still answers that URL with 200, the
-// frontend just doesn't present an ordering with no data behind it.
-// MEH-2294: "distance" (nearest-first, backend MEH-1829 #3538) is legal only
-// while the visitor has a location fix (useUserLocation) — the backend 422s a
-// sort=distance without lat+lng, and has no origin to measure from anyway. No
-// radius is ever sent: sorting reorders, it never hides a row.
-const SORT_DISTANCE = "distance";
-function sortValuesFor(ratingSortEnabled, hasLocation = false) {
-  const values = ratingSortEnabled ? [...SORT_VALUES] : [SORT_DEFAULT];
-  if (hasLocation) values.push(SORT_DISTANCE);
-  return values;
-}
-function initSortFromParams(searchParams, ratingSortEnabled) {
-  const s = searchParams.get("sort");
-  // unknown (or gated-off) → default. MEH-2294: a ?sort=distance deep-link is
-  // KEPT here even though the location is unknown on the first render
-  // (useUserLocation hydrates in an effect); until a fix arrives the effective
-  // order is the default — see `effectiveSort` in the component.
-  return sortValuesFor(ratingSortEnabled, true).includes(s) ? s : SORT_DEFAULT;
-}
-// MEH-2294: the request params for one sort axis. {} at the default (byte-
-// identical to the pre-sort listing); distance without a fix also → {}.
-function sortRequestParams(sort, loc) {
-  if (sort === SORT_DEFAULT) return {};
-  if (sort === SORT_DISTANCE) return loc ? { sort, lat: loc.lat, lng: loc.lng } : {};
-  return { sort };
-}
 
 // MEH-2634: the six hardcoded escape chips (בשר/גבינה/לחם/ירקות/שמן/דבש) are
 // gone. They were a free-text `?q=` guess, so a chip could lead to a SECOND
@@ -263,6 +228,13 @@ export default function ProducersClient({
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...baseItems, ...appendItems];
+  // MEH-3810: Back from a card brings back the loaded pages and the place (lib/use-list-return.js).
+  useListReturn({
+    key: "producers",
+    enabled: !hasActiveChips && effectiveSort === SORT_DEFAULT,
+    pages: { items: appendItems, nextPage, hasMore, total: liveTotal },
+    restore: (p) => { setAppendItems(p.items); setNextPage(p.nextPage); setHasMore(p.hasMore); setLiveTotal(p.total); },
+  });
   // MEH-2598: the promoted service trio shows its own on/off state in the row,
   // so it is not repeated as a removable tag nor counted on «סינון» — the
   // same split home (tagChips) and /map (activeFilterTags) make.
@@ -416,7 +388,9 @@ export default function ProducersClient({
       })
       .then((r) => {
         const items = Array.isArray(r.data) ? r.data : [];
-        setAppendItems((prev) => [...prev, ...items]);
+        // MEH-3810: by id, so a page that lands twice (an observer from before a
+        // Back restore) is not drawn twice.
+        setAppendItems((prev) => [...prev, ...items.filter((it) => !prev.some((p) => p.id === it.id))]);
         // MEH-159: sync total from fresh header on every page load.
         const freshTotal = Number(r.headers["x-total-count"]);
         if (!Number.isNaN(freshTotal) && freshTotal >= 0) setLiveTotal(freshTotal);

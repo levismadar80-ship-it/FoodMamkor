@@ -524,6 +524,7 @@ export default function ProducerDashboardPage() {
         <div id="phone-verify">
           <PhoneVerifyCard
             variant="reverify"
+            phone={profile.phone}
             onVerified={() =>
               setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
             }

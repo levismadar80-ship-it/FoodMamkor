@@ -10,7 +10,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
-import { useEventsNavGate, resetEventsNavGateRequest } from "@/lib/use-events-nav-gate";
+import { useEventsNavGate, useEventsNavGateState, resetEventsNavGateRequest } from "@/lib/use-events-nav-gate";
 
 function Probe() {
   const visible = useEventsNavGate();
@@ -75,5 +75,40 @@ describe("useEventsNavGate (MEH-2369)", () => {
     render(<Probe />);
     await waitFor(() => expect(gate()).toBe("shown"));
     expect(get).toHaveBeenCalledTimes(1);
+  });
+});
+
+// MEH-3809: the Header holds the hub link's place until `settled`, so a gate
+// that never settles would leave an empty gap in the header for good.
+describe("useEventsNavGateState — settles on every outcome (MEH-3809)", () => {
+  function StateProbe() {
+    const { visible, settled } = useEventsNavGateState();
+    return <span data-testid="state">{`${visible}/${settled}`}</span>;
+  }
+  const state = () => screen.getByTestId("state").textContent;
+
+  it("unsettled while the request is in flight", () => {
+    get.mockReturnValue(new Promise(() => {}));
+    render(<StateProbe />);
+    expect(state()).toBe("false/false");
+  });
+
+  it("a failed request settles hidden", async () => {
+    get.mockReturnValue(Promise.reject(new Error("down")));
+    render(<StateProbe />);
+    await waitFor(() => expect(state()).toBe("false/true"));
+  });
+
+  it("a malformed body settles hidden", async () => {
+    get.mockReturnValue(Promise.resolve({ data: { not: "a list" } }));
+    render(<StateProbe />);
+    await waitFor(() => expect(state()).toBe("false/true"));
+  });
+
+  it("a cached answer is settled before the first paint", () => {
+    sessionStorage.setItem("meh_events_upcoming_any", JSON.stringify({ any: false, at: Date.now() }));
+    render(<StateProbe />);
+    expect(state()).toBe("false/true");
+    expect(get).not.toHaveBeenCalled();
   });
 });

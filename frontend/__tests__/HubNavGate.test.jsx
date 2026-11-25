@@ -11,7 +11,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
-import { useHubNavGate, resetHubNavGateRequests } from "@/lib/use-hub-nav-gate";
+import { useHubNavGate, useHubNavGateState, resetHubNavGateRequests } from "@/lib/use-hub-nav-gate";
 
 function Probe({ hub }) {
   const visible = useHubNavGate(hub);
@@ -174,5 +174,33 @@ describe("useHubNavGate — cached answer is in the first frame (MEH-3049)", () 
       host.remove();
       globalThis.IS_REACT_ACT_ENVIRONMENT = prev;
     }
+  });
+});
+
+// MEH-3809: the Header holds the hub link's place until `settled`.
+describe("useHubNavGateState — settles on every outcome (MEH-3809)", () => {
+  function StateProbe({ hub }) {
+    const { visible, settled } = useHubNavGateState(hub);
+    return <span data-testid="state">{`${visible}/${settled}`}</span>;
+  }
+  const state = () => screen.getByTestId("state").textContent;
+
+  it("a pilot that is off settles hidden at once, asking nothing", () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
+    render(<StateProbe hub="rescue" />);
+    expect(state()).toBe("false/true");
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("a failed request settles hidden", async () => {
+    get.mockReturnValue(Promise.reject(new Error("down")));
+    render(<StateProbe hub="groupBuys" />);
+    await waitFor(() => expect(state()).toBe("false/true"));
+  });
+
+  it("unsettled while the request is in flight", () => {
+    get.mockReturnValue(new Promise(() => {}));
+    render(<StateProbe hub="groupBuys" />);
+    expect(state()).toBe("false/false");
   });
 });
