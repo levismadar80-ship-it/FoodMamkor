@@ -7,8 +7,8 @@ Touches:  The test DB via `db`; HTTP through `client`, admin-authenticated.
 Does NOT: assert the column shapes or the public-serializer exclusion — that is
           chunk A, in `test_meh1494_recommended_at_note.py`. Does not cover the
           annual-review listing or the ProducerForm field.
-Related:  backend/app/routers/admin.py::_apply_recommended_pick /
-          admin_update_producer; backend/app/schemas/schemas.py::ProducerUpdate;
+Related:  backend/app/services/admin_producer_writes.py::_apply_recommended_pick /
+          admin_update_producer_row; backend/app/schemas/schemas.py::ProducerUpdate;
           backend/app/routers/producer_me.py::_PRODUCER_WRITABLE_FIELDS.
 History:  MEH-1494 chunk B (creation, 06/09).
 

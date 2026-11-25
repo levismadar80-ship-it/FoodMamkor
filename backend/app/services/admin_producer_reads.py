@@ -6,7 +6,7 @@ Purpose:  What the admin business screens READ: the business list with its
 Touches:  producers, users (read only).
 Does NOT: write anything, or register routes — routers/admin.py keeps every
           route, its admin dependency and its docstring (the openapi
-          description). Admin writes stay in routers/admin.py.
+          description). Admin writes live in services/admin_producer_writes.py.
 Related:  backend/app/routers/admin.py (list_producers, admin_get_producer,
           license_expiry_reminders, get_stats) · backend/app/routers/admin_decisions.py
           (the pending list reuses attach_aging + attach_has_owner).

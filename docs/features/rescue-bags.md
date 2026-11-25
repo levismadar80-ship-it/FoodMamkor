@@ -44,6 +44,7 @@
 * `tests/test_meh3698_rescue_history.py` — `GET /rescue/orders/history`: כל השריונים של הקונה מכל יום, עם שם בית העסק, לרשימה האחת «ההזמנות שלי» (MEH-3698). בלי קוד האיסוף.
 * `tests/test_meh3702_rescue_tomorrow.py` — סל של מחר: פרסום, שריון, רשימות, המייל «מחר», ותזכורת הבוקר (MEH-3702).
 * `tests/test_meh3703_rescue_schedule.py` · `frontend/__tests__/RescueSchedule.test.jsx` — הלוח הקבוע: ימים, דילוג, ביטול ביד שלא חוזר, מעבר שעון, בעלות, והשורה והדף (MEH-3703).
+* `frontend/__tests__/RescueSimplerScreens.test.jsx` — המסכים הפשוטים לבית עסק חדש: אלרגנים מקופלים, «שווי הסל», כרטיס הפרסום קודם כשאין סל בחוץ, שעון 24 שעות (`frontend/components/ui/TimeOfDaySelect.jsx`), שורת ביטול שמציינת את הסל, ושורת «לשאול באיסוף» קבועה לקונים (MEH-3823).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית רשימת הסלים (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 

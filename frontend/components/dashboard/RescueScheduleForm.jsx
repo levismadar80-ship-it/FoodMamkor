@@ -27,6 +27,9 @@ import { DAY_MS, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, RESCUE_SKIP_DAYS_AHEAD }
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Checkbox from "@/components/ui/Checkbox";
+import Heading from "@/components/ui/Heading";
+import Select from "@/components/ui/Select";
 import WeekdayChips from "@/components/ui/WeekdayChips";
 
 // Tomorrow is the strip's; the list starts the day after.
@@ -131,7 +134,7 @@ function PointRoutine({ row, today, onSaved }) {
   if (!row.exact) {
     return (
       <section className="border border-border rounded-md px-4 py-4 space-y-1" data-testid="rescue-schedule-point">
-        {place && <h2 className="font-headline-md text-base font-black text-text">{place}</h2>}
+        {place && <Heading level={2}>{place}</Heading>}
         <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-schedule-not-exact">{t("point_not_exact")}</p>
       </section>
     );
@@ -139,7 +142,7 @@ function PointRoutine({ row, today, onSaved }) {
 
   return (
     <section className="border border-border rounded-md px-4 py-4 space-y-4" data-testid="rescue-schedule-point">
-      {place && <h2 className="font-headline-md text-base font-black text-text">{place}</h2>}
+      {place && <Heading level={2}>{place}</Heading>}
       <div className="space-y-2">
         <p id={daysId} className="font-body-sm text-sm text-text font-medium">{t("days_label")}</p>
         <WeekdayChips labelledBy={daysId} value={draft.weekdays} onChange={(mask) => set({ weekdays: mask ?? 0 })} testIdPrefix="rescue-schedule-day" />
@@ -165,28 +168,35 @@ function PointRoutine({ row, today, onSaved }) {
         </label>
         <label className="font-body-sm text-sm col-span-2">
           {tf("cancel")}
-          <select
+          <Select
+            inline
+            size="xs"
             value={draft.cancel_minutes}
             onChange={(e) => set({ cancel_minutes: Number(e.target.value) })}
             data-testid="rescue-schedule-cancel"
-            className="w-full border border-border rounded-sm px-2 py-1 mt-1 bg-surface-card text-text focus-ring"
+            className="w-full mt-1"
           >
             {RESCUE_CANCEL_CUTOFFS.map(([minutes, key]) => (
               <option key={minutes} value={minutes}>
                 {tf(`cancel_${key}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
       {row.schedule && (
-        <label className="flex items-start gap-2 font-body-sm text-sm text-text">
-          <input type="checkbox" checked={draft.paused} onChange={(e) => set({ paused: e.target.checked })} className="mt-1 size-4 accent-primary" data-testid="rescue-schedule-paused" />
+        <Checkbox
+          className="flex items-start gap-2 font-body-sm text-sm text-text"
+          boxClassName="mt-0.5"
+          checked={draft.paused}
+          onChange={(e) => set({ paused: e.target.checked })}
+          data-testid="rescue-schedule-paused"
+        >
           <span>
             {t("paused")}
             <span className="block text-fg-muted">{t("paused_help")}</span>
           </span>
-        </label>
+        </Checkbox>
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="primary" disabled={busy || draft.weekdays === 0} onClick={save} data-testid="rescue-schedule-save">

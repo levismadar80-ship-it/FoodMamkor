@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import RescueScheduleForm from "@/components/dashboard/RescueScheduleForm";
 import BackLink from "@/components/ui/BackLink";
+import Heading from "@/components/ui/Heading";
 import { rescueBagsEnabled } from "@/lib/rescue";
 
 /**
@@ -23,7 +24,7 @@ export default async function RescueSchedulePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10" data-testid="rescue-schedule-page">
       <BackLink href="/producer/dashboard/rescue" label={tBack("back")} />
-      <h1 className="font-headline-md text-xl font-black text-text mt-1 mb-1">{tTool("label")}</h1>
+      <Heading level={1} className="mt-1 mb-1">{tTool("label")}</Heading>
       <p className="font-body-sm text-sm text-fg-muted mb-4">{t("lead")}</p>
       <RescueScheduleForm />
     </div>
