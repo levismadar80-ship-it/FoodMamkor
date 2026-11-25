@@ -128,8 +128,28 @@ def test_only_a_priced_site_form_signup_is_a_paid_tool(price, method, paid):
 def test_each_listed_route_asks_about_its_own_tool(tool, target):
     module_name, func_name = target.split(":")
     func = getattr(importlib.import_module(module_name), func_name)
-    source = inspect.getsource(func)
+    source = _source_with_write_delegates(func)
     assert capabilities.PAID_TOOL_CALLS[tool] in source, target
+
+
+def _source_with_write_delegates(func) -> str:
+    """The route's source plus a router / service function it calls by name.
+
+    MEH-3873: the owner's and the admin's routes hand their body to one shared
+    write function (events.create_event_for and its siblings), so the call sits
+    one level down. One level only, and only a direct call by name — the same
+    rule as tests/test_meh3247_own_uploads_only.py::_source_with_service_delegates.
+    """
+    source = inspect.getsource(func)
+    for name, obj in inspect.unwrap(func).__globals__.items():
+        module = getattr(obj, "__module__", "") or ""
+        if (
+            inspect.isfunction(obj)
+            and module.startswith(("app.services.", "app.routers."))
+            and f"{name}(" in source
+        ):
+            source += inspect.getsource(obj)
+    return source
 
 
 # ---------- behaviour, route by route ----------

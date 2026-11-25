@@ -302,6 +302,26 @@ def create_event(
     user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ) -> EventOut:
+    if not user.producer_id:
+        raise HTTPException(status_code=403, detail="הפעולה זמינה רק לחשבון של בית עסק")
+    return create_event_for(
+        db, user.producer_id, data, actor=user, background_tasks=background_tasks  # type: ignore[arg-type]
+    )
+
+
+def create_event_for(
+    db: Session,
+    producer_id: UUID,
+    data: EventCreate,
+    *,
+    actor: User,
+    background_tasks: BackgroundTasks,
+) -> EventOut:
+    """Create an event for `producer_id`. MEH-3873: the ONE create path — the
+    owner's POST /events and the admin's POST /admin/producers/{id}/events
+    (routers/admin_business_content.py) both land here, so every rule below
+    holds for both. `actor` is who pressed save (image-ownership check);
+    the caller has already decided that `actor` may write for `producer_id`."""
     if data.category not in VALID_CATEGORIES:
         raise HTTPException(
             status_code=400,
@@ -312,17 +332,15 @@ def create_event(
                 "params": {"allowed": sorted(VALID_CATEGORIES)},
             },
         )
-    if not user.producer_id:
-        raise HTTPException(status_code=403, detail="הפעולה זמינה רק לחשבון של בית עסק")
     # MEH-3224 (D6): a past date would publish a dead event and fire the
     # new-event alert to every follower.
     refuse_past_date(data.event_date)
-    assert_own_new_images(user, data.image_url)  # MEH-3247
+    assert_own_new_images(actor, data.image_url)  # MEH-3247
     # MEH-3022: cap on UPCOMING events — past ones are history and never count.
     enforce_cap(
         db.query(Event)
         .filter(
-            Event.producer_id == user.producer_id,
+            Event.producer_id == producer_id,
             Event.event_date >= israel_today(),
             Event.is_active.is_(True),
         )
@@ -332,7 +350,7 @@ def create_event(
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
-        phone=_producer_phone(db, user.producer_id),  # type: ignore[arg-type]
+        phone=_producer_phone(db, producer_id),  # type: ignore[arg-type]
         registration_url=data.registration_url,
     )
     if problem:
@@ -340,11 +358,11 @@ def create_event(
 
     # MEH-3180: a priced sign-up through the site's form is a paid tool.
     capabilities.require_paid_signup(
-        db, user.producer_id, price=data.price, method=data.registration_method
+        db, producer_id, price=data.price, method=data.registration_method
     )
 
     event = Event(
-        producer_id=user.producer_id,
+        producer_id=producer_id,
         title=data.title,
         description=data.description,
         event_date=data.event_date,
@@ -380,7 +398,7 @@ def create_event(
     background_tasks.add_task(
         fire_alerts,
         db,
-        user.producer_id,  # type: ignore[arg-type]
+        producer_id,
         "new_event",
         AlertContent(
             title=f"אירוע חדש: {data.title}",
@@ -439,12 +457,27 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
     # management lives on admin endpoints (REUSES producer_recipes.py:203-206).
     if event.producer_id != user.producer_id:
         raise HTTPException(status_code=404, detail="האירוע לא נמצא")
+    return update_event_row(
+        db, event, data, actor=user, background_tasks=background_tasks
+    )
 
+
+def update_event_row(
+    db: Session,
+    event: Event,
+    data: EventUpdate,
+    *,
+    actor: User,
+    background_tasks: BackgroundTasks,
+) -> EventOut:
+    """Apply an edit to `event`. MEH-3873: the ONE update path — the owner's
+    PUT /events/{id} and the admin's PUT /admin/events/{id} both land here.
+    The caller has already decided that `actor` may edit this event."""
     changes = data.model_dump(exclude_unset=True)
     # MEH-3224 (D6): moving an event INTO the past is refused; an edit that
     # leaves the stored date alone is not.
     refuse_past_date(changes.get("event_date"), event.event_date)  # type: ignore[arg-type]
-    assert_own_new_images(user, changes.get("image_url"), event.image_url)  # MEH-3247
+    assert_own_new_images(actor, changes.get("image_url"), event.image_url)  # MEH-3247
     # MEH-2469: a PUT may carry only one of the pair, so the end-time rule is
     # checked against the values the row will hold after the update — never
     # against the payload alone.

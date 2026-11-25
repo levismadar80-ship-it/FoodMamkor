@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_business_content,
     admin_decisions,
     admin_draft_merge,
     admin_experiences,
@@ -245,6 +246,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_recipes.router)
     # MEH-3333: admin CRUD for a business's locations (pickup points).
     app.include_router(admin_producer_locations.router)
+    # MEH-3873: admin writes a business's events + experiences, with consent.
+    app.include_router(admin_business_content.router)
     # MEH-2312: admin catalog import → drafts → approve.
     app.include_router(admin_product_import.router)
     app.include_router(reviews.router)

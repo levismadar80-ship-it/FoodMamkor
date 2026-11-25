@@ -284,14 +284,16 @@ def _source_with_service_delegates(ep) -> str:
 
     MEH-3841 (MEH-3537): a thin handler hands its whole body to one service
     function, so the ownership call now sits one level down. Only a direct
-    call by name from the handler counts, and only into `app.services`.
+    call by name from the handler counts, and only into `app.services`, or
+    (MEH-3873) into a router's shared write function — the owner's and the
+    admin's routes both call `events.create_event_for` and its siblings.
     """
     source = inspect.getsource(ep)
     for name, obj in inspect.unwrap(ep).__globals__.items():
         module = getattr(obj, "__module__", "") or ""
         if (
             inspect.isfunction(obj)
-            and module.startswith("app.services.")
+            and module.startswith(("app.services.", "app.routers."))
             and f"{name}(" in source
         ):
             source += inspect.getsource(obj)

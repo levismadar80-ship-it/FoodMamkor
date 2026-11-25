@@ -1739,6 +1739,22 @@
     }
   },
   "admin": {
+    "business_events": {
+      "title": "The business's events",
+      "intro": "Add and update events here on the business's behalf, after it agreed in writing. The event shows on the business's page.",
+      "empty": "This business has no events yet. Add the first one.",
+      "add": "Add an event",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "cancelled": "Cancelled",
+      "past": "Date passed",
+      "consent_label": "The business approved this event and its details in writing",
+      "consent_required": "Tick that the business approved in writing before saving",
+      "created": "The event was added to the business's page",
+      "updated": "Changes saved",
+      "loading": "Loading events…",
+      "load_error": "We couldn't load the events. Try refreshing the page."
+    },
     "common": {
       "loading": "Loading…",
       "loading_f": "Loading…",
