@@ -18,6 +18,7 @@ import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
 import { haversineKm, formatDistance } from "../../../lib/distance.js";
 // @ts-expect-error TS7016 — JS data module, no .d.ts
 import { ISRAEL_CITIES } from "../../../data/cities.js";
+import { heAxisCopy } from "../_axis-label";
 
 /**
  * Spec:     manual/map
@@ -187,18 +188,8 @@ export type Axis = { key: string; label: string };
  * the label is joined in from he.json here, and a missing one throws at load
  * instead of silently widening a locator.
  */
-const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
 export const AXES = Object.fromEntries(
-  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([k, a]) => {
-    const copy = HE_AXES[k];
-    // MEH-3824: an axis named after a site section reads its label from that
-    // key (lib/chip-copy.js does the same).
-    const label = a.labelKey
-      ? (a.labelKey.split(".").reduce((n: unknown, p) => (n as Record<string, unknown> | undefined)?.[p], he) as string | undefined)
-      : copy?.label;
-    if (!label) throw new Error(`he.json label for axis ${k} is missing — the spec cannot name the chip`);
-    return [k, { ...a, label, subtext: copy?.subtext ?? null }];
-  }),
+  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([k, a]) => [k, { ...a, ...heAxisCopy(he, k, a) }]),
 ) as Record<string, Axis>;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he/en.json. */
