@@ -19,7 +19,7 @@
  *           MEH-3818: once shown, keeps its slot when a filter empties it.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 // MEH-2161: the SAME constant `WaitingBadge` reads, imported rather than
@@ -41,10 +41,11 @@ const PILL = "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font
 export default function QueueSlaSummary({ rows }) {
   const t = useTranslations("admin");
   const queued = (rows || []).filter((p) => SLA_STATUSES.includes(p?.status));
+  // Latched during render, not in an effect: React's «storing information
+  // from previous renders» pattern, so the slot exists on the very render
+  // that empties the list (an effect would add one extra render first).
   const [shown, setShown] = useState(false);
-  useEffect(() => {
-    if (queued.length > 0) setShown(true);
-  }, [queued.length]);
+  if (queued.length > 0 && !shown) setShown(true);
 
   // Nothing waiting → render nothing. A «0 ממתינים» line is a permanent
   // fixture that says nothing on the day it matters, and the empty queue is
