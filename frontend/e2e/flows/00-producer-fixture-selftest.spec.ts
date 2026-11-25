@@ -39,6 +39,11 @@ const OK_DOC = `<!doctype html><html><head><meta charset="utf-8"></head><body><h
 // whenever the kernel gave that recorder 39009. Same port as that spec's DEAD_PORT.
 const UNUSED_ORIGIN = "http://localhost:29009";
 
+// MEH-3809: ERROR_DOC throws an uncaught error on purpose (it is the "a
+// component threw" case this classifier must catch), so the load guard is off
+// for this file. The guard has its own self-test (00-load-guard-selftest).
+test.use({ loadGuard: "off" });
+
 test.describe("_producer-fixture self-test", () => {
   test("assertDetailRendered is silent on a healthy page and reports on the error document", async ({
     page,

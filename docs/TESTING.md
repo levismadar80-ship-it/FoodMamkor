@@ -60,6 +60,32 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
 5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
 
+### Load guard — every flows test checks the page while it loads (MEH-3809)
+
+`frontend/e2e/flows/_load-guard.ts`, installed by the shared `page` fixture in
+`_cloudinary-stub.ts`, fails a passing test when, during the test, a page:
+
+- threw an uncaught error (`pageerror`) or logged a `console.error` that is not
+  in `CONSOLE_ALLOW` (each entry carries a reason and a card);
+- logged a React hydration mismatch (never allowlistable);
+- shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
+  right after a click or key press excluded; same limit as `lighthouserc.cjs`).
+
+CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
+page whose observer never reported fails the test, so a dead probe cannot read
+green. A spec that provokes errors on purpose opts out with
+`test.use({ loadGuard: "off" })` and a comment saying why; a spec that moves the
+layout itself (enlarges text, taps with `dispatchEvent`, which is not counted
+as input) uses `"errors"`, which keeps the error checks and drops CLS.
+A spec that measures timing itself under a CPU throttle (`flows/manual/nav-throttled.spec.ts`)
+is `"off"` too: the guard's probe changes the frames it counts (MEH-3809).
+
+Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
+1.5 × the largest value measured. A listed page passes under its ceiling and
+fails above it; every other page fails at 0.1. The list only shrinks: a fix
+removes its row, and a new shift gets a fix, not a row. The guard's own
+self-test is `flows/00-load-guard-selftest.spec.ts`.
+
 ### Slow-phone navigation — `flows/manual/nav-throttled.spec.ts` (MEH-3810)
 
 CI's network is fast, so the route loader is on screen for a frame and what goes

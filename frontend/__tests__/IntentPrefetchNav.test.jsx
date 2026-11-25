@@ -24,9 +24,9 @@ vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 vi.mock("framer-motion", () => ({
   motion: { div: ({ initial, animate, transition, ...props }) => <div {...props} /> },
 }));
-vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
-vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false }));
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false, useEventsNavGateState: () => ({ visible: !!(false), settled: true }) }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false, useExperiencesNavGateState: () => ({ visible: !!(false), settled: true }) }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false, useHubNavGateState: () => ({ visible: !!(false), settled: true }) }));
 vi.mock("@phosphor-icons/react", () => ({
   Compass: () => null, MapTrifold: () => null, Flower: () => null,
   CalendarBlank: () => null, Basket: () => null, User: () => null,
