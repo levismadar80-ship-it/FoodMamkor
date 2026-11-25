@@ -32,11 +32,11 @@ function sameLists(a, b) {
 }
 
 /** @param {Promise<{ data: any }>} read @returns {Promise<any[] | null>} */
-const settle = (read) =>
+const listOrNull = (read) =>
   read.then((r) => (Array.isArray(r.data) ? r.data : null)).catch(() => null);
 
 /** @param {string} path @returns {Promise<any[] | null>} */
-const readList = (path) => settle(api.get(path));
+const readList = (path) => listOrNull(api.get(path));
 
 /**
  * A failed read is an empty list, as it was before: the section hides
@@ -70,7 +70,7 @@ export function useProducerActivities({ producerId, slug = "", initial = null })
     }, ACTIVITIES_WAIT_MS);
     // Spelled as a literal api.get so the route scanner (unwired-route-guard)
     // sees the page as this route's caller.
-    settle(api.get(`/producers/${encodeURIComponent(slug)}/recipes`)).then((got) => {
+    listOrNull(api.get(`/producers/${encodeURIComponent(slug)}/recipes`)).then((got) => {
       clearTimeout(cap);
       if (cancelled) return;
       // A failed refresh keeps what the server sent; a failed first read hides the section.
