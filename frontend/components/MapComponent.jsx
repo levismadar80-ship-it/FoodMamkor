@@ -457,7 +457,12 @@ export default function MapComponent({
   // MEH-3824: read at icon-build time, like activeIdRef, so a rebuild after a
   // refetch carries the marks without a new dependency on the marker effect.
   const offerMarksRef = useRef(offerMarks);
-  offerMarksRef.current = offerMarks;
+  // Synced in an effect, not during render (react-hooks/refs). It is declared
+  // before the marker effects below, and effects run in declaration order, so
+  // every rebuild or refresh reads the current switches.
+  useEffect(() => {
+    offerMarksRef.current = offerMarks;
+  });
   // MAP_IMPROVEMENTS bug #13 — reuse a single marker for "my location"
   // instead of stacking a fresh circleMarker on every click.
   const myLocationMarkerRef = useRef(null);
