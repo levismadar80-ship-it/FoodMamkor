@@ -9,7 +9,7 @@
  * from the repo's own colour tokens, so a new faint class fails by number.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import tokens from "../tailwind.tokens.json";
 
 const apiMock = vi.hoisted(() => ({ get: vi.fn(() => new Promise(() => {})), post: vi.fn() }));
@@ -72,9 +72,13 @@ describe("admin layout", () => {
     return render(<AdminLayout><div /></AdminLayout>);
   };
 
-  it("every phone-strip nav link is at least 44px tall (was 28px)", () => {
+  it("every phone-strip nav link is at least 44px tall (was 28px)", async () => {
+    // MEH-3818: the strip shows its tabs once the counts have answered, so
+    // this case lets /admin/dashboard answer instead of holding it open.
+    apiMock.get.mockImplementationOnce(() => Promise.resolve({ data: { stats: {} } }));
     const { container } = renderAdmin();
     const strip = container.querySelector("div.md\\:hidden.sticky nav");
+    await waitFor(() => expect(strip.querySelectorAll("a[href]").length).toBeGreaterThan(0));
     const links = [...strip.querySelectorAll("a[href]")];
     expect(links.length).toBeGreaterThan(3);
     for (const a of links) expect(a.classList.contains("min-h-touch"), a.textContent).toBe(true);

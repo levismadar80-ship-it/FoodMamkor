@@ -41,8 +41,8 @@ export function getSectionNavItems(producer, t) {
     },
     {
       // MEH-2634: gated on reviews_count, like the other four pills. The
-      // `#reviews` WRAPPER still always renders — it is the lazy-load IO
-      // observation point and cannot be gated without breaking the fetch — so
+      // `#reviews` WRAPPER still always renders (ReviewsSection mounts with
+      // the page since MEH-3819 and starts its own read when it is near) — so
       // this is the one item where the pill is deliberately NARROWER than its
       // anchor: pill ⇒ anchor holds (no dead jump, which is what this list
       // exists to prevent), anchor ⇒ pill does not. At zero reviews the

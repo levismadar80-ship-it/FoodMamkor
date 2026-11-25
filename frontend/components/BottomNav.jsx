@@ -325,7 +325,8 @@ export default function BottomNav() {
   // Toaster, InstallPrompt, ChatWidget and BackToTop. Every one keeps a static
   // fallback: this var is ABSENT on desktop (the pill is md:hidden so height is
   // 0), on producer pages (the MEH-2148 gate unmounts the pill), and before
-  // hydration — so a consumer with no fallback would collapse to 0 in three
+  // hydration on a page that shows the pill (on a page without it, MEH-3818's
+  // no-pill <style> sets it in the server HTML) — so a consumer with no fallback would collapse to 0 in three
   // routine states, not exotic ones.
   //
   // Two of the eight were not parity swaps: MapBottomSheet and FavoritesClient
@@ -467,22 +468,34 @@ export default function BottomNav() {
   // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
   // bottom layer, not two. Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
+  // MEH-3818: on the no-pill routes below, the server HTML already carries the
+  // no-pill clearance, so whatever reads --bottom-nav-clearance (the cookie
+  // banner, toasts) is placed right from the first paint. Before, the var
+  // was set by the effect above only after hydration, and the cookie banner
+  // dropped 60px on every admin / dashboard / sign-up page (0.016 shift). The
+  // effect still sets the same value inline; this rule leaves with the route.
+  const noPillStyle = (
+    <style
+      data-no-bottom-chrome=""
+      dangerouslySetInnerHTML={{ __html: `:root{--bottom-nav-clearance:${NO_PILL_CLEARANCE}}` }}
+    />
+  );
   // MEH-2359: /admin has its own mobile nav (admin/AdminLayoutClient.jsx horizontal strip);
   // the consumer BottomNav floated over the approvals table at 375 (measured
   // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
-  if (isAdminRoute(pathname)) return null;
+  if (isAdminRoute(pathname)) return noPillStyle;
   // MEH-2431: same for the owner dashboard, which has its own tab nav
   // (producer/dashboard/DashboardLayoutClient.jsx). The pill covered rows of the locations
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
-  if (isOwnerDashboardRoute(pathname)) return null;
+  if (isOwnerDashboardRoute(pathname)) return noPillStyle;
   // MEH-2927 (pilot B3c): the registration flow. Measured at the iPhone VISUAL
   // viewport rather than the device height — at 375x667 one pixel of the 48px
   // «מתחילים» button was visible and unobstructed, at 390x664 sixteen. The
   // pill contributes 6px of that at one size and none at the others; the
   // cookie banner and the fold do the rest, which is why the answer is to take
   // the pill off the flow rather than lift one button over it (Sapir, 11/11).
-  if (isRegisterRoute(pathname)) return null;
+  if (isRegisterRoute(pathname)) return noPillStyle;
 
   return (
     <>

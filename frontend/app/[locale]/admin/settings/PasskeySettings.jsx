@@ -90,7 +90,13 @@ function PasskeyRow({ row, onRemove, busy }) {
   );
 }
 
-export default function PasskeySettings() {
+/**
+ * MEH-3818: `preload` as in ChecklistSettings — undefined → the card reads
+ * /auth/passkey itself; null → the settings page is still reading it;
+ * `{ data }` / `{ error: true }` → the page's answer.
+ * @param {{ preload?: { data?: any, error?: boolean } | null }} props
+ */
+export default function PasskeySettings({ preload } = {}) {
   const t = useTranslations("admin.passkeys");
   const [state, setState] = useState(/** @type {any} */ (null));
   const [loadError, setLoadError] = useState(false);
@@ -109,9 +115,18 @@ export default function PasskeySettings() {
       })
       .catch(() => setLoadError(true));
 
+  const selfLoad = preload === undefined;
   useEffect(() => {
-    load();
-  }, []);
+    if (selfLoad) load();
+  }, [selfLoad]);
+
+  // The page's answer, adopted once during render (see ChecklistSettings).
+  const [adopted, setAdopted] = useState(false);
+  if (preload && !adopted) {
+    setAdopted(true);
+    if (preload.error) setLoadError(true);
+    else if (state === null) setState(preload.data);
+  }
 
   /** @param {() => Promise<void>} work */
   const run = async (work) => {

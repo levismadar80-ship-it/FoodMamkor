@@ -1,3 +1,4 @@
+import { renderToString } from "react-dom/server";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import BottomNav from "@/components/BottomNav";
@@ -234,11 +235,13 @@ describe("BottomNav", () => {
   // MEH-2431 (reverses the MEH-1202 carve-out above): the owner dashboard has
   // its own tab nav; the consumer pill floated over its lists at 375.
   it.each(["/producer/dashboard", "/producer/dashboard/edit", "/producer/dashboard/events/new"])(
-    "renders null on the owner dashboard subtree (%s)",
+    "renders no nav on the owner dashboard subtree (%s)",
     (path) => {
       pathnameRef.current = path;
       const { container } = render(<BottomNav />);
-      expect(container).toBeEmptyDOMElement();
+      // MEH-3818: only the no-pill clearance <style>; no element is shown.
+      expect(container.querySelector(":not(style)")).toBeNull();
+      expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
     },
   );
 
@@ -252,10 +255,11 @@ describe("BottomNav", () => {
     "/register",
     "/register/producer",
     "/register/organizer",
-  ])("renders null on the registration flow (%s)", (path) => {
+  ])("renders no nav on the registration flow (%s)", (path) => {
     pathnameRef.current = path;
     const { container } = render(<BottomNav />);
-    expect(container).toBeEmptyDOMElement();
+    expect(container.querySelector(":not(style)")).toBeNull();
+    expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
   });
 
   // Controls: consumer routes keep the nav, so a gate that hides it
@@ -361,10 +365,28 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
       const { container } = render(<BottomNav />);
       // The render gate and the publish share one predicate: no pill AND the
       // no-pill clearance, on the same path, so the two cannot drift apart.
-      expect(container).toBeEmptyDOMElement();
+      // MEH-3818: nothing visible; only the no-pill clearance rule.
+      expect(container.querySelector(":not(style)")).toBeNull();
+      expect(container.querySelectorAll("style[data-no-bottom-chrome]")).toHaveLength(1);
       expect(clearance()).toBe("calc(env(safe-area-inset-bottom, 0px) + 12px)");
     },
   );
+
+  // MEH-3818: the clearance must be right in the SERVER HTML, before any effect
+  // runs, or the cookie banner paints 60px too high and drops on hydration.
+  it.each(["/admin", "/producer/dashboard", "/register"])(
+    "%s carries the no-pill clearance in its server HTML",
+    (path) => {
+      pathnameRef.current = path;
+      const html = renderToString(<BottomNav />);
+      expect(html).toContain("--bottom-nav-clearance:calc(env(safe-area-inset-bottom, 0px) + 12px)");
+    },
+  );
+
+  it("a consumer page's server HTML sets no clearance (the pill publishes its own)", () => {
+    pathnameRef.current = "/";
+    expect(renderToString(<BottomNav />)).not.toContain("--bottom-nav-clearance");
+  });
 
   // The StickyContactBar sits at the bottom of a business page; the fallback is
   // what keeps content clear of it, so that gate must NOT publish anything.

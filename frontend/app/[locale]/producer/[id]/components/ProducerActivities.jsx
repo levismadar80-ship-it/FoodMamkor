@@ -14,8 +14,9 @@ import OfferCard from "@/components/ui/OfferCard";
 import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-2602: the business page lists its open group buys and upcoming
-// experiences, fetched client-side by producer_id; a failed fetch or an empty
-// list hides the section.
+// experiences; a failed fetch or an empty list hides the section. Since
+// MEH-3819 the page hands the lists in (useProducerActivities, server-read on
+// /{slug}); the component reads them itself only when it is given none.
 //
 // MEH #2659 (Sapir, 04/11 — proposal https://claude.ai/artifact/3KGkJqw9im6RWKNv4x3hHr):
 // - Events and experiences are ONE date-sorted list, drawn with the home
@@ -44,11 +45,25 @@ function byDateTime(a, b) {
   return ka < kb ? -1 : ka > kb ? 1 : 0;
 }
 
+/** Date.now(), read again after mount so a cached server render is corrected
+ *  (React's two-pass pattern for a value only the browser knows). */
+function useMountedNow() {
+  const [now, setNow] = useState(() => Date.now());
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- MEH-3819: one deliberate second pass after hydration, to replace the server's clock
+  useEffect(() => { setNow(Date.now()); }, []);
+  return now;
+}
+
 function GroupBuyRow({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
-  const daysLeft = Math.max(0, Math.ceil(((parseNaiveUtc(gb.deadline)?.getTime() ?? 0) - Date.now()) / 86400000));
+  // MEH-3819: this row is in the cached server HTML of /{slug}, hydrated hours
+  // later, so "days left" can differ between the two renders. The server text
+  // is kept through hydration (suppressHydrationWarning below, Next's pattern
+  // for clocks) and the browser's own clock replaces it right after mount.
+  const now = useMountedNow();
+  const daysLeft = Math.max(0, Math.ceil(((parseNaiveUtc(gb.deadline)?.getTime() ?? 0) - now) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   // MEH-3289 · MEH-3588: from the minimum on, the count alone (see the group-buy page).
@@ -101,20 +116,28 @@ function GroupBuyRow({ gb }) {
           </span>
         </>
       }
-      bandEnd={daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
+      bandEnd={<span suppressHydrationWarning>{daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}</span>}
     />
   );
 }
 
-export default function ProducerActivities({ producerId, events = [], sectionRefs }) {
+/**
+ * @param {{ producerId: string, events?: any[], experiences?: any[], groupBuys?: any[], sectionRefs?: any }} props
+ */
+export default function ProducerActivities({ producerId, events = [], experiences: givenExperiences, groupBuys: givenGroupBuys, sectionRefs }) {
   const t = useTranslations("producer.detail.sections");
-  const [groupBuys, setGroupBuys] = useState([]);
-  const [experiences, setExperiences] = useState([]);
+  // MEH-3819: the page reads the lists (useProducerActivities) so they paint
+  // with it; this component reads them itself only when it is given none.
+  const given = givenExperiences !== undefined && givenGroupBuys !== undefined;
+  const [ownGroupBuys, setGroupBuys] = useState([]);
+  const [ownExperiences, setExperiences] = useState([]);
+  const groupBuys = given ? givenGroupBuys : ownGroupBuys;
+  const experiences = given ? givenExperiences : ownExperiences;
   const [showAll, setShowAll] = useState(false);
   const [showAllGroupBuys, setShowAllGroupBuys] = useState(false);
 
   useEffect(() => {
-    if (!producerId) return undefined;
+    if (!producerId || given) return undefined;
     let cancelled = false;
     const id = encodeURIComponent(producerId);
     api
@@ -132,7 +155,7 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
     return () => {
       cancelled = true;
     };
-  }, [producerId]);
+  }, [producerId, given]);
 
   const entries = useMemo(() => {
     const list = [
