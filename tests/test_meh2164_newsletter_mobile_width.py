@@ -125,7 +125,7 @@ def test_copy_and_palette_untouched():
         "ברוכים הבאים למהמקור",
         # MEH-2611 replaced the weekly/Monday promise (nothing sends weekly)
         # with copy Sapir approved 30/10; this pins the new line instead.
-        "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",
+        "נכתוב כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",
         "בלי ספאם, ואפשר לבטל בכל רגע.",
         "לבטל הרשמה",
         "#F5F0E8",

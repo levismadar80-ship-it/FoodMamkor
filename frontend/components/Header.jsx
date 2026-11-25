@@ -54,8 +54,7 @@ const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
   "favorites",
-  "myOrders",
-  "myGroupBuys", // MEH-3609
+  "myOrders", // MEH-3698: group buys and bags are in it too
   "settings",
   "admin",
 ];

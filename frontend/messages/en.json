@@ -173,6 +173,7 @@
       "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
+      "google_continue": "Continue with Google",
       "google_error": "Google sign-in failed",
       "apple_error": "Apple sign-in failed",
       "apple_continue": "Continue with Apple",
@@ -5211,6 +5212,15 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_14": {
+            "i0": "Before you open orders, you can see how the order form looks to customers. If something is missing, it says what to add.",
+            "i1": "Paste text and get a draft of a recipe, an event or your order settings. Every field has a «?» with a short explanation.",
+            "i2": "Surprise bags can now be listed for tomorrow too, and customers get a reminder on the morning of pickup day.",
+            "i3": "When you set a vacation or a closed day that has orders you already accepted, a message shows them.",
+            "i4": "The card for asking customers for a review now also appears at the top of the «Reviews» page.",
+            "i5": "The link to your page and your QR code are now in one place, «Share», in the «Tools» tab.",
+            "i6": "New category: «Cooked to order», for platters, salads and Shabbat meals."
+          },
           "v1_5_11": {
             "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",
             "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
@@ -5399,6 +5409,7 @@
         "groups": {
           "offer_heading": "Offer to customers",
           "reviews_heading": "Customer reviews",
+          "reach_heading": "Bring in customers",
           "content_heading": "Content",
           "events_sub": "A one-time event, or an experience people sign up for",
           "opportunities_sub": "A group buy, or surprise bags from what is left today"
@@ -5851,7 +5862,6 @@
         "note_placeholder": "For example: Rosh Hashana eve",
         "invalid_date": "Invalid or duplicate date",
         "save_success": "Special hours saved",
-        "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "payment_info": {
@@ -7197,7 +7207,12 @@
       "empty_title": "No rescue bags yet today",
       "empty_title_city": "No rescue bags in {city} yet today",
       "empty_subtitle": "Worth checking again this afternoon",
-      "count": "{count, plural, one {one bag} other {# bags}}"
+      "count": "{count, plural, one {one bag} other {# bags}}",
+      "sort_label": "Sort",
+      "sort_time": "By pickup time",
+      "sort_near": "Closest",
+      "sort_cheap": "Cheapest",
+      "sort_rating": "Highest rated"
     },
     "row": {
       "left": "{count, plural, one {one left} other {# left}}",
@@ -7428,6 +7443,13 @@
           "a": "On the bag's page and in the reservation email, with the pickup code."
         }
       }
+    },
+    "share": {
+      "button": "Send to a friend",
+      "line_code_at": "Pickup code for the bag at {business}: {code}",
+      "line_code": "Bag pickup code: {code}",
+      "line_say": "Say the code at the counter to collect the bag",
+      "line_say_pay": "Say the code at the counter and pay {price} ₪ there"
     }
   },
   "holidays": {
@@ -8254,6 +8276,23 @@
       "cancelled": "Cancelled",
       "expired": "No reply in time",
       "no_show": "Not collected"
+    },
+    "section_active": "Active",
+    "section_past": "Past",
+    "kind": {
+      "order": "Order"
+    },
+    "bag_status": {
+      "handed": "Collected",
+      "no_show": "Not collected",
+      "cancelled_by_business": "Cancelled by the business"
+    },
+    "partial_error": "Part of the list didn't load.",
+    "group_buy_status": {
+      "open": "Open to join",
+      "funded": "Reached its goal",
+      "fulfilled": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "google_profile": {
@@ -8297,20 +8336,5 @@
     "hours_title": "Opening hours",
     "hours_note": "Each side writes hours differently, so compare them yourself.",
     "empty_value": "—"
-  },
-  "my_group_buys": {
-    "title": "My group buys",
-    "empty": "You haven't joined a group buy yet.",
-    "empty_cta": "To group buys",
-    "load_error": "We couldn't load your group buys.",
-    "quantity_unit": "{count} {unit}",
-    "quantity": "Quantity: {count}",
-    "deadline": "Joining closes {date}",
-    "status": {
-      "open": "Open to join",
-      "funded": "Reached its goal",
-      "fulfilled": "Completed",
-      "cancelled": "Cancelled"
-    }
   }
 }

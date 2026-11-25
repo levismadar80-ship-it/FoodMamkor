@@ -10,7 +10,7 @@
  * Does NOT: edit producers.order_window (when the business ANSWERS orders,
  *           a different fact, edit/OrderWindowEditor.jsx). It only reads it
  *           once, to prefill an empty week (approved stage-4 design).
- * Related:  lib/order-window.js (daysFromOrderWindow), lib/hours.js (DAY_KEYS)
+ * Related:  lib/order-window-editor.js (daysFromOrderWindow), lib/hours.js (DAY_KEYS)
  * History:  MEH-3316 (creation; stage 4 of MEH-3216) · MEH-3752 (the lead
  *           carries a «?»; an order-setup draft replaces the rows, saved
  *           with the usual button)
@@ -27,7 +27,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import { detailToMessage } from "@/lib/errors";
 import { DAY_KEYS } from "@/lib/hours";
-import { daysFromOrderWindow } from "@/lib/order-window";
+import { daysFromOrderWindow } from "@/lib/order-window-editor";
 import { saveWindows } from "@/lib/product-orders";
 import { draftWindows } from "@/lib/order-setup-draft";
 

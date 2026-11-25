@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 // MEH-731: locale-stripping usePathname so isActive() matches the
 // non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
@@ -35,6 +35,10 @@ import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 import BrandLoader from "@/components/BrandLoader";
 import BackLink from "@/components/ui/BackLink";
+
+// MEH-3818: the longest the phone strip waits for the counts before it shows
+// its tabs anyway (the same 2.5 s cap as the settings page).
+const COUNTS_WAIT_MS = 2500;
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -127,6 +131,21 @@ function AdminShell({ children }) {
   const stats = dashboard?.stats ?? null;
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
   const countsError = loadError;
+  // MEH-3818: the counts have answered (or failed). Until then the phone strip
+  // holds its height with a placeholder and the home's logout button waits:
+  // the queue tabs used to appear in the middle of the strip and push the
+  // others aside, and the button sat under the home's short skeleton and
+  // dropped ~420px when the home filled in (0.09 layout shift on a slow phone).
+  // Latched: a refetch clears loadError while data is still null, so the
+  // raw condition flips back to false on every navigation after one failure
+  // and the strip would lose its tabs each time. Capped at COUNTS_WAIT_MS so
+  // a slow or hanging read never holds the strip empty for the 15 s timeout.
+  const [countsKnown, setCountsKnown] = useState(false);
+  if (!countsKnown && (stats !== null || countsError)) setCountsKnown(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setCountsKnown(true), COUNTS_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   // MEH-1599: same 401/403 split as producer/dashboard/DashboardLayoutClient.jsx:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
@@ -255,13 +274,13 @@ function AdminShell({ children }) {
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-green-50 flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
           <p className="font-headline-md text-xl text-white">{t("common.brand_admin")}</p>
-          <p className="text-green-50/60 text-xs mt-1">{user.name}</p>
+          <p className="text-green-50/75 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {NAV_SECTIONS.map((section) => {
             const items = itemsOf(section);
             const label = (
-              <p className="text-xs text-white/50 px-3 pb-1">
+              <p className="text-xs text-white/70 px-3 pb-1">
                 {t(`layout.nav_sections.${section.key}`)}
               </p>
             );
@@ -282,7 +301,7 @@ function AdminShell({ children }) {
                   open={containsActive || undefined}
                 >
                   {/* MEH-3539: min-h-6 = axe target-size (24px); was 20px tall. */}
-                  <summary className="flex min-h-6 items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
+                  <summary className="flex min-h-6 items-center gap-1 text-xs text-white/70 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
                     <span>{t(`layout.nav_sections.${section.key}`)}</span>
                     <CaretDown size={12} className="transition group-open:rotate-180" aria-hidden="true" />
                   </summary>
@@ -298,7 +317,7 @@ function AdminShell({ children }) {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
+        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/75">
           <BackLink href="/" tone="onDark" label={t("common.back_home")} />
         </div>
       </aside>
@@ -309,7 +328,14 @@ function AdminShell({ children }) {
           tabs once the page scrolled (Sapir's iPhone screenshot, 29/10). */}
       <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-[var(--chrome-top,82px)] z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
-          {navHrefs.map((n) => {
+          {!countsKnown && (
+            // Same box as one tab, so the strip has its final height at once.
+            <span aria-hidden="true" className="invisible flex items-center gap-1.5 px-3 py-1.5 text-xs">
+              <Gauge size={14} />
+              {t("layout.nav.dashboard")}
+            </span>
+          )}
+          {countsKnown && navHrefs.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             // MEH-1701: the same badge the desktop sidebar shows — an admin
@@ -320,7 +346,7 @@ function AdminShell({ children }) {
               <Link
                 key={n.href}
                 href={n.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs transition ${
+                className={`flex items-center min-h-touch gap-1.5 px-3 py-1.5 rounded-sm text-xs transition ${
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
                 aria-current={active ? "page" : undefined}
@@ -355,7 +381,7 @@ function AdminShell({ children }) {
             logout the 401 branch above sends her to /login. */}
         {/* MEH-2728: only on the panel's home, and muted — same reasoning
             as the owner dashboard (DashboardLayoutClient.jsx). */}
-        {pathname === "/admin" && (
+        {pathname === "/admin" && countsKnown && (
           <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
             <button
               type="button"

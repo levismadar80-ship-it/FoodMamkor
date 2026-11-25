@@ -3,7 +3,7 @@
 
 /**
  * Module:   PaymentInfoEditor
- * Purpose:  «איך משלמים לך?» — the owner picks how customers pay (five tiles
+ * Purpose:  «איך משלמים לעסק?» — the owner picks how customers pay (five tiles
  *           with icons + a «בחירת הכל» switch), when they pay (one of three,
  *           clearable), and one optional line. Saves producers.payment_info.
  * Does NOT: render the public answer — that is the «איך משלמים?» chip on the

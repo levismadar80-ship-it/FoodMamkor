@@ -12,6 +12,7 @@
  */
 
 import api from "@/lib/api";
+import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
 import { eventWhen } from "@/lib/event-when";
 import { israelToday } from "@/lib/israel-date";
 import {
@@ -216,6 +217,8 @@ export async function fetchOffer(offerId) {
 /** Reserve. Throws the axios error so the caller can map status → copy. */
 export async function reserveBag({ offerId, qty = 1 }) {
   const res = await api.post("/rescue/orders", { offer_id: offerId, qty });
+  // MEH-3698: reserved, so «ההזמנות שלי» has something — whatever the parse says.
+  clearMyOrdersNavGate();
   const parsed = CreateOrderRescueOrdersPostResponse.safeParse(res.data);
   if (!parsed.success) throw new Error("rescue:unparsable-order");
   return parsed.data;

@@ -136,16 +136,18 @@ test.describe("load guard self-test (MEH-3809)", () => {
     // Anchored to a real row: the dashboard, at a value measured on PR #5280.
     expect(KNOWN_CLS.some((k) => k.card === "MEH-3817")).toBe(true);
     expect(run(shifted("/producer/dashboard/edit?group=products", 0.548))).toEqual([]);
-    expect(run(shifted("/en/producer/dashboard", 0.55))).toEqual([]);
+    expect(run(shifted("/en/producer/dashboard/edit", 0.55))).toEqual([]);
+    // A row removed when its fix merged: the dashboard home now fails at 0.1.
+    expect(run(shifted("/producer/dashboard", 0.3))).toHaveLength(1);
     // Worse than the ceiling: still red, and says it got worse.
-    const worse = run(shifted("/producer/dashboard", 1.6));
+    const worse = run(shifted("/producer/dashboard/edit", 1.6));
     expect(worse).toHaveLength(1);
     expect(worse[0]).toContain("got worse");
     // A page that is not listed fails at the plain limit, a lookalike path too.
     expect(run(shifted("/producers", CLS_LIMIT + 0.05))).toHaveLength(1);
-    expect(run(shifted("/producer/dashboardx", 0.3))).toHaveLength(1);
+    expect(run(shifted("/producer/dashboard/editx", 0.3))).toHaveLength(1);
     // A listed page never hides an error.
-    expect(run(shifted("/producer/dashboard", 0.3, ["pageerror: boom"]))).toEqual(["pageerror: boom"]);
+    expect(run(shifted("/producer/dashboard/edit", 0.3, ["pageerror: boom"]))).toEqual(["pageerror: boom"]);
     // "errors" mode (cls: false) drops CLS only.
     expect(run(shifted("/producers", 0.9), false)).toEqual([]);
     expect(run(shifted("/producers", 0.9, ["console.error: boom"]), false)).toEqual(["console.error: boom"]);

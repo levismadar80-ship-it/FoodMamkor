@@ -2,13 +2,13 @@
 /// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
-import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
-import { useGsiRedrawOnResize } from "@/lib/use-gsi-redraw-on-resize";
+import { useGoogleCodeSignIn } from "@/lib/use-google-code-sign-in";
+import GoogleButton from "@/components/ui/GoogleButton";
 import { env } from "@/lib/env";
 
 /**
@@ -19,8 +19,8 @@ import { env } from "@/lib/env";
  * endpoint returns 409 when the user already has a producer linked,
  * which lets us redirect to /login instead of silently logging in.
  *
- * Re-uses the Google GSI and Apple JS SDK the consumer flow already
- * loads — no new env vars. Renders nothing when the provider client_id
+ * Re-uses the consumer flow's Google button and code swap (MEH-3690: our own
+ * button, lib/use-google-code-sign-in.js) and the Apple JS SDK. Renders nothing when the provider client_id
  * is missing, so local dev without OAuth creds stays functional via
  * the email/password path below.
  */
@@ -31,7 +31,6 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
   const appleId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const appleRedirect = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
 
-  const googleBtnRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
   const finish = async (provider, id_token, name) => {
@@ -67,29 +66,15 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
     }
   };
 
-  // Google GSI — the shared hook loads the script once per document and calls
-  // cancel() before each initialize() and on unmount, clearing any stale
-  // producer callback. It does NOT limit initialize() to one call per page:
-  // the guard is useEffect-scoped with no module-level flag, so a second
-  // GSI-bearing component mounting in the same document (e.g. a client-side
-  // navigation to /login) initializes again and GSI logs "called multiple
-  // times". Corrected under MEH-1778 — this comment previously claimed the
-  // one-per-page guarantee that use-google-sign-in.js never made. The defect
-  // itself is MEH-1776 / MEH-282; only the comment is fixed here.
-  const drawGoogleButton = () => {
-    if (googleBtnRef.current) {
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: "outline",
-        size: "large",
-        width: googleBtnRef.current.offsetWidth,
-        text: "continue_with",
-        locale: gsiLang(),
-      });
-    }
-  };
-  useGoogleSignIn(googleId, (response) => finish("google", response.credential), drawGoogleButton);
-  // MEH-3687: the width above is fixed at draw time; redraw when the screen narrows.
-  useGsiRedrawOnResize(googleBtnRef, drawGoogleButton);
+  // MEH-3690: our own button. The code swap hands back the same Google ID
+  // token the rendered button used to, so the producer endpoint is unchanged.
+  const google = useGoogleCodeSignIn(googleId, {
+    onIdToken: (idToken) => finish("google", idToken),
+    onError: (err) => {
+      // @ts-ignore — an axios error carries response.data.detail; anything else has none.
+      onError?.(detailToMessage(err?.response?.data?.detail) || t("google_error"));
+    },
+  });
 
   // Apple JS — mount the SDK, listen to success/failure events, forward
   // to our producer endpoint.
@@ -137,7 +122,15 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
   return (
     <div className="space-y-3" aria-busy={loading ? "true" : "false"}>
       <p className="text-sm font-semibold text-text">{t("producer_quick_signup")}</p>
-      {googleId && <div ref={googleBtnRef} className="w-full min-h-[48px]" data-gsi-slot="" />}
+      {googleId && (
+        <GoogleButton
+          onClick={google.start}
+          busy={loading || google.busy}
+          label={t("google_continue")}
+          testId="producer-google-button"
+          size="lg"
+        />
+      )}
       {appleId && (
         <button
           type="button"

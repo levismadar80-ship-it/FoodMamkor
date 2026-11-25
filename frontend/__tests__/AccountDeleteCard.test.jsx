@@ -13,9 +13,13 @@ vi.mock("@/lib/api", () => ({ default: { get: (...a) => apiGet(...a) } }));
 
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_GOOGLE_CLIENT_ID: "cid" } }));
 const googleCallbacks = [];
-vi.mock("@/lib/use-google-sign-in", () => ({
-  gsiLang: () => "he",
-  useGoogleSignIn: (_id, cb) => googleCallbacks.push(cb),
+// MEH-3690: our own Google button; a pushed callback({ credential }) stands
+// for "the code swap returned this ID token".
+vi.mock("@/lib/use-google-code-sign-in", () => ({
+  useGoogleCodeSignIn: (_id, { onIdToken }) => {
+    googleCallbacks.push(({ credential }) => onIdToken(credential));
+    return { start: () => {}, busy: false };
+  },
 }));
 
 vi.mock("@/i18n/navigation", () => ({

@@ -19,6 +19,7 @@ import {
   hasFullCookieConsent,
   setCookieConsent,
 } from "@/lib/cookie-consent";
+import { COOKIE_BANNER_HEIGHT_SCRIPT } from "@/lib/cookie-banner-height-inline";
 
 /**
  * Cookie consent — compact bottom bar.
@@ -94,6 +95,7 @@ export default function CookieBanner() {
   if (!visible) return null;
 
   return (
+    <>
     <div
       ref={bannerRef}
       className="cookie-banner vv-pin print:hidden fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-cookie-banner bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
@@ -135,5 +137,11 @@ export default function CookieBanner() {
         </div>
       </div>
     </div>
+    {/* MEH-3820: the server-HTML copy publishes its own height before the first
+        paint, so /map reserves the banner's strip from the start instead of
+        shrinking the map ~5 s in on a slow phone, when the effect above runs.
+        Rendered only until mount (server + hydration render alike). */}
+    {!mounted && <script dangerouslySetInnerHTML={{ __html: COOKIE_BANNER_HEIGHT_SCRIPT }} />}
+    </>
   );
 }

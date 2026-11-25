@@ -49,7 +49,7 @@ export default function BackLink({ href, label, tone = "default", className = ""
     <Link
       href={href}
       data-testid={testId}
-      className={`inline-flex items-center gap-1 text-sm rounded-sm focus-visible:outline-none focus-visible:ring-2 ${TONES[tone] ?? TONES.default} ${className}`}
+      className={`tap-area inline-flex items-center gap-1 text-sm rounded-sm focus-visible:outline-none focus-visible:ring-2 ${TONES[tone] ?? TONES.default} ${className}`}
     >
       <ArrowRight size={16} weight="bold" aria-hidden="true" className="ltr:rotate-180" />
       {label}

@@ -97,34 +97,14 @@ type KnownCls = { path: RegExp; ceiling: number; reason: string; card: string };
  *  never add one to get a new shift green — a new shift gets a fix. */
 export const KNOWN_CLS: readonly KnownCls[] = [
   {
-    path: /^\/producer\/dashboard(?:\/edit)?$/,
+    // MEH-3817: #5292 fixed the dashboard home; the edit groups are still open
+    // on the card. The other rows (MEH-3818 admin #5302, MEH-3819 business
+    // page #5294, MEH-3820 map #5301, MEH-3821 home with a city #5298) were
+    // removed when their fixes merged.
+    path: /^\/producer\/dashboard\/edit$/,
     ceiling: 1.5,
-    reason: "Owner dashboard home and edit groups: late cards push the page down (largest 0.981, mobile).",
+    reason: "Owner dashboard edit groups: late cards push the page down (largest 0.981, mobile, measured before #5292).",
     card: "MEH-3817",
-  },
-  {
-    path: /^\/admin(?:\/settings|\/producers)?$/,
-    ceiling: 0.8,
-    reason: "Admin home, settings and businesses: content arrives after load (largest 0.525, mobile).",
-    card: "MEH-3818",
-  },
-  {
-    path: /^\/(?:producer\/[0-9a-f-]{36}|ruach-hasadeh)$/,
-    ceiling: 2.0,
-    reason: "Business page: delivery and reviews sections pushed down after load (largest 1.334, mobile).",
-    card: "MEH-3819",
-  },
-  {
-    path: /^\/map$/,
-    ceiling: 0.25,
-    reason: "Phone map shrinks after load, e.g. when the cookie banner comes up (largest 0.138).",
-    card: "MEH-3820",
-  },
-  {
-    path: /^\/$/,
-    ceiling: 0.65,
-    reason: "Home with a city on the phone: the minimap section is pushed down after load (0.415).",
-    card: "MEH-3821",
   },
 ];
 

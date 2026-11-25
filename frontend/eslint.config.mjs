@@ -6,6 +6,8 @@ import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
 import security from "eslint-plugin-security";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import designSystem from "./eslint-rules/design-system.mjs";
 
 export default [
   {
@@ -170,6 +172,40 @@ export default [
     rules: {
       "max-lines": "off",
     },
+  },
+
+  // ── MEH-3829: design-system + accessibility rules (parent MEH-3826) ─────
+  // Every rule is "warn"; scripts/checks/eslint-ratchet.mjs gates the
+  // `design-system/` and `jsx-a11y/` totals, which may only go down.
+  // jsx-a11y is already registered by eslint-config-next (a handful of its
+  // rules); this turns on the whole recommended set. The design-system rules
+  // are the local Atlassian-style `no-html-*` set: a raw basic element
+  // outside components/ui/ should be the shared owner.
+  {
+    files: ["**/*.{js,jsx}"],
+    plugins: { "design-system": designSystem },
+    rules: {
+      ...Object.fromEntries(
+        Object.entries(jsxA11y.configs.recommended.rules).map(([k, v]) => {
+          const opts = Array.isArray(v) ? v.slice(1) : [];
+          const severity = Array.isArray(v) ? v[0] : v;
+          if (severity === "off" || severity === 0) return [k, v];
+          return [k, opts.length ? ["warn", ...opts] : "warn"];
+        }),
+      ),
+      ...Object.fromEntries(Object.keys(designSystem.rules).map((r) => [`design-system/${r}`, "warn"])),
+    },
+  },
+  // The owners themselves are where the raw elements belong. Only the
+  // no-html-* rules are off here: an owner must still give its field a label
+  // and must not ship a read-only one.
+  {
+    files: ["components/ui/**"],
+    rules: Object.fromEntries(
+      Object.keys(designSystem.rules)
+        .filter((r) => r.startsWith("no-html-"))
+        .map((r) => [`design-system/${r}`, "off"]),
+    ),
   },
 
   // ── MEH-1618: i18n literal gate ──────────────────────────────────────

@@ -65,8 +65,8 @@ left in v1" vs "what's planned for v2".
 | `/verify-email` | Email verification landing |
 | `/account-deleted` | Landing after an account is deleted (MEH-3248) |
 | `/favorites` | Saved businesses and items, with alert preferences (new events, group buys, rescue bags) |
-| `/my-group-buys` | MEH-3609: «הקבוצות שלי», the group buys the signed-in person joined, running ones first; each row opens `/group-buys/[id]`. Linked from the account menus |
-| `/my-orders` | MEH-3525: the signed-in buyer's on-site orders, newest first; each row opens `/order/[id]`. Linked from the account menus while ordering is on |
+| `/my-group-buys` | MEH-3609 page; since MEH-3698 a redirect to `/my-orders`, where group buys are listed. Not in the menus |
+| `/my-orders` | MEH-3525 · MEH-3698: one list of the signed-in buyer's product orders, group buys and surprise bags, «פעילות» then «קודמות», a tag per row; each row opens that item's page. In the account menus only for someone with at least one |
 | `/messages` | Messages between visitors and businesses |
 | `/settings` | Profile, security, notifications, delete account |
 | `/registration/[token]` | Cancel an event registration from the confirmation email (noindex) |
@@ -100,7 +100,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
-| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749) |
+| `/producer/dashboard/tools` | «כלים» tab: tools grouped by task (offer to customers, reviews, bring in customers, content); «אירועים» and «הזדמנויות» open in place (MEH-3669); «שיתוף» is one tile to its own page (MEH-3749), in its own group «להביא לקוחות» (MEH-3787) |
 | `/producer/dashboard/share` | «שיתוף»: the QR card and «ערכת שיתוף», approved business only, opened from «כלים» (MEH-3749) |
 | `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
 | `/producer/dashboard/offer` | «הטבה»: the business's one offer to customers, from «כלים» › «להציע ללקוחות» (MEH-3785; was a card in the edit tab) |

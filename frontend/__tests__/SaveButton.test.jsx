@@ -16,7 +16,7 @@ vi.mock("next-intl", () => ({
       title: "רוצה לשמור? 🌿",
       login_cta: "היכנסו",
       dismiss_cta: "אולי אחר כך",
-      saved_toast_first_time: "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט",
+      saved_toast_first_time: "נשמר! כל המועדפים מחכים בעמוד המועדפים שבתפריט",
       saved_toast: "נשמר למועדפים",
       removed_toast: "הוסר מהמועדפים",
       add_aria: "הוסיפו למועדפים",

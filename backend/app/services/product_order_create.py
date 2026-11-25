@@ -103,7 +103,7 @@ KEY_REUSED_DETAIL = "ההזמנה הזאת כבר נשלחה"
 RESTING_DETAIL = "ההזמנות נפתחות שוב במוצאי שבת"
 TOO_LARGE_DETAIL = "ההזמנה גדולה מדי להזמנה באתר. צריך לפנות ישירות לבית העסק"
 # MEH-3691: approved word for word by Sapir, 22/11.
-OWN_BUSINESS_DETAIL = "אי אפשר להזמין מבית העסק שלך"
+OWN_BUSINESS_DETAIL = "אי אפשר להזמין מבית עסק בבעלות החשבון הזה"
 CODE_USED_DETAIL = phone_codes.CODE_WRONG_DETAIL
 
 

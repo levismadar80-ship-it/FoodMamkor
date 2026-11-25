@@ -41,7 +41,7 @@ COVERED: dict[str, str] = {
     "recipes": "**איפה יש מתכונים?**",
     "offer": "**יש הטבות?**",
     "delivery_areas": "**יש משלוחים?**",
-    "delivery_checker": "«יש משלוח לעיר שלך?»",
+    "delivery_checker": "«יש משלוח אליי?»",
     "waitlist": "אפשר להצטרף לרשימת המתנה ולקבל מייל",
     "save_share": "**איך שומרים בית עסק ומקבלים עדכונים?**",
     "follower_updates": "שם אפשר גם לבחור לקבל עדכונים",
