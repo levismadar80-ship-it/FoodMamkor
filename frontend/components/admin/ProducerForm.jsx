@@ -8,6 +8,7 @@ import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
 import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import AdminOwnerStoryFields from "@/components/admin/AdminOwnerStoryFields";
 import api from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
@@ -343,7 +344,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
-  const [categories, setCategories] = useState([]);
+  // MEH-3818: through the shared read cache. The edit and new pages read the
+  // same key before they draw the form, so the list is here on the form's
+  // first paint instead of being inserted into it a moment later and pushing
+  // every field below it down (CLS 0.12–0.20, MEH-3809 guard; field p75
+  // 0.28 on edit and 1.0 on new, Sentry 25/11).
+  const { data: categoriesData } = useApi("/categories");
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
   // MEH-1506: admin-only Google Place lookup — search by the producer's own
@@ -353,10 +360,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [placeCandidates, setPlaceCandidates] = useState(null);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
-
-  useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
-  }, []);
 
   useEffect(() => {
     if (initial) {
