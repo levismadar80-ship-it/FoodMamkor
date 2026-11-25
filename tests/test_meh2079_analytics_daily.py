@@ -174,6 +174,10 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
         # MEH-3022: names the table in OWNED_TABLE_EXEMPT (why it needs no
         # per-business cap). A registry entry — neither reads nor writes rows.
         "backend/app/limits.py",
+        # MEH-3865: names the table in REPLACE_TABLES. When an admin moves a
+        # draft to its owner, the generic table loop re-points the owner's
+        # rows to the draft. It neither counts nor rolls up anything.
+        "backend/app/services/draft_merge_policy.py",
     }, files
 
 

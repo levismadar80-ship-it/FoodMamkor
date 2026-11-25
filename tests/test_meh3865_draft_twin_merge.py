@@ -596,3 +596,93 @@ class TestPolicyCoverage:
         assert len(tables) > 20, "control: the metadata walk found the child tables"
         assert tables - set(named) == set(), "unclassified child tables of producers"
         assert set(named) - tables == set(), "a rule names a table that is gone"
+
+
+class TestPromisedCases:
+    """The seven cases promised to Sapir on 25/11 that no test above holds."""
+
+    def test_the_merge_leaves_one_audit_row_with_what_moved(self, client, db, no_emails):
+        from app.models.admin_ops import AdminAuditLog
+
+        admin = make_user(db, role="admin")
+        draft = _ownerless_draft(db)
+        owned, _ = make_submit_ready_producer(db, status="pending")
+        r = _merge(client, admin, draft, owned)
+        assert r.status_code == 200
+        db.expire_all()
+        rows = [
+            r for r in db.query(AdminAuditLog).all()
+            if r.action == "POST /admin/producers/{draft_id}/merge-owner"
+        ]
+        assert len(rows) == 1
+        assert rows[0].actor_id == admin.id
+        assert rows[0].created_at is not None
+        assert rows[0].details["after"] == {
+            "status": r.json()["status"], "products_moved": r.json()["products_moved"],
+        }
+        assert rows[0].details["before"] == {"status": "pending"}, "her row, before it was deleted"
+
+    def test_the_old_claim_link_to_the_draft_stops_working(self, client, db, no_emails):
+        from app.auth import create_producer_claim_token
+
+        admin = make_user(db, role="admin")
+        draft = _ownerless_draft(db)
+        token = create_producer_claim_token(draft.id)[0]
+        r = client.post("/producer-claim/preview", json={"token": token})
+        assert r.status_code == 200, "control: the link works before the merge"
+        owned, _ = make_submit_ready_producer(db, status="pending")
+        assert _merge(client, admin, draft, owned).status_code == 200
+        assert client.post("/producer-claim/preview", json={"token": token}).status_code == 409
+
+    def test_a_test_account_merge_sends_no_email(self, client, db, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            "app.routers.admin_draft_merge.send_owner_draft_merged",
+            lambda *a, **kw: calls.append(kw.get("test_cause")),
+        )
+        admin = make_user(db, role="admin")
+        draft = _ownerless_draft(db)
+        draft.is_test = True
+        owned, _ = make_submit_ready_producer(db, status="pending")
+        owned.is_test = True
+        db.commit()
+        assert _merge(client, admin, draft, owned).status_code == 200
+        assert calls == [True]
+
+    def test_the_owner_email_carries_the_test_cause_to_the_send_layer(self, monkeypatch):
+        from app.services import draft_merge_emails
+
+        sent = []
+        # The send layer (email.send_email) drops a test-caused send (MEH-2952).
+        monkeypatch.setattr(
+            draft_merge_emails, "send_email", lambda *a, **kw: sent.append(kw.get("test_cause"))
+        )
+        draft_merge_emails.send_owner_draft_merged("o@example.com", "ארז", "מאפייה", test_cause=True)
+        draft_merge_emails.send_owner_draft_merged("o@example.com", "ארז", "מאפייה")
+        assert sent == [True, False]
+
+    def test_her_open_order_blocks_the_merge_before_any_write(self, client, db, no_emails):
+        from datetime import timedelta
+
+        from app.models import ProductOrder
+        from app.services.product_order_guards import OPEN_ORDERS_BLOCK_DELETE_DETAIL
+        from app.utils.clock import utc_now
+
+        admin = make_user(db, role="admin")
+        draft = _ownerless_draft(db)
+        owned, owner = make_submit_ready_producer(db, status="pending")
+        now = utc_now()
+        db.add(ProductOrder(
+            producer_id=owned.id, customer_name="דנה לוי", customer_phone="+972501234567",
+            fulfilment="pickup", slot_start=now + timedelta(days=1),
+            slot_end=now + timedelta(days=1, hours=2), estimated_total_agorot=8600,
+            status="pending",
+        ))
+        db.commit()
+        owner_id, owned_id = owner.id, owned.id
+        r = _merge(client, admin, draft, owned)
+        assert r.status_code == 409
+        assert r.json()["detail"] == OPEN_ORDERS_BLOCK_DELETE_DETAIL
+        db.expire_all()
+        assert db.get(User, owner_id).producer_id == owned_id
+        assert no_emails == []
