@@ -32,6 +32,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // MEH-3475: `saveUrl` — the admin edit page mounts this against
 // PUT /admin/producers/{id}.
@@ -220,15 +221,14 @@ export default function OrderWindowEditor({
                         />
                       </div>
                       {day.ranges.length > 1 && (
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() => removeRange(i, rangeIdx)}
-                          aria-label={`${tDays(key)} — ${t("remove_range")}`}
+                          label={`${tDays(key)} — ${t("remove_range")}`}
                           data-testid={`order-window-remove-${i}-${rangeIdx}`}
                           className="text-fg-muted hover:text-danger-600 transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   ))}

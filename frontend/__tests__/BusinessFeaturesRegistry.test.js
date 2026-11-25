@@ -252,8 +252,16 @@ describe("visibility", () => {
     const on = countVisibleBusinessFeatures();
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
     const off = countVisibleBusinessFeatures();
-    expect(on - off).toBe(1);
+    // MEH-3703: the weekly routine sits behind the same flag as the bags.
+    expect(on - off).toBe(2);
     expect(off).toBeGreaterThan(0); // control: the list is not empty either way
+  });
+
+  it("drops the weekly bag routine with the bags", () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
+    expect(visibleBusinessFeatures().map((f) => f.id)).not.toContain("rescue_schedule");
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
+    expect(visibleBusinessFeatures().map((f) => f.id)).toContain("rescue_schedule");
   });
 });
 

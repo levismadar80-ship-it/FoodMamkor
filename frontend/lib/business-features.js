@@ -122,6 +122,8 @@ export const BUSINESS_FEATURES = [
   { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"], dashboard: { home: "insights", href: "/producer/dashboard/insights" } },
   { id: "waitlist", group: "return", status: "live", codeRef: ["backend/app/services/delivery_waitlist.py", "frontend/components/DeliveryWaitlistForm.jsx"] },
   { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"], dashboard: { home: "tools", href: "/producer/dashboard/rescue" } },
+  // MEH-3703: a sub-page of the rescue tab (DASHBOARD_SUBPAGES), so no `dashboard` of its own.
+  { id: "rescue_schedule", group: "return", status: "live", tip: true, flag: () => rescueBagsEnabled(), codeRef: ["frontend/components/dashboard/RescueScheduleForm.jsx", "backend/app/services/rescue_schedule.py"] },
 
   // ── trust ───────────────────────────────────────────────────────────────
   { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/cards/LicenseCard.jsx"] },
@@ -175,6 +177,8 @@ export const DASHBOARD_SUBPAGES = {
   "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
   "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
   "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+  // MEH-3703: the weekly bag routine, from the publish card and the strip.
+  "/producer/dashboard/rescue/schedule": "/producer/dashboard/rescue",
   // MEH-3749: the print view of the QR card, opened from the «שיתוף» page
   // (that page is the qr_code tool's landing page now).
   "/producer/dashboard/qr-card": "/producer/dashboard/share",

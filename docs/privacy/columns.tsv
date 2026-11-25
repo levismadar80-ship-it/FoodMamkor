@@ -376,6 +376,7 @@ producer_locations.phone	business	a business's branch or pickup point
 producer_locations.pickup_days	business	a business's branch or pickup point
 producer_locations.pickup_note	business	a business's branch or pickup point
 producer_locations.producer_id	business	a business's branch or pickup point
+producer_locations.rescue_schedule	business	a business's branch or pickup point
 producer_locations.updated_at	business	a business's branch or pickup point
 producer_name_change_requests.admin_notes	business	a business's request to change its name
 producer_name_change_requests.created_at	business	a business's request to change its name

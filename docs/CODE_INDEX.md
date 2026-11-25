@@ -160,6 +160,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/recipes_outreach.py` | Business recipes, outreach leads and the public suggest-a- business form. |
 | `schemas/registration.py` | Request and response shapes for sign-up, login, OAuth, password reset, the owner-claim link and the owner invite. |
 | `schemas/rescue.py` | Request/response shapes for the rescue-bags pilot — what a business sends to publish a bag, what a buyer sends to reserve one, and what the three tables … |
+| `schemas/rescue_schedule.py` | The shape of a pickup point's weekly surprise-bag routine — what the business sends, what is stored in producer_locations.rescue_schedule, and what the … |
 | `schemas/review_reply_suggest.py` | The answer of POST /reviews/{id}/reply/suggest (MEH-3480). |
 | `schemas/reviews.py` | Reviews, review invites, owner replies and listing removal. |
 | `schemas/schemas.py` | — אין כותרת — |
@@ -167,6 +168,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `sentry.py` | MEH-500: backend Sentry SDK init. |
 | `services/account_guards.py` | MEH-3248 — who may be deleted, and through which door. |
 | `services/admin_audit.py` | One append-only row for every successful change an admin makes: who, what (method + route template), on what, when, from where. |
+| `services/admin_category_writes.py` | The admin's create, rename and delete of a category, with the guards that keep the taxonomy safe: a duplicate name, a seeded (system) row, a licensed row, and … |
 | `services/admin_dashboard.py` | The numbers behind the admin home ('GET /admin/dashboard') and the admin analytics page ('GET /admin/analytics'). |
 | `services/admin_draft_missing.py` | For a draft its owner has claimed («נקלט, בהשלמה»), say what is still missing before she can send it for review, so the admin's follow-up call is about one … |
 | `services/admin_passkey.py` | The second factor of an admin account: a passkey (WebAuthn) checked after the password or Google / Apple sign-in, and ten one-time recovery codes for a lost … |
@@ -175,6 +177,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/admin_producer_reads.py` | What the admin business screens READ: the business list with its queue order and per-row enrichment, one business, the licence-expiry list and the … |
 | `services/admin_producer_writes.py` | The admin's create and edit of a business (POST /admin/producers and PUT /admin/producers/{id}): slug, categories, delivery areas, the editorial pick, the … |
 | `services/admin_settings.py` | Read and write the admin toggles kept in 'admin_settings' ('GET/PUT /admin/settings', 'GET/POST /admin/settings/vacation'). |
+| `services/admin_user_writes.py` | The admin's changes to one account: the role change (with the linked-business and super-admin refusals), the block toggle (which hides a live business left … |
 | `services/ai_budget.py` | One site-wide daily ceiling on paid AI calls, per model tier (MEH-3498). Above it every generation tool answers as if the key were missing: the chat gives its … |
 | `services/ai_text.py` | One short plain-text answer from Claude, and the claim filter, for the owner-side suggestions: a product description (MEH-3479) and a review-reply draft … |
 | `services/analytics.py` | Analytics tracking + metrics helpers for feature/producer-analytics. |
@@ -304,6 +307,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/rescue_no_show.py` | MEH-3226 (D4 of the 14/11 grill retro) — the buyer hears about every no-show the business marks, so a block never arrives as a surprise: the first mail says … |
 | `services/rescue_reads.py` | What the surprise-bag (rescue) screens read: today's public list, the buyer's own reservations, the business's orders and bags of the day, the business's … |
 | `services/rescue_reminders.py` | MEH-3702 — on the morning of the pickup day, remind every buyer who reserved a bag on an EARLIER day: the code, the window, the free cancel. … |
+| `services/rescue_schedule.py` | Turn each pickup point's weekly routine into ordinary rescue_offers rows for the days buyers can reserve (today and tomorrow), and keep the routine itself: … |
 | `services/rescue_writes.py` | The state changes behind the rescue-bag write routes: cancel a whole offer, reserve, hand over, no-show, buyer cancel, review, clear a no-show block, record … |
 | `services/resend_client.py` | One place that configures the Resend SDK: the API key, and a 10 s HTTP timeout instead of the SDK's 30 s default. … |
 | `services/resend_verify_cap.py` | A per-ACCOUNT cap on POST /auth/resend-verify, on top of the route's per-IP limit, so rotating IPs cannot flood one inbox (MEH-2906). |
@@ -789,6 +793,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/CoverageCtaToggle.jsx` | The owner's on/off for the public «לא מגיעים אליך?» CTA on her page. Saves immediately (one field, no form), like the alert switches in AlertPrefsPanel. |
 | `dashboard/ProductVariantsField.jsx` | The «אפשרויות» block of the owner's product editor: sizes or flavours of one product, each with a name, an optional price, an «במלאי» switch and its place in … |
 | `dashboard/ProductWeekdaysField.jsx` | «ימים שהמוצר זמין» in the owner's product form (MEH-3618): «כל הימים» (the default) or some of the seven days, as chips. Holds the mask in the form; … |
+| `dashboard/RescueScheduleForm.jsx` | The weekly surprise-bag routine of every pickup point: days, hours, how many bags and the price, set once; … |
+| `dashboard/RescueScheduleStrip.jsx` | One line per pickup point under the counters on the rescue tab: what tomorrow's routine bag is, and «לדלג על מחר» (or «לבטל את הדילוג»). … |
 | `dashboard/RescueTab.jsx` | — אין כותרת — |
 | `dashboard/google-profile/GoogleProfileCheck.jsx` | Compare what Google shows with the business page, on request (MEH-3641): name, phone and website each get a verdict; … |
 | `dashboard/google-profile/GoogleProfileGuide.jsx` | The three steps to open or fix a Google Business Profile, the business page's link to paste into it, and Google's rule on review incentives (MEH-3641). |
@@ -879,6 +885,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |
 | `ui/GoogleButton.jsx` | Our own «להמשיך עם Google» button (MEH-3690). Drawn by us, so it is on screen with the page or the modal — Google's rendered button arrived about a second … |
 | `ui/Heading.jsx` | Render h1-h4 with the project's font tokens so pages stop repeating inline 'font-headline-* text-* font-bold' triplets. Net-new atom. |
+| `ui/IconButton.jsx` | The one place an icon-only button is written. 'label' is required and becomes the accessible name ('aria-label'), so a nameless icon button cannot be written … |
 | `ui/InlineMessage.jsx` | The one look for a form-level or page-level message that appears in place: a submit error, «נשמר», a load error in a row. … |
 | `ui/Input.jsx` | — אין כותרת — |
 | `ui/Link.jsx` | — אין כותרת — |
@@ -896,6 +903,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/Textarea.jsx` | — אין כותרת — |
 | `ui/TimeOfDaySelect.jsx` | A clock time «HH:MM» picked from two selects (hour 00–23, minutes in steps), so it always reads on a 24-hour clock (MEH-3823). … |
 | `ui/Tooltip.jsx` | — אין כותרת — |
+| `ui/WeekdayChips.jsx` | Pick days of the week as chips, Sunday first, on the shared mask (Sunday = 1 … Saturday = 64, lib/product-weekdays.js). … |
 | `ui/field.jsx` | One source for the look of a compact field (border, radius, focus ring, error border, disabled) and for the label + message wiring around it, so Input, Select … |
 | `ui/index.js` | Barrel export for the atomic UI layer (MEH-602). |
 | `ui/overlay-icon-button.js` | MEH-3115: one anatomy for every icon-only button that sits ON a photo — the business hero's heart / share / bell, the recipe, event and experience cover … |

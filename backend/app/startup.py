@@ -31,6 +31,8 @@ from app.services.job_heartbeat import (
     RESCUE_EVENING_REMINDER_CRON,
     RESCUE_REMINDER_CRON,
     RESCUE_REMINDER_TZ,
+    RESCUE_SCHEDULE_CRON,
+    RESCUE_SCHEDULE_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -628,6 +630,35 @@ def _run_rescue_evening_reminder_job() -> None:
         db.close()
 
 
+# MEH-3703: publish the weekly-routine bags that came into reach.
+@heartbeat(
+    "rescue-schedule-publish-hourly",
+    cron_monitor_config(RESCUE_SCHEDULE_CRON, timezone=RESCUE_SCHEDULE_TZ),
+)
+def _run_rescue_schedule_job() -> None:
+    """MEH-3703: publish today's and tomorrow's routine bags. Fresh session per
+    run; any exception is swallowed so the scheduler thread never dies. A day
+    that already has an offer is skipped, so a rerun publishes nothing twice."""
+    from app.database import SessionLocal
+    from app.routers.rescue import city_in_pilot
+    from app.services.rescue_schedule import publish_due
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        count = publish_due(
+            db, today=israel_today(), now=utc_now(), in_pilot=city_in_pilot
+        )
+        if count:
+            log.info("[RESCUE-SCHEDULE] hourly run published=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_schedule_publish")
+        log.error("[RESCUE-SCHEDULE] hourly run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
@@ -1030,6 +1061,17 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
             max_instances=1,
             coalesce=True,
             misfire_grace_time=3 * 3600,
+        )
+        # MEH-3703: the weekly-routine publisher, hourly. A 50-minute grace
+        # runs a paused tick late instead of dropping it.
+        followup_scheduler.add_job(
+            _run_rescue_schedule_job,
+            CronTrigger.from_crontab(RESCUE_SCHEDULE_CRON, timezone=RESCUE_SCHEDULE_TZ),
+            id="meh_3703_rescue_schedule_publish",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=50 * 60,
         )
     from app.services.rescue_digest import digest_enabled as _digest_enabled
 

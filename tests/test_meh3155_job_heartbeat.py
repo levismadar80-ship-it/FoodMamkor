@@ -154,6 +154,12 @@ JOBS = [
         job_heartbeat.RESCUE_EVENING_REMINDER_CRON,
     ),
     (
+        "_run_rescue_schedule_job",
+        "rescue-schedule-publish-hourly",
+        "crontab",
+        job_heartbeat.RESCUE_SCHEDULE_CRON,
+    ),
+    (
         "_run_weekly_owner_summary_job",
         "weekly-owner-summary",
         "crontab",
@@ -309,6 +315,7 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     assert "_run_rescue_digest_job" not in triggers
     assert "_run_rescue_morning_reminder_job" not in triggers  # MEH-3702
     assert "_run_rescue_evening_reminder_job" not in triggers  # MEH-3805
+    assert "_run_rescue_schedule_job" not in triggers  # MEH-3703
     assert "_run_weekly_owner_summary_job" not in triggers
     assert "_run_product_order_jobs" not in triggers  # MEH-3296
     flagged = {
@@ -316,6 +323,7 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
         "_run_rescue_digest_job",
         "_run_rescue_morning_reminder_job",
         "_run_rescue_evening_reminder_job",
+        "_run_rescue_schedule_job",
         "_run_weekly_owner_summary_job",
         "_run_product_order_jobs",
     }
