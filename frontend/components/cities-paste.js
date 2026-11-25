@@ -14,7 +14,7 @@
  * History:  MEH-3867 (creation — חוות הפרא took ~80 picks for 82 cities)
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { CitiesMatchSchema } from "@/lib/api-responses";
 
@@ -63,7 +63,9 @@ export function useCitiesPaste({ value, onChange }) {
   // The chips as of NOW, not as of the paste: a second paste, or a chip
   // clicked while the request was out, must not be overwritten (rule-5a).
   const valueRef = useRef(value);
-  valueRef.current = value;
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   /** @param {import("react").ClipboardEvent<HTMLInputElement>} e */
   const onPaste = async (e) => {
