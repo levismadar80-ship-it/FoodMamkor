@@ -487,7 +487,14 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
     await expect(page.getByTestId("register-form")).toBeVisible();
     // 260px ≈ header (~90px) + section padding; the old 30vh band alone put
     // the heading past 300px on a 844px-tall phone.
-    const headingBox = (await page.getByTestId("register-heading").boundingBox())!;
+    // MEH-3862 (mobile sibling of MEH-3833): read once the layout is quiet. A
+    // read during the load got 298.5 once on CI: the same 64px gap MEH-3833
+    // saw between the desktop panes, cause not yet found. A heading that
+    // SETTLES that low still fails here; a shift during the load is not
+    // asserted by this test.
+    const heading = page.getByTestId("register-heading");
+    await layoutSettled(heading);
+    const headingBox = (await heading.boundingBox())!;
     expect(headingBox.y, "the heading starts in the first screen, not under a 30vh band").toBeLessThan(260);
 
     const overflow = await page.evaluate(
