@@ -622,6 +622,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     | Pricing, plans, upgrade prompts | `pricing-strategy`, `paywall-upgrade-cro` |
     | Personal data, consent, terms, legal | `israeli-privacy-shield`, `israeli-ecommerce-compliance`, `hebrew-legal-research` |
     | RTL / i18n | `hebrew-rtl-best-practices`, `hebrew-i18n` |
+    | Any task that takes screenshots (QA, PR evidence, a gallery, a bug report) | `screenshot-review` (MEH-3816) |
     | Errors, edge cases, empty states | `harden` |
     | Speed | `optimize` |
     | Big or ambiguous feature | `grilling` (rule 4 interview) |
