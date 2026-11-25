@@ -92,4 +92,16 @@ def test_current_name_reaches_a_row_stored_under_the_old_name(client, db):
 
 
 def test_unseeded_search_folds_a_dash_too(client, db):
-    assert "תל מונד" in client.get("/cities", params={"q": "תל-מונד"}).json()
+    assert client.get("/cities", params={"q": "תל-מונד"}).json() == ["תל מונד"]
+
+
+def test_a_query_of_only_separators_matches_nothing(client, db):
+    """Rule-5a review: «-» folded to «%» and returned every city."""
+    _seed_official(db, ["חיפה", "חדרה"])
+
+    assert client.get("/cities", params={"q": "-"}).json() == []
+    assert client.get("/cities", params={"q": " – "}).json() == []
+
+
+def test_unseeded_query_of_only_separators_matches_nothing(client, db):
+    assert client.get("/cities", params={"q": "-"}).json() == []

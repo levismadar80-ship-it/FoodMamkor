@@ -78,7 +78,13 @@ def _prefixes(clean: str) -> list[str]:
     # row. «תל-מונד» and «תל  מונד» found nothing while the row is «תל מונד»
     # (production, 25/11); city_key already treats all of them as one, so the
     # search does too.
-    forms.update(_SEPARATOR_RUN.sub("%", f.strip()) for f in list(forms))
+    for f in list(forms):
+        # Separators at the ends are dropped, not turned into `%`: a leading
+        # `%` is a contains-search, and a query of only "-" would become "%"
+        # and match every row (rule-5a review).
+        core = _SEPARATOR_RUN.sub(" ", f).strip()
+        if core:
+            forms.add(core.replace(" ", "%"))
     forms.update(alias_like_patterns(clean))
     # MEH-3867: and the stored old name of a city typed by its current one
     # («נוף הגליל» → the table's «נצרת עילית»).
@@ -155,7 +161,10 @@ def list_cities(
             # the query no longer misses (the same fold as the table path).
             c
             for c in ISRAEL_CITIES
-            if any(city_key(c).startswith(city_key(p)) for p in static_prefixes)
+            if any(
+                city_key(p) and city_key(c).startswith(city_key(p))
+                for p in static_prefixes
+            )
         ]
     else:
         static_cities = list(ISRAEL_CITIES)

@@ -125,3 +125,43 @@ describe("CitiesAutocomplete paste (MEH-3867)", () => {
     expect(screen.queryByTestId("cities-paste-result")).toBeNull();
   });
 });
+
+describe("CitiesAutocomplete paste — review cases (MEH-3867)", () => {
+  it("two overlapping pastes keep both lists", async () => {
+    let releaseA;
+    api.post
+      .mockImplementationOnce(() => new Promise((r) => { releaseA = () => r({ data: { matched: ["חדרה", "עפולה"], unmatched: [] } }); }))
+      .mockResolvedValueOnce({ data: { matched: ["חיפה", "עכו"], unmatched: [] } });
+    render(<Harness />);
+
+    paste("חדרה\nעפולה");
+    paste("חיפה\nעכו");
+    await screen.findByText("נוספו 2 ערים.");
+    releaseA();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect([...latest].sort()).toEqual(["חדרה", "חיפה", "עכו", "עפולה"].sort());
+  });
+
+  it("a chip saved in another spelling is not added twice", async () => {
+    api.post.mockResolvedValue({ data: { matched: ["תל אביב-יפו", "קריית שמונה"], unmatched: [] } });
+    render(<Harness initial={["תל אביב - יפו", "קרית שמונה"]} />);
+
+    paste("תל אביב-יפו\nקריית שמונה");
+
+    await screen.findByText("כל הערים שהודבקו כבר ברשימה.");
+    expect(latest).toEqual([]);
+  });
+
+  it("names over the request limits are reported, not dropped", async () => {
+    api.post.mockResolvedValue({ data: { matched: [], unmatched: [] } });
+    render(<Harness />);
+    const many = Array.from({ length: 302 }, (_, i) => `עיר${i}`);
+
+    paste(many.join("\n"));
+
+    const line = await screen.findByTestId("cities-paste-unmatched");
+    expect(api.post.mock.calls[0][1].names).toHaveLength(300);
+    expect(line.textContent).toContain("עיר300, עיר301");
+  });
+});

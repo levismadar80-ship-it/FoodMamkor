@@ -14,7 +14,7 @@
  * History:  MEH-3867 (creation — חוות הפרא took ~80 picks for 82 cities)
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import api from "@/lib/api";
 import { CitiesMatchSchema } from "@/lib/api-responses";
 
@@ -32,9 +32,22 @@ export function splitPastedCities(text) {
   return String(text || "")
     .split(/[\n\r,;\t•|]+/)
     .map((s) => s.replace(/^\s*(?:\d+[.)]|[-*·])\s*/, "").trim())
-    .filter(Boolean)
-    .map((s) => s.slice(0, MAX_NAME))
-    .slice(0, MAX_PASTED);
+    .filter(Boolean);
+}
+
+/**
+ * The comparison form of a city name, so a chip saved as «תל אביב - יפו» or
+ * «קריית שמונה» is not added again as «תל אביב-יפו» / «קרית שמונה». A subset
+ * of the backend's city_key (separators, spaces, the double yod); aliases are
+ * the backend's job.
+ * @param {string} name
+ */
+export function cityFold(name) {
+  return String(name)
+    .replace(/[\s\-־–—]+/g, " ")
+    .trim()
+    .replace(/(^|\s)קריית(?=\s|$)/g, "$1קרית")
+    .toLowerCase();
 }
 
 /**
@@ -46,6 +59,10 @@ export function splitPastedCities(text) {
  */
 export function useCitiesPaste({ value, onChange }) {
   const [result, setResult] = useState(/** @type {PasteResult | null} */ (null));
+  // The chips as of NOW, not as of the paste: a second paste, or a chip
+  // clicked while the request was out, must not be overwritten (rule-5a).
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   /** @param {import("react").ClipboardEvent<HTMLInputElement>} e */
   const onPaste = async (e) => {
@@ -53,13 +70,29 @@ export function useCitiesPaste({ value, onChange }) {
     // One name pastes into the input as before, so the suggestions can help.
     if (names.length < 2) return;
     e.preventDefault();
+    // Over the request's limits: reported as not found, never dropped.
+    const fits = names.filter((n) => n.length <= MAX_NAME);
+    const tooLong = names.filter((n) => n.length > MAX_NAME);
+    const sent = fits.slice(0, MAX_PASTED);
+    const overflow = [...fits.slice(MAX_PASTED), ...tooLong];
     try {
-      const r = await api.post("/cities/match", { names });
+      const r = await api.post("/cities/match", { names: sent });
       const parsed = CitiesMatchSchema.safeParse(r.data);
       if (!parsed.success) throw new Error("bad /cities/match response");
-      const fresh = parsed.data.matched.filter((c) => !value.includes(c));
-      if (fresh.length > 0) onChange([...value, ...fresh]);
-      setResult({ added: fresh.length, unmatched: parsed.data.unmatched, error: false });
+      const current = valueRef.current;
+      const have = new Set(current.map(cityFold));
+      const fresh = [];
+      for (const c of parsed.data.matched) {
+        if (have.has(cityFold(c))) continue;
+        have.add(cityFold(c));
+        fresh.push(c);
+      }
+      if (fresh.length > 0) {
+        const next = [...current, ...fresh];
+        valueRef.current = next;
+        onChange(next);
+      }
+      setResult({ added: fresh.length, unmatched: [...parsed.data.unmatched, ...overflow], error: false });
     } catch {
       setResult({ added: 0, unmatched: [], error: true });
     }
