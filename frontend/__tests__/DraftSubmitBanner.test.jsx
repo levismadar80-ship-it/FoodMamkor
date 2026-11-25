@@ -65,8 +65,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("@/components/PhoneVerifyCard", () => ({
-  default: ({ onVerified }) => (
-    <button type="button" data-testid="phone-verify-card" onClick={onVerified}>
+  default: ({ onVerified, phone }) => (
+    <button type="button" data-testid="phone-verify-card" data-phone={phone ?? ""} onClick={onVerified}>
       verify
     </button>
   ),
@@ -167,6 +167,12 @@ describe("DraftSubmitBanner — the PhoneVerifyCard mount (MEH-2100 blocking def
   it("mounts the OTP card while the phone is unverified", () => {
     render(<DraftSubmitBanner producer={{ ...READY, phone_verified: false }} />);
     expect(screen.getByTestId("phone-verify-card")).toBeTruthy();
+  });
+
+  // MEH-3868: the card is told which number the code goes to.
+  it("hands the business phone to the OTP card", () => {
+    render(<DraftSubmitBanner producer={{ ...READY, phone: "055-9937900", phone_verified: false }} />);
+    expect(screen.getByTestId("phone-verify-card").getAttribute("data-phone")).toBe("055-9937900");
   });
 
   it("does NOT mount it once verified", () => {

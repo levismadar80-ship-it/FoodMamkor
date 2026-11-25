@@ -10,7 +10,7 @@ import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
-import { Link } from "@/i18n/navigation";
+import Link from "@/components/ui/Link";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -211,12 +211,12 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
       )}
 
       {phone && !userFlow && (
-        <p data-testid="phone-verify-number" className="text-xs text-text mb-3">
+        <p data-testid="phone-verify-number" className="text-sm text-text mb-3">
           {t("sends_to")} <bdi dir="ltr">{phone}</bdi>{" · "}
           <Link
             href={CHANGE_NUMBER_HREF}
             data-testid="phone-verify-change"
-            className="text-primary underline underline-offset-2 hover:text-primary-dark focus-ring rounded"
+            className="tap-area"
           >
             {t("change_number")}
           </Link>

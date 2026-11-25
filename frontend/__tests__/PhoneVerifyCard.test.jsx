@@ -520,6 +520,11 @@ describe("PhoneVerifyCard — names the number the code goes to (MEH-3868)", () 
     expect(screen.getByTestId("phone-verify-number").textContent).toContain("055-9937900");
   });
 
+  it.each(["reverify", "inline"])("the %s variant shows the number too", (variant) => {
+    render(<PhoneVerifyCard variant={variant} phone="055-9937900" />);
+    expect(screen.getByTestId("phone-verify-number").textContent).toContain("055-9937900");
+  });
+
   it("no phone → no number line", () => {
     render(<PhoneVerifyCard />);
     expect(screen.queryByTestId("phone-verify-number")).toBeNull();
