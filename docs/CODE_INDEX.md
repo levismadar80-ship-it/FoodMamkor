@@ -171,6 +171,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/admin_pending_reminder.py` | Once a morning, email the admin a list of the businesses that have waited for approval 2 business days or more. The owner was told «תשובה עד 3 ימי עסקים»; … |
 | `services/admin_producer_emails.py` | Text and HTML bodies of the emails an admin decision sends to a business owner: approved, rejected, changes requested. |
 | `services/admin_producer_reads.py` | What the admin business screens READ: the business list with its queue order and per-row enrichment, one business, the licence-expiry list and the … |
+| `services/admin_producer_writes.py` | The admin's create and edit of a business (POST /admin/producers and PUT /admin/producers/{id}): slug, categories, delivery areas, the editorial pick, the … |
 | `services/admin_settings.py` | Read and write the admin toggles kept in 'admin_settings' ('GET/PUT /admin/settings', 'GET/POST /admin/settings/vacation'). |
 | `services/ai_budget.py` | One site-wide daily ceiling on paid AI calls, per model tier (MEH-3498). Above it every generation tool answers as if the key were missing: the chat gives its … |
 | `services/ai_text.py` | One short plain-text answer from Claude, and the claim filter, for the owner-side suggestions: a product description (MEH-3479) and a review-reply draft … |
@@ -213,6 +214,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/farmer_declaration.py` | Server-side gate + record for the grower declaration («גידלתי בחלקתי בלבד») at producer registration, apart from the licensing declaration (declared_at / … |
 | `services/form_fill_windows.py` | The hand-over windows of an order-setup draft (MEH-3752): keep a window only when the text names its day and states its hours (a clock time, an hour number, … |
 | `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
+| `services/freshness_month_numbers.py` | Last calendar month's numbers for the one monthly owner email on the 1st (MEH-3194, Sapir 24/11: one monthly touch, value before any bill): bookings through … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
 | `services/google_code_exchange.py` | Swap the one-time authorization code from our own Google button (GIS code client, popup, redirect_uri "postmessage") for a Google-signed ID token, and accept … |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
@@ -890,6 +892,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/StruckPrice.jsx` | The one way a crossed-out price is drawn: an <s>, left-to-right so ₪ and the digits keep their order inside RTL, muted, struck. … |
 | `ui/Switch.jsx` | Every role="switch" draws the same track: 40×24, a 16px knob that sits at the inline-START when off and the inline-END when on (logical insets, so it moves … |
 | `ui/Textarea.jsx` | — אין כותרת — |
+| `ui/TimeOfDaySelect.jsx` | A clock time «HH:MM» picked from two selects (hour 00–23, minutes in steps), so it always reads on a 24-hour clock (MEH-3823). … |
 | `ui/Tooltip.jsx` | — אין כותרת — |
 | `ui/field.jsx` | One source for the look of a compact field (border, radius, focus ring, error border, disabled) and for the label + message wiring around it, so Input, Select … |
 | `ui/index.js` | Barrel export for the atomic UI layer (MEH-602). |
