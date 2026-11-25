@@ -22,7 +22,7 @@ import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
 import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
@@ -156,6 +156,10 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
   // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
   // a time; filters the rows already loaded (no refetch).
   const [when, setWhen] = useState(null);
+  // MEH-3861: the Israel day these rows are filtered and counted on. The
+  // server's day while hydrating (the cached HTML was drawn with it), the
+  // visitor's right after.
+  const today = useIsraelToday();
   // MEH-3626: put a tab's known unfiltered list on screen now (no skeleton).
   // Returns false when nothing is known — the caller's load shows the skeleton.
   const showKnown = (next) => {
@@ -302,10 +306,9 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
   const events = useMemo(
     () => {
       if (!when) return rows;
-      const today = israelToday(); // once per filter, not once per row
       return rows.filter((row) => matchesWhen(row.event_date, when, today));
     },
-    [rows, when],
+    [rows, when, today],
   );
   const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
   const categoryLabel = (entry) =>
@@ -415,14 +418,13 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
   // every shortcut (fail open).
   const whenCounts = useMemo(() => {
     if (busy || loadError) return null;
-    const today = israelToday();
     return Object.fromEntries(
       WHEN_KEYS.map((k) => [
         `${WHEN_CHIP_PREFIX}${k}`,
         rows.filter((row) => matchesWhen(row.event_date, k, today)).length,
       ]),
     );
-  }, [rows, busy, loadError]);
+  }, [rows, busy, loadError, today]);
   const settledChips = dropZeroChips({ chips: shownChips, counts: whenCounts, active: [...activeChipKeys] });
   // MEH-3626: while a list loads, nothing is known about the chips, and the
   // gates above fail open — drawing every chip, then dropping the empty ones

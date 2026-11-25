@@ -33,6 +33,7 @@ import {
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
 import { COLOR } from "@/lib/color-tokens";
+import { RENDER_TIME_META } from "@/lib/render-time";
 
 // MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
 // files committed in this repo, and the build makes no network request for
@@ -247,6 +248,11 @@ export default async function LocaleLayout({ children, params }) {
             byte. Must run before any chunk, so it is inline and first in
             <head>; PrehydrationInputReplay (end of <body>) replays it. */}
         <script dangerouslySetInnerHTML={{ __html: PREHYDRATION_CAPTURE_SCRIPT }} />
+        {/* MEH-3861: when the server rendered this HTML. A component that
+            draws by the Israel day (lib/use-israel-today.js) hydrates with
+            this moment, so a page cached before midnight and opened after it
+            hydrates cleanly and then moves to the visitor's day. */}
+        <meta name={RENDER_TIME_META} content={new Date().toISOString()} />
         {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
             Fonts stylesheet that used to sit here are gone — next/font serves
             every family from our own origin, so there is nothing left to
