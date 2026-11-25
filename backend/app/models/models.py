@@ -1325,5 +1325,6 @@ import app.models.admin_passkeys  # noqa: E402,F401
 
 # MEH-3526: staff who handle a business's orders (own module, same reason).
 import app.models.producer_staff  # noqa: E402,F401
+
 # MEH-3535: the durable email queue (own module, same reason).
 import app.models.email_outbox  # noqa: E402,F401
