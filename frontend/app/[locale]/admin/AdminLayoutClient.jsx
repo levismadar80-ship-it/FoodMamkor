@@ -330,7 +330,7 @@ function AdminShell({ children }) {
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
           {!countsKnown && (
             // Same box as one tab, so the strip has its final height at once.
-            <span aria-hidden="true" className="invisible flex items-center gap-1.5 px-3 py-1.5 text-xs">
+            <span aria-hidden="true" className="invisible flex items-center min-h-touch gap-1.5 px-3 py-1.5 text-xs">
               <Gauge size={14} />
               {t("layout.nav.dashboard")}
             </span>
