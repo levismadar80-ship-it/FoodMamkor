@@ -968,6 +968,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/components/MapKey.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPane.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPickupPointPanel.jsx` | MEH-3756 — under the picked-business card on the phone map, when the tapped pin is a pickup point or a market stand: when and how to collect there (its hours, … |
+| `[locale]/map/components/MapRescueRow.jsx` | The business's surprise bag today, as one row under the business picked on the map: «סל הפתעה», the pickup window and the price, linking to the bag's own … |
 | `[locale]/map/components/MobileSheetSelectedCard.jsx` | — אין כותרת — |
 | `[locale]/map/components/NearMePill.jsx` | — אין כותרת — |
 | `[locale]/map/components/ServiceChipRow.jsx` | — אין כותרת — |

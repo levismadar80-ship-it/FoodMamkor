@@ -72,7 +72,7 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * radius_km * math.asin(math.sqrt(a))
 
 
-def _public_business_clauses() -> tuple[Any, ...]:
+def public_business_clauses() -> tuple[Any, ...]:
     """The business filter shared by the bag list and the bag page: approved,
     not a seeded test row (MEH-2952). One place, so the page never shows a bag
     the list would hide (MEH-3586)."""
@@ -109,7 +109,7 @@ def public_offers(  # noqa: PLR0913 — keyword-only inputs the router reads (ME
             # "זמן האיסוף חלף"), so listing it would offer a button that can
             # only fail. Same naive-UTC comparison as the reserve guard.
             RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
-            *_public_business_clauses(),
+            *public_business_clauses(),
         )
     )
     # Only pilot towns are listed, whatever is asked for. Without this an
@@ -231,7 +231,7 @@ def offer_detail(
         .filter(
             RescueOffer.id == offer_id,
             RescueOffer.date.between(*reserve_days(today)),
-            *_public_business_clauses(),
+            *public_business_clauses(),
             ProducerLocation.city.in_(pilot),
         )
         .one_or_none()

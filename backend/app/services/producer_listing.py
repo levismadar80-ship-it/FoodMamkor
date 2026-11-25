@@ -43,6 +43,7 @@ from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
     attach_rescue_saving,
+    attach_rescue_today,
     haversine_min_km,
     weighted_rating_expr,
 )
@@ -1301,6 +1302,7 @@ def _finalize_results(
             results.append(producer)
         attach_favorites_counts(results, db)
         attach_rescue_saving(results, db)
+        attach_rescue_today(results, db)  # MEH-3824
         return results
 
     rows = q.offset(offset).limit(limit).all()
@@ -1308,6 +1310,7 @@ def _finalize_results(
         attach_badge_fields(p)
     attach_favorites_counts(rows, db)
     attach_rescue_saving(rows, db)
+    attach_rescue_today(rows, db)  # MEH-3824
     return rows
 
 
