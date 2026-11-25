@@ -282,10 +282,16 @@ export default function RescueSection({ producer }) {
                 </p>
               ) : (
                 <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                  {t("section.allergens_undeclared")}
+                  {t("section.allergens_undeclared_short")}
                 </p>
               )}
             </details>
+            {/* MEH-3823: outside the fold, so buyers always see it, whatever
+                was declared — a surprise bag changes daily (the Too Good To
+                Go line). */}
+            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-section-allergens-ask">
+              {t("section.allergens_ask")}
+            </p>
             {/* MEH-3586: the bag's own page — map, how pickup works, the
                 cancel rule. Next: the whole card becomes this link and the
                 reserve moves there (bag-page thread, follow-up PR). */}
