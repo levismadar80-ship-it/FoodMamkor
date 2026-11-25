@@ -3,10 +3,10 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Eye } from "@phosphor-icons/react";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "@/i18n/navigation";
+import PreviewBanner from "@/components/ui/PreviewBanner";
 import { PreviewModeProvider } from "@/lib/preview-mode";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 
@@ -17,7 +17,7 @@ import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
  * Does NOT: fetch on the server. `lib/server-fetch.js` deliberately sends no
  *           Authorization, which is why the public route 404s her — the whole
  *           point of this route is to ask as her instead.
- * History:  MEH-2916 (C4).
+ * History:  MEH-2916 (C4); MEH-3776 the banner is ui/PreviewBanner.
  */
 export default function PreviewClient() {
   const t = useTranslations("dashboard.page_preview");
@@ -46,14 +46,9 @@ export default function PreviewClient() {
 
   return (
     <div className="max-w-6xl mx-auto" data-testid="producer-page-preview">
-      <p
-        role="status"
-        data-testid="preview-banner"
-        className="flex items-start gap-2 bg-green-50 border border-primary/30 rounded-md px-4 py-3 mb-4 text-sm text-text text-start"
-      >
-        <Eye size={18} aria-hidden="true" className="shrink-0 mt-0.5 text-primary" />
-        <span>{t("banner")}</span>
-      </p>
+      <PreviewBanner data-testid="preview-banner" className="mb-4">
+        {t("banner")}
+      </PreviewBanner>
 
       {/* Inside the provider the page hides favourite + share (a shared link
           would 404 for whoever opened it) and leaves the contact buttons

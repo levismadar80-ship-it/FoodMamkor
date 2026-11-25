@@ -9,9 +9,10 @@
  *           anything on their own (Sapir's ruling ב). Opt-in: a business that
  *           never touches it stores NULL and its public page shows nothing.
  * Does NOT: edit the weekly window (OrderWindowEditor.jsx) or store hours
- *           (LocationsEditor) — the override is order-axis only (ruling א).
+ *           (HoursCard / LocationHoursField) — the override is order-axis only (ruling א).
+ *           Mounted as a section of the «שעות» card (HoursCard.jsx, MEH-3790).
  *           It does not derive "open now"; the public page owns that
- *           (lib/orderWindow.js). Past dates are not editable here: they are
+ *           (lib/order-window-status.js). Past dates are not editable here: they are
  *           dropped on load and therefore on the next save (ruling ג).
  * Related:  frontend/lib/special-hours.js (rows ⇄ payload, issues, chips),
  *           edit/OrderWindowEditor.jsx (the row/save/dirty pattern this
@@ -21,12 +22,13 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
-import { nextOrderRange } from "@/lib/order-window";
+import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
+import { nextOrderRange } from "@/lib/order-window-editor";
 import {
   MAX_SPECIAL_DATES,
   MAX_SPECIAL_NOTE_LENGTH,
@@ -41,9 +43,13 @@ import {
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
+  const tClosed = useTranslations("dashboard.producer.closed_day_orders");
+  const locale = useLocale();
   const tHoliday = useTranslations("holidays");
   // Range mechanics and the save/revert buttons REUSE the order-window copy —
   // same nouns, same verbs, and one place to fix them.
@@ -177,6 +183,15 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
+      // MEH-3770: orders she already accepted on a date she just closed.
+      // Only dates newly closed in this save, from today on: a note edit does
+      // not re-warn about a date she closed (and saw the warning for) before.
+      const isClosed = (entry) => Array.isArray(entry?.ranges) && entry.ranges.length === 0;
+      const wasClosed = serializeSpecialHours(seedRows) || {};
+      const closedDates = Object.entries(current || {})
+        .filter(([day, entry]) => isClosed(entry) && day >= today && !isClosed(wasClosed[day]))
+        .map(([day]) => day);
+      if (closedDates.length > 0) warnClosedDayOrders({ dates: closedDates }, { t: tClosed, locale });
     } catch (error) {
       setErrorMsg(detailToMessage(error?.response?.data?.detail) || tRange("save_error"));
     } finally {
@@ -238,25 +253,22 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                   data-testid={`special-hours-date-${i}`}
                   className="numeric"
                 />
-                <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[34px]">
-                  <input
-                    type="checkbox"
-                    checked={row.closed}
-                    onChange={(e) => patchRow(i, { closed: e.target.checked })}
-                    className="w-4 h-4 accent-primary"
-                    data-testid={`special-hours-closed-${i}`}
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-sm"
+                  checked={row.closed}
+                  onChange={(e) => patchRow(i, { closed: e.target.checked })}
+                  data-testid={`special-hours-closed-${i}`}
+                >
                   <span>{t("closed_toggle")}</span>
-                </label>
-                <button
-                  type="button"
+                </Checkbox>
+                <IconButton
                   onClick={() => removeRow(i)}
-                  aria-label={`${row.date || t("date_label")} — ${t("remove_date")}`}
+                  label={`${row.date || t("date_label")} — ${t("remove_date")}`}
                   data-testid={`special-hours-remove-${i}`}
                   className="ms-auto text-fg-muted hover:text-error transition p-1"
                 >
                   <X size={14} aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
 
               {!row.closed && (
@@ -282,15 +294,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                         />
                       </div>
                       {row.ranges.length > 1 && (
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() => removeRange(i, rangeIdx)}
-                          aria-label={`${row.date} — ${tRange("remove_range")}`}
+                          label={`${row.date} — ${tRange("remove_range")}`}
                           data-testid={`special-hours-remove-range-${i}-${rangeIdx}`}
                           className="text-fg-muted hover:text-error transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   ))}

@@ -37,7 +37,8 @@ flowchart TD
     IssueJWTp --> ReturnTokenP[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     Choice -->|OAuth one-click| OAuthChoice{Google or Apple?}
-    OAuthChoice -->|Google| GoogleFlow[POST /auth/google<br/>body: id_token + terms_accepted?<br/>MEH-2080: true from /register → stamp terms]
+    OAuthChoice -->|Google| GoogleCode[our button → Google popup → one-time code<br/>POST /auth/google/code swaps it at oauth2.googleapis.com/token<br/>GOOGLE_CLIENT_SECRET · returns the verified id_token · MEH-3690]
+    GoogleCode --> GoogleFlow[POST /auth/google<br/>body: id_token + terms_accepted?<br/>MEH-2080: true from /register → stamp terms]
     OAuthChoice -->|Apple| AppleFlow[POST /auth/apple<br/>body: identity_token + terms_accepted?<br/>required for App Store]
     GoogleFlow --> VerifyG[google-auth:<br/>verify id_token against<br/>GOOGLE_CLIENT_ID]
     AppleFlow --> VerifyA[PyJWT:<br/>verify identity_token against<br/>Apple public keys + APPLE_CLIENT_ID]

@@ -13,6 +13,9 @@
 **קבצים מרכזיים**
 * `backend/app/routers/admin.py`
 * `backend/app/services/admin_producer_reads.py` — מה שמסכי בתי העסק של האדמין קוראים: הרשימה וסדר התור, בית עסק בודד, רשימת הרישיונות שפגים בקרוב ומוני `/admin/stats`. ה-routes נשארים ב-`backend/app/routers/admin.py` (MEH-3562).
+* `backend/app/services/admin_producer_writes.py` — יצירה ועריכה של בית עסק באדמין (`POST /admin/producers`, ‏`PUT /admin/producers/{id}`): slug, קטגוריות, אזורי משלוח, המלצת העורכת, בדיקות ההשהיה והניקוי אחרי השמירה. ה-routes נשארים ב-`backend/app/routers/admin.py` (MEH-3843).
+* `backend/app/services/admin_user_writes.py` — שינוי הרשאה, חסימה ובדיקת ההשפעה של חסימה (`PUT /admin/users/{user_id}/role`, ‏`POST /admin/users/{user_id}/block`, ‏`GET /admin/users/{user_id}/block-impact`). ה-routes נשארים ב-`backend/app/routers/admin_extra.py` (MEH-3537).
+* `backend/app/services/admin_category_writes.py` — יצירה, שינוי שם ומחיקה של קטגוריה, עם השומרים: שם תפוס, קטגוריית מערכת, קטגוריה עם רישיון, קטגוריה משויכת לעסקים (MEH-3537).
 * `backend/app/services/admin_audit.py` — יומן הפעולות (MEH-3306): שורה לכל שינוי מוצלח של חשבון אדמין, נכתבת מתוך `backend/app/auth.py`. קריאה: `GET /admin/audit-log` ב-`backend/app/routers/admin_extra.py`.
 * `backend/app/services/admin_dashboard.py` + `backend/app/services/admin_settings.py` — המספרים של דף הבית של האדמין (`GET /admin/dashboard`), דף האנליטיקה (`GET /admin/analytics`), ומתגי ההגדרות ומצב החופשה (`/admin/settings`). ה-handlers ב-`backend/app/routers/admin_extra.py` רק קוראים להם (MEH-3538).
 * `frontend/components/admin/AdminRowMenu.jsx`
@@ -46,6 +49,7 @@
 * `tests/test_meh2952_test_business_toggle.py` — **השומר** של המתג: 401/403, הסתרה והחזרה, IndexNow, ודגל ה-seed כבוי כברירת מחדל; `frontend/__tests__/AdminTestBusinessToggle.test.jsx` — המתג והתגית. `tests/test_meh2952_is_test_guards.py` מתיר כתיבה רק משני הקבצים.
 * `frontend/__tests__/AdminVerifiedPanel.test.jsx` · `frontend/__tests__/AdminAlcoholPanel.test.jsx` · `frontend/__tests__/AdminReportsPage.test.jsx` · `frontend/__tests__/AdminLicenceExpiry.test.jsx` · `frontend/__tests__/AdminRescueMetrics.test.jsx` — התג, האלכוהול, סגירת הדיווחים בהשהיה, הרישיונות שפגים ומספרי ההצלה (MEH-3524); הנתיב החדש נבדק ב-`tests/test_meh3218_product_orders.py`.
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
+* `frontend/__tests__/AdminSettingsShowsOnce.test.jsx` · `frontend/__tests__/AdminLoadsOnce.test.jsx` — **השומר** של טעינה בלי קפיצות (MEH-3818): ההגדרות, רשימת העסקים ורצועת הניווט בנייד מופיעות פעם אחת, אחרי הקריאות שקובעות את הגובה שלהן (או אחרי 2.5 שניות).
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`
 * `frontend/e2e/flows/manual/admin-producers-queue.spec.ts` · `admin-producers-decisions.spec.ts` · `admin-users-reviews-categories.spec.ts` · `admin-settings-licence-actions.spec.ts` (תחת `frontend/e2e/flows/manual/`)

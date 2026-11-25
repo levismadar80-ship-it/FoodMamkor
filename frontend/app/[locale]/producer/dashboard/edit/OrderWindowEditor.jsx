@@ -9,7 +9,7 @@
  * Does NOT: edit opening_hours (store hours) — that is HoursEditor.jsx, a
  *           different column and a different meaning. It also does not derive
  *           "open now"; the public page owns that (MEH-1546).
- * Related:  frontend/lib/order-window.js (serializer + close>open mirror),
+ * Related:  frontend/lib/order-window-editor.js (serializer + close>open mirror),
  *           edit/HoursEditor.jsx (the row/save/dirty pattern this follows),
  *           backend/app/routers/producer_me.py (PUT /producers/me).
  * History:  MEH-1544 — chunk 2/3 of חלון הזמנות.
@@ -27,10 +27,12 @@ import {
   orderDayIssues,
   nextOrderRange,
   canAddOrderRange,
-} from "@/lib/order-window";
+} from "@/lib/order-window-editor";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // MEH-3475: `saveUrl` — the admin edit page mounts this against
 // PUT /admin/producers/{id}.
@@ -181,16 +183,14 @@ export default function OrderWindowEditor({
           const issueReason = issueByDay.get(i);
           return (
             <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0 min-h-[34px]">
-                <input
-                  type="checkbox"
-                  checked={day.open}
-                  onChange={(e) => patchDay(i, { open: e.target.checked })}
-                  className="w-4 h-4 accent-primary"
-                  aria-label={`${tDays(key)} — ${t("toggle_label")}`}
-                />
+              <Checkbox
+                className="flex items-center gap-2 text-sm w-28 shrink-0"
+                checked={day.open}
+                onChange={(e) => patchDay(i, { open: e.target.checked })}
+                aria-label={`${tDays(key)} — ${t("toggle_label")}`}
+              >
                 <span>{tDays(key)}</span>
-              </label>
+              </Checkbox>
 
               {day.open ? (
                 // MEH-1869: a day holds up to MAX_ORDER_RANGES_PER_DAY ranges
@@ -221,15 +221,14 @@ export default function OrderWindowEditor({
                         />
                       </div>
                       {day.ranges.length > 1 && (
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() => removeRange(i, rangeIdx)}
-                          aria-label={`${tDays(key)} — ${t("remove_range")}`}
+                          label={`${tDays(key)} — ${t("remove_range")}`}
                           data-testid={`order-window-remove-${i}-${rangeIdx}`}
                           className="text-fg-muted hover:text-danger-600 transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   ))}

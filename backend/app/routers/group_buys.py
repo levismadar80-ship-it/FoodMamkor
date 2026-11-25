@@ -39,6 +39,7 @@ from app.services.group_buy_notifications import (
 )
 from app.services import indexnow  # MEH-2852
 from app.services import group_buy_capacity as capacity  # MEH-3592
+from app.services import group_buy_no_show as no_show  # MEH-3735
 from app.services.producer_listing import is_business
 from app.services.group_buy_pickup_text import (
     is_delivery_only,
@@ -423,6 +424,7 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
     capacity.refuse_own_group(gb, current_user)  # MEH-3691
+    no_show.refuse_if_blocked(db, current_user)  # MEH-3735
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
     # relationship and can be stale within the serialized critical section.
@@ -438,7 +440,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         .first()
     )
     if existing:
-        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
+        raise HTTPException(
+            status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת"
+        )
     capacity.refuse_unless_room(gb, current_count, current_units, 1, data.quantity)
     # MEH-3592: a waitlisted visitor who joins leaves the waitlist.
     capacity.drop_from_waitlist(db, group_buy_id, current_user.id)
@@ -451,6 +455,8 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         group_buy_id=group_buy_id,
         user_id=current_user.id,
         quantity=data.quantity,
+        # MEH-3735: unique within the group (UNIQUE + the row lock above).
+        pickup_code=no_show.new_code(no_show.codes_in_use(db, group_buy_id)),
     )
     db.add(commit)
     # Flush so the just-added commit is visible to the participant-email query
@@ -473,7 +479,7 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     db.commit()
     db.refresh(commit)
-    return {"detail": "הצטרפת בהצלחה", "status": gb.status, "commits_count": new_count}
+    return {"detail": "ההצטרפות נקלטה", "status": gb.status, "commits_count": new_count}
 
 
 @router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)

@@ -12,6 +12,9 @@
  */
 
 import api from "@/lib/api";
+import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
+import { eventWhen } from "@/lib/event-when";
+import { israelToday } from "@/lib/israel-date";
 import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
@@ -38,6 +41,22 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE = 422;
 
+/** Bags in one offer: RESCUE_MAX_QTY_PER_OFFER in backend/app/models/rescue.py. */
+export const RESCUE_MAX_QTY = 20;
+
+// One calendar day in ms, for date arithmetic at noon UTC (the same Israel day).
+export const DAY_MS = 86_400_000;
+// Days a business may skip ahead (SKIP_DAYS_AHEAD in schemas/rescue_schedule.py).
+export const RESCUE_SKIP_DAYS_AHEAD = 14;
+/** Minutes before pickup_start that free cancellation ends, and the
+ *  `rescue.dashboard.field.cancel_*` key. Shared by the one-off publish form
+ *  and the weekly routine (MEH-3703). */
+export const RESCUE_CANCEL_CUTOFFS = /** @type {const} */ ([
+  [30, "half_hour"],
+  [60, "hour"],
+  [120, "two_hours"],
+]);
+
 export function rescueBagsEnabled() {
   return process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true";
 }
@@ -58,6 +77,22 @@ export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
   const key = typeof city === "string" ? city.trim() : "";
   // Own keys only: a town named "constructor" must not resolve to Object.prototype.
   return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
+}
+
+/**
+ * MEH-3702: a bag is for today or for tomorrow on the Israel clock (the API
+ * lists no other day). "tomorrow" only when the date is exactly the next
+ * Israel day; anything else, including a missing date, reads as "today", so
+ * a row from an older API never gains a wrong «מחר». REUSES:
+ * lib/event-when.js `eventWhen` (the same Israel-day arithmetic).
+ *
+ * @param {string|null|undefined} date `YYYY-MM-DD`
+ * @param {string} [today] `YYYY-MM-DD`, injectable for tests
+ * @returns {"today"|"tomorrow"}
+ */
+export function bagDay(date, today = israelToday()) {
+  if (typeof date !== "string" || !today) return "today";
+  return eventWhen(date, today) === "tomorrow" ? "tomorrow" : "today";
 }
 
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */
@@ -90,7 +125,7 @@ export function shekels(agorot) {
  * HH:MM in Asia/Jerusalem.
  *
  * NOT `toLocaleTimeString` with no zone: the browser's zone is the visitor's,
- * and a pickup window is a fact about a shop in Israel. `lib/orderWindow.js`
+ * and a pickup window is a fact about a shop in Israel. `lib/order-window-status.js`
  * owns the same primitive for store hours (israel-clock-guard, MEH-1988) —
  * this formats an instant rather than deriving "open now", so it reads the
  * zone directly instead of reaching into that module's day logic.
@@ -106,6 +141,22 @@ export function israelTime(iso) {
     // guard-ok: formats one instant as HH:MM; derives no "today" or "open now".
     timeZone: "Asia/Jerusalem",
   }).format(d);
+}
+
+/**
+ * The free-cancel deadline as the screen says it: «18:30» when it is today,
+ * «מחר ב-18:30» when it falls on the next Israel day (MEH-3702 — a bag for
+ * tomorrow usually has its deadline tomorrow, and a bare time reads as today).
+ *
+ * @param {string|null|undefined} iso the `cancel_until` instant
+ * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @returns {string|null}
+ */
+export function rescueCancelText(iso, t) {
+  const time = israelTime(iso);
+  if (!time || !iso) return time;
+  const day = bagDay(israelToday(new Date(iso)));
+  return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
 }
 
 /**
@@ -182,6 +233,8 @@ export async function fetchOffer(offerId) {
 /** Reserve. Throws the axios error so the caller can map status → copy. */
 export async function reserveBag({ offerId, qty = 1 }) {
   const res = await api.post("/rescue/orders", { offer_id: offerId, qty });
+  // MEH-3698: reserved, so «ההזמנות שלי» has something — whatever the parse says.
+  clearMyOrdersNavGate();
   const parsed = CreateOrderRescueOrdersPostResponse.safeParse(res.data);
   if (!parsed.success) throw new Error("rescue:unparsable-order");
   return parsed.data;

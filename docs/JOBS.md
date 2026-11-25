@@ -33,7 +33,7 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 הרישום שלה, בקובץ שבעמודה «נרשמת ב».
 
 <!-- BEGIN GENERATED: jobs-map (tests/test_meh3599_jobs_map.py) -->
-16 server jobs · 9 GitHub Actions schedules.
+19 server jobs · 9 GitHub Actions schedules.
 
 ### משימות בשרת (APScheduler)
 
@@ -48,11 +48,14 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 | `meh_3287_group_buy_expiry_daily` | `_run_group_buy_expiry_job` | cron `0 6 * * *` (UTC) | תמיד | group-buy-expiry-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3287: close open group buys whose deadline passed below their minimum, and mail the participants. |
 | `meh_3296_product_orders` | `_run_product_order_jobs` | כל 2 minutes | `product_orders_enabled()` (app.routers.product_orders.product_orders_enabled) | product-orders-tick | backend/app/startup.py · _register_product_order_job | MEH-3296: one 2-minute tick for on-site orders — expire the requests nobody answered, then send the messages that are due. |
 | `meh_3312_registration_reminder_daily` | `_run_registration_reminder_job` | cron `0 17 * * *` (Asia/Jerusalem) | תמיד | registration-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3312: the evening-before reminder to on-site registrants. |
-| `meh_3332_job_staleness_check` | `_run_job_staleness_check` | כל 30 minutes | `_enabled()` (app.services.job_heartbeat._enabled) | — | backend/app/startup.py · _register_job_staleness_check | MEH-3332: every 30 minutes, email the admin about a registered @heartbeat job with no recent success. |
+| `meh_3332_job_staleness_check` | `_run_job_staleness_check` | כל 30 minutes | `_enabled()` (app.services.job_heartbeat._enabled) | — | backend/app/startup.py · _register_job_staleness_check | MEH-3332: every 30 minutes, report to Sentry (ops_alert, MEH-3705; email to the admin when Sentry is off) a registered @heartbeat job with no recent success. |
 | `meh_3413_billing_start_signal_monthly` | `_run_billing_start_signal_job` | cron `0 5 1-3 * *` (UTC) | תמיד | billing-start-signal-monthly | backend/app/startup.py · register_scheduler_jobs | MEH-3413: early in the month, email the admin when the month that just ended reached the billing-start signal. |
 | `meh_3535_email_outbox` | `_run_email_outbox_job` | כל 1 minutes | `not (settings.outbox_external_worker)` (app.config.settings) | email-outbox-tick | backend/app/startup.py · _register_outbox_jobs | MEH-3535: send the queued emails that are due (services/email_outbox). |
 | `meh_3610_group_buy_pickup_reminder_daily` | `_run_group_buy_pickup_reminder_job` | cron `0 17 * * *` (Asia/Jerusalem) | תמיד | group-buy-pickup-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3610: mail each participant of a funded group before its pickup. |
 | `meh_3630_staging_weekly_reset` | `run` | cron `0 23 * * sat` (UTC) | `enabled()` | — | backend/app/services/staging_reset_job.py · register | One weekly wipe + re-seed of the staging DB, staging only (MEH-3630). |
+| `meh_3702_rescue_morning_reminder` | `_run_rescue_morning_reminder_job` | cron `0 8 * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-morning-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3702: queue today's reminder emails. |
+| `meh_3703_rescue_schedule_publish` | `_run_rescue_schedule_job` | cron `5 * * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-schedule-publish-hourly | backend/app/startup.py · register_scheduler_jobs | MEH-3703: publish today's and tomorrow's routine bags. |
+| `meh_3805_rescue_evening_reminder` | `_run_rescue_evening_reminder_job` | cron `0 20 * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-evening-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3805: queue tomorrow's early-window reminders. |
 | `meh_509_pr2b_after_hours_watchdog` | `_run_watchdog_job` | כל 5 minutes | `settings.watchdog_enabled` (app.config.settings) | auto-reply-watchdog | backend/app/startup.py · register_scheduler_jobs | MEH-509 PR2b: 5-min after-hours watchdog tick. |
 | `meh_539_onboarding_followups_daily` | `_run_followup_job` | cron `0 10 * * *` (UTC) | תמיד | onboarding-followups-daily | backend/app/startup.py · register_scheduler_jobs | MEH-539: daily APScheduler tick. |
 

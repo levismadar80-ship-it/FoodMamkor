@@ -17,7 +17,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
-import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillmentTags";
+import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
 import { resolveStoreHours } from "@/lib/hours";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -27,6 +27,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import DeliveryBulkDay from "./DeliveryBulkDay";
 import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
 import DeliveryDefaultTerms from "./DeliveryDefaultTerms";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -351,43 +352,37 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       </div>
 
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.hasPhysical}
-            onChange={(e) => set({ hasPhysical: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
+        <Checkbox
+          className="flex items-center gap-2 text-sm"
+          checked={form.hasPhysical}
+          onChange={(e) => set({ hasPhysical: e.target.checked })}
+        >
           {t("has_physical_location")}
-        </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.offersDelivery}
-            onChange={(e) => set({ offersDelivery: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
+        </Checkbox>
+        <Checkbox
+          className="flex items-center gap-2 text-sm"
+          checked={form.offersDelivery}
+          onChange={(e) => set({ offersDelivery: e.target.checked })}
+        >
           {t("offers_delivery")}
-        </label>
+        </Checkbox>
         {neitherType && (
           <p className="text-xs text-danger-600">{t("type_validation")}</p>
         )}
         {form.offersDelivery && (
           <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.nationwide}
-                onChange={(e) =>
+            <Checkbox
+              className="flex items-center gap-2 text-sm"
+              checked={form.nationwide}
+              onChange={(e) =>
                   set({
                     nationwide: e.target.checked,
                     ...(e.target.checked ? { cities: [] } : {}),
                   })
                 }
-                className="w-4 h-4 accent-primary"
-              />
+            >
               {t("delivery_nationwide")}
-            </label>
+            </Checkbox>
             {/* MEH-1577: structured delivery cost. Both optional — leaving them
                 empty keeps the public page exactly as it is today. Each field
                 carries a "where it appears" line + an example placeholder per

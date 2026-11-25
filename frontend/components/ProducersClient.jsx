@@ -18,7 +18,7 @@ import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -143,7 +143,7 @@ export default function ProducersClient({
   // MEH-2131: the clock for the open-now zero-result guard. `null` on the
   // server pass AND on the first client render, so both produce the same DOM;
   // the effect below fills it in afterwards. Reading `new Date()` during render
-  // is exactly what lib/orderWindow.js's header warns against — the status is
+  // is exactly what lib/order-window-status.js's header warns against — the status is
   // time-derived, so a server pass and hydration can disagree.
   const [openNowClock, setOpenNowClock] = useState(null);
   // MEH-2767: the unfiltered catalog the chip gate counts (see visibleChipDefs).

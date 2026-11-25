@@ -1,7 +1,8 @@
 /**
  * MEH-2883 (MEH-2882 PR 2) — placement on the dashboard home:
  * - approved + complete: the «מצב נוכחי» switch comes right after the
- *   greeting, BEFORE «הלינק שלי» and the numbers (daily before now-and-then);
+ *   greeting, before the now-and-then rows (MEH-3767: «הלינק שלי» moved to
+ *   «שיתוף»; the help line is the last row the switch must precede);
  * - a business in draft sees ONE setup checklist: the completeness card, with
  *   the submit actions at its foot — not the draft banner stacked above it;
  * - an organizer in draft keeps its own draft banner (ADR-036).
@@ -78,12 +79,14 @@ beforeEach(() => {
 });
 
 describe("approved + complete: the switch first (MEH-2883)", () => {
-  it("«מצב נוכחי» renders before «הלינק שלי»", async () => {
+  it("«מצב נוכחי» renders before the help line, and «הלינק שלי» is not on home", async () => {
     render(<ProducerDashboardPage />);
-    const share = await screen.findByTestId("vanity-share");
+    await screen.findByTestId("availability-pause-switch");
+    const help = screen.getByTestId("dashboard-help-row");
     const heading = document.getElementById("availability-heading");
     expect(heading, "availability card").not.toBeNull();
-    expect(before(heading, share), "switch before the link").toBe(true);
+    expect(before(heading, help), "switch before the help line").toBe(true);
+    expect(screen.queryByTestId("vanity-share")).toBeNull();
   });
 });
 

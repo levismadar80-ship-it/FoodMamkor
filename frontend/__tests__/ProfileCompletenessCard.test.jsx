@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, within, fireEvent, waitFor } from "@testing-library/react";
 
 // MEH-3659: the card has two modes. Draft = the submit-gate checklist (only
 // what blocks «שליחה לבדיקה»). Anything else = «לשפר את העמוד» (the full
@@ -114,6 +114,24 @@ describe("ProfileCompletenessCard — improve mode (after submission)", () => {
     expect(screen.getByTestId("completeness-row-owner_photo").dataset.done).toBe("false");
   });
 
+  // MEH-3745: on a phone there is no hover, so a link row carries a caret.
+  // A row that is not a link (phone_verified, done) carries none.
+  it("a link row has a caret; a row that is not a link has none", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+    const hours = screen.getByTestId("completeness-row-hours");
+    expect(hours.querySelector("a [data-testid='row-caret']")).not.toBeNull();
+    // An undone link row is in the link colour; a done one stays plain, caret grey.
+    expect(hours.querySelector("a > span:not([data-testid])")?.className ?? "").toMatch(/\btext-primary\b/);
+    const image = screen.getByTestId("completeness-row-location");
+    expect(image.querySelector("[data-testid='row-caret']")?.getAttribute("class")).toMatch(/\btext-fg-muted\b/);
+    cleanup();
+    // Draft mode: a done phone row is plain text (its OTP card opens in place).
+    render(<ProfileCompletenessCard producer={{ ...draft, images: [] }} />);
+    const phone = screen.getByTestId("completeness-row-phone_verified");
+    expect(phone.querySelector("a")).toBeNull();
+    expect(phone.querySelector("[data-testid='row-caret']")).toBeNull();
+  });
+
   it("step order is stable: image, location, products, contact, WhatsApp, hours, owner photo", () => {
     render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
     const keys = within(list())
@@ -152,6 +170,12 @@ describe("ProfileCompletenessCard — improve mode (after submission)", () => {
   it("whitespace-only hours count as missing (same trim as the heuristic)", () => {
     render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "   " }} />);
     expect(screen.getByTestId("completeness-open-hours")).toBeInTheDocument();
+  });
+
+  // MEH-3790: hours have one card again («שעות»), so the step links to it.
+  it("missing hours → the step opens the «שעות» card", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "" }} />);
+    expect(screen.getByTestId("completeness-open-cta-hours").getAttribute("href")).toBe(`${EDIT}#hours`);
   });
 
   it.each([["null", null], ["empty", ""], ["whitespace", "   "]])(

@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-92 send sites · 89 on a single channel.
+93 send sites · 90 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -68,6 +68,7 @@
 | `services/experience_notifications.py` | `notify_host_changes_requested` | מייל | בעלת העסק |
 | `services/experience_notifications.py` | `notify_host_rejected` | מייל | בעלת העסק |
 | `services/group_buy_goal_flap.py` | `send_below_goal_emails` | מייל | לקוחה |
+| `services/group_buy_no_show.py` | `send_group_buy_no_show_email` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_allergens_changed` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled_delisted` | מייל | לקוחה |

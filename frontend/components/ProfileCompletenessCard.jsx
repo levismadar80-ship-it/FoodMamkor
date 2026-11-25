@@ -3,7 +3,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Check, ArrowRight } from "@phosphor-icons/react";
+import { Check, ArrowRight, CaretLeft } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { useResendVerification } from "@/lib/use-resend-verification";
@@ -192,18 +192,15 @@ function buildSteps(producer, missingLabels) {
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
     // (producer-completeness.js, MEH-1884) — no second condition to drift.
     //
-    // MEH-2142: the anchor moved from `#hours` to `#locations`. The
-    // business-level hours card was removed and store hours are edited per
-    // location now, so `#hours` no longer resolves to anything — it was
-    // dropped from ANCHOR_TO_KEY in the same change, and a CTA pointing at a
-    // deleted card is the MEH-2058 failure repeated. `#locations` is a
-    // registered anchor (edit/page.js) and lands on the editor that actually
-    // owns the field.
+    // MEH-3790: the anchor is `#hours` again. MEH-2142 had moved it to
+    // `#locations` when store hours lived in each location's form; they now
+    // live in the one «שעות» card (HoursCard.jsx), and `#hours` is registered
+    // in ANCHOR_TO_KEY (lib/dashboard-edit-anchors.js) and opens it.
     {
       key: "hours",
       done: has("hours"),
       required: false,
-      href: `${EDIT_HUB}#locations`,
+      href: `${EDIT_HUB}#hours`,
     },
     // MEH-3032: the owner's own photo — the face on the public OwnerCard
     // (Airbnb «meet your host», Etsy «meet the owner»). Recommended, and
@@ -354,8 +351,15 @@ function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
             ) : (
               <Link href={r.href} className={ROW_LINK}>
                 <RowMark done={r.done} />
-                <span className={r.done ? "text-text" : "text-fg-muted"}>{text}</span>
+                <span className={r.done ? "text-text" : "text-primary font-medium"}>{text}</span>
                 {status}
+                {/* MEH-3745: hover is the only cue a row is a link, and a phone has no hover. */}
+                <CaretLeft
+                  size={14}
+                  aria-hidden="true"
+                  data-testid="row-caret"
+                  className={`ms-auto shrink-0 ltr:rotate-180 ${r.done ? "text-fg-muted" : "text-primary"}`}
+                />
               </Link>
             )}
           </li>

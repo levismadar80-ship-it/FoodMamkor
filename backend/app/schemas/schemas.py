@@ -560,7 +560,7 @@ def _custom_questions_validator(value: list[str] | None) -> list[str] | None:
 
     None stays None and `[]` stays `[]` — the two are NOT collapsed. They are
     indistinguishable to every reader measured (frontend
-    lib/resolvedQuestions.js `ownerQuestionLabels` — the one derivation the
+    lib/resolved-questions.js `ownerQuestionLabels` — the one derivation the
     page component and the dashboard preview share — and tests
     `custom_questions?.length > 0`, so both yield no owner rows), but
     collapsing them would still rewrite what the column stores
@@ -1068,6 +1068,8 @@ from app.schemas.registration import (  # noqa: E402
     CheckPasswordRequest as CheckPasswordRequest,
     ForgotPasswordRequest as ForgotPasswordRequest,
     GoogleAuthRequest as GoogleAuthRequest,
+    GoogleCodeRequest as GoogleCodeRequest,  # MEH-3690
+    GoogleCodeResponse as GoogleCodeResponse,  # MEH-3690
     GoogleAuthResponse as GoogleAuthResponse,
     LoginRequest as LoginRequest,
     OwnerInviteAccept as OwnerInviteAccept,

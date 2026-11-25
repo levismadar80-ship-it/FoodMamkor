@@ -26,8 +26,7 @@ mehamakor/
 ├── .agents/skills/             canonical skill content (symlinked into .claude/)
 ├── .github/workflows/          CI gates + Vercel/Railway redeploy triggers
 ├── scripts/                    repo-level helpers (smoke_test, etc.)
-├── tests/                      top-level fixtures / screenshots
-└── logo/                       brand assets
+└── tests/                      top-level fixtures / screenshots
 ```
 
 ---
@@ -135,6 +134,7 @@ FEATURES.md; other files → code index) · `frontend/components/`,
 `docs/COPY_BANK.md`) · `frontend/i18n/` (locale routing) · `frontend/data/`
 (static data files) · `frontend/types/` (JSDoc types) · `frontend/public/`
 (static assets) · `frontend/scripts/` (build helpers) · `frontend/__tests__/`,
-`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/qa-artifacts/` (QA text
+`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/eslint-rules/` (house lint
+rules, `frontend/components/CLAUDE.md`) · `frontend/qa-artifacts/` (QA text
 evidence, never images) · `frontend/.ds-sync-css/` (Tailwind input for the
 design-system sync).

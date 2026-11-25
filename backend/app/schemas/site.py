@@ -48,6 +48,9 @@ class UserAdminOut(BaseModel):
     # rescue-bag reservations — drives the badge and «שחרור חסימת סלים».
     rescue_active_no_shows: int = 0
     rescue_blocked: bool = False
+    # MEH-3735: the group-buy count, separate from the rescue one.
+    group_buy_active_no_shows: int = 0
+    group_buy_blocked: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,4 @@
-"""MEH-3108 — «מה מחכה לך» on the dashboard home: GET /producers/me/dashboard
+"""MEH-3108 — «מה ממתין לטיפול» on the dashboard home: GET /producers/me/dashboard
 carries `attention` with what is waiting for the owner.
 
 - reviews with no reply (hidden ones don't count — they are not on the page)
@@ -81,6 +81,7 @@ def test_nothing_waiting_is_all_zero(client, db):
         "pending_orders": 0,
         "products": 0,
         "products_no_allergens": 0,
+        "live_rescue_offers": 0,
     }
 
 
@@ -159,6 +160,7 @@ def test_a_failed_count_returns_an_empty_card_not_a_500(client, db, monkeypatch)
         "pending_orders": 0,
         "products": -1,  # MEH-3430: unknown, not zero
         "products_no_allergens": 0,  # MEH-3445: no nag on a failed count
+        "live_rescue_offers": 0,  # MEH-3767
     }
 
 

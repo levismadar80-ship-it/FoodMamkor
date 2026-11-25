@@ -10,7 +10,7 @@
  *           PUT {basePath}/products/{id}/group — basePath /producers/me (owner)
  *           or /admin/producers/{id} (admin, MEH-3472).
  * Does NOT: create, edit or delete products (ProductsSection.jsx), and does not
- *           decide display order — lib/product-order.js does, for both the
+ *           decide display order — lib/product-display-order.js does, for both the
  *           public page and this list.
  * Placement (rule 37, delegated by Sapir 13/11 17:00Z): in the products card,
  *           under the product list, because ordering and grouping are about
@@ -27,12 +27,13 @@ import { ArrowDown, ArrowUp, DotsSixVertical, Trash } from "@phosphor-icons/reac
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
-import { orderProducts } from "@/lib/product-order";
+import { orderProducts } from "@/lib/product-display-order";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import ProductGroupSuggest from "@/components/ProductGroupSuggest";
+import Checkbox from "@/components/ui/Checkbox";
 
 /** @typedef {{ id: string, name: string, position?: number|null, group_id?: string|null, image_url?: string|null }} Product */
 /** @typedef {{ id: string, name: string }} Group */
@@ -56,7 +57,7 @@ function move(list, from, to) {
 
 /**
  * MEH-3477: lay the list out group by group in the groups' order, ungrouped
- * last — the public page's layout (lib/product-order.js). Stable, so the
+ * last — the public page's layout (lib/product-display-order.js). Stable, so the
  * order inside each group is the list's own.
  * @param {Product[]} list
  * @param {Group[]} groups
@@ -479,15 +480,13 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
       data-name={product.name}
     >
       {/* MEH-3477: 44px tap target around a native checkbox. */}
-      <label className="shrink-0 inline-flex items-center justify-center w-11 h-11 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          aria-label={t("select_aria", { name: product.name })}
-          className="w-4 h-4 accent-primary"
-        />
-      </label>
+      <Checkbox
+        className="shrink-0 inline-flex items-center justify-center w-11 h-11"
+        checked={checked}
+        onChange={onToggle}
+        aria-label={t("select_aria", { name: product.name })}
+      >
+      </Checkbox>
       <button
         type="button"
         aria-label={t("drag_aria", { name: product.name })}

@@ -248,7 +248,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
       type="button"
       aria-label={ariaLabel}
       data-badge="verified"
-      className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
+      className="tap-area group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
     >
       <span
         className={
@@ -408,7 +408,7 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             type="button"
             aria-label={`${badge.label} — ${badge.tooltip}`}
             data-badge={badge.key}
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
+            className="tap-area group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
             <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),

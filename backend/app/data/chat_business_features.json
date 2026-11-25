@@ -122,7 +122,7 @@
         },
         {
           "id": "delivery_checker",
-          "label": "בדיקת \"יש משלוח לעיר שלך?\""
+          "label": "בדיקת \"יש משלוח אליי?\""
         },
         {
           "id": "product_orders",
@@ -178,6 +178,11 @@
           "id": "rescue_bags",
           "label": "סלי הפתעה למה שנשאר בסוף היום",
           "flag": "rescue_bags"
+        },
+        {
+          "id": "rescue_schedule",
+          "label": "לוח קבוע לסלי הפתעה",
+          "flag": "rescue_schedule"
         }
       ]
     },

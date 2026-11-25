@@ -3,7 +3,7 @@
 
 /**
  * Module:   OwnerAttentionCard
- * Purpose:  «מה מחכה לך» — the top of the dashboard home lists what is
+ * Purpose:  «מה ממתין לטיפול» — the top of the dashboard home lists what is
  *           waiting for the owner right now, each row one tap from the tool
  *           that handles it (MEH-3108; Airbnb «Today», Shopify home tasks).
  * Touches:  nothing — renders `attention` from GET /producers/me/dashboard
@@ -27,9 +27,9 @@ const SIGNUP_HREF = {
 };
 
 /**
- * The rows to show, in a fixed order: orders waiting (MEH-3316), reviews, the item with the most new
+ * The rows to show, in a fixed order: orders waiting (MEH-3316), live rescue bags (MEH-3767), reviews, the item with the most new
  * sign-ups, funded group buys, no products yet (MEH-3430), products with no allergens
- * marked (MEH-3445). At most 5: «menu» needs 0 products and «allergens» needs some.
+ * marked (MEH-3445). At most 6: «menu» needs 0 products and «allergens» needs some.
  * @param {any} attention
  * @param {boolean} [isOrganizer]
  * @returns {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]}
@@ -42,6 +42,13 @@ function attentionRows(attention, isOrganizer = false) {
   const orders = Number(attention.pending_orders) || 0;
   if (orders > 0) {
     rows.push({ key: "orders", text: ["orders", { count: orders }], cta: "orders_cta", href: "/producer/dashboard/orders" });
+  }
+  // MEH-3767: rescue bags open today — the owner hands them over against a
+  // code, so they come right after orders. Only a real count shows the row
+  // (an old backend sends nothing).
+  const bags = Number(attention.live_rescue_offers) || 0;
+  if (bags > 0) {
+    rows.push({ key: "rescue", text: ["rescue", { count: bags }], cta: "rescue_cta", href: "/producer/dashboard/rescue" });
   }
   const reviews = Number(attention.unreplied_reviews) || 0;
   if (reviews > 0) {

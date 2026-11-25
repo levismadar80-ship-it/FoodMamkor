@@ -345,7 +345,7 @@ export const ProducerListSchema = z.object({
   // thing that fails a parse. Inner fields stay permissive anyway, because the
   // /map feed parses all-or-nothing (useProducersFeed.js:41) and one odd range
   // must never cost a whole business — `normalizeDayEntries`
-  // (lib/orderWindow.js:93) already drops any range that is not valid HH:MM.
+  // (lib/order-window-status.js:93) already drops any range that is not valid HH:MM.
   order_window: z
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
     .nullable()
@@ -361,7 +361,7 @@ export const ProducerListSchema = z.object({
   // The per-date entry is `.nullable()` ON PURPOSE even though the backend
   // validator never writes a null entry: this literal guards two all-or-nothing
   // feeds, and a hand-edited or imported row with one null entry must cost that
-  // one date (the readers skip it — orderWindow.js `overrideFor`), never the
+  // one date (the readers skip it — order-window-status.js `overrideFor`), never the
   // whole business. Tightening it here would turn a data blemish into a
   // vanished producer, which is the exact failure the permissive inner shape
   // above exists to prevent.

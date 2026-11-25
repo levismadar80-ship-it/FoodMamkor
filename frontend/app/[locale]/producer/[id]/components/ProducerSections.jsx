@@ -15,14 +15,14 @@ import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
-import { hasDeliverySection } from "@/lib/quickAnswers"; // MEH-3460
+import { hasDeliverySection } from "@/lib/quick-answers"; // MEH-3460
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import BusinessChatPrompt from "./BusinessChatPrompt";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { resolveStoreHours } from "@/lib/hours";
-import { primaryPoint } from "@/lib/producerPoints";
+import { primaryPoint } from "@/lib/producer-points";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
@@ -43,7 +43,7 @@ import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // ME
 import { shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
-import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
+import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-display-order";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -162,16 +162,16 @@ function ProductDietPills({ product, t }) {
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * The events list (and its show-all state) moved to ProducerActivities
- * (MEH #2659), merged with experiences. The reviews wrapper accepts
- * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
- * observation point remains identical to the source.
+ * (MEH #2659), merged with experiences. The reviews section mounts with the
+ * page and fetches once in view (MEH-3819; it used to mount only near the
+ * screen, via the retired useLazyReviews).
  */
 export default function ProducerSections({
   producer,
   events,
+  experiences,
+  groupBuys,
   sectionRefs,
-  reviewsContainerRef,
-  reviewsVisible,
   isOwner = false,
   onReviewsTotalChange,
   orderCart = null,
@@ -261,11 +261,11 @@ export default function ProducerSections({
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
-  // MEH-3021 / MEH-3055: the order is lib/product-order.js — the owner's
+  // MEH-3021 / MEH-3055: the order is lib/product-display-order.js — the owner's
   // order when she set one, else photos first; grouped products laid out
   // group by group. The signature product stays out of the grid.
   const productGroups = producer.product_groups || [];
-  /** @type {Array<import("@/lib/product-order").OrderedProduct & { name?: string, description?: string, price_min?: number | null, price_max?: number | null, price_range?: string | null }>} */
+  /** @type {Array<import("@/lib/product-display-order").OrderedProduct & { name?: string, description?: string, price_min?: number | null, price_max?: number | null, price_range?: string | null }>} */
   const gridUnsorted = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
@@ -761,7 +761,13 @@ export default function ProducerSections({
 
       {/* Events + experiences (one list) and open group buys — MEH-2602,
           reshaped under MEH #2659. */}
-      <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
+      <ProducerActivities
+        producerId={producer.id}
+        events={events}
+        experiences={experiences}
+        groupBuys={groupBuys}
+        sectionRefs={sectionRefs}
+      />
 
       {/* MEH-3585 (Sapir 21/11): the rescue bag moved here from above
           «מוצרים». The catalogue — what this business always makes — comes
@@ -791,19 +797,21 @@ export default function ProducerSections({
         className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
-          reviewsContainerRef.current = el;
         }}
       >
-        {reviewsVisible && (
-          <ReviewsSection
-            producerId={producer.id}
-            avgRating={producer.avg_rating ?? 0}
-            reviewCount={producer.reviews_count ?? 0}
-            isOwner={isOwner}
-            onTotalChange={onReviewsTotalChange}
-            producerName={producer.name}
-          />
-        )}
+        {/* MEH-3819: mounted with the page, so its heading, summary and
+            loading rows hold their place; it was mounted only near the screen
+            (useLazyReviews), growing from nothing under a reader who landed
+            on #reviews (≈ 0.4 CLS on a phone). The FETCH stays lazy:
+            ReviewsSection reads /reviews only once it is in view. */}
+        <ReviewsSection
+          producerId={producer.id}
+          avgRating={producer.avg_rating ?? 0}
+          reviewCount={producer.reviews_count ?? 0}
+          isOwner={isOwner}
+          onTotalChange={onReviewsTotalChange}
+          producerName={producer.name}
+        />
       </div>
 
       {/* MEH-1490: quiet Google-rating trust line — detached from the native

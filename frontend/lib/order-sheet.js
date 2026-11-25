@@ -17,6 +17,7 @@
 import { z } from "zod";
 
 import api from "@/lib/api";
+import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
 import { QuoteOrderRouteProductOrdersQuotePostResponse } from "@/lib/generated/api.zod";
 import { splitKey } from "@/lib/product-variants";
 
@@ -157,6 +158,7 @@ export async function quoteOrder(body) {
 export async function sendOrder(body) {
   const { data } = await api.post("/product-orders", body);
   const sent = SentOrder.parse(data);
+  clearMyOrdersNavGate(); // MEH-3698: «ההזמנות שלי» now has something
   return `/order/${sent.id}#t=${encodeURIComponent(sent.status_token)}`;
 }
 

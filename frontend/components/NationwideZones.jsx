@@ -7,7 +7,7 @@
  *           own order cutoff and next delivery. A zone wins over «כל הארץ»
  *           in its cities.
  * Does NOT: render the nationwide badge or the country-wide fee line
- *           (DeliveryBlock.jsx), or decide the next date (lib/nextDelivery.js).
+ *           (DeliveryBlock.jsx), or decide the next date (lib/next-delivery.js).
  * Related:  backend/app/services/delivery_zones.py (writes a nationwide
  *           business's zone rows — the only city rows it has).
  * History:  MEH-3511 (creation).
@@ -18,7 +18,7 @@
 import { useTranslations } from "next-intl";
 import AreaTermsRow, { LIST_CARD } from "@/components/AreaTermsRow";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
-import { daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
+import { daysOfRow, sharedCutoff } from "@/lib/next-delivery";
 
 /** @typedef {{ city: string, zone_name?: string | null, delivery_fee?: number | null,
  *   min_order?: number | null, delivery_days_min?: number | null, delivery_days_max?: number | null,

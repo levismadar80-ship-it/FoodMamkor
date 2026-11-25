@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveDeliveryFee } from "@/lib/deliveryFee";
+import { resolveDeliveryFee } from "@/lib/delivery-fee";
 
 // MEH-2602 — card and business page read ONE fee. The staging sweep found the
 // card «25₪» beside the page «מ-20₪» for the same business.

@@ -14,7 +14,7 @@ import { MAP_REFERRER } from "@/lib/map-view-state";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
-import { producerPoints } from "@/lib/producerPoints";
+import { producerPoints } from "@/lib/producer-points";
 import RatingCompact from "@/components/ui/RatingCompact";
 import { hasCardRating } from "@/lib/rating-gate";
 import {
@@ -22,7 +22,7 @@ import {
   FULFILLMENT_WASH_GREEN,
   FULFILLMENT_WASH_NEUTRAL,
   FULFILLMENT_ICON_PX,
-} from "@/lib/fulfillmentTags";
+} from "@/lib/fulfillment-tags";
 import { COLOR } from "@/lib/color-tokens";
 import { producerPath } from "@/lib/producer-path";
 

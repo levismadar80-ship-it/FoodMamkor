@@ -14,7 +14,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producer-points";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -57,26 +57,30 @@ const CITY_FLY_ZOOM = 13;
 // MEH-1009: SSR/first-paint fallback for the desktop shell's top offset —
 // matches the 64px the height calc always hardcoded; corrected by a live
 // measurement on mount (see the measurement effect in MapPage).
-const DESKTOP_HEADER_OFFSET_PX = 64;
+// MEH-3820: 82, not 64. The floating header ends at 82px (measured 24/11 at
+// 320, 360, 375, 390, 430, 1024, 1280 and 1440 wide; 130 at 768, where the
+// mobile shell's own measurement corrects it). A 64 guess made the shell 18px
+// too tall until the measurement ran after hydration, so the map shrank on a
+// slow phone. A real top banner (VerifyBanner) is still caught by the
+// measurement below.
+const DESKTOP_HEADER_OFFSET_PX = 82;
 
-// MEH-1019: same SSR/first-paint fallback for the MOBILE shell — it hardcoded
-// the identical 64 before this fix. Corrected by a live measurement on mount
-// (mobile mirror of the desktop reservation).
-const MOBILE_HEADER_OFFSET_PX = 64;
+// MEH-1019: same SSR/first-paint fallback for the MOBILE shell. Corrected by a
+// live measurement on mount (mobile mirror of the desktop reservation).
+const MOBILE_HEADER_OFFSET_PX = 82;
 
-// MEH-933 R2: SSR/first-paint fallback for the mobile sticky filter bar's
-// height — replaces the old hardcoded `pt-[174px]` reservation on the map
-// wrapper (= a WRONG assumed 110px bar + 64px header). Corrected to the bar's
-// real measured height on mount (ResizeObserver below). Kept generous so the
-// first paint never under-reserves and briefly overlaps the map.
-const MOBILE_BAR_FALLBACK_PX = 174;
+// MEH-3820: the mobile filter bar is in flow (a flex column), so the map
+// starts under it with no measured padding. The old 174px first-paint guess
+// (MEH-933 R2), corrected on mount, moved the map up by ~55px after hydration.
 
 // MEH-945 / MEH-2148: the strip the mobile map wrapper reserves at its bottom
 // while the cookie banner shows: the nav clearance, CookieBanner's 8px gap,
 // 16px of air, and the banner's live height. Named because two properties
-// carry it (paddingBottom and --map-pane-reserve, MEH-2517).
-const MOBILE_BANNER_RESERVE =
-  "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))";
+// carry it (paddingBottom and --map-pane-reserve, MEH-2517). MEH-3820: the
+// length itself is defined once, as --map-banner-reserve in app/globals.css,
+// which also applies it before hydration; this inline copy covers a banner
+// re-opened from the footer, and is the same value by construction.
+const MOBILE_BANNER_RESERVE = "var(--map-banner-reserve)";
 
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
@@ -251,37 +255,6 @@ export default function MapPage() {
       window.removeEventListener("resize", measure);
       bannerObserver?.disconnect();
     };
-  }, []);
-
-  // MEH-933 R2: measure the mobile sticky filter bar's REAL height. The bar is
-  // data-driven — category row + quick-toggle row + a CONDITIONAL active-filter-
-  // tags row (FilterChipsBar.jsx:98) that mounts once any filter is active — so
-  // its height swings well past the old hardcoded 110px assumption (measured
-  // 171px with the tags row). The map wrapper's padding-top is driven off THIS
-  // value alone: the mobile shell already begins BELOW the sticky header (it's
-  // in normal flow after <Header>; measured shell top === header height), so the
-  // bar sits at top-0 of the shell and needs NO header offset of its own — the
-  // prior `top-16` + `pt-[174px]`'s baked-in 64 double-counted the header into a
-  // ~64px dead gap between header and city-search (Sapir 12/07 QA). A bar height
-  // change (tags row toggling) resizes the map wrapper → MapComponent's own
-  // ResizeObserver→invalidateSize (MapComponent.jsx:392) reflows Leaflet, so the
-  // toggle-row appear/disappear can't leave a gray band. Mirrors the
-  // measure-don't-hardcode pattern of the MEH-1019/945 offset effects above.
-  const mobileBarRef = useRef(null);
-  const [mobileBarHeight, setMobileBarHeight] = useState(MOBILE_BAR_FALLBACK_PX);
-  useEffect(() => {
-    const el = mobileBarRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      // ceil, not round: under-reserving by a fraction would let the bar's
-      // bottom border overlap the first map pixels; a fraction over is invisible.
-      const h = Math.ceil(el.getBoundingClientRect().height);
-      if (h > 0) setMobileBarHeight(h);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
   }, []);
 
   // MEH-1010: Enter-on-marker keyboard activation (MEH-765 AC). Leaflet only
@@ -1066,15 +1039,16 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" data-pick={showPickCard ? "on" : undefined} className="group/mapshell lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" data-pick={showPickCard ? "on" : undefined} className="group/mapshell lg:hidden flex flex-col" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
             offset of its own. The prior `top-16` (64px) double-counted the header
             offset (the shell already clears it), opening a ~64px dead gap between
-            the header and the city-search input (Sapir 12/07 QA). The map wrapper
-            below reserves this bar's MEASURED height (mobileBarHeight) instead of
-            the old hardcoded `pt-[174px]` (a wrong 110px bar + a redundant 64px
+            the header and the city-search input (Sapir 12/07 QA). MEH-3820: the
+            bar is in flow and the map takes the rest of the column; before, the
+            map wrapper reserved this bar's MEASURED height, and before that the
+            old hardcoded `pt-[174px]` (a wrong 110px bar + a redundant 64px
             header), which is why the real 171px bar overlapped the map canvas +
             search-this-area pill + zoom control.
             MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
@@ -1119,7 +1093,7 @@ export default function MapPage() {
             what was measured rather than by a file:line that could not be
             confirmed. (An earlier revision of this comment did attribute it to
             the `×` button; the CI reviewer on PR #3002 caught that.) */}
-        <div ref={mobileBarRef} data-testid="map-mobile-bar" className="absolute top-0 inset-x-0 px-3 py-2 bg-background border-b border-border">
+        <div data-testid="map-mobile-bar" className="relative shrink-0 px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search
@@ -1137,10 +1111,9 @@ export default function MapPage() {
           {renderFilterChipsBar(mobileOriginTag, true)}
         </div>
 
-        {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height
-            (mobileBarHeight), no hardcoded magic. Because the bar now sits at
-            top-0 of the shell, reserving exactly its height leaves NO gap and NO
-            overlap regardless of the tags row appearing/disappearing (which also
+        {/* Map fills the rest — MEH-3820: flex-1 under the in-flow bar (was
+            MEH-933 R2's measured padding-top). No gap and no overlap whatever
+            the bar's height, the tags row appearing/disappearing included (which also
             kills the documented ~10px spill the old 174 hack carried).
             MEH-945: while the cookie banner shows, reserve its footprint at the
             bottom — its own offset (MEH-1950: derived nav-clearance + 8px gap,
@@ -1157,9 +1130,12 @@ export default function MapPage() {
             OSM attribution (globals.css, rides the sheet edge) ended under the
             sheet and the nav pill. */}
         <div
-          className="w-full h-full [&_.leaflet-container]:!min-h-0"
+          className="w-full flex-1 min-h-0 [&_.leaflet-container]:!min-h-0"
+          // MEH-3820: globals.css reserves the banner strip from the first
+          // paint while the visitor has not answered; the inline style below
+          // covers a banner re-opened from the footer.
+          data-map-banner-reserve=""
           style={{
-            paddingTop: `${mobileBarHeight}px`,
             ...(cookieBannerVisible
               // MEH-2148: the 96px was CookieBanner's own offset (nav clearance
               // + its 8px gap) plus 16px of breathing room, summed by hand. Now

@@ -13,6 +13,7 @@ History:  MEH-3313 (creation)
 """
 
 from dataclasses import dataclass
+from datetime import date
 
 from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
@@ -21,7 +22,8 @@ from app.config import settings
 from app.models.models import RescueOffer, RescueOrder
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
-from app.services.rescue_emails import israel_hhmm, shekels
+from app.services.rescue_emails import day_word, israel_hhmm
+from app.utils.money import shekels_text
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,8 @@ class BusinessReservation:
     total_agorot: int
     pickup_from: str
     pickup_until: str
+    # MEH-3702: a bag reserved a day ahead says «מחר» (copy approved 24/11).
+    tomorrow: bool = False
 
 
 def _qty_line(qty: int) -> str:
@@ -46,13 +50,15 @@ def send_business_reservation_email(
     """MEH-3313 — one email per owner login (text body; send_email adds the branded HTML part, MEH-3587)."""
     name = " ".join(m.producer_name.split())
     subject = f"נשמר סל הפתעה ב{name}"
+    day = "מחר" if m.tomorrow else "היום"
+    which = "של היום ושל מחר" if m.tomorrow else "של היום"
     body = (
         "שלום,\n\n"
-        f"{_qty_line(m.qty)} עכשיו מסלי ההפתעה של היום.\n"
+        f"{_qty_line(m.qty)} עכשיו מסלי ההפתעה של {day}.\n"
         f"קוד האיסוף: {m.pickup_code}. בקופה אומרים את הקוד ומשלמים "
-        f"{shekels(m.total_agorot)} ₪.\n"
-        f"איסוף היום {m.pickup_from}–{m.pickup_until}.\n\n"
-        "את כל השריונים של היום אפשר לראות בלוח הבקרה:\n"
+        f"{shekels_text(m.total_agorot)} ₪.\n"
+        f"איסוף {day} {m.pickup_from}–{m.pickup_until}.\n\n"
+        f"את כל השריונים {which} אפשר לראות בלוח הבקרה:\n"
         f"{settings.frontend_url}/producer/dashboard/rescue\n\n"
         "צוות מהמקור"
     )
@@ -64,6 +70,7 @@ def queue_business_reservation_email(
     db: Session,
     offer: RescueOffer,
     order: RescueOrder,
+    today: date | None = None,
 ) -> int:
     """Queue one email per owner login, AFTER the reservation's commit.
     Returns how many were queued (0 = no owner with an email)."""
@@ -78,6 +85,7 @@ def queue_business_reservation_email(
         total_agorot=int(offer.price_agorot) * int(order.qty),
         pickup_from=israel_hhmm(offer.pickup_start),  # type: ignore[arg-type]
         pickup_until=israel_hhmm(offer.pickup_end),  # type: ignore[arg-type]
+        tomorrow=today is not None and day_word(offer.date, today) == "מחר",  # type: ignore[arg-type]
     )
     recipients = owner_emails(db, producer)
     for to in recipients:

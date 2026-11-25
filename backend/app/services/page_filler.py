@@ -27,7 +27,7 @@ from app.config import ai_fast_request_kwargs
 from app.data.cities import STATIC_SPELLING_BY_KEY, canonical_city, city_key
 from app.schemas.page_fill import PageDraft
 from app.schemas.schemas import _ALLOWED_CONTACT_METHODS
-from app.services import ai_text
+from app.services import ai_budget, ai_text
 from app.services.description_writer import _TERMS
 from app.services.menu_reader import _get_client  # REUSES: one Anthropic client
 
@@ -221,7 +221,7 @@ def to_draft(data: dict[str, Any], source: str, allowed_ids: set[int]) -> PageDr
 def read_page(text: str, categories: list[tuple[int, str]]) -> PageDraft | None:
     """None means "could not read" (no key, API error, refusal, bad JSON)."""
     client = _get_client()
-    if client is None:
+    if client is None or not ai_budget.allow("fast"):  # MEH-3498
         return None
     prompt = _PROMPT.format(
         categories=_categories_block(categories), text=ai_text.wrap("owner_text", text)

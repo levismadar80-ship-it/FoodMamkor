@@ -64,7 +64,6 @@ import {
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import WhatsThis from "@/components/WhatsThis";
 import EditAccordionCard, {
   EditAccordionKindContext,
   PreviewThumbs,
@@ -74,8 +73,10 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import GoogleProfileHubTile from "@/components/dashboard/google-profile/GoogleProfileHubTile";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LogoCard, PricingCard, DeliveryCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import { licenseMissingForProfile } from "@/lib/license-required-categories";
 import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
@@ -85,17 +86,16 @@ import TagsCard, { activeTagCount } from "./TagsCard";
 import ReservistOwnedCard from "./ReservistOwnedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
-import OrderWindowEditor from "./OrderWindowEditor";
+import HoursCard from "./HoursCard";
 // MEH-2264: per-date overrides above the weekly window (own file, same reason).
-import SpecialHoursEditor from "./SpecialHoursEditor";
-// MEH-3035 chunk 2: «איך משלמים לך?» (producers.payment_info).
+// MEH-3035 chunk 2: «איך משלמים לעסק?» (producers.payment_info).
 import PaymentInfoEditor from "./PaymentInfoEditor";
 import { paymentAnswer } from "@/lib/payment-info";
 import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
-import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveProducerQuestions } from "@/lib/resolved-questions";
 import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
@@ -109,6 +109,7 @@ import {
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
+import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
@@ -160,7 +161,8 @@ const GROUP_MEMBERS = {
   // field — counting it would show every existing business as 2/4 instead of
   // 2/3 and nudge them to maintain hours they never asked for (the exact
   // GBP-staleness risk the ticket cites). It still belongs to the location
-  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally
+  // (MEH-3790: to its section inside the «שעות» card).
   // MEH-2058: "location" was a member of this group before its card (the
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see
@@ -226,23 +228,27 @@ function EditPageInner() {
   const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
-  // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
+  // WhatsAppQuestionChips does (lib/resolved-questions.js explains why).
   const tChips = useTranslations("whatsapp.question_chips");
   // MEH-1872: business-name change-request card.
   const tName = useTranslations("dashboard.producer.name_change");
-  // MEH-1823: the offer feature owns one namespace shared by the dashboard
-  // card and the public badge, so the four type labels have a single source.
-  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
-  // MEH-1773: point-of-decision explainer for the order-window card. The
-  // ContactChannelsCard hook of the same name (:1202) is scoped to that
-  // component and not reachable from here.
-  // REUSES: frontend/app/[locale]/producer/dashboard/edit/page.js:1202 — same
-  // top-level whats_this namespace, same WhatsThis component (MEH-1115).
-  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
+  // MEH-3788: «ספרו לנו על העסק» is for a page that is still empty (no
+  // description, or the registration placeholder); after that the writer
+  // inside «תיאור העסק» is the one entry. Latched: a save from the panel
+  // fills the description, and the panel stays until the next visit so the
+  // owner sees her save land instead of the panel vanishing under her.
+  const [fillLatched, setFillLatched] = useState(false);
+  const fillDesc = (profile?.description || "").trim();
+  const pageEmpty = Boolean(profile) && (!fillDesc || isDefaultDescription(fillDesc));
+  // Read in the same render as the profile, so the panel does not pop in a
+  // commit later and push the tiles down; the latch only keeps it there.
+  const showFill = fillLatched || pageEmpty;
+  // Set during render, not in an effect (eslint set-state-in-effect ratchet).
+  if (pageEmpty && !fillLatched) setFillLatched(true);
 
   // MEH-1116: accordion state — one card open at a time, all collapsed on load.
   const [openKey, setOpenKey] = useState(null);
@@ -280,6 +286,7 @@ function EditPageInner() {
   const [productsCount, setProductsCount] = useState(null);
   // MEH-2937: LocationsEditor reports its live list here (null until it loads).
   const [liveLocations, setLiveLocations] = useState(null);
+  const [locationsRefresh, setLocationsRefresh] = useState(0); // MEH-3790
 
   // MEH-2207: the LIVE primary contact channel, as selected in the contact
   // card's form — not the saved value. Seeded from the profile so the notice
@@ -352,41 +359,10 @@ function EditPageInner() {
       });
   }, [user, authLoading, router]);
 
-  // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [anyDirty]);
-
-  // MEH-1100 guard 2: in-app navigation. The App Router exposes no
-  // route-change events, so intercept anchor clicks at capture phase while
-  // dirty — this covers the tab nav, header, and BottomNav links alike.
-  // New-tab clicks (target=_blank / modifier keys) don't leave the page and
-  // pass through; same-path clicks (e.g. anchors) are ignored.
-  useEffect(() => {
-    if (!anyDirty) return;
-    const onClick = (e) => {
-      if (e.defaultPrevented || e.button !== 0) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const anchor = e.target.closest?.("a[href]");
-      if (!anchor || anchor.target === "_blank") return;
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#")) return;
-      const url = new URL(anchor.href, window.location.href);
-      if (url.origin === window.location.origin && url.pathname === window.location.pathname) return;
-      if (!window.confirm(t("unsaved_guard.confirm"))) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [anyDirty, t]);
+  // MEH-1100: the refresh / tab-close prompt and the in-app link confirm,
+  // while any card is dirty. MEH-3785 moved both into a hook the offer page
+  // shares.
+  useUnsavedGuard(anyDirty, t("unsaved_guard.confirm"));
 
   // MEH-1116 + MEH-1408: URL-hash deep link — #<anchor> auto-selects the card's
   // GROUP, expands the card, and scrolls to it; on load (once the profile has
@@ -678,6 +654,7 @@ function EditPageInner() {
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
+    hours: t("completeness.fields.hours"),
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
@@ -690,7 +667,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "paymentInfo", "organizerCity",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "hours", "orderWindow", "specialHours", "questions", "paymentInfo", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -762,8 +739,8 @@ function EditPageInner() {
           {tAcc("hub_title")}
         </h1>
         {/* Locations as the page shows them (an edit this session wins over the loaded profile). */}
-        <PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
-          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />
+        {showFill && (<PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
+          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />)}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);
@@ -775,10 +752,23 @@ function EditPageInner() {
                 marker={tile.marker}
                 statusLine={tile.statusLine}
                 previews={tile.previews}
-                onClick={() => enterGroup(g)}
+                // MEH-3762: one tap to a form — the group's first missing
+                // card (or its only card) opens as the group opens.
+                // Routed through the pending-anchor relay too, so the group-change
+                // effect scrolls the opened card into view (the hub's scroll
+                // offset would otherwise leave a 3rd/4th card below the fold).
+                onClick={() => {
+                  const key = autoOpenKeyFor(g, membersOf(g), cardFilled);
+                  setOpenKey(key);
+                  if (key && KEY_TO_GROUP[key] === g) pendingAnchorRef.current = key;
+                  enterGroup(g);
+                }}
               />
             );
-          })}
+          }).flatMap((tile, i) =>
+            // MEH-3723: «הפרופיל בגוגל» right after «קשר»; never an organizer.
+            visibleGroupKeys[i] === "contact" && !isOrganizer ? [tile, <GoogleProfileHubTile key="google-profile" />] : [tile]
+          )}
         </div>
       </div>
 
@@ -914,7 +904,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, tags (the offer left for «כלים», MEH-3785)
               (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
@@ -981,28 +971,10 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* MEH-1823 — the owner's single typed offer. MEH-2433 moved it from
-            the location group (after delivery) to here, beside her prices:
-            that is where an owner looks for a discount. Summary shows the live
-            offer sentence, or "no active offer" — the empty state is a real
-            state here, not a placeholder. */}
-        <EditAccordionCard
-          anchorId="offer"
-          title={tOffer("card_title")}
-          summary={
-            profile.active_offer
-              ? tOffer(`types.${profile.active_offer.offer_type}`)
-              : tOffer("type_none")
-          }
-          open={openKey === "offer"}
-          onToggle={() => toggleKey("offer")}
-        >
-          <OffersCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-3785: «הטבה» moved to its own page, /producer/dashboard/offer,
+            reached from «כלים» › «להציע ללקוחות» (Shopify keeps discounts apart
+            from products). */}
+
 
         {/* MEH-2729 — ONE «תגים» card for what the business declares about
             itself: «תזונה» (MEH-1508 — whole-catalog vegan / vegetarian +
@@ -1076,7 +1048,7 @@ function EditPageInner() {
           open={openKey === "locations"}
           onToggle={() => toggleKey("locations")}
         >
-          <LocationsEditor onLocationsChange={setLiveLocations} />
+          <LocationsEditor onLocationsChange={setLiveLocations} hoursElsewhere refreshKey={locationsRefresh} />
         </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
@@ -1108,79 +1080,23 @@ function EditPageInner() {
         </EditAccordionCard>
 
 
-        {/* MEH-2142 — the business-level opening-hours card stood here and was
-            REMOVED. Store hours are a per-location fact: the owner edits them
-            on each location in LocationsEditor (the "פרטים נוספים" section of
-            the locations card, same group), and the public page prefers her
-            primary location's value. Asking for the same fact twice, in two
-            cards, is what made owners fill it in twice and still not know which
-            one the site showed. `Producer.opening_hours` stays as a read
-            fallback and is no longer owner-writable (producer_me.py). */}
-
-        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in, and the only
-            "when" card left in this group. */}
-        <EditAccordionCard
-          anchorId="order-window"
-          title={t("order_window.heading")}
-          summary={
-            cardFilled.orderWindow
-              ? t("order_window.summary_set", {
-                  count: Object.keys(profile.order_window || {}).length,
-                })
-              : t("order_window.summary_empty")
-          }
-          open={openKey === "orderWindow"}
-          onToggle={() => toggleKey("orderWindow")}
-        >
-          {/* MEH-1773: "חלון הזמנות" and the "זמינות" card on the dashboard
-              landing page both read as "when am I open", so owners could not
-              tell them apart. This names the distinction at the point of
-              editing — the recurring weekly schedule — and its twin sits on
-              the availability card (dashboard/page.js) saying the other half:
-              a manual, temporary exception. */}
-          <WhatsThis
-            content={tWhat("order_window")}
-            className="mb-1"
-            testId="whats-this-order-window"
-          />
-          <OrderWindowEditor
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
-        {/* MEH-2264 — per-date overrides ABOVE the weekly window ("ערב ראש
-            השנה 09:00–13:00", "כיפור: סגור"). Opt-in like its sibling, and
-            deliberately its own card: a date list and a weekly grid are two
-            different mental models, and MEH-1830's finding was that the time
-            cluster is already confusing when things share a card. The
-            WhatsThis reuses the card's subtitle string on purpose (rule 22 —
-            approved copy, no second sentence to approve). */}
-        <EditAccordionCard
-          anchorId="special-hours"
-          title={t("special_hours.heading")}
-          summary={
-            cardFilled.specialHours
-              ? t("special_hours.summary_set", {
-                  count: upcomingSpecialCount(profile.special_hours),
-                })
-              : t("special_hours.summary_empty")
-          }
-          open={openKey === "specialHours"}
-          onToggle={() => toggleKey("specialHours")}
-        >
-          <WhatsThis
-            content={t("special_hours.subtitle")}
-            className="mb-1"
-            testId="whats-this-special-hours"
-          />
-          <SpecialHoursEditor
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+        {/* MEH-3790 — one «שעות» card: each location's opening hours (moved
+            out of the location form), the weekly order window and dated
+            exceptions. Sapir 24/11, reversing MEH-2142's per-form hours and
+            MEH-2264's separate holiday card. */}
+        <HoursCard
+          profile={profile}
+          locations={currentLocations}
+          open={openKey === "hours"}
+          onToggle={() => toggleKey("hours")}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+          onHoursSaved={() => setLocationsRefresh((n) => n + 1)}
+          onGoToLocations={() => {
+            setOpenKey("locations");
+            document.getElementById("locations")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </div>
 
       {/* ===== GROUP: contact — contact-channels, questions ===== */}

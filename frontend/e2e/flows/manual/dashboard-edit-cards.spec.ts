@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { layoutSettled } from "../_layout-settled";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -224,7 +225,7 @@ test.describe("edit tab — unsaved-changes guard", () => {
     await heroField(page).fill("תיאור מעודכן");
     await expect(banner(page)).toBeVisible();
 
-    await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();
+    await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));
     await expect(banner(page)).toHaveCount(0);
     expect(puts.length, "exactly one PUT must have left the client").toBe(1);
 
@@ -333,7 +334,7 @@ test.describe("edit tab — description card", () => {
     await openAt(page, "bio");
     await heroField(page).fill("תיאור חדש");
     await cardBody(page, "bio").getByPlaceholder(/משפט אחד שמסכם/).fill("משפט תדמית חדש");
-    await cardBody(page, "bio").getByRole("button", { name: "שמרו" }).click();
+    await clickSaveAfterEdit(page, cardBody(page, "bio").getByRole("button", { name: "שמרו" }));
     await expect(banner(page)).toHaveCount(0);
 
     expect(puts.length).toBe(1);
@@ -469,12 +470,14 @@ test.describe("overview — completeness card", () => {
   });
 
   // MT:MEH-1106:5 — drift D4: the six-way href partition as it stands today.
+  // MEH-3790: hours moved out of the location form into the «שעות» card, so
+  // the hours step links to `#hours`, not a second `#locations`.
   test("each checklist step deep-links to the editor that owns it", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false, locations: [], city: null, phone: null, whatsapp: null, primary_contact_method: null }));
     const items = checklist(page).getByRole("listitem");
     await expect(items).toHaveCount(7);
     const hrefs = await items.locator("a").evaluateAll((as) => as.map((a) => new URL((a as HTMLAnchorElement).href).hash));
-    expect(hrefs.sort()).toEqual(["#locations", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products", "#owner-story"].sort());
+    expect(hrefs.sort()).toEqual(["#hours", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products", "#owner-story"].sort());
   });
 
   // MT:MEH-1106:6 — delivery-only satisfies the location step without coordinates.

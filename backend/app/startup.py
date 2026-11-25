@@ -28,6 +28,11 @@ from app.services.job_heartbeat import (
     REGISTRATION_REMINDER_TZ,
     GROUP_BUY_PICKUP_REMINDER_CRON,
     GROUP_BUY_PICKUP_REMINDER_TZ,
+    RESCUE_EVENING_REMINDER_CRON,
+    RESCUE_REMINDER_CRON,
+    RESCUE_REMINDER_TZ,
+    RESCUE_SCHEDULE_CRON,
+    RESCUE_SCHEDULE_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -576,6 +581,84 @@ def _run_group_buy_pickup_reminder_job() -> None:
         db.close()
 
 
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier day.
+@heartbeat(
+    "rescue-morning-reminder-daily",
+    cron_monitor_config(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_morning_reminder_job() -> None:
+    """MEH-3702: queue today's reminder emails. Fresh session per run; any
+    exception is swallowed so the scheduler thread never dies. Nothing stamps
+    an order as reminded, so this runs once a day and never on an interval."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_morning_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_morning_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] daily run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_morning_reminder")
+        log.error("[RESCUE-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3805: the evening-before reminder for a bag whose window ends by 08:00.
+@heartbeat(
+    "rescue-evening-reminder-daily",
+    cron_monitor_config(RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+)
+def _run_rescue_evening_reminder_job() -> None:
+    """MEH-3805: queue tomorrow's early-window reminders. Same guards as the
+    morning job: fresh session, exceptions swallowed, once a day."""
+    from app.database import SessionLocal
+    from app.services.rescue_reminders import queue_evening_reminders
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        counters = queue_evening_reminders(db, today=israel_today(), now=utc_now())
+        log.info("[RESCUE-REMINDER] evening run complete %s", counters)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_evening_reminder")
+        log.error("[RESCUE-REMINDER] evening run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3703: publish the weekly-routine bags that came into reach.
+@heartbeat(
+    "rescue-schedule-publish-hourly",
+    cron_monitor_config(RESCUE_SCHEDULE_CRON, timezone=RESCUE_SCHEDULE_TZ),
+)
+def _run_rescue_schedule_job() -> None:
+    """MEH-3703: publish today's and tomorrow's routine bags. Fresh session per
+    run; any exception is swallowed so the scheduler thread never dies. A day
+    that already has an offer is skipped, so a rerun publishes nothing twice."""
+    from app.database import SessionLocal
+    from app.routers.rescue import city_in_pilot
+    from app.services.rescue_schedule import publish_due
+    from app.utils.clock import israel_today, utc_now
+
+    db = SessionLocal()
+    try:
+        count = publish_due(
+            db, today=israel_today(), now=utc_now(), in_pilot=city_in_pilot
+        )
+        if count:
+            log.info("[RESCUE-SCHEDULE] hourly run published=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="rescue_schedule_publish")
+        log.error("[RESCUE-SCHEDULE] hourly run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
@@ -762,7 +845,8 @@ def _outbox_jobs_run_elsewhere() -> list[tuple[str, Any]]:
     """MEH-3535: while the worker service owns the outbox ticks they are not on
     this scheduler, so the overdue-job check would never see them. Its
     `@heartbeat` writes the same `job_ok:<slug>` rows, so they are checked
-    here: a dead worker emails the admin like any stopped job."""
+    here: a dead worker raises an ops_alert in Sentry like any stopped job
+    (email to the admin when Sentry is off, MEH-3705)."""
     if not settings.outbox_external_worker:
         return []
     from app.routers.product_orders import product_orders_enabled
@@ -952,6 +1036,43 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # watchdog's guards, for the same reason it has them: max_instances=1 +
     # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
     # a brief pause runs it late instead of skipping a window.
+    # MEH-3702: the rescue morning reminder, 08:00 Israel, pilot-gated. A
+    # 3h grace runs it late after a deploy pause; a later restart skips the
+    # day (no stamp, so never a second run on the same day).
+    if settings.rescue_bags_enabled:
+        followup_scheduler.add_job(
+            _run_rescue_morning_reminder_job,
+            CronTrigger.from_crontab(RESCUE_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ),
+            id="meh_3702_rescue_morning_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
+        # MEH-3805: the evening twin, 20:00 Israel. Same 3h grace: a run as
+        # late as 23:00 still lands before any early window starts.
+        followup_scheduler.add_job(
+            _run_rescue_evening_reminder_job,
+            CronTrigger.from_crontab(
+                RESCUE_EVENING_REMINDER_CRON, timezone=RESCUE_REMINDER_TZ
+            ),
+            id="meh_3805_rescue_evening_reminder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3 * 3600,
+        )
+        # MEH-3703: the weekly-routine publisher, hourly. A 50-minute grace
+        # runs a paused tick late instead of dropping it.
+        followup_scheduler.add_job(
+            _run_rescue_schedule_job,
+            CronTrigger.from_crontab(RESCUE_SCHEDULE_CRON, timezone=RESCUE_SCHEDULE_TZ),
+            id="meh_3703_rescue_schedule_publish",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=50 * 60,
+        )
     from app.services.rescue_digest import digest_enabled as _digest_enabled
 
     if settings.rescue_bags_enabled and _digest_enabled():
@@ -989,7 +1110,8 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
 
 
 def _register_job_staleness_check(scheduler: Any) -> None:
-    """MEH-3332: every 30 minutes, email the admin about a registered
+    """MEH-3332: every 30 minutes, report to Sentry (ops_alert, MEH-3705;
+    email to the admin when Sentry is off) a registered
     @heartbeat job with no recent success. Reads the job list off the
     scheduler at each run, so a flag-gated job that is off is never checked.
     Not itself a @heartbeat job: a dead scheduler thread is what the one

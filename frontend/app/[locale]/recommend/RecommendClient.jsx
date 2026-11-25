@@ -49,6 +49,7 @@ import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
+import Checkbox from "@/components/ui/Checkbox";
 
 // The recommender's own fields → account field (MEH-3112). Never the
 // business fields: those describe someone else.
@@ -323,15 +324,14 @@ export default function RecommendClient() {
                 with no update. */}
             {canGetUpdate && (
               <div className="mt-4">
-                <label className="flex items-center gap-2 text-sm text-text">
-                  <input
-                    type="checkbox"
-                    checked={form.wants_update}
-                    onChange={(e) => setForm({ ...form, wants_update: e.target.checked })}
-                    data-testid="recommend-wants-update"
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-sm text-text"
+                  checked={form.wants_update}
+                  onChange={(e) => setForm({ ...form, wants_update: e.target.checked })}
+                  data-testid="recommend-wants-update"
+                >
                   {t("wants_update_label")}
-                </label>
+                </Checkbox>
                 {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
                     the point of collection — now the opt-in, since that is
                     what makes us use the account address — and states purpose

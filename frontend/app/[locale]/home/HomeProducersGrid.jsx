@@ -19,9 +19,10 @@ import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useChipCopy } from "@/lib/use-chip-copy";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch"; // MEH-3748
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
-import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { keepFocusedChipClear } from "@/lib/keep-focused-chip-clear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 // MEH-2767: visibleAxisChips is the one chip gate home, /producers and /map
 // share (it replaced MEH-1934's visibleGatedDietKeys + MEH-2131's open-now
@@ -149,6 +150,7 @@ export function HomeProducersGrid({
 }) {
   const t = useTranslations();
   const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
+  const intent = useIntentPrefetch(); // MEH-3748
   // MEH-2714: the card entrance plays on the first visit only (see route-memory).
   const skipReveal = useRevealSkip();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
@@ -158,7 +160,7 @@ export function HomeProducersGrid({
   // MEH-2131: same clock discipline as /producers — null through the SSR pass
   // and the first client render, filled in afterwards. The chip's PRESENCE
   // depends on it, so reading `new Date()` during render would make the server
-  // and client DOM disagree (lib/orderWindow.js header).
+  // and client DOM disagree (lib/order-window-status.js header).
   const [openNowClock, setOpenNowClock] = useState(null);
   useEffect(() => {
     setOpenNowClock(new Date());
@@ -242,7 +244,17 @@ export function HomeProducersGrid({
   // since the row scrolls sideways on a phone and would clip it. State, not a
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
-  // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
+  // MEH-3821: the skeleton is for the first load only. A filter change (city,
+  // day, category) keeps the current results on screen, dimmed, until the new
+  // set arrives — as Nielsen Norman's faceted-search guidance does. Swapping
+  // them for 8 skeleton cards collapsed the grid and shot the mini-map up and
+  // back down (≈ 0.4 CLS on a phone, after the tap's 500 ms grace).
+  const [paintedOnce, setPaintedOnce] = useState(!producersLoading);
+  if (!producersLoading && !paintedOnce) setPaintedOnce(true);
+  // An empty state is not kept: its copy names the old filter («no delivery to
+  // A» while B loads). It gives way to the skeleton, as before.
+  const showSkeleton = producersLoading && (!paintedOnce || producers.length === 0);
+  // MEH-2537: focus under the sticky «סינון» — lib/keep-focused-chip-clear.js.
   return (
     // MEH-2712: pb-8 so the gap to the mini-map below is 56px on phones, not
     // ~104px. MEH-2747: the mini-map follows this grid on desktop too now, so
@@ -263,8 +275,12 @@ export function HomeProducersGrid({
             : t("home.producers.heading")}
         </SectionHeading>
         {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
-            opens on the same search the grid is showing. */}
-        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            opens on the same search the grid is showing.
+            MEH-3748: prefetch={false} + prefetch on touch, like the site
+            chrome (MEH-2850). /map is static, so a viewport prefetch fetched
+            its whole RSC payload (~76 KB) on every home load — the largest
+            single item over the Lighthouse byte budget. */}
+        <Link prefetch={false} {...intent(`/map${chipsToQuery(chips)}`)} href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
@@ -460,10 +476,14 @@ export function HomeProducersGrid({
         onClear={onClearLocation}
       />
 
-      {producersLoading ? (
+      {showSkeleton ? (
         <SkeletonProducerGrid count={8} />
       ) : (
-        <>
+        <div
+          data-testid="home-producers-results"
+          aria-busy={producersLoading || undefined}
+          className={`transition-opacity duration-base ${producersLoading ? "opacity-60" : ""}`}
+        >
           {/* MEH-1282 (GAP A): persistent inline notice when "קרוב אליי" found
               nothing nearby and fell back to the full list. The MEH-1269 toast
               was too transient — its final state read as "nothing happened".
@@ -705,7 +725,7 @@ export function HomeProducersGrid({
               </Link>
             </p>
           )}
-        </>
+        </div>
       )}
     </section>
   );

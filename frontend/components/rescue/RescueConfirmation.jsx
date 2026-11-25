@@ -5,8 +5,10 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
+import ShareCodeButton, { shareCodeText } from "@/components/rescue/ShareCodeButton";
 
-import { israelTime, shekels } from "@/lib/rescue";
+import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
 
 /**
  * Module:   RescueConfirmation
@@ -20,9 +22,12 @@ import { israelTime, shekels } from "@/lib/rescue";
  *           so the copy says «אומרים בקופה» and stops there.
  * Related:  components/rescue/RescueSection.jsx (reserves, then renders this)
  * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
- *           cutoff the terms say it can no longer be cancelled)
+ *           cutoff the terms say it can no longer be cancelled) · MEH-3704
+ *           (send the code to a friend; `place` = the business and the
+ *           pickup address, which the order itself does not carry)
  */
-export default function RescueConfirmation({ order, onCancel, cancelling = false }) {
+export default function RescueConfirmation({ order, onCancel, cancelling = false, place = null }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // MEH-2737: the cancel link asks before it acts — one stray tap used to
   // give the bag away with no way back.
@@ -30,7 +35,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   if (!order) return null;
 
   const price = shekels(order.price_agorot);
-  const cancelUntil = israelTime(order.cancel_until);
+  const cancelUntil = rescueCancelText(order.cancel_until, t); // MEH-3702
   const from = israelTime(order.pickup_start);
   const until = israelTime(order.pickup_end);
   const started = order.pickup_start ? new Date(order.pickup_start) <= new Date() : false;
@@ -43,6 +48,9 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   const cancellable =
     order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
+  const when = from && until
+    ? t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })
+    : null;
 
   return (
     <div
@@ -75,7 +83,8 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {from && until && (
         <p className="font-body-sm text-sm text-text mt-1" data-testid="rescue-confirmation-window">
-          {t("row.pickup", { from, until })}
+          {/* MEH-3702: a bag for tomorrow says so; today's keeps the bare window. */}
+          {when}
         </p>
       )}
 
@@ -99,6 +108,19 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
           {t("confirm.step_done")}
         </li>
       </ol>
+
+      {/* MEH-3704: only while the bag waits at the counter. Once handed or
+          cancelled there is nothing for a friend to collect. */}
+      {order.status === "reserved" && (
+        <div className="mt-4">
+          <ShareCodeButton
+            text={shareCodeText(
+              { code: order.pickup_code, business: place?.name, when, address: place?.address, price: price === null ? null : String(price) },
+              t,
+            )}
+          />
+        </div>
+      )}
 
       {onCancel && cancellable && asking && (
         <div

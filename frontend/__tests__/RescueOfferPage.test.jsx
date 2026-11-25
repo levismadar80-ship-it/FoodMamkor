@@ -15,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+import { israelToday } from "@/lib/israel-date";
 import heMessages from "../messages/he.json";
 
 function lookup(key) {
@@ -264,7 +265,15 @@ describe("RescueOfferPage — what is inside and allergens", () => {
   });
   it("allergens not declared → ask before pickup", async () => {
     await renderWith(offer());
-    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared"));
+    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared_short"));
+  });
+  // MEH-3823: the bag page wires the fixed «ask at pickup» line, declared or not.
+  it.each([
+    ["declared", ["gluten"]],
+    ["not declared", null],
+  ])("the «ask at pickup» line is on the bag page (%s)", async (_n, allergens) => {
+    await renderWith(offer({ allergens }));
+    expect(screen.getByTestId("rescue-offer-allergens-ask").textContent).toBe(lookup("rescue.section.allergens_ask"));
   });
   it("declared allergens are listed by their product-sheet names", async () => {
     await renderWith(offer({ allergens: ["gluten"] }));
@@ -283,7 +292,7 @@ describe("RescueOfferPage — what is inside and allergens", () => {
   // known codes; the bag's own copy printed whatever key the list held.
   it("an unknown allergen code is not printed as a raw key", async () => {
     await renderWith(offer({ allergens: ["not_a_code"] }));
-    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared"));
+    expect(screen.getByTestId("rescue-offer-allergens-none").textContent).toBe(lookup("rescue.section.allergens_undeclared_short"));
     expect(screen.queryByTestId("rescue-offer-allergens-declared")).toBeNull();
   });
 });
@@ -300,6 +309,17 @@ describe("RescueOfferPage — a bag that cannot be reserved", () => {
     expect(box.querySelector("a").getAttribute("href")).toBe("/rescue");
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
     expect(screen.queryByTestId("sticky-bar")).toBeNull();
+  });
+
+  // MEH-3702: tomorrow's bag names its day (copy approved 24/11).
+  it.each([
+    ["sold_out", "rescue.offer_page.state_sold_out_tomorrow"],
+    ["cancelled", "rescue.offer_page.state_cancelled_tomorrow"],
+  ])("%s on tomorrow's bag says «מחר»", async (state, key) => {
+    const tomorrow = new Date(Date.parse(`${israelToday()}T00:00:00Z`) + 24 * HOUR).toISOString().slice(0, 10);
+    await renderWith(offer({ state, date: tomorrow, qty_left: state === "sold_out" ? 0 : 2 }));
+    expect(screen.getByTestId("rescue-offer-unavailable").textContent).toContain(lookup(key));
+    expect(screen.getByTestId("rescue-offer-pickup").textContent.startsWith(`${lookup("rescue.offer_page.pickup_title_tomorrow")} `)).toBe(true);
   });
 
   it("not found → the empty state with a way to other bags", async () => {

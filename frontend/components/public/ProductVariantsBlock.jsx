@@ -19,8 +19,7 @@ import { useTranslations } from "next-intl";
 import OrderStepper from "@/components/public/OrderStepper";
 import { lineKey, needsChoice, variantsOf } from "@/lib/product-variants";
 import { formatPrice } from "@/lib/utils";
-
-const AGOROT = 100;
+import { agorotToShekels } from "@/lib/money";
 
 /**
  * @param {{
@@ -44,7 +43,7 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
       <ul className="mt-2 divide-y divide-border-subtle">
         {variantsOf(product).map((v) => {
           const menu = menuVariants.get(v.id);
-          const price = formatPrice(menu ? menu.price_agorot / AGOROT : priceOf(product, v));
+          const price = formatPrice(menu ? agorotToShekels(menu.price_agorot) : priceOf(product, v));
           return (
             <li key={v.id} className="flex items-center justify-between gap-3 py-2 min-h-[52px]" data-testid="product-variant-row">
               {/* A gap, not a margin: the price is dir="ltr", so its inline
@@ -78,6 +77,6 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
  * @returns {number | string | null}
  */
 function priceOf(product, variant) {
-  if (typeof variant.price_agorot === "number") return variant.price_agorot / AGOROT;
+  if (typeof variant.price_agorot === "number") return agorotToShekels(variant.price_agorot);
   return product.price_min ?? null;
 }

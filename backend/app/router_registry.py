@@ -18,6 +18,7 @@ from app.routers import (
     admin_passkey,
     auth,
     auth_register_producer,
+    auth_google_code,
     business_suggestions,
     category_requests,
     chat,
@@ -29,6 +30,8 @@ from app.routers import (
     group_buys,
     group_buy_capacity,
     group_buy_mine,
+    group_buy_pickup,
+    my_orders_any,
     health,
     holiday_mode,
     marketing,
@@ -52,6 +55,7 @@ from app.routers import (
     product_describe,
     menu_import,
     page_fill,
+    form_fill,
     product_order_business,
     product_order_buyer,
     product_order_offer,
@@ -90,6 +94,8 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(review_reply_suggest.router)
     # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
     app.include_router(page_fill.router)
+    # MEH-3740: «יש לכם מתכון כתוב?» — one draft route for every dashboard form
+    app.include_router(form_fill.router)
     # MEH-3641: «הפרופיל שלכם בגוגל» — /producers/me/google-profile
     app.include_router(producer_google_profile.router)
 
@@ -126,6 +132,9 @@ def _include_admin(app: FastAPI) -> None:
     app.include_router(admin_product_organize.router)
     # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
     app.include_router(admin_test_business.router)
+    # MEH-3690: POST /auth/google/code, our own Google button's code swap.
+    # Here only to keep register_routers under the statement limit.
+    app.include_router(auth_google_code.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:
@@ -167,6 +176,11 @@ def _register_flagged_features(app: FastAPI) -> None:
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
     # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
+    # MEH-3735: pickup codes, «נמסר» / «לא הגיע», the admin block release.
+    app.include_router(group_buy_pickup.router)
+    app.include_router(group_buy_pickup.admin_router)
+    # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
+    app.include_router(my_orders_any.router)
 
 
 def register_routers(app: FastAPI) -> None:

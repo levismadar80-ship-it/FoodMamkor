@@ -63,8 +63,13 @@ messages. In order of preference (ADR-037 §Decision):
 4. Masculine plural as the unmarked form where a pronoun is needed:
    «ברוכים הבאים», «אליכם».
 
-`לך` / `שלך` stay (unmarked in writing). `אלייך` is marked feminine and is not
-used. Slash and dot forms are never used (BRAND.md §9).
+No singular second person either: `שלך`, `לך`, `אותך` and the like are not
+used in new copy (ADR-037 amendment, 24/11/2026; until then they stayed as
+"unmarked"). Write «המוצרים של העסק» or «אפשר לשמור», or «שלכם» / «לכם» when a
+pronoun is needed, on consumer and business surfaces alike (ADR-037
+amendment, 25/11/2026). `brand-lexicon-guard.sh` (rule
+`singular-address`, MEH-3808) fails new ones. `אלייך` is marked feminine and is
+not used. Slash and dot forms are never used (BRAND.md §9).
 
 **Still feminine, by design (ADR-037):** Sapir's own first-person and founder
 voice («אנחנו מכירות»); admin screens and admin-directed messages; the badge

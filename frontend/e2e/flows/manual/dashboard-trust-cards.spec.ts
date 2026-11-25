@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
 import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../lib/license-required-categories";
 
@@ -174,7 +175,7 @@ test.describe("licence card", () => {
     expect(PRODUCER_LICENSE_REGEX.test("1234567"), "control: the fixture number must satisfy the code's own regex").toBe(true);
     await field(page).fill("1234567");
     await expect(body(page, "license").getByText(WARNING)).toHaveCount(0);
-    await saveBtn(page, "license").click();
+    await clickSaveAfterEdit(page, saveBtn(page, "license"));
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length, { message: "the PUT never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({ producer_license_number: "1234567" });
     await expect(page.getByTestId("license-save-success")).toHaveText("מספר הרישיון נשמר");
@@ -223,7 +224,7 @@ test.describe("licence card", () => {
     await stubEdit(page, { profile: { ...BASE, producer_license_number: "1234567" }, putAnswer: { status: 422, body: { detail: DETAIL } } });
     await openAt(page, "license");
     await field(page).fill("");
-    await saveBtn(page, "license").click();
+    await clickSaveAfterEdit(page, saveBtn(page, "license"));
     await expect(body(page, "license").getByRole("alert")).toHaveText(DETAIL);
     await expect(page.getByTestId("license-save-success")).toHaveCount(0);
   });
@@ -391,7 +392,7 @@ test.describe("business-name card", () => {
     await submit(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "POST").length, { message: "the POST never left the browser" }).toBe(1);
     expect(writes[0].body).toEqual({ requested_name: "מאפיית שקד ובנות", reason: null });
-    await expect(page.getByTestId("name-change-sent")).toHaveText("הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.");
+    await expect(page.getByTestId("name-change-sent")).toHaveText("הבקשה נשלחה. נשלח עדכון כשהשם החדש יאושר.");
   });
 
   // MT:MEH-1872b:6 — a pending request replaces the form.

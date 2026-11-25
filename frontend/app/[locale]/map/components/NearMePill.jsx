@@ -3,6 +3,7 @@
 
 import { useTranslations } from "next-intl";
 import { Crosshair } from "@phosphor-icons/react";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * NearMePill — MEH-970 chunk 2-lite.
@@ -38,11 +39,10 @@ import { Crosshair } from "@phosphor-icons/react";
 export default function NearMePill({ onClick }) {
   const t = useTranslations();
   return (
-    <button
-      type="button"
+    <IconButton
       onClick={onClick}
       data-testid="map-near-me-pill"
-      aria-label={t("map.near_me_pill.aria")}
+      label={t("map.near_me_pill.aria")}
       // MEH-970 R2: `bottom` rides the sheet edge (--map-sheet-h) and animates in
       // lockstep with the sheet via --map-sheet-anim (0ms drag / 300ms snap,
       // published by MapBottomSheet). The explicit transition-property list keeps
@@ -68,6 +68,6 @@ export default function NearMePill({ onClick }) {
       className="lg:hidden absolute end-4 z-map-controls w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary [@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden"
     >
       <Crosshair size={20} weight="bold" aria-hidden="true" />
-    </button>
+    </IconButton>
   );
 }

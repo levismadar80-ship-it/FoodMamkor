@@ -73,6 +73,17 @@ REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
 # MEH-3610: the group-buy pickup reminder, the same evening hour.
 GROUP_BUY_PICKUP_REMINDER_CRON = "0 17 * * *"
 GROUP_BUY_PICKUP_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3702: the morning-of reminder for a rescue bag reserved on an earlier
+# day, 08:00 on the Israel clock. Once a day: see services/rescue_reminders.py.
+RESCUE_REMINDER_CRON = "0 8 * * *"
+RESCUE_REMINDER_TZ = "Asia/Jerusalem"
+# MEH-3805: the evening-before reminder for a bag whose window ends by 08:00.
+RESCUE_EVENING_REMINDER_CRON = "0 20 * * *"
+# MEH-3703: publish the weekly-routine bags that came into reach. Hourly, five
+# past, so a restart loses at most an hour and midnight's new «מחר» is up by
+# 00:05. Safe to rerun: a day that has any offer is left alone.
+RESCUE_SCHEDULE_CRON = "5 * * * *"
+RESCUE_SCHEDULE_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -108,7 +119,8 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 #
 # MEH-3332 (18/11): "unmonitored" below means by SENTRY. The seven are now
 # watched for free instead: every run that returns is recorded, and
-# services/job_staleness.py emails the admin when one stops running.
+# services/job_staleness.py reports one that stops running (Sentry ops_alert,
+# email when Sentry is off, MEH-3705).
 #
 # The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
@@ -143,6 +155,14 @@ UNMONITORED_SLUGS = frozenset(
         # MEH-3610: the pickup reminder before a funded group's pickup. No
         # Sentry monitor (plan limit, MEH-3332).
         "group-buy-pickup-reminder-daily",
+        # MEH-3702: the rescue bag morning reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "rescue-morning-reminder-daily",
+        # MEH-3805: its evening-before twin. Same plan limit (MEH-3332).
+        "rescue-evening-reminder-daily",
+        # MEH-3703: the weekly-routine publisher. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "rescue-schedule-publish-hourly",
     }
 )
 
@@ -207,7 +227,7 @@ def heartbeat(
                 job()
                 status = "ok"
                 # MEH-3332: the free monitor. Sentry's $0 plan holds one cron
-                # monitor; job_staleness emails the admin about the others.
+                # monitor; job_staleness reports the others (MEH-3705: Sentry first).
                 from app.services.job_staleness import record_ok
 
                 record_ok(slug)

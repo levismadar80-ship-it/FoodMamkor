@@ -14,7 +14,7 @@ file and never opens a PR: a person decides every delete.
 |---|---|---|
 | [`orphan-folder-scan.sh`](./orphan-folder-scan.sh) | a folder nothing live points at, untouched 60 days | anchored to `3a5c2a3e3`, which still held `design-reference/` and `frontend/e2e/_qa-archive/` |
 | [`recheck-date-scan.sh`](./recheck-date-scan.sh) | a folder whose README's `Re-check: MM/YYYY` has come | fixtures in `testdata/` |
-| [`weekly-repo-health.sh`](./weekly-repo-health.sh) | runs the two above, `vulture` (Python, ≥ 80% confidence, new vs [`vulture-baseline.txt`](./vulture-baseline.txt)), the knip baseline totals, the expiry checks and the WARN lines of `run-all.sh` | each section runs its self-test first; a dead section prints ERROR |
+| [`weekly-repo-health.sh`](./weekly-repo-health.sh) | runs the two above, `vulture` (Python, ≥ 80% confidence, new vs [`vulture-baseline.txt`](./vulture-baseline.txt); and functions nobody calls in `services/` + `utils/` at ≥ 60%, new vs [`vulture-functions-baseline.txt`](./vulture-functions-baseline.txt), MEH-3714), the knip baseline totals, the expiry checks and the WARN lines of `run-all.sh` | each section runs its self-test first; a dead section prints ERROR |
 
 ## A folder that is kept "for now"
 

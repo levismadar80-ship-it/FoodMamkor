@@ -92,7 +92,6 @@ duplicate	2	המחיר לא יכול להיות שלילי
 duplicate	2	המחיר נפתח!
 duplicate	2	המחירים כוללים מע״מ, אם יחול.
 duplicate	2	המייל לא תקין
-duplicate	2	המייל שלך
 duplicate	2	המיקום זוהה: {location}
 duplicate	2	הנחה באיסוף עצמי
 duplicate	2	הסר ממועדפים
@@ -165,6 +164,7 @@ duplicate	2	כשרות
 duplicate	2	כתובת
 duplicate	2	לא הגיע
 duplicate	2	לא הגיעו
+duplicate	2	לא הוגדר
 duplicate	2	לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית
 duplicate	2	לא הצלחנו לטעון את המוצרים
 duplicate	2	לא הצלחנו ליצור קישור
@@ -205,6 +205,7 @@ duplicate	2	מה חדש במהמקור
 duplicate	2	מה כדאי להכין
 duplicate	2	מה לא לעשות
 duplicate	2	מה מחכה לטיפול
+duplicate	2	מה קורה אם לא אספתי?
 duplicate	2	מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.
 duplicate	2	מהמקור / Mehamakor.
 duplicate	2	מובילת קהילה
@@ -256,7 +257,6 @@ duplicate	2	סבונים טבעיים
 duplicate	2	סוכות
 duplicate	2	סיבה אחרת
 duplicate	2	סיבת הדחייה
-duplicate	2	סיסמתך חייבת להכיל לפחות {min} תווים
 duplicate	2	סיפור
 duplicate	2	סיפור קצר על העסק
 duplicate	2	סננו לפי עיר
@@ -331,7 +331,6 @@ duplicate	2	תמונה
 duplicate	2	תמונה הבאה
 duplicate	2	תמונה קודמת
 duplicate	2	תמונה ראשית
-duplicate	2	תמונה שלך
 duplicate	2	תסריט שיחה
 duplicate	2	תעודת כשרות
 duplicate	2	✓ נשמר
@@ -361,6 +360,7 @@ duplicate	3	הזמנות
 duplicate	3	החלפת חשבון
 duplicate	3	היי! הגעתי דרך מהמקור — {name}
 duplicate	3	הסטטוס עודכן
+duplicate	3	הסיסמה חייבת להכיל לפחות {min} תווים
 duplicate	3	הסתירו סיסמה
 duplicate	3	העלאת התמונה נכשלה. נסו שוב.
 duplicate	3	העתקה
@@ -383,7 +383,6 @@ duplicate	3	כניסה לחשבון
 duplicate	3	כניסה למהמקור
 duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
-duplicate	3	לא הוגדר
 duplicate	3	להשלמת העמוד
 duplicate	3	לכל הנתונים
 duplicate	3	לנסות שוב
@@ -473,6 +472,7 @@ duplicate	5	אודות
 duplicate	5	אישור
 duplicate	5	גראס פד
 duplicate	5	חזרה לדף הבית
+duplicate	5	חזרה לכלים
 duplicate	5	כותרת
 duplicate	5	למה מקומי?
 duplicate	5	נדחה
@@ -489,7 +489,6 @@ duplicate	6	אשרי
 duplicate	6	בוטלה
 duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
-duplicate	6	חזרה לכלים
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
 duplicate	6	עריכה

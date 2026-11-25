@@ -83,7 +83,7 @@
 |---|---|---|---|---|---|
 | `showErrorToast` | `lib/errors.js:163` | 0 | 0 | 5 | **wire או delete** — עוזר להצגת שגיאה שאף מסך לא קורא לו. או שהוא הדפוס המיועד ואף אחד לא חובר אליו, או שהוא נעקף ע"י `showToast.error` ישירות. להכריע ולבצע. |
 | `useFirstVisit` | `lib/useFirstVisit.js:9` | 0 | 0 | 1 | **delete** — הוק שכל תוכן הקובץ הוא הוא. אין קורא. אם נועד ל-onboarding שלא נבנה, למחוק ולפתוח כרטיס כשיידרש. |
-| `invalidDayIndices` | `lib/hours-serialize.js:98` | 0 | 0 | 4 | **wire** — התאום שלו `invalidOrderDayIndices` (`lib/order-window.js:148`) **כן** בשימוש פנימי. ולידציית שעות פתיחה כנראה חסרה את מה שולידציית חלון ההזמנות מקבלת. לבדוק לפני מחיקה. |
+| `invalidDayIndices` | `lib/hours-serialize.js:98` | 0 | 0 | 4 | **wire** — התאום שלו `invalidOrderDayIndices` (`lib/order-window-editor.js:148`) **כן** בשימוש פנימי. ולידציית שעות פתיחה כנראה חסרה את מה שולידציית חלון ההזמנות מקבלת. לבדוק לפני מחיקה. |
 
 הפקודה שאימתה את שלושתם (0 שורות שאינן ההגדרה או טסט):
 
@@ -109,9 +109,9 @@ cd frontend && grep -rn "\bshowErrorToast\b" --include=*.js --include=*.jsx . \
 | `CATEGORY_QUESTIONS` | `lib/categoryQuestions.js:9` | 1 |
 | `DEFAULT_QUESTIONS` | `lib/categoryQuestions.js:85` | 2 |
 | `CategorySchema` | `lib/api-schemas.js:23` | 1 |
-| `DEFAULT_ORDER_OPEN` | `lib/order-window.js:31` | 1 |
-| `DEFAULT_ORDER_CLOSE` | `lib/order-window.js:32` | 1 |
-| `emptyOrderRange` | `lib/order-window.js:47` | 2 |
+| `DEFAULT_ORDER_OPEN` | `lib/order-window-editor.js:31` | 1 |
+| `DEFAULT_ORDER_CLOSE` | `lib/order-window-editor.js:32` | 1 |
+| `emptyOrderRange` | `lib/order-window-editor.js:47` | 2 |
 | `emptyRange` | `lib/hours-serialize.js:39` | 2 |
 | `HOLIDAYS` | `lib/holidays.js:7` | 4 |
 | `OLD_TO_NEW` | `lib/i18n-key-map.js:6` | 1 |
@@ -214,8 +214,8 @@ MEH-1856) ואחר כך `name` · `starting_price_label` · `is_available_today`
 |---|---|---|---|
 | 1 | `getOrderWindowRanges` | "יתום, בחיווט ע"י MEH-1875" | ❌ **כבר מחווט.** `OrderWindowStrip.jsx:131` צורך אותו, וה-block מורכב ב-`ProducerSections.jsx:512`. גם ה-QA harness של אותו כרטיס (`frontend/e2e/_qa-archive/qa-meh1875-order-window-schedule.mjs`) כבר על staging — כלומר MEH-1875 נחת. **לא יתום.** |
 | 2 | `custom_questions` | "יתום, בחיווט ע"י MEH-1886" | ❌ **מחווט מאז MEH-1302**, הרבה לפני MEH-1886. השרשרת: `ContactCard.jsx:255` → `WhatsAppQuestionChips.jsx:185` → `lib/categoryQuestions.js:88`, שם שאלות הבעלים **גוברות** על ברירות המחדל לפי קטגוריה. הופיע ב-grep של ציר 2 עם 3 הפניות ציבוריות. **הנחת MEH-1886 הייתה שגויה מלכתחילה** — דווח על אותו כרטיס ב-04/08. |
-| 3 | `israelNowParts` | יתום | ✅ **משוחזר.** `lib/orderWindow.js:57` — production=0, internal=1, test=3. שייך לקבוצת §1.4 (עוזר טהור עם טסט בבידוד), לא לשלושת החדים. |
-| 4 | `normalizeDayEntries` | יתום | ✅ **משוחזר.** `lib/orderWindow.js:93` — production=0, internal=3, test=1. אותה קבוצה. |
+| 3 | `israelNowParts` | יתום | ✅ **משוחזר.** `lib/order-window-status.js:57` — production=0, internal=1, test=3. שייך לקבוצת §1.4 (עוזר טהור עם טסט בבידוד), לא לשלושת החדים. |
+| 4 | `normalizeDayEntries` | יתום | ✅ **משוחזר.** `lib/order-window-status.js:93` — production=0, internal=3, test=1. אותה קבוצה. |
 
 **שתי סוגי התיישנות, ולא אותו דבר.** שורה 1 התיישנה **לטובה** — הכרטיס תיאר מצב
 אמיתי, והעבודה נחתה בין כתיבתו למדידה. שורה 2 **לא הייתה נכונה אף פעם** — החיווט

@@ -2,10 +2,12 @@
 Module:   job_staleness
 Purpose:  Free replacement for the Sentry cron monitors the $0 plan does not
           allow. Every @heartbeat job records its last successful run; a
-          checker job emails the admin when a registered job is overdue.
+          checker job reports a registered job that is overdue: a Sentry
+          warning tagged ops_alert (MEH-3705), or an email to the admin when
+          Sentry is not active.
 Touches:  admin_settings (keys `job_ok:<slug>`, `job_stale_alerted:<slug>`),
-          Resend via services/email.py (one email per overdue job per Israel
-          day).
+          Sentry via services/ops_alert.py, or Resend via services/email.py
+          when Sentry is off (one alert per overdue job per Israel day).
 Does NOT: replace Sentry for the scheduler as a whole — `auto-reply-watchdog`
           keeps the plan's one Sentry cron monitor, and that is what notices a
           dead scheduler thread (this checker runs on the same thread). Does
@@ -20,7 +22,8 @@ Related:  app/services/job_heartbeat.py (`heartbeat` calls `record_ok`);
           app/startup.py `register_scheduler_jobs` (registers the checker);
           docs/audits/2026-11-sentry-crons.md §4.
 History:  MEH-3332 (creation, 18/11/2026 — Sentry Developer plan: 1 cron
-          monitor, 8 jobs; seven ran with no monitoring at all).
+          monitor, 8 jobs; seven ran with no monitoring at all); MEH-3705
+          (Sentry instead of the admin's inbox; email kept as fallback).
 """
 
 from __future__ import annotations
@@ -30,6 +33,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.config import settings
+from app.services.ops_alert import report_ops_alert
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +138,18 @@ def _alert(db: Any, slug: str, today: str, last_ok: str | None) -> None:
 
     if _read(db, ALERTED_KEY.format(slug=slug)) == today:
         return
+    # MEH-3705: Sentry first, so the daily Claude check sees it and the admin
+    # does not have to relay it. The email below is the fallback for a
+    # process with no active Sentry client.
+    if report_ops_alert(
+        "job-stale",
+        slug,
+        f"background job overdue: {slug}",
+        {"last_ok": last_ok or "none since boot"},
+    ):
+        _write(db, ALERTED_KEY.format(slug=slug), today)
+        logger.warning("[JOB-STALENESS] %s overdue — sent to Sentry", slug)
+        return
     if not settings.admin_email:
         logger.warning(
             "[JOB-STALENESS] ADMIN_EMAIL not set — %s overdue, no email", slug
@@ -156,8 +172,8 @@ def check_jobs(
     booted_at: datetime,
     now: datetime | None = None,
 ) -> list[str]:
-    """Email the admin about each overdue job, once per Israel day. Returns
-    the overdue slugs."""
+    """Report each overdue job once per Israel day (Sentry, or an email to
+    the admin when Sentry is off, MEH-3705). Returns the overdue slugs."""
     from app.database import SessionLocal
     from app.utils.clock import israel_today
 

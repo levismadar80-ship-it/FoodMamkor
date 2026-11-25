@@ -4546,6 +4546,60 @@
         "title": "ForgotPasswordRequest",
         "type": "object"
       },
+      "FormFillOut": {
+        "description": "Field key -> value. A field the text does not state is null, or an\nempty list for a list field; the form decides which keys it reads.",
+        "properties": {
+          "draft": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Draft",
+            "type": "object"
+          },
+          "form": {
+            "title": "Form",
+            "type": "string"
+          }
+        },
+        "required": [
+          "form",
+          "draft"
+        ],
+        "title": "FormFillOut",
+        "type": "object"
+      },
       "GoogleAuthRequest": {
         "properties": {
           "id_token": {
@@ -4585,6 +4639,36 @@
           "email_sent"
         ],
         "title": "GoogleAuthResponse",
+        "type": "object"
+      },
+      "GoogleCodeRequest": {
+        "description": "MEH-3690: the one-time code from Google's popup (GIS code client).",
+        "properties": {
+          "code": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "GoogleCodeRequest",
+        "type": "object"
+      },
+      "GoogleCodeResponse": {
+        "description": "MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.",
+        "properties": {
+          "id_token": {
+            "title": "Id Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleCodeResponse",
         "type": "object"
       },
       "GooglePlaceIdIn": {
@@ -4822,6 +4906,25 @@
         "title": "GrantVerifiedIn",
         "type": "object"
       },
+      "GroupBuyBlockStateOut": {
+        "properties": {
+          "active_no_shows": {
+            "title": "Active No Shows",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "active_no_shows"
+        ],
+        "title": "GroupBuyBlockStateOut",
+        "type": "object"
+      },
       "GroupBuyCommitOut": {
         "properties": {
           "created_at": {
@@ -4838,6 +4941,17 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
           },
           "quantity": {
             "title": "Quantity",
@@ -5672,6 +5786,106 @@
           "id"
         ],
         "title": "GroupBuyPickupLocationOut",
+        "type": "object"
+      },
+      "GroupBuyPickupOut": {
+        "properties": {
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "no_show_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show At"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "quantity"
+        ],
+        "title": "GroupBuyPickupOut",
+        "type": "object"
+      },
+      "GroupBuyPickupsOut": {
+        "properties": {
+          "can_mark": {
+            "title": "Can Mark",
+            "type": "boolean"
+          },
+          "mark_state": {
+            "enum": [
+              "open",
+              "not_funded",
+              "delivery",
+              "no_window",
+              "wait",
+              "closed"
+            ],
+            "title": "Mark State",
+            "type": "string"
+          },
+          "pickup_ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ended At"
+          },
+          "pickups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupBuyPickupOut"
+            },
+            "title": "Pickups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "can_mark",
+          "mark_state",
+          "pickups"
+        ],
+        "title": "GroupBuyPickupsOut",
         "type": "object"
       },
       "GroupBuyQuantityUpdate": {
@@ -6868,6 +7082,20 @@
         "title": "MyGroupBuysOut",
         "type": "object"
       },
+      "MyOrdersAnyOut": {
+        "description": "`any`: at least one row in one of the three lists /my-orders shows.",
+        "properties": {
+          "any": {
+            "title": "Any",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "any"
+        ],
+        "title": "MyOrdersAnyOut",
+        "type": "object"
+      },
       "MyProductOrderingOut": {
         "description": "One of the owner's own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.",
         "properties": {
@@ -7409,6 +7637,18 @@
             "title": "Price Unit",
             "type": "string"
           },
+          "product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
           "qty": {
             "title": "Qty",
             "type": "integer"
@@ -7416,6 +7656,18 @@
           "unit_price_agorot": {
             "title": "Unit Price Agorot",
             "type": "integer"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
           },
           "variant_name": {
             "anyOf": [
@@ -19156,6 +19408,83 @@
         "title": "RescueDonatedIn",
         "type": "object"
       },
+      "RescueHistoryOut": {
+        "description": "One of the caller's reservations, any day, for «ההזמנות שלי» (MEH-3698).\n\nNo `pickup_code`: the list row links to the bag's page, which shows the\ncode on the day. `producer_name` is what the row prints.",
+        "properties": {
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "status",
+          "created_at",
+          "date",
+          "pickup_start",
+          "pickup_end",
+          "producer_id",
+          "producer_name",
+          "cancelled_by_business"
+        ],
+        "title": "RescueHistoryOut",
+        "type": "object"
+      },
       "RescueMetricsOut": {
         "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
         "properties": {
@@ -19276,6 +19605,11 @@
             "title": "Created At",
             "type": "string"
           },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "handed_at": {
             "anyOf": [
               {
@@ -19358,6 +19692,7 @@
           "status",
           "created_at",
           "price_agorot",
+          "date",
           "cancel_until",
           "pickup_start",
           "pickup_end",
@@ -19897,6 +20232,11 @@
             "title": "Created At",
             "type": "string"
           },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "handed_at": {
             "anyOf": [
               {
@@ -19969,6 +20309,7 @@
           "status",
           "created_at",
           "price_agorot",
+          "date",
           "cancel_until",
           "pickup_start",
           "pickup_end"
@@ -20060,6 +20401,11 @@
       "RescueOwnerOfferOut": {
         "description": "One of today's bags as the business's dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business's own report, capped at\n`leftover` by the API.",
         "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -20098,6 +20444,7 @@
         },
         "required": [
           "id",
+          "date",
           "qty_total",
           "qty_left",
           "status",
@@ -20127,6 +20474,11 @@
           "created_at": {
             "format": "date-time",
             "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
             "type": "string"
           },
           "handed_at": {
@@ -20183,6 +20535,7 @@
         "required": [
           "id",
           "offer_id",
+          "date",
           "qty",
           "pickup_code",
           "status",
@@ -20325,8 +20678,19 @@
         "type": "object"
       },
       "RescueProducerSummary": {
-        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
+        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock or the contact details — serializing them would publish more than\nthe screen needs. The public rating is here since MEH-3704, because the\nlist sorts by it; it is the same number the business page already shows.",
         "properties": {
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
           "city": {
             "anyOf": [
               {
@@ -20558,6 +20922,251 @@
           "created_at"
         ],
         "title": "RescueReviewOut",
+        "type": "object"
+      },
+      "RescueScheduleIn": {
+        "description": "What the business sets once. Hours are the Israel wall clock.",
+        "properties": {
+          "cancel_minutes": {
+            "default": 60,
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Cancel Minutes",
+            "type": "integer"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "pickup_end": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          },
+          "weekdays": {
+            "maximum": 127.0,
+            "minimum": 1.0,
+            "title": "Weekdays",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekdays",
+          "pickup_start",
+          "pickup_end",
+          "qty",
+          "price_agorot"
+        ],
+        "title": "RescueScheduleIn",
+        "type": "object"
+      },
+      "RescueScheduleRow": {
+        "description": "One pickup point on the settings page: its routine, or none.",
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "closed_days": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "title": "Closed Days",
+            "type": "array"
+          },
+          "exact": {
+            "title": "Exact",
+            "type": "boolean"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "publishing": {
+            "default": false,
+            "title": "Publishing",
+            "type": "boolean"
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueScheduleStored"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "producer_location_id",
+          "exact"
+        ],
+        "title": "RescueScheduleRow",
+        "type": "object"
+      },
+      "RescueScheduleStored": {
+        "description": "The column's JSON: the routine plus the days the business skipped.",
+        "properties": {
+          "cancel_minutes": {
+            "default": 60,
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Cancel Minutes",
+            "type": "integer"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "pickup_end": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          },
+          "skip_dates": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Skip Dates",
+            "type": "array"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          },
+          "weekdays": {
+            "maximum": 127.0,
+            "minimum": 1.0,
+            "title": "Weekdays",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekdays",
+          "pickup_start",
+          "pickup_end",
+          "qty",
+          "price_agorot"
+        ],
+        "title": "RescueScheduleStored",
         "type": "object"
       },
       "RescueTypicalItemsIn": {
@@ -21789,6 +22398,16 @@
             "default": 0,
             "title": "Favorites Count",
             "type": "integer"
+          },
+          "group_buy_active_no_shows": {
+            "default": 0,
+            "title": "Group Buy Active No Shows",
+            "type": "integer"
+          },
+          "group_buy_blocked": {
+            "default": false,
+            "title": "Group Buy Blocked",
+            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -23095,6 +23714,55 @@
           }
         ],
         "summary": "Admin List Group Buys",
+        "tags": [
+          "admin-group-buys"
+        ]
+      }
+    },
+    "/admin/group-buys/users/{user_id}/clear-block": {
+      "post": {
+        "description": "Release a group-buy no-show block. The marks stay; they stop counting.",
+        "operationId": "clear_group_buy_block_admin_group_buys_users__user_id__clear_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyBlockStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear Group Buy Block",
         "tags": [
           "admin-group-buys"
         ]
@@ -28050,6 +28718,57 @@
         ]
       }
     },
+    "/auth/google/code": {
+      "post": {
+        "description": "Swap a Google authorization code for a verified Google ID token.",
+        "operationId": "google_code_auth_google_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Google refused the code or the token failed verification"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "Google's token endpoint could not be reached"
+          },
+          "503": {
+            "description": "Google sign-in is not configured on this server"
+          }
+        },
+        "summary": "Google Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "operationId": "login_auth_login_post",
@@ -30698,6 +31417,123 @@
         ]
       }
     },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/handed": {
+      "post": {
+        "operationId": "mark_group_buy_handed_group_buys__group_buy_id__commits__commit_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Group Buy Handed",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/no-show": {
+      "post": {
+        "description": "Only after the pickup ended, once per commit; mails the participant.",
+        "operationId": "mark_group_buy_no_show_group_buys__group_buy_id__commits__commit_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Group Buy No Show",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
     "/group-buys/{group_buy_id}/settings": {
       "patch": {
         "operationId": "update_group_buy_settings_group_buys__group_buy_id__settings_patch",
@@ -32274,6 +33110,63 @@
         ]
       }
     },
+    "/producers/me/ai-fill/{form}": {
+      "post": {
+        "operationId": "fill_my_form_producers_me_ai_fill__form__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "form",
+            "required": true,
+            "schema": {
+              "title": "Form",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Fill My Form",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/analytics": {
       "get": {
         "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - share_visits (MEH-3331): visits through a link the owner shared, same shape\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
@@ -32675,6 +33568,55 @@
           }
         ],
         "summary": "List My Group Buys",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/producers/me/group-buys/{group_buy_id}/pickups": {
+      "get": {
+        "description": "Codes and quantities of one of the business's group buys.",
+        "operationId": "list_pickups_producers_me_group_buys__group_buy_id__pickups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Pickups",
         "tags": [
           "group-buys"
         ]
@@ -33093,6 +34035,33 @@
         "summary": "Request Name Change",
         "tags": [
           "producer-name-requests"
+        ]
+      }
+    },
+    "/producers/me/order-menu/preview": {
+      "get": {
+        "description": "MEH-3746: the caller's own order menu, exactly as a buyer would get it,\nBEFORE ordering is switched on — the public route 404s until then, so the\nowner could not see what her settings do. No `takes_orders()` gate here:\nonly her own business is read (no id is taken from the request), and a\nbusiness that never saved settings gets the defaults, unsaved. Read only:\nthe preview cannot place an order (MEH-3691 refuses an owner's order).",
+        "operationId": "get_my_order_menu_preview_producers_me_order_menu_preview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMenuOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Menu Preview",
+        "tags": [
+          "product-orders"
         ]
       }
     },
@@ -34613,9 +35582,241 @@
         ]
       }
     },
+    "/producers/me/rescue/locations/{location_id}/schedule": {
+      "delete": {
+        "description": "Stop the routine. Bags already published stay, as a pause leaves them.",
+        "operationId": "delete_my_schedule_producers_me_rescue_locations__location_id__schedule_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete My Schedule",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Set or change the routine, then publish any day already in reach.",
+        "operationId": "save_my_schedule_producers_me_rescue_locations__location_id__schedule_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueScheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Save My Schedule",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/locations/{location_id}/schedule/skips/{day}": {
+      "delete": {
+        "description": "Take a skip back. A day whose bag was already cancelled stays without\none: a cancel told its buyers, and a bag that reappears would confuse them.",
+        "operationId": "unskip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Unskip My Day",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Skip one day, so the routine does not publish it.\n\nA day whose bag is already up loses it in the same transaction, through\ncancel_whole_offer, the dashboard's «ביטול», so its buyers get the same\nemail. If someone reserved that bag, the first call answers 409 and the\ndashboard asks; the second sends `cancel_reserved=true`. The bag is read\nunder its row lock, so a reservation cannot slip in between. Only a day\non the routine's weekdays is touched.",
+        "operationId": "skip_my_day_producers_me_rescue_locations__location_id__schedule_skips__day__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cancel_reserved",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cancel Reserved",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueScheduleRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Skip My Day",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/producers/me/rescue/offers": {
       "get": {
-        "description": "Today's bags across this business's pickup points, with what was left.\n\nToday only, by the Israel clock, like the orders list beside it.",
+        "description": "Today's and tomorrow's bags across this business's pickup points, with\nwhat was left.\n\nThe same two days, by the Israel clock, as the orders list beside it.",
         "operationId": "list_my_offers_producers_me_rescue_offers_get",
         "responses": {
           "200": {
@@ -34705,7 +35906,7 @@
     },
     "/producers/me/rescue/orders": {
       "get": {
-        "description": "Today's reservations across this business's pickup points.\n\nToday only, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
+        "description": "Today's and tomorrow's reservations across this business's pickup\npoints, today's first (MEH-3702).\n\nToday and tomorrow, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
         "operationId": "list_my_orders_producers_me_rescue_orders_get",
         "responses": {
           "200": {
@@ -34756,6 +35957,37 @@
           }
         ],
         "summary": "My Pilot Locations",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/schedules": {
+      "get": {
+        "description": "Every pickup point of this business, with its routine or none.",
+        "operationId": "list_my_schedules_producers_me_rescue_schedules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueScheduleRow"
+                  },
+                  "title": "Response List My Schedules Producers Me Rescue Schedules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Schedules",
         "tags": [
           "rescue"
         ]
@@ -36344,7 +37576,7 @@
     },
     "/rescue/offers": {
       "get": {
-        "description": "Today's bags that still have stock. Public — no auth.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
+        "description": "Today's and tomorrow's bags that still have stock (MEH-3702). Public.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
         "operationId": "list_offers_rescue_offers_get",
         "parameters": [
           {
@@ -36432,7 +37664,7 @@
         ]
       },
       "post": {
-        "description": "Publish today's bags at one pickup point.\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
+        "description": "Publish a bag for today or tomorrow at one pickup point (MEH-3702).\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
         "operationId": "create_offer_rescue_offers_post",
         "requestBody": {
           "content": {
@@ -36479,7 +37711,7 @@
     },
     "/rescue/offers/{offer_id}": {
       "get": {
-        "description": "One of today's bags, for its own page (MEH-3586). Public — no auth.\n\nA sold-out, cancelled or closed bag still answers, with `state` saying\nwhy; another day's bag, a test or unapproved business, or a town outside\nthe pilot answers 404 — the same set the list never shows.",
+        "description": "One of today's or tomorrow's bags, for its own page (MEH-3586). Public.\n\nA sold-out, cancelled or closed bag still answers, with `state` saying\nwhy; another day's bag, a test or unapproved business, or a town outside\nthe pilot answers 404 — the same set the list never shows.",
         "operationId": "get_offer_rescue_offers__offer_id__get",
         "parameters": [
           {
@@ -36617,9 +37849,40 @@
         ]
       }
     },
+    "/rescue/orders/history": {
+      "get": {
+        "description": "MEH-3698: the caller's own reservations from every day, newest first,\nwith the business name — the bags in the one «ההזמנות שלי» list. Only the\ncaller's rows; capped at `HISTORY_MAX_ROWS`.",
+        "operationId": "list_my_reservation_history_rescue_orders_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueHistoryOut"
+                  },
+                  "title": "Response List My Reservation History Rescue Orders History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Reservation History",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/rescue/orders/mine": {
       "get": {
-        "description": "The caller's own live reservations on today's bags (MEH-2680).\n\nOnly the caller's rows, only today's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
+        "description": "The caller's own live reservations on today's and tomorrow's bags\n(MEH-2680, MEH-3702).\n\nOnly the caller's rows, only today's and tomorrow's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
         "operationId": "list_my_reservations_rescue_orders_mine_get",
         "responses": {
           "200": {
@@ -37736,6 +38999,33 @@
         "summary": "List Own Group Buys",
         "tags": [
           "group-buys"
+        ]
+      }
+    },
+    "/users/me/orders/any": {
+      "get": {
+        "description": "True when the caller has an order, a group buy or a bag to list.",
+        "operationId": "has_any_orders_users_me_orders_any_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOrdersAnyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Has Any Orders",
+        "tags": [
+          "users"
         ]
       }
     },

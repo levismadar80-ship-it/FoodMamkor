@@ -17,7 +17,12 @@
  *           via ui/Input + focus to the first invalid one — the top banner now
  *           carries server/network errors only);
  *           MEH-2932 (pick one of the business's SAVED locations instead of
- *           retyping it — see the saved-locations block below).
+ *           retyping it — see the saved-locations block below);
+ *           MEH-3751 (create mode opens with «יש לכם מודעה על האירוע?»,
+ *           FormFillBox: a pasted post fills the fields as a draft, nothing is
+ *           saved until the owner presses publish; every field carries a «?»,
+ *           FieldHelpLabel, whose text is events.form.help.<key>, the keys of
+ *           backend/app/data/form_maps/event.json).
  */
 
 import { useEffect, useState } from "react";
@@ -36,6 +41,9 @@ import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
 import InlineMessage from "@/components/ui/InlineMessage";
+import FieldHelpLabel from "@/components/FieldHelpLabel";
+import FormFillBox from "@/components/FormFillBox";
+import { applyEventDraft, eventDraftKeys } from "@/lib/event-draft";
 
 const DEFAULTS = {
   title: "",
@@ -169,6 +177,8 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const t = useTranslations("sweep_tail.event_new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
+  const tForm = useTranslations("events.form"); // MEH-3751
+  const help = (key) => tForm(`help.${key}`);
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
@@ -235,6 +245,18 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const [uploading, setUploading] = useState(false);
 
   const isEdit = mode === "edit";
+  // MEH-3751: a draft replaces what it fills; a drafted address is no longer
+  // a saved point, and a filled field stops showing its old error.
+  const onDraft = (draft) => {
+    const filled = eventDraftKeys(draft);
+    setForm((f) => applyEventDraft(f, draft));
+    if (filled.includes("location") || filled.includes("city")) markAddressEdited();
+    setFieldErrors((errs) => {
+      const next = { ...errs };
+      for (const key of filled) delete next[key];
+      return next;
+    });
+  };
   const update = (field) => (e) => {
     const { value } = e.target;
     setForm((f) => ({ ...f, [field]: value }));
@@ -315,11 +337,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </InlineMessage>
       )}
 
+      {!isEdit && (
+        <div className="mb-5">
+          <FormFillBox form="event" title={tForm("fill.title")} intro={tForm("fill.intro")} onDraft={onDraft} />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <FieldHelpLabel htmlFor="title" label={t("field_title_label")} help={help("title")} required testId="event-help-title" />
         <Input
           id="title"
           type="text"
-          label={t("field_title_label")}
           required
           value={form.title}
           onChange={update("title")}
@@ -327,7 +355,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           error={fieldErrors.title}
         />
 
-        <Field id="description" label={t("field_description_label")}>
+        <Field id="description" label={t("field_description_label")} help={help("description")}>
           <textarea
             id="description"
             rows={4}
@@ -339,31 +367,32 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Input
-            id="event_date"
-            type="date"
-            label={t("field_date_label")}
-            required
-            value={form.event_date}
-            onChange={update("event_date")}
-            error={fieldErrors.event_date}
-          />
-          <Input
-            id="event_time"
-            type="time"
-            label={t("field_time_label")}
-            value={form.event_time}
-            onChange={update("event_time")}
-          />
+          <div>
+            <FieldHelpLabel htmlFor="event_date" label={t("field_date_label")} help={help("event_date")} required testId="event-help-event_date" />
+            <Input
+              id="event_date"
+              type="date"
+              required
+              value={form.event_date}
+              onChange={update("event_date")}
+              error={fieldErrors.event_date}
+            />
+          </div>
+          <div>
+            <FieldHelpLabel htmlFor="event_time" label={t("field_time_label")} help={help("event_time")} testId="event-help-event_time" />
+            <Input id="event_time" type="time" value={form.event_time} onChange={update("event_time")} />
+          </div>
           {/* MEH-2469: optional end time — shown as «09:30–15:00». */}
-          <Input
-            id="end_time"
-            type="time"
-            label={t("field_end_time_label")}
-            value={form.end_time}
-            onChange={update("end_time")}
-            error={fieldErrors.end_time}
-          />
+          <div>
+            <FieldHelpLabel htmlFor="end_time" label={t("field_end_time_label")} help={help("end_time")} testId="event-help-end_time" />
+            <Input
+              id="end_time"
+              type="time"
+              value={form.end_time}
+              onChange={update("end_time")}
+              error={fieldErrors.end_time}
+            />
+          </div>
         </div>
 
         {/* MEH-2932: only when there is something to choose. A business with no
@@ -414,9 +443,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         )}
 
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-text mb-1">
-            {t("field_location_label")}
-          </label>
+          <FieldHelpLabel htmlFor="location" label={t("field_location_label")} help={help("location")} testId="event-help-location" />
           {/* MEH-1404: AddressSearch fills location text (onChange) + lat/lng
               (onSelect). Free-text still allowed — coords stay null unless a
               suggestion is picked. MEH-1405: the visible <label htmlFor> above is
@@ -442,12 +469,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </div>
 
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">
-            {t("field_city_label")}{" "}
-            <span className="text-error" aria-hidden="true">
-              *
-            </span>
-          </label>
+          <FieldHelpLabel htmlFor="city" label={t("field_city_label")} help={help("city")} required testId="event-help-city" />
           <CitySearch
             id="city"
             required
@@ -474,7 +496,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           )}
         </div>
 
-        <Field id="category" label={t("field_category_label")} required error={fieldErrors.category}>
+        <Field id="category" label={t("field_category_label")} help={help("category")} required error={fieldErrors.category}>
           <select
             id="category"
             value={form.category}
@@ -500,29 +522,31 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            label={t("field_price_label_full")}
-            value={form.price}
-            onChange={update("price")}
-            error={fieldErrors.price}
-          />
-          <Input
-            id="max_participants"
-            type="number"
-            min="1"
-            label={t("field_max_participants_label_full")}
-            value={form.max_participants}
-            onChange={update("max_participants")}
-            placeholder={t("field_max_participants_hint")}
-            error={fieldErrors.max_participants}
-          />
+          <div>
+            <FieldHelpLabel htmlFor="price" label={t("field_price_label_full")} help={help("price")} testId="event-help-price" />
+            <Input id="price" type="number" min="0" value={form.price} onChange={update("price")} error={fieldErrors.price} />
+          </div>
+          <div>
+            <FieldHelpLabel
+              htmlFor="max_participants"
+              label={t("field_max_participants_label_full")}
+              help={help("max_participants")}
+              testId="event-help-max_participants"
+            />
+            <Input
+              id="max_participants"
+              type="number"
+              min="1"
+              value={form.max_participants}
+              onChange={update("max_participants")}
+              placeholder={t("field_max_participants_hint")}
+              error={fieldErrors.max_participants}
+            />
+          </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text mb-1">{t("image_label")}</label>
+          <FieldHelpLabel label={t("image_label")} help={help("image_url")} testId="event-help-image_url" />
           {/* MEH-2546: why upload — rows show the event photo first, and only
               fall back to the owner's photo or a category tile without one. */}
           {!form.image_url && (
@@ -638,25 +662,16 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 
 // MEH-2013: `error` mirrors ui/Input's error slot so a Field-hosted control
 // (the category <select>) can carry an inline message instead of the raw 422
-// that noValidate left as the only failure path. The asterisk mechanism above
-// is untouched on purpose — MEH-2015 owns consolidating it.
-/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
-function Field({ id, label, required, error, children }) {
+// that noValidate left as the only failure path. MEH-3751: the label is
+// FieldHelpLabel (label + «?»), which keeps the aria-hidden asterisk of MEH-2015.
+/** @param {{ id: string, label: string, help: string, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
+function Field({ id, label, help, required, error, children }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
-        {label}{" "}
-        {required && (
-          // MEH-2015: aria-hidden — the hosted control carries aria-required;
-          // without this, screen readers hear "star" after every label.
-          <span className="text-error" aria-hidden="true">
-            *
-          </span>
-        )}
-      </label>
+      <FieldHelpLabel htmlFor={id} label={label} help={help} required={required} testId={`event-help-${id}`} />
       {children}
       {error && (
-        <span id={id ? `${id}-error` : undefined} className="text-xs text-error mt-1 block">
+        <span id={`${id}-error`} className="text-xs text-error mt-1 block">
           {error}
         </span>
       )}

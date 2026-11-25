@@ -27,7 +27,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -48,19 +48,20 @@ from app.schemas.rescue import (
     RescueTypicalItemsIn,
 )
 from app.services import billing_ledger  # MEH-3179
-from app.services.rescue_emails import israel_hhmm
+from app.services.rescue_emails import israel_date, israel_hhmm
 from app.services.rescue_no_show import NO_SHOW_BLOCK_AT, active_no_show_counts
 from app.services.rescue_reads import (
     RESERVE_CLOSES_BEFORE_END,
     leftover_bags,
     owner_offer_row,
+    reserve_days,
 )
-from app.utils.clock import utc_now
+from app.utils.clock import israel_today, utc_now
 
 # The router's `_offer_for_update`, passed in (see the module docstring).
 OfferLock = Callable[[Session, UUID], RescueOffer]
 
-BLOCKED_DETAIL = "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
+BLOCKED_DETAIL = "שני סלים לא נאספו, ולכן אי אפשר לשריין סלים חדשים כרגע. כתבו לנו"
 
 # How many times to retry a colliding pickup code before giving up. The code
 # is unique per OFFER and an offer holds at most 20 bags, so a collision is
@@ -159,6 +160,50 @@ def order_or_404(db: Session, order_id: UUID) -> RescueOrder:
     return order
 
 
+def _check_offer_day(body: RescueOfferCreate, today: date) -> None:
+    """The bag's day and window against the Israel clock (MEH-3702); 422s."""
+    if body.date < today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="אי אפשר לפרסם סל לתאריך שעבר",
+        )
+    # MEH-3702: no further ahead than buyers can reserve, or the bag would sit
+    # unlisted until its day comes into the window.
+    if body.date > reserve_days(today)[1]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="אפשר לפרסם סל רק להיום או למחר",
+        )
+    # MEH-3702 edge case: a bag for tomorrow with today's hours (an API call,
+    # or an owner's device on another clock) would sit under «מחר» with a
+    # window that is already over by then, and the morning reminder would
+    # miss it. A late-night window that runs into the next day stays allowed.
+    if body.pickup_end <= utc_now():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="שעת סיום האיסוף כבר עברה",
+        )
+    if israel_date(body.pickup_start) < body.date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="שעות האיסוף צריכות להיות ביום של הסל",
+        )
+
+
+# MEH-3703: one publisher at a time, by hand or by the weekly routine. The
+# "no active bag yet" check and the insert are two statements; without one
+# lock a hand publish and the hourly job could both pass the check.
+PUBLISH_LOCK_KEY = "rescue-schedule-publish"
+
+
+def lock_offer_publishing(db: Session) -> None:
+    """Take the transaction-scoped lock every bag insert waits on."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"),
+        {"k": PUBLISH_LOCK_KEY},
+    )
+
+
 def publish_offer(
     db: Session,
     *,
@@ -209,12 +254,9 @@ def publish_offer(
             detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
         )
 
-    if body.date < today:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="אי אפשר לפרסם סל לתאריך שעבר",
-        )
+    _check_offer_day(body, today)
 
+    lock_offer_publishing(db)
     # One active bag per point per day: `qty_left` is per OFFER, so a second
     # row for the same evening would show the same business twice with two
     # separate stock counts and two codes per buyer.
@@ -313,9 +355,11 @@ def reserve(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"
         )
-    if offer.date != today:
+    first, last = reserve_days(today)
+    if not first <= offer.date <= last:  # MEH-3702: today and tomorrow
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו של היום"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="אפשר לשריין רק סלים של היום ושל מחר",
         )
     if offer.pickup_end <= utc_now() + RESERVE_CLOSES_BEFORE_END:
         raise HTTPException(
@@ -365,6 +409,7 @@ def created_order_payload(order: RescueOrder, offer: RescueOffer) -> dict[str, o
         "cancelled_at": order.cancelled_at,
         "created_at": order.created_at,
         "price_agorot": offer.price_agorot,
+        "date": offer.date,
         "cancel_until": offer.cancel_until,
         "pickup_start": offer.pickup_start,
         "pickup_end": offer.pickup_end,
@@ -394,6 +439,14 @@ def hand_over(
     order = order_or_404(db, order_id)
     require_offer_owner(user, order.offer)
     refuse_unless_reserved_for_handover(order)
+    # MEH-3805: tomorrow's bag is reserved, not collectable. The dashboard
+    # shows no button on tomorrow's rows; this holds a direct call too. A
+    # past day stays allowed: a business may mark yesterday's bag late.
+    if order.offer.date > israel_today():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="אפשר למסור את הסל רק ביום האיסוף",
+        )
 
     # Lock the offer, then the order — the order cancel_order takes them in —
     # and read the status AGAIN under the lock (MEH-2865). The check above ran

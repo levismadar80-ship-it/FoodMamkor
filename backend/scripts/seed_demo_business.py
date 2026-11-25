@@ -78,6 +78,7 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
 )
 from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from scripts._seed_every_state import seed_every_state  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # MEH-3542: the rest of this program lives in the parts below, moved
 # verbatim and dependencies-first; every name is re-exported here.
@@ -213,7 +214,10 @@ def _seed_group_buy(db, producer) -> None:
     # first review author. No new emails (ticket constraint), and each user
     # appears once — UNIQUE (group_buy_id, user_id) makes a repeat a hard error.
     committer_emails = [DEMO_CONSUMER_EMAIL, DEMO_REVIEWS[0]["email"]]
-    for email, quantity in zip(committer_emails, DEMO_GROUP_BUY_COMMIT_QUANTITIES):
+    # MEH-3735: fixed codes per seat, so the dashboard's pickup list shows a code.
+    for seat, (email, quantity) in enumerate(
+        zip(committer_emails, DEMO_GROUP_BUY_COMMIT_QUANTITIES)
+    ):
         committer = db.query(User).filter(User.email == email).first()
         if committer is None:
             # Loud rather than silent: a missing committer leaves the group buy
@@ -226,6 +230,7 @@ def _seed_group_buy(db, producer) -> None:
                 user_id=committer.id,
                 quantity=quantity,
                 phone=DEMO_PRODUCER["phone"],
+                pickup_code=f"{1001 + seat:04d}",
             )
         )
 
@@ -1143,6 +1148,8 @@ def main() -> None:
             # MEH-2981: same contract — a live demo group buy, added only if
             # none is open, so a plain run (no --refresh) restores the tab.
             seed_open_group_buy(db)
+            # MEH-3630: one demo row per status (_seed_every_state.py).
+            seed_every_state(db)
             # MEH-2952 chunk 4: opt-in only — see mark_demo_businesses_as_test.
             if args.mark_test:
                 mark_demo_businesses_as_test(db, hidden=True)

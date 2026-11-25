@@ -173,6 +173,7 @@
       "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
+      "google_continue": "Continue with Google",
       "google_error": "Google sign-in failed",
       "apple_error": "Apple sign-in failed",
       "apple_continue": "Continue with Apple",
@@ -634,7 +635,8 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee"
+    "kph": "Coffee",
+    "byshvl-lpy-hzmnh": "Cooked to order"
   },
   "seo": {
     "home": {
@@ -1045,7 +1047,9 @@
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
-        "day_conflict_remove": "Remove «{name}» from the order"
+        "day_conflict_remove": "Remove «{name}» from the order",
+        "preview_send": "Sending is off in the preview",
+        "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale."
       }
     },
     "card": {
@@ -1192,6 +1196,21 @@
       "errors": {
         "upload_image_failed": "Image upload failed",
         "rejected_default": "Content does not meet our criteria"
+      },
+      "help": {
+        "title": "The name shown at the top of the recipe and in site search.",
+        "description": "A sentence or two: what is special about the recipe and why to make it.",
+        "ingredients": "One ingredient per line, with the amount.",
+        "instructions": "One step per line, in order.",
+        "prep_time_min": "Minutes of hands-on work, without cooking or rising time.",
+        "cook_time_min": "Minutes in the oven or on the stove.",
+        "servings": "How many people the recipe serves, or how many pieces it makes.",
+        "image_url": "A photo of the finished dish. Daylight works best.",
+        "product_ids": "Your products used in the recipe. They appear under the recipe with a link to your page."
+      },
+      "fill": {
+        "title": "Have a written recipe?",
+        "intro": "Paste the recipe as it is, and we'll make a draft from it. Nothing is saved without your approval."
       }
     },
     "dashboard": {
@@ -1323,9 +1342,13 @@
       "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
       "pickup_place_label": "Pickup place",
       "cancel_until_short": "You can leave until {date}",
+      "member_next_open": "We'll email you when the group reaches its goal. If it doesn't by {date}, your commitment is cancelled and you owe nothing.",
+      "member_next_funded_pickup": "The group reached its goal. Pickup: {when}.",
+      "member_my_groups": "All my group buys",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
-      "calendar_title": "Pickup: {title}"
+      "calendar_title": "Pickup: {title}",
+      "pickup_code_line": "Your pickup code: {code}. Show it at the business when you collect."
     },
     "dashboard": {
       "status": {
@@ -1432,6 +1455,12 @@
         "place_help": "Shown on the group page with a map, and in the reminder participants get before pickup.",
         "allergens_title": "Allergens",
         "allergens_help": "Tick what the product contains. What you tick shows on the group page. With nothing ticked, it says no allergens were listed."
+      },
+      "pickups": {
+        "title": "Pickup codes",
+        "after_pickup": "You can mark «Didn't come» once the pickup time is over.",
+        "no_window": "To mark a no-show, set a pickup time for the group.",
+        "closed": "More than 14 days have passed since the pickup ended, so marking is closed."
       }
     },
     "availability": {
@@ -1514,6 +1543,38 @@
       "approaching": "{name} is approaching",
       "aria": "Holiday notice",
       "close_aria": "Close"
+    },
+    "faq": {
+      "items": {
+        "what": {
+          "q": "What is a group buy?",
+          "a": "Several people order together from a business and get a lower price. Once enough people join, the group price unlocks."
+        },
+        "pay": {
+          "q": "When do I pay, and to whom?",
+          "a": "Nothing is paid now, and nothing is ever paid through Mehamakor. You arrange payment directly with the business when you coordinate the order."
+        },
+        "miss": {
+          "q": "What if the group doesn't reach its goal?",
+          "a": "Your commitment is cancelled automatically and you owe nothing. We'll email you."
+        },
+        "cancel": {
+          "q": "How do I leave, and until when?",
+          "a": "On the group's page, with «Cancel my commitment», until the deadline. In the last 24 hours you can't leave if that would drop the group below its goal."
+        },
+        "pickup": {
+          "q": "Where and when is pickup?",
+          "a": "The time and place are on the group's page and in the email when the group reaches its goal. A reminder email goes out before pickup."
+        },
+        "no_show": {
+          "q": "What if I don't pick it up?",
+          "a": "The business can mark the order as not collected, and we'll email you about it. Two no-shows within 30 days block joining new group buys. If you can't make it, you can cancel until the group's deadline."
+        },
+        "mine": {
+          "q": "Where do I see my group buys?",
+          "a": "In the account menu, under «My group buys»."
+        }
+      }
     }
   },
   "map": {
@@ -1636,6 +1697,7 @@
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
       "full_profile": "Full profile",
+      "business_page": "Business page",
       "fulfillment": {
         "delivery": "Delivery",
         "pickup": "Self-pickup",
@@ -2266,7 +2328,8 @@
         "unblock": "Unblock",
         "block": "Block",
         "delete": "Delete",
-        "clear_rescue_block": "Release bag block"
+        "clear_rescue_block": "Release bag block",
+        "clear_group_buy_block": "Release group-buy block"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -2297,7 +2360,10 @@
         "blocked_badge": "Blocked from bags ({count} no-shows)",
         "cleared": "Block released"
       },
-      "blocked_hidden": "The account is blocked and the business is hidden."
+      "blocked_hidden": "The account is blocked and the business is hidden.",
+      "group_buy": {
+        "blocked_badge": "Blocked from group buys ({count} no-shows)"
+      }
     },
     "recipes": {
       "title": "Business recipes",
@@ -3300,6 +3366,25 @@
         "fri": "Fri",
         "sat": "Sat"
       }
+    },
+    "form": {
+      "fill": {
+        "title": "Have a post about the event?",
+        "intro": "Paste the post or the message as it is, and we will make a draft from it. Nothing is saved without your approval."
+      },
+      "help": {
+        "title": "The event's name, as it will appear in the events list.",
+        "description": "What happens at the event, who it suits and what to bring.",
+        "category": "The kind of event. People find it by this in the filter.",
+        "event_date": "The day the event takes place.",
+        "event_time": "The start time.",
+        "end_time": "When the event ends, if known.",
+        "location": "The address or the name of the place, so it is easy to get there.",
+        "city": "The city where the event takes place.",
+        "price": "The price per participant. If the event is free, leave 0.",
+        "max_participants": "How many people can take part. When the places run out, sign-up closes.",
+        "image_url": "A photo from a past event or of the place."
+      }
     }
   },
   "experiences": {
@@ -3791,7 +3876,8 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans"
+        "kph": "Coffee beans",
+        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -4595,7 +4681,7 @@
           },
           "orders": {
             "label": "Orders and surprise bags:",
-            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
           },
           "messages": {
             "label": "WhatsApp and email messages:",
@@ -5126,7 +5212,6 @@
       },
       "help_row": {
         "title": "Need help?",
-        "body": "Write to us and we'll get back to you by the end of the business day.",
         "cta": "Contact the team"
       },
       "whats_new": {
@@ -5142,13 +5227,23 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_14": {
+            "i0": "Before you open orders, you can see how the order form looks to customers. If something is missing, it says what to add.",
+            "i1": "Paste text and get a draft of a recipe, an event or your order settings. Every field has a «?» with a short explanation.",
+            "i2": "Surprise bags can now be listed for tomorrow too, and customers get a reminder on the morning of pickup day.",
+            "i3": "When you set a vacation or a closed day that has orders you already accepted, a message shows them.",
+            "i4": "The card for asking customers for a review now also appears at the top of the «Reviews» page.",
+            "i5": "The link to your page and your QR code are now in one place, «Share», in the «Tools» tab.",
+            "i6": "New category: «Cooked to order», for platters, salads and Shabbat meals.",
+            "i7": "A fixed schedule for surprise bags: choose the days and times once, and the bag goes up on the site by itself. On a day with no food left over, skip it with one tap."
+          },
           "v1_5_11": {
             "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",
             "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
             "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
             "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
             "i4": "The dashboard home shows how many orders reached you through the site this month.",
-            "i5": "New tool in the «Tools» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
+            "i5": "New tool in the «Edit» tab: connect your Google profile to your page here, and check that the name, phone and website match in both places."
           },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
@@ -5267,7 +5362,9 @@
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
         "menu_cta": "Upload a menu",
         "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
-        "allergens_cta": "Mark them"
+        "allergens_cta": "Mark them",
+        "rescue": "{count, plural, one {Surprise bags open today} other {# surprise-bag offers open today}}",
+        "rescue_cta": "Manage"
       },
       "status": {
         "pending": {
@@ -5323,9 +5420,12 @@
       },
       "quick_links": {
         "locked_until_approved": "Opens once your business is approved",
+        "locked_rejected": "Opens once you fix and resubmit, and your business is approved",
+        "locked_inactive": "Closed while your business is inactive",
         "groups": {
           "offer_heading": "Offer to customers",
           "reviews_heading": "Customer reviews",
+          "reach_heading": "Bring in customers",
           "content_heading": "Content",
           "events_sub": "A one-time event, or an experience people sign up for",
           "opportunities_sub": "A group buy, or surprise bags from what is left today"
@@ -5778,7 +5878,6 @@
         "note_placeholder": "For example: Rosh Hashana eve",
         "invalid_date": "Invalid or duplicate date",
         "save_success": "Special hours saved",
-        "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
       },
       "payment_info": {
@@ -5918,6 +6017,8 @@
       "manage_events": {
         "heading": "My events",
         "pending_note": "Your events will appear on the site once your business is approved.",
+        "rejected_note": "Your events will appear on the site once you fix and resubmit, and your business is approved.",
+        "inactive_note": "Your business is inactive right now, so your events don't appear on the site. Contact us to reactivate it.",
         "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
@@ -6188,12 +6289,35 @@
             "orders": "Orders",
             "last": "Last order"
           }
-        }
+        },
+        "fill": {
+          "title": "Tell us how you take orders",
+          "intro": "For example: “Order by Thursday evening, pick up Friday morning.” We'll draft your settings from it, and nothing is saved without your approval."
+        },
+        "help": {
+          "slot_cap": "How many orders you can prepare for the same slot.",
+          "cancel_cutoff_hours": "Up to how long before the slot customers can cancel on their own.",
+          "min_order": "The lowest amount an order can be.",
+          "slot_minutes": "How long each pickup or delivery window lasts.",
+          "lead_time_hours": "How many hours before the slot an order must be placed, so you have time to prepare.",
+          "windows": "The days and hours when orders can be picked up or delivered.",
+          "product_ids": "Which products customers can order from your page."
+        },
+        "preview_link": "How customers see it",
+        "preview_banner": "Preview: this is how customers see the order. You can't send from here.",
+        "preview_no_products": "No product is open for ordering yet, so customers won't see a way to order here.",
+        "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
+        "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
+        "preview_fix_link": "Go to the orders tab"
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
         "helper": "Every week your page had views, we'll send you a short email with the numbers.",
         "label": "Get the weekly summary"
+      },
+      "closed_day_orders": {
+        "warning": "{count, plural, one {One order you already accepted falls} other {# orders you already accepted fall}} on days you closed: {list}. They stay valid, so let your customers know.",
+        "action": "To orders"
       }
     },
     "page_preview": {
@@ -7099,7 +7223,12 @@
       "empty_title": "No rescue bags yet today",
       "empty_title_city": "No rescue bags in {city} yet today",
       "empty_subtitle": "Worth checking again this afternoon",
-      "count": "{count, plural, one {one bag} other {# bags}}"
+      "count": "{count, plural, one {one bag} other {# bags}}",
+      "sort_label": "Sort",
+      "sort_time": "By pickup time",
+      "sort_near": "Closest",
+      "sort_cheap": "Cheapest",
+      "sort_rating": "Highest rated"
     },
     "row": {
       "left": "{count, plural, one {one left} other {# left}}",
@@ -7110,7 +7239,10 @@
       "pickup_label": "Pickup",
       "until": "until {time}",
       "soon": "within the hour",
-      "left_short": "{count, plural, one {1 left} other {# left}}"
+      "left_short": "{count, plural, one {1 left} other {# left}}",
+      "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
+      "cancel_at_tomorrow": "tomorrow at {time}",
+      "worth_and_price": "Worth {worth}, you pay {price}"
     },
     "section": {
       "title": "Rescue bag",
@@ -7124,18 +7256,21 @@
       "cancelled": "Your reservation is cancelled, and the bag is back on the list.",
       "allergens_declared": "Contains: {list} · as declared by the business",
       "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
-      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come."
+      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come.",
+      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come.",
+      "allergens_undeclared_short": "The business did not list allergens.",
+      "allergens_ask": "Have an allergy? Ask the business at pickup."
     },
     "confirm": {
       "title": "Your bag is reserved",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
-      "terms": "Free cancellation until {cancel_until} · two no-shows = blocked",
+      "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
       "step_reserved": "Reserved",
       "step_collect": "To collect",
       "step_done": "Handed over",
       "cancel": "Cancel the reservation",
-      "terms_no_cancel": "No cancellation · two no-shows = blocked",
+      "terms_no_cancel": "No cancellation · after two bags not collected, new reservations are paused",
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
@@ -7162,7 +7297,7 @@
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "unverified": "Please verify your email address first.",
-      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
+      "blocked": "Two bags were not collected, so new reservations are paused for now. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -7215,7 +7350,13 @@
         "cancel": "Free cancellation until",
         "cancel_half_hour": "Half an hour before pickup",
         "cancel_hour": "An hour before pickup",
-        "cancel_two_hours": "Two hours before pickup"
+        "cancel_two_hours": "Two hours before pickup",
+        "worth": "Bag worth (₪)",
+        "worth_help": "What the bag would cost at full price. Optional. When it is above the price, buyers see it struck through beside the price.",
+        "from_hour": "Pickup start, hour",
+        "from_minute": "Pickup start, minutes",
+        "to_hour": "Pickup end, hour",
+        "to_minute": "Pickup end, minutes"
       },
       "items_title": "What's usually in the bag",
       "items_help": "Separate with commas. This is what customers see before they reserve a bag.",
@@ -7247,7 +7388,16 @@
       "cancel_offer_yes": "Yes, cancel",
       "cancel_offer_no": "No",
       "not_in_pilot": "Surprise bags are not open in {city} yet. Once they open there, you can publish from here.",
-      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today."
+      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today.",
+      "offers_title_tomorrow": "Tomorrow's bags",
+      "orders_title_tomorrow": "Tomorrow's reservations",
+      "orders_empty_tomorrow": "No reservations for tomorrow yet.",
+      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?",
+      "allergens_toggle": "Allergens in the bag · optional",
+      "allergens_count": "{count, plural, one {one marked} other {# marked}}",
+      "offers_title_today": "Today's bags",
+      "cancel_offer_row": "Pickup {window} · {count, plural, one {one bag} other {# bags}}",
+      "cancel_offer_aria": "Cancel the bag, pickup {window}"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -7279,7 +7429,7 @@
       "cancel_title": "Cancelling",
       "cancel_body": "Free cancellation until {time}. After that the reservation stands.",
       "cancel_passed": "The free-cancellation time has passed, so a reservation made now stands.",
-      "no_show": "Two missed pickups block new reservations.",
+      "no_show": "After two bags not collected, new reservations are paused. Can't make it? Cancel, so the bag goes to someone else.",
       "business_link": "Go to {name}",
       "state_sold_out": "This bag is sold out for today.",
       "state_cancelled": "The business cancelled today's bag.",
@@ -7291,7 +7441,74 @@
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
-      "calendar_title": "Surprise bag pickup: {business_name}"
+      "calendar_title": "Surprise bag pickup: {business_name}",
+      "pickup_title_tomorrow": "Pickup tomorrow",
+      "state_sold_out_tomorrow": "This bag is sold out for tomorrow.",
+      "state_cancelled_tomorrow": "The business cancelled tomorrow's bag."
+    },
+    "faq": {
+      "items": {
+        "contents": {
+          "q": "What's in the bag?",
+          "a": "Whatever is left that day, so it changes. The bag's page says what it usually holds."
+        },
+        "allergens": {
+          "q": "What about allergens?",
+          "a": "The business lists on the bag's page which allergens it may contain. If none are listed, ask before pickup."
+        },
+        "pay": {
+          "q": "Do I pay in advance?",
+          "a": "No. You pay the business at pickup."
+        },
+        "cancel": {
+          "q": "Until when can I cancel?",
+          "a": "For free, until the time shown on the bag's page and in the reservation email. After that the reservation stands."
+        },
+        "no_show": {
+          "q": "What if I don't pick it up?",
+          "a": "The business marks the bag as not collected. After two bags not collected within 30 days, new reservations are paused."
+        },
+        "mine": {
+          "q": "Where do I see my reservation?",
+          "a": "On the bag's page and in the reservation email, with the pickup code."
+        }
+      }
+    },
+    "schedule": {
+      "lead": "Pick the days and hours once, and the bag goes up on its own the day before. On a day with nothing left, skip it.",
+      "failed": "We couldn't load the schedule. Try again in a moment.",
+      "no_points": "To set a schedule you need a pickup point with an exact address.",
+      "no_points_cta": "Add an address",
+      "point_not_exact": "This point has no exact address, so bags can't be published here.",
+      "days_label": "Which days",
+      "none_picked": "Pick at least one day",
+      "paused": "Pause the schedule",
+      "paused_help": "While paused, no new bags go up. Bags already up stay.",
+      "save": "Save schedule",
+      "saved": "Saved. Bags will go up on their own on the days you picked.",
+      "remove": "Remove schedule",
+      "removed": "Schedule removed. Bags already up stay.",
+      "upcoming_title": "Coming days",
+      "upcoming_help": "Tap a day to skip it or bring it back.",
+      "day_skipped": "Skipped",
+      "strip_on": "Tomorrow's schedule: {qty} bags at {price}, {from}–{to}",
+      "strip_on_at": "{place}, tomorrow's schedule: {qty} bags at {price}, {from}–{to}",
+      "strip_skipped": "Tomorrow is skipped, no bag",
+      "strip_skipped_at": "{place}: tomorrow is skipped, no bag",
+      "skip_tomorrow": "Skip tomorrow",
+      "unskip_tomorrow": "Undo skip",
+      "skip_has_orders": "Tomorrow already has reservations. Skipping cancels the bag and emails the buyers.",
+      "skip_yes": "Skip and cancel",
+      "skip_no": "Keep the bag",
+      "setup_link": "Publish like this every week",
+      "edit_link": "Weekly schedule"
+    },
+    "share": {
+      "button": "Send to a friend",
+      "line_code_at": "Pickup code for the bag at {business}: {code}",
+      "line_code": "Bag pickup code: {code}",
+      "line_say": "Say the code at the counter to collect the bag",
+      "line_say_pay": "Say the code at the counter and pay {price} ₪ there"
     }
   },
   "holidays": {
@@ -7759,6 +7976,10 @@
         "tile_title": "Surprise bags",
         "tile_line": "For what is left at the end of the day, at a discount"
       },
+      "rescue_schedule": {
+        "label": "A weekly surprise-bag schedule",
+        "tip": "Pick the days and hours once and the bag goes up on its own. On a day with nothing left, skip it."
+      },
       "verified_badge": {
         "label": "A \"verified\" badge after a manual licence check",
         "tile_title": "Verified badge",
@@ -8002,6 +8223,13 @@
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
   },
+  "order_again": {
+    "button": "Order again",
+    "added_all": "We added the items from last time to your order",
+    "added_some": "We added what can be ordered now. Not available right now: {names}",
+    "none_available": "The items from last time are not available right now",
+    "not_taking": "This business is not taking orders on the site right now"
+  },
   "product_variants": {
     "from": "From ",
     "choose": "Choose",
@@ -8111,10 +8339,26 @@
       "cancelled": "Cancelled",
       "expired": "No reply in time",
       "no_show": "Not collected"
+    },
+    "section_active": "Active",
+    "section_past": "Past",
+    "kind": {
+      "order": "Order"
+    },
+    "bag_status": {
+      "handed": "Collected",
+      "no_show": "Not collected",
+      "cancelled_by_business": "Cancelled by the business"
+    },
+    "partial_error": "Part of the list didn't load.",
+    "group_buy_status": {
+      "open": "Open to join",
+      "funded": "Reached its goal",
+      "fulfilled": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "google_profile": {
-    "back": "Back to tools",
     "title": "Your Google profile",
     "lead": "Many customers search Google first. A Google business profile with a link to your page here helps them find you.",
     "loading": "Loading…",
@@ -8155,20 +8399,5 @@
     "hours_title": "Opening hours",
     "hours_note": "Each side writes hours differently, so compare them yourself.",
     "empty_value": "—"
-  },
-  "my_group_buys": {
-    "title": "My group buys",
-    "empty": "You haven't joined a group buy yet.",
-    "empty_cta": "To group buys",
-    "load_error": "We couldn't load your group buys.",
-    "quantity_unit": "{count} {unit}",
-    "quantity": "Quantity: {count}",
-    "deadline": "Joining closes {date}",
-    "status": {
-      "open": "Open to join",
-      "funded": "Reached its goal",
-      "fulfilled": "Completed",
-      "cancelled": "Cancelled"
-    }
   }
 }

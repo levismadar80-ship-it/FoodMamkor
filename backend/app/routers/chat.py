@@ -38,6 +38,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import (
+    ai_budget,
     ai_text,
     chat_business_context,
     chat_db_tools,
@@ -115,7 +116,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 לגולשים שמחפשים אוכל האתר חינם, ומהמקור לא גובה מהם כלום. לבתי עסק: ההרשמה והעמוד באתר חינם, ופנייה של לקוחות בוואטסאפ, בטלפון או במייל לא עולה כסף. בתקופת ההשקה גם כל הכלים חינם. אחרי ההשקה יש עמלה על הזמנות בתשלום שמגיעות דרך הכלים של האתר, כמו הרשמה בתשלום לסדנה או הזמנה בקבוצת רכישה שנסגרה, או מנוי עם עמלה מופחתת. משלמים רק בחודש שבו ההזמנות האלה עברו סף שכתוב במחירון, ומקבלים הודעה בכתב מראש. אל תגידי שאין עמלה, ואל תנקבי במחירים או באחוזים: המחירון המלא מופיע באתר, בעמוד /join/pricing. הכסף של הלקוחות עובר ישירות לבית העסק.
 
 **איך נרשמים כבית עסק**
-נרשמים דרך טופס קצר בעמוד /register/producer, וההרשמה חינם. אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
+נרשמים דרך טופס קצר בעמוד /register/producer, וההרשמה חינם. אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק עד 3 ימי עסקים, ואז הוא מופיע באתר.
 
 **איך נרשמים כלקוחות**
 - לקוחות נרשמים חינם בעמוד /register (מייל + סיסמה, או Google/Apple).
@@ -138,7 +139,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 - **איפה מוצאים סדנאות וסיורים?** — בעמוד /experiences יש סדנאות, סיורים וטעימות שבתי עסק מארחים. בכל חוויה רואים תאריך, מחיר וכמה מקומות נשארו, ונרשמים דרך הכפתור שבעמוד החוויה. אירועים חד-פעמיים, כמו יום פתוח או דוכן בשוק, נמצאים בעמוד /events.
 - **איפה יש מתכונים?** — בתי עסק מפרסמים מתכונים עם המוצרים שלהם. המתכונים נמצאים בעמוד של בית העסק, תחת «המתכונים שלנו», ואפשר לשמור מתכון למועדפים.
 - **יש הטבות?** — חלק מבתי העסק מציעים הטבה, למשל בהזמנה הראשונה. ההטבה מופיעה בעמוד של בית העסק ובכרטיס שלו, עם תאריך סיום. מממשים אותה ישירות מול בית העסק.
-- **יש משלוחים?** — בעמוד של כל בית עסק כתוב לאילו אזורים הוא שולח, ומה המינימום, העלות והיום. אפשר גם לבדוק שם «יש משלוח לעיר שלך?». אין עדיין משלוח לעיר שלכם? אפשר להצטרף לרשימת המתנה ולקבל מייל כשבית העסק מגיע אליכם.
+- **יש משלוחים?** — בעמוד של כל בית עסק כתוב לאילו אזורים הוא שולח, ומה המינימום, העלות והיום. אפשר גם לבדוק שם «יש משלוח אליי?». אין עדיין משלוח לעיר שלכם? אפשר להצטרף לרשימת המתנה ולקבל מייל כשבית העסק מגיע אליכם.
 - **איך שומרים בית עסק ומקבלים עדכונים?** — לוחצים על הלב של בית עסק, מתכון או אירוע, והוא נשמר בעמוד /favorites. בשביל זה צריך להתחבר. שם אפשר גם לבחור לקבל עדכונים, למשל על מתכון, אירוע או קבוצת רכישה חדשים.
 - **מי יכול לכתוב ביקורת?** — כדי לכתוב ביקורת צריך להתחבר. רק מי שפנה לבית העסק דרך מהמקור, או קיבל ממנו קישור לביקורת, יכול לכתוב אחת. בית העסק יכול להגיב לכל ביקורת.
 - **מה אומרים התגים?** — «מאומת» אומר שמישהי מהצוות בדקה את מסמך הרישוי או את אישור הפטור של בית העסק. התאריך שליד התג הוא מועד הבדיקה. «כשרות מאומתת» אומר שתעודת הכשרות נבדקה. יש גם תג «עסק של מילואימניקים», ותגי תזונה כמו טבעוני או ללא גלוטן.
@@ -318,6 +319,10 @@ def _live_data_context(
     latest = next(
         (m["content"] for m in reversed(api_messages) if m["role"] == "user"), ""
     )
+    # MEH-3498: the intent call is a second Haiku call, so it spends its own
+    # unit; above the ceiling chat answers without live data.
+    if not ai_budget.allow("fast"):
+        return None
     categories = chat_db_tools.list_category_slugs()
     decision = chat_intent_router.classify(client, latest, categories)
     if decision.route != chat_intent_router.ROUTE_DB or not decision.tool:
@@ -420,9 +425,13 @@ def chat(
     if client is None:
         # Fail-open friendly message — UI keeps working.
         return ChatResponse(reply=OFFLINE_REPLY)
-    if not _global_chat_allowed():
-        # MEH-3010: site-wide daily cap reached — same reply, no model call.
-        logger.warning("chat global daily cap reached (%s)", GLOBAL_DAILY_LIMIT)
+    # MEH-3010: the chat's own site-wide daily cap; MEH-3498: the AI ceiling
+    # shared with the owner tools (ai_budget logs its own refusal). This is
+    # the unit for the reply call; the intent call spends a second one in
+    # _live_data_context, so a message costs up to two. Same reply, no
+    # model call.
+    if not _global_chat_allowed() or not ai_budget.allow("fast"):
+        logger.warning("chat daily cap reached (chat %s)", GLOBAL_DAILY_LIMIT)
         return ChatResponse(reply=OFFLINE_REPLY)
 
     # Trim to the last MAX_HISTORY_TURNS turns. A "turn" here = one

@@ -25,10 +25,12 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // Mirrors MAX_VARIANTS_PER_PRODUCT (backend/app/limits.py); the server holds it.
 export const MAX_VARIANTS = 10;
-const AGOROT = 100;
 const ICON_BTN = "w-11 h-11 flex items-center justify-center rounded-full text-fg-muted hover:bg-primary/[0.06] focus-ring disabled:opacity-50";
 
 /** @typedef {{ key: string, id: string | null, name: string, price: string, in_stock: boolean }} Row */
@@ -39,7 +41,7 @@ export function rowsFrom(variants) {
     key: v.id,
     id: v.id,
     name: v.name,
-    price: typeof v.price_agorot !== "number" ? "" : String(v.price_agorot / AGOROT),
+    price: typeof v.price_agorot !== "number" ? "" : String(agorotToShekels(v.price_agorot)),
     in_stock: v.in_stock,
   }));
 }
@@ -79,7 +81,7 @@ export function bodyFrom(rows) {
       .map((r) => ({
         ...(r.id ? { id: r.id } : {}),
         name: r.name.trim(),
-        price_agorot: r.price.trim() === "" ? null : Math.round(shekelsOf(r.price) * AGOROT),
+        price_agorot: r.price.trim() === "" ? null : shekelsToAgorot(shekelsOf(r.price)),
         in_stock: r.in_stock,
       })),
   };
@@ -159,19 +161,22 @@ function VariantRow({ row, index, last, edit, move, remove, t }) {
         <Input size="sm" label={t("price_label")} value={row.price} inputMode="decimal" dir="ltr" placeholder={t("price_placeholder")}
           onChange={(e) => edit(index, { price: e.target.value })} />
       </div>
-      <label className="flex items-center gap-1.5 min-h-touch text-sm text-text">
-        <input type="checkbox" checked={row.in_stock} onChange={(e) => edit(index, { in_stock: e.target.checked })} />
+      <Checkbox
+        className="flex items-center gap-1.5 text-sm text-text"
+        checked={row.in_stock}
+        onChange={(e) => edit(index, { in_stock: e.target.checked })}
+      >
         {t("in_stock")}
-      </label>
-      <button type="button" className={ICON_BTN} disabled={index === 0} onClick={() => move(index, -1)} aria-label={t("move_up", { name: label })}>
+      </Checkbox>
+      <IconButton className={ICON_BTN} disabled={index === 0} onClick={() => move(index, -1)} label={t("move_up", { name: label })}>
         <ArrowUp size={18} aria-hidden="true" />
-      </button>
-      <button type="button" className={ICON_BTN} disabled={last} onClick={() => move(index, 1)} aria-label={t("move_down", { name: label })}>
+      </IconButton>
+      <IconButton className={ICON_BTN} disabled={last} onClick={() => move(index, 1)} label={t("move_down", { name: label })}>
         <ArrowDown size={18} aria-hidden="true" />
-      </button>
-      <button type="button" className={ICON_BTN} onClick={remove} aria-label={t("remove", { name: label })}>
+      </IconButton>
+      <IconButton className={ICON_BTN} onClick={remove} label={t("remove", { name: label })}>
         <Trash size={18} aria-hidden="true" />
-      </button>
+      </IconButton>
     </div>
   );
 }

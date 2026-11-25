@@ -4,6 +4,63 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-25 — סלי הפתעה: סדר שבועי ושעון 24 שעות (PR #5316, #5290, #5324)
+
+**שורה אחת:** שלושה PR-ים ב-staging. בית עסק קובע סדר שבועי לכל נקודת איסוף, והסל מתפרסם לבד. השעות נבחרות בשעון 24 שעות בשני הטפסים, ושני הטפסים כוללים את «שווי הסל».
+
+**מה צריך לדעת לפני עבודה:**
+- **שעה ביום:** משתמשים ב-`frontend/components/ui/TimeOfDaySelect.jsx`, לא ב-`<input type="time">`, שמציג AM/PM במכשיר באנגלית. הערך נשמר כ-`HH:MM`.
+- **הסדר השבועי** נשמר בעמודה `producer_locations.rescue_schedule` ולא בטבלה, כי טבלה חדשה דורשת שינוי ב-`EXPECTED_TABLES` של ה-workflow. המשימה השעתית לא נוגעת ביום שיש בו סל כלשהו, גם סל שבוטל, ולכן הרצה חוזרת בטוחה.
+- **«שווי הסל»:** נשלח רק כשהוא גבוה מהמחיר. אחרת שולחים `null`, כי לקוחה לא תראה מחיר מחוק. אין ממשק שקובע את `value_max_agorot`, ושמירה של הסדר השבועי מוחקת אותו.
+- **`WeekdayChips` בלי «כל הימים»** מציג שורה של 7 עמודות עד `max-w-sm`. עם «כל הימים» (ימים של מוצר) הוא לא השתנה.
+- **פתוח אצל ספיר:** איפה להראות סלים על המפה (MEH-3824). הקוד נוגע ב-`MapClient.jsx`, שהוא רכיב מרכזי (RED), ולכן לא מתחילים לפני שהיא בוחרת.
+
+## 2026-11-24 — מסך הטעינה עולה לראש הדף (PR #5266)
+
+**שורה אחת:** במעבר מרשימה גלולה לדף, מסך הטעינה הוצג בגובה הגלילה הישן, ולכן רואים רק את ה-footer. ‏`useScrollTopOnArrival()` ב-`frontend/lib/route-memory.js` גולל לראש הדף בלחיצה על קישור.
+
+**מה צריך לדעת לפני עבודה:**
+- **`loading.js` חדש קורא ל-`useScrollTopOnArrival()`.** ‏`RouteLoadingScrollTop.test.jsx` סורק את כל קבצי ה-`loading.js` ונכשל על קובץ שלא קורא לו.
+- **בדיקת E2E שגוללת, לוחצת וחוזרת בכל הרשימות:** בעבודה ב-MEH-3810.
+
+## 2026-11-24 — שורת הצ'יפים לא קורסת בלי `scrollTo` (PR #5251)
+
+**שורה אחת:** תוקנה השגיאה `scrollTo is not a function` מ-Sentry ‏(JAVASCRIPT-NEXTJS-14) בדף /producers. כשאין `scrollTo` או `scrollBy` על אלמנט, `ChipScrollRow.jsx` ו-`useScrollAffordance.js` קובעים את `scrollLeft` ישירות.
+
+**מה צריך לדעת לפני עבודה:**
+- **`el?.method()` לא מגן על הפונקציה, רק על האלמנט.** בקריאה ל-API גלילה על אלמנט, בודקים `typeof el.scrollTo === "function"`. דוגמה: `scrollRowTo` ב-`ChipScrollRow.jsx`.
+- **נשאר בלי שינוי:** ‏`?.scrollIntoView(...)` ב-`ChipScrollRow.jsx`. זה API ותיק בהרבה, ואין לו אירוע ב-Sentry.
+
+## 2026-11-24 — נתוני דמו לכל מצב ב-staging (PR #5219, #5249)
+
+**שורה אחת:** staging אופס ונזרע מחדש עם עסק דמו או שורה לכל מצב באתר (כיסוי 90/90). בדיקת ה-E2E שנשברה בגלל זה תוקנה ב-#5249.
+
+**מה צריך לדעת לפני עבודה:**
+- **staging כבר לא «הכל מאושר».** יש בו עסקים בטיוטה, ממתינים, נדחים ומושהים (`demo-state-*`), ומשתמשים `state-*@example.com` שאף אחד לא מתחבר איתם. בדיקה שמניחה שכל העסקים מאושרים, או שקוראת את הרשימה הראשונה שעל המסך, תיכשל עכשיו.
+- **סטטוס חדש או ערך חדש בעמודת סטטוס:** מוסיפים לו שורה ב-`backend/scripts/_seed_every_state.py` ובטבלה ב-`docs/SEED_COVERAGE.md`, ומריצים `backend/scripts/check_seed_coverage.py`.
+- **הביקורות המסומנות** יושבות על העסק המושהה (`demo-state-paused`), כדי שהדירוג של `ruach-hasadeh` לא ישתנה.
+- **זריעה מחדש של staging:** הפקודות ב-`docs/DEPLOYMENT.md` «Staging QA auth fixtures». בקונסולה של Railway מריצים עם `.venv/bin/python`.
+
+## 2026-11-24 — תצוגת חלון ההזמנה לבעלת העסק (PR #5221, #5222, #5233)
+
+**שורה אחת:** שלושת ה-PR-ים נכנסו ל-staging ברכבת 3 (#5244). בעלת עסק רואה את חלון ההזמנה כמו לקוחה עוד לפני שהיא מפעילה הזמנות, ורואה מה עוד חסר.
+
+**מה צריך לדעת לפני עבודה:**
+- **מצב תצוגה מקדימה:** ‏`PreviewModeProvider` (`frontend/lib/preview-mode.js`) מסמן את העץ. ‏`ownerOrderMenu` הוא הסכמה מפורשת, ורק `OrderPreviewClient` מפעיל אותה. תצוגת הטיוטה נפתחת בלי התחברות, ולכן היא לא קוראת את התפריט של הבעלים.
+- **רכיב חדש שמשתמש ב-`useOrderCart`:** בתוך תצוגה מקדימה הוא לא שולח הזמנה ולא מבקש קוד. ‏`OrderSheet` ו-`OrderSheetPhone` כבר נוהגים כך.
+- **פס «תצוגה מקדימה»:** רכיב אחד, `frontend/components/ui/PreviewBanner.jsx` (#5246). מסך תצוגה חדש משתמש בו ולא מעתיק את ה-`<p>`.
+- **קישור חזרה אחד בתצוגת ההזמנה (טלפון):** רק «→ הזמנות»; `ProducerDetail` מקבל `hideHistoryBack` ורק `OrderPreviewClient` מעביר אותו (#5248).
+- **timeout של `ts-check-files.test.js`** (120 שניות) קורה כש-runner עמוס. אם הוא נכשל, מריצים מחדש את ה-job. התיקון ב-#5242.
+
+## 2026-11-22 — הרשמת לקוחה בלי לעזוב את הדף (PR #5123, #5158, #5159, #5144)
+
+**שורה אחת:** ארבעה PR-ים ב-staging. הלקוחה נכנסת עם Google בתוך החלונית ונשארת בדף, גם ב«רוצה לשמור?» וגם בהצטרפות לקבוצת רכישה.
+
+**מה צריך לדעת לפני עבודה:**
+- **כפתור Google:** מאז PR #5285 (24/11) הכפתור הוא שלנו (`ui/GoogleButton.jsx` + `useGoogleCodeSignIn`). ‏`useGsiRedrawOnResize` ו-`data-gsi-slot` נמחקו.
+- **ב-PR רגיל הכפתור לא נבדק באמת:** GSI מצייר רק על origin מורשה, ולכן רק staging מוכיח את התיקון.
+- **פתוח (אחרי ההשקה):** ניסוי One Tap (MEH-3695) אחרי 3–4 שבועות של מדידה. כפתור Google משלנו נכנס ב-PR #5285.
+
 ## 2026-11-21 — סוד העקיפה של Vercel: עוגייה בלבד, ושומר שחוסם כותרת בדפדפן (PR #5085, #5100)
 
 **שורה אחת:** ‏#5085 ו-#5100 בתוך רכבת השחרור 2 (#5063), יחד עם #5057. בדפדפן אין יותר את `x-vercel-protection-bypass`: הסוד נשלח פעם אחת בבקשת API, ו-Vercel מחזיר עוגיית `_vercel_jwt` לאתר הזה בלבד.

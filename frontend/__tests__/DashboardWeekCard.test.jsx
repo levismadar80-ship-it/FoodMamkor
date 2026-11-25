@@ -10,7 +10,7 @@
  * DashboardInsightsFollowersShare.test.jsx — the MEH-2876 hang).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
 
 const mockPush = vi.fn();
@@ -51,6 +51,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("@phosphor-icons/react", () => ({
   ChatText: (p) => <span {...p} />,
+  CaretLeft: (p) => <span {...p} />, // MEH-3745: completeness link rows
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
@@ -188,19 +189,24 @@ describe("the week card (MEH-2884 item 5)", () => {
     statusRef.current = "pending";
     analyticsRef.current = week(0, 0);
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("share-locked-hint");
+    // MEH-3767: the locked hint that marked "the fetches settled" left the
+    // home; wait for the analytics read and one tick instead.
+    const api = (await import("@/lib/api")).default;
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/producers/me/analytics"));
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByTestId("overview-zero-state")).toBeNull();
     expect(screen.queryByTestId("overview-zero-share")).toBeNull();
     // The zero state is not the week card: no link to numbers that are all 0.
     expect(screen.queryByTestId("week-all-insights")).toBeNull();
   });
 
-  it("approved but profile incomplete: no «שתפו» — «הלינק שלי» says sharing is locked", async () => {
+  // MEH-3767: «הלינק שלי» and its locked line moved to «שיתוף»
+  // (DashboardSharePlacement.test.jsx); the «שתפו» gate stays here.
+  it("approved but profile incomplete: no «שתפו»", async () => {
     completeRef.current = false;
     analyticsRef.current = week(0, 0);
     render(<ProducerDashboardPage />);
     await screen.findByTestId("overview-zero-state");
-    expect(await screen.findByTestId("share-locked-hint")).toBeInTheDocument();
     expect(screen.queryByTestId("overview-zero-share")).toBeNull();
   });
 

@@ -1,0 +1,25 @@
+{
+  "form": "order_setup",
+  "subject": "a description of how a small Israeli food business takes orders: when customers order, when and how they collect or get a delivery, and which products they can order",
+  "fields": [
+    {"key": "slot_cap", "type": "int", "min": 1, "max": 500, "ai": true,
+     "units": ["הזמנות", "הזמנה"],
+     "prompt": "how many orders the business can prepare for one hand-over slot, only if the text gives a number"},
+    {"key": "cancel_cutoff_hours", "type": "int", "min": 0, "max": 168, "ai": true,
+     "units": ["שעות", "שעה"], "days": true,
+     "prompt": "up to how many hours before the slot a customer may cancel, in hours; null if the text does not say"},
+    {"key": "min_order", "type": "int", "min": 0, "max": 100000, "ai": true,
+     "units": ["₪", "ש״ח", "ש\"ח", "שח", "שקלים", "שקל"],
+     "prompt": "the minimum order in whole shekels; null if not given"},
+    {"key": "slot_minutes", "type": "int", "min": 30, "max": 120, "allowed": [30, 60, 120], "ai": true,
+     "units": ["דקות", "דקה", "דק׳", "דק'", "דק"], "hours": true,
+     "prompt": "how long one hand-over slot is, in minutes: 30, 60 or 120 only; null if the text does not say"},
+    {"key": "lead_time_hours", "type": "int", "min": 0, "max": 168, "ai": true,
+     "units": ["שעות", "שעה"], "days": true,
+     "prompt": "how many hours before the slot an order must be placed, in hours; null if the text does not say. A weekday deadline («עד חמישי») is not a number of hours: null"},
+    {"key": "windows", "type": "windows", "max": 28, "ai": true,
+     "prompt": "the weekly hand-over windows: weekday 0=Sunday … 6=Saturday, start_time and end_time HH:MM in 24 hours, fulfilment pickup or delivery. Only days the text names for collecting or delivery; a deadline for ordering is not a window. When the text gives only a part of the day use: בוקר 08:00–12:00, צהריים 12:00–16:00, אחר הצהריים 14:00–18:00, ערב 17:00–21:00"},
+    {"key": "product_ids", "type": "choices", "max": 200, "ai": true,
+     "prompt": "the numbers of the business's products below that the text says customers can order"}
+  ]
+}

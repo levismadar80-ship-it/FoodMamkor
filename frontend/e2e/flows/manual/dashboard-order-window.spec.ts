@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
-import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window";
+import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window-editor";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -23,12 +24,12 @@ test.beforeEach(async ({ page }) => {
  *           save exercises the seed parser on what the client sent. That is a
  *           client round-trip, not persistence: no byte reaches a server.
  * Does NOT: cover the public-page status between ranges (MT:MEH-1869:8 —
- *           /producer/[id] page group, lib/orderWindow status helper), or
+ *           /producer/[id] page group, lib/order-window-status status helper), or
  *           mobile (MT:MEH-1869:9). Does NOT cover MT:MEH-1870 / MT:MEH-1403 /
  *           MT:MEH-1884:6-7 — see the drift block: the surfaces those rows
  *           describe no longer exist.
  * Related:  app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx ·
- *           lib/order-window.js (the rules the editor mirrors; imported here
+ *           lib/order-window-editor.js (the rules the editor mirrors; imported here
  *           so the expectations derive from the code, not from the doc)
  * History:  MEH-1249 chunk 11e.
  *
@@ -37,7 +38,7 @@ test.beforeEach(async ({ page }) => {
  *      blocks, and what it puts on the wire.
  *   2. `order_window` is a JSONB with a backend validator
  *      (backend/app/schemas/schemas.py `_order_window_validator`) that
- *      lib/order-window.js mirrors by declaration; the PUT contract is the
+ *      lib/order-window-editor.js mirrors by declaration; the PUT contract is the
  *      same one chunks 11c/11d capture.
  *   3. Reaching "three ranges on Sunday" honestly means PUTting to the shared
  *      staging backend CI points at — forbidden (Sapir 13/07).
@@ -59,7 +60,7 @@ test.beforeEach(async ({ page }) => {
  * D3 · MT:MEH-1884:6-7 describe a grey hint under the hours card's subtitle for
  *      a business that never saved hours. No consumer of that copy exists.
  * D4 · MT:MEH-1869:1 says the second range opens "13:00–15:00" after a
- *      09:00–13:00 range. The rule is lib/order-window.js `nextOrderRange` —
+ *      09:00–13:00 range. The rule is lib/order-window-editor.js `nextOrderRange` —
  *      asserted from that function, whatever its duration constant is.
  */
 
@@ -126,8 +127,10 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
   });
 }
 
-const card = (page: Page) => page.getByTestId("accordion-order-window");
-const body = (page: Page) => page.locator('#order-window [role="region"]');
+// MEH-3790: the order window is a section (#order-window) of the one «שעות»
+// card; the deep link opens that card and scrolls to the section.
+const card = (page: Page) => page.getByTestId("accordion-hours");
+const body = (page: Page) => page.locator("#order-window");
 const dayToggle = (page: Page, day: string) => body(page).getByRole("checkbox", { name: `${day} — מקבלים הזמנות ביום זה` });
 const from = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} פתיחה ${n}`, { exact: true });
 const to = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} סגירה ${n}`, { exact: true });
@@ -181,7 +184,7 @@ test.describe("order-window card — several ranges per day", () => {
     await addRange(page, 0).click();
     await from(page, SUN, 2).fill("16:00");
     await to(page, SUN, 2).fill("20:00");
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     await expect(page.getByTestId("order-window-save-success")).toHaveText("חלון ההזמנות נשמר");
     expect(puts[0]).toEqual({ order_window: { sunday: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }] } });
@@ -256,7 +259,7 @@ test.describe("order-window card — several ranges per day", () => {
     await from(page, SUN, 2).fill("12:00");
     await expect(alerts(page)).toHaveText([OVERLAP]);
 
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     // The click surfaces the same reason as the form-level error too — that is the
     // observable proof the handler ran and stopped, before we check the wire. Both
     // alerts are asserted by text, not count: handleSave sets `t(issues[0].reason)`
@@ -275,7 +278,7 @@ test.describe("order-window card — several ranges per day", () => {
     await from(page, SUN, 2).fill("13:00");
     await to(page, SUN, 2).fill("17:00");
     await expect(alerts(page)).toHaveCount(0);
-    await saveBtn(page).click();
+    await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     expect(puts[0]).toEqual({ order_window: { sunday: [{ open: "09:00", close: "13:00" }, { open: "13:00", close: "17:00" }] } });
   });

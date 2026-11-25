@@ -67,7 +67,7 @@ vi.mock("@/components/ui/Input", () => ({
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (x) => x, IMAGE_RATIOS: {} }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn().mockResolvedValue({}) } }));
-vi.mock("@/lib/passwordMessages", () => ({ firstFailureMessage: () => "" }));
+vi.mock("@/lib/password-messages", () => ({ firstFailureMessage: () => "" }));
 vi.mock("@/lib/validators", () => ({
   validateEmail: (v) => typeof v === "string" && v.includes("@") && v.includes("."),
   PASSWORD_MIN_LENGTH: 12,

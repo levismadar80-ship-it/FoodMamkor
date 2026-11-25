@@ -19,7 +19,7 @@ vi.mock("next-intl", () => ({
       reply_save: "שמירה",
       cancel: "ביטול",
       submit_saving: "בשמירה…",
-      owner_only_eyebrow: "מוצג רק לך",
+      owner_only_eyebrow: "מוצג רק לבעלי העסק",
     };
     const t = (key) => flat[key] || key;
     // guest login-prompt path: render the `login` chunk so its href is testable
@@ -172,10 +172,10 @@ describe("ReviewsSection — business reply (MEH-1039)", () => {
 });
 
 describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
-  it("shows the 'מוצג רק לך' eyebrow above the owner empty state", async () => {
+  it("shows the 'מוצג רק לבעלי העסק' eyebrow above the owner empty state", async () => {
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={true} />);
-    expect(await screen.findByText("מוצג רק לך")).toBeInTheDocument();
+    expect(await screen.findByText("מוצג רק לבעלי העסק")).toBeInTheDocument();
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
@@ -185,7 +185,7 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     // The reader path renders no empty state at all since MEH-2592.
     await waitFor(() => expect(screen.queryByText("loading")).not.toBeInTheDocument());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
+    expect(screen.queryByText("מוצג רק לבעלי העסק")).not.toBeInTheDocument();
   });
 });
 
@@ -664,13 +664,26 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
 describe("ReviewsSection — loading state (MEH-2606)", () => {
   it("while the list loads: review-row skeleton under role=status, label sr-only, no visible text line", async () => {
     apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
-    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={2} />);
     const status = await screen.findByRole("status");
     expect(status).toHaveAttribute("aria-busy", "true");
     expect(status.querySelector(".sr-only")).toHaveTextContent("loading");
     expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
     // the old loading line was a visible <p>; nothing outside the sr-only span reads "loading"
     expect(screen.getAllByText("loading").every((el) => el.classList.contains("sr-only"))).toBe(true);
+  });
+
+  // MEH-3819: the section mounts with the page, so its loading rows stand in
+  // for the list in place — as many rows as the list will open with.
+  it("loading rows match the list it opens with: 3 for many reviews, none for zero", async () => {
+    apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
+    const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={7} />);
+    const status = await screen.findByRole("status");
+    expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(3);
+    unmount();
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    // Zero reviews: no loading rows that would shrink to the one quiet line.
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });
 
@@ -947,6 +960,17 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  // MEH-3819: the section mounts with the page, before /reviews answers. At
+  // zero reviews the invite row is drawn in its final form at once, so the
+  // read's answer does not move it.
+  it("0 reviews, guest, read still pending: the row already has no hairline and no top gap", () => {
+    apiMock.get.mockImplementation(() => new Promise(() => {}));
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = screen.getByTestId("reviews-write-hint");
     expect(row.className).not.toMatch(RULE);
     expect(row.className).not.toMatch(GAP);
   });

@@ -419,7 +419,8 @@ module.exports = {
 ה-CSP הנאכף (`frontend/next.config.js`) עדיין מתיר `'unsafe-inline'` ו-`'unsafe-eval'`.
 שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
 ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
-שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את שני הסקריפטים ה-inline של MEH-2233: ‏`frontend/lib/prehydration-flags-inline.js` ב-`<head>` (בלי nonce עליו הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת) ו-`frontend/lib/guest-to-login-inline.js` של `/favorites` (בלי nonce עליו אורחת מגיעה ל-`/login` רק אחרי ה-hydration, כמו קודם). `CspReportOnly.test.js` שומר
+מקור הדיווח «Blocked unsafe eval()» בשלב 1 היה בדיקה ש-Zod עושה עם `Function("")` (MEH-3706, `zod/v4/core/util.js:218`), ולא קוד שלנו. ‏MEH-3733 מכבה אותה (`z.config({ jitless: true })` ב-`frontend/lib/zod-csp.js`, שה-import הראשון שלו הוא ב-`frontend/instrumentation-client.js`). לכן «שבוע נקי» נספר מיום המיזוג של MEH-3733.
+שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את שני הסקריפטים ה-inline של MEH-2233: ‏`frontend/lib/prehydration-flags-inline.js` ב-`<head>` (בלי nonce עליו הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת) ו-`frontend/lib/guest-to-login-inline.js` של `/favorites` (בלי nonce עליו אורחת מגיעה ל-`/login` רק אחרי ה-hydration, כמו קודם). וגם סקריפט שלישי, `frontend/lib/cookie-banner-height-inline.js` (MEH-3820), שבא מיד אחרי באנר העוגיות ב-HTML של השרת: בלי nonce עליו המפה בנייד שוב מתכווצת אחרי ה-hydration. `CspReportOnly.test.js` שומר
 ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
 בלי `NEXT_PUBLIC_SENTRY_DSN` אין report-uri, ולכן הכותרת Report-Only לא נשלחת בכלל (MEH-3286): מדיניות שאין לה לאן לדווח לא מודדת כלום, ו-WebKit כותב עליה שגיאה בקונסול בכל דף.
 
@@ -514,6 +515,26 @@ response as the new access token.
 - `backend/app/routers/auth.py` — `_set_fingerprint_cookie`, 8 call
   sites, logout deletion
 - `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
+
+### ✅ 8b-2. Google sign-in: the code swap (MEH-3690, November 2026)
+
+Our own Google button opens Google's popup (GIS code client) and gets a
+one-time code. `POST /auth/google/code` swaps it at
+`oauth2.googleapis.com/token` with `GOOGLE_CLIENT_SECRET` and returns the ID
+token; the browser then posts that token to `/auth/google` (or the
+registration / owner-invite / account-delete route) exactly as before.
+
+- **The token is verified twice:** in the swap
+  (`services/google_code_exchange.py`: issuer, audience = our client id,
+  expiry, plus `email_verified`) and again by the route that signs in.
+- **No state, no cookie:** the swap writes nothing and sets no cookie. It
+  returns the token in the JSON body only, which CORS keeps from other sites,
+  so Google's suggested `X-Requested-With` check would add nothing here.
+- **Nothing sensitive is logged:** only Google's `error` code on a refusal,
+  never the code, the secret, the access token or the ID token. Google's
+  access and refresh tokens are dropped.
+- **10/minute per IP** (`@limiter.limit`), the same as `/auth/google`.
+- Without the secret the route answers 503 with a Hebrew message.
 
 ### ✅ 8c. Dependency audits + Dependabot (MEH-330 → MEH-336, April–May 2026)
 

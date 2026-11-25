@@ -1,5 +1,5 @@
 /**
- * MEH-3108: «מה מחכה לך» on the dashboard home. 0 items → nothing rendered;
+ * MEH-3108: «מה ממתין לטיפול» on the dashboard home. 0 items → nothing rendered;
  * 1 → one row; 3 → reviews, the top sign-up item, funded group buys, each
  * linking to its tool. Rendered with the real he.json so the ICU plurals are
  * read, not keys.
@@ -38,7 +38,7 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
   it("1 item: one row, singular copy, links to the reviews page", () => {
     renderCard({ ...none, unreplied_reviews: 1 });
     const card = screen.getByTestId("owner-attention");
-    expect(within(card).getByRole("heading")).toHaveTextContent("מה מחכה לך");
+    expect(within(card).getByRole("heading")).toHaveTextContent("מה ממתין לטיפול");
     expect(within(card).getAllByRole("listitem")).toHaveLength(1);
     const row = screen.getByTestId("owner-attention-reviews");
     expect(row).toHaveTextContent("ביקורת אחת בלי תגובה");
@@ -139,5 +139,26 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
       expect(container.innerHTML).toBe("");
       unmount();
     }
+  });
+
+  // MEH-3767: live rescue bags — the row that replaced the home's rescue card.
+  it("rescue: 0 → no row; 1 → singular, to the rescue tool; right after orders", () => {
+    const { unmount } = renderCard({ ...none, live_rescue_offers: 0, unreplied_reviews: 1 });
+    expect(screen.queryByTestId("owner-attention-rescue")).toBeNull();
+    unmount();
+    renderCard({ ...none, pending_orders: 1, live_rescue_offers: 1, unreplied_reviews: 1 });
+    expect(screen.getAllByRole("listitem").map((r) => r.dataset.testid)).toEqual([
+      "owner-attention-orders",
+      "owner-attention-rescue",
+      "owner-attention-reviews",
+    ]);
+    const row = screen.getByTestId("owner-attention-rescue");
+    expect(row).toHaveTextContent("סלי הפתעה פתוחים היום");
+    expect(within(row).getByRole("link", { name: "לניהול" })).toHaveAttribute("href", "/producer/dashboard/rescue");
+  });
+
+  it("rescue: several offers → the plural with the count", () => {
+    renderCard({ ...none, live_rescue_offers: 3 });
+    expect(screen.getByTestId("owner-attention-rescue")).toHaveTextContent("3 פרסומים של סלי הפתעה פתוחים היום");
   });
 });

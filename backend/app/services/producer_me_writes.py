@@ -9,7 +9,7 @@ Does NOT: route, authorize or commit — `routers/producer_me.py` does, and it
           read the whitelist from that file's text and patch the ping names on
           that module).
 Related:  backend/app/routers/producer_me.py::update_my_producer ·
-          backend/app/routers/admin.py (reconcile_secondary_phone,
+          backend/app/services/admin_producer_writes.py (reconcile_secondary_phone,
           _apply_delivery_rows).
 History:  MEH-3569 (moved verbatim from routers/producer_me.py, no behaviour
           change).
@@ -421,7 +421,7 @@ def _resolve_top_product(
         # for other producers' product ids.
         raise HTTPException(
             status_code=422,
-            detail="המוצר המוביל חייב להיות מוצר קיים של העסק שלך",
+            detail="המוצר המוביל חייב להיות מוצר קיים של העסק",
         )
     payload["top_product_name"] = product.name
 

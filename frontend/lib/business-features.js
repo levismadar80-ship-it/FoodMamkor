@@ -70,9 +70,9 @@ export const BUSINESS_FEATURES = [
   { id: "page_fill", group: "page", status: "live", codeRef: ["frontend/components/PageFillPanel.jsx", "frontend/lib/page-fill.js"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx", "frontend/components/MenuImport.jsx"] },
   { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/PricingCard.jsx"] },
-  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
+  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
   { id: "vacation_mode", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx"] },
-  { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producerPoints.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
+  { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producer-points.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
   { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/PickupScheduleField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx"] },
   { id: "draft_claim", group: "page", status: "live", tile: { icon: "PencilSimple" }, codeRef: ["backend/app/routers/producer_claim.py", "frontend/components/admin/ClaimLinkPanel.jsx"] },
   { id: "ai_writer", group: "page", status: "live", codeRef: ["backend/app/services/bio_generator.py", "frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx"] },
@@ -82,17 +82,17 @@ export const BUSINESS_FEATURES = [
   { id: "onboarding_emails", group: "page", status: "live", codeRef: ["backend/app/services/pending_nudge.py"] },
 
   // ── found ───────────────────────────────────────────────────────────────
-  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/app/[locale]/producer/dashboard/page.js"] },
+  { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/components/producer/VanityLinkCard.jsx"] },
   { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CategoriesCard.jsx"] },
   { id: "similar_businesses", group: "found", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
-  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/share" } },
   // MEH-3641: «הפרופיל שלכם בגוגל» — guide, owner self-link of the place_id,
   // live check. Copy chosen by Claude on Sapir's delegation (21/11). No tile:
   // «found» already has its 4.
-  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "tools", href: "/producer/dashboard/google-profile" } },
+  { id: "google_profile", group: "found", status: "live", codeRef: ["frontend/components/dashboard/google-profile/GoogleProfileTool.jsx", "backend/app/routers/producer_google_profile.py", "backend/app/services/google_profile.py"], dashboard: { home: "edit", href: "/producer/dashboard/google-profile" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
@@ -112,7 +112,8 @@ export const BUSINESS_FEATURES = [
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },
 
   // ── return ──────────────────────────────────────────────────────────────
-  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx"] },
+  // MEH-3785: the offer has its own page under «כלים» (it was a card in עריכה › מוצרים ומחירים).
+  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx", "frontend/app/[locale]/producer/dashboard/offer/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/offer" } },
   { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
   { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
   // MEH-2885: experiences (hosted visits) — he copy approved word for word by Sapir 10/11.
@@ -121,6 +122,8 @@ export const BUSINESS_FEATURES = [
   { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"], dashboard: { home: "insights", href: "/producer/dashboard/insights" } },
   { id: "waitlist", group: "return", status: "live", codeRef: ["backend/app/services/delivery_waitlist.py", "frontend/components/DeliveryWaitlistForm.jsx"] },
   { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"], dashboard: { home: "tools", href: "/producer/dashboard/rescue" } },
+  // MEH-3703: a sub-page of the rescue tab (DASHBOARD_SUBPAGES), so no `dashboard` of its own.
+  { id: "rescue_schedule", group: "return", status: "live", tip: true, flag: () => rescueBagsEnabled(), codeRef: ["frontend/components/dashboard/RescueScheduleForm.jsx", "backend/app/services/rescue_schedule.py"] },
 
   // ── trust ───────────────────────────────────────────────────────────────
   { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/cards/LicenseCard.jsx"] },
@@ -174,11 +177,19 @@ export const DASHBOARD_SUBPAGES = {
   "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
   "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
   "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+  // MEH-3703: the weekly bag routine, from the publish card and the strip.
+  "/producer/dashboard/rescue/schedule": "/producer/dashboard/rescue",
+  // MEH-3749: the print view of the QR card, opened from the «שיתוף» page
+  // (that page is the qr_code tool's landing page now).
+  "/producer/dashboard/qr-card": "/producer/dashboard/share",
   // MEH-2916: a view of an existing surface (her own business page), not a new
   // tool — so a sub-page entry rather than a registry tool with its own copy.
   // Reached in 1 tap from anywhere in the dashboard: the «צפייה בדף» link in
   // the tab row points here while the business is unapproved.
   "/producer/dashboard/preview": "/producer/dashboard",
+  // MEH-3746: the order form as a buyer sees it — a view of the orders tab,
+  // reached from the link beside its title.
+  "/producer/dashboard/orders/preview": "/producer/dashboard/orders",
   // MEH-3200: the «מה חדש» release archive — not a tool, a page about the
   // site itself. Reached from the home's top card and fixed row (1 tap).
   "/producer/dashboard/whats-new": "/producer/dashboard",
@@ -226,4 +237,16 @@ export function visibleBusinessFeatures() {
 /** The number in the total line. Derived — never write the count as copy. */
 export function countVisibleBusinessFeatures() {
   return visibleBusinessFeatures().length;
+}
+
+/**
+ * MEH-3723: the dashboard tab that holds a tool, by its landing href — so the
+ * «חדש» dot lands on the tab where the new tool actually lives (the Google
+ * profile moved from «כלים» to «עריכה»). An href no entry claims stays on «כלים».
+ * @param {string} href
+ * @returns {string} a tab key: "tools", "edit", "insights", …
+ */
+export function dashboardTabForHref(href) {
+  const feature = BUSINESS_FEATURES.find((f) => f.dashboard?.href === href);
+  return feature?.dashboard?.home || "tools";
 }

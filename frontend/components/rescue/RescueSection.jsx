@@ -8,8 +8,9 @@ import { Clock, MapPin } from "@phosphor-icons/react";
 
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
-import { fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
-import useRescueReservation from "@/lib/useRescueReservation";
+import { bagDay, rescueCancelText, fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
+import useIsraelToday from "@/lib/use-israel-today";
+import useRescueReservation from "@/lib/use-rescue-reservation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID, rescueOfferPath } from "@/lib/producer-path";
@@ -34,12 +35,19 @@ import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
  *           cancelled the bag) · MEH-3586 (reserve/cancel state moved to
- *           lib/useRescueReservation, shared with the bag page) · MEH-3585
+ *           lib/use-rescue-reservation, shared with the bag page) · MEH-3585
  *           (drawn by the shared ui/OfferCard, the group-buy card: same size,
  *           seeds for the bags left)
  */
 
+/** The pickup point as one line, or null when the row is gone or has none. */
+function pickupAddress(offer) {
+  const p = offer?.producer;
+  return [p?.location_address, p?.location_city].filter(Boolean).join(", ") || null;
+}
+
 export default function RescueSection({ producer }) {
+  const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
   // the bag and a product never name the same allergen differently.
@@ -72,7 +80,10 @@ export default function RescueSection({ producer }) {
       const ticket = ++latest.current;
       return fetchOffers({ city: producer?.city || undefined })
         .then((rows) => {
-          if (ticket === latest.current) setOffer(rows.find((row) => row.producer?.id === producer?.id) || null);
+          if (ticket !== latest.current) return;
+          // MEH-3702: today's bag first; tomorrow's when there is none today.
+          const own = rows.filter((row) => row.producer?.id === producer?.id);
+          setOffer(own.find((row) => bagDay(row.date) === "today") || own[0] || null);
         })
         .catch(() => {
           if (!keepOnError && ticket === latest.current) setOffer(null);
@@ -88,7 +99,7 @@ export default function RescueSection({ producer }) {
   // bag's own page.
   const {
     order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed,
-    cancelled, businessCancelled, reserve, cancel,
+    cancelled, businessCancelled, businessCancelledDay, reserve, cancel,
   } = useRescueReservation({ producerId: producer?.id, onCancelled: () => loadOffer(true) });
 
   if (!rescueBagsEnabled()) return null;
@@ -104,7 +115,7 @@ export default function RescueSection({ producer }) {
   // business's own LOW estimate (worthAgorot), so never a made-up discount.
   const worthA = worthAgorot(offer);
   const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
-  const cancelUntil = israelTime(offer?.cancel_until);
+  const cancelUntil = rescueCancelText(offer?.cancel_until, t); // MEH-3702
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);
@@ -146,13 +157,20 @@ export default function RescueSection({ producer }) {
           data-testid="rescue-business-cancelled"
           className="mt-3 font-body-sm text-sm text-text bg-surface-card border border-border rounded-md px-4 py-3"
         >
-          {t("section.business_cancelled")}
+          {t(businessCancelledDay === "tomorrow" ? "section.business_cancelled_tomorrow" : "section.business_cancelled")}
         </p>
       )}
 
       {order ? (
         <div className="mt-3 space-y-4">
-          <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+          <RescueConfirmation
+            order={order}
+            onCancel={cancel}
+            cancelling={busy}
+            // MEH-3704: what the friend needs. The bag row can be gone (sold
+            // out), so the address is sent only when it is still listed.
+            place={{ name: producer?.name, address: pickupAddress(offer) }}
+          />
           {errorLine}
           {/* The review only appears once the business marked it handed; the
               API refuses it before that with a 409, so showing it earlier
@@ -221,7 +239,7 @@ export default function RescueSection({ producer }) {
                   <Clock aria-hidden="true" size={14} className="shrink-0" />
                   {/* MEH-3585: say the day — the public list is today's bags
                       only, and a bare window reads as «every day». */}
-                  {t("section.pickup_today", { from, until })}
+                  {t(bagDay(offer.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "section.pickup_today", { from, until })}
                 </span>
               )
             }
@@ -264,10 +282,16 @@ export default function RescueSection({ producer }) {
                 </p>
               ) : (
                 <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                  {t("section.allergens_undeclared")}
+                  {t("section.allergens_undeclared_short")}
                 </p>
               )}
             </details>
+            {/* MEH-3823: outside the fold, so buyers always see it, whatever
+                was declared — a surprise bag changes daily (the Too Good To
+                Go line). */}
+            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-section-allergens-ask">
+              {t("section.allergens_ask")}
+            </p>
             {/* MEH-3586: the bag's own page — map, how pickup works, the
                 cancel rule. Next: the whole card becomes this link and the
                 reserve moves there (bag-page thread, follow-up PR). */}

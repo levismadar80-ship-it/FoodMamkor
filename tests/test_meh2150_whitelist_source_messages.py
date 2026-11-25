@@ -23,7 +23,7 @@ import re
 
 import pytest
 
-import app.routers.producer_me as producer_me_module
+import app.services.producer_owner_update as producer_me_module  # MEH-3841: the whitelist moved here
 from tests.whitelist_source import WHITELIST_NAME, read_producer_writable_fields
 
 

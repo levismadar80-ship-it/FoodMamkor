@@ -23,7 +23,9 @@
  *           place + confirmation map up front, the four detail fields behind
  *           "פרטים נוספים", GBP pattern);
  *           MEH-3512 (pickup days + own order cutoff for a pickup point or a
- *           market stand — PickupScheduleField, shown before the disclosure).
+ *           market stand — PickupScheduleField, shown before the disclosure);
+ *           MEH-3790 (`hoursElsewhere`: on the owner's page the hours field
+ *           moves to the one «שעות» card, HoursCard.jsx).
  */
 "use client";
 
@@ -58,6 +60,8 @@ import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/Skeleton";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -166,7 +170,18 @@ function toEditForm(loc) {
 const OWNER_BASE = "/producers/me/locations";
 
 /** @param {{ basePath?: string }} props */
-export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChange } = {}) {
+// MEH-3790: `hoursElsewhere` — the owner's edit page shows opening hours in
+// its one «שעות» card (HoursCard.jsx), so the location form drops its hours
+// field AND stops sending `opening_hours`. The PUT is a partial update
+// (`exclude_unset`), so a form opened before an hours save cannot write the
+// old value back. `refreshKey` lets that card make this list re-read after it
+// saves. The admin page passes neither and keeps the field.
+export default function LocationsEditor({
+  basePath = OWNER_BASE,
+  onLocationsChange,
+  hoursElsewhere = false,
+  refreshKey = 0,
+} = {}) {
   const t = useTranslations("settings.locations");
   const tKind = useTranslations("settings.locations.kind");
   const [locations, setLocations] = useState(null);
@@ -263,7 +278,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
       .get(basePath)
       .then((r) => setLocations(r.data))
       .catch(() => setLoadError(true));
-  }, [reloadKey, basePath]);
+  }, [reloadKey, basePath, refreshKey]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -280,10 +295,12 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
   // from a toast to the in-form slot, and returning the string keeps this
   // helper from knowing about either.
   const validate = useCallback((form) => {
-    const parsed = LocationInputSchema.safeParse(buildPayload(form));
+    const payload = buildPayload(form);
+    if (hoursElsewhere) delete payload.opening_hours;
+    const parsed = LocationInputSchema.safeParse(payload);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     return { data: parsed.data };
-  }, []);
+  }, [hoursElsewhere]);
 
   const handleCreate = useCallback(
     async (form) => {
@@ -417,6 +434,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
                 // the client hint and the server rule agreeing.
                 siblings={locations.filter((l) => l.id !== loc.id)}
                 initial={toEditForm(loc)}
+                showHours={!hoursElsewhere}
                 saving={saving}
                 error={saveError}
                 errorCode={saveErrorCode}
@@ -452,6 +470,7 @@ export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChan
           heading={t("add_heading")}
           siblings={locations}
           initial={EMPTY_FORM}
+          showHours={!hoursElsewhere}
           saving={saving}
           error={saveError}
           errorCode={saveErrorCode}
@@ -523,23 +542,21 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
             {t("set_primary_cta")}
           </button>
         ) : null}
-        <button
-          type="button"
+        <IconButton
           onClick={onEdit}
-          aria-label={t("edit_aria")}
+          label={t("edit_aria")}
           className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-primary"
         >
           <Pencil size={18} />
-        </button>
-        <button
-          type="button"
+        </IconButton>
+        <IconButton
           onClick={onDelete}
           disabled={deleting}
-          aria-label={t("delete_aria")}
+          label={t("delete_aria")}
           className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
         >
           <Trash size={18} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );
@@ -555,6 +572,7 @@ function LocationForm({
   onSubmit,
   onCancel,
   siblings = [],
+  showHours = true,
 }) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
@@ -634,7 +652,8 @@ function LocationForm({
         (initial.label || "").trim() ||
           (initial.phone || "").trim() ||
           (initial.pickup_note || "").trim() ||
-          (initial.opening_hours || "").trim(),
+          // MEH-3790: hours are not in this form on the owner page.
+          (showHours && (initial.opening_hours || "").trim()),
       ) || (initial.location_precision || "exact") !== "exact",
   );
   const labelRef = useRef(null);
@@ -779,14 +798,13 @@ function LocationForm({
     >
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-text">{heading}</h4>
-        <button
-          type="button"
+        <IconButton
           onClick={onCancel}
-          aria-label={t("cancel_cta")}
+          label={t("cancel_cta")}
           className="text-fg-muted hover:text-text"
         >
           <X size={16} weight="bold" />
-        </button>
+        </IconButton>
       </div>
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
@@ -977,13 +995,15 @@ function LocationForm({
           {/* MEH-2805: day-row picker instead of free text — the stored string
               is canonical from the first save, and an unreadable legacy value
               is shown verbatim and left untouched until the owner edits it. */}
-          <LocationHoursField
-            value={form.opening_hours}
-            onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
-            onValidityChange={setHoursValid}
-            isPrimary={!!form.is_primary}
-            kind={form.kind}
-          />
+          {showHours && (
+            <LocationHoursField
+              value={form.opening_hours}
+              onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
+              onValidityChange={setHoursValid}
+              isPrimary={!!form.is_primary}
+              kind={form.kind}
+            />
+          )}
           <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
             <select
               value={form.location_precision}
@@ -1010,17 +1030,16 @@ function LocationForm({
               catch. Shown from the second location onward, where it decides
               something. */}
           {siblings.length > 0 ? (
-            <label className="flex items-center gap-2 self-end text-sm text-text">
-              <input
-                type="checkbox"
-                checked={!!form.is_primary}
-                onChange={(e) =>
+            <Checkbox
+              className="flex items-center gap-2 self-end text-sm text-text"
+              checked={!!form.is_primary}
+              onChange={(e) =>
                   setForm((f) => ({ ...f, is_primary: e.target.checked }))
                 }
-                data-testid="location-primary"
-              />
+              data-testid="location-primary"
+            >
               {tForm("primary_label")}
-            </label>
+            </Checkbox>
           ) : null}
         </div>
       </details>

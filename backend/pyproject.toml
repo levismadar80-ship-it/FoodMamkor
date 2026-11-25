@@ -37,7 +37,7 @@ dev = [
     "mutmut>=3.8.1",
     "mypy==2.4.1",
     "pip-audit>=2.10.1",
-    "hypothesis>=6.170.16",
+    "hypothesis>=6.170.17",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=16.7",
@@ -167,6 +167,7 @@ plugins = ["pydantic.mypy"]
 # STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
 files = [
+    "app/utils/money.py",
     "app/services/email_layout.py",
     "app/site_pages.py",
     "app/services/chat_site_knowledge.py",
@@ -285,6 +286,7 @@ files = [
     "app/schemas/recipes_outreach.py",
     "app/schemas/registration.py",
     "app/schemas/rescue.py",
+    "app/schemas/rescue_schedule.py",
     "app/schemas/reviews.py",
     "app/schemas/schemas.py",
     "app/schemas/site.py",
@@ -335,7 +337,12 @@ files = [
     "app/services/group_buy_capacity.py",
     "app/services/group_buy_pickup_text.py",
     "app/routers/group_buy_mine.py",
+    "app/routers/my_orders_any.py",
     "app/schemas/group_buy_mine.py",
+    "app/routers/group_buy_pickup.py",
+    "app/schemas/group_buy_pickup.py",
+    "app/services/group_buy_no_show.py",
+    "app/schemas/my_orders_any.py",
     "app/services/group_buy_pickup_place.py",
     "app/services/group_buy_pickup_reminder.py",
     "app/services/group_buy_delist.py",
@@ -356,11 +363,15 @@ files = [
     "app/services/moderation_schemas.py",
     "app/services/newsletter_sync.py",
     "app/services/oauth_verifiers.py",
+    "app/services/google_code_exchange.py",  # MEH-3690
+    "app/routers/auth_google_code.py",  # MEH-3690
     "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
+    "app/services/ops_alert.py",
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
     "app/services/page_freshness.py",
+    "app/services/freshness_month_numbers.py",
     "app/services/page_freshness_digest.py",
     "app/services/signup_fill_digest.py",
     "app/services/password_policy.py",
@@ -403,6 +414,8 @@ files = [
     "app/services/registration_reminders.py",
     "app/services/rescue_business_emails.py",
     "app/services/rescue_emails.py",
+    "app/services/rescue_reminders.py",
+    "app/services/rescue_schedule.py",
     "app/services/review_conflicts.py",
     "app/services/review_reports.py",
     "app/services/rescue_no_show.py",
@@ -438,6 +451,15 @@ files = [
     "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
     "app/routers/rescue_pilot.py",
+    "app/services/ai_budget.py",
+    "app/services/form_filler.py",
+    "app/services/form_fill_windows.py",
+    "app/routers/form_fill.py",
+    "app/schemas/form_fill.py",
+    "app/services/producer_owner_update.py",  # MEH-3841
+    "app/services/admin_producer_writes.py",  # MEH-3843
+    "app/services/admin_user_writes.py",  # MEH-3537
+    "app/services/admin_category_writes.py",  # MEH-3537
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

@@ -14,7 +14,7 @@
  *           this line (Sapir's table). Renders nothing until the read lands,
  *           and nothing when it fails: a missing summary is not an error the
  *           owner can act on.
- * Related:  app/[locale]/producer/dashboard/page.js (mounts it under «מה מחכה לך»).
+ * Related:  app/[locale]/producer/dashboard/page.js (mounts it under «מה ממתין לטיפול»).
  * History:  MEH-3194 (creation).
  */
 
@@ -23,10 +23,8 @@ import { useTranslations } from "next-intl";
 import { ChartLineUp } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
-import { formatPrice } from "@/lib/utils";
 import { MyBillingSummaryProducersMeBillingSummaryGetResponse as SummarySchema } from "@/lib/generated/api.zod";
-
-const AGOROT_PER_SHEKEL = 100;
+import { formatAgorot } from "@/lib/money";
 
 /**
  * The message key and its values. Sapir's table: 0 / 1 / many, and no
@@ -36,7 +34,7 @@ const AGOROT_PER_SHEKEL = 100;
  */
 function monthValueMessage(s) {
   if (s.bookings <= 0) return ["none", {}];
-  const value = s.value_agorot > 0 ? formatPrice(s.value_agorot / AGOROT_PER_SHEKEL) : null;
+  const value = s.value_agorot > 0 ? formatAgorot(s.value_agorot) : null;
   const base = s.bookings === 1 ? "one" : "many";
   return value ? [`${base}_value`, { count: s.bookings, value }] : [base, { count: s.bookings }];
 }

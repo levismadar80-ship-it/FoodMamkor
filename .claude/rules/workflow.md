@@ -605,6 +605,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     `hebrew-content-writer` and `clarify`.
     A PR that adds a component, hook or helper module also carries `Reuse:`
     (what existing code it checked first, MEH-3612); `reuse-line-guard.sh` warns.
+    A new primitive (overlay, positioning, form handling, date or calendar,
+    email rendering, auth glue) also names on that line the maintained
+    open-source library it checked, with license, size and RTL support, or
+    why none fits; when one fits, the PR uses it (Sapir 24/11, MEH-3801).
 
     | Task | Skills |
     |---|---|
@@ -614,6 +618,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     | Signup / registration / onboarding | `signup-flow-cro`, `onboarding-cro`, `form-cro` |
     | Metadata, landing pages, sitemap, JSON-LD | `seo-audit`, `schema-markup`, `ai-seo` |
     | Email flows | `email-sequence` |
+    | Mehamakor outreach to businesses, business pages, social replies, scripts, Instagram posts, reels (MEH-3757; these win over the generic `cold-email` / `social-content` / `copywriting`) | `mehamakor-daily-outreach`, `mehamakor-business-page`, `hebrew-human-comments`, `hebrew-spoken-script`, `mehamakor-instagram-posts`, `mehamakor-voice-reel` |
     | Pricing, plans, upgrade prompts | `pricing-strategy`, `paywall-upgrade-cro` |
     | Personal data, consent, terms, legal | `israeli-privacy-shield`, `israeli-ecommerce-compliance`, `hebrew-legal-research` |
     | RTL / i18n | `hebrew-rtl-best-practices`, `hebrew-i18n` |

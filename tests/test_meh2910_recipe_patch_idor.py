@@ -384,7 +384,7 @@ def test_patch_cannot_link_another_businesss_product(client, db, monkeypatch):
     # Measured by a reviewer: `foreign = []` plus a `missing` computation
     # that fires instead left this test passing.
     assert resp.json()["detail"] == (
-        "כל המוצרים המקושרים חייבים להיות שייכים לעסק שלך"
+        "כל המוצרים המקושרים חייבים להיות שייכים לעסק"
     ), resp.text
     after = _touchable_snapshot(db, recipe_id)
     assert after == before, (

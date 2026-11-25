@@ -18,6 +18,10 @@
  *           MEH-3618 (slots only on days every picked product is made)
  *           MEH-3640 what she typed survives closing the sheet, and a line
  *           says why «שליחת הבקשה» waits for a city
+ *           MEH-3746 inside the owner's preview: no quote, the send button
+ *           says it cannot send
+ *           MEH-3763 the seller line when no business number is set yet
+ *           (owner's preview only)
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -33,6 +37,7 @@ import OrderSheetPhone from "@/components/public/OrderSheetPhone";
 import { NoteField, SlotChoice, WayChoice } from "@/components/public/OrderSheetChoices";
 import { useRouter } from "@/i18n/navigation";
 import { useOptionalAuth } from "@/lib/auth-context";
+import { usePreviewMode } from "@/lib/preview-mode";
 import { detailToMessage } from "@/lib/errors";
 import { dayLabel, hhmm, shekelsText } from "@/lib/product-orders";
 import {
@@ -49,6 +54,7 @@ import {
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
 import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
+import Checkbox from "@/components/ui/Checkbox";
 
 const QUOTE_DELAY_MS = 400;
 
@@ -147,11 +153,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   const delivery = fulfilment === "delivery";
   const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
-  useQuote(needsCity ? null : body, setAnswer, setQuoteError, onStale);
+  // MEH-3746: the owner's preview asks no quote — the quote route refuses a
+  // business whose ordering is off — and cannot send.
+  const preview = usePreviewMode();
+  useQuote(needsCity || preview ? null : body, setAnswer, setQuoteError, onStale);
   const quote = answer && answer.body === body ? answer.quote : null;
 
   const submit = async (/** @type {any} */ e) => {
     e.preventDefault();
+    if (preview) return; // Enter in a field submits the form too (MEH-3746)
     setBusy(true);
     setError(null);
     try {
@@ -193,10 +203,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
-          <label className="flex items-start gap-2 text-sm text-text">
-            <input type="checkbox" required checked={form.age} onChange={(e) => set({ age: e.target.checked })} data-testid="order-sheet-age" />
+          <Checkbox
+            className="flex items-start gap-2 text-sm text-text"
+            required
+            checked={form.age}
+            onChange={(e) => set({ age: e.target.checked })}
+            data-testid="order-sheet-age"
+          >
             {t("age")}
-          </label>
+          </Checkbox>
         )}
       </div>
       <Totals quote={quote} delivery={delivery} t={t} />
@@ -204,9 +219,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
       {quoteError && <InlineMessage tone="error" className="mt-3">{quoteError}</InlineMessage>}
       {error && <InlineMessage tone="error" className="mt-3">{error}</InlineMessage>}
       <div className="mt-5 flex gap-3">
-        <Button type="submit" disabled={busy || !slot || !quote} data-testid="order-sheet-send" className="flex-1">
+        <Button type="submit" disabled={preview || busy || !slot || !quote} data-testid="order-sheet-send" className="flex-1">
           {busy && <ButtonSpinner />}
-          {sendLabel(quote, t)}
+          {preview ? t("preview_send") : sendLabel(quote, t)}
         </Button>
         <Button type="button" variant="outlined" onClick={onClose} data-autofocus="">{t("close")}</Button>
       </div>
@@ -289,7 +304,10 @@ function Disclosures({ producer, menu, deadline, locale, t }) {
       {/* MEH-3216: the seller's identity before the order, as distance selling requires.
           The city only: the street address stays private (MEH-829). */}
       <p data-testid="order-sheet-seller">
-        {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })}
+        {/* MEH-3763: an empty number reaches only the owner's preview (a buyer's menu always has one). */}
+        {menu.business_id_number
+          ? t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })
+          : t("seller_line_no_number", { name: producer?.name ?? "", city: producer?.city?.trim() || "none" })}
       </p>
     </div>
   );

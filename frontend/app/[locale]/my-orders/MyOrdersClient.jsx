@@ -3,45 +3,98 @@
 
 /**
  * Module:   MyOrdersClient
- * Purpose:  «ההזמנות שלי»: the signed-in buyer's on-site orders, newest first.
- *           Each row opens the order's existing status page.
- * Touches:  GET /users/me/product-orders (product_order_buyer.py).
- * Does NOT: show an order's details or act on it — /order/[id] does
- *           (OrderStatusClient.jsx), and reads it by id for its owner.
- *           Registrations and rescue bags are not here: they are separate
- *           products with their own links.
- * Related:  lib/use-my-orders-nav-gate.js (the menu link), lib/nav-registry.js
- * History:  MEH-3525 (creation). The route had no screen since MEH-3216 —
- *           found by the unwired-route guard (MEH-3523).
+ * Purpose:  «ההזמנות שלי»: everything the signed-in buyer ordered on the site —
+ *           product orders, group buys and surprise bags — in one list, split
+ *           into «פעילות» and «קודמות». Each row opens the item's own page.
+ * Touches:  GET /users/me/product-orders (product_order_buyer.py),
+ *           GET /users/me/group-buys (group_buy_mine.py),
+ *           GET /rescue/orders/history (rescue.py) — in parallel.
+ * Does NOT: show an item's details or act on it — /order/[id], /group-buys/[id]
+ *           and /rescue/[offerId] do. Event and workshop registrations are not
+ *           here: they are a separate product with their own links.
+ * Related:  lib/my-orders-merge.js (sections and order), MyOrdersRow.jsx,
+ *           lib/use-my-orders-nav-gate.js (the menu link), lib/nav-registry.js
+ * History:  MEH-3525 (creation). MEH-3698: one list for all three kinds;
+ *           /my-group-buys redirects here.
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Receipt } from "@phosphor-icons/react";
 
-import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { formatDate } from "@/lib/format-date";
+import { israelToday } from "@/lib/israel-date";
+import { mergeMyOrders } from "@/lib/my-orders-merge";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
-import { ListOwnOrdersUsersMeProductOrdersGetResponse } from "@/lib/generated/api.zod";
+import {
+  ListMyReservationHistoryRescueOrdersHistoryGetResponse,
+  ListOwnGroupBuysUsersMeGroupBuysGetResponse,
+  ListOwnOrdersUsersMeProductOrdersGetResponse,
+} from "@/lib/generated/api.zod";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
+import MyOrdersRow from "./MyOrdersRow";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
-const STATUSES = ["pending", "change_proposed", "confirmed", "ready", "handed", "declined", "cancelled", "expired", "no_show"];
+
+// Each source: where it is read, and how its rows come out of a parsed body.
+// Rule 19: a body that does not parse is that source failing, not a list.
+// Each read is a literal `api.get("…")`: scripts/check_api_contract.py finds
+// callers by that shape.
+const SOURCES = [
+  { key: "orders", read: () => api.get("/users/me/product-orders"), schema: ListOwnOrdersUsersMeProductOrdersGetResponse, rows: (/** @type {any} */ d) => d.orders },
+  { key: "groupBuys", read: () => api.get("/users/me/group-buys"), schema: ListOwnGroupBuysUsersMeGroupBuysGetResponse, rows: (/** @type {any} */ d) => d.group_buys },
+  { key: "bags", read: () => api.get("/rescue/orders/history"), schema: ListMyReservationHistoryRescueOrdersHistoryGetResponse, rows: (/** @type {any} */ d) => d },
+];
+
+/**
+ * One source. 404 = that feature is off: nobody has any, so an empty list.
+ * @param {typeof SOURCES[number]} source
+ * @returns {Promise<any[] | null>} null = this source failed
+ */
+async function readSource(source) {
+  try {
+    const r = await source.read();
+    const parsed = source.schema.safeParse(r.data);
+    return parsed.success ? source.rows(parsed.data) : null;
+  } catch (err) {
+    return /** @type {any} */ (err)?.response?.status === 404 ? [] : null;
+  }
+}
+
+/** @returns {Promise<{ lists: Record<string, any[]>, failed: number }>} */
+async function readAll() {
+  const results = await Promise.all(SOURCES.map(readSource));
+  /** @type {Record<string, any[]>} */
+  const lists = {};
+  SOURCES.forEach((s, i) => { lists[s.key] = results[i] ?? []; });
+  return { lists, failed: results.filter((r) => r === null).length };
+}
+
+/** @param {{ title: string, rows: any[], testId: string }} props */
+function OrdersSection({ title, rows, testId }) {
+  if (rows.length === 0) return null;
+  return (
+    <section className="mb-6" data-testid={testId}>
+      <SectionHeading size="content" className="mb-2">{title}</SectionHeading>
+      <ul className="divide-y divide-border bg-surface border border-border rounded-md" data-testid="my-orders-list">
+        {rows.map((row) => <MyOrdersRow key={`${row.kind}-${row.id}`} row={row} />)}
+      </ul>
+    </section>
+  );
+}
 
 export default function MyOrdersClient() {
   const t = useTranslations("my_orders");
   const tRoot = useTranslations();
-  const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [orders, setOrders] = useState(/** @type {any[] | null} */ (null));
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState(/** @type {{ lists: Record<string, any[]>, failed: number } | null} */ (null));
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -51,51 +104,41 @@ export default function MyOrdersClient() {
       return;
     }
     let live = true;
-    api
-      .get("/users/me/product-orders")
-      .then((r) => {
-        // Rule 19: parse before render; a bad body is an error, not a list.
-        const parsed = ListOwnOrdersUsersMeProductOrdersGetResponse.safeParse(r.data);
-        if (!live) return;
-        if (parsed.success) setOrders(parsed.data.orders);
-        else setFailed(true);
-      })
-      .catch((err) => {
-        if (!live) return;
-        // 404 = on-site ordering is off: nobody has orders, so the empty state.
-        if (err?.response?.status === 404) setOrders([]);
-        else setFailed(true);
-      });
+    readAll().then((next) => { if (live) setState(next); });
     return () => { live = false; };
   }, [user, authLoading, router, attempt]);
+
+  const retry = () => { setState(null); setAttempt((a) => a + 1); };
+  const allFailed = state?.failed === SOURCES.length;
+  const now = new Date();
+  const merged = state && !allFailed ? mergeMyOrders(state.lists, { now, today: israelToday(now) }) : null;
+  const empty = merged && merged.active.length === 0 && merged.past.length === 0;
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8" data-testid="my-orders">
       <h1 className="text-2xl font-bold text-text mb-6">{t("title")}</h1>
-      {failed ? (
+      {allFailed || (empty && state.failed > 0) ? (
         <div data-testid="my-orders-error" className="space-y-3">
           <InlineMessage>{t("load_error")}</InlineMessage>
-          <Button variant="outlined" size="sm" onClick={() => { setFailed(false); setAttempt((a) => a + 1); }} data-testid="my-orders-error-retry">
+          <Button variant="outlined" size="sm" onClick={retry} data-testid="my-orders-error-retry">
             {tRoot("error.retry")}
           </Button>
         </div>
-      ) : orders === null ? (
+      ) : !merged ? (
         <Skeleton />
-      ) : orders.length === 0 ? (
+      ) : empty ? (
         <EmptyState icon={Receipt} title={t("empty")} ctaLabel={t("empty_cta")} ctaHref="/producers" />
       ) : (
-        <ul className="divide-y divide-border bg-surface border border-border rounded-md" data-testid="my-orders-list">
-          {orders.map((o) => (
-            <li key={o.id}>
-              <Link href={`/order/${o.id}`} className="block px-4 py-3 min-h-touch hover:bg-background" data-testid="my-orders-row">
-                {/* A status this page has no word for shows no status, never a wrong one. */}
-                {STATUSES.includes(o.status)
-                  ? t("row", { business: o.producer_name, date: formatDate(o.created_at, locale), status: t(`status.${o.status}`) })
-                  : t("row_no_status", { business: o.producer_name, date: formatDate(o.created_at, locale) })}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          {state.failed > 0 && (
+            <div data-testid="my-orders-partial" className="mb-4 space-y-2">
+              <InlineMessage>{t("partial_error")}</InlineMessage>
+              <Button variant="outlined" size="sm" onClick={retry}>{tRoot("error.retry")}</Button>
+            </div>
+          )}
+          <OrdersSection title={t("section_active")} rows={merged.active} testId="my-orders-active" />
+          <OrdersSection title={t("section_past")} rows={merged.past} testId="my-orders-past" />
+        </>
       )}
     </main>
   );
