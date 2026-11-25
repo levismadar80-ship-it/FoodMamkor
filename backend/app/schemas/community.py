@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from app.services.sanitization import sanitize_text
 from app.schemas.producer_out import ProducerListOut
+from app.schemas.producer_staff import StaffOfOut  # MEH-3526
 
 
 # --- User ---
@@ -57,6 +58,9 @@ class UserOut(BaseModel):
     producer_resubmission_count: int = 0
     # MEH-192: email verification status.
     email_verified: bool = False
+    # MEH-3526: the business this account handles orders for, as staff
+    # (set by GET /auth/me only; the dashboard opens its orders tab on it).
+    staff_of: StaffOfOut | None = None
 
     model_config = {"from_attributes": True}
 

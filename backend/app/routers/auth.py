@@ -48,6 +48,8 @@ from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services import resend_verify_cap  # MEH-2906
 from app.services import admin_passkey as admin_passkey_service  # MEH-3305
 from app.schemas.admin_passkey import PasskeyRequired  # MEH-3305
+from app.schemas.producer_staff import StaffOfOut  # MEH-3526
+from app.services.order_access import staff_of  # MEH-3526
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -605,6 +607,9 @@ def get_me(
     out = UserOut.model_validate(user)
     # MEH-3248: /settings explains instead of offering a delete button.
     out.is_super_admin = is_super_admin(user)
+    # MEH-3526: order staff of a business (read per request, never in the JWT).
+    staff = None if user.producer_id else staff_of(db, user)
+    out.staff_of = StaffOfOut(**staff) if staff else None
     if user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
         if producer:

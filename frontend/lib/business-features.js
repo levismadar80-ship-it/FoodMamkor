@@ -106,7 +106,7 @@ export const BUSINESS_FEATURES = [
   // by Sapir 19/11. Live: she approved turning PRODUCT_ORDERS_ENABLED on in
   // production (19/11 11:37Z); the flag is set right after the release that
   // carries this entry. Each business still opts in from its dashboard.
-  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "frontend/components/dashboard/orders/OrderCustomersCard.jsx", "backend/app/routers/product_order_buyer.py"] },
+  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "frontend/components/dashboard/orders/OrderCustomersCard.jsx", "backend/app/routers/product_order_buyer.py", "frontend/components/dashboard/staff/StaffCard.jsx"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "nav_buttons", group: "contact", status: "live", tile: { icon: "NavigationArrow" }, codeRef: ["frontend/components/NavAppGlyphs.jsx"] },
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },

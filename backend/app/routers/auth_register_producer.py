@@ -79,6 +79,7 @@ from app.routers.auth import (
     _set_fingerprint_cookie,
     _set_refresh_cookie,
 )
+from app.services.staff_membership import end_staff_membership
 
 logger = logging.getLogger(__name__)
 
@@ -359,6 +360,8 @@ async def register_producer(
         user.producer_id = producer.id
         user.role = "producer"  # type: ignore[assignment]
         user.is_producer = True  # type: ignore[assignment]
+        # MEH-3526: an owner is no longer someone else's order staff.
+        end_staff_membership(db, user.id)
         # MEH-1995: the upgrade path collects ToS consent exactly like the two
         # account-creation paths — the checkbox renders in the STORY step with
         # no isUpgrade condition and hard-gates submit

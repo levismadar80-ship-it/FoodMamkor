@@ -56,10 +56,12 @@ import {
   GetSavedIdsUsersMeSavedIdsGetResponse,
   GetSavedUsersMeSavedGetResponse,
   GetStatsStatsGetResponse,
+  InviteStaffProducersMeStaffPostResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
   ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
+  ListStaffProducersMeStaffGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
   RandomProducerProducersRandomGetResponse,
@@ -199,3 +201,7 @@ export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResp
 // --- sign-in --------------------------------------------------------------
 // MEH-3690: our own Google button reads the ID token the code was swapped for.
 export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;
+
+// MEH-3526: the owner's order-staff list, and the row an invite answers with.
+export const StaffListOutSchema = ListStaffProducersMeStaffGetResponse;
+export const StaffMemberOutSchema = InviteStaffProducersMeStaffPostResponse;
