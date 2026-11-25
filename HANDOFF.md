@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-25 — העברת טיוטה של אדמין לבעלת העסק שנרשמה לבד (PR #5349)
+
+**שורה אחת:** ב-staging. כשטיוטה בלי בעלים ועסק שבעלת העסק רשמה בעצמה נראים כמו אותו עסק, האדמין רואה תג בשתי השורות, מקבלת מייל כשהיא שולחת לבדיקה, ובלחיצה מאושרת מעבירה את הטיוטה לחשבון שלה.
+
+**מה צריך לדעת לפני עבודה:**
+- **עמודה או טבלת בת חדשה עם FK ל-`producers`** צריכה סיווג ב-`backend/app/services/draft_merge_policy.py` (עמודה: מי גובר; טבלה: APPEND, REPLACE או LEFT). בלי סיווג `TestPolicyCoverage` נכשל.
+- **ההתאמה** נמצאת ב-`backend/app/services/draft_twins.py`. אות חזק אחד מספיק (טלפון, מייל כניסה, אינסטגרם, דומיין אתר, פייסבוק). שם נחשב רק באותה עיר. קישורי פוסט ושיתוף, דומיינים משותפים וטלפונים מזויפים לא נחשבים.
+- **מנרמל השם** עבר ל-`backend/app/services/business_name_key.py`, ובדיקת השם בהרשמה ותג הכפילות משתמשים בו.
+- **המיזוג מסרב** כשסוג העסק שונה, כשאחד מהם חשבון בדיקה והשני לא, כשיש לה הזמנה פתוחה, או כשהעמוד מאושר.
+- **הצילומים** (טלפון ומחשב) בתיקייה QA-evidence של הכרטיס ב-Drive. בתצוגה המקדימה נוסף `draft_twin` לתשובה, כי ה-backend של staging עוד לא כלל את ה-PR.
+
 ## 2026-11-25 — סלי הפתעה: סדר שבועי ושעון 24 שעות (PR #5316, #5290, #5324)
 
 **שורה אחת:** שלושה PR-ים ב-staging. בית עסק קובע סדר שבועי לכל נקודת איסוף, והסל מתפרסם לבד. השעות נבחרות בשעון 24 שעות בשני הטפסים, ושני הטפסים כוללים את «שווי הסל».
