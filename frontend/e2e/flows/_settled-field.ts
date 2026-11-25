@@ -10,7 +10,8 @@ import type { Page, Locator } from "./_cloudinary-stub";
 // hydrated carries a `__reactFiber$…` expando, the not-yet-hydrated server
 // copy does not. Timing traces and the shown-failing runs: PR #3651 and the
 // MEH-2323 card. Shared since MEH-2323 chunk 3: flows/30 and flows/25 fill
-// the same login form. 01-home-load.spec.ts (MEH-1078) waits for the same settling
+// the same login form; flows/26 waits on the producer page's delivery checker
+// (MEH-3835). 01-home-load.spec.ts (MEH-1078) waits for the same settling
 // with a count alone. `__reactFiber$` is a React internal (verified on React
 // 18.3, package.json): a rename cannot pass this silently — the wait fails,
 // and the thrown error names the helper and the suspect so seven timeouts do
