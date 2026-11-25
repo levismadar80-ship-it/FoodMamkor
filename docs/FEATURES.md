@@ -118,6 +118,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/recipes/[id]/edit` | Edit a recipe |
 | `/producer/dashboard/rescue` | Manage surprise bags: offers, reservations, pickups |
 | `/producer/dashboard/rescue/counter-card` | A5 card for the till: check the code, hand over the bag |
+| `/producer/dashboard/rescue/schedule` | Weekly surprise-bag routine per pickup point, and the days to skip |
 
 ### About, trust and legal
 

@@ -44,6 +44,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -260,15 +261,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                 >
                   <span>{t("closed_toggle")}</span>
                 </Checkbox>
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => removeRow(i)}
-                  aria-label={`${row.date || t("date_label")} — ${t("remove_date")}`}
+                  label={`${row.date || t("date_label")} — ${t("remove_date")}`}
                   data-testid={`special-hours-remove-${i}`}
                   className="ms-auto text-fg-muted hover:text-error transition p-1"
                 >
                   <X size={14} aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
 
               {!row.closed && (
@@ -294,15 +294,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                         />
                       </div>
                       {row.ranges.length > 1 && (
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() => removeRange(i, rangeIdx)}
-                          aria-label={`${row.date} — ${tRange("remove_range")}`}
+                          label={`${row.date} — ${tRange("remove_range")}`}
                           data-testid={`special-hours-remove-range-${i}-${rangeIdx}`}
                           className="text-fg-muted hover:text-error transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   ))}

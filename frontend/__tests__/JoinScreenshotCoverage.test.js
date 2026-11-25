@@ -76,6 +76,9 @@ const NO_VISUAL = new Set([
   // MEH-3483: an owner-only step on the edit screen; the /join demo pictures
   // the public page it fills, not the form.
   "page_fill",
+  // MEH-3703: an owner-only settings page; the /join demo already pictures
+  // the bag it publishes (rescue_bags).
+  "rescue_schedule",
 ]);
 
 describe("the shot list against the tool registry", () => {

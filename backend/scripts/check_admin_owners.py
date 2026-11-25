@@ -7,7 +7,7 @@ Touches:  Reads `users` (id, role, producer_id, created_at). SELECT only.
 Does NOT: change anything. A row found here is fixed by a person: such an
           account can no longer be demoted (409) or detached from the panel.
           It prints ids, never emails or names.
-Related:  backend/app/routers/admin_extra.py update_user_role (the two 409s),
+Related:  backend/app/services/admin_user_writes.py change_user_role (the two 409s),
           tests/test_meh3376_demote_owner_409.py.
 History:  MEH-3376 (creation).
 

@@ -264,7 +264,7 @@ def test_admin_create_category_returns_409_not_500_when_the_slug_is_taken(db):
     from fastapi.testclient import TestClient
 
     from app.main import app
-    from app.routers import admin_extra
+    from app.services import admin_category_writes as admin_extra  # MEH-3537: moved
     from conftest import auth_header, make_user
 
     admin = make_user(db, email="slug-race-admin@example.com", role="admin")

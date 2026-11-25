@@ -292,6 +292,7 @@ files = [
     "app/schemas/recipes_outreach.py",
     "app/schemas/registration.py",
     "app/schemas/rescue.py",
+    "app/schemas/rescue_schedule.py",
     "app/schemas/reviews.py",
     "app/schemas/schemas.py",
     "app/schemas/site.py",
@@ -420,6 +421,7 @@ files = [
     "app/services/rescue_business_emails.py",
     "app/services/rescue_emails.py",
     "app/services/rescue_reminders.py",
+    "app/services/rescue_schedule.py",
     "app/services/review_conflicts.py",
     "app/services/review_reports.py",
     "app/services/rescue_no_show.py",
@@ -462,6 +464,8 @@ files = [
     "app/schemas/form_fill.py",
     "app/services/producer_owner_update.py",  # MEH-3841
     "app/services/admin_producer_writes.py",  # MEH-3843
+    "app/services/admin_user_writes.py",  # MEH-3537
+    "app/services/admin_category_writes.py",  # MEH-3537
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

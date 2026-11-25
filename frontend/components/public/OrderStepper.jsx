@@ -18,6 +18,7 @@ import { Minus, Plus } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 
 const ROUND =
   "w-11 h-11 flex items-center justify-center rounded-full text-white focus-ring";
@@ -82,15 +83,14 @@ export default function OrderStepper({ product, qty, onChange }) {
       >
         {/* «−» first: in RTL it lands on the right and «+» on the left, as in
           placement A (Sapir 14/11). */}
-        <button
-          type="button"
+        <IconButton
           className={ROUND}
-          aria-label={t("remove_one", { name: product.name })}
+          label={t("remove_one", { name: product.name })}
           onClick={() => set(qty - 1)}
           data-testid="order-minus"
         >
           <Minus size={16} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
         <span
           className="min-w-[1.5rem] text-center font-medium"
           aria-live="polite"
@@ -98,15 +98,14 @@ export default function OrderStepper({ product, qty, onChange }) {
         >
           {qty}
         </span>
-        <button
-          type="button"
+        <IconButton
           className={ROUND}
-          aria-label={t("add_one", { name: product.name })}
+          label={t("add_one", { name: product.name })}
           onClick={() => set(qty + 1)}
           data-testid="order-plus"
         >
           <Plus size={16} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
     </span>
   );
