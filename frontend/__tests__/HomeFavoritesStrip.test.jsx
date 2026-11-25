@@ -262,6 +262,7 @@ describe("favorites-cache → getFavoriteProducers", () => {
   });
 
   it("strip hint: set after a load with favorites, cleared on logout", async () => {
+    localStorage.setItem("token", "t"); // a signed-in load always has a stored session (MEH-3858)
     apiGet.mockResolvedValue({ data: [row(1, "2026-11-01T10:00:00")] });
     await ensureFavoritesLoaded();
     expect(hadFavoritesLastVisit()).toBe(true);

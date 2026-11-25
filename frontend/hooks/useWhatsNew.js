@@ -22,6 +22,7 @@ const SEEN_EVENT = "mehamakor:whats-new-seen";
 /** @returns {string | null} the last version the owner marked as seen. */
 function readSeenVersion() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the screen it feeds renders only after the client has auth, so nothing server-painted changes (measured 0 on the dashboard, MEH-3858)
     return window.localStorage.getItem(WHATS_NEW_SEEN_KEY);
   } catch {
     return null;
@@ -126,6 +127,7 @@ export function useOwnerWelcome(createdAt) {
   useEffect(() => {
     let dismissed = closed.current;
     try {
+      // eslint-disable-next-line no-restricted-syntax -- the screen it feeds renders only after the client has auth, so nothing server-painted changes (measured 0 on the dashboard, MEH-3858)
       dismissed = dismissed || window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "1";
     } catch {
       // blocked storage: rely on the in-memory flag

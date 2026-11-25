@@ -66,6 +66,7 @@ export const SOURCE_CITY = "city";
 function readRecord() {
   if (!hasStorage()) return null;
   try {
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);

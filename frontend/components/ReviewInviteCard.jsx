@@ -54,6 +54,7 @@ function saveDraftStars(producerId, value) {
 /** Read and clear the kept star; 0 when none (or storage is blocked). */
 export function takeDraftStars(producerId) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
     const n = Number(sessionStorage.getItem(DRAFT_KEY(producerId)));
     if (n >= 1 && n <= STAR_COUNT) {
       sessionStorage.removeItem(DRAFT_KEY(producerId));

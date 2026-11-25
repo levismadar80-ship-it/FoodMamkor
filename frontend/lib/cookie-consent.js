@@ -17,6 +17,7 @@ const CONSENT_VALUES = new Set(["all", "essential"]);
 /** @returns {boolean} true once the visitor answered the cookie banner. */
 export function hasCookieConsent() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- cookie-consent answer; the banner it decides is a fixed overlay
     return CONSENT_VALUES.has(localStorage.getItem(COOKIE_CONSENT_KEY));
   } catch {
     return false;
@@ -26,6 +27,7 @@ export function hasCookieConsent() {
 /** @returns {boolean} true only for the "all" answer — the analytics gate. */
 export function hasFullCookieConsent() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- cookie-consent answer; the banner it decides is a fixed overlay
     return localStorage.getItem(COOKIE_CONSENT_KEY) === "all";
   } catch {
     return false;
