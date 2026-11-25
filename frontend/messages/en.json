@@ -7480,7 +7480,6 @@
       "not_found_body": "It may have been for another day. New bags are posted daily.",
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
-      "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
       "calendar_title": "Surprise bag pickup: {business_name}",
       "pickup_title_tomorrow": "Pickup tomorrow",
