@@ -9,4 +9,3 @@
 > `Whats-new: <tool_id> none — <סיבה>`.
 
 <!-- items below this line -->
-- rescue_schedule: אפשר לקבוע פעם אחת ימים ושעות לסלי הפתעה, והסל עולה לבד. ביום בלי עודפים מדלגים עליו בלחיצה.
