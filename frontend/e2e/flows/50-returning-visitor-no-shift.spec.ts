@@ -78,6 +78,11 @@ const CLOCK_PAGES = ["/", "/producers", "/group-buys", "/events", "/producer"];
 // /rescue is left out: it is behind a flag and answers 404 where it is off.
 const PAGES = ["/", "/producers", "/group-buys", "/events", "/experiences", "/favorites", "/recommend", "/about"];
 
+/** "/producer" in CLOCK_PAGES stands for the first seeded business's page. */
+function clockTarget(path: string, ids: string[]) {
+  return path === "/producer" ? `/producer/${ids[0]}` : path;
+}
+
 async function loadShift(page: import("@playwright/test").Page, path: string, stored: Stored) {
   await page.addInitScript((s) => {
     try {
@@ -157,8 +162,7 @@ test.describe("MEH-3858 a returning visitor's stored state does not move the pag
     for (const path of CLOCK_PAGES) {
       test(`${path} at ${label}: layout shift over the load stays at or under ${LIMIT}`, async ({ page }) => {
         await page.clock.setFixedTime(new Date(at));
-        const target = path === "/producer" ? `/producer/${ids[0]}` : path;
-        const r = await loadShift(page, target, returningVisitor(ids));
+        const r = await loadShift(page, clockTarget(path, ids), returningVisitor(ids));
         expect(r.observed).toBe(true);
         expect(r.seeded).not.toBeNull();
         expect(r.sum).toBeLessThanOrEqual(LIMIT);
