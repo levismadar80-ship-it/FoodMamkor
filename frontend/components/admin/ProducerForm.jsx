@@ -15,7 +15,7 @@ import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-responses";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
@@ -316,6 +316,8 @@ function Field({ label, children, full = false }) {
 }
 
 export default function ProducerForm({ initial = null, producerId = null }) {
+  // MEH-3861: the first date a picker allows, the same in both renders.
+  const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
@@ -1317,7 +1319,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.vacation_until}
             // MEH-1983: Israel's today, not UTC's — the server validates
             // vacation_until against israel_today().
-            min={israelToday()}
+            min={today}
             onChange={(e) => update("vacation_until", e.target.value)}
             dir="ltr"
           />

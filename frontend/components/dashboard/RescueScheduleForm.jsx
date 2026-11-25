@@ -22,6 +22,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { ListMySchedulesProducersMeRescueSchedulesGetResponse as SchedulesOut } from "@/lib/generated/api.zod";
 import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { detailToMessage } from "@/lib/errors";
 import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
 import { DAY_MS, RESCUE_CANCEL_CUTOFFS, RESCUE_MAX_QTY, RESCUE_SKIP_DAYS_AHEAD } from "@/lib/rescue";
@@ -266,7 +267,8 @@ export default function RescueScheduleForm({ today }) {
   const ta = useTranslations("a11y");
   const [rows, setRows] = useState(/** @type {any[] | null} */ (null));
   const [failed, setFailed] = useState(false);
-  const day = today || israelToday();
+  const fallbackDay = useIsraelToday(); // MEH-3861: when no `today` is passed
+  const day = today || fallbackDay;
 
   const load = useCallback(() => {
     api

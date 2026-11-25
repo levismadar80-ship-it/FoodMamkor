@@ -132,6 +132,19 @@ export default [
           message:
             "A read of browser storage: the server cannot see it, so anything it changes on screen moves after the load (MEH-3857, MEH-3858). Show it only after a tap, reserve its space from the first paint, float it over the page, or keep the value in a cookie the server reads. Then cover the page in e2e/flows/50-returning-visitor-no-shift.spec.ts and add eslint-disable-next-line no-restricted-syntax -- <why it cannot move the page>. A tripwire, not a proof: an alias or a computed key gets past it.",
         },
+        {
+          // MEH-3861: the Israel day read during render. The server draws with
+          // its day, the browser hydrates with the visitor's, and a page cached
+          // across midnight disagrees (React 418, the page drawn again).
+          // useIsraelToday() hydrates with the server's day (the render-time tag
+          // in <head>) and moves to the visitor's right after. A default
+          // parameter (`today = israelToday()`) is the helper's own fallback and
+          // is not flagged; its callers are, when they leave `today` out.
+          selector:
+            "CallExpression[callee.name='israelToday'][arguments.length=0]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='eventWhen'][arguments.length<2]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='matchesWhen'][arguments.length<3]:not(AssignmentPattern > CallExpression)",
+          message:
+            "The Israel day, read where it can reach the screen: a page cached before midnight hydrates after it with another day (React 418, MEH-3861). In a component, use useIsraelToday() from lib/use-israel-today.js and pass it on (eventWhen(date, today), matchesWhen(date, when, today)). In a click handler or an effect it is safe: add eslint-disable-next-line no-restricted-syntax -- <where it runs>.",
+        },
       ],
     },
   },
