@@ -13,6 +13,7 @@ import {
   trackContactClick,
 } from "@/lib/contact-tracking";
 import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
+import { readFirstReviewsPage } from "@/lib/reviews-page";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import ReviewReportMenu from "@/components/ReviewReportMenu";
@@ -428,9 +429,14 @@ export default function ReviewsSection({
     if (inFlightRef.current) return; // HOT-018: drop overlapping requests
     inFlightRef.current = true;
     setLoading(true);
-    api
-      .get(`/producers/${producerId}/reviews`, { params: { page: p } })
-      .then((r) => {
+    // MEH-3836: page 1 joins the header quote's read (lib/reviews-page.js).
+    const read =
+      p === 1
+        ? readFirstReviewsPage(producerId)
+        : api.get(`/producers/${producerId}/reviews`, { params: { page: p } }).then((r) => r.data);
+    read
+      .then((data) => {
+        const r = { data };
         const fresh = Array.isArray(r.data?.reviews) ? r.data.reviews : [];
         // Append (was replace) so "הצג עוד" accumulates pages. id-dedupe guards
         // a double page-1 fetch (StrictMode / IO re-observe) from producing
@@ -452,9 +458,21 @@ export default function ReviewsSection({
       });
   };
 
+  // MEH-3836: a business with reviews reads page 1 with the page, as the
+  // header quote already does (one shared request). Read on scroll, the rows
+  // arrived under the reader's eyes and pushed the write-a-review line and
+  // the next section down (CLS 0.12 on a phone, MEH-3809 guard). Web.dev's
+  // CLS guide: content that loads late either has its space held or arrives
+  // before it is in view. A business with no reviews keeps the scroll gate
+  // below, so its page makes no reviews request until it is needed.
+  const eager = reviewCount > 0;
+  useEffect(() => {
+    if (producerId && eager) fetchPage(1);
+  }, [producerId, eager]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Lazy-load via IntersectionObserver — only fetch when section is visible.
   useEffect(() => {
-    if (!producerId) return;
+    if (!producerId || eager) return;
     const el = sectionRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -468,7 +486,7 @@ export default function ReviewsSection({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [producerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [producerId, eager]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pre-fill form if user already has a review (passed WA gate before).
   useEffect(() => {

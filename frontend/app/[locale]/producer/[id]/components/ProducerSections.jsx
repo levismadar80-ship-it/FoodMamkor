@@ -7,7 +7,6 @@ import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
 import { useTranslations, useLocale } from "next-intl";
-import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPriceRange, isPriceLabel, priceLabelText } from "@/lib/utils";
@@ -171,6 +170,7 @@ export default function ProducerSections({
   events,
   experiences,
   groupBuys,
+  recipes = [],
   sectionRefs,
   isOwner = false,
   onReviewsTotalChange,
@@ -202,26 +202,11 @@ export default function ProducerSections({
   const [showAllProducts, setShowAllProducts] = useState(false);
   // MEH-3055: the visitor's group filter — null = «הכל».
   const [activeGroup, setActiveGroup] = useState(null);
-  // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
-  // public read endpoint added in chunk 2 — backend already filters to
-  // published+approved, so an empty array means "no recipes to show"
-  // and the section hides entirely (silent empty, per spec).
-  const [recipes, setRecipes] = useState([]);
-  useEffect(() => {
-    if (!producer?.slug) return;
-    let cancelled = false;
-    api
-      .get(`/producers/${encodeURIComponent(producer.slug)}/recipes`)
-      .then((r) => {
-        if (!cancelled) setRecipes(r.data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setRecipes([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [producer?.slug]);
+  // MEH-591: producer recipes (chunk 4/4). The backend already filters to
+  // published+approved, so an empty array means "no recipes to show" and the
+  // section hides entirely (silent empty, per spec). MEH-3836: read with the
+  // page's other lists (hooks/useProducerActivities.js) and passed in, so the
+  // section is there in the first paint instead of landing above the reviews.
 
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias

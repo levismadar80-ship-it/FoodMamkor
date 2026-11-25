@@ -60,7 +60,7 @@ async function getProducerBySlug(slug) {
 // (useProducerActivities) — a missing list must never cost the page.
 // A short timeout and no retry: these lists are not worth a slow first byte.
 const ACTIVITIES_TIMEOUT_MS = 2500;
-async function getProducerActivities(producerId) {
+async function getProducerActivities(producerId, slug) {
   const id = encodeURIComponent(producerId);
   /** @param {string} path */
   const list = async (path) => {
@@ -74,12 +74,15 @@ async function getProducerActivities(producerId) {
     return Array.isArray(data) ? data : [];
   };
   try {
-    const [events, experiences, groupBuys] = await Promise.all([
+    // MEH-3836: recipes too, so «מתכונים» is in the server HTML instead of
+    // landing above the reviews after the paint.
+    const [events, experiences, groupBuys, recipes] = await Promise.all([
       list(`/events?producer_id=${id}`),
       list(`/experiences?producer_id=${id}`),
       list(`/group-buys?producer_id=${id}`),
+      slug ? list(`/producers/${encodeURIComponent(slug)}/recipes`) : Promise.resolve([]),
     ]);
-    return { events, experiences, groupBuys };
+    return { events, experiences, groupBuys, recipes };
   } catch (err) {
     // Not silent: reported, and the browser reads the lists itself. A 429 is
     // the per-IP limit on the server's one egress address (SYSTEM_MAP «What
@@ -162,7 +165,7 @@ export default async function ProducerSlugPage(props) {
   const producer = await getProducerBySlug(slug);
   if (!producer) notFound();
   if (producer === GONE) return <ProducerGone />;
-  const activities = await getProducerActivities(producer.id);
+  const activities = await getProducerActivities(producer.id, producer.slug);
 
   return (
     <>
