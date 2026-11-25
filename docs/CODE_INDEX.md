@@ -864,6 +864,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/Badge.jsx` | — אין כותרת — |
 | `ui/Button.jsx` | — אין כותרת — |
 | `ui/Card.jsx` | — אין כותרת — |
+| `ui/Checkbox.jsx` | A native <input type="checkbox"> inside its own <label>, so the whole row (box + text) is the hit area: at least 44px tall below md and 32px from md up … |
 | `ui/Dialog.jsx` | — אין כותרת — |
 | `ui/EmptyState.jsx` | — אין כותרת — |
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |

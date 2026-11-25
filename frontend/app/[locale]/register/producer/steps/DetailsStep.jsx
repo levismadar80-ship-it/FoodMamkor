@@ -11,6 +11,7 @@ import Input from "@/components/ui/Input";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 import { CROSS_STEP_REQUIRED, FULFILMENT_AXES, STEP, fulfilmentHasAxis, toggleFulfilmentAxis } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
@@ -133,14 +134,10 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
               </legend>
               {/* MEH-2939: two checkboxes, at least one — «גם וגם» is both ticked. */}
               {FULFILMENT_AXES.map((axis) => (
-                <label
+                <Checkbox
                   key={axis}
-                  htmlFor={`fulfilment-${axis}`}
-                  className="flex items-center gap-3 min-h-touch cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    id={`fulfilment-${axis}`}
+                  className="flex items-center gap-3"
+                  id={`fulfilment-${axis}`}
                     name="fulfilment"
                     value={axis}
                     data-testid={`register-fulfilment-${axis}`}
@@ -150,12 +147,11 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                       setFulfilmentError("");
                       setAndSave((prev) => ({ ...prev, fulfilment: toggleFulfilmentAxis(prev.fulfilment, axis) }));
                     }}
-                    className="w-5 h-5 accent-primary shrink-0"
-                  />
+                >
                   <span className="text-sm text-text">
                     {t(`auth.register.producer.fields.fulfilment.${axis}`)}
                   </span>
-                </label>
+                </Checkbox>
               ))}
               {fulfilmentError && (
                 <p className="text-xs text-error" data-testid="register-fulfilment-error">
