@@ -6,7 +6,7 @@ import en from "../messages/en.json";
 
 /**
  * MEH-3869 — the business FAQs answer «the site is new, will it bring me
- * customers?». Approved word for word by Sapir (25/11). On /about/for-businesses
+ * customers?». Approved word for word by Sapir (25/11, revised the same evening to name the tools). On /about/for-businesses
  * it follows «visibility»; on /join it is third, after the two money questions.
  */
 
@@ -42,10 +42,16 @@ import JoinPage from "@/app/[locale]/join/page";
 const params = { params: Promise.resolve({ locale: "he" }) };
 const Q = "האתר עוד חדש. זה באמת יביא לי לקוחות?";
 const A1 =
-  "העמוד מתחיל לעבוד בשבילכם עוד לפני שהאתר גדול. הוא מחליף אתר שהייתם צריכים לבנות ולשלם עליו: הסיפור, התמונות, המחירים ואזורי המשלוח במקום אחד, עם כפתור שפותח שיחה בוואטסאפ. שמים אותו בביו ובסטטוס, ולקוחות מקבלים תשובות בלי לשאול אתכם שוב ושוב.";
+  "העמוד מתחיל לעבוד בשבילכם מהיום הראשון, גם לפני שהאתר גדול. יש בו את הסיפור, התמונות, המוצרים עם המחירים ואזורי המשלוח, וכפתור שפותח שיחה בוואטסאפ. עוזרת AI עונה ללקוחות על שאלות לפי מה שכתוב בעמוד, וכל לקוח בודק לבד אם יש משלוח ליישוב שלו. במקום לענות על אותן שאלות שוב ושוב, שולחים לינק אחד.";
 const A2 =
-  "ובזמן שאתם מוכרים, אנחנו עובדות להביא אליכם תנועה. אנחנו בונות איתכם את העמוד, מספרות על כל בית עסק חדש ברשתות שלנו, והעמוד פתוח לחיפוש בגוגל ובצ'אטים כמו ChatGPT. מי שמצטרף עכשיו הוא מהראשונים בתחום שלו, לפני שהרשימה מתמלאת. ובלוח הבקרה תראו כמה נכנסו לעמוד וכמה פנו אליכם, אז לא צריך להאמין לנו: רואים.";
-const A = `${A1}\n\n${A2}`;
+  "יש גם כלים שמביאים מכירות: קבוצות רכישה, אירועים וסדנאות, ומבצעים. לקוחות ששומרים את העסק מקבלים עדכון כשעולה משהו חדש, ויש QR להדפסה וכרטיסים מוכנים לשיתוף ברשתות.";
+const A3 =
+  "ובזמן שאתם מוכרים, אנחנו עובדות להביא אליכם תנועה. אנחנו בונות איתכם את העמוד, מספרות על כל בית עסק חדש ברשתות שלנו, והעמוד פתוח לחיפוש בגוגל ובצ'אטים כמו ChatGPT. מי שמצטרף עכשיו הוא מהראשונים בתחום שלו. ובלוח הבקרה תראו כמה נכנסו לעמוד וכמה פנו אליכם, אז לא צריך להאמין לנו: רואים.";
+const A = `${A1}
+
+${A2}
+
+${A3}`;
 
 describe("business FAQ: «will it bring me customers?» (MEH-3869)", () => {
   it("carries the approved Hebrew copy once, with an English mirror", () => {
@@ -56,14 +62,14 @@ describe("business FAQ: «will it bring me customers?» (MEH-3869)", () => {
     expect(en.about_business.faq.new_site.a).toBeTruthy();
   });
 
-  it("/about/for-businesses: right after «visibility», two paragraphs, and in the FAQPage JSON-LD", async () => {
+  it("/about/for-businesses: right after «visibility», three paragraphs, and in the FAQPage JSON-LD", async () => {
     const { container } = render(await ForBusinessesPage(params));
     const qs = [...container.querySelectorAll("details summary span")].map((s) => s.textContent);
     const i = qs.indexOf(Q);
     expect(i).toBeGreaterThan(0);
     expect(qs[i - 1]).toBe(he.about_business.faq.visibility.q);
     const paras = [...container.querySelectorAll("details")[i].querySelectorAll("p")].map((p) => p.textContent);
-    expect(paras).toEqual([A1, A2]);
+    expect(paras).toEqual([A1, A2, A3]);
     const ld = JSON.parse(container.querySelector('script[type="application/ld+json"]').textContent);
     expect(ld.mainEntity.find((e) => e.name === Q)?.acceptedAnswer.text).toBe(A);
   });
