@@ -131,4 +131,33 @@ describe("QueueSlaSummary (MEH-2138 chunk E)", () => {
       expect(toneOf(9)).toContain("bg-danger-100");
     });
   });
+
+  // MEH-3818: a filter that empties the line must not pull the table up.
+  describe("its slot once shown (MEH-3818)", () => {
+    const wrap = (rows) => (
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <QueueSlaSummary rows={rows} />
+      </NextIntlClientProvider>
+    );
+    const slot = () => screen.queryByTestId("queue-sla-slot");
+
+    it("nothing waiting from the start → no line and no slot", () => {
+      renderSummary([row({ status: "approved" })]);
+      expect(el()).toBeNull();
+      expect(slot()).toBeNull();
+    });
+
+    it("shown, then emptied by a filter → the line goes, an empty slot of its height stays", () => {
+      const { rerender } = render(wrap([row()]));
+      expect(el()).not.toBeNull();
+      rerender(wrap([row({ status: "approved" })]));
+      expect(el()).toBeNull();
+      // The same pill box, invisible, so its line is as tall as the real one.
+      expect(slot().firstChild).toHaveClass("invisible", "inline-flex", "py-1", "text-sm");
+      expect(slot()).toHaveAttribute("aria-hidden", "true");
+      rerender(wrap([row(), row()]));
+      expect(el()).toHaveAttribute("data-count", "2");
+      expect(slot()).toBeNull();
+    });
+  });
 });

@@ -182,37 +182,47 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
   });
 });
 
-describe("user_city seed (MEH-1675 addition)", () => {
-  it("a saved uncovered city answers — and shows the CTA — with zero typing", async () => {
+// MEH-3857 (Sapir, 25/11): the saved city is OFFERED as the first option of
+// the empty field, not filled in and checked after the load — that changed
+// the field and added a verdict under the visitor's eyes. One tap on the
+// offer gives the same answer the old seed gave with none.
+describe("saved user_city is offered, not filled in (MEH-1675 → MEH-3857)", () => {
+  const settle = () => new Promise((r) => setTimeout(r, 20));
+
+  it("a saved city leaves the field empty and shows no verdict after the load", async () => {
     setUserCity("נתניה");
     setup();
+    await settle();
+    expect(field().value).toBe("");
+    expect(screen.getByTestId("delivery-checker-result").getAttribute("data-result")).toBe("none");
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+
+  it("focusing the empty field offers the saved city; picking an uncovered one answers and shows the CTA", async () => {
+    setUserCity("נתניה");
+    setup();
+    await settle();
+    fireEvent.focus(field());
+    fireEvent.mouseDown(screen.getByRole("option", { name: "נתניה" }));
     await waitFor(() => expect(screen.getByText("עדיין לא מגיעים לנתניה")).toBeTruthy());
     expect(screen.getByTestId("coverage-request-cta")).toBeTruthy();
-    expect(field().value).toBe("נתניה");
   });
 
-  it("a saved COVERED city answers yes with zero typing and shows no CTA", async () => {
+  it("picking a saved COVERED city answers yes and shows no CTA", async () => {
     setUserCity("חיפה");
     setup();
+    await settle();
+    fireEvent.focus(field());
+    fireEvent.mouseDown(screen.getByRole("option", { name: "חיפה" }));
     await waitFor(() => expect(screen.getByText("כן, מגיעים לחיפה")).toBeTruthy());
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 
-  it("seeds once — the visitor's own edit is not overwritten", async () => {
-    setUserCity("נתניה");
-    setup();
-    await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
-    // She retypes; a later user_city change event must not yank her verdict back.
-    commitCity("חיפה");
-    await waitFor(() => expect(screen.getByText("כן, מגיעים לחיפה")).toBeTruthy());
-    window.dispatchEvent(new CustomEvent("mehamakor:city-changed"));
-    await waitFor(() => expect(field().value).toBe("חיפה"));
-    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
-  });
-
-  it("no saved city → no seed, no verdict, no CTA", () => {
+  it("no saved city → focusing offers nothing, no verdict, no CTA", () => {
     setUserCity(null);
     setup();
+    fireEvent.focus(field());
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
     expect(field().value).toBe("");
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });

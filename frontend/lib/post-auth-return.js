@@ -42,6 +42,7 @@ export function rememberReturnPath(path) {
  */
 export function peekReturnPath() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const { path, at } = JSON.parse(raw);

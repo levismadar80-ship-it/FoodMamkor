@@ -8,13 +8,14 @@ import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
 import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import AdminOwnerStoryFields from "@/components/admin/AdminOwnerStoryFields";
 import api from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-responses";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
@@ -315,6 +316,8 @@ function Field({ label, children, full = false }) {
 }
 
 export default function ProducerForm({ initial = null, producerId = null }) {
+  // MEH-3861: the first date a picker allows, the same in both renders.
+  const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
@@ -343,7 +346,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
-  const [categories, setCategories] = useState([]);
+  // MEH-3818: through the shared read cache. The edit and new pages read the
+  // same key before they draw the form, so the list is here on the form's
+  // first paint instead of being inserted into it a moment later and pushing
+  // every field below it down (CLS 0.12–0.20, MEH-3809 guard; field p75
+  // 0.28 on edit and 1.0 on new, Sentry 25/11).
+  const { data: categoriesData } = useApi("/categories");
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
   // MEH-1506: admin-only Google Place lookup — search by the producer's own
@@ -353,10 +362,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [placeCandidates, setPlaceCandidates] = useState(null);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
-
-  useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
-  }, []);
 
   useEffect(() => {
     if (initial) {
@@ -1314,7 +1319,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.vacation_until}
             // MEH-1983: Israel's today, not UTC's — the server validates
             // vacation_until against israel_today().
-            min={israelToday()}
+            min={today}
             onChange={(e) => update("vacation_until", e.target.value)}
             dir="ltr"
           />

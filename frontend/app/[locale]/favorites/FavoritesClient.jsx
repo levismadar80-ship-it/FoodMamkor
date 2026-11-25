@@ -27,6 +27,7 @@ import SaveButton from "@/components/SaveButton";
 import { EMPTY_SAVED, loadSavedItems, splitByTime } from "./savedItems";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
+import useIsraelToday from "@/lib/use-israel-today";
 
 // MEH-2560: the chips, in order. "all" mixes every type in sections headed by
 // the same labels; the others show one type.
@@ -167,6 +168,8 @@ function TypeEmpty({ text }) {
 export default function FavoritesClient() {
   const t = useTranslations("favorites");
   const tList = useTranslations("events.list");
+  // MEH-3861: upcoming vs past on one Israel day for both renders.
+  const today = useIsraelToday();
   // MEH-996: shared generic error copy for the failed-fetch state.
   const tError = useTranslations("error");
   const { user, loading: authLoading } = useAuth();
@@ -329,8 +332,8 @@ export default function FavoritesClient() {
   }, [saved, savedTick]);
 
   const { upcomingEvents, upcomingExperiences, past } = useMemo(
-    () => splitByTime(visibleSaved.events, visibleSaved.experiences),
-    [visibleSaved],
+    () => splitByTime(visibleSaved.events, visibleSaved.experiences, today),
+    [visibleSaved, today],
   );
 
   const counts = {

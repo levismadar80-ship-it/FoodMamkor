@@ -28,6 +28,7 @@ function isIOS() {
 }
 
 function lsGet(key, fallback) {
+  // eslint-disable-next-line no-restricted-syntax -- decides a fixed-position overlay, which floats over the page and cannot move it
   try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
 }
 

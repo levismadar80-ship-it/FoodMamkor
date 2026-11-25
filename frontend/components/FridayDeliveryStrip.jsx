@@ -62,7 +62,7 @@ function ProducerMiniCard({ producer }) {
 // Same outer box as the real strip (py-4, title row, w-36 cards of h-24 +
 // two text lines), so swapping it for the loaded strip moves nothing.
 const SKELETON_CARDS = 6;
-function FridayStripSkeleton() {
+export function FridayStripSkeleton() {
   return (
     <section
       className="bg-background border-b border-border py-4 px-4"
@@ -89,14 +89,30 @@ function FridayStripSkeleton() {
   );
 }
 
-export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
+const STRIP_MAX = 12;
+
+/**
+ * @param {{ city?: string, onVisibilityChange?: (v: boolean) => void, initialProducers?: object[] | null }} props
+ * `initialProducers` (MEH-3860): the nationwide list the home server fetched.
+ * With it the strip paints its cards in the first HTML (no skeleton), and a
+ * city with no Friday delivery keeps showing it instead of collapsing.
+ * An EMPTY list means the server found none when it rendered: the strip draws
+ * nothing and holds no slot, and still asks the API quietly, in case the
+ * cached page is older than a business that now delivers on Friday.
+ */
+export default function FridayDeliveryStrip({ city, onVisibilityChange, initialProducers = null }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
-  const [producers, setProducers] = useState([]);
+  const hasInitial = Array.isArray(initialProducers) && initialProducers.length > 0;
+  // MEH-3860: the server rendered with none, so no skeleton (it would collapse).
+  const quiet = Array.isArray(initialProducers) && initialProducers.length === 0;
+  // The last list the API answered, and the city it was for ("" = nationwide).
+  const [fetched, setFetched] = useState(/** @type {{ city: string, list: object[] } | null} */ (null));
   // MEH-3001: the strip used to appear only after its fetch returned, pushing
   // the page ~220px down on Thursday evening / Friday morning. Until the fetch
   // settles, a same-shaped skeleton holds the space (Sapir's pick, 12/11).
-  const [loaded, setLoaded] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const loaded = hasInitial || settled;
   // MEH-1391: desktop scroll arrows via the shared hook. The previous
   // local scrollRef was attached but never read — the hook's ref
   // replaces it (same element, now actually consumed).
@@ -108,28 +124,39 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
     // of the owner-ticked «זמין היום» state, which is no longer writable.
     // The default listing already hides on_vacation.
     // DELIVERY_DAYS is sun→sat, so index 5 is שישי (the backend vocabulary).
-    const params = { delivery_day: DELIVERY_DAYS[5], page_size: 12 };
+    // MEH-3860: with no city, the server already sent the nationwide list.
+    if (hasInitial && !city) return;
+    const params = { delivery_day: DELIVERY_DAYS[5], page_size: STRIP_MAX };
     if (city) params.delivery_city = city;
-    // No setLoaded(false) here: on a city change the old strip stays up until
-    // the new list arrives, instead of flashing back to the skeleton.
+    // No reset here: on a city change the old strip stays up until the new
+    // list arrives, instead of flashing back to the skeleton.
     api
       .get("/producers", { params })
-      .then((r) => setProducers((r.data || []).slice(0, 12)))
+      .then((res) => setFetched({ city: city || "", list: (res.data || []).slice(0, STRIP_MAX) }))
       .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, [city]);
+      .finally(() => setSettled(true));
+  }, [city, hasInitial]);
+
+  // MEH-3860: with the server's list, a city's own list wins only when it has
+  // cards; a city with none shows the nationwide cards (no chip), so the strip
+  // the first paint showed never collapses or names the wrong city.
+  const cityList = hasInitial && city && fetched && fetched.list.length > 0 ? fetched : null;
+  const producers = hasInitial
+    ? cityList?.list ?? initialProducers.slice(0, STRIP_MAX)
+    : fetched?.list ?? [];
+  const shownCity = hasInitial ? cityList?.city ?? "" : fetched?.city ?? "";
 
   // MEH-879: report show-state up to the homepage banner single-slot so
   // lower-precedence banners (Holiday, Location) can yield to this strip.
   const visible = producers.length > 0;
   // MEH-3001: the skeleton holds the slot too, so a Holiday/Location banner
   // does not render beside it and then yield when the list arrives.
-  const holdsSlot = !loaded || visible;
+  const holdsSlot = (!loaded && !quiet) || visible;
   useEffect(() => {
     onVisibilityChange?.(holdsSlot);
   }, [holdsSlot, onVisibilityChange]);
 
-  if (!loaded) return <FridayStripSkeleton />;
+  if (!loaded) return quiet ? null : <FridayStripSkeleton />;
   if (!visible) return null;
 
   return (
@@ -147,9 +174,9 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
           <h2 className="font-headline-md font-semibold text-primary text-base">
             {t("title_alt")}
           </h2>
-          {city && (
+          {shownCity && (
             <span className="text-xs text-fg-muted border border-border rounded-full px-2 py-0.5">
-              {city}
+              {shownCity}
             </span>
           )}
         </div>

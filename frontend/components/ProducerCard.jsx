@@ -46,6 +46,7 @@ import { humanTime } from "@/lib/time-format";
 import RatingCompact from "@/components/ui/RatingCompact";
 import { hasCardRating } from "@/lib/rating-gate";
 import { producerPath } from "@/lib/producer-path";
+import useIsraelToday from "@/lib/use-israel-today";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
 // DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
@@ -283,7 +284,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
   // row instead of a chip. MEH-2744: that row then shows only the threshold.
-  const freeAbove = freeDeliveryThreshold(producer.active_offer);
+  // MEH-3861: the same Israel day OfferBadge reads, so card and chip agree.
+  const today = useIsraelToday();
+  const freeAbove = freeDeliveryThreshold(producer.active_offer, today);
   const alwaysFree = cardFee.fee === 0 && !cardFee.from;
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
   // overflow rows read the identical `kashrut.badges.*.label` strings the

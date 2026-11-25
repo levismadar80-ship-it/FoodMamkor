@@ -25,6 +25,7 @@ export function captureReviewInvite(producerId, search) {
   const rt = new URLSearchParams(search || "").get("rt") || null;
   try {
     if (rt) sessionStorage.setItem(keyFor(producerId), rt);
+    // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
     return sessionStorage.getItem(keyFor(producerId));
   } catch {
     // Storage blocked (cookies off / some private modes): the token in the URL

@@ -460,6 +460,18 @@ producer_reviews.reply_at	ugc	a user's review of a business
 producer_reviews.source	ugc	a user's review of a business
 producer_reviews.stars	ugc	a user's review of a business
 producer_reviews.user_id	ugc	a user's review of a business
+producer_staff.accepted_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.created_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.expires_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.invited_by	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.invited_email	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.producer_id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.revoked_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.role	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.status	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.token_hash	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.user_id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
 producer_whatsapp_clicks.city	cookies	a click on a business's WhatsApp button
 producer_whatsapp_clicks.clicked_at	cookies	a click on a business's WhatsApp button
 producer_whatsapp_clicks.id	cookies	a click on a business's WhatsApp button

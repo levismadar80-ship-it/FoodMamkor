@@ -38,6 +38,7 @@ duplicate	2	אינסטגרם (שם משתמש)
 duplicate	2	איסוף
 duplicate	2	איסוף ומשלוח
 duplicate	2	איפוס סיסמה
+duplicate	2	אירועים וסדנאות
 duplicate	2	אירועים קרובים
 duplicate	2	אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף
 duplicate	2	אישור הרשמה
@@ -95,7 +96,6 @@ duplicate	2	המייל לא תקין
 duplicate	2	המיקום זוהה: {location}
 duplicate	2	הנחה באיסוף עצמי
 duplicate	2	הסר ממועדפים
-duplicate	2	הסרה
 duplicate	2	הסרת התמונה
 duplicate	2	העברה בנקאית
 duplicate	2	העלאת תמונה
@@ -312,6 +312,7 @@ duplicate	2	שיפנו אליכם
 duplicate	2	שישי
 duplicate	2	שיתוף
 duplicate	2	שכפול
+duplicate	2	שליחה מחדש
 duplicate	2	שליחת הודעה בוואטסאפ
 duplicate	2	שליחת קוד חדש
 duplicate	2	שם המוצר
@@ -361,6 +362,7 @@ duplicate	3	החלפת חשבון
 duplicate	3	היי! הגעתי דרך מהמקור — {name}
 duplicate	3	הסטטוס עודכן
 duplicate	3	הסיסמה חייבת להכיל לפחות {min} תווים
+duplicate	3	הסרה
 duplicate	3	הסתירו סיסמה
 duplicate	3	העלאת התמונה נכשלה. נסו שוב.
 duplicate	3	העתקה

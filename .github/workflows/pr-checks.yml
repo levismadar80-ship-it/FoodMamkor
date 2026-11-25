@@ -503,7 +503,8 @@ jobs:
           # MEH-3617: product_variants (a product's sizes or flavours) — 65 -> 66.
           # MEH-3592: group_buy_waitlist (a full group buy's waitlist) — 66 -> 67.
           # MEH-3839: email_events (what Resend reports for each email) — 67 -> 68.
-          EXPECTED_TABLES=68
+          # MEH-3526: producer_staff (who handles a business's orders) — 68 -> 69.
+          EXPECTED_TABLES=69
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables

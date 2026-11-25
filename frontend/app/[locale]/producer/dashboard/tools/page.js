@@ -27,7 +27,8 @@
  *           to the edit tab); MEH-3749 (the «שיתוף» section became a tile; its
  *           page is share/page.js); MEH-3785 (the «הטבה» tile in «להציע
  *           ללקוחות», its page moved out of עריכה); MEH-3787 (the «שיתוף»
- *           tile got its own group, «להביא לקוחות»).
+ *           tile got its own group, «להביא לקוחות»); MEH-3526 (the «צוות
+ *           להזמנות» card, StaffCard).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -43,6 +44,7 @@ import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
 import NewToolPill from "@/components/producer/NewToolPill";
 import ToolGroupCard from "@/components/producer/ToolGroupCard";
+import StaffCard from "@/components/dashboard/staff/StaffCard";
 
 // MEH-3669: one look for every group heading and grid on the tab; the
 // «שיתוף» heading below already used this h2.
@@ -260,6 +262,9 @@ export default function ProducerDashboardToolsPage() {
             </Link>
           </div>
         </section>
+        {/* MEH-3526: who handles the orders. One-time setup, so «כלים», last;
+            the card hides itself while on-site ordering is off. */}
+        {!isOrganizer && <StaffCard />}
       </div>
 
     </div>

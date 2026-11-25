@@ -16,6 +16,7 @@ import {
 // useState below for the three-way drift that made a hand-written copy a bad
 // idea, and for why `categoryKeys` stays out of it.
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
+import { activeOfferMarks } from "@/lib/map-offer-marks";
 import { chipsFromQuery, mapFiltersFromQuery, writeMapFilters } from "@/lib/filter-url";
 import { cityParams } from "@/lib/map-city-params";
 import { haversineKm } from "@/lib/distance";
@@ -465,6 +466,9 @@ export function useMapFilters({
   // MEH-3054: the «איסוף עצמי» chip expands every business's pickup points on
   // the map (mapPinPoints); the list filter below tests the same pins.
   const showAllPickupPoints = !!chipState.pickup_points;
+  // MEH-3824: the offer switches that are on — the pins of matching
+  // businesses carry that switch's mark while it is on (lib/map-offer-marks).
+  const offerMarks = useMemo(() => activeOfferMarks(chipState), [chipState]);
 
   // Bug #14 fix: filter the grid by `committedBounds`, NOT the live
   // `mapBounds`, so panning doesn't continuously reshuffle the list.
@@ -590,6 +594,7 @@ export function useMapFilters({
     // state
     chipState,
     showAllPickupPoints,
+    offerMarks, // MEH-3824
     setChipState,
     visibleToggleChips,
     cityFilter,

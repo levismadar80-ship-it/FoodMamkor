@@ -60,6 +60,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   // (the dashboard fetches the profile in the browser), and a stable value
   // keeps every derived list below consistent for the life of the form.
   const [today, setToday] = useState(null);
+  // eslint-disable-next-line no-restricted-syntax -- MEH-3861: read in an effect, after hydration
   useEffect(() => setToday(israelToday()), []);
 
   const seedRows = useMemo(

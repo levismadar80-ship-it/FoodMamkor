@@ -30,6 +30,8 @@ const apiMock = vi.hoisted(() => {
 });
 vi.mock("@/lib/api", () => ({ default: apiMock }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
+// MEH-3526: the page asks whether the reader is order staff; here an owner.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: { role: "producer", producer_id: "p-1" } }) }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => (
     <a href={href} {...rest}>

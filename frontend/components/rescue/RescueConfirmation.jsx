@@ -35,7 +35,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   if (!order) return null;
 
   const price = shekels(order.price_agorot);
-  const cancelUntil = rescueCancelText(order.cancel_until, t); // MEH-3702
+  const cancelUntil = rescueCancelText(order.cancel_until, t, day); // MEH-3702
   const from = israelTime(order.pickup_start);
   const until = israelTime(order.pickup_end);
   const started = order.pickup_start ? new Date(order.pickup_start) <= new Date() : false;

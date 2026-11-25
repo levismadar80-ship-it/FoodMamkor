@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
 import { settledField } from "../_settled-field";
+import { layoutSettled } from "../_layout-settled";
 
 /**
  * Spec:     manual/auth
@@ -444,8 +445,19 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
 
     const form = page.getByTestId("register-form-pane");
     const hero = page.getByTestId("register-hero-pane");
-    const formBox = (await form.boundingBox())!;
-    const heroBox = (await hero.boundingBox())!;
+    await expect(form).toBeVisible();
+    await expect(hero).toBeVisible();
+    // MEH-3833: two separate boundingBox() calls could straddle a layout shift
+    // (the received gap was always 64px). Wait for quiet, then read both boxes
+    // in one frame, so the comparison is between the same layout.
+    await layoutSettled(form);
+    const [formBox, heroBox] = await page.evaluate(() => {
+      const box = (id: string) => {
+        const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      };
+      return [box("register-form-pane"), box("register-hero-pane")];
+    });
 
     // RTL page: START is the right edge. The form must be the right-hand pane.
     expect(
@@ -475,7 +487,14 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
     await expect(page.getByTestId("register-form")).toBeVisible();
     // 260px ≈ header (~90px) + section padding; the old 30vh band alone put
     // the heading past 300px on a 844px-tall phone.
-    const headingBox = (await page.getByTestId("register-heading").boundingBox())!;
+    // MEH-3862 (mobile sibling of MEH-3833): read once the layout is quiet. A
+    // read during the load got 298.5 once on CI: the same 64px gap MEH-3833
+    // saw between the desktop panes, cause not yet found. A heading that
+    // SETTLES that low still fails here; a shift during the load is not
+    // asserted by this test.
+    const heading = page.getByTestId("register-heading");
+    await layoutSettled(heading);
+    const headingBox = (await heading.boundingBox())!;
     expect(headingBox.y, "the heading starts in the first screen, not under a 30vh band").toBeLessThan(260);
 
     const overflow = await page.evaluate(
