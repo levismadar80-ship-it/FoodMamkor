@@ -121,6 +121,17 @@ export default [
           message:
             "Hand-rolled address/city field — use the canonical <AddressSearch> or <CitySearch> component (MEH-1455, MEH-1766: this exact pattern shipped two bugs — a city that silently fell out of the map filter, an address saved with no lat/lng). Legitimate exception (e.g. an admin raw-coordinates escape hatch)? Add // address-field-ok and eslint-disable-next-line.",
         },
+        {
+          // MEH-3858: browser storage never reaches the server, so a value read
+          // from it and painted after the load moves the page under the
+          // visitor's eyes (the saved city, MEH-3857; the favorites-strip hint,
+          // CLS 0.14 on home). Born at today's count in the eslint ratchet:
+          // the total only goes down, and a new read has to say why it is safe.
+          selector:
+            "CallExpression[callee.property.name='getItem'][callee.object.name=/^(localStorage|sessionStorage)$/], CallExpression[callee.property.name='getItem'][callee.object.property.name=/^(localStorage|sessionStorage)$/]",
+          message:
+            "A read of browser storage: the server cannot see it, so anything it changes on screen moves after the load (MEH-3857, MEH-3858). Show it only after a tap, reserve its space from the first paint, float it over the page, or keep the value in a cookie the server reads. Then cover the page in e2e/flows/50-returning-visitor-no-shift.spec.ts and add eslint-disable-next-line no-restricted-syntax -- <why it cannot move the page>. A tripwire, not a proof: an alias or a computed key gets past it.",
+        },
       ],
     },
   },

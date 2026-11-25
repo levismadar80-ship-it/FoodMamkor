@@ -31,6 +31,7 @@ const PROBE_CONFIG = /** @type {import("axios").AxiosRequestConfig} */ ({ skipAu
 /** @param {string} uid */
 function readCache(uid) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- nav-link cache, read in a layout effect before the first paint (MEH-2965)
     const parsed = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
     if (parsed?.uid !== uid || typeof parsed?.on !== "boolean") return null;
     if (Date.now() - parsed.at > TTL_MS) return null;

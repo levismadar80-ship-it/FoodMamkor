@@ -100,6 +100,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // Wrapped in try/catch — localStorage can throw on quota / private-mode.
   const [step, setStep] = useState(() => {
     try {
+      // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
       if (typeof window !== "undefined" && localStorage.getItem("token")) return STEP.DETAILS;
     } catch {
       // private browsing / storage disabled — fall through to step 1
@@ -363,6 +364,7 @@ function RegisterProducerPageBody({ routeKind }) {
   useEffect(() => {
     loadCategories();
     try {
+      // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = parseDraft(saved, Date.now());
@@ -434,6 +436,7 @@ function RegisterProducerPageBody({ routeKind }) {
 
   const restoreDraft = () => {
     try {
+      // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = parseDraft(saved, Date.now());
@@ -446,6 +449,7 @@ function RegisterProducerPageBody({ routeKind }) {
           // actually finish from — see safeResumeStep for why a signed-out
           // resume must still cross the account frame.
           let hasToken = false;
+          // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
           // MEH-2915: the draft no longer carries a phone and nothing

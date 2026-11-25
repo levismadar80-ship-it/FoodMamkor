@@ -52,6 +52,7 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 function readCache(key, ttlMs) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- nav-link cache, read in a layout effect before the first paint (MEH-2965)
     const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);

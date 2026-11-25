@@ -98,6 +98,7 @@ const ORDER_LINK_TOKEN_ENCODED = /(%23t%3D)[\w-]{20,100}/gi;
 export function stashClaimToken(token) {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STORAGE_KEY) === token;
   } catch {
     return false;
@@ -106,6 +107,7 @@ export function stashClaimToken(token) {
 
 export function readClaimToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
@@ -127,6 +129,7 @@ export function clearClaimToken() {
 export function stashOwnerInviteToken(token) {
   try {
     window.sessionStorage.setItem(OWNER_INVITE_STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(OWNER_INVITE_STORAGE_KEY) === token;
   } catch {
     return false;
@@ -135,6 +138,7 @@ export function stashOwnerInviteToken(token) {
 
 export function readOwnerInviteToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(OWNER_INVITE_STORAGE_KEY);
   } catch {
     return null;
@@ -158,6 +162,7 @@ const STAFF_INVITE_STORAGE_KEY = "mehamakor.staffInviteToken";
 export function stashStaffInviteToken(token) {
   try {
     window.sessionStorage.setItem(STAFF_INVITE_STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY) === token;
   } catch {
     return false;
@@ -166,6 +171,7 @@ export function stashStaffInviteToken(token) {
 
 export function readStaffInviteToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY);
   } catch {
     return null;
@@ -206,6 +212,7 @@ export function stashOwnerInviteCodeSent(token, email) {
 
 export function readOwnerInviteCodeSent(token) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const stored = JSON.parse(window.sessionStorage.getItem(OWNER_INVITE_CODE_SENT_KEY));
     if (!stored || typeof stored.email !== "string" || !stored.email) return null;
     const age = Date.now() - stored.sentAt;

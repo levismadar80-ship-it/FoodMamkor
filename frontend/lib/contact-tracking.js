@@ -55,6 +55,7 @@ export function trackContactClick(producerId, method) {
   // MEH-2999: any contact channel opens the first-review gate server-side
   // (reviews.py, MEH-2204), so it unlocks the review form here too.
   markContactedLocal(producerId, method);
+  // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -95,6 +96,7 @@ export function pingWhatsAppBeacon(producerId, city = null) {
   // body at all, which is what keeps the anonymous sendBeacon path below
   // working; only a city forces fetch(keepalive) even without a token,
   // because sendBeacon cannot set Content-Type: application/json.
+  // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   if (token || coverageCity) {
     /** @type {Record<string, string>} */
@@ -171,7 +173,9 @@ function markContactedLocal(producerId, method) {
 export function contactedMethodLocal(producerId) {
   if (!producerId) return null;
   try {
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     if (localStorage.getItem(`wa_clicked_${producerId}`) === "1") return "whatsapp";
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     return localStorage.getItem(`contacted_${producerId}`) || null;
   } catch {
     return null;
@@ -200,6 +204,7 @@ export function trackProducerView(producerId, referrer) {
   // whatsapp-click this endpoint takes a JSON body, and sendBeacon cannot set
   // Content-Type: application/json (it sends text/plain, which FastAPI rejects
   // with 422). keepalive gives the same survives-navigation guarantee.
+  // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;

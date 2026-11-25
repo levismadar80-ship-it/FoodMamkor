@@ -34,6 +34,7 @@ const storageKey = (id) => `mehamakor.link-everywhere.${id}`;
 /** @param {string} id @returns {string[]} */
 function readDone(id) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the screen it feeds renders only after the client has auth, so nothing server-painted changes (measured 0 on the dashboard, MEH-3858)
     const raw = window.localStorage.getItem(storageKey(id));
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list.filter((p) => LINK_PLACES.includes(p)) : [];

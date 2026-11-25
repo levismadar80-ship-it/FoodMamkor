@@ -43,6 +43,7 @@ export default function VerifyBanner() {
   // guard. The banner never renders on the server (user is null there), so no
   // hydration mismatch — the client is the first place this runs with a user.
   const [dismissed, setDismissed] = useState(
+    // eslint-disable-next-line no-restricted-syntax -- the dismiss flag only keeps the banner away; the banner itself waits for auth, a separate shift tracked in MEH-1658
     () => typeof window !== "undefined" && sessionStorage.getItem(DISMISS_KEY) === "1"
   );
 

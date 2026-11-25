@@ -4,6 +4,7 @@
 
 export function isFridayMode() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- Friday mode moves home after the load (0.13 / 0.29, measured 25/11); MEH-3860 fixes it, this read is not the cause (the clock is)
     if (typeof window !== "undefined" && localStorage.getItem("friday_mode_override") === "1") {
       return true;
     }

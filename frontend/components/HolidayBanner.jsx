@@ -29,6 +29,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
     const apply = (h) => {
       if (!h) return;
       const dismissedKey = `${DISMISS_KEY}_${h.key}`;
+      // eslint-disable-next-line no-restricted-syntax -- the banner is revealed on purpose after a delay (MEH-41 / MEH-55); a probe measured CLS 0-0.03 with it shown, under 0.1 (MEH-3858, 25/11; spec 50 seeds no holiday)
       if (sessionStorage.getItem(dismissedKey)) return;
       setHoliday(h);
       setDismissed(false);

@@ -206,6 +206,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
       setShowNewUserHint(true);
     }
@@ -214,6 +215,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   useEffect(() => {
     if (!showNewUserHint) return;
     const onStorage = () => {
+      // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
       if (localStorage.getItem("favorite_hint_shown")) setShowNewUserHint(false);
     };
     window.addEventListener("storage", onStorage);
@@ -255,6 +257,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // runs this effect twice in dev — the second call would read `false`.
     if (historyReturnRef.current === null) historyReturnRef.current = consumeHistoryReturn();
     const savedCount = historyReturnRef.current
+      // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
       ? Number(window.sessionStorage?.getItem("home_visible_count"))
       : NaN;
     // MEH-1387: clamp a restored count to the cap — sessions saved before the
@@ -352,6 +355,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!historyReturnRef.current) return;
+    // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
     const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
     if (!Number.isFinite(savedY) || savedY <= 0) return;
     requestAnimationFrame(() => {

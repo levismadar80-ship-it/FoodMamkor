@@ -31,6 +31,7 @@ const UpcomingSchema = z.array(z.unknown());
 
 function readCache() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- nav-link cache, read in a layout effect before the first paint (MEH-2965)
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
