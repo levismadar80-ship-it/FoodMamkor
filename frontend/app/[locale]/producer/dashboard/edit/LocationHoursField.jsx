@@ -2,11 +2,13 @@
 
 /**
  * Module:   LocationHoursField
- * Purpose:  The opening-hours picker of one location in the owner's
- *           LocationsEditor: seven day rows (א׳–ש׳), each with an open toggle
- *           and up to three time ranges. Writes the canonical string
+ * Purpose:  The opening-hours picker of one location, in the owner's
+ *           «שעות» card (HoursCard, MEH-3790) and the admin LocationsEditor:
+ *           seven day rows (א׳–ש׳), each with an open toggle and up to three
+ *           time ranges. Writes the canonical string
  *           ("Sun-Thu 09:00-18:00, Fri 09:00-13:00") the public page reads.
- * Does NOT: save anything itself — the location form owns the request; this
+ * Does NOT: save anything itself — HoursCard or the location form owns
+ *           the request; this
  *           only reports a string and a validity flag upward. No special
  *           hours (SpecialHoursEditor), no "open 24h", no admin use (the admin
  *           ProducerForm keeps its text field).
@@ -40,6 +42,7 @@ import {
   nextRange,
   serializeHours,
 } from "@/lib/hours-serialize";
+import Checkbox from "@/components/ui/Checkbox";
 
 // Shared by every time input: ≥44px tall (min-h-touch), numerals in reading
 // order. REUSES: HoursEditor.jsx (6f8d70e8^) input class, plus the touch floor.
@@ -157,16 +160,14 @@ export default function LocationHoursField({
           const issueReason = issueByDay.get(i);
           return (
             <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1" data-testid={`location-hours-day-${i}`}>
-              <label className="flex min-h-touch w-24 shrink-0 cursor-pointer items-center gap-2 text-sm text-text">
-                <input
-                  type="checkbox"
-                  checked={day.open}
-                  onChange={(e) => patchDay(i, { open: e.target.checked })}
-                  className="h-4 w-4 accent-primary"
-                  data-testid={`location-hours-open-${i}`}
-                />
+              <Checkbox
+                className="flex w-24 shrink-0 items-center gap-2 text-sm text-text"
+                checked={day.open}
+                onChange={(e) => patchDay(i, { open: e.target.checked })}
+                data-testid={`location-hours-open-${i}`}
+              >
                 <span>{tDays(key)}</span>
-              </label>
+              </Checkbox>
 
               {day.open ? (
                 <div className="flex flex-col gap-1.5">

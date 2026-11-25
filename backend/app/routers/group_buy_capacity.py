@@ -22,7 +22,7 @@ from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, GroupBuyWaitlist, User
 from app.rate_limit import limiter
 from app.routers.group_buys import _is_public
-from app.schemas.group_buys_requests import PICKUP_BEFORE_DEADLINE
+from app.schemas.group_buys_requests import PICKUP_ALREADY_ENDED, PICKUP_BEFORE_DEADLINE
 from app.schemas.schemas import (
     GroupBuyQuantityUpdate,
     GroupBuySettingsUpdate,
@@ -176,7 +176,9 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         .first()
     )
     if joined:
-        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
+        raise HTTPException(
+            status_code=400, detail="ההצטרפות לקבוצת הרכישה הזאת כבר קיימת"
+        )
     waiting = (
         db.query(GroupBuyWaitlist.id)
         .filter(
@@ -186,7 +188,7 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         .first()
     )
     if waiting:
-        raise HTTPException(status_code=400, detail="כבר נרשמת לרשימת ההמתנה")
+        raise HTTPException(status_code=400, detail="ההרשמה לרשימת ההמתנה כבר קיימת")
     if capacity.waitlist_count(db, gb.id) >= capacity.WAITLIST_MAX:
         raise HTTPException(status_code=409, detail="רשימת ההמתנה מלאה")
     db.add(
@@ -195,7 +197,7 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         )
     )
     db.commit()
-    return {"detail": "נרשמת לרשימת ההמתנה"}
+    return {"detail": "ההרשמה לרשימת ההמתנה נקלטה"}
 
 
 @router.delete("/{group_buy_id}/waitlist", response_model=None)
@@ -241,6 +243,10 @@ def _set_pickup_window(
         data.pickup_ends_at,
     ):  # type: ignore[comparison-overlap]
         return
+    # MEH-3735: a new end that already passed would let the business mark
+    # «לא הגיע» before anyone could come. An unchanged window is let through above.
+    if data.pickup_ends_at is not None and data.pickup_ends_at <= utc_now():
+        raise HTTPException(status_code=400, detail=PICKUP_ALREADY_ENDED)
     first = gb.pickup_starts_at is None
     gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
     gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]

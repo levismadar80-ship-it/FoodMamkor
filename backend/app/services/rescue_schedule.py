@@ -41,7 +41,7 @@ from app.utils.clock import ISRAEL_TZ
 log = logging.getLogger(__name__)
 
 
-def _israel_utc(day: date, hhmm: str) -> datetime:
+def _routine_wall_clock_utc(day: date, hhmm: str) -> datetime:
     """An Israel wall-clock time on `day`, as the naive UTC the columns store.
     zoneinfo applies the offset of that date, so a DST switch moves nothing."""
     hours, minutes = (int(part) for part in hhmm.split(":"))
@@ -65,7 +65,7 @@ def stored(location: ProducerLocation) -> RescueScheduleStored | None:
 def _bag_for(
     location: ProducerLocation, routine: RescueScheduleStored, day: date
 ) -> RescueOffer:
-    start = _israel_utc(day, routine.pickup_start)
+    start = _routine_wall_clock_utc(day, routine.pickup_start)
     return RescueOffer(
         producer_location_id=location.id,
         date=day,
@@ -75,7 +75,7 @@ def _bag_for(
         value_min_agorot=routine.value_min_agorot,
         value_max_agorot=routine.value_max_agorot,
         pickup_start=start,
-        pickup_end=_israel_utc(day, routine.pickup_end),
+        pickup_end=_routine_wall_clock_utc(day, routine.pickup_end),
         cancel_until=start - timedelta(minutes=routine.cancel_minutes),
         status="active",
     )

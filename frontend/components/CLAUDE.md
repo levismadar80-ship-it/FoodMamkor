@@ -21,6 +21,11 @@ export nobody imports there fails the Knip dead-code ratchet.
 The last column is the guard that pins the owner or its look; some cover only
 part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
+A raw `<button>`, `<select>`, `<textarea>`, checkbox, radio, `<h1>`–`<h3>` or `<a>`
+outside `ui/` is an ESLint warning (`design-system/no-html-*`, local plugin
+`eslint-rules/design-system.mjs`, MEH-3829), and so is a field named only by its
+placeholder or read-only / always-disabled. With the jsx-a11y recommended set,
+their totals are gated by `npm run lint:ratchet`: they may only go down.
 
 | Need | Owner | Guard |
 |---|---|---|
@@ -36,8 +41,10 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
 | Days of the week as chips, Sunday first, on the shared mask (a product's days, a bag routine's days) | `ui/WeekdayChips.jsx` | — |
+| Checkbox with its label — the whole row is the 44px hit area (32px from md) | `ui/Checkbox.jsx` | ESLint `design-system/no-html-checkbox` (ratchet) |
 | Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
+| 44×44 hit area on a small control without moving the layout (`::before`) | `.tap-area` in `app/globals.css` | `TapArea44` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
 | Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
@@ -50,6 +57,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | A form field's label with a «?» that opens its explanation inline under it (dashboard forms, MEH-3740) | `FieldHelpLabel.jsx` | — |
 | «fill this form from text» box over a dashboard form (one engine, `form` = the field map) | `FormFillBox.jsx` | — |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
+| «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |

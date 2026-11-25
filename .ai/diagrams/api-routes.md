@@ -14,7 +14,7 @@
 >   - 👤 = producer role (`require_producer`). Includes `GET /producers/me/group-buys` (MEH-2437: the business's own group buys, every status, newest first; no business linked → 403).
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
 >   - Paid-tool gate (MEH-3180, switched off: `app.pricing.BILLING_PHASE = "launch"`): once billing is on, a business in `page_only` / `unpaid` gets 403 from `services/capabilities.py` when it opens a NEW paid booking on `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` (priced + `site_form` only), `POST /group-buys`, and `POST /rescue/offers` (route dependency `capabilities.bags_open`, after `require_rescue_enabled`). No new route.
->   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated. MEH-3691: `POST …/commit` and `POST …/waitlist` answer 403 to the group's own business account.
+>   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated. MEH-3691: `POST …/commit` and `POST …/waitlist` answer 403 to the group's own business account. MEH-3735: `POST …/commit` also answers 403 after two group-buy no-shows in 30 days; the owner's pickup list and marks live in `routers/group_buy_pickup.py` (`GET /producers/me/group-buys/{id}/pickups`, `POST /group-buys/{id}/commits/{commit_id}/handed|no-show`, admin `POST /admin/group-buys/users/{user_id}/clear-block`).
 >   - 🛡️ = admin role (`require_admin`)
 >   - MEH-3137: `PUT /producers/me`, claim, owner-invite accept and `POST /producers` take `farmer_declaration_accepted`; moving into ירקות/פירות with no recorded grower line and no flag → 422 Hebrew. Details: `docs/DATA.md` → MEH-3137.
 >   - MEH-3261: owner `PUT /producers/me` and `POST`/`PUT /producers/me/products[/{id}]` of an APPROVED business run changed text through the AI check (REJECTED → 422, nothing saved) and ping the admin once per content save — no route or response shape change.
@@ -108,6 +108,7 @@ graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
     SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 10/hour (MEH-1635)<br/>routers/auth_register_producer.py (MEH-3293)<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
+    SignUp --> OAuthGC[POST /auth/google/code<br/>🌐 code → id_token, MEH-3690]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
 
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
@@ -133,7 +134,7 @@ graph TD
 ```mermaid
 graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
-    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week +<br/>attention «מה מחכה לך» (incl. live_rescue_offers, MEH-3767)]
+    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week +<br/>attention «מה ממתין לטיפול» (incl. live_rescue_offers, MEH-3767)]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>30d chart, top cities,<br/>share_visits (MEH-3331, referrer=share)]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
     Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]

@@ -96,7 +96,10 @@ test.describe("manual › Hebrew typography (MEH-2488)", () => {
 
   test("a guide headline at 375 wraps without a one-word last line", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/about/for-businesses/guides/business-story");
+    // MEH-3812: business-story's title lost «שלך» and now fits one line at 375,
+    // which leaves balance nothing to do. product-photography wraps to 2 lines;
+    // measured locally 24/11: last line 60% with balance, 12% («נכון») without.
+    await page.goto("/about/for-businesses/guides/product-photography");
     const h1 = "main h1";
     await page.locator(h1).first().waitFor({ state: "visible", ...FIRST_PAINT });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));

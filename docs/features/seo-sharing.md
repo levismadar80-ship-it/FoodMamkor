@@ -17,7 +17,7 @@
 * `frontend/lib/legal-page-metadata.js` — ‏`buildLegalPageMetadata`: ה-metadata של דפי הפרטיות, התנאים והצהרת הנגישות, במקום שלושה עותקים (MEH-3623).
 * `frontend/components/StoryCardCanvas.jsx` · `frontend/components/ReviewCardCanvas.jsx` — כרטיסי שיתוף.
 * `frontend/components/producer/FeedPostCanvas.jsx` · `frontend/components/producer/feed-post-draw.js` · `frontend/lib/share-post.js` — פוסט 4:5 מוכן לשיתוף, לפי רגע (השבוע · מוצר חדש · חג), עם קישור מתויג `?from=share` (MEH-3330).
-* `frontend/components/producer/LinkEverywhere.jsx` — «הקישור שלך בכל מקום»: ארבעה מקומות לקישור, העתקה ו«עשיתי» (localStorage). `frontend/components/producer/ShareVisitsLine.jsx` — שורת «כניסות מהשיתופים שלך» בתובנות, מ-`share_visits` (MEH-3331).
+* `frontend/components/producer/LinkEverywhere.jsx` — «קישור אחד לכל מקום»: ארבעה מקומות לקישור, העתקה ו«עשיתי» (localStorage). `frontend/components/producer/ShareVisitsLine.jsx` — שורת «כניסות מהשיתופים» בתובנות, מ-`share_visits` (MEH-3331).
 * `frontend/lib/qr.js` · `frontend/components/producer/BusinessQrCard.jsx`
 * `frontend/public/robots.txt` — מי חסום ומי לא. ‏ClaudeBot חסום, ‏Claude-User מותר; ‏GPTBot חסום, ‏OAI-SearchBot מותר. הדוח: `docs/audits/2026-11-ai-crawler-access.md`.
 

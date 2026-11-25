@@ -25,6 +25,7 @@ import { rememberReturnPath } from "@/lib/post-auth-return";
 import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
 import { trackEvent } from "@/lib/analytics";
 import SeedMark from "@/components/brand/SeedMark";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-3676: display-scale size (DESIGN.md Icons), same as /login.
 const HERO_MARK_PX = 40;
@@ -448,15 +449,14 @@ function RegisterPageBody() {
               ariaLabel={t("auth.register.consumer.fields.password_aria")}
             />
           </div>
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="register-terms"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
-              required
-            />
+          <Checkbox
+            className="flex items-start gap-2 text-sm"
+            boxClassName="mt-0.5"
+            data-testid="register-terms"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            required
+          >
             <span className="leading-relaxed">
               {t("auth.register.consumer.terms.intro")}{" "}
               <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
@@ -467,7 +467,7 @@ function RegisterPageBody() {
                 {t("auth.register.consumer.terms.privacy_link")}
               </Link>
             </span>
-          </label>
+          </Checkbox>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
           {error && <InlineMessage data-testid="register-error">{error}</InlineMessage>}

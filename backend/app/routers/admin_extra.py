@@ -49,6 +49,9 @@ from app.services.booking_cancellations import (  # MEH-2871, MEH-3375
     hide_business,
 )
 from app.services.category_slug import resolve_unique_slug
+from app.services.group_buy_no_show import (  # MEH-3735
+    group_buy_active_no_show_counts as group_buy_no_show_counts,
+)
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
     active_no_show_counts,
@@ -151,6 +154,7 @@ def list_users(
     )
     # MEH-3226: one grouped query, the same count the reserve gate reads.
     no_shows = active_no_show_counts(db, [u.id for u in users])  # type: ignore[misc]
+    gb_no_shows = group_buy_no_show_counts(db, [u.id for u in users])  # MEH-3735
     out = []
     for u in users:
         out.append(
@@ -169,6 +173,8 @@ def list_users(
                 favorites_count=fav_counts.get(u.id, 0),
                 rescue_active_no_shows=no_shows.get(u.id, 0),
                 rescue_blocked=no_shows.get(u.id, 0) >= NO_SHOW_BLOCK_AT,
+                group_buy_active_no_shows=gb_no_shows.get(u.id, 0),
+                group_buy_blocked=gb_no_shows.get(u.id, 0) >= NO_SHOW_BLOCK_AT,
                 created_at=u.created_at or utc_now(),
             )
         )

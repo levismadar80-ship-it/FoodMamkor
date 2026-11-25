@@ -16,6 +16,7 @@ import Button from "@/components/ui/Button";
 import RescueScheduleStrip from "@/components/dashboard/RescueScheduleStrip"; // MEH-3703
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { useOptionalAuth } from "@/lib/auth-context";
+import useIsraelToday from "@/lib/use-israel-today";
 import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
 import Input from "@/components/ui/Input";
@@ -39,6 +40,7 @@ const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish", items: "items", leftover: "leftover" };
 
 export default function RescueTab() {
+  const day = useIsraelToday(); // MEH-3805: «מחר» becomes «היום» at midnight without a reload
   const t = useTranslations("rescue.dashboard");
   const tSchedule = useTranslations("rescue.schedule"); // MEH-3703
   const emailUnverified = useOptionalAuth()?.user?.email_verified === false; // MEH-2918
@@ -167,8 +169,8 @@ export default function RescueTab() {
   }, [load]);
 
   // MEH-3702: the counter tool is today's; tomorrow's orders get their own list.
-  const todayOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date) === "today"), [orders]);
-  const tomorrowOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date) === "tomorrow"), [orders]);
+  const todayOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date, day) === "today"), [orders, day]);
+  const tomorrowOrders = useMemo(() => (orders || []).filter((o) => bagDay(o.date, day) === "tomorrow"), [orders, day]);
   // Three counters, derived from one list so they cannot disagree with it.
   const counters = useMemo(() => {
     const rows = todayOrders;
@@ -347,8 +349,8 @@ export default function RescueTab() {
   const cancellable = offers
     .filter((o) => o.status === "active" && new Date(o.pickup_end).getTime() > now)
     // MEH-3702: today's first, so «הסלים של מחר» heads one run of rows.
-    .sort((a, b) => Number(bagDay(a.date) === "tomorrow") - Number(bagDay(b.date) === "tomorrow"));
-  const tomorrowBags = offers.some((o) => o.status === "active" && bagDay(o.date) === "tomorrow");
+    .sort((a, b) => Number(bagDay(a.date, day) === "tomorrow") - Number(bagDay(b.date, day) === "tomorrow"));
+  const tomorrowBags = offers.some((o) => o.status === "active" && bagDay(o.date, day) === "tomorrow");
   const openOn = (offerId) =>
     (orders || []).filter((o) => o.offer_id === offerId && o.status === "reserved").length;
   // MEH-2702: the group for the town of the point bags are published from,
@@ -365,7 +367,7 @@ export default function RescueTab() {
   // so the business is told where to look instead of finding it by chance.
   // MEH-3702: today's only — tomorrow's bag says nothing about today's leftovers.
   const upcoming = offers.some(
-    (o) => o.status === "active" && bagDay(o.date) === "today" && new Date(o.pickup_end).getTime() > now,
+    (o) => o.status === "active" && bagDay(o.date, day) === "today" && new Date(o.pickup_end).getTime() > now,
   );
   const chosenQty = donateQty === null ? leftoverTotal : Math.min(donateQty, leftoverTotal);
   // No recipient in the link: the business picks the contact or group in
@@ -512,7 +514,7 @@ export default function RescueTab() {
             const open = openOn(o.id);
             // MEH-3702: tomorrow's bags come after today's, under their own line.
             const firstTomorrow =
-              bagDay(o.date) === "tomorrow" && (i === 0 || bagDay(cancellable[i - 1].date) !== "tomorrow");
+              bagDay(o.date, day) === "tomorrow" && (i === 0 || bagDay(cancellable[i - 1].date, day) !== "tomorrow");
             const dayLine = firstTomorrow ? (
               <p key={`day-${o.id}`} className="font-body-sm text-sm font-bold text-text" data-testid="rescue-offers-tomorrow-title">
                 {t("offers_title_tomorrow")}
@@ -527,7 +529,7 @@ export default function RescueTab() {
                 className="border border-border rounded-md px-4 py-3 space-y-3 bg-surface-card"
               >
                 <p id={`rescue-offer-cancel-title-${o.id}`} className="font-body-sm text-base font-bold text-text">
-                  {t(bagDay(o.date) === "tomorrow" ? "cancel_offer_title_tomorrow" : "cancel_offer_title")}
+                  {t(bagDay(o.date, day) === "tomorrow" ? "cancel_offer_title_tomorrow" : "cancel_offer_title")}
                 </p>
                 <p className="font-body-sm text-sm text-text">
                   {open === 0

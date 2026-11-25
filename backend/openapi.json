@@ -4641,6 +4641,36 @@
         "title": "GoogleAuthResponse",
         "type": "object"
       },
+      "GoogleCodeRequest": {
+        "description": "MEH-3690: the one-time code from Google's popup (GIS code client).",
+        "properties": {
+          "code": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "GoogleCodeRequest",
+        "type": "object"
+      },
+      "GoogleCodeResponse": {
+        "description": "MEH-3690: the Google-signed ID token the code was swapped for. The\nbrowser posts it to the same routes that take a GIS credential today.",
+        "properties": {
+          "id_token": {
+            "title": "Id Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleCodeResponse",
+        "type": "object"
+      },
       "GooglePlaceIdIn": {
         "properties": {
           "google_place_id": {
@@ -4876,6 +4906,25 @@
         "title": "GrantVerifiedIn",
         "type": "object"
       },
+      "GroupBuyBlockStateOut": {
+        "properties": {
+          "active_no_shows": {
+            "title": "Active No Shows",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "active_no_shows"
+        ],
+        "title": "GroupBuyBlockStateOut",
+        "type": "object"
+      },
       "GroupBuyCommitOut": {
         "properties": {
           "created_at": {
@@ -4892,6 +4941,17 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
           },
           "quantity": {
             "title": "Quantity",
@@ -5726,6 +5786,106 @@
           "id"
         ],
         "title": "GroupBuyPickupLocationOut",
+        "type": "object"
+      },
+      "GroupBuyPickupOut": {
+        "properties": {
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "no_show_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show At"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "quantity"
+        ],
+        "title": "GroupBuyPickupOut",
+        "type": "object"
+      },
+      "GroupBuyPickupsOut": {
+        "properties": {
+          "can_mark": {
+            "title": "Can Mark",
+            "type": "boolean"
+          },
+          "mark_state": {
+            "enum": [
+              "open",
+              "not_funded",
+              "delivery",
+              "no_window",
+              "wait",
+              "closed"
+            ],
+            "title": "Mark State",
+            "type": "string"
+          },
+          "pickup_ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ended At"
+          },
+          "pickups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupBuyPickupOut"
+            },
+            "title": "Pickups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "can_mark",
+          "mark_state",
+          "pickups"
+        ],
+        "title": "GroupBuyPickupsOut",
         "type": "object"
       },
       "GroupBuyQuantityUpdate": {
@@ -20518,8 +20678,19 @@
         "type": "object"
       },
       "RescueProducerSummary": {
-        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
+        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock or the contact details — serializing them would publish more than\nthe screen needs. The public rating is here since MEH-3704, because the\nlist sorts by it; it is the same number the business page already shows.",
         "properties": {
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
           "city": {
             "anyOf": [
               {
@@ -22228,6 +22399,16 @@
             "title": "Favorites Count",
             "type": "integer"
           },
+          "group_buy_active_no_shows": {
+            "default": 0,
+            "title": "Group Buy Active No Shows",
+            "type": "integer"
+          },
+          "group_buy_blocked": {
+            "default": false,
+            "title": "Group Buy Blocked",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -23533,6 +23714,55 @@
           }
         ],
         "summary": "Admin List Group Buys",
+        "tags": [
+          "admin-group-buys"
+        ]
+      }
+    },
+    "/admin/group-buys/users/{user_id}/clear-block": {
+      "post": {
+        "description": "Release a group-buy no-show block. The marks stay; they stop counting.",
+        "operationId": "clear_group_buy_block_admin_group_buys_users__user_id__clear_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyBlockStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear Group Buy Block",
         "tags": [
           "admin-group-buys"
         ]
@@ -28488,6 +28718,57 @@
         ]
       }
     },
+    "/auth/google/code": {
+      "post": {
+        "description": "Swap a Google authorization code for a verified Google ID token.",
+        "operationId": "google_code_auth_google_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Google refused the code or the token failed verification"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "Google's token endpoint could not be reached"
+          },
+          "503": {
+            "description": "Google sign-in is not configured on this server"
+          }
+        },
+        "summary": "Google Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "operationId": "login_auth_login_post",
@@ -31136,6 +31417,123 @@
         ]
       }
     },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/handed": {
+      "post": {
+        "operationId": "mark_group_buy_handed_group_buys__group_buy_id__commits__commit_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Group Buy Handed",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/{group_buy_id}/commits/{commit_id}/no-show": {
+      "post": {
+        "description": "Only after the pickup ended, once per commit; mails the participant.",
+        "operationId": "mark_group_buy_no_show_group_buys__group_buy_id__commits__commit_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Commit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Group Buy No Show",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
     "/group-buys/{group_buy_id}/settings": {
       "patch": {
         "operationId": "update_group_buy_settings_group_buys__group_buy_id__settings_patch",
@@ -33170,6 +33568,55 @@
           }
         ],
         "summary": "List My Group Buys",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/producers/me/group-buys/{group_buy_id}/pickups": {
+      "get": {
+        "description": "Codes and quantities of one of the business's group buys.",
+        "operationId": "list_pickups_producers_me_group_buys__group_buy_id__pickups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_buy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Buy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyPickupsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Pickups",
         "tags": [
           "group-buys"
         ]

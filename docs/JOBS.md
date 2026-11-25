@@ -33,7 +33,7 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 הרישום שלה, בקובץ שבעמודה «נרשמת ב».
 
 <!-- BEGIN GENERATED: jobs-map (tests/test_meh3599_jobs_map.py) -->
-18 server jobs · 9 GitHub Actions schedules.
+19 server jobs · 9 GitHub Actions schedules.
 
 ### משימות בשרת (APScheduler)
 
@@ -55,6 +55,7 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 | `meh_3630_staging_weekly_reset` | `run` | cron `0 23 * * sat` (UTC) | `enabled()` | — | backend/app/services/staging_reset_job.py · register | One weekly wipe + re-seed of the staging DB, staging only (MEH-3630). |
 | `meh_3702_rescue_morning_reminder` | `_run_rescue_morning_reminder_job` | cron `0 8 * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-morning-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3702: queue today's reminder emails. |
 | `meh_3703_rescue_schedule_publish` | `_run_rescue_schedule_job` | cron `5 * * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-schedule-publish-hourly | backend/app/startup.py · register_scheduler_jobs | MEH-3703: publish today's and tomorrow's routine bags. |
+| `meh_3805_rescue_evening_reminder` | `_run_rescue_evening_reminder_job` | cron `0 20 * * *` (Asia/Jerusalem) | `settings.rescue_bags_enabled` (app.config.settings) | rescue-evening-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3805: queue tomorrow's early-window reminders. |
 | `meh_509_pr2b_after_hours_watchdog` | `_run_watchdog_job` | כל 5 minutes | `settings.watchdog_enabled` (app.config.settings) | auto-reply-watchdog | backend/app/startup.py · register_scheduler_jobs | MEH-509 PR2b: 5-min after-hours watchdog tick. |
 | `meh_539_onboarding_followups_daily` | `_run_followup_job` | cron `0 10 * * *` (UTC) | תמיד | onboarding-followups-daily | backend/app/startup.py · register_scheduler_jobs | MEH-539: daily APScheduler tick. |
 

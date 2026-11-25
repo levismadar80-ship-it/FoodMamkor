@@ -77,6 +77,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(
         rescue_reminders, "queue_morning_reminders", lambda db, **kw: {}
     )
+    monkeypatch.setattr(  # MEH-3805: its evening twin
+        rescue_reminders, "queue_evening_reminders", lambda db, **kw: {}
+    )
     monkeypatch.setattr(
         registration_reminders, "send_registration_reminders", lambda db: 0
     )
@@ -143,6 +146,12 @@ JOBS = [
         "rescue-morning-reminder-daily",
         "crontab",
         job_heartbeat.RESCUE_REMINDER_CRON,
+    ),
+    (
+        "_run_rescue_evening_reminder_job",
+        "rescue-evening-reminder-daily",
+        "crontab",
+        job_heartbeat.RESCUE_EVENING_REMINDER_CRON,
     ),
     (
         "_run_rescue_schedule_job",
@@ -305,6 +314,7 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
     assert "_run_rescue_morning_reminder_job" not in triggers  # MEH-3702
+    assert "_run_rescue_evening_reminder_job" not in triggers  # MEH-3805
     assert "_run_rescue_schedule_job" not in triggers  # MEH-3703
     assert "_run_weekly_owner_summary_job" not in triggers
     assert "_run_product_order_jobs" not in triggers  # MEH-3296
@@ -312,6 +322,7 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
         "_run_watchdog_job",
         "_run_rescue_digest_job",
         "_run_rescue_morning_reminder_job",
+        "_run_rescue_evening_reminder_job",
         "_run_rescue_schedule_job",
         "_run_weekly_owner_summary_job",
         "_run_product_order_jobs",

@@ -35,7 +35,7 @@ export default function Breadcrumb({ items = [], className = "" }) {
               {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-[24px] min-w-[24px] items-center justify-center hover:text-primary transition"
+                  className="tap-area inline-flex min-h-[24px] min-w-[24px] items-center justify-center hover:text-primary transition"
                 >
                   {item.label}
                 </Link>

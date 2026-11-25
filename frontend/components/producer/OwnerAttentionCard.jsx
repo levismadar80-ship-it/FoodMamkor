@@ -3,7 +3,7 @@
 
 /**
  * Module:   OwnerAttentionCard
- * Purpose:  «מה מחכה לך» — the top of the dashboard home lists what is
+ * Purpose:  «מה ממתין לטיפול» — the top of the dashboard home lists what is
  *           waiting for the owner right now, each row one tap from the tool
  *           that handles it (MEH-3108; Airbnb «Today», Shopify home tasks).
  * Touches:  nothing — renders `attention` from GET /producers/me/dashboard

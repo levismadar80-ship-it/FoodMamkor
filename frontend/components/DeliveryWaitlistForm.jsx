@@ -12,6 +12,7 @@ import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EmailTypoHint from "@/components/EmailTypoHint";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Module:   DeliveryWaitlistForm
@@ -230,16 +231,15 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
       {/* MEH-2674: opt-in to host a pickup point in this city. Unticked by
           default; the hint under it says the mail-confirmation step out loud
           so nobody thinks the box alone hands her email to the business. */}
-      <div className="mt-2 flex items-start gap-2">
-        <input
-          id={hostId}
-          type="checkbox"
-          checked={wantsToHost}
-          onChange={(e) => setWantsToHost(e.target.checked)}
-          data-testid="delivery-waitlist-host"
-          className="mt-1 h-4 w-4 flex-shrink-0 accent-primary"
-        />
-        <label htmlFor={hostId} className="text-sm text-text">
+      <Checkbox
+        className="mt-2 flex items-start gap-2 text-sm text-text"
+        boxClassName="mt-0.5"
+        id={hostId}
+        checked={wantsToHost}
+        onChange={(e) => setWantsToHost(e.target.checked)}
+        data-testid="delivery-waitlist-host"
+      >
+        <span>
           {t("host_label", { city: value })}
           <span
             className="block text-xs text-fg-muted"
@@ -247,8 +247,8 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           >
             {t("host_hint")}
           </span>
-        </label>
-      </div>
+        </span>
+      </Checkbox>
       {error && (
         <InlineMessage className="mt-1" data-testid="delivery-waitlist-error">
           {t("error")}

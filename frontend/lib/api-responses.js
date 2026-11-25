@@ -58,11 +58,13 @@ import {
   GetStatsStatsGetResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
+  ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
   RandomProducerProducersRandomGetResponse,
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
+  GoogleCodeAuthGoogleCodePostResponse,
 } from "@/lib/generated/api.zod";
 
 /** @param {unknown} value */
@@ -182,6 +184,8 @@ export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGro
     path: ["status"],
   }),
 );
+// MEH-3735: the owner's pickup list for one group buy (codes, never names).
+export const GroupBuyPickupsSchema = ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse;
 // The public group page reads the business's delivery fields and, under a "no"
 // verdict, its phone and name — all of ProducerDetailOut, so the whole of it.
 export const GroupBuyProducerDeliverySchema = GetProducerProducersProducerIdGetResponse;
@@ -191,3 +195,7 @@ export const OrderBusinessSchema = GetProducerProducersProducerIdGetResponse;
 
 // --- sign-up --------------------------------------------------------------
 export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResponse;
+
+// --- sign-in --------------------------------------------------------------
+// MEH-3690: our own Google button reads the ID token the code was swapped for.
+export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;

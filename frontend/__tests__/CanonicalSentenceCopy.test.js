@@ -20,7 +20,7 @@ const APPROVED_HE = "אוכל מבתי עסק מקומיים שבחרנו איש
 const APPROVED_EN =
   "Food from local businesses we've personally chosen — close to you, without searching for hours.";
 const APPROVED_LOGIN_OG =
-  "התחברו כדי לגלות בתי עסק מקומיים, לשמור מועדפים ולתמוך בעסקים מהסביבה שלך.";
+  "התחברו כדי לגלות בתי עסק מקומיים, לשמור מועדפים ולתמוך בעסקים מהסביבה.";
 
 describe("canonical sentence copy (MEH-2313)", () => {
   it("the constant is the approved sentence", () => {

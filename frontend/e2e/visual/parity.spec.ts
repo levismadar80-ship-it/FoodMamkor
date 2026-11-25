@@ -1320,6 +1320,11 @@ test.describe("Visual parity — MEH-991", () => {
   // («גיל 18 ומעלה, והסכמה»). The change sat inside the 2% tolerance, so the
   // old PNGs were deleted first to force a fresh write; both new ones (393x1787,
   // 1440x1781) were opened and read: they show the new line, layout unchanged.
+  // MEH-3690 (24/11): login + register regenerated after Google's iframe button
+  // was replaced by our own «להמשיך עם Google». Old PNGs deleted first (the
+  // desktop change sat inside the 2% tolerance). The new four were opened and
+  // read (login 393x1714 / 1440x1781, register 393x1791 / 1440x1781): our
+  // button with the full-colour G and the approved label, layout unchanged.
   test("register", async ({ page }) => {
     await preparePage(page);
     await page.goto("/register");

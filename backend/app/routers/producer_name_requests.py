@@ -36,7 +36,7 @@ def _own_producer(user: User, db: Session) -> Producer:
     """The caller's own producer, or 403. Never trusts an id from the body."""
     producer_id = getattr(user, "producer_id", None)
     if producer_id is None:
-        raise HTTPException(status_code=403, detail="אין לך בית עסק משויך")
+        raise HTTPException(status_code=403, detail="אין בית עסק משויך לחשבון")
     producer = db.get(Producer, producer_id)
     if producer is None:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
