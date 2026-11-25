@@ -62,7 +62,19 @@ import { currentIsraelYear } from "@/lib/established-year";
  *   - MEH-976: newsletter input switched to unicode-bidi:plaintext (+ pe-11)
  *     so the Hebrew placeholder no longer collides with the submit arrow;
  *     replaces the MEH-968 dir="ltr" + ps-11 attempt.
+ *   - MEH-3847: «גלו» holds the height of all six links on desktop from the
+ *     first paint (DISCOVER_RESERVE), so the gated links no longer push the
+ *     footer down when they arrive.
  */
+// MEH-3847: «גלו» gets up to four links (events, experiences, group buys,
+// rescue bags) only once their checks answer, after the first paint. On
+// desktop the groups are stacked, so a growing list pushed the rest of the
+// footer down (CLS 0.42 on /recommend, MEH-3809 guard). Its space is held for
+// all six links from the first paint: 6 × 24px rows + 5 × 8px gaps = 184px
+// (each <li> measured 24px at 1280, 25/11). On a phone the list is a closed
+// accordion row, so nothing is held there.
+const DISCOVER_RESERVE = "md:min-h-[11.5rem]";
+
 export default function Footer() {
   const t = useTranslations();
   // MEH-3059: prefetch on intent (the footer was first; /producers renders per
@@ -289,7 +301,7 @@ export default function Footer() {
                   </h3>
                   <ul
                     id={group.id}
-                    className={`${open ? "flex" : "hidden"} md:flex flex-col gap-3 pb-4 md:gap-2 md:pb-0`}
+                    className={`${open ? "flex" : "hidden"} md:flex flex-col gap-3 pb-4 md:gap-2 md:pb-0 ${group.id === "footer-group-discover" ? DISCOVER_RESERVE : ""}`}
                   >
                     {group.links.map((link) => (
                       <li key={link.href + link.label}>
