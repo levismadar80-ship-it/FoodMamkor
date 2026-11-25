@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
+import MapRescueRow from "./MapRescueRow"; // MEH-3824
 import { SkeletonStyles } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -112,6 +113,8 @@ export default function MapCardList({
             active={activeProducerId === p.id}
             onClick={onCardClick}
           />
+          {/* MEH-3824: the picked business's bag today, under its card only. */}
+          {activeProducerId === p.id && <MapRescueRow producer={p} />}
         </div>
       ))}
       {visibleProducers.length === 0 && (

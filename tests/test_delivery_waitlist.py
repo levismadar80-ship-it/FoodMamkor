@@ -607,7 +607,7 @@ class TestHostConfirmAbuseGuards:
             "host_confirm": "sent",
         }
         monkeypatch.setattr(
-            "app.routers.producers.delivery_waitlist.find_entry",
+            "app.services.delivery_waitlist_requests.delivery_waitlist.find_entry",  # MEH-3537
             lambda *a, **k: None,
         )
         r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)

@@ -468,6 +468,9 @@ files = [
     "app/services/admin_producer_writes.py",  # MEH-3843
     "app/services/admin_user_writes.py",  # MEH-3537
     "app/services/admin_category_writes.py",  # MEH-3537
+    "app/services/rescue_notify.py",  # MEH-3537
+    "app/services/rescue_routine_writes.py",  # MEH-3537
+    "app/services/delivery_waitlist_requests.py",  # MEH-3537
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

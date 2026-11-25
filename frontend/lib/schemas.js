@@ -247,6 +247,22 @@ export const ProducerListSchema = z.object({
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
   reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
   rescued_recently: z.boolean().nullable().optional(),       // → rescue_saving («מצילים מזון», MEH-2716)
+  // MEH-3824: today's next bag (a row in its card on the map).
+  // `.catch(null)`: a malformed bag costs the badge, never the business — the
+  // feed parses all-or-nothing, like the badge inputs above.
+  rescue_today: z
+    .object({
+      offer_id: z.string().min(1),
+      location_id: z.string().nullable().optional(),
+      price_agorot: z.number(),
+      value_min_agorot: z.number().nullable().optional(),
+      pickup_start: z.string(),
+      pickup_end: z.string(),
+      qty_left: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional()
+    .catch(null),
   has_gluten_free_products: z.boolean().nullable().optional(),   // → gluten_free
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
