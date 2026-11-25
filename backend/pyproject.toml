@@ -370,6 +370,7 @@ files = [
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
     "app/services/page_freshness.py",
+    "app/services/freshness_month_numbers.py",
     "app/services/page_freshness_digest.py",
     "app/services/signup_fill_digest.py",
     "app/services/password_policy.py",
