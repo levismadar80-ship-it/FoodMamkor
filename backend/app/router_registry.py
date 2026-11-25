@@ -57,6 +57,7 @@ from app.routers import (
     page_fill,
     form_fill,
     product_order_business,
+    producer_staff,
     product_order_buyer,
     product_order_offer,
     product_variants,
@@ -172,6 +173,10 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3526: order staff — invite, accept, remove, leave.
+    app.include_router(producer_staff.owner_router)
+    app.include_router(producer_staff.invite_router)
+    app.include_router(producer_staff.member_router)
     # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
     app.include_router(group_buy_capacity.router)
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's

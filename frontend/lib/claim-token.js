@@ -16,6 +16,7 @@
  *           sentry.*.config.js · components/SpeedInsightsRedacted.jsx ·
  *           backend producer_claim.py · backend producer_owner_invite.py.
  * History:  MEH-2324 (creation). MEH-2974 (the owner-invite token).
+ *           MEH-3526 (the order-staff invite token).
  *
  * The link is a bearer credential: whoever holds it and is signed in can take
  * the draft. That is why it must not sit in a URL a third party records.
@@ -63,6 +64,16 @@ const REG_PATH_ENCODED = new RegExp(String.raw`(%2F(?:[a-z]{2}%2F)?registrations
 const OWNER_INVITE_PATH = new RegExp(String.raw`(/owner-invite)/${REG_TOKEN}`, "g");
 const OWNER_INVITE_PATH_ENCODED = new RegExp(
   String.raw`(%2F(?:[a-z]{2}%2F)?owner-invite)%2F${REG_TOKEN}`,
+  "gi",
+);
+
+// MEH-3526: /staff-invite/<token>. Same `secrets.token_urlsafe(32)` shape
+// (producer_staff.py `_mint`), so REG_TOKEN's 40+ floor keeps the route's own
+// files out of the match. Whoever holds it and signs in with the invited
+// address handles that business's orders, with its customers' phones.
+const STAFF_INVITE_PATH = new RegExp(String.raw`(/staff-invite)/${REG_TOKEN}`, "g");
+const STAFF_INVITE_PATH_ENCODED = new RegExp(
+  String.raw`(%2F(?:[a-z]{2}%2F)?staff-invite)%2F${REG_TOKEN}`,
   "gi",
 );
 
@@ -140,6 +151,35 @@ export function clearOwnerInviteToken() {
   }
 }
 
+// MEH-3526 — the same three operations for the order-staff invite token, on
+// a key of its own for the reason OWNER_INVITE_STORAGE_KEY gives.
+const STAFF_INVITE_STORAGE_KEY = "mehamakor.staffInviteToken";
+
+export function stashStaffInviteToken(token) {
+  try {
+    window.sessionStorage.setItem(STAFF_INVITE_STORAGE_KEY, token);
+    return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY) === token;
+  } catch {
+    return false;
+  }
+}
+
+export function readStaffInviteToken() {
+  try {
+    return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearStaffInviteToken() {
+  try {
+    window.sessionStorage.removeItem(STAFF_INVITE_STORAGE_KEY);
+  } catch {
+    // Storage unavailable: nothing was stored.
+  }
+}
+
 // MEH-3025 — the address a verification code was sent to, so a reload of the
 // invite page (she switches to her mail app and the phone evicts the tab) does
 // not strand the code already in her inbox. It holds no secret: the address is
@@ -186,6 +226,8 @@ export function redactClaimPath(value) {
     .replace(REG_PATH_ENCODED, "$1%2F[token]")
     .replace(OWNER_INVITE_PATH, "$1/[token]")
     .replace(OWNER_INVITE_PATH_ENCODED, "$1%2F[token]")
+    .replace(STAFF_INVITE_PATH, "$1/[token]")
+    .replace(STAFF_INVITE_PATH_ENCODED, "$1%2F[token]")
     .replace(DRAFT_PREVIEW_PATH, "$1/[token]")
     .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]")
     .replace(ORDER_LINK_TOKEN, "$1[token]")

@@ -39,6 +39,7 @@
     "reset-password",
     "settings",
     "share",
+    "staff-invite",
     "terms",
     "unsubscribe",
     "verify-email"

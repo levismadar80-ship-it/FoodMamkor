@@ -3906,6 +3906,10 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "role": /*#__PURE__*/ zod.string(),
+  "staff_of": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('Which business this account handles orders for (`/auth/me`).')),/*#__PURE__*/ zod.null()])),
   "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseWhatsappReadyDefault)
 })
 
@@ -8808,6 +8812,45 @@ export const GetReviewInviteLinkProducersMeReviewLinkGetResponse = /*#__PURE__*/
 
 
 /**
+ * @summary List Staff
+ */
+export const ListStaffProducersMeStaffGetResponse = /*#__PURE__*/ zod.object({
+  "max_staff": /*#__PURE__*/ zod.int(),
+  "staff": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "expired": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "status": /*#__PURE__*/ zod.enum(['pending', 'active'])
+}))
+})
+
+
+/**
+ * Invite an address, or send a pending invite again with a new link.
+ *
+ * The answer never depends on whether the address has an account here.
+ * @summary Invite Staff
+ */
+export const InviteStaffProducersMeStaffPostResponse = /*#__PURE__*/ zod.object({
+  "accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "expired": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "status": /*#__PURE__*/ zod.enum(['pending', 'active'])
+})
+
+
+/**
+ * Withdraw an invite or remove a member. Their next request is refused.
+ * @summary Remove Staff
+ */
+export const RemoveStaffProducersMeStaffStaffIdDeleteResponse = /*#__PURE__*/ zod.void()
+
+
+/**
  * The owner declares her profile ready and hands it to the admin queue.
  *
  * This is the ONLY transition out of `draft` (MEH-2100). All three producer
@@ -10153,6 +10196,17 @@ export const SmartSearchSearchGetResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * Join a business's order staff. Single use: the conditional UPDATE's
+ * row count is the lock, so of two simultaneous accepts exactly one wins.
+ * @summary Accept Staff Invite
+ */
+export const AcceptStaffInviteStaffInvitesAcceptPostResponse = /*#__PURE__*/ zod.object({
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('Which business this account handles orders for (`/auth/me`).'))
+
+
+/**
  * @summary Get Stats
  */
 export const GetStatsStatsGetResponse = /*#__PURE__*/ zod.object({
@@ -10288,6 +10342,10 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateProfileUsersMePatchResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "role": /*#__PURE__*/ zod.string(),
+  "staff_of": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('Which business this account handles orders for (`/auth/me`).')),/*#__PURE__*/ zod.null()])),
   "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseWhatsappReadyDefault)
 })
 
@@ -10758,6 +10816,13 @@ export const UnsaveItemUsersMeSavedItemTypeItemIdDeleteResponse = /*#__PURE__*/ 
  * @summary Save Item
  */
 export const SaveItemUsersMeSavedItemTypeItemIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The staff member leaves. Their access ends with this request.
+ * @summary Leave Staff
+ */
+export const LeaveStaffUsersMeStaffMembershipDeleteResponse = /*#__PURE__*/ zod.void()
 
 
 /**

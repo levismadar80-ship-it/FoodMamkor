@@ -95,6 +95,7 @@ from app.services.owner_invite_google import (  # MEH-3675
 )
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
+from app.services.staff_membership import end_staff_membership
 
 logger = structlog.get_logger(__name__)
 
@@ -251,6 +252,8 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
 
     locked.role = "producer"  # type: ignore[assignment]
     locked.producer_id = p_id
+    # MEH-3526: an owner is no longer someone else's order staff.
+    end_staff_membership(db, locked.id)
     locked.is_producer = True  # type: ignore[assignment]
     # Every session issued before this moment is a consumer session; the
     # bump retires them, and the one below is the only producer session.

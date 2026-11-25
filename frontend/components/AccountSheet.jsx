@@ -5,7 +5,7 @@
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X, Receipt } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X, Receipt, Basket } from "@phosphor-icons/react";
 import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -69,7 +69,9 @@ export default function AccountSheet({ open, onClose, user, logout }) {
   const ordersOn = useMyOrdersNavGate(user);
   const row = (id) => {
     const entry = byId.get(id);
-    return entry?.item.dataGate === "orders-on" && !ordersOn ? undefined : entry;
+    if (entry?.item.dataGate === "orders-on" && !ordersOn) return undefined;
+    // MEH-3526: the order-staff row, only for order staff.
+    return entry?.item.dataGate === "staff-of" && !user?.staff_of ? undefined : entry;
   };
 
   // MEH-3026 (F2): «כניסה» brings the guest back to the page she opened the
@@ -208,6 +210,14 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               <Link href={row("producerDashboard").item.href} onClick={onClose} className={rowCls}>
                 <Gauge size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("producerDashboard").surface.labelKey)}
+              </Link>
+            </li>
+          )}
+          {row("staffOrders") && (
+            <li className={liCls}>
+              <Link href={row("staffOrders").item.href} onClick={onClose} className={rowCls}>
+                <Basket size={20} weight="regular" className={iconCls} aria-hidden="true" />
+                {t(row("staffOrders").surface.labelKey)}
               </Link>
             </li>
           )}

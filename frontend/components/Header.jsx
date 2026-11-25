@@ -52,6 +52,7 @@ const HUB_GROUP_BY_GATE = {
 };
 const HEADER_MENU_ORDER = [
   "producerDashboard",
+  "staffOrders", // MEH-3526
   "producerPublicPage",
   "favorites",
   "myOrders", // MEH-3698: group buys and bags are in it too
@@ -721,6 +722,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
     )
     .filter(({ item }) => item.dataGate !== "orders-on" || ordersOn)
+    .filter(({ item }) => item.dataGate !== "staff-of" || Boolean(user.staff_of))
     .map(({ item, surface }) => ({
       // MEH-3024: an unapproved business's /producer/<id> is a real 404, so
       // its owner's «צפייה בדף» goes to the dashboard preview — the same rule

@@ -44,6 +44,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/events.py` | Events, workshops (experiences), their registrations and group buys. |
 | `models/home_products.py` | Home-kitchen products posted by neighbours, their WhatsApp clicks and ratings. |
 | `models/models.py` | The core tables every other model module points at: City, Producer, User, RetiredSlug, AdminSetting, StaticPage, Category, ProducerCategory. |
+| `models/producer_staff.py` | Who besides the owner may handle a business's orders. One row per invite; an accepted invite is the staff member's access. |
 | `models/product_orders.py` | The tables behind on-site ordering («בקשת הזמנה»): a business's ordering settings, an order, its lines, and the log of its status changes. |
 | `models/recipes.py` | Recipes a business publishes on its page, and their moderation state. |
 | `models/rescue.py` | The rescue-bags pilot: offers, orders, reviews and the typical items a business lists for its bags. |
@@ -104,6 +105,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/producer_owner_invite.py` | Owner invite — an admin builds a business's page end to end, after written consent from its owner, then hands it over: a one-time link on which the owner sets … |
 | `routers/producer_owner_invite_existing.py` | Accept an owner invite on an account that ALREADY EXISTS (MEH-3256, grill retro D8). … |
 | `routers/producer_recipes.py` | Producer-self CRUD + public read for producer-owned recipes (MEH-589 chunk 2/4 of the producer-recipes epic). |
+| `routers/producer_staff.py` | A business invites up to 5 people by email to handle its orders; the invited person signs in with their own account and accepts; … |
 | `routers/producers.py` | — אין כותרת — |
 | `routers/product_describe.py` | «הצעת תיאור» (MEH-3479): Claude suggests a short description for one product; the owner (or the admin, in her place) edits it in the form and only the product … |
 | `routers/product_order_business.py` | The business's side of on-site ordering: list the orders sent to it, and act on one — confirm, decline, propose a change, mark ready, hand over, report a … |
@@ -151,6 +153,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/password.py` | MEH-305 — Pydantic password field type. |
 | `schemas/producer.py` | The business page, write side: create, admin create, owner update, admin update, plus AVAILABILITY_STATES and normalize_google_place_id, which services import. |
 | `schemas/producer_out.py` | The business page, read side: list card, detail, admin and owner views, kashrut certificate ref, Google place id and rating. |
+| `schemas/producer_staff.py` | Request and response shapes of the order-staff routes (MEH-3526). |
 | `schemas/product_describe.py` | The request and answer of «הצעת תיאור» (MEH-3479). Every string is capped; nothing here is stored. |
 | `schemas/product_order_buy.py` | Request/response shapes for an on-site order: asking for a phone code, sending the order, the buyer's status view, and what a business sends when it acts on … |
 | `schemas/product_order_offer.py` | Request/response shapes for what a business offers for on-site ordering: its weekly windows, a product's ordering fields, and the public order menu. |
@@ -253,6 +256,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/offer_supply.py` | Which businesses have something on today besides their products: a surprise bag today, an open group buy, an upcoming event, a listed experience (MEH-3824). … |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
+| `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |
 | `services/outbound_guard.py` | Outside production, no message reaches a real person. Every channel that can reach a person asks this module first, so the protection comes from the … |
 | `services/outreach_lead_registration.py` | Mark an outreach lead «registered» when its owner signs up through the lead's prefill link (MEH-3026 F11) — until now the pipeline status never moved, so the … |
 | `services/owner_attention.py` | The «מה ממתין לטיפול» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her … |
@@ -322,6 +326,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/review_reports.py` | «דיווח על ביקורת» (MEH-3260) — build the admin email for a visitor's report on one review, and drop a repeat of the same report. |
 | `services/sanitization.py` | HTML sanitization helper — defense-in-depth per ASVS V13 (MEH-329). |
 | `services/signup_fill_digest.py` | Once a week (Sunday, Israel clock) check what share of the businesses that signed up in the last 7 days have a referral source («מאיפה שמעתם») and a location, … |
+| `services/staff_emails.py` | The email a business sends to invite someone to handle its orders. |
+| `services/staff_membership.py` | End a person's active order-staff membership when the same account becomes a business owner, so the old business's team list and its 5 seats stop counting … |
 | `services/staging_reset_job.py` | Once a week, put the STAGING database back to the seed recipe by running 'scripts/reset_staging.py --confirm', so E2E users and hand-made test rows stop … |
 | `services/submission_confirmation.py` | Confirm in writing, to the business owner, that a profile reached the review queue — fixing the submission timestamp and the "עד 3 ימי עסקים" promise the SLA … |
 | `services/submission_gate.py` | The single answer to "may this business be sent to the admin review queue, and if not, what is it missing?". … |
@@ -545,6 +551,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `social-links.js` | ONE definition of "turn a stored instagram field into a link". |
 | `special-hours.js` | Convert between the backend 'producers.special_hours' JSONB shape ({"YYYY-MM-DD": {ranges: [{open, close}], note?}}) and the date-row editor model the … |
 | `ssr-entity-fetch.js` | The server-side fetch at the top of the four detail pages (producer, event, experience, group-buy): one request, one three-way answer, one way of reporting it. |
+| `staff.js` | The order-staff calls (MEH-3526): the owner lists, invites and removes; the invited person accepts. |
 | `submission-gate.js` | Answer "may this business be sent for review, and if not, what is missing?" on the CLIENT, so the dashboard can disable the "שליחה לבדיקה" CTA and name the … |
 | `time-format.js` | The single owner of how a time-of-day is SHOWN to a reader — "09:00" becomes "9:00". … |
 | `time-range.js` | One owner for how an event's time reads: «09:30», or «09:30–15:00» when it has an end time (MEH-2469). |
@@ -816,6 +823,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
+| `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |
 | `group-buy/GroupBuyCalendarButton.jsx` | MEH-3597 (Sapir 21/11, «תבדוק מה עוד חסר»): a member who joined can put the pickup in her calendar, as an event page allows (MEH-2468). … |
 | `group-buy/GroupBuyLineTotal.jsx` | MEH-3592: under the quantity field — what is left (a units cap) and what the order comes to («3 ק"ג × 13₪ = 39₪»). … |
 | `group-buy/GroupBuyMemberPanel.jsx` | MEH-3592: what a participant sees on the join card — her confirmation, a quantity she can change until the deadline (Kickstarter: a pledge can change until … |
@@ -1067,6 +1075,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/rescue/[offerId]/RescueOfferPage.jsx` | — אין כותרת — |
 | `[locale]/reset-password/ResetPasswordClient.jsx` | — אין כותרת — |
 | `[locale]/share/ShareClient.jsx` | — אין כותרת — |
+| `[locale]/staff-invite/StaffInviteClient.jsx` | What someone a business invited to its order team opens from the email (MEH-3526): sign in with the invited address, tap once, land on the business's orders … |
+| `[locale]/staff-invite/staff-invite-metadata.js` | Page metadata for the order-staff invite page: never indexed, no alternates, no referrer, because on /staff-invite/[token] the path IS the credential. |
 | `[locale]/unsubscribe/weekly/UnsubscribeClient.jsx` | — אין כותרת — |
 | `[locale]/verify-email/VerifyEmailClient.jsx` | — אין כותרת — |
 | `fonts.js` | The four brand typefaces, self-hosted from files committed in this repo. |
