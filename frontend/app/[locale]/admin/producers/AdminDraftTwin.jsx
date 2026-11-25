@@ -37,6 +37,7 @@ const MERGE_TIMEOUT_MS = 30000;
  */
 export function DraftTwinNotice({ producer, onMerged }) {
   const t = useTranslations("admin.producers.table.draft_twin");
+  const tCommon = useTranslations("admin.common");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const twin = producer.draft_twin;
@@ -74,9 +75,7 @@ export function DraftTwinNotice({ producer, onMerged }) {
 
   return (
     <div data-testid="draft-twin" className="flex flex-col items-start gap-1 max-w-xs">
-      {/* token-ok: the same orange as the «כפילות?» tag (AdminProducersTable ProducerTags), one family of duplicate signals. */}
-      {/* eslint-disable-next-line no-restricted-syntax -- matches the existing duplicate tag */}
-      <span className="inline-flex items-center rounded-full bg-orange-100 text-orange-800 px-2 py-0.5 text-2xs font-medium">
+      <span className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-2xs font-medium">
         {isDraftRow ? t("tag_on_draft") : t("tag_on_owner")}
       </span>
       <span className="text-2xs text-muted" data-testid="draft-twin-detail">
@@ -99,7 +98,7 @@ export function DraftTwinNotice({ producer, onMerged }) {
               {t("confirm_yes")}
             </Button>
             <Button variant="text" size="sm" disabled={busy} onClick={() => setConfirming(false)}>
-              {t("cancel")}
+              {tCommon("cancel")}
             </Button>
           </div>
         </div>

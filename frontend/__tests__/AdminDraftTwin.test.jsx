@@ -120,7 +120,7 @@ describe("DraftTwinNotice", () => {
     const group = within(notice).getByRole("group", { name: T.merge });
     expect(group).toHaveTextContent("מאפיית ארז");
     expect(group).toHaveTextContent("ארז אופה בבית");
-    fireEvent.click(within(group).getByRole("button", { name: T.cancel }));
+    fireEvent.click(within(group).getByRole("button", { name: he.admin.common.cancel }));
     expect(within(notice).queryByRole("group")).toBeNull();
     expect(api.post).not.toHaveBeenCalled();
   });
