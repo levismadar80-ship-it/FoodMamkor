@@ -32,6 +32,7 @@ import { ArrowDown, ArrowUp, Plus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 
 const ICON = 16;
 
@@ -216,6 +217,9 @@ export default function ChecklistSettings({ preload } = {}) {
             }`}
           >
             <div className="flex items-start gap-2">
+              {/* MEH-3832: raw buttons on purpose. The arrows are 16px and 20px apart, so
+                  IconButton's 44px .tap-area zones would overlap and a tap on the lower
+                  part of «up» would run «down». A real fix gives each a 44px cell. */}
               <div className="flex flex-col gap-1 pt-1">
                 <button
                   type="button"
@@ -256,15 +260,13 @@ export default function ChecklistSettings({ preload } = {}) {
                   onChange={(e) => update(index, { hint: e.target.value })}
                   maxLength={300}
                 />
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={item.active}
-                    onChange={(e) => update(index, { active: e.target.checked })}
-                    className="h-4 w-4 accent-primary"
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-xs"
+                  checked={item.active}
+                  onChange={(e) => update(index, { active: e.target.checked })}
+                >
                   <span>{item.active ? t("active") : t("inactive")}</span>
-                </label>
+                </Checkbox>
               </div>
             </div>
           </li>

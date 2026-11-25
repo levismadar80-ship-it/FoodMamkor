@@ -14,14 +14,18 @@
  *           this was taken from, MEH-3586) · components/rescue/RescueSection.jsx
  * History:  MEH-3610 (creation)
  *
- * @param {{ allergens?: string[] | null, headingId: string, testId?: string }} props
+ * `askAtPickup` (MEH-3823, the rescue bag): a fixed «ask at pickup» line under
+ * whatever was declared, as Too Good To Go shows on every bag. A surprise bag's
+ * contents change daily, so a declaration is never the whole answer.
+ *
+ * @param {{ allergens?: string[] | null, headingId: string, testId?: string, askAtPickup?: boolean }} props
  */
 import { useTranslations } from "next-intl";
 import { Warning } from "@phosphor-icons/react";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { ALLERGEN_CODES } from "@/lib/allergens";
 
-export default function AllergenSection({ allergens, headingId, testId }) {
+export default function AllergenSection({ allergens, headingId, testId, askAtPickup = false }) {
   // The copy lives with the bag (rescue.section.*) and is not bag-specific;
   // one set of words for both offers. Labels are the product sheet's
   // vocabulary (MEH-2662), so no two surfaces name an allergen differently.
@@ -38,9 +42,16 @@ export default function AllergenSection({ allergens, headingId, testId }) {
             {t("allergens_declared", { list: known.map((code) => tProducts(`allergen_${code}`)).join(", ") })}
           </span>
         ) : (
-          <span data-testid={testId && `${testId}-none`}>{t("allergens_undeclared")}</span>
+          <span data-testid={testId && `${testId}-none`}>
+            {t(askAtPickup ? "allergens_undeclared_short" : "allergens_undeclared")}
+          </span>
         )}
       </p>
+      {askAtPickup && (
+        <p className="mt-2 text-sm text-fg-muted" data-testid={testId && `${testId}-ask`}>
+          {t("allergens_ask")}
+        </p>
+      )}
     </section>
   );
 }

@@ -46,8 +46,8 @@ There is no soft-delete: deletion removes the row.
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
-| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
-| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
+| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` → `services/admin_user_writes.py` `change_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
+| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` → `services/admin_user_writes.py` `toggle_user_block` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | current password (MEH-3104); 5 wrong per account per hour, row lock (MEH-3425); OAuth and super-admin refused; other devices signed out (`token_version`) |
 | tokens invalidated | the user | logout-all, password change, password reset, email change (MEH-3425) | checked on every request in `auth.py` `get_current_user` |
@@ -92,7 +92,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
 | inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo keeps it `inactive` (MEH-3026: the licence is not checked), owner still linked (MEH-3268) |
-| approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `hide_business` | a co-owner who can sign in keeps it up |
+| approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `services/admin_user_writes.py` `toggle_user_block` → `hide_business` | a co-owner who can sign in keeps it up |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |
 
@@ -147,6 +147,8 @@ and every transition re-reads the row under a lock.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
+| offer → active (created) | the business, by hand, or the hourly routine job for a day in its weekly schedule (MEH-3703) | `routers/rescue.py` `create_offer`; `services/rescue_schedule.py` `publish_due` | approved business, exact address, pilot town, paid tool open; the job skips a day that already has any offer, cancelled included, a skipped or paused day, and a window whose reserve cut-off passed |
+| active → cancelled | the business, also when it skips a scheduled day whose bag is up (MEH-3703) | `routers/rescue.py` `cancel_offer`; `skip_my_day` (same `cancel_whole_offer`) | before `pickup_end`; holders are mailed |
 | → reserved | buyer with a verified email | `routers/rescue.py` `create_order` | offer locked; business live; offer active, today or tomorrow (MEH-3702), inside the window; per-buyer cap; stock |
 | reserved → handed | the business / admin | `routers/rescue.py` | lock + re-read; ledger row counted; 409 on a bag dated after today (MEH-3805) |
 | reserved → no_show | the business | `routers/rescue.py` | after the pickup window ends |
@@ -159,7 +161,8 @@ and every transition re-reads the row under a lock.
 open → funded → fulfilled, and open / funded → cancelled. Fulfilled and
 cancelled are terminal. Owner and admin share one transition table
 (`routers/group_buys.py` `OWNER_TRANSITIONS`). A commit is a row: it exists or
-it does not.
+it does not, and after pickup the business may mark it `handed_at` or
+`no_show_at` (timestamps, not a status column; MEH-3735).
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
@@ -169,6 +172,7 @@ it does not.
 | waitlist row: waiting → offered | automatic, when a place frees (leave, smaller quantity, raised cap, reopened joins) | `services/group_buy_capacity.py::offer_freed_place` | `offered_at` stamped; offered again after 24 h if the place went to someone else; the row is deleted when she joins or leaves the list |
 | open → funded → open | automatic, on join / leave / account deletion | `routers/group_buys.py`, `services/group_buy_delist.py` | minimum reached / lost |
 | → fulfilled, → cancelled | owner / admin | `routers/group_buys.py` | transition table; cancel mails the participants |
+| commit: unmarked → handed · no_show (MEH-3735) | owner / admin | `routers/group_buy_pickup.py` → `services/group_buy_no_show.py::mark` | group row lock; `mark_state(gb) == "open"`: funded or fulfilled, not delivery-only, `pickup_ends_at` set and passed less than 14 days ago; once per commit (`group_buy_commits_one_outcome_check`). A no-show mails her; two inside 30 days (groups not later cancelled) refuse her next join (403) until an admin writes `users.group_buy_block_cleared_at`. Separate from the rescue count |
 
 An **open** group buy that passes its deadline below its minimum is not closed
 by anything today; only the open tab filters by deadline. Open PR #4625 adds

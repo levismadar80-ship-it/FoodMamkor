@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check, Question, X } from "@phosphor-icons/react";
 
 import { styleForProducer } from "@/lib/category-registry";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * MapKey — "מה רואים במפה?" (MEH-2424).
@@ -184,19 +185,18 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
 
   return (
     <>
-      <button
+      <IconButton
         ref={toggleRef}
-        type="button"
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={t("map.pane.key.title")}
+        label={t("map.pane.key.title")}
         data-testid={`map-key-toggle${testIdSuffix}`}
         style={buttonStyle}
         className={`${buttonClassName} ${CONTROL_CLASS} ${open ? CONTROL_ON : CONTROL_OFF}`}
       >
         <Question size={20} weight={open ? "bold" : "regular"} aria-hidden="true" />
-      </button>
+      </IconButton>
       {open && (
         <section
           id={panelId}
@@ -208,15 +208,14 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
             <h2 id={`${panelId}-title`} className="font-headline-md text-base font-bold text-text">
               {t("map.pane.key.title")}
             </h2>
-            <button
+            <IconButton
               ref={closeRef}
-              type="button"
               onClick={close}
-              aria-label={t("common.aria.close")}
+              label={t("common.aria.close")}
               className="-m-2 inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"
             >
               <X size={16} weight="bold" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
           <ul className="space-y-2.5">
             {rows.map(([Sample, label]) => (

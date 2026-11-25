@@ -541,7 +541,7 @@ describe("the business-page section — reserve and confirm", () => {
       render(<RescueSection producer={PRODUCER} />);
       const terms = await screen.findByTestId("rescue-section-terms");
       expect(terms.textContent).toBe("ביטול חינם עד 10:30");
-      expect(terms.textContent).not.toContain("אי-הגעות");
+      expect(terms.textContent).not.toContain("לא נאספו");
     });
   });
 
@@ -569,11 +569,24 @@ describe("the business-page section — reserve and confirm", () => {
     fetchOffers.mockResolvedValue([offer({ allergens: null })]);
     render(<RescueSection producer={PRODUCER} />);
     const line = await screen.findByTestId("rescue-section-allergens-none");
-    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים. שאלו לפני האיסוף.");
+    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים.");
     // The old fixed sentence warned every buyer about four allergens that may
     // not be in the bag. It must not come back.
     const box = screen.getByTestId("rescue-section-allergens");
     expect(box.textContent).not.toContain("ייתכנו גלוטן");
+  });
+
+  // MEH-3823: the fixed line sits outside the closed fold, so a buyer sees it
+  // without opening anything, whatever the business declared.
+  it.each([
+    ["declared", ["milk"]],
+    ["not declared", null],
+  ])("MEH-3823: the «ask at pickup» line is outside the allergen fold (%s)", async (_n, allergens) => {
+    fetchOffers.mockResolvedValue([offer({ allergens })]);
+    render(<RescueSection producer={PRODUCER} />);
+    const ask = await screen.findByTestId("rescue-section-allergens-ask");
+    expect(ask.textContent).toBe("יש אלרגיה? כדאי לשאול בבית העסק באיסוף.");
+    expect(ask.closest("details")).toBeNull();
   });
 
   it("MEH-2752: an empty list is treated as 'not declared', never as 'none'", async () => {
@@ -654,7 +667,7 @@ describe("the business-page section — reserve and confirm", () => {
     expect((await screen.findByTestId("rescue-confirmation-price")).textContent).toContain("15");
     const terms = screen.getByTestId("rescue-confirmation-terms");
     expect(terms.textContent).toContain("ביטול חינם עד");
-    expect(terms.textContent).toContain("שתי אי-הגעות = חסימה");
+    expect(terms.textContent).toContain("אחרי שני סלים שלא נאספו, אי אפשר לשריין סלים חדשים");
   });
 
   it("there is no countdown anywhere in the confirmation", async () => {
@@ -723,7 +736,7 @@ describe("every error the API actually returns", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
     expect(plain("rescue.errors.blocked")).toBe(
-      "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו",
+      "שני סלים לא נאספו, ולכן אי אפשר לשריין סלים חדשים כרגע. כתבו לנו",
     );
   });
 
@@ -1172,7 +1185,7 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
   it("the confirmation keeps the no-show rule and drops the time", () => {
     render(<RescueConfirmation order={order({ cancel_until: past() })} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-terms").textContent).toBe(
-      "אי אפשר לבטל · שתי אי-הגעות = חסימה",
+      "אי אפשר לבטל · אחרי שני סלים שלא נאספו, אי אפשר לשריין סלים חדשים",
     );
   });
 });

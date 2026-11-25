@@ -7,7 +7,7 @@ Does NOT: send a new code (POST /producers/me/verify-phone, producer_me.py)
           or decide submit readiness (services/submission_gate.py).
 Related:  backend/app/routers/producer_me.py (update_my_producer, confirm —
           which only claims a token issued for the CURRENT number),
-          backend/app/routers/admin.py (admin_update_producer),
+          backend/app/services/admin_producer_writes.py (admin_update_producer_row),
           backend/app/utils/phone.py canonical_il_msisdn.
 History:  MEH-3245 (creation, grill B8) — MEH-745 made the verified number a submit item.
 """

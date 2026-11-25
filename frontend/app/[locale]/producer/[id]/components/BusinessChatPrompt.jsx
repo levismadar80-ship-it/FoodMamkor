@@ -8,6 +8,7 @@ import { openBusinessChat } from "@/lib/business-chat";
 import { businessChatPrompts } from "@/lib/business-chat-prompts";
 import { businessChatHandoff } from "@/lib/business-chat-handoff";
 import { usePreviewMode } from "@/lib/preview-mode";
+import IconButton from "@/components/ui/IconButton";
 
 // The panel's own field has the same cap (components/ChatWidget.jsx input).
 const CHAT_MAX_CHARS = 500;
@@ -120,15 +121,15 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
           enterKeyHint="send"
           className="min-w-0 flex-1 bg-transparent py-2 text-base text-text placeholder:text-fg-muted focus:outline-none"
         />
-        <button
+        <IconButton
           type="submit"
           data-testid="business-chat-open"
           aria-haspopup="dialog"
-          aria-label={t("page_title", { name })}
+          label={t("page_title", { name })}
           className="grid size-11 flex-shrink-0 place-items-center rounded-full text-primary focus-visible:ring-2 focus-visible:ring-primary"
         >
           <PaperPlaneTilt size={18} weight="fill" className="rtl:-scale-x-100" aria-hidden="true" />
-        </button>
+        </IconButton>
       </form>
     </section>
   );

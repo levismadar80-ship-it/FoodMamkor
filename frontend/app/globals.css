@@ -988,7 +988,11 @@ html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
    Does not work inside an `overflow` scroller that would clip the pseudo
    (the admin phone strip uses `min-h-touch` for that reason). */
 @layer utilities {
-  .tap-area {
+  /* MEH-3832: :where() keeps this at zero specificity, so a caller's own
+     `absolute` / `fixed` / `sticky` always wins over it, whatever the order of
+     the two rules in the stylesheet. The ::before only needs SOME positioned
+     box to measure from, and any of those is one. */
+  :where(.tap-area) {
     position: relative;
   }
   .tap-area::before {
