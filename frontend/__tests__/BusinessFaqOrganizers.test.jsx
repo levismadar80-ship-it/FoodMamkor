@@ -47,12 +47,14 @@ describe("business FAQ: organizers question (MEH-3000)", () => {
     expect(en.about_business.faq.organizers.a).toBeTruthy();
   });
 
-  it("renders 11 questions, the organizers one last, and keeps Q1..Q10 in order", async () => {
+  // MEH-3869 inserted «new_site» after «visibility» (Q6), so 11 → 12 and the
+  // organizers question is still last.
+  it("renders 12 questions, the organizers one last, after «difference»", async () => {
     const { container } = render(await ForBusinessesPage(params));
     const qs = [...container.querySelectorAll("details summary span")].map((s) => s.textContent);
-    expect(qs).toHaveLength(11);
-    expect(qs[10]).toBe(Q);
-    expect(qs[9]).toBe(he.about_business.faq.difference.q);
+    expect(qs).toHaveLength(12);
+    expect(qs[11]).toBe(Q);
+    expect(qs[10]).toBe(he.about_business.faq.difference.q);
     expect(qs[0]).toBe(he.about_business.faq.cost.q);
   });
 

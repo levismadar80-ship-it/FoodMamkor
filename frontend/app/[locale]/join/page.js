@@ -110,7 +110,13 @@ const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4"
 // questions that stop a registration. (The price promise itself changed
 // with ADR-042 — MEH-3166; a_cost now takes its numbers from lib/pricing.js.) Then discovery, then the «one more place to
 // update» objection that keeps coming back in Topaz's calls.
-const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
+// MEH-3869 (Sapir, 25/11): «will it bring me customers?» stops a registration
+// the way cost does, so it sits right after the two money questions.
+const FAQ_KEYS = ["cost", "price", "new_site", "google", "updates", "revenue", "customers"];
+// MEH-3869: a question whose copy is the same word for word on the full FAQ
+// (/about/for-businesses) is read from there, so the text has one owner
+// (messages-hygiene-guard fails on a value held by two keys).
+const SHARED_FAQ = new Set(["new_site"]);
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
 // (/about/for-businesses/page.js:183) — with EVERY question closed on load.
 // That page used to open its cost question; since MEH-3003 both are all-closed.
@@ -121,6 +127,8 @@ export default async function JoinPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "join" });
   const tPricing = await getTranslations({ locale, namespace: "pricing" });
+  const tFullFaq = await getTranslations({ locale, namespace: "about_business.faq" });
+  const faqQ = (key) => (SHARED_FAQ.has(key) ? tFullFaq(`${key}.q`) : t(`faq.q_${key}`));
   const pricingValues = pricingCopyValues();
   const sample = t("features.sample_label");
 
@@ -262,7 +270,7 @@ export default async function JoinPage({ params }) {
                 className="group rounded-lg border border-border bg-surface-card"
               >
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                  <h3 className="font-headline-md text-lg font-bold text-text">{t(`faq.q_${key}`)}</h3>
+                  <h3 className="font-headline-md text-lg font-bold text-text">{faqQ(key)}</h3>
                   <CaretDown
                     aria-hidden="true"
                     size={20}
@@ -271,8 +279,8 @@ export default async function JoinPage({ params }) {
                 </summary>
                 {/* MEH-3166: the cost answer takes its numbers from lib/pricing.js
                     and is the one place on /join that links to the price list. */}
-                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">
-                  {t(`faq.a_${key}`, pricingValues)}
+                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85 whitespace-pre-line">
+                  {SHARED_FAQ.has(key) ? tFullFaq(`${key}.a`) : t(`faq.a_${key}`, pricingValues)}
                   {key === "cost" && (
                     <>
                       {" "}
