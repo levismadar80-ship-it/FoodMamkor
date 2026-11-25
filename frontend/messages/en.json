@@ -8224,6 +8224,8 @@
     "dead_title": "This link is no longer active. You can update your page from your dashboard."
   },
   "phone_verify": {
+    "sends_to": "WhatsApp number to verify:",
+    "change_number": "Change number",
     "title": "Verify your business phone",
     "reverify_title": "Your business WhatsApp number isn't verified yet",
     "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
