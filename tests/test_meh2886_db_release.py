@@ -387,11 +387,15 @@ def test_background_kwarg_classifier_self_test():
         "Response(b'', 200, None, None, t)\n", "p.py"
     ) == ["p.py:1"]
     assert _calls_with_background_kwarg("JSONResponse({})\n", "y.py") == []
-    # Anchored to a real file (testing.md, MEH-1909): producers.py returns a
-    # JSONResponse with no background — the scan must not flag it.
+    # Anchored to a real file (testing.md, MEH-1909): delivery_waitlist_requests.py
+    # returns a JSONResponse with no background — the scan must not flag it.
+    # MEH-3537: the anchor moved with the code out of routers/producers.py.
     from pathlib import Path
 
-    real = Path(__file__).resolve().parents[1] / "backend/app/routers/producers.py"
+    real = (
+        Path(__file__).resolve().parents[1]
+        / "backend/app/services/delivery_waitlist_requests.py"
+    )
     src = real.read_text(encoding="utf-8")
     assert "JSONResponse(" in src, "anchor file changed — pick another"
     assert _calls_with_background_kwarg(src, str(real)) == []
