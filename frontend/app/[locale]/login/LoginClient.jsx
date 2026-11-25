@@ -245,16 +245,23 @@ function LoginPageBody() {
     </Suspense>
   );
   if (user) {
+    // MEH-3809: signed in, on the way to the redirect target. Its own key, so
+    // React does not reuse the form screen's root div for it (that reuse
+    // counted as the whole page moving: CLS 0.30 on /login?redirect=, CI
+    // 25/11), and the form screen's height, so the footer stays where it was.
     return (
-      <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
-        {queryReader}
-        {t("loading")}
+      <div key="signed-in" className="min-h-[calc(100vh-180px)]">
+        <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+          {queryReader}
+          {t("loading")}
+        </div>
       </div>
     );
   }
 
   return (
     <div
+      key="form"
       className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2"
       data-auth-pending={authLoading ? "" : undefined}
       data-prehydration={mounted ? undefined : ""}
