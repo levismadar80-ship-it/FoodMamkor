@@ -116,6 +116,15 @@ delivery_waitlist.notified_at	identity	email and town of someone waiting for del
 delivery_waitlist.producer_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.user_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.wants_to_host	identity	email and town of someone waiting for delivery to their town
+email_events.created_at	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.detail	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.event_type	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.kind	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.recipient_domain	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.resend_email_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.svix_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.user_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
 email_outbox.attempts	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
 email_outbox.body	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
 email_outbox.created_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
@@ -367,6 +376,7 @@ producer_locations.phone	business	a business's branch or pickup point
 producer_locations.pickup_days	business	a business's branch or pickup point
 producer_locations.pickup_note	business	a business's branch or pickup point
 producer_locations.producer_id	business	a business's branch or pickup point
+producer_locations.rescue_schedule	business	a business's branch or pickup point
 producer_locations.updated_at	business	a business's branch or pickup point
 producer_name_change_requests.admin_notes	business	a business's request to change its name
 producer_name_change_requests.created_at	business	a business's request to change its name
@@ -450,6 +460,18 @@ producer_reviews.reply_at	ugc	a user's review of a business
 producer_reviews.source	ugc	a user's review of a business
 producer_reviews.stars	ugc	a user's review of a business
 producer_reviews.user_id	ugc	a user's review of a business
+producer_staff.accepted_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.created_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.expires_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.invited_by	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.invited_email	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.producer_id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.revoked_at	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.role	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.status	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.token_hash	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
+producer_staff.user_id	orders	who a business invited to handle its orders (invited address, the account that accepted, a hashed invite link, status and dates); the privacy page's orders item says invited staff see order details (MEH-3526)
 producer_whatsapp_clicks.city	cookies	a click on a business's WhatsApp button
 producer_whatsapp_clicks.clicked_at	cookies	a click on a business's WhatsApp button
 producer_whatsapp_clicks.id	cookies	a click on a business's WhatsApp button
@@ -801,3 +823,7 @@ users.terms_accepted_at	identity	a user account
 users.terms_version	identity	a user account
 users.token_version	technical	sign-in and security data of the account
 users.whatsapp_consent_at	identity	a user account
+group_buy_commits.pickup_code	orders	a user joining a group buy; the only thing the business sees of her (MEH-3735)
+group_buy_commits.handed_at	orders	when the business marked a group-buy order collected
+group_buy_commits.no_show_at	orders	when the business marked a group-buy order not collected
+users.group_buy_block_cleared_at	orders	when a group-buy no-show block was lifted

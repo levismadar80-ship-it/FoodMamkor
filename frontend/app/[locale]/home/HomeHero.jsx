@@ -181,7 +181,6 @@ const CHIP_CLASS =
  * different risk tier.
  */
 export function HomeHero({
-  fridayMode,
   geoLoading,
   onNearMe,
   onDeliveryCta,
@@ -270,7 +269,11 @@ export function HomeHero({
               transition={{ duration: 0.64, delay: 0.1, ease: EASE_QUART }}
               className="font-body-lg text-body-lg mt-3 text-green-50"
             >
-              {fridayMode ? t("home.hero.friday_subtitle") : t("home.hero.subtitle")}
+              {/* MEH-3860: both lines are in the server HTML and CSS shows one
+                  (data-friday-mode on <html>, set before the first paint), so
+                  the hero does not change height when Friday mode starts. */}
+              <span data-friday-only="">{t("home.hero.friday_subtitle")}</span>
+              <span data-friday-off="">{t("home.hero.subtitle")}</span>
             </motion.p>
           </div>
         </div>

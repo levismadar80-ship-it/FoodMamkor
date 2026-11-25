@@ -687,6 +687,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "wrapper param ← producer.is_test (no account exists until acceptance)",
     ),
+    # MEH-3526: a business invites someone to handle its orders. The invited
+    # address may have no account, so the signal is the BUSINESS's is_test.
+    ("services/staff_emails.py", "send_staff_invite_email", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test (routers/producer_staff.py invite)",
+    ),
     # MEH-2974 v3: the 6-digit code that proves the address typed on the
     # acceptance page. Same position as the invite itself — no account yet.
     ("services/auth_emails.py", "send_owner_invite_code_email", "send_email"): (
@@ -1039,6 +1046,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     ),
     # MEH-3226 (D4): the buyer's mail on each no-show.
     ("services/rescue_no_show.py", "send_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
+    # MEH-3735: the buyer's mail on each group-buy no-show.
+    ("services/group_buy_no_show.py", "send_group_buy_no_show_email", "send_email"): (
         1,
         CON,
         "wrapper param ← producer.is_test or user.is_test",

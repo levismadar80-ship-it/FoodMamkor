@@ -204,6 +204,21 @@ erDiagram
         timestamp created_at
     }
 
+    producer_staff {
+        uuid id PK
+        uuid producer_id FK "CASCADE; the business (MEH-3526)"
+        uuid user_id FK "nullable, CASCADE; set on accept. UNIQUE WHERE status='active'"
+        string invited_email "UNIQUE (producer_id, lower) among live rows"
+        string role "orders (CHECK)"
+        string token_hash "nullable; sha256 of the invite token, NULL after accept/revoke"
+        timestamp expires_at "invite + 7 days"
+        uuid invited_by FK "nullable, SET NULL"
+        string status "pending | active | revoked (CHECK); a withdrawn invite is deleted"
+        timestamp created_at
+        timestamp accepted_at "nullable"
+        timestamp revoked_at "nullable"
+    }
+
     product_orders {
         uuid id PK
         uuid producer_id FK
@@ -273,6 +288,18 @@ erDiagram
         int attempts "max 5, backoff 2 min doubling"
         string last_error "short code, never message text"
         timestamp sent_at
+        timestamp created_at "deleted after 30 days"
+    }
+
+    email_events {
+        uuid id PK
+        string svix_id UK "Resend retries with the same id"
+        string event_type "email.delivered, bounced, clicked, ... (MEH-3839)"
+        string kind "the tag send_email put on it, or other"
+        uuid user_id FK "nullable, SET NULL"
+        string recipient_domain "never the full address"
+        string resend_email_id
+        string detail "bounce type/subType; never server text"
         timestamp created_at "deleted after 30 days"
     }
 
@@ -729,7 +756,7 @@ erDiagram
         timestamp sent_at "indexed (user,producer,channel,sent_at)"
     }
 
-    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702)"
+    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702); rescue_schedule JSONB = the weekly routine the hourly job publishes from (MEH-3703)"
     rescue_offers ||--o{ rescue_orders : "reservations"
     rescue_orders ||--o| rescue_reviews : "one review each"
     users ||--o{ rescue_orders : "reserves"
@@ -737,6 +764,8 @@ erDiagram
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
     producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
+    producers ||--o{ producer_staff : "order staff, max 5 live (MEH-3526)"
+    users |o--o{ producer_staff : "the staff member, once accepted"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
@@ -827,6 +856,14 @@ erDiagram
 > `pickup_end` is AFTER this stamp — so one write releases a buyer and the
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-3735 — group-buy no-show (24/11/2026):** `group_buy_commits` gains
+> `pickup_code` (4 digits, UNIQUE per group, backfilled for existing commits),
+> `handed_at` and `no_show_at` (CHECK: at most one is set); `users` gains
+> `group_buy_block_cleared_at`, the admin release. Two no-shows inside 30 days
+> after that stamp block joining new group buys. A count separate from rescue
+> bags on purpose. Adds no table → `EXPECTED_TABLES` unchanged. Migration
+> `f3a7c91e2b64`.
 
 > **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
 > billing will count from: one row per booking a business got through the site,

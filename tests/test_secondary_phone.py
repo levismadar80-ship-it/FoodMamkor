@@ -184,7 +184,7 @@ def test_changing_the_second_number_pings_the_admin(client, db):
     from unittest.mock import patch
 
     user, producer = _owner(db)
-    with patch("app.routers.producer_me.notify_admin_producer_sensitive_edit") as ping:
+    with patch("app.services.producer_owner_update.notify_admin_producer_sensitive_edit") as ping:
         resp = _put_me(client, user, {"secondary_phone": "0522723011"})
     assert resp.status_code == 200, resp.text
     ping.assert_called_once()

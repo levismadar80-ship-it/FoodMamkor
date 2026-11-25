@@ -41,8 +41,40 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE = 422;
 
+/** Bags in one offer: RESCUE_MAX_QTY_PER_OFFER in backend/app/models/rescue.py. */
+export const RESCUE_MAX_QTY = 20;
+
+// One calendar day in ms, for date arithmetic at noon UTC (the same Israel day).
+export const DAY_MS = 86_400_000;
+// Days a business may skip ahead (SKIP_DAYS_AHEAD in schemas/rescue_schedule.py).
+export const RESCUE_SKIP_DAYS_AHEAD = 14;
+/** Minutes before pickup_start that free cancellation ends, and the
+ *  `rescue.dashboard.field.cancel_*` key. Shared by the one-off publish form
+ *  and the weekly routine (MEH-3703). */
+export const RESCUE_CANCEL_CUTOFFS = /** @type {const} */ ([
+  [30, "half_hour"],
+  [60, "hour"],
+  [120, "two_hours"],
+]);
+
 export function rescueBagsEnabled() {
   return process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true";
+}
+
+/**
+ * The business's bag today as the map shows it (MEH-3824): the server's
+ * `rescue_today` off the producer list, or null while the pilot is off here.
+ * Both halves of the switch, like every other rescue surface: the API leaves
+ * the field empty while RESCUE_BAGS_ENABLED is off, and the client hides it
+ * while NEXT_PUBLIC_RESCUE_BAGS_ENABLED is, so neither can point at a bag page
+ * the other half would 404.
+ *
+ * @param {{ rescue_today?: object|null }|null|undefined} producer
+ */
+export function rescueToday(producer) {
+  if (!rescueBagsEnabled()) return null;
+  const bag = producer?.rescue_today;
+  return bag && typeof bag.offer_id === "string" && bag.offer_id ? bag : null;
 }
 
 /**
@@ -134,12 +166,14 @@ export function israelTime(iso) {
  *
  * @param {string|null|undefined} iso the `cancel_until` instant
  * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @param {string} [today] the Israel day the screen draws with: useIsraelToday() in a
+ *   component, so hydration uses the server's day (MEH-3861)
  * @returns {string|null}
  */
-export function rescueCancelText(iso, t) {
+export function rescueCancelText(iso, t, today = israelToday()) {
   const time = israelTime(iso);
   if (!time || !iso) return time;
-  const day = bagDay(israelToday(new Date(iso)));
+  const day = bagDay(israelToday(new Date(iso)), today);
   return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
 }
 

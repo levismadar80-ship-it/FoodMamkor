@@ -39,6 +39,7 @@ const USER_SENT_AT_KEY = "mehamakor.user_otp_sent_at";
  *  throw (private mode, cleared data) — then it is simply 0. */
 function readOtpSentAt(key = SENT_AT_KEY) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const raw = globalThis.sessionStorage?.getItem(key);
     const ts = raw ? Number(raw) : 0;
     return Number.isFinite(ts) && Date.now() - ts < OTP_TTL_MS ? ts : 0;

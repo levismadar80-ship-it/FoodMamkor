@@ -29,6 +29,10 @@ vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{c
 // MEH-990: ProducersClient now renders MapPin/Plant/Leaf icons too (Emoji LOCK
 // swap of 📍🌱🌿) — mock all four so the partial mock doesn't throw on render.
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CookingPot: () => null,
   // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
   ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent

@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { showToast } from "@/lib/toast";
 import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { getUpcomingHoliday } from "@/lib/holidays";
@@ -41,6 +42,7 @@ import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
 import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * Module:   producer/dashboard/page (Overview / סקירה index)
@@ -90,6 +92,8 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 // accepting_orders, the only other value since MEH-2782.
 
 export default function ProducerDashboardPage() {
+  // MEH-3861: the vacation picker's first allowed day, the same in both renders.
+  const today = useIsraelToday();
   const t = useTranslations("dashboard.producer");
   const locale = useLocale();
   const tSignup = useTranslations("auth.register.producer.success");
@@ -220,6 +224,7 @@ export default function ProducerDashboardPage() {
         showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
         // MEH-3770: orders she already accepted on the days she is away.
         warnClosedDayOrders(
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: inside the save handler, after hydration; nothing is drawn from it
           { from: israelToday(), until: vacationUntil || null, openEnded: !vacationUntil },
           { t: (key, values) => t(`closed_day_orders.${key}`, values), locale },
         );
@@ -713,6 +718,7 @@ export default function ProducerDashboardPage() {
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
           MEH-2460: its CTA is the catalog — not for an organizer. */}
       {!isOrganizer && (() => {
+        // eslint-disable-next-line no-restricted-syntax -- MEH-3861: the server renders null here (it returns null until auth is read in the browser)
         const h = getUpcomingHoliday();
         if (!h) return null;
         return (
@@ -794,21 +800,20 @@ export default function ProducerDashboardPage() {
                 // MEH-1983: Israel's today, not UTC's — the server validates
                 // vacation_until against israel_today(), so the UTC date
                 // offered a value the server would then reject.
-                min={israelToday()}
+                min={today}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
               />
               {vacationUntil && (
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
                   className="text-fg-muted hover:text-danger-600 transition inline-flex"
-                  aria-label={t("availability.remove_vacation_date_aria")}
+                  label={t("availability.remove_vacation_date_aria")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
-                </button>
+                </IconButton>
               )}
               <Button
                 type="button"

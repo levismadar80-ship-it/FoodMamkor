@@ -43,6 +43,8 @@ import {
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -58,6 +60,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   // (the dashboard fetches the profile in the browser), and a stable value
   // keeps every derived list below consistent for the life of the form.
   const [today, setToday] = useState(null);
+  // eslint-disable-next-line no-restricted-syntax -- MEH-3861: read in an effect, after hydration
   useEffect(() => setToday(israelToday()), []);
 
   const seedRows = useMemo(
@@ -251,25 +254,22 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                   data-testid={`special-hours-date-${i}`}
                   className="numeric"
                 />
-                <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[34px]">
-                  <input
-                    type="checkbox"
-                    checked={row.closed}
-                    onChange={(e) => patchRow(i, { closed: e.target.checked })}
-                    className="w-4 h-4 accent-primary"
-                    data-testid={`special-hours-closed-${i}`}
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-sm"
+                  checked={row.closed}
+                  onChange={(e) => patchRow(i, { closed: e.target.checked })}
+                  data-testid={`special-hours-closed-${i}`}
+                >
                   <span>{t("closed_toggle")}</span>
-                </label>
-                <button
-                  type="button"
+                </Checkbox>
+                <IconButton
                   onClick={() => removeRow(i)}
-                  aria-label={`${row.date || t("date_label")} — ${t("remove_date")}`}
+                  label={`${row.date || t("date_label")} — ${t("remove_date")}`}
                   data-testid={`special-hours-remove-${i}`}
                   className="ms-auto text-fg-muted hover:text-error transition p-1"
                 >
                   <X size={14} aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
 
               {!row.closed && (
@@ -295,15 +295,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                         />
                       </div>
                       {row.ranges.length > 1 && (
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() => removeRange(i, rangeIdx)}
-                          aria-label={`${row.date} — ${tRange("remove_range")}`}
+                          label={`${row.date} — ${tRange("remove_range")}`}
                           data-testid={`special-hours-remove-range-${i}-${rangeIdx}`}
                           className="text-fg-muted hover:text-error transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   ))}

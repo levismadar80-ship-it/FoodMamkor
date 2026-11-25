@@ -56,9 +56,12 @@ import {
   GetSavedIdsUsersMeSavedIdsGetResponse,
   GetSavedUsersMeSavedGetResponse,
   GetStatsStatsGetResponse,
+  InviteStaffProducersMeStaffPostResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
+  ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
+  ListStaffProducersMeStaffGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
   RandomProducerProducersRandomGetResponse,
@@ -183,6 +186,8 @@ export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGro
     path: ["status"],
   }),
 );
+// MEH-3735: the owner's pickup list for one group buy (codes, never names).
+export const GroupBuyPickupsSchema = ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse;
 // The public group page reads the business's delivery fields and, under a "no"
 // verdict, its phone and name — all of ProducerDetailOut, so the whole of it.
 export const GroupBuyProducerDeliverySchema = GetProducerProducersProducerIdGetResponse;
@@ -196,3 +201,7 @@ export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResp
 // --- sign-in --------------------------------------------------------------
 // MEH-3690: our own Google button reads the ID token the code was swapped for.
 export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;
+
+// MEH-3526: the owner's order-staff list, and the row an invite answers with.
+export const StaffListOutSchema = ListStaffProducersMeStaffGetResponse;
+export const StaffMemberOutSchema = InviteStaffProducersMeStaffPostResponse;

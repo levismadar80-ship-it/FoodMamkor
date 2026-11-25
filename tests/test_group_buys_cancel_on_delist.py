@@ -80,7 +80,7 @@ def _capture(monkeypatch):
     sent = []
     monkeypatch.setattr(
         "app.services.group_buy_notifications.send_email",
-        lambda to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
+        lambda to, subject, body, html=None, test_cause=False, kind=None: sent.append((to, subject, body)),
     )
     return sent
 
@@ -269,7 +269,7 @@ class TestDelistedEmailCopy:
     def test_wording_is_pinned_and_carries_no_contact_details(self):
         sent = {}
 
-        def _cap(to, subject, body, html=None, test_cause=False):
+        def _cap(to, subject, body, html=None, test_cause=False, kind=None):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _cap):

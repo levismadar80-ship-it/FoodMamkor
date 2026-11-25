@@ -25,7 +25,7 @@ dependencies = [
     "slowapi==0.1.10",
     "pywebpush==2.5.0",
     "resend==2.55.0",
-    "structlog==24.4.0",
+    "structlog==26.1.0",
     "asgi-correlation-id==5.0.1",
     "sentry-sdk[fastapi]==2.75.0",
     "apscheduler~=3.11",
@@ -37,7 +37,7 @@ dev = [
     "mutmut>=3.8.1",
     "mypy==2.4.1",
     "pip-audit>=2.10.1",
-    "hypothesis>=6.170.16",
+    "hypothesis>=6.170.17",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=16.7",
@@ -190,6 +190,7 @@ files = [
     "app/models/analytics.py",
     "app/models/billing.py",
     "app/models/catalog.py",
+    "app/models/email_events.py",
     "app/models/engagement.py",
     "app/models/events.py",
     "app/models/home_products.py",
@@ -247,6 +248,12 @@ files = [
     "app/routers/producer_owner_detach.py",
     "app/routers/producer_owner_invite.py",
     "app/routers/producer_owner_invite_existing.py",
+    "app/routers/producer_staff.py",  # MEH-3526
+    "app/models/producer_staff.py",
+    "app/schemas/producer_staff.py",
+    "app/services/order_access.py",
+    "app/services/staff_membership.py",
+    "app/services/staff_emails.py",
     "app/routers/producer_recipes.py",
     "app/routers/producers.py",
     "app/routers/product_order_business.py",
@@ -259,6 +266,7 @@ files = [
     "app/routers/report_info.py",
     "app/routers/reports.py",
     "app/routers/rescue.py",
+    "app/routers/resend_webhook.py",
     "app/routers/reviews.py",
     "app/routers/saved_items.py",
     "app/routers/search.py",
@@ -286,6 +294,7 @@ files = [
     "app/schemas/recipes_outreach.py",
     "app/schemas/registration.py",
     "app/schemas/rescue.py",
+    "app/schemas/rescue_schedule.py",
     "app/schemas/reviews.py",
     "app/schemas/schemas.py",
     "app/schemas/site.py",
@@ -338,6 +347,9 @@ files = [
     "app/routers/group_buy_mine.py",
     "app/routers/my_orders_any.py",
     "app/schemas/group_buy_mine.py",
+    "app/routers/group_buy_pickup.py",
+    "app/schemas/group_buy_pickup.py",
+    "app/services/group_buy_no_show.py",
     "app/schemas/my_orders_any.py",
     "app/services/group_buy_pickup_place.py",
     "app/services/group_buy_pickup_reminder.py",
@@ -367,6 +379,7 @@ files = [
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
     "app/services/page_freshness.py",
+    "app/services/freshness_month_numbers.py",
     "app/services/page_freshness_digest.py",
     "app/services/signup_fill_digest.py",
     "app/services/password_policy.py",
@@ -377,6 +390,7 @@ files = [
     "app/services/producer_insights.py",
     "app/services/producer_listing.py",
     "app/services/producer_queries.py",
+    "app/services/offer_supply.py",
     "app/services/producer_recipe_moderation.py",
     "app/services/producer_risk.py",
     "app/services/product_order_actions.py",
@@ -410,6 +424,7 @@ files = [
     "app/services/rescue_business_emails.py",
     "app/services/rescue_emails.py",
     "app/services/rescue_reminders.py",
+    "app/services/rescue_schedule.py",
     "app/services/review_conflicts.py",
     "app/services/review_reports.py",
     "app/services/rescue_no_show.py",
@@ -450,6 +465,13 @@ files = [
     "app/services/form_fill_windows.py",
     "app/routers/form_fill.py",
     "app/schemas/form_fill.py",
+    "app/services/producer_owner_update.py",  # MEH-3841
+    "app/services/admin_producer_writes.py",  # MEH-3843
+    "app/services/admin_user_writes.py",  # MEH-3537
+    "app/services/admin_category_writes.py",  # MEH-3537
+    "app/services/rescue_notify.py",  # MEH-3537
+    "app/services/rescue_routine_writes.py",  # MEH-3537
+    "app/services/delivery_waitlist_requests.py",  # MEH-3537
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

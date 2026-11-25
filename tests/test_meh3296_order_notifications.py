@@ -275,7 +275,7 @@ class Wire:
                 outcome=wa_outcome, ok=wa_outcome == "accepted", http_status=http_status
             )
 
-        def fake_mail(to, subject, body, html=None, reply_to=None, test_cause=False):
+        def fake_mail(to, subject, body, html=None, reply_to=None, test_cause=False, kind=None):
             self.mail.append((to, subject, body, test_cause))
             return "skipped_test" if test_cause else mail
 

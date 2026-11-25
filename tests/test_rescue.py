@@ -30,6 +30,7 @@ from sqlalchemy import event
 from app.database import engine
 from app.models.models import ProducerLocation, RescueOffer, RescueOrder
 from app.routers import rescue as rescue_module
+from app.services import rescue_notify
 from app.routers.rescue import (
     NO_SHOW_BLOCK_AT,
     NO_SHOW_WINDOW_DAYS,
@@ -708,7 +709,7 @@ class TestNoShowBlock:
             headers=auth_header(buyer),
         )
         assert r.status_code == 422
-        assert r.json()["detail"] == "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
+        assert r.json()["detail"] == "שני סלים לא נאספו, ולכן אי אפשר לשריין סלים חדשים כרגע. כתבו לנו"
 
     def test_two_no_shows_outside_the_window_do_not_block(
         self, client, db, shop, rescue_on
@@ -1048,7 +1049,8 @@ class TestReserveEmail:
         def _boom(_value):
             raise RuntimeError("clock")
 
-        monkeypatch.setattr(rescue_module, "israel_hhmm", _boom)
+        # MEH-3537: the email is prepared in services/rescue_notify.py now.
+        monkeypatch.setattr(rescue_notify, "israel_hhmm", _boom)
         offer = _seed_offer(db, shop["location"], qty_total=2)
         buyer = make_user(db, email="boom@example.com")
         db.commit()

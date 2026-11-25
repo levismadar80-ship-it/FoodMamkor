@@ -89,7 +89,7 @@ export default function RescueOfferDetails({ offer }) {
 
       {/* MEH-2752: null = not declared; a list = what THIS business declared.
           The block is shared with the group buy (MEH-3610). */}
-      <AllergenSection allergens={offer.allergens} headingId="rescue-allergens" testId="rescue-offer-allergens" />
+      <AllergenSection allergens={offer.allergens} headingId="rescue-allergens" testId="rescue-offer-allergens" askAtPickup />
 
       <section aria-labelledby="rescue-how">
         <SectionHeading size="content" id="rescue-how" className="mb-3">{t("offer_page.how_title")}</SectionHeading>

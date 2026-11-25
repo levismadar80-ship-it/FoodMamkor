@@ -13,6 +13,9 @@
 **קבצים מרכזיים**
 * `backend/app/routers/admin.py`
 * `backend/app/services/admin_producer_reads.py` — מה שמסכי בתי העסק של האדמין קוראים: הרשימה וסדר התור, בית עסק בודד, רשימת הרישיונות שפגים בקרוב ומוני `/admin/stats`. ה-routes נשארים ב-`backend/app/routers/admin.py` (MEH-3562).
+* `backend/app/services/admin_producer_writes.py` — יצירה ועריכה של בית עסק באדמין (`POST /admin/producers`, ‏`PUT /admin/producers/{id}`): slug, קטגוריות, אזורי משלוח, המלצת העורכת, בדיקות ההשהיה והניקוי אחרי השמירה. ה-routes נשארים ב-`backend/app/routers/admin.py` (MEH-3843).
+* `backend/app/services/admin_user_writes.py` — שינוי הרשאה, חסימה ובדיקת ההשפעה של חסימה (`PUT /admin/users/{user_id}/role`, ‏`POST /admin/users/{user_id}/block`, ‏`GET /admin/users/{user_id}/block-impact`). ה-routes נשארים ב-`backend/app/routers/admin_extra.py` (MEH-3537).
+* `backend/app/services/admin_category_writes.py` — יצירה, שינוי שם ומחיקה של קטגוריה, עם השומרים: שם תפוס, קטגוריית מערכת, קטגוריה עם רישיון, קטגוריה משויכת לעסקים (MEH-3537).
 * `backend/app/services/admin_audit.py` — יומן הפעולות (MEH-3306): שורה לכל שינוי מוצלח של חשבון אדמין, נכתבת מתוך `backend/app/auth.py`. קריאה: `GET /admin/audit-log` ב-`backend/app/routers/admin_extra.py`.
 * `backend/app/services/admin_dashboard.py` + `backend/app/services/admin_settings.py` — המספרים של דף הבית של האדמין (`GET /admin/dashboard`), דף האנליטיקה (`GET /admin/analytics`), ומתגי ההגדרות ומצב החופשה (`/admin/settings`). ה-handlers ב-`backend/app/routers/admin_extra.py` רק קוראים להם (MEH-3538).
 * `frontend/components/admin/AdminRowMenu.jsx`

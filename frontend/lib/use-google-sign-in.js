@@ -77,6 +77,7 @@ let preloadStarted = false;
 export function preloadGsiWhenIdle(clientId) {
   if (!clientId || typeof window === "undefined" || preloadStarted) return () => {};
   let signedIn = false;
+  // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
   try { signedIn = Boolean(window.localStorage.getItem("token")); } catch { /* storage blocked: treat as guest */ }
   if (signedIn || !hasFullCookieConsent()) return () => {};
   preloadStarted = true;

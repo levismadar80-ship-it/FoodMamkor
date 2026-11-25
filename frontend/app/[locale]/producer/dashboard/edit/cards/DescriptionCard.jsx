@@ -21,6 +21,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { ViewOnPageLink } from "./ViewOnPageLink";
+import IconButton from "@/components/ui/IconButton";
 
 // ============================================================
 // MEH-1173: "תיאור העסק" card (was "ביו AI" / BioPanelCard). Direction 2 —
@@ -61,14 +62,13 @@ function AssistForm({ t, assist }) {
       <div className="flex items-center gap-2">
         <Sparkle size={16} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
         <strong className="text-sm flex-1">{t("assist_title")}</strong>
-        <button
-          type="button"
+        <IconButton
           onClick={close}
-          aria-label={t("assist_close")}
+          label={t("assist_close")}
           className="text-fg-muted hover:text-text transition"
         >
           <X size={14} aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
 
       <AssistField

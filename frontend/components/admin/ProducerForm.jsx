@@ -8,13 +8,14 @@ import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
 import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import AdminOwnerStoryFields from "@/components/admin/AdminOwnerStoryFields";
 import api from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-responses";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
@@ -31,6 +32,7 @@ import {
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -314,6 +316,8 @@ function Field({ label, children, full = false }) {
 }
 
 export default function ProducerForm({ initial = null, producerId = null }) {
+  // MEH-3861: the first date a picker allows, the same in both renders.
+  const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
@@ -342,7 +346,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
-  const [categories, setCategories] = useState([]);
+  // MEH-3818: through the shared read cache. The edit and new pages read the
+  // same key before they draw the form, so the list is here on the form's
+  // first paint instead of being inserted into it a moment later and pushing
+  // every field below it down (CLS 0.12–0.20, MEH-3809 guard; field p75
+  // 0.28 on edit and 1.0 on new, Sentry 25/11).
+  const { data: categoriesData } = useApi("/categories");
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
   // MEH-1506: admin-only Google Place lookup — search by the producer's own
@@ -352,10 +362,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [placeCandidates, setPlaceCandidates] = useState(null);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
-
-  useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
-  }, []);
 
   useEffect(() => {
     if (initial) {
@@ -920,19 +926,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             const capDisabled =
               !checked && form.category_ids.length >= MAX_CATEGORIES;
             return (
-              <label
+              <Checkbox
                 key={c.id}
-                className={`flex items-center gap-2 text-sm ${
-                  capDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                }`}
+                className="flex items-center gap-2 text-sm"
+                checked={checked}
+                disabled={capDisabled}
+                onChange={() => toggleCategory(c.id)}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={capDisabled}
-                  onChange={() => toggleCategory(c.id)}
-                  className="w-4 h-4 accent-primary"
-                />
                 <span>{c.name}</span>
                 {isPrimary && (
                   <span
@@ -942,46 +942,41 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                     {t("producers.form.primary_badge")}
                   </span>
                 )}
-              </label>
+              </Checkbox>
             );
           })}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-border">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.grass_fed}
-              onChange={(e) => update("grass_fed", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            checked={form.grass_fed}
+            onChange={(e) => update("grass_fed", e.target.checked)}
+          >
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
-          </label>
+          </Checkbox>
           {/* MEH-2699: owner-declared reservist claim — shown on edit so the
               admin can see it and correct a false declaration. */}
           {producerId && (
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                name="reservist_owned"
-                checked={!!form.reservist_owned}
-                onChange={(e) => update("reservist_owned", e.target.checked)}
-                className="w-4 h-4 accent-primary"
-              />
+            <Checkbox
+              className="flex items-center gap-2 text-sm"
+              name="reservist_owned"
+              checked={!!form.reservist_owned}
+              onChange={(e) => update("reservist_owned", e.target.checked)}
+            >
               <Medal size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.reservist_owned")}
-            </label>
+            </Checkbox>
           )}
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           {/* MEH-766 ch3: "verified" checkbox removed — verification is the
               admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!form.is_recommended}
-              onChange={(e) => update("is_recommended", e.target.checked)}
-              className="w-4 h-4 accent-accent"
-            />
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            boxClassName="accent-accent"
+            checked={!!form.is_recommended}
+            onChange={(e) => update("is_recommended", e.target.checked)}
+          >
             {t("producers.form.fields.recommended")}
-          </label>
+          </Checkbox>
           {/* MEH-2274 (MEH-1494 chunk B, frontend half). Three deliberate
               choices here, each of which the backend already decided:
 
@@ -1108,20 +1103,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       {!producerId && (
       <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.has_physical_location}
-              onChange={(e) => update("has_physical_location", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            checked={form.has_physical_location}
+            onChange={(e) => update("has_physical_location", e.target.checked)}
+          >
             {t("producers.form.fields.has_physical_location")}
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.offers_delivery}
-              onChange={(e) => {
+          </Checkbox>
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            checked={form.offers_delivery}
+            onChange={(e) => {
                 const on = e.target.checked;
                 update("offers_delivery", on);
                 // MEH-1879: the delivery block below is CONDITIONALLY RENDERED
@@ -1142,29 +1134,26 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   update("delivery_excluded_cities", []);
                 }
               }}
-              className="w-4 h-4 accent-primary"
-            />
+          >
             {t("producers.form.fields.offers_delivery")}
-          </label>
+          </Checkbox>
           {!form.has_physical_location && !form.offers_delivery && (
             <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
           )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.delivery_nationwide}
-                  onChange={(e) => {
+              <Checkbox
+                className="flex items-center gap-2 text-sm"
+                checked={form.delivery_nationwide}
+                onChange={(e) => {
                     update("delivery_nationwide", e.target.checked);
                     // Clear cities entering nationwide; clear exclusions leaving it.
                     if (e.target.checked) update("delivery_cities", []);
                     else update("delivery_excluded_cities", []);
                   }}
-                  className="w-4 h-4 accent-primary"
-                />
+              >
                 {t("producers.form.fields.delivery_nationwide")}
-              </label>
+              </Checkbox>
               {!form.delivery_nationwide && (
                 <div data-testid="delivery-cities-block">
                   <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
@@ -1330,7 +1319,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.vacation_until}
             // MEH-1983: Israel's today, not UTC's — the server validates
             // vacation_until against israel_today().
-            min={israelToday()}
+            min={today}
             onChange={(e) => update("vacation_until", e.target.value)}
             dir="ltr"
           />
@@ -1348,19 +1337,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       {!producerId && (
         <Section title={t("producers.claim.title")} testId="as-draft-section">
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="as-draft-checkbox"
-              checked={asDraft}
-              onChange={(e) => setAsDraft(e.target.checked)}
-              className="w-4 h-4 accent-primary mt-1"
-            />
+          <Checkbox
+            className="flex items-start gap-2"
+            boxClassName="mt-1"
+            data-testid="as-draft-checkbox"
+            checked={asDraft}
+            onChange={(e) => setAsDraft(e.target.checked)}
+          >
             <span>
               <span className="block text-sm font-medium">{t("producers.form.fields.as_draft")}</span>
               <span className="block text-xs text-muted mt-1">{t("producers.form.fields.as_draft_hint")}</span>
             </span>
-          </label>
+          </Checkbox>
         </Section>
       )}
 

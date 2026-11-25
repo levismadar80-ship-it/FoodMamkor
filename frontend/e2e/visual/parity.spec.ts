@@ -223,8 +223,10 @@ const SHOT = { stylePath: STYLE_PATH } as const;
 
 /**
  * MEH-1531: the page's wall clock, frozen. The home hero subtitle switches on
- * real time — `HomeHero.jsx:115` renders `home.hero.friday_subtitle` instead of
- * `home.hero.subtitle` while `isFridayMode()` (`lib/friday-mode.js:4`) is true,
+ * real time — `HomeHero.jsx` renders both lines and CSS shows
+ * `home.hero.friday_subtitle` instead of `home.hero.subtitle` while
+ * `data-friday-mode` is on <html> (set before paint from the same clock as
+ * `isFridayMode()`, MEH-3860),
  * i.e. Thu 18:00 → Fri 14:00 Asia/Jerusalem. `parity.css` already hides the
  * friday-delivery-strip (presence varies) but nothing froze the SUBTITLE, so
  * the shot differed by day-of-week: any run whose friday state differed from

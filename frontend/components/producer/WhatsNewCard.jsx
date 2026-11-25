@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 import { useUnseenRelease } from "@/hooks/useWhatsNew";
+import IconButton from "@/components/ui/IconButton";
 
 export const WHATS_NEW_HREF = "/producer/dashboard/whats-new";
 
@@ -44,15 +45,14 @@ export default function WhatsNewCard() {
         <h2 id="whats-new-card-heading" className="font-semibold text-text pt-2">
           {t("card_title")}
         </h2>
-        <button
-          type="button"
+        <IconButton
           onClick={dismiss}
-          aria-label={t("card_close")}
+          label={t("card_close")}
           data-testid="whats-new-close"
           className="w-11 h-11 -me-2 -mt-1 inline-flex items-center justify-center rounded-full text-fg-muted hover:text-text focus-ring shrink-0"
         >
           <X size={20} aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
       <ReleaseLines releaseKey={release.key} count={release.items} className="mt-1" />
       <Link

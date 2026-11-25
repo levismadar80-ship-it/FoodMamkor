@@ -30,6 +30,7 @@ from app.routers import (
     group_buys,
     group_buy_capacity,
     group_buy_mine,
+    group_buy_pickup,
     my_orders_any,
     health,
     holiday_mode,
@@ -56,6 +57,7 @@ from app.routers import (
     page_fill,
     form_fill,
     product_order_business,
+    producer_staff,
     product_order_buyer,
     product_order_offer,
     product_variants,
@@ -74,6 +76,7 @@ from app.routers import (
     system,
     upload,
     users_me,
+    resend_webhook,
     whatsapp_webhook,
 )
 
@@ -170,13 +173,28 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3526: order staff — invite, accept, remove, leave.
+    app.include_router(producer_staff.owner_router)
+    app.include_router(producer_staff.invite_router)
+    app.include_router(producer_staff.member_router)
     # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
     app.include_router(group_buy_capacity.router)
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
     # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
+    # MEH-3735: pickup codes, «נמסר» / «לא הגיע», the admin block release.
+    app.include_router(group_buy_pickup.router)
+    app.include_router(group_buy_pickup.admin_router)
     # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
     app.include_router(my_orders_any.router)
+
+
+def _include_webhooks(app: FastAPI) -> None:
+    """Inbound webhooks from outside services; each one checks a signature."""
+    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
+    app.include_router(whatsapp_webhook.router)
+    # MEH-3839: Resend delivery events. /webhook/resend.
+    app.include_router(resend_webhook.router)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -254,6 +272,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)
-    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
-    app.include_router(whatsapp_webhook.router)
+    _include_webhooks(app)
     _register_flagged_features(app)

@@ -465,6 +465,7 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
                 html=html,
                 test_cause=cand.test_business or owner_is_test,
                 headers=unsubscribe_headers(base, token),
+                kind="weekly_summary",
             )
             counters["sent"] += 1
         except Exception:  # noqa: BLE001 — one business never stops the run

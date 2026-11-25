@@ -259,7 +259,7 @@ def rendered(monkeypatch):
     for label, module, call in _CORPUS:
         captured = {}
 
-        def _capture(to, subject, body, html=None, test_cause=False, _c=captured):
+        def _capture(to, subject, body, html=None, test_cause=False, _c=captured, kind=None):
             _c["subject"], _c["text"], _c["html"] = subject, body, html
 
         def _capture_queued(db, kind, to, subject, body, html=None, test_cause=False, _c=captured):

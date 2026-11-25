@@ -83,6 +83,7 @@ export default function RescueSection({ producer }) {
           if (ticket !== latest.current) return;
           // MEH-3702: today's bag first; tomorrow's when there is none today.
           const own = rows.filter((row) => row.producer?.id === producer?.id);
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the fetch's .then, after the load
           setOffer(own.find((row) => bagDay(row.date) === "today") || own[0] || null);
         })
         .catch(() => {
@@ -115,7 +116,7 @@ export default function RescueSection({ producer }) {
   // business's own LOW estimate (worthAgorot), so never a made-up discount.
   const worthA = worthAgorot(offer);
   const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
-  const cancelUntil = rescueCancelText(offer?.cancel_until, t); // MEH-3702
+  const cancelUntil = rescueCancelText(offer?.cancel_until, t, day); // MEH-3702
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);
@@ -282,10 +283,16 @@ export default function RescueSection({ producer }) {
                 </p>
               ) : (
                 <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                  {t("section.allergens_undeclared")}
+                  {t("section.allergens_undeclared_short")}
                 </p>
               )}
             </details>
+            {/* MEH-3823: outside the fold, so buyers always see it, whatever
+                was declared — a surprise bag changes daily (the Too Good To
+                Go line). */}
+            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-section-allergens-ask">
+              {t("section.allergens_ask")}
+            </p>
             {/* MEH-3586: the bag's own page — map, how pickup works, the
                 cancel rule. Next: the whole card becomes this link and the
                 reserve moves there (bag-page thread, follow-up PR). */}

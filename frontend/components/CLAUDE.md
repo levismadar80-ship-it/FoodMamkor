@@ -40,6 +40,9 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
+| A button that is only an icon (close «×», kebab ⋮, +/−): `label` required, 44px hit area via `.tap-area`, the look stays the caller's `className` | `ui/IconButton.jsx` | ESLint `design-system/no-html-button` (ratchet) |
+| Days of the week as chips, Sunday first, on the shared mask (a product's days, a bag routine's days) | `ui/WeekdayChips.jsx` | — |
+| Checkbox with its label — the whole row is the 44px hit area (32px from md) | `ui/Checkbox.jsx` | ESLint `design-system/no-html-checkbox` (ratchet) |
 | Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | 44×44 hit area on a small control without moving the layout (`::before`) | `.tap-area` in `app/globals.css` | `TapArea44` |
@@ -57,6 +60,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
 | «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
+| A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) | `ui/TimeOfDaySelect.jsx` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
@@ -95,10 +99,12 @@ touched (21/11):
 - Allergens: `public/ProductFacts.jsx:38` (reads `lib/allergens.js`) and
   `rescue/RescueSection.jsx:395` (its own `allergen_${code}` lookup).
 - Price with the regular price struck through: `rescue/BagRow.jsx:125`,
-  `HomeWhatsOn.jsx:533`, and the group-buy pages
+  `HomeWhatsOn.jsx:533`, `app/[locale]/map/components/MapRescueRow.jsx`, and
+  the group-buy pages
   (`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:293`,
   `app/[locale]/group-buys/GroupBuysClient.jsx:105`).
-- Pickup time line: `rescue/BagRow.jsx:80` and `rescue/RescueSection.jsx:347`.
+- Pickup time line: `rescue/BagRow.jsx:80`, `rescue/RescueSection.jsx:347` and
+  `app/[locale]/map/components/MapRescueRow.jsx`.
 
 **Say what you checked.** A PR that adds a file under `frontend/components`,
 `frontend/lib`, `frontend/hooks` or `backend/app/services` carries

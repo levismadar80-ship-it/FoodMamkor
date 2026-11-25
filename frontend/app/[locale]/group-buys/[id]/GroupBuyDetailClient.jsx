@@ -74,6 +74,7 @@ function saveDraftQuantity(gbId, value) {
 /** Read and clear the kept quantity; null when none (or storage is blocked). */
 function takeDraftQuantity(gbId) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
     const raw = sessionStorage.getItem(QTY_DRAFT_KEY(gbId));
     if (raw === null) return null;
     sessionStorage.removeItem(QTY_DRAFT_KEY(gbId));

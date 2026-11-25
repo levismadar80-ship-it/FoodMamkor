@@ -98,6 +98,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
         await api.post(`/users/me/saved/${itemType}/${itemId}`);
         let firstTime = false;
         try {
+          // eslint-disable-next-line no-restricted-syntax -- read inside a click or submit handler, after the page is on screen
           firstTime = !localStorage.getItem("favorite_hint_shown");
           if (firstTime) localStorage.setItem("favorite_hint_shown", "1");
         } catch {

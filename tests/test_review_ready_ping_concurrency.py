@@ -90,7 +90,7 @@ import threading
 
 from fastapi.testclient import TestClient
 
-import app.routers.producer_me as pm
+import app.services.producer_owner_update as pm  # MEH-3841: the save moved here
 from app.models.models import Producer
 from tests.conftest import auth_header, make_producer, make_user
 

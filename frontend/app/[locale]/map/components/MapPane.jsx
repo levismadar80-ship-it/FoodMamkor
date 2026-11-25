@@ -16,6 +16,7 @@ import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import MapKey from "./MapKey";
 import { SkeletonBlock } from "@/components/Skeleton";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import IconButton from "@/components/ui/IconButton";
 
 // NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
 const NEAR_ME_STACK_OFFSET_PX = 68;
@@ -89,6 +90,8 @@ export default function MapPane({
   // points show when it is selected, and every business's while the
   // «איסוף עצמי» chip is on (this flag, from useMapFilters).
   showAllPickupPoints = false,
+  // MEH-3824: the offer switches that are on; matching pins carry a mark.
+  offerMarks,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -127,6 +130,7 @@ export default function MapPane({
         mapRef={mapRef}
         focusedProducerId={focusedProducerId}
         showAllPickupPoints={showAllPickupPoints}
+        offerMarks={offerMarks}
       />
 
 
@@ -267,16 +271,15 @@ export default function MapPane({
             </div>
           </div>
         )}
-        <button
-          type="button"
+        <IconButton
           onClick={onLegendToggle}
           data-testid="map-legend-toggle"
-          aria-label={t("map.pane.aria.categories")}
+          label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
           className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SquaresFour size={16} weight="bold" className="text-text" />
-        </button>
+        </IconButton>
       </div>
       {/* MEH-2424: "מה רואים במפה?" — the marker key, one more circle in the
           control column. It took the slot the pickup-layer toggle left (Sapir

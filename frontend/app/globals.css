@@ -512,6 +512,13 @@ html:not([data-cookie-answered]) body:not(.sheet-open) [data-map-banner-reserve]
 html[data-has-token] [data-auth-pending] {
   visibility: hidden;
 }
+/* MEH-3860: Friday mode is known before the first paint (data-friday-mode,
+   lib/prehydration-flags-inline.js), so the hero line and the strip's slot
+   are right from the first frame instead of changing after hydration. */
+html:not([data-friday-mode]) [data-friday-only],
+html[data-friday-mode] [data-friday-off] {
+  display: none;
+}
 /* A stored session sees a «loading» line instead of an empty pane. */
 html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
   display: block;
@@ -988,7 +995,11 @@ html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
    Does not work inside an `overflow` scroller that would clip the pseudo
    (the admin phone strip uses `min-h-touch` for that reason). */
 @layer utilities {
-  .tap-area {
+  /* MEH-3832: :where() keeps this at zero specificity, so a caller's own
+     `absolute` / `fixed` / `sticky` always wins over it, whatever the order of
+     the two rules in the stylesheet. The ::before only needs SOME positioned
+     box to measure from, and any of those is one. */
+  :where(.tap-area) {
     position: relative;
   }
   .tap-area::before {

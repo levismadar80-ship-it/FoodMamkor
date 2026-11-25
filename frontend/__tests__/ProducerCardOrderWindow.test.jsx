@@ -72,6 +72,11 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   Leaf: (p) => <span data-testid="leaf-icon" {...p} />,
   HeartStraight: ({ weight, ...p }) => <span data-testid="icon-heart" {...p} />,
   Star: (p) => <span data-testid="icon-star" {...p} />,

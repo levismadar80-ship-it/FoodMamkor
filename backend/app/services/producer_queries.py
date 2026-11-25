@@ -349,6 +349,51 @@ def attach_rescue_saving(producers: list[Any], db: Session) -> list[Any]:
     return producers
 
 
+def attach_rescue_today(producers: list[Any], db: Session) -> list[Any]:
+    """MEH-3824: batch-set `rescue_today` — the bag row in the business card
+    picked on the map.
+
+    The earliest bag TODAY per business, from the same set the bag list shows
+    (`rescue_reads.public_offers`): active, stock left, still reservable, an
+    approved non-test business, a pickup point in a pilot town. Tomorrow's bags
+    are not "today" and stay on the bag list. One query for the page, none
+    while the pilot is off or names no town.
+    """
+    if not producers:
+        return producers
+    for p in producers:
+        p.rescue_today = None
+    # MEH-3824: the same query feeds the map's «סלי הפתעה» switch
+    # (services/offer_supply.py), so the row and the switch cannot disagree.
+    from app.services.offer_supply import rescue_today_query
+
+    q = rescue_today_query(db)
+    if q is None:
+        return producers
+    ids = [p.id for p in producers]
+    rows = (
+        q.filter(ProducerLocation.producer_id.in_(ids))
+        .order_by(RescueOffer.pickup_start.asc(), RescueOffer.id.asc())
+        .all()
+    )
+    first: dict[Any, Any] = {}
+    for offer, producer_id in rows:
+        first.setdefault(producer_id, offer)
+    for p in producers:
+        offer = first.get(p.id)
+        if offer is not None:
+            p.rescue_today = {
+                "offer_id": offer.id,
+                "location_id": offer.producer_location_id,
+                "price_agorot": offer.price_agorot,
+                "value_min_agorot": offer.value_min_agorot,
+                "pickup_start": offer.pickup_start,
+                "pickup_end": offer.pickup_end,
+                "qty_left": offer.qty_left,
+            }
+    return producers
+
+
 def attach_favorites_count(producer: Any, db: Session) -> Any:
     """MEH-106: load favorites_count for a single producer."""
     producer.favorites_count = (
