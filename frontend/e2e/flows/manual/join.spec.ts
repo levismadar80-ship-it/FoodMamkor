@@ -216,7 +216,7 @@ test.describe("manual › /join (MEH-995)", () => {
     const first = items.nth(0);
     await expect(first.getByText(COST_ANSWER)).toBeHidden();
     // MEH-2841 reordered FAQ_KEYS to [cost, price, google, updates, revenue,
-    // customers], so index 1 is now the price answer, not the Google one.
+    // customers] (MEH-3869 inserted new_site third), so index 1 is the price answer.
     // The ticket named only the count; this positional assertion is the
     // other half, and it would have gone red on the wrong text.
     await expect(items.nth(1).getByText(COPY.faq.a_price)).toBeHidden();
