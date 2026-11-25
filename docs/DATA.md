@@ -1383,6 +1383,14 @@ POST   /producer-claim                     auth   — 10/hour. Body {token, decl
 POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D). ProductCreate → ProductOut, 201. ONLY while the draft is claimable
                                                      (draft + no owner, producer row locked FOR UPDATE); otherwise 409. No new-product alert (a draft is not public). The six diet flags (is_*) are DROPPED — they are the owner's self-declaration, set from her dashboard after the claim (Sapir, 26/10).
 DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
+POST   /admin/producers/{draft_id}/merge-owner  admin — 30/hour. MEH-3865. Body {target_producer_id}: a business its owner registered herself (draft or pending, exactly one
+                                                     owner). The admin list offers the pairs `services/draft_twins.py` matched; the route itself does not re-run the match (an admin
+                                                     action). Every refusal before any write (409, Hebrew): not an ownerless draft · target approved/rejected/inactive · different kind
+                                                     or is_test · no owner · two owners · open orders · > MAX_PRODUCTS after the merge · same row. Both producers locked in id order.
+                                                     What survives, column by column and child table by child table: `services/draft_merge_policy.py` (her name, contacts, images,
+                                                     declarations and history win; the admin's prose stays; her delivery / pickup setup replaces the draft's whole). Her row is
+                                                     deleted through admin_delete_producer in the same transaction. Pending stays pending only if the merged page passes submission_missing_items.
+                                                     Background: the owner's email (send_owner_draft_merged). → {producer_id, status, products_moved}.
                                                      Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 

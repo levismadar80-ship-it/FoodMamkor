@@ -29,8 +29,9 @@ import RescueOfferDetails from "./RescueOfferDetails";
  *           out like the event page — cover, title and business row, a side
  *           card with price and the reserve button (under the title on a
  *           phone), and the details below.
- * Does NOT: decide what a reservation does — lib/use-rescue-reservation.js, the
- *           same hook the business page's bag block uses.
+ * Does NOT: decide what a reservation does — lib/use-rescue-reservation.js.
+ *           This page is the only place a bag is reserved; the business-page
+ *           card links here (MEH-3586).
  * Related:  ./RescueOfferAction.jsx, ./RescueOfferDetails.jsx,
  *           backend/app/routers/rescue.py get_offer
  * History:  MEH-3586 (creation) · MEH-3610 (pickup line = shared

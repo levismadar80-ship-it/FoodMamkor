@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.15 (25/11): one line for businesses, staff who handle only orders
+  // (#5317, MEH-3526), approved word for word by Sapir on the release
+  // thread's decision card on 25/11. The rest is the map, the home page, the
+  // email events, refactors and tests.
+  { version: "1.5.15", key: "v1_5_15", date: "2026-11-25", items: 1 },
   // 1.5.14 (24/11): seven lines approved word for word by Sapir in the
   // release thread («מאשרת», 24/11 21:29): order-form preview, AI drafts from
   // text, tomorrow's surprise bags, the closed-day warning, review requests,

@@ -557,6 +557,19 @@ class ProducerClaimOut(BaseModel):
     status: str
 
 
+class DraftMergeRequest(BaseModel):
+    """MEH-3865: the business the owner registered herself, to merge INTO the
+    draft the admin prepared (routers/admin_draft_merge.py)."""
+
+    target_producer_id: UUID
+
+
+class DraftMergeOut(BaseModel):
+    producer_id: UUID
+    status: str
+    products_moved: int
+
+
 class ProducerClaimNewLinkOut(BaseModel):
     # MEH-3122: always the same body — see request_new_claim_link.
     ok: bool

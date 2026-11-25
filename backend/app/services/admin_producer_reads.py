@@ -29,6 +29,7 @@ from app.schemas.schemas import LicenseExpiryReminderOut, LicenseExpiryReminderR
 from app.services.admin_draft_missing import attach_draft_missing  # MEH-3409
 from app.services.page_freshness import stale_clause
 from app.services.producer_duplicates import attach_duplicate_signals  # MEH-3408
+from app.services.draft_twins import attach_draft_twins  # MEH-3865
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services.producer_queries import attach_badge_fields
 from app.utils.clock import business_days_waiting, israel_now
@@ -237,6 +238,8 @@ def admin_producer_list(
     attach_draft_missing(db, results)
     # MEH-3408: «כפילות?» compares against every status, not the loaded page.
     attach_duplicate_signals(db, results)
+    # MEH-3865: a draft and the business its owner registered herself.
+    attach_draft_twins(db, results)
     return results
 
 

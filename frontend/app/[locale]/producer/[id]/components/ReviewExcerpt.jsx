@@ -5,14 +5,14 @@ import { useEffect, useState } from "react";
 import { CaretLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import * as Sentry from "@sentry/nextjs";
-import api from "@/lib/api";
+import { readFirstReviewsPage } from "@/lib/reviews-page";
 
 /**
  * MEH-1048 (chunk 2) — one short review quote above the fold, linked to the
  * reviews section (#reviews).
  *
- * Data: reviews are lazy-fetched on scroll elsewhere; this eager-fetches page
- * 1 of the nested reviews endpoint (≤10, newest-first) ONLY when the producer
+ * Data: this eager-fetches page
+ * 1 of the nested reviews endpoint (shared with ReviewsSection, MEH-3836) (≤10, newest-first) ONLY when the producer
  * has reviews — a zero-review producer makes no call at all. It shows the
  * most-recent review WITH non-empty body, falling through rating-only
  * reviews; if none in page 1 have text, it renders nothing (the header rating
@@ -32,14 +32,13 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
     // Guard: zero reviews → no fetch at all (Sapir condition a).
     if (!producerId || reviewsCount <= 0) return undefined;
     let alive = true;
-    // MEH-1048 a11y-followup: abort the in-flight request on unmount /
-    // param change so it doesn't run to completion after the component is gone.
-    const controller = new AbortController();
-    api
-      .get(`/producers/${producerId}/reviews`, { params: { page: 1 }, signal: controller.signal })
-      .then((r) => {
+    // MEH-3836: the same read the reviews list makes on this page, joined to
+    // it (lib/reviews-page.js). It is not aborted on unmount, because the list
+    // may still be waiting on it; `alive` drops the answer instead.
+    readFirstReviewsPage(producerId)
+      .then((data) => {
         if (!alive) return;
-        const reviews = r.data?.reviews ?? [];
+        const reviews = data?.reviews ?? [];
         // Newest-first order → first with non-empty body is the most-recent
         // review that has text; rating-only reviews are skipped.
         const withText = reviews.find((rv) => rv.body && rv.body.trim());
@@ -48,16 +47,12 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
         setExcerpt(body.length > MAX_LEN ? `${body.slice(0, MAX_LEN).trimEnd()}…` : body);
       })
       .catch((err) => {
-        // Swallow ONLY genuine aborts (axios CanceledError on unmount / param
-        // change). Checking the error — not signal.aborted — avoids dropping a
-        // real error whose .catch races cleanup, preserving MEH-325 observability.
         // Fail-open: no excerpt on error (the header rating pill still shows).
-        if (err?.code === "ERR_CANCELED") return;
-        Sentry.captureException(err);
+        // Reported once here, the list stays quiet (MEH-325 observability).
+        if (alive) Sentry.captureException(err);
       });
     return () => {
       alive = false;
-      controller.abort();
     };
   }, [producerId, reviewsCount]);
 

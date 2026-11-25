@@ -1077,6 +1077,8 @@ from app.schemas.registration import (  # noqa: E402
     OwnerInviteCreatedOut as OwnerInviteCreatedOut,
     OwnerInviteEmailCodeRequest as OwnerInviteEmailCodeRequest,
     OwnerInvitePublicOut as OwnerInvitePublicOut,
+    DraftMergeOut as DraftMergeOut,
+    DraftMergeRequest as DraftMergeRequest,
     ProducerClaimLinkOut as ProducerClaimLinkOut,
     ProducerClaimNewLinkOut as ProducerClaimNewLinkOut,
     ProducerClaimOut as ProducerClaimOut,

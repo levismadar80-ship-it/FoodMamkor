@@ -11,8 +11,8 @@ import { UNVERIFIED_KEY } from "@/lib/use-rescue-reservation";
 /**
  * Module:   RescueErrorLine
  * Purpose:  The one line under the reserve / cancel button that says why it
- *           did not work. Shared by the business page's bag block and the
- *           bag's own page (MEH-3586), so an error reads the same in both.
+ *           did not work. Used on the bag's own page only, since the
+ *           business-page card became a link to it (MEH-3586).
  * History:  MEH-3586 (moved out of RescueSection unchanged: MEH-3225 resend
  *           notice for an unverified email, MEH-3226 «כתבו לנו» link)
  *
