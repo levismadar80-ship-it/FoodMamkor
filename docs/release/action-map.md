@@ -16,8 +16,8 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 337 | 322 | 10 | 5 | 0 |
-| — negative cell of gated routes (401/403) | 252 | 171 | 0 | 81 | 0 |
+| API routes (actor actions) | 341 | 326 | 10 | 5 | 0 |
+| — negative cell of gated routes (401/403) | 256 | 173 | 0 | 83 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 54 | 51 | 1 | 2 | 0 |
 | Pages — public | 62 | 52 | 0 | 10 | 0 |
@@ -28,7 +28,7 @@
 
 Pages opened by a CI-run Playwright spec: **43 / 109** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 111** (route positive 5 · route negative 81 · tools 2 · pages 16 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 113** (route positive 5 · route negative 83 · tools 2 · pages 16 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -409,7 +409,11 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 344 | DELETE | `/group-buys/{group_buy_id}/waitlist` | `group_buy_capacity.leave_waitlist` | registered user | `tests/test_meh3592_group_buy_capacity.py:219` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:382` | 9 |
 | 345 | PATCH | `/group-buys/{group_buy_id}/settings` | `group_buy_capacity.update_group_buy_settings` | registered user | `tests/test_meh3592_group_buy_capacity.py:85` | `tests/test_meh3592_group_buy_capacity.py:113` | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:382` | 8 |
 | 346 | GET | `/users/me/group-buys` | `group_buy_mine.list_own_group_buys` | registered user | `tests/test_meh3609_my_group_buys.py:23` | `tests/test_meh3609_my_group_buys.py:18` | — | 2 |
-| 347 | GET | `/users/me/orders/any` | `my_orders_any.has_any_orders` | registered user | `tests/test_meh3698_orders_any.py:35` | `tests/test_meh3698_orders_any.py:60` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:198` | 2 |
+| 347 | GET | `/producers/me/group-buys/{group_buy_id}/pickups` | `group_buy_pickup.list_pickups` | registered user | `tests/test_meh3735_group_buy_no_show.py:92` | `tests/test_meh3735_group_buy_no_show.py:109` | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:132` | 2 |
+| 348 | POST | `/group-buys/{group_buy_id}/commits/{commit_id}/handed` | `group_buy_pickup.mark_group_buy_handed` | registered user | `tests/test_meh3735_group_buy_no_show.py:132` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:382` | 8 |
+| 349 | POST | `/group-buys/{group_buy_id}/commits/{commit_id}/no-show` | `group_buy_pickup.mark_group_buy_no_show` | registered user | `tests/test_meh3735_group_buy_no_show.py:67` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:382` | 8 |
+| 350 | POST | `/admin/group-buys/users/{user_id}/clear-block` | `group_buy_pickup.clear_group_buy_block` | admin | `tests/test_meh3735_group_buy_no_show.py:233` | `tests/test_meh3735_group_buy_no_show.py:232` | — | 5 |
+| 351 | GET | `/users/me/orders/any` | `my_orders_any.has_any_orders` | registered user | `tests/test_meh3698_orders_any.py:35` | `tests/test_meh3698_orders_any.py:60` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:198` | 2 |
 
 ### Internal routes (allowlisted — not actor actions)
 
@@ -500,10 +504,10 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/[slug]` | `frontend/e2e/flows/00-producer-fixture-probe-origin.spec.ts:111` | `frontend/__tests__/BusinessPageUntranslatedMeta.test.js:37` | covered |
 | `/[slug]/recipes/[recipe_id]` | GAP | `frontend/__tests__/RecipeResolverErrorSeparation.test.jsx:42` | covered |
 | `/about/badges` | GAP | `frontend/__tests__/title-pattern.test.js:139` | covered |
-| `/about/for-businesses/guides/business-story` | `frontend/e2e/flows/manual/hebrew-typography.spec.ts:99` | `frontend/__tests__/title-pattern.test.js:182` | covered |
+| `/about/for-businesses/guides/business-story` | GAP | `frontend/__tests__/title-pattern.test.js:182` | covered |
 | `/about/for-businesses/guides/customer-messages` | GAP | `frontend/__tests__/title-pattern.test.js:183` | covered |
 | `/about/for-businesses/guides` | GAP | `frontend/__tests__/TitlesGuidesCopy.test.jsx:47` | covered |
-| `/about/for-businesses/guides/product-photography` | GAP | `frontend/__tests__/title-pattern.test.js:184` | covered |
+| `/about/for-businesses/guides/product-photography` | `frontend/e2e/flows/manual/hebrew-typography.spec.ts:102` | `frontend/__tests__/title-pattern.test.js:184` | covered |
 | `/about/for-businesses` | `frontend/e2e/flows/manual/join.spec.ts:235` | `frontend/__tests__/BusinessFaqClosedOnLoad.test.jsx:36` | covered |
 | `/about` | `frontend/e2e/flows/13-static-pages-render.spec.ts:8` | `frontend/__tests__/title-pattern.test.js:135` | covered |
 | `/about/process` | `frontend/e2e/flows/manual/hebrew-typography.spec.ts:57` | `frontend/__tests__/title-pattern.test.js:136` | covered |
@@ -661,10 +665,10 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/_test_api__p04.py:120` | a delete transition reached no DELETE handler — audit line may be off |
 | 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:122` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
-| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `PUT /experiences/{experience_id}`, `PATCH /producers/me/recipes/{recipe_id}`, `GET /admin/audit-log`, `GET /admin/users` | `tests/_test_experiences__p01.py:819` | a delete transition reached no DELETE handler — audit line may be off |
+| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `PUT /experiences/{experience_id}`, `PATCH /producers/me/recipes/{recipe_id}`, `POST /admin/users/{user_id}/block`, `GET /admin/users` | `tests/_test_experiences__p01.py:819` | a delete transition reached no DELETE handler — audit line may be off; nearest write handler — audit line may have drifted |
 | 9 | `registrations.status` | registrations.py:375, registrations.py:377, registrations.py:383, registrations.py:226 … | `POST /events/{event_id}/registrations`, `POST /experiences/{experience_id}/registrations`, `POST /experiences`, `POST /registrations/{token}/cancel` | `tests/test_meh2763_registrations.py:116` | nearest function — audit line may have drifted |
 | 9 | `events` | — | — | GAP | — |
-| 9 | `users` | admin_extra.py:185, auth.py:627, auth.py:830, producer_claim.py:249 | `PUT /admin/users/{user_id}/role`, `POST /auth/logout-all-devices`, `POST /auth/reset-password`, `POST /producer-claim/new-link-request` | `tests/_test_api__p03.py:226` | nearest function — audit line may have drifted |
+| 9 | `users` | admin_extra.py:185, auth.py:627, auth.py:830, producer_claim.py:249 | `PUT /admin/users/{user_id}/role`, `POST /auth/logout-all-devices`, `POST /auth/reset-password`, `POST /producer-claim/new-link-request` | `tests/_test_api__p03.py:226` | nearest write handler — audit line may have drifted |
 | 9 | not covered by the audit (time box) | admin_kashrut.py:210 | `POST /admin/kashrut/{request_id}/revoke` | `tests/test_meh2518_kashrut_real_expiry.py:149` | — |
 
 ## Mandatory extra rows (§B.3)

@@ -32,7 +32,7 @@ WHY IT LIVES HERE
 import ast
 from pathlib import Path
 
-import app.routers.producer_me as producer_me_module
+import app.services.producer_owner_update as producer_me_module  # MEH-3841: the whitelist moved here
 
 WHITELIST_NAME = "_PRODUCER_WRITABLE_FIELDS"
 

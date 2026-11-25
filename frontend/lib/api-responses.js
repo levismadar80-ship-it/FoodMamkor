@@ -58,6 +58,7 @@ import {
   GetStatsStatsGetResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
+  ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
@@ -183,6 +184,8 @@ export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGro
     path: ["status"],
   }),
 );
+// MEH-3735: the owner's pickup list for one group buy (codes, never names).
+export const GroupBuyPickupsSchema = ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse;
 // The public group page reads the business's delivery fields and, under a "no"
 // verdict, its phone and name — all of ProducerDetailOut, so the whole of it.
 export const GroupBuyProducerDeliverySchema = GetProducerProducersProducerIdGetResponse;
