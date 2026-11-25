@@ -162,6 +162,7 @@ const STAFF_INVITE_STORAGE_KEY = "mehamakor.staffInviteToken";
 export function stashStaffInviteToken(token) {
   try {
     window.sessionStorage.setItem(STAFF_INVITE_STORAGE_KEY, token);
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY) === token;
   } catch {
     return false;
@@ -170,6 +171,7 @@ export function stashStaffInviteToken(token) {
 
 export function readStaffInviteToken() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     return window.sessionStorage.getItem(STAFF_INVITE_STORAGE_KEY);
   } catch {
     return null;
