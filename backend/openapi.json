@@ -10732,6 +10732,16 @@
             ],
             "title": "Requested Changes"
           },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rescued_recently": {
             "default": false,
             "title": "Rescued Recently",
@@ -12728,6 +12738,16 @@
             "title": "Report Count",
             "type": "integer"
           },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rescued_recently": {
             "default": false,
             "title": "Rescued Recently",
@@ -13498,6 +13518,16 @@
             "default": 0,
             "title": "Products Count",
             "type": "integer"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -15514,6 +15544,16 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -21167,6 +21207,60 @@
           "price_agorot"
         ],
         "title": "RescueScheduleStored",
+        "type": "object"
+      },
+      "RescueTodayOut": {
+        "description": "The business's next bag today, in its card on the map (MEH-3824).\n\nCarried on `ProducerListOut.rescue_today` so the map needs no second\nrequest. Only today's bags, only ones the list would also show (stock,\nwindow still open for reserving, pilot town); the earliest pickup wins.",
+        "properties": {
+          "location_id": {
+            "format": "uuid",
+            "title": "Location Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "offer_id",
+          "location_id",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "qty_left"
+        ],
+        "title": "RescueTodayOut",
         "type": "object"
       },
       "RescueTypicalItemsIn": {

@@ -62,6 +62,22 @@ export function rescueBagsEnabled() {
 }
 
 /**
+ * The business's bag today as the map shows it (MEH-3824): the server's
+ * `rescue_today` off the producer list, or null while the pilot is off here.
+ * Both halves of the switch, like every other rescue surface: the API leaves
+ * the field empty while RESCUE_BAGS_ENABLED is off, and the client hides it
+ * while NEXT_PUBLIC_RESCUE_BAGS_ENABLED is, so neither can point at a bag page
+ * the other half would 404.
+ *
+ * @param {{ rescue_today?: object|null }|null|undefined} producer
+ */
+export function rescueToday(producer) {
+  if (!rescueBagsEnabled()) return null;
+  const bag = producer?.rescue_today;
+  return bag && typeof bag.offer_id === "string" && bag.offer_id ? bag : null;
+}
+
+/**
  * Where a business can pass on bags nobody collected (MEH-2702).
  *
  * One link per town, for towns that have a local food-rescue group. The

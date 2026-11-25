@@ -48,6 +48,7 @@
 * `tests/test_meh3703_rescue_schedule.py` · `frontend/__tests__/RescueSchedule.test.jsx` — הלוח הקבוע: ימים, דילוג, ביטול ביד שלא חוזר, מעבר שעון, בעלות, והשורה והדף (MEH-3703).
 * `frontend/__tests__/RescueSimplerScreens.test.jsx` — המסכים הפשוטים לבית עסק חדש: אלרגנים מקופלים, «שווי הסל», כרטיס הפרסום קודם כשאין סל בחוץ, שעון 24 שעות (`frontend/components/ui/TimeOfDaySelect.jsx`), שורת ביטול שמציינת את הסל, ושורת «לשאול באיסוף» קבועה לקונים (MEH-3823).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
+* `tests/test_meh3824_rescue_today_on_map.py` · `frontend/__tests__/MapRescueOnMap.test.jsx` — הסל של היום בכרטיס של בית העסק במפה (`rescue_today`, `attach_rescue_today` ב-`backend/app/services/producer_queries.py`).
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית רשימת הסלים (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 
 **מזהי רישום שזה מכסה.** `rescue_bags`.
