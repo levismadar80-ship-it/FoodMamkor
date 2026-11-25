@@ -313,7 +313,7 @@ class TestAdminListsBusinessEvents:
 
 
 class TestAdminExperiences:
-    def test_created_for_the_owner_account_and_already_approved(self, client, db):
+    def test_created_for_the_owner_account_and_queued_for_review(self, client, db):
         producer = make_producer(db, status="approved")
         owner = _owner_of(db, producer, email="host-3873@example.com")
         admin = _admin(db)
@@ -327,8 +327,9 @@ class TestAdminExperiences:
         assert resp.status_code == 201, resp.text
         ex = db.query(Experience).one()
         assert ex.host_user_id == owner.id
-        # The admin writing it is the review: it does not wait in her queue.
-        assert ex.status == "approved"
+        # Same queue as the owner's: approving it is what emails the host and
+        # pings IndexNow (admin_experiences.approve).
+        assert ex.status == "pending"
         rows = _audit_rows(db, "POST /admin/producers/{producer_id}/experiences")
         assert [r.details for r in rows] == [{"after": {"owner_consent": True}}]
 
@@ -358,7 +359,7 @@ class TestAdminExperiences:
         assert resp.status_code == 422
         assert db.query(Experience).count() == 0
 
-    def test_admin_edit_keeps_it_approved(self, client, db):
+    def test_admin_content_edit_goes_back_to_review_like_the_owners(self, client, db):
         producer = make_producer(db, status="approved")
         owner = _owner_of(db, producer, email="host3-3873@example.com")
         ex = Experience(
@@ -382,10 +383,10 @@ class TestAdminExperiences:
         assert resp.status_code == 200, resp.text
         db.refresh(ex)
         assert ex.title == "סדנת ריבות וחמוצים"
-        assert ex.status == "approved"
+        assert ex.status == "pending"
 
     def test_owner_content_edit_still_goes_back_to_review(self, client, db):
-        # Control for the admin case above: the owner's own path is unchanged.
+        # The owner's own path, unchanged by the shared writer.
         producer = make_producer(db, status="approved")
         owner = _owner_of(db, producer, email="host4-3873@example.com")
         ex = Experience(

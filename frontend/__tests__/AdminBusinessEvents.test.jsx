@@ -66,10 +66,13 @@ beforeEach(() => {
 });
 
 describe("EventForm in admin mode", () => {
-  it("reads the business's saved locations from the admin route", async () => {
+  it("reads the business's saved locations and phone from the admin routes", async () => {
     wrap(<EventForm adminProducerId="p1" />);
     await waitFor(() => expect(api.get).toHaveBeenCalledWith("/admin/producers/p1/locations"));
     expect(api.get).not.toHaveBeenCalledWith("/producers/me/locations");
+    // The sign-up method's phone check reads the business, not the admin's account.
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/admin/producers/p1"));
+    expect(api.get).not.toHaveBeenCalledWith("/producers/me");
   });
 
   it("refuses to save until the consent box is ticked", () => {

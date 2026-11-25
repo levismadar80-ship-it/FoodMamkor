@@ -63,7 +63,7 @@ export default function AdminBusinessEventsPanel({ producerId }) {
       <p className="text-sm text-text-muted mb-4">{t("intro")}</p>
 
       {isLoading && <p className="text-sm text-text-muted">{t("loading")}</p>}
-      {error && (
+      {error && !data && (
         <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {t("load_error")}
         </InlineMessage>

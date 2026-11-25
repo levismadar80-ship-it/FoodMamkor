@@ -436,10 +436,6 @@ def get_experience(
 # ---------- Create ----------
 
 
-def _is_admin(user: User) -> bool:
-    """MEH-3873: the admin writing on a business's behalf."""
-    return getattr(user, "role", None) == "admin"
-
 
 @router.post("", response_model=ExperienceDetailOut, status_code=201)
 @limiter.limit("10/hour")
@@ -463,7 +459,10 @@ def submit_experience_for(
     MEH-3873: the ONE create path — the owner's POST /experiences and the
     admin's POST /admin/producers/{id}/experiences (host = the business's
     owner account, routers/admin_business_content.py) both land here. The
-    caller has already decided that `actor` may write for `host`.
+    caller has already decided that `actor` may write for `host`. An
+    admin-written experience goes through the same moderation and the same
+    approval queue as the owner's (reviewer, MEH-3873: approving it there is
+    what sends the host email and the IndexNow ping).
 
     Submit a new experience. Flow:
       1. Normalize + hand off to Claude via validate_experience
@@ -545,9 +544,7 @@ def submit_experience_for(
         ),
         registration_method=data.registration_method,
         registration_url=data.registration_url,
-        # MEH-3873: an admin writing it IS the review — it does not wait in
-        # her own queue. Claude's REJECTED above still blocks it.
-        status="approved" if _is_admin(actor) else "pending",
+        status="pending",
         moderation_status=verdict["status"],
         moderation_reason=verdict.get("reason"),
         moderation_suggestion=verdict.get("suggestion"),
@@ -565,16 +562,14 @@ def submit_experience_for(
     )
 
     # Best-effort admin email. Never blocks the submission — the service
-    # fails open on missing RESEND_API_KEY / send errors. Not when the admin
-    # wrote it herself (MEH-3873).
-    if not _is_admin(actor):
-        notify_admin_new_submission(
-            title=ex.title,  # type: ignore[arg-type]
-            host_name=host.name,  # type: ignore[arg-type]
-            city=ex.city,  # type: ignore[arg-type]
-            moderation_status=verdict["status"],
-            test_cause=host_test_cause(ex.host),  # MEH-2952
-        )
+    # fails open on missing RESEND_API_KEY / send errors.
+    notify_admin_new_submission(
+        title=ex.title,  # type: ignore[arg-type]
+        host_name=host.name,  # type: ignore[arg-type]
+        city=ex.city,  # type: ignore[arg-type]
+        moderation_status=verdict["status"],
+        test_cause=host_test_cause(ex.host),  # MEH-2952
+    )
 
     return _serialize_detail(ex)
 
@@ -772,13 +767,7 @@ def update_experience_row(
     # Any content edit after a negative moderation verdict sends the
     # experience back to `pending` and clears the admin-written feedback so
     # the admin queue shows a fresh card. Claude re-runs on the new content.
-    # MEH-3873: the admin's own edit is already reviewed — it keeps the
-    # status it had and does not go back to her queue.
-    if (
-        content_changed
-        and not _is_admin(actor)
-        and ex.status in ("changes_requested", "rejected", "approved")
-    ):
+    if content_changed and ex.status in ("changes_requested", "rejected", "approved"):
         ex.status = "pending"  # type: ignore[assignment]
         ex.admin_feedback = None  # type: ignore[assignment]
         ex.rejection_reason = None  # type: ignore[assignment]

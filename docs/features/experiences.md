@@ -8,6 +8,7 @@
 * `frontend/app/[locale]/admin/experiences/`
 
 **קבצים מרכזיים**
+* `backend/app/routers/admin_business_content.py` — אדמין יוצרת ועורכת חוויה בשם בית עסק שיש לו חשבון בעלים (המארח הוא החשבון הזה), עם `owner_consent: true` בכל שמירה. עוברת לאותו תור אישור ואותה בדיקת תוכן כמו חוויה של בעל העסק. אותה פונקציה משותפת: `submit_experience_for` / `update_experience_row` ב-`backend/app/routers/experiences.py` (MEH-3873).
 * `backend/app/routers/experiences.py`
 * `backend/app/services/experience_moderation.py` — בדיקת AI, נכשלת פתוח בלי `ANTHROPIC_API_KEY`.
 * `backend/app/services/moderation_common.py` — הלקוח, קריאת התשובה והקריאה למודל המהיר, משותפים לבדיקת החוויות, המתכונים ומוצרי השכנים (MEH-3619).

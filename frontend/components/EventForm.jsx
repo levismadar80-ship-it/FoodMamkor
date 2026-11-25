@@ -632,6 +632,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           url={form.registration_url}
           onUrlChange={(v) => update("registration_url")({ target: { value: v } })}
           urlError={fieldErrors.registration_url}
+          businessUrl={adminProducerId ? `/admin/producers/${adminProducerId}` : undefined}
         />
 
         <CollectionNotice

@@ -10,6 +10,7 @@ Two things must hold together:
 # ruff: noqa: F811 — `shop` / `rescue_on` are fixtures imported from test_rescue
 import importlib
 import inspect
+import re
 from datetime import timedelta
 
 import pytest
@@ -132,6 +133,14 @@ def test_each_listed_route_asks_about_its_own_tool(tool, target):
     assert capabilities.PAID_TOOL_CALLS[tool] in source, target
 
 
+# MEH-3873: the routers' shared write functions a handler may hand its body
+# to — named one by one (reviewer: a module-wide prefix would admit any
+# sibling whose text happens to carry the check).
+SHARED_WRITERS = frozenset(
+    {"create_event_for", "update_event_row", "submit_experience_for", "update_experience_row"}
+)
+
+
 def _source_with_write_delegates(func) -> str:
     """The route's source plus a router / service function it calls by name.
 
@@ -145,8 +154,11 @@ def _source_with_write_delegates(func) -> str:
         module = getattr(obj, "__module__", "") or ""
         if (
             inspect.isfunction(obj)
-            and module.startswith(("app.services.", "app.routers."))
-            and f"{name}(" in source
+            and (
+                module.startswith("app.services.")
+                or (module.startswith("app.routers.") and name in SHARED_WRITERS)
+            )
+            and re.search(rf"\b{re.escape(name)}\(", source)
         ):
             source += inspect.getsource(obj)
     return source

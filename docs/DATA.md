@@ -1710,8 +1710,8 @@ PUT    /admin/experiences/{experience_id}         admin       the handlers call 
                                                               experiences.submit_experience_for / update_experience_row. An
                                                               experience is hosted by the business's owner account (oldest
                                                               users row with that producer_id); no owner account → 409. An
-                                                              admin-written experience is `approved` at once and an admin
-                                                              edit keeps its status. The consent is recorded on the admin
+                                                              admin-written experience goes to the same pending queue and
+                                                              moderation as the owner's. The consent is recorded on the admin
                                                               audit row (`details.after.owner_consent = true`). Unknown
                                                               business / event / experience → 404. 60–120/hr.
 GET    /admin/test-businesses                     admin     — MEH-2952 chunk 4: {producer_ids: [uuid]} of the businesses hidden as test rows
