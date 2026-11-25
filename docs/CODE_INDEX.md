@@ -54,6 +54,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/admin.py` | — אין כותרת — |
 | `routers/admin_checklist.py` | MEH-1399 Phase 2 — the pre-approval review checklist as data. Serves the editable item list and records which items an admin ticked for a given producer, with … |
 | `routers/admin_decisions.py` | The admin review decisions under /admin/producers: the pending queue, approve, reject (with presets), request changes, and the verified badge, plus the two … |
+| `routers/admin_draft_merge.py` | Move a draft the admin prepared to the owner who registered the same business herself: the draft becomes the page in her account, and what she had added moves … |
 | `routers/admin_experiences.py` | Admin moderation routes for experiences (community workshops). |
 | `routers/admin_extra.py` | Extended admin endpoints for the full dashboard: users management, content (categories + static pages), analytics, settings. |
 | `routers/admin_kashrut.py` | MEH-51: Admin endpoints for kashrut badge review + ambassador toggle. |
@@ -195,6 +196,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/billing_summary.py` | Read the billable-events ledger: what one business got through the site in a month, and — for the admin — which businesses passed the results threshold and … |
 | `services/bio_generator.py` | AI description writer for producer profiles (MEH-56; MEH-1173). |
 | `services/booking_cancellations.py` | When bookings stop being real, cancel them and tell the people who made them (D1 of the 14/11 grill retro, MEH-3227): 1. … |
+| `services/business_name_key.py` | The one comparison key for a business name: lower-case, no quote marks or invisible characters, single spaces. «ג׳חנון» and «ג'חנון» get the same key. |
 | `services/capabilities.py` | The one place that answers "what may this business do?" — so no route reads 'producer.plan' or a billing column on its own. … |
 | `services/category_slug.py` | Produce the stable ASCII identity for a category row, server-side, so 'categories.slug' can be NOT NULL without any writer having to remember it. |
 | `services/chat_business_context.py` | The facts the site chat answers from when a question names ONE business (MEH-3481). … |
@@ -211,7 +213,10 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/delivery_waitlist_requests.py` | What the three public delivery-waitlist routes do with a request: join a business's per-city waitlist (with the «אשמח לארח» host confirmation), confirm … |
 | `services/delivery_zones.py` | Write a business's named delivery zones and copy each zone's days, minimum, fee and free-delivery threshold onto the delivery_areas rows of its cities. |
 | `services/description_writer.py` | Suggest a short Hebrew description for one product from what the owner already typed (name, group, price, current description). … |
+| `services/draft_merge_emails.py` | The two emails of the draft-twin flow (MEH-3865): the admin hears that a business sent for review looks like a draft she prepared, and the owner hears that … |
+| `services/draft_merge_policy.py` | What survives when an admin-prepared draft is moved to the owner who registered the same business herself (MEH-3865): column by column of 'producers', and … |
 | `services/draft_preview.py` | The signed token behind a draft business's read-only preview link (MEH-3377): mint and decode, nothing else. |
+| `services/draft_twins.py` | Find the admin-prepared draft (ownerless, status 'draft') that is the same business as one its owner registered herself, and say WHY they match, so the admin … |
 | `services/email.py` | Email delivery via Resend HTTP API. |
 | `services/email_branding.py` | The brand header shared by every HTML email (MEH-2834 PR 2). |
 | `services/email_change_guard.py` | The password gate on an account-email change (PATCH /users/me): a per-ACCOUNT cap on wrong passwords, and the messages for an account that has no password at … |
@@ -939,6 +944,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/admin/producers/AdminDraftClaimActions.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminDraftLinkAge.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminDraftMissing.jsx` | — אין כותרת — |
+| `[locale]/admin/producers/AdminDraftTwin.jsx` | On a row of the admin producers list, say that a draft the admin prepared and a business its owner registered herself look like one business, why (same phone, … |
 | `[locale]/admin/producers/AdminProducersTable.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminProducersToolbar.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminReviewChecklist.jsx` | AdminReviewChecklist — the pre-approval review checklist for a pending producer, rendered as a sub-row in AdminProducersTable. |

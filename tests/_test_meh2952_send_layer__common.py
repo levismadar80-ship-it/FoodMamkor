@@ -165,6 +165,7 @@ def _loud(caplog):
 
 def _notifier_calls():
     from app.services import auth_notifications as an
+    from app.services import draft_merge_emails as dm
 
     return [
         ("registered", lambda tc: an.notify_producer_registered("x", "0521234567", tc)),
@@ -206,6 +207,16 @@ def _notifier_calls():
         (
             "new_producer",
             lambda tc: an.notify_admin_new_producer("x", "c", test_cause=tc),
+        ),
+        (
+            "draft_twin",
+            lambda tc: dm.notify_admin_draft_twin("x", "y", ["phone"], test_cause=tc),
+        ),
+        (
+            "draft_merged",
+            lambda tc: dm.send_owner_draft_merged(
+                "o@example.com", "x", "y", test_cause=tc
+            ),
         ),
     ]
 
@@ -773,6 +784,18 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_admin_new_business_suggestion",
         "send_email",
     ): (1, NONE, "same"),
+    # MEH-3865: a draft looks like a business sent for review — admin email;
+    # the owner's email after the admin moved the draft to her account.
+    ("services/draft_merge_emails.py", "notify_admin_draft_twin", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
+    ("services/draft_merge_emails.py", "send_owner_draft_merged", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
     # MEH-3410: an owner claimed a draft — admin email (MEH-3589: no WhatsApp).
     ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_email"): (
         1,

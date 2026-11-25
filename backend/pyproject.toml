@@ -387,6 +387,11 @@ files = [
     "app/services/phone_reverify.py",
     "app/services/producer_approval.py",
     "app/services/producer_duplicates.py",
+    "app/services/business_name_key.py",  # MEH-3865
+    "app/services/draft_twins.py",  # MEH-3865
+    "app/services/draft_merge_emails.py",  # MEH-3865
+    "app/routers/admin_draft_merge.py",  # MEH-3865
+    "app/services/draft_merge_policy.py",  # MEH-3865
     "app/services/producer_insights.py",
     "app/services/producer_listing.py",
     "app/services/producer_queries.py",
