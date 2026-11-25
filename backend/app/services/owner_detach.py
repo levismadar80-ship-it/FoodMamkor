@@ -44,4 +44,6 @@ def send_owner_detached_email(
             {paragraphs}
         """,
     )
-    send_email(email, subject, body, html=html_body, test_cause=test_cause)
+    send_email(
+        email, subject, body, html=html_body, test_cause=test_cause, kind="owner_detach"
+    )

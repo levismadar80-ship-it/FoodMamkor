@@ -336,6 +336,7 @@ def send_freshness_emails(db: Session, now: datetime | None = None) -> dict[str,
                 subject,
                 body,
                 test_cause=cand.test_business or owner_is_test,
+                kind="page_freshness",  # MEH-3839: Resend events split by kind
             )
             counters["sent"] += 1
         except Exception:  # noqa: BLE001 — one business never stops the run
