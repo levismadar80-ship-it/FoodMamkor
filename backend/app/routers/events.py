@@ -306,10 +306,10 @@ def create_event(
         raise HTTPException(status_code=403, detail="הפעולה זמינה רק לחשבון של בית עסק")
     return create_event_for(
         db,
-        user.producer_id,
+        user.producer_id,  # type: ignore[arg-type]
         data,
         actor=user,
-        background_tasks=background_tasks,  # type: ignore[arg-type]
+        background_tasks=background_tasks,
     )
 
 
