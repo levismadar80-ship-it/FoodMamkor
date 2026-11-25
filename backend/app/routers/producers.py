@@ -13,7 +13,6 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -24,7 +23,6 @@ from app.auth import (
 from app.database import get_db
 from app.models import (
     Category,
-    DeliveryWaitlistEntry,
     Producer,
     User,
 )
@@ -45,7 +43,11 @@ from app.schemas.schemas import (
     ProducerViewIn,
     WhatsAppClickIn,
 )
-from app.services import delivery_waitlist  # MEH-2618
+from app.services.delivery_waitlist_requests import (  # MEH-3537
+    add_to_delivery_waitlist,
+    confirm_host,
+    unsubscribe,
+)
 from app.services.analytics import (
     EventContext,
     is_internal_viewer,
@@ -55,7 +57,6 @@ from app.services.farmer_declaration import farmer_declaration_stamp  # MEH-3137
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     build_producers_query,
-    is_business,
     is_business_row,
 )
 from app.services.producer_queries import (
@@ -78,7 +79,6 @@ from app.services.producer_detail import (  # MEH-3559
     producer_by_id_for_viewer,
     producer_by_slug_or_raise,
 )
-from app.utils.clock import utc_now
 from app.utils.pii import round_coord
 
 logger = structlog.get_logger(__name__)
@@ -569,90 +569,13 @@ def join_delivery_waitlist(
     city to its delivery areas, one email goes out (see
     services/delivery_waitlist). Rate-limited 10/minute per IP.
     """
-    # MEH-2618: the public listing filter, not a bare existence check — a
-    # pending/rejected business has no public page to send her to, and its
-    # trigger would never fire (notify_cities applies the same filter).
-    producer = (
-        db.query(Producer).filter(Producer.id == producer_id, is_business()).first()
+    # MEH-3537: the request's rules live in services/delivery_waitlist_requests.py.
+    out, created = add_to_delivery_waitlist(
+        db, producer_id, data, current_user, background_tasks
     )
-    if producer is None:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2952: a test business or a signed-in test account → no mail.
-    test_cause = bool(
-        producer.is_test or (current_user is not None and current_user.is_test)
-    )
-    existing = delivery_waitlist.find_entry(
-        db,
-        producer.id,  # type: ignore[arg-type]
-        city=data.city,
-        email=data.email,
-    )
-    if existing is not None:
-        # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
-        # confirmation link; the row turns True only from that link. An
-        # unticked repeat changes nothing — never a silent withdrawal.
-        host_confirm = None
-        if data.wants_to_host:
-            if existing.wants_to_host:
-                host_confirm = "confirmed"
-            else:
-                verdict = delivery_waitlist.claim_host_confirm_send(db, existing)
-                if verdict == "send":
-                    # Captured before the commit: expire_on_commit would
-                    # otherwise refresh the row just to read three columns.
-                    mail_args = (
-                        existing.id,
-                        existing.email,
-                        existing.city,
-                        producer.name,
-                    )
-                    db.commit()
-                    host_confirm = "sent"
-                    background_tasks.add_task(
-                        delivery_waitlist.send_host_confirmation,
-                        *mail_args,  # type: ignore[arg-type]
-                        test_cause=test_cause,
-                    )
-                else:
-                    db.rollback()  # releases the advisory lock, nothing to write
-                    host_confirm = verdict
+    if not created:
         response.status_code = 200
-        return DeliveryWaitlistOut(status="exists", host_confirm=host_confirm)
-    entry = delivery_waitlist.add_entry(
-        db, producer, email=data.email, city=data.city, user=current_user
-    )
-    new_verdict: delivery_waitlist.HostConfirmVerdict | None = None
-    try:
-        # The INSERT is flushed here, inside the except below, BEFORE the
-        # claim takes the per-address lock — so a double-tap (two first-time
-        # POSTs for the same row in flight) trips the unique constraint
-        # here, not as an unhandled 500 out of the claim's own statements.
-        db.flush()
-        if data.wants_to_host:
-            # Stamped before the commit so this mail counts toward the
-            # per-address cap; the mail itself is queued after the commit.
-            new_verdict = delivery_waitlist.claim_host_confirm_send(db, entry)
-        mail_args = (entry.id, entry.email, entry.city, producer.name)
-        db.commit()
-    except IntegrityError:
-        # Two identical POSTs in flight (double-tap): both passed find_entry,
-        # the second trips uq_delivery_waitlist_city_email. That is the same
-        # calm "exists" as the sequential duplicate, not a 500.
-        db.rollback()
-        response.status_code = 200
-        return DeliveryWaitlistOut(status="exists")
-    host_confirm = new_verdict
-    if new_verdict == "send":
-        # MEH-2673: the box alone shares nothing. The row stays
-        # wants_to_host=False until the address itself clicks the link —
-        # otherwise anyone could hand a stranger's email to a business.
-        host_confirm = "sent"
-        background_tasks.add_task(
-            delivery_waitlist.send_host_confirmation,
-            *mail_args,  # type: ignore[arg-type]
-            test_cause=test_cause,
-        )
-    return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
+    return out
 
 
 @router.post("/delivery-waitlist/host-confirm", status_code=200, response_model=None)
@@ -673,34 +596,7 @@ def confirm_delivery_waitlist_host(
     cooldown/cap), so the page is never a dead end (the double-opt-in norm:
     an expired link offers a new one). The body carries `resent` so the page
     can say whether to look in the inbox. An expired link never confirms."""
-    entry_id, state = delivery_waitlist.inspect_host_confirm_token(data.token)
-    entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
-    if entry is None:
-        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
-    if state == "expired" and not entry.wants_to_host:
-        # An expired link on an already-confirmed entry falls through to the
-        # idempotent 200 below: the consent is on record, no error page.
-        resent = False
-        if delivery_waitlist.claim_host_confirm_send(db, entry) == "send":
-            mail_args = (entry.id, entry.email, entry.city, entry.producer.name)
-            db.commit()
-            resent = True
-            background_tasks.add_task(
-                delivery_waitlist.send_host_confirmation,
-                *mail_args,  # type: ignore[arg-type]
-                test_cause=bool(entry.producer and entry.producer.is_test),
-            )
-        else:
-            db.rollback()  # releases the advisory lock, nothing to write
-        return JSONResponse(
-            status_code=410,
-            content={"detail": "הקישור לא תקין או שפג תוקפו", "resent": resent},
-        )
-    if not entry.wants_to_host:
-        entry.wants_to_host = True  # type: ignore[assignment]
-        entry.host_confirmed_at = utc_now()  # type: ignore[assignment]
-        db.commit()
-    return {"producer_name": entry.producer.name}
+    return confirm_host(db, data, background_tasks)  # MEH-3537
 
 
 @router.post("/delivery-waitlist/unsubscribe", status_code=200, response_model=None)
@@ -715,14 +611,7 @@ def unsubscribe_delivery_waitlist(
     Idempotent: an already-removed entry is still 200. 400 on a token that
     does not verify.
     """
-    entry_id = delivery_waitlist.decode_unsubscribe_token(data.token)
-    if entry_id is None:
-        raise HTTPException(status_code=400, detail="קישור ביטול לא תקין")
-    entry = db.get(DeliveryWaitlistEntry, entry_id)
-    if entry is not None:
-        db.delete(entry)
-        db.commit()
-    return {"detail": "הוסרת מרשימת ההמתנה"}
+    return unsubscribe(db, data.token)  # MEH-3537
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)

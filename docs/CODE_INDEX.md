@@ -205,6 +205,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/date_rules.py` | One rule for "an event or experience date may not be in the past" (D6 of the 14/11 grill retro, MEH-3224), read by both routers. |
 | `services/delivery_validation.py` | Guard the MEH-1255 delivery-exclusion invariant on PATCH-style producer updates: an exclusion list ("לכל הארץ חוץ מ:") is only legal while delivery_nationwide … |
 | `services/delivery_waitlist.py` | The one owner of the waitlist's two writes — adding an entry (POST /producers/{id}/delivery-waitlist, routers/producers.py) and the once-only email fan-out … |
+| `services/delivery_waitlist_requests.py` | What the three public delivery-waitlist routes do with a request: join a business's per-city waitlist (with the «אשמח לארח» host confirmation), confirm … |
 | `services/delivery_zones.py` | Write a business's named delivery zones and copy each zone's days, minimum, fee and free-delivery threshold onto the delivery_areas rows of its cities. |
 | `services/description_writer.py` | Suggest a short Hebrew description for one product from what the owner already typed (name, group, price, current description). … |
 | `services/draft_preview.py` | The signed token behind a draft business's read-only preview link (MEH-3377): mint and decode, nothing else. |
@@ -972,6 +973,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/components/MapKey.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPane.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPickupPointPanel.jsx` | The action panel under the picked-business card on the phone map, for EVERY pin (one card for all pins, Sapir 25/11 — Google Maps / Apple Maps give every … |
+| `[locale]/map/components/MapRescueRow.jsx` | The business's surprise bag today, as one row under the business picked on the map: «סל הפתעה», the pickup window and the price, linking to the bag's own … |
 | `[locale]/map/components/MobileSheetSelectedCard.jsx` | — אין כותרת — |
 | `[locale]/map/components/NearMePill.jsx` | — אין כותרת — |
 | `[locale]/map/components/ServiceChipRow.jsx` | — אין כותרת — |
