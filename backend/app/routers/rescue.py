@@ -34,8 +34,12 @@ Related:  app/models/models.py (RescueOffer and siblings, the status tuples),
           app/schemas/rescue.py (every request/response shape),
           app/routers/group_buys.py:238-258 (the with_for_update pattern this
           reuses for stock, MEH-773)
+          app/services/rescue_notify.py (what is queued after a commit) and
+          app/services/rescue_routine_writes.py (the weekly routine), MEH-3537
 History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643);
           MEH-3117 (new_rescue favorite alert on create_offer)
+          MEH-3537 (email/alert queueing and the routine's rules moved to
+          services; the handlers pass the clock and pilot check in)
 """
 
 from datetime import date
@@ -65,8 +69,6 @@ from app.config import settings
 from app.data.cities import canonical_city
 from app.database import get_db
 from app.models.models import (
-    Producer,
-    ProducerLocation,
     RescueOffer,
     RescueOrder,
     RescueReview,
@@ -97,26 +99,26 @@ from app.schemas.rescue import (
 from app.schemas.rescue_schedule import (  # MEH-3703
     RescueScheduleIn,
     RescueScheduleRow,
-    weekday_bit,
 )
 from app.sentry import capture_background_exception
-from app.services.rescue_schedule import (  # MEH-3703
-    can_host,
-    cancelled_days_in_reach,
-    publish_due,
-    save_routine,
-    set_skip,
-)
-from app.services.rescue_schedule import stored as stored_routine
 from app.services.rescue_business_emails import queue_business_reservation_email
-from app.services.rescue_emails import (
-    ReservationEmail,
-    day_word,
-    israel_date,
-    israel_hhmm,
-    send_business_cancel_email,
-    send_cancel_email,
-    send_reservation_email,
+from app.services.rescue_notify import (  # MEH-3537
+    RescueClock,
+    queue_business_cancel_emails,
+    queue_cancel_email,
+    queue_new_rescue_alert,
+    queue_reservation_email,
+)
+from app.services.rescue_routine_writes import (  # MEH-3537
+    RoutineCall,
+    clear_schedule,
+    mark_skip,
+    owned_location,
+    routine_bag_to_skip,
+    save_schedule,
+    schedule_row,
+    schedule_rows,
+    unskip_day,
 )
 from app.services.rescue_no_show import (  # MEH-3226
     NO_SHOW_BLOCK_AT,  # noqa: F401 — re-exported for tests/test_rescue.py
@@ -279,43 +281,11 @@ def create_offer(
         today=israel_today(),
         in_pilot=city_in_pilot,
     )
-    _queue_new_rescue_alert(background_tasks, db, producer, offer)
-    return offer
-
-
-def _queue_new_rescue_alert(
-    background_tasks: BackgroundTasks,
-    db: Session,
-    producer: Producer,
-    offer: RescueOffer,
-) -> None:
-    """MEH-3117: tell the people who saved this business that it has bags today.
-
-    Only for an offer dated TODAY on the Israel clock — the approved title
-    says «היום», so a bag published tonight for tomorrow sends nothing (a
-    morning-of send would need a scheduler job; not in the pilot). Fired
-    here only, after the commit: never on cancel, reservation or handover.
-    Same fan-out, channels and 24h cap as the other alert types.
-    """
-    if offer.date != israel_today() or offer.pickup_end <= utc_now():
-        return  # not today, or the pickup window is already over
-    from app.routers.alerts import AlertContent, fire_alerts
-
-    # Approved copy, Sapir 14/11 (MEH-3117 rows 2 and 3).
-    background_tasks.add_task(
-        fire_alerts,
-        db,
-        producer.id,  # type: ignore[arg-type]
-        "new_rescue",
-        AlertContent(
-            title=f"סלי הפתעה היום ב{producer.name}",
-            body=(
-                f"{offer.qty_total} סלים, איסוף "
-                f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}"  # type: ignore[arg-type]
-            ),
-            url="/rescue",
-        ),
+    # MEH-3537: what gets queued lives in services/rescue_notify.py.
+    queue_new_rescue_alert(
+        background_tasks, db, producer, offer, RescueClock(israel_today(), utc_now())
     )
+    return offer
 
 
 @router.get(
@@ -393,45 +363,12 @@ def cancel_offer(
         db, user=current_user, offer_id=offer_id, lock=_offer_for_update
     )
     try:
-        _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)
+        queue_business_cancel_emails(
+            background_tasks, db, offer, buyer_ids, israel_today()
+        )
     except Exception as exc:  # the cancel is committed; a mail never undoes it
         capture_background_exception(exc, task="rescue_business_cancel_email")
     return offer
-
-
-def _queue_business_cancel_emails(
-    background_tasks: BackgroundTasks,
-    db: Session,
-    offer: RescueOffer,
-    buyer_ids: set[Any],
-) -> None:
-    """MEH-2738: one email per buyer whose reservation the business cancelled.
-
-    Values are read here, while the Session is open, and handed to the task
-    as plain strings (the MEH-1651 convention). One per buyer, not per order:
-    a buyer may hold two orders on one offer.
-    """
-    if not buyer_ids:
-        return
-    location = offer.location
-    producer = location.producer if location else None
-    if producer is None:
-        return
-    emails = sorted(
-        {
-            email
-            for (email,) in db.query(User.email).filter(User.id.in_(buyer_ids))
-            if email
-        }
-    )
-    for email in emails:
-        background_tasks.add_task(
-            send_business_cancel_email,
-            email,
-            producer.name or "",
-            test_cause=bool(producer.is_test),  # MEH-2952
-            tomorrow=day_word(offer.date, israel_today()) == "מחר",  # type: ignore[arg-type]  # MEH-3702
-        )
 
 
 @router.get(
@@ -479,88 +416,6 @@ def list_my_reservation_history(
     return my_reservation_history(db, user_id=current_user.id)
 
 
-def _pickup_note(offer: RescueOffer) -> str | None:
-    """MEH-3593: «הוראות איסוף» of the bag's pickup point, read while the
-    request's Session is still open (before the task is queued)."""
-    try:
-        note: str | None = offer.location.pickup_note
-    except Exception:  # noqa: BLE001 — a note must never cost the buyer the code email
-        logger.warning("rescue: pickup note read failed for offer %s", offer.id)
-        return None
-    return note
-
-
-def _queue_reservation_email(
-    background_tasks: BackgroundTasks,
-    user: User,
-    offer: RescueOffer,
-    order: RescueOrder,
-) -> None:
-    """MEH-2715: queue the buyer's confirmation email, after the commit.
-
-    Everything is read HERE, while the request's Session is open, and handed
-    to the task as plain values — a background task must never touch `db`
-    (the group_buys MEH-1651 convention). Queued only after the commit, so a
-    refused or rolled-back reservation sends nothing.
-    """
-    location = offer.location
-    producer = location.producer if location else None
-    if not user.email or producer is None:
-        return
-    address = ", ".join(p for p in (location.address, location.city) if p)
-    today = israel_today()
-    background_tasks.add_task(
-        send_reservation_email,
-        user.email,  # type: ignore[arg-type]
-        ReservationEmail(
-            producer_name=producer.name or "",
-            producer_id=str(producer.id),
-            pickup_code=order.pickup_code,  # type: ignore[arg-type]
-            total_agorot=offer.price_agorot * order.qty,  # type: ignore[arg-type]
-            pickup_from=israel_hhmm(offer.pickup_start),  # type: ignore[arg-type]
-            pickup_until=israel_hhmm(offer.pickup_end),  # type: ignore[arg-type]
-            address=address,
-            # MEH-2737: reserved after the free-cancel cutoff → the email says
-            # nothing about cancelling (no line, no button).
-            cancel_until=(
-                israel_hhmm(offer.cancel_until)  # type: ignore[arg-type]
-                if offer.cancel_until > utc_now()
-                else None
-            ),
-            pickup_note=_pickup_note(offer),
-            # MEH-3702: tomorrow's bag says «מחר», and so does its cutoff.
-            pickup_day=day_word(offer.date, today) or "היום",  # type: ignore[arg-type]
-            cancel_day=(
-                ""
-                if israel_date(offer.cancel_until) == today  # type: ignore[arg-type]
-                else day_word(israel_date(offer.cancel_until), today)  # type: ignore[arg-type]
-            ),
-        ),
-        # MEH-2952: a test business or a test buyer → dropped and logged.
-        test_cause=bool(producer.is_test or user.is_test),
-    )
-
-
-def _queue_cancel_email(
-    background_tasks: BackgroundTasks, user: User, offer: RescueOffer
-) -> None:
-    """MEH-2737: tell the buyer the cancel went through.
-
-    Same rules as `_queue_reservation_email`: plain values only, queued after
-    the commit, nothing when the buyer has no email.
-    """
-    location = offer.location
-    producer = location.producer if location else None
-    if not user.email or producer is None:
-        return
-    background_tasks.add_task(
-        send_cancel_email,
-        user.email,  # type: ignore[arg-type]
-        producer.name or "",
-        test_cause=bool(producer.is_test or user.is_test),  # MEH-2952
-    )
-
-
 @router.post(
     "/orders",
     response_model=RescueOrderCreatedOut,
@@ -583,7 +438,13 @@ def create_order(
     # The reservation is committed. Nothing about preparing the email may turn
     # it into a 500: the buyer would read that as "not reserved" and retry.
     try:
-        _queue_reservation_email(background_tasks, current_user, offer, order)
+        queue_reservation_email(
+            background_tasks,
+            current_user,
+            offer,
+            order,
+            RescueClock(israel_today(), utc_now()),
+        )
         queue_business_reservation_email(  # MEH-3313
             background_tasks, db, offer, order, today=israel_today()
         )
@@ -671,7 +532,7 @@ def cancel_order(
     # Committed. A failure preparing the email must not turn a done cancel
     # into a 500 the buyer would read as "still reserved".
     try:
-        _queue_cancel_email(background_tasks, current_user, offer)
+        queue_cancel_email(background_tasks, current_user, offer)
     except Exception as exc:  # noqa: BLE001 — fail-open, as the reservation email
         capture_background_exception(exc, task="rescue_cancel_email")
         logger.error("rescue cancel email not queued: %s", type(exc).__name__)
@@ -874,38 +735,10 @@ def set_typical_items(
 # path as the dashboard's «ביטול», so every buyer gets the same email.
 
 
-def _my_location(db: Session, user: User, location_id: UUID) -> ProducerLocation:
-    """The caller's own pickup point, locked for this write (two quick skips
-    must not overwrite each other's list); 404 otherwise, so another
-    business's point is indistinguishable from a missing one. Owners only:
-    these routes sit behind require_producer, which an admin does not pass."""
-    location = (
-        db.query(ProducerLocation)
-        .filter(
-            ProducerLocation.id == location_id,
-            ProducerLocation.producer_id == user.producer_id,
-        )
-        .with_for_update()
-        .first()
-    )
-    if location is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="נקודת האיסוף לא נמצאה"
-        )
-    return location
-
-
-def _schedule_row(db: Session, location: ProducerLocation) -> RescueScheduleRow:
-    return RescueScheduleRow(
-        producer_location_id=location.id,
-        label=location.label,
-        address=location.address,
-        city=location.city,
-        exact=location.location_precision == "exact",
-        publishing=can_host(db, location, city_in_pilot),
-        closed_days=cancelled_days_in_reach(db, location.id, israel_today()),
-        schedule=stored_routine(location),
-    )
+def _routine_call() -> RoutineCall:
+    """MEH-3537: the clock and pilot check the routine service runs on,
+    read from this module so a test that pins them here pins the service."""
+    return RoutineCall(today=israel_today(), now=utc_now(), in_pilot=city_in_pilot)
 
 
 @me_router.get(
@@ -924,13 +757,8 @@ def list_my_schedules(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
         )
-    points = (
-        db.query(ProducerLocation)
-        .filter(ProducerLocation.producer_id == current_user.producer_id)
-        .order_by(ProducerLocation.is_primary.desc(), ProducerLocation.created_at)
-        .all()
-    )
-    return [_schedule_row(db, p) for p in points]
+    # MEH-3537: the routine's rules live in services/rescue_routine_writes.py.
+    return schedule_rows(db, current_user.producer_id, _routine_call())  # type: ignore[arg-type]
 
 
 @me_router.put(
@@ -947,28 +775,8 @@ def save_my_schedule(
     db: Session = Depends(get_db),
 ) -> RescueScheduleRow:
     """Set or change the routine, then publish any day already in reach."""
-    location = _my_location(db, current_user, location_id)
-    if location.location_precision != "exact":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם סל",
-        )
-    if not city_in_pilot(location.city):  # type: ignore[arg-type]
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
-        )
-    save_routine(location, body, israel_today())
-    db.commit()
-    publish_due(
-        db,
-        today=israel_today(),
-        now=utc_now(),
-        in_pilot=city_in_pilot,
-        location_id=location.id,  # type: ignore[arg-type]
-    )
-    db.refresh(location)
-    return _schedule_row(db, location)
+    location = owned_location(db, current_user, location_id)
+    return save_schedule(db, location, body, _routine_call())
 
 
 @me_router.delete(
@@ -984,11 +792,8 @@ def delete_my_schedule(
     db: Session = Depends(get_db),
 ) -> RescueScheduleRow:
     """Stop the routine. Bags already published stay, as a pause leaves them."""
-    location = _my_location(db, current_user, location_id)
-    location.rescue_schedule = None  # type: ignore[assignment]
-    db.commit()
-    db.refresh(location)
-    return _schedule_row(db, location)
+    location = owned_location(db, current_user, location_id)
+    return clear_schedule(db, location, _routine_call())
 
 
 @me_router.put(
@@ -1014,43 +819,10 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
     dashboard asks; the second sends `cancel_reserved=true`. The bag is read
     under its row lock, so a reservation cannot slip in between. Only a day
     on the routine's weekdays is touched."""
-    location = _my_location(db, current_user, location_id)
-    routine = stored_routine(location)
-    # Only a day the routine covers can hold a routine bag; a bag published by
-    # hand on another day is cancelled from its own card, never by a skip.
-    covered = routine is not None and bool(routine.weekdays & weekday_bit(day))
-    bag = (
-        None
-        if not covered
-        else (
-            db.query(RescueOffer)
-            .filter(
-                RescueOffer.producer_location_id == location.id,
-                RescueOffer.date == day,
-                RescueOffer.status == "active",
-                RescueOffer.pickup_end > utc_now(),
-            )
-            .with_for_update()
-            .first()
-        )
-    )
-    if bag is not None and not cancel_reserved:
-        reserved = (
-            db.query(RescueOrder.id)
-            .filter(RescueOrder.offer_id == bag.id, RescueOrder.status == "reserved")
-            .first()
-        )
-        if reserved is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="יש הזמנות לסל של היום הזה",
-            )
-    try:
-        set_skip(location, day, skip=True, today=israel_today())
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
-        ) from exc
+    location = owned_location(db, current_user, location_id)
+    call = _routine_call()  # read after the row lock, as the clock was before
+    bag = routine_bag_to_skip(db, location, day, call.now, cancel_reserved)
+    mark_skip(location, day, call.today, skip=True)
     if bag is None:
         db.commit()
     else:
@@ -1062,11 +834,13 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
             lock=_offer_for_update,
         )
         try:
-            _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)
+            queue_business_cancel_emails(
+                background_tasks, db, offer, buyer_ids, call.today
+            )
         except Exception as exc:  # the cancel is committed; a mail never undoes it
             capture_background_exception(exc, task="rescue_business_cancel_email")
     db.refresh(location)
-    return _schedule_row(db, location)
+    return schedule_row(db, location, call)
 
 
 @me_router.delete(
@@ -1084,20 +858,5 @@ def unskip_my_day(
 ) -> RescueScheduleRow:
     """Take a skip back. A day whose bag was already cancelled stays without
     one: a cancel told its buyers, and a bag that reappears would confuse them."""
-    location = _my_location(db, current_user, location_id)
-    try:
-        set_skip(location, day, skip=False, today=israel_today())
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
-        ) from exc
-    db.commit()
-    publish_due(
-        db,
-        today=israel_today(),
-        now=utc_now(),
-        in_pilot=city_in_pilot,
-        location_id=location.id,  # type: ignore[arg-type]
-    )
-    db.refresh(location)
-    return _schedule_row(db, location)
+    location = owned_location(db, current_user, location_id)
+    return unskip_day(db, location, day, _routine_call())

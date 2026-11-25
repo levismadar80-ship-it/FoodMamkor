@@ -25,7 +25,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { SkeletonList } from "@/components/Skeleton";
 import RegistrationsList from "@/components/RegistrationsList";
 
@@ -39,7 +39,7 @@ const NOT_LIVE_NOTE_KEY = {
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
-  const today = israelToday();
+  const today = useIsraelToday(); // MEH-3861: same day in both renders
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();

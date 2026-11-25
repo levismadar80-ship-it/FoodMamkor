@@ -330,6 +330,21 @@ export const NAV_ITEMS = Object.freeze([
     note: "Signed-in only on both surfaces, like `favorites` above (MEH-2982).",
   },
   {
+    id: "staffOrders",
+    kind: "link",
+    href: "/producer/dashboard/orders",
+    surfaces: {
+      headerMenu: { labelKey: "account.menu.staff_orders", audience: "auth" },
+      accountSheet: { labelKey: "account.menu.staff_orders", audience: "auth" },
+    },
+    /** MEH-3526: only for order staff of a business (`/auth/me` staff_of). */
+    dataGate: "staff-of",
+    note:
+      "MEH-3526: someone a business invited to handle its orders is not a " +
+      "producer, so `producerDashboard` (audience producer) never shows. This " +
+      "row is their way back to the one screen they have.",
+  },
+  {
     id: "producerDashboard",
     kind: "link",
     href: "/producer/dashboard",

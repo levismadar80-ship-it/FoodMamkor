@@ -456,7 +456,8 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out",
-      "view_page": "View page"
+      "view_page": "View page",
+      "staff_orders": "Orders to handle"
     },
     "sheet": {
       "connected": "Signed in",
@@ -798,6 +799,9 @@
       "description": "What is free for businesses on Mehamakor, what costs money and when payment starts. Your page is free, and during the launch period so is every tool.",
       "og_title": "Price list for businesses",
       "og_description": "What is free, what costs money, and when payment starts."
+    },
+    "staff_invite": {
+      "description": "Handling a business's orders on Mehamakor"
     }
   },
   "producer": {
@@ -4681,7 +4685,7 @@
           },
           "orders": {
             "label": "Orders and surprise bags:",
-            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. People the business invited to handle its orders see these details too. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
           },
           "messages": {
             "label": "WhatsApp and email messages:",
@@ -6308,7 +6312,8 @@
         "preview_no_products": "No product is open for ordering yet, so customers won't see a way to order here.",
         "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
         "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
-        "preview_fix_link": "Go to the orders tab"
+        "preview_fix_link": "Go to the orders tab",
+        "staff_note": "Handling the orders of {name}."
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
@@ -6318,6 +6323,23 @@
       "closed_day_orders": {
         "warning": "{count, plural, one {One order you already accepted falls} other {# orders you already accepted fall}} on days you closed: {list}. They stay valid, so let your customers know.",
         "action": "To orders"
+      },
+      "staff": {
+        "heading": "Order team",
+        "intro": "You can add up to {max} people to handle orders. They see only the orders tab, including the phone and address of whoever ordered.",
+        "email_label": "Email address of the person joining",
+        "invite": "Send a join link",
+        "sent": "We sent a join link to {email}. It is valid for 7 days.",
+        "empty": "No one on the team yet.",
+        "count": "{count} of {max}",
+        "status_active": "On the team",
+        "status_pending": "Link sent",
+        "status_expired": "Link expired",
+        "resend": "Send again",
+        "remove": "Remove",
+        "remove_aria": "Remove {email} from the team",
+        "full": "The team is full. To add someone new, remove someone first.",
+        "load_error": "We couldn't load the team."
       }
     },
     "page_preview": {
@@ -6916,7 +6938,8 @@
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",
-      "clear": "Clear all"
+      "clear": "Clear all",
+      "group_happenings": "Events & workshops"
     }
   },
   "whats_this": {
@@ -8399,5 +8422,15 @@
     "hours_title": "Opening hours",
     "hours_note": "Each side writes hours differently, so compare them yourself.",
     "empty_value": "—"
+  },
+  "staff_invite": {
+    "title": "Join a business's team",
+    "intro": "A business on Mehamakor is asking you to help handle its orders. Once you join, you will see its orders tab, and only that.",
+    "guest": "To join, sign in with the account of the email address that got the link.",
+    "register": "Create an account",
+    "accept": "Join the team",
+    "invalid_title": "This link is not valid",
+    "invalid_body": "You can ask the business to send a new link.",
+    "error": "We couldn't add you. You can try again."
   }
 }

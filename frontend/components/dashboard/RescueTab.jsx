@@ -316,6 +316,7 @@ export default function RescueTab() {
     }
     // MEH-3702: the day and the hours on the Israel clock, not the device's —
     // a device on another zone sent the hours off by its own offset.
+    // eslint-disable-next-line no-restricted-syntax -- MEH-3861: inside publish(), a click handler after hydration
     const day = israelToday(new Date(Date.parse(`${israelToday()}T12:00:00Z`) + dayOffset * DAY_MS));
     const iso = (hhmm) => israelWallClockToIso(`${day}T${hhmm}`);
     // MEH-2722: the business picks how long before pickup free cancellation

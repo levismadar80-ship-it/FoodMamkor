@@ -53,6 +53,7 @@ defined in more files than `duplicate-name-baseline.txt` allows fails
 |---|---|---|
 | Print a date | `format-date.js` | `formatDate`, `formatEventDate` |
 | "Today" in Israel time | `israel-date.js` | `israelToday` |
+| "Today" drawn in a component (hydration-safe, MEH-3861) | `use-israel-today.js` | `useIsraelToday` (default export) |
 | Price, price range | `utils.js` | `formatPrice`, `formatPriceRange` |
 | Agorot ↔ shekels (API prices are agorot) | `money.js` | `formatAgorot`, `agorotToShekels`, `shekelsToAgorot` |
 | Phone: normalise · validate | `utils.js` · `validators.js` | `normalizePhone` · `validateIsraeliPhone` |

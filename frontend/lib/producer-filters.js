@@ -110,6 +110,12 @@ export const GATED_AXIS_PREDICATES = {
   grass_fed: (p) => !!p.grass_fed,
   no_added_sugar: (p) => !!p.has_no_added_sugar_products,
   on_site: (p) => !!p.sells_on_site, // MEH-2598
+  // MEH-3824: the map's offer switches — the same fields the server sets
+  // from each kind's public list (services/offer_supply.py).
+  rescue_today: (p) => !!p.rescue_today,
+  group_buy: (p) => !!p.has_open_group_buy,
+  event: (p) => !!p.has_upcoming_event,
+  experience: (p) => !!p.has_listed_experience,
 };
 
 /**
@@ -208,7 +214,7 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
     if (chips[key]) return true;
     const counts = GATED_AXIS_PREDICATES[key];
     const n = producers.filter((p) => p && counts(p)).length;
-    return n >= DIET_CHIP_MIN;
+    return n >= (FILTER_AXES[key]?.gateMin ?? DIET_CHIP_MIN);
   });
 }
 
@@ -297,8 +303,10 @@ export function visibleAxisChips({
     // the matches may sit past the page. Undecided ⇒ show, never hide a
     // filter that may work. Pre-launch the catalog is one page, so this only
     // starts to matter at 100+ businesses (follow-up: server-side counts).
-    if (n < DIET_CHIP_MIN && !complete) return true;
-    return n >= DIET_CHIP_MIN;
+    // MEH-3824: an axis may set its own minimum (the offer switches use 1).
+    const min = FILTER_AXES[chip.key]?.gateMin ?? DIET_CHIP_MIN;
+    if (n < min && !complete) return true;
+    return n >= min;
   });
 }
 

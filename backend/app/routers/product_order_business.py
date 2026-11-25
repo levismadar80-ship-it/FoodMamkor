@@ -44,6 +44,7 @@ from app.schemas.product_order_buy import (
 from app.services import product_order_actions as actions
 from app.services.product_order_customers import list_customers
 from app.services.product_order_state import Actor
+from app.services.order_access import OrderAccess, require_order_access, visible_orders
 from app.services.product_order_views import business_view
 
 router = APIRouter(
@@ -67,20 +68,15 @@ MAX_PAGE = 50
 _ACTION_LIMIT = "240/hour"
 
 
-def _own_order_id(db: Session, order_id: UUID, user: User) -> Any:
-    """The id, once it is known to be an order of the caller's own business."""
-    if not user.producer_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
-        )
-    found = (
-        db.query(ProductOrder.id)
-        .filter(
-            ProductOrder.id == order_id,
-            ProductOrder.producer_id == user.producer_id,
-        )
-        .first()
-    )
+def _own_order_id(db: Session, order_id: UUID, access: OrderAccess) -> Any:
+    """The id, once it is known to be an order the caller may handle.
+
+    MEH-3526: for a staff member that is an order of their business that is
+    open or closed in the last 7 days; anything else is the same 404.
+    """
+    found = visible_orders(
+        db.query(ProductOrder.id).filter(ProductOrder.id == order_id), access
+    ).first()
     if found is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=actions.NOT_FOUND_DETAIL
@@ -102,15 +98,11 @@ def list_business_orders(  # noqa: PLR0913 — FastAPI dependencies, not argumen
     status_filter: StatusFilter | None = Query(default=None, alias="status"),
     limit: int = Query(default=20, ge=1, le=MAX_PAGE),
     offset: int = Query(default=0, ge=0, le=100_000),
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
     """The business's orders, the soonest slot first."""
-    if not user.producer_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
-        )
-    query = db.query(ProductOrder).filter(ProductOrder.producer_id == user.producer_id)
+    query = visible_orders(db.query(ProductOrder), access)
     if status_filter is not None:
         query = query.filter(ProductOrder.status == status_filter)
     total = query.count()
@@ -141,8 +133,9 @@ def list_business_customers(
     return {"customers": list_customers(db, user.producer_id)}  # type: ignore[arg-type]
 
 
-def _actor(user: User) -> Actor:
-    return Actor("business", user.id)  # type: ignore[arg-type]
+def _actor(access: OrderAccess) -> Actor:
+    # A staff member moves the order for the business; the log keeps who did it.
+    return Actor("business", access.user.id)  # type: ignore[arg-type]
 
 
 @router.post("/{order_id}/confirm", response_model=BusinessOrderOut)
@@ -152,11 +145,11 @@ def confirm_order(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: ConfirmIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    own = _own_order_id(db, order_id, user)
-    order = actions.business_confirm(db, own, _actor(user), body.final_total_agorot)
+    own = _own_order_id(db, order_id, access)
+    order = actions.business_confirm(db, own, _actor(access), body.final_total_agorot)
     return _done(db, response, order)
 
 
@@ -167,12 +160,12 @@ def propose_order_change(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: ProposeChangeIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    own = _own_order_id(db, order_id, user)
+    own = _own_order_id(db, order_id, access)
     order = actions.business_propose_change(
-        db, own, _actor(user), body.slot_start, body.total_agorot, body.note
+        db, own, _actor(access), body.slot_start, body.total_agorot, body.note
     )
     return _done(db, response, order)
 
@@ -184,11 +177,11 @@ def hand_order_over(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: HandedIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    own = _own_order_id(db, order_id, user)
-    order = actions.business_hand_over(db, own, _actor(user), body.pickup_code)
+    own = _own_order_id(db, order_id, access)
+    order = actions.business_hand_over(db, own, _actor(access), body.pickup_code)
     return _done(db, response, order)
 
 
@@ -198,23 +191,23 @@ def report_no_show(
     request: Request,
     response: Response,
     order_id: UUID,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    own = _own_order_id(db, order_id, user)
-    return _done(db, response, actions.business_no_show(db, own, _actor(user)))
+    own = _own_order_id(db, order_id, access)
+    return _done(db, response, actions.business_no_show(db, own, _actor(access)))
 
 
 def _simple_move(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: NoteIn,
-    user: User,
+    access: OrderAccess,
     db: Session,
     to_status: str,
 ) -> Any:
-    own = _own_order_id(db, order_id, user)
-    order = actions.business_simple_move(db, own, _actor(user), to_status, body.note)
+    own = _own_order_id(db, order_id, access)
+    order = actions.business_simple_move(db, own, _actor(access), to_status, body.note)
     return _done(db, response, order)
 
 
@@ -228,10 +221,10 @@ def decline_order(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: NoteIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    return _simple_move(response, order_id, body, user, db, "declined")
+    return _simple_move(response, order_id, body, access, db, "declined")
 
 
 @router.post("/{order_id}/ready", response_model=BusinessOrderOut)
@@ -241,10 +234,10 @@ def ready_order(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: NoteIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    return _simple_move(response, order_id, body, user, db, "ready")
+    return _simple_move(response, order_id, body, access, db, "ready")
 
 
 @router.post("/{order_id}/cancel", response_model=BusinessOrderOut)
@@ -254,7 +247,7 @@ def cancel_order(  # noqa: PLR0913
     response: Response,
     order_id: UUID,
     body: NoteIn,
-    user: User = Depends(require_producer),
+    access: OrderAccess = Depends(require_order_access),
     db: Session = Depends(get_db),
 ) -> Any:
-    return _simple_move(response, order_id, body, user, db, "cancelled")
+    return _simple_move(response, order_id, body, access, db, "cancelled")

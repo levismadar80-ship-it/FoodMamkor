@@ -47,6 +47,10 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/components/producer/RequestReviewCard", () => ({ default: () => <div data-testid="request-review-stub" /> }));
 vi.mock("@/components/producer/BusinessQrCard", () => ({ default: () => null }));
 vi.mock("@/components/producer/ShareKitSection", () => ({ default: () => null }));
+// MEH-3864: StaffCard (#5317) draws its own h2 once its two reads settle, after
+// the grid is already on screen, so the heading order below raced it. It has
+// its own tests; here it is a stub like the cards above.
+vi.mock("@/components/dashboard/staff/StaffCard", () => ({ default: () => null }));
 vi.mock("@/lib/producer-completeness", () => ({ producerCompleteness: () => ({ missing: [], priority: "green" }) }));
 
 const { state } = vi.hoisted(() => ({ state: { status: "approved", rescue: false, newTools: new Set() } }));

@@ -55,7 +55,7 @@ export function loginHrefBackHere() {
 // page (the default anyway), the auth screens, and the three token flows —
 // their address can carry a credential, which has no business in a second URL.
 const NO_RETURN =
-  /^\/(?:$|\?|(?:login|register|verify-email|reset-password|forgot-password|registration|owner-invite|claim)(?:[/?]|$))/;
+  /^\/(?:$|\?|(?:login|register|verify-email|reset-password|forgot-password|registration|owner-invite|staff-invite|claim)(?:[/?]|$))/;
 
 /**
  * MEH-3026 (F2): the href for a «כניסה» LINK.

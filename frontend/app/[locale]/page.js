@@ -4,7 +4,8 @@
  * Purpose:  Server shell for the homepage — fetches the first-paint producer
  *           feed + categories on the server so the first HTML byte already
  *           carries producer cards, then hands them to HomeClient.
- * Touches:  GET /producers and GET /categories via serverFetch (revalidate 60).
+ * Touches:  GET /producers (the feed, in season, Friday delivery) and GET
+ *           /categories via serverFetch (revalidate 60).
  * Does NOT: own any interactivity — geo, chips, friday strip,
  *           recently-viewed and every effect live in home/HomeClient.jsx.
  * Related:  app/[locale]/home/HomeClient.jsx (the moved client body),
@@ -14,6 +15,7 @@
  */
 import HomeClient from "@/app/[locale]/home/HomeClient";
 import { serverFetch } from "@/lib/server-fetch";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { API_URL } from "@/lib/env";
 import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
@@ -64,17 +66,21 @@ async function fetchFirstPaint() {
   // `?in_season=true` answers against the Israel calendar day server-side,
   // which also means an expired mark disappears without the page reloading a
   // stale boolean.
-  const [producers, categories, inSeason] = await Promise.all([
+  // MEH-3860: the Friday strip's nationwide list (the same query the strip
+  // sends with no city), so Friday mode paints its cards, or no slot when
+  // nobody delivers on Friday, from the first HTML.
+  const [producers, categories, inSeason, friday] = await Promise.all([
     get("/producers"),
     get("/categories"),
     get("/producers?in_season=true"),
+    get(`/producers?delivery_day=${encodeURIComponent(DELIVERY_DAYS[5])}&page_size=12`),
   ]);
-  return { producers, categories, inSeason };
+  return { producers, categories, inSeason, friday };
 }
 
 export default async function HomePage({ params }) {
   const { locale } = await params;
-  const { producers, categories, inSeason } = await fetchFirstPaint();
+  const { producers, categories, inSeason, friday } = await fetchFirstPaint();
 
   return (
     <>
@@ -91,6 +97,7 @@ export default async function HomePage({ params }) {
         initialProducers={producers}
         initialCategories={categories}
         initialInSeason={inSeason}
+        initialFriday={friday}
       />
     </>
   );

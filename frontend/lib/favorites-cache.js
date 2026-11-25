@@ -66,7 +66,13 @@ export function clearFavoritesStripHint() {
 
 export function hadFavoritesLastVisit() {
   try {
-    return localStorage.getItem(STRIP_HINT_KEY) === "1";
+    // MEH-3858: the same condition as the pre-paint script in
+    // app/[locale]/home/HomeStaticBlocks.jsx (FAVORITES_PREPAINT_SCRIPT). A
+    // hint left behind by a session that ended in api.js (token removed,
+    // hint kept) reserved the strip after mount and collapsed it when auth
+    // came back signed out: CLS 0.14 on a phone's home page.
+    // eslint-disable-next-line no-restricted-syntax -- same condition as the pre-paint script in app/[locale]/home/HomeStaticBlocks.jsx (MEH-3858)
+    return localStorage.getItem("token") !== null && localStorage.getItem(STRIP_HINT_KEY) === "1";
   } catch {
     return false;
   }

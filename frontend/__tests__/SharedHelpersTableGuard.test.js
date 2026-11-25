@@ -31,7 +31,7 @@ function rows() {
 
 /** Is `name` exported (function / const / re-export list) by this source? */
 function exportsName(src, name) {
-  const direct = new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`);
+  const direct = new RegExp(`export\\s+(?:default\\s+)?(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`);
   const listed = new RegExp(`export\\s*\\{[^}]*\\b${name}\\b[^}]*\\}`);
   return direct.test(src) || listed.test(src);
 }
@@ -40,8 +40,9 @@ describe("frontend.md shared-helpers table", () => {
   const table = rows();
 
   it("recognises an export, and a missing one (self-test)", () => {
-    const src = "export function formatDate() {}\nconst hidden = 1;\nexport { a, shareOrCopy };";
+    const src = "export function formatDate() {}\nconst hidden = 1;\nexport { a, shareOrCopy };\nexport default function useToday() {}";
     expect(exportsName(src, "formatDate")).toBe(true);
+    expect(exportsName(src, "useToday")).toBe(true);
     expect(exportsName(src, "shareOrCopy")).toBe(true);
     expect(exportsName(src, "hidden")).toBe(false);
     expect(exportsName(src, "format")).toBe(false);

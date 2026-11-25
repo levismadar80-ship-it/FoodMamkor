@@ -14,6 +14,7 @@ import { allBadges } from "../../../lib/badges.js";
 import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
+import { heAxisCopy } from "../_axis-label";
 
 /**
  * Spec:     manual/producers
@@ -154,13 +155,8 @@ type Axis = { key: string; label: string; group: string; surfaces: string[]; sco
  * the label is joined in from he.json here, and a missing one throws at load
  * instead of silently widening a locator.
  */
-const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
 const AXES = Object.fromEntries(
-  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
-    const copy = HE_AXES[k];
-    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
-    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
-  }),
+  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([k, a]) => [k, { ...a, ...heAxisCopy(he, k, a) }]),
 ) as Record<string, Axis>;
 /** The diet axes offered on /producers, in declaration order (filter-taxonomy.js). */
 const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(

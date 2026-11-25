@@ -36,6 +36,7 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Icon, Globe: Icon, EnvelopeSimple: Icon, InstagramLogo: Icon, FacebookLogo: Icon,
     Receipt: Icon, CalendarCheck: Icon, CaretDown: Icon, CaretUp: Icon,
     Info: Icon, // MEH-2999: fine-print icon
+    Basket: Icon, UsersThree: Icon, CalendarBlank: Icon, CookingPot: Icon, // MEH-3824: offer-switch icons (lib/chip-icons.js)
   };
 });
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));

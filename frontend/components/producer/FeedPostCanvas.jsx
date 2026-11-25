@@ -66,6 +66,7 @@ function useOwnerProducts() {
  */
 function useMoments(t, tHoliday) {
   return useMemo(() => {
+    // eslint-disable-next-line no-restricted-syntax -- MEH-3861: the share kit draws from the profile fetched in the browser; the server never renders it
     const holiday = getUpcomingHoliday(HOLIDAY_AHEAD_DAYS);
     const name = holiday ? tHoliday(`${holiday.key}.name`) : null;
     const list = [

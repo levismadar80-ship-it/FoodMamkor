@@ -186,6 +186,13 @@ const STATES = {
     signedIn: true,
     role: "admin",
   },
+  // MEH-3526: order staff — a consumer account with `staff_of`.
+  staff: {
+    user: { name: "נועה", role: "consumer", staff_of: { producer_id: "p-42", name: "מאפיית הגבעה" } },
+    signedIn: true,
+    role: "consumer",
+    staffOf: true,
+  },
 };
 
 // ─────────────────────────────── helpers ───────────────────────────────
@@ -486,7 +493,7 @@ describe("MEH-1703 — Header link row matches the registry", () => {
 
 describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
   afterEach(() => { ordersGateRef.current = false; });
-  for (const [name, ordersOn] of [["consumer", false], ["consumer", true], ["producer", false], ["producer", true], ["producerNoId", false], ["admin", false]]) {
+  for (const [name, ordersOn] of [["consumer", false], ["consumer", true], ["producer", false], ["producer", true], ["producerNoId", false], ["admin", false], ["staff", false]]) {
     it(`headerMenu surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
       ordersGateRef.current = ordersOn;
@@ -499,6 +506,7 @@ describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
         ...expectedLinks("headerMenu", state, {
           "producer-id-present": Boolean(state.producerId),
           "orders-on": ordersOn,
+          "staff-of": Boolean(state.staffOf),
         }),
       ];
       expect(sortLinks(renderedLinks(container))).toEqual(sortLinks(expected));
@@ -573,7 +581,7 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
 
 describe("MEH-1703 — AccountSheet matches the registry", () => {
   afterEach(() => { ordersGateRef.current = false; });
-  for (const [name, ordersOn] of [["guest", false], ["guest", true], ["consumer", false], ["consumer", true], ["producer", false], ["admin", false]]) {
+  for (const [name, ordersOn] of [["guest", false], ["guest", true], ["consumer", false], ["consumer", true], ["producer", false], ["admin", false], ["staff", false]]) {
     it(`accountSheet surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
       ordersGateRef.current = ordersOn;
@@ -590,7 +598,7 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
         />,
       );
       expect(sortLinks(renderedLinks(container))).toEqual(
-        sortLinks(expectedLinks("accountSheet", state, { "orders-on": ordersOn })),
+        sortLinks(expectedLinks("accountSheet", state, { "orders-on": ordersOn, "staff-of": Boolean(state.staffOf) })),
       );
     });
   }

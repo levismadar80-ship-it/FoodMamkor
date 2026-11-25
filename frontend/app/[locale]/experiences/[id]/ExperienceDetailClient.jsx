@@ -35,6 +35,7 @@ import EntityCover from "@/components/EntityCover";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
+import useIsraelToday from "@/lib/use-israel-today";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
 import { splitBringList } from "@/lib/bring-list";
@@ -93,6 +94,9 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
   const tCat = useTranslations("experiences.categories");
   const locale = useLocale();
   const { id } = useParams();
+  // MEH-3861: the Israel day «היום» / «מחר» is read against — the server's
+  // while hydrating, the visitor's right after (lib/use-israel-today.js).
+  const today = useIsraelToday();
   const search = useSearchParams();
   const justSubmitted = search.get("pending") === "1";
 
@@ -184,7 +188,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
   const bringItems = splitBringList(ex.requirements);
   // A recurring experience's date is its first occasion — no «מחר» chip, and
   // no single-date calendar entry that would read as the only one.
-  const when = ex.is_recurring ? null : eventWhen(ex.event_date);
+  const when = ex.is_recurring ? null : eventWhen(ex.event_date, today);
   const isPast = when === "past";
   const hasCoords = ex.lat != null && ex.lng != null;
   // Address-built Waze / Google only for a public venue: a home address is

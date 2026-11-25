@@ -87,6 +87,7 @@ export function AuthProvider({ children }) {
   // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
   // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
   const loadSession = () => {
+    // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
     if (token) {
       api
@@ -311,6 +312,7 @@ export function AuthProvider({ children }) {
   // MEH-143 — after a role upgrade the stored token changes; re-read
   // /auth/me so context reflects the new role immediately.
   const refreshUser = async () => {
+    // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
     if (!token) return;
     try {

@@ -20,6 +20,8 @@
  *           · MEH-3746 (the link to the order preview beside the title)
  *           · MEH-3752 («ספרו לנו איך אתם מקבלים הזמנות»: one draft for the
  *           three setup cards, each saved with its own button)
+ *           · MEH-3526 (order staff: the orders board alone; the settings,
+ *           windows, products and customers routes are the owner's)
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -38,10 +40,16 @@ import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
+
+/** MEH-3526: what order staff see — the orders, nothing the owner sets up. */
+async function loadStaff() {
+  return { staff: true, orders: await loadOrders() };
+}
 
 /** Everything the page shows, in one round. `settings: null` = ordering off. */
 async function loadAll() {
@@ -58,6 +66,9 @@ async function loadAll() {
 
 export default function OrdersPage() {
   const t = useTranslations("dashboard.producer.orders");
+  // MEH-3526: the layout already sends staff here and nowhere else.
+  const { user } = useAuth();
+  const staffOf = user?.role !== "producer" ? user?.staff_of ?? null : null;
   const [data, setData] = useState(/** @type {any} */ (null));
   const [failed, setFailed] = useState(false);
 
@@ -76,13 +87,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     let live = true;
-    loadAll()
+    (staffOf ? loadStaff() : loadAll())
       .then((loaded) => live && setData(loaded))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [attempt]);
+  }, [attempt, staffOf]);
   const retry = () => {
     setFailed(false);
     setAttempt((n) => n + 1);
@@ -107,15 +118,16 @@ export default function OrdersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
         {/* MEH-3746: the order form as a buyer sees it, before ordering is on. */}
-        <Link
+        {!staffOf && <Link
           href="/producer/dashboard/orders/preview"
           data-testid="orders-preview-link"
           className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
         >
           <Eye size={16} aria-hidden="true" />
           {t("preview_link")}
-        </Link>
+        </Link>}
       </div>
+      {staffOf && <p data-testid="orders-staff-note" className="text-sm text-fg-muted">{t("staff_note", { name: staffOf.name })}</p>}
       {failed && (
         <div className="space-y-2">
           <InlineMessage tone="error">{t("load_error")}</InlineMessage>
@@ -123,6 +135,7 @@ export default function OrdersPage() {
         </div>
       )}
       {!data && !failed && <Skeleton count={3} testId="orders-loading" />}
+      {data?.staff && <OrdersBoard orders={data.orders} onChanged={replace} />}
       {data?.settings && (
         <>
           <OrderSetupChecklist

@@ -18,7 +18,7 @@ const get = vi.fn();
 const post = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: (...a) => post(...a) } }));
 
-const { fetchOffers, RescueShapeError, reserveErrorKey, walkingMinutes, shekels, israelTime } =
+const { fetchOffers, RescueShapeError, reserveErrorKey, walkingMinutes, shekels, israelTime, rescueCancelText } =
   await import("@/lib/rescue");
 
 function validOffer(over = {}) {
@@ -117,6 +117,15 @@ describe("the unit helpers", () => {
     expect(israelTime("2026-11-04T16:00:00+00:00")).toBe("18:00");
     expect(israelTime("not-a-date")).toBeNull();
     expect(israelTime(null)).toBeNull();
+  });
+
+  it("the cancel deadline's «מחר» is decided against the day the screen draws with (MEH-3861)", () => {
+    // 10:00 Israel time on 27/11. The screen's day comes in, not the clock:
+    // a page rendered on 26/11 hydrates with «מחר», whatever the browser says.
+    const t = (key, v) => `${key}:${v.time}`;
+    const iso = "2026-11-27T08:00:00+00:00";
+    expect(rescueCancelText(iso, t, "2026-11-26")).toBe("row.cancel_at_tomorrow:10:00");
+    expect(rescueCancelText(iso, t, "2026-11-27")).toBe("10:00");
   });
 
   it("maps each status the API returns to its own copy key", () => {

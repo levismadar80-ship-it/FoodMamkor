@@ -130,6 +130,8 @@ export const NON_ENTITY_ROUTES = {
   // not an entity id. The segment is swapped out of the address on first
   // load, so the route never settles on a URL anyone could share or index.
   "app/[locale]/owner-invite/[token]": "one-time owner-invite link",
+  // MEH-3526. The order-staff invite, swapped out of the address on load.
+  "app/[locale]/staff-invite/[token]": "one-time order-staff invite link",
   // MEH-3377. A signed, expiring read of a draft that is not public yet; the
   // entity it shows gets its own page (/[slug]) only once it is published.
   "app/[locale]/draft-preview/[token]": "read-only preview link for an unpublished draft",

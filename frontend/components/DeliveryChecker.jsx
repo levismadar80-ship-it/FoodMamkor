@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
@@ -137,22 +137,11 @@ export default function DeliveryChecker({
   // between buttons still hears which city they are about.
   const verdictId = useId();
 
-  // MEH-1675: seed from the saved user_city so a visitor who already told us
-  // where she is gets her answer — and, when it is "no", the coverage CTA —
-  // without typing. Deliberately an EFFECT and not `useState(initial)`:
-  // user_city lives in localStorage, which is unreadable during SSR, so an
-  // initial value would be `null` on the server and desync on hydration.
-  // One-shot by construction (`seeded` ref): once the visitor touches the
-  // field, her input owns it and a later city-changed event must not yank
-  // the verdict out from under her.
+  // MEH-1675 → MEH-3857: the saved user_city is offered as the first option
+  // of the empty field; picking it gives the answer at once (onSubmit). It is
+  // no longer filled in and checked after the load, which changed the field
+  // and added the verdict under the visitor's eyes.
   const { city: userCity } = useUserCity();
-  const seeded = useRef(false);
-  useEffect(() => {
-    if (seeded.current || !userCity) return;
-    seeded.current = true;
-    setCity(userCity);
-    setChecked(userCity);
-  }, [userCity]);
 
   // Gates documented on isDeliveryCheckerUsable (lib/delivery-coverage.js).
   if (!isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded, areas })) return null;
@@ -187,6 +176,7 @@ export default function DeliveryChecker({
           labelVisible
           pill
           placeholder={t("checker.placeholder")}
+          suggestion={userCity}
         />
       </div>
 

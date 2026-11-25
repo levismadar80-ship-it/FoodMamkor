@@ -129,6 +129,9 @@ flowchart LR
     RoleDep -->|get_current_user| Pass[Return User]
     RoleDep -->|require_producer| ProdCheck{user.role ==<br/>producer?}
     RoleDep -->|require_admin| AdminCheck{user.role ==<br/>admin?}
+    RoleDep -->|require_order_access<br/>MEH-3526, the 8 order routes only| OrderCheck{owner, or an ACTIVE<br/>producer_staff row on a<br/>business that still has an owner?<br/>read from the DB, no JWT claim}
+    OrderCheck -->|yes| Pass
+    OrderCheck -->|no| Raise403o[HTTPException 403]
 
     ProdCheck -->|yes| Pass
     ProdCheck -->|no| Raise403p[HTTPException 403<br/>Producer access required]

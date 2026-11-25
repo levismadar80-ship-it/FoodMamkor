@@ -988,6 +988,15 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17b-staff. Order staff: a second principal on the order routes (MEH-3526)
+
+A business can let up to 5 people handle its orders, and nothing else.
+
+- **The gate.** `require_order_access` (`backend/app/services/order_access.py`) admits the owner, or a user with an `active` row in `producer_staff` on a business that still has an owner. It is read from the database on every request; there is no JWT claim, so a removed member is out on the next call. It guards only the eight routes of `product_order_business.py`; every other owner route, the customer list included, keeps `require_producer`. Staff keep `role = consumer` and `producer_id = NULL`.
+- **The link.** `secrets.token_urlsafe(32)`, stored only as sha256 (`token_hash`), 7 days, single use through a conditional UPDATE whose row count decides; a resend replaces the hash. Accepting needs a signed-in plain consumer account whose verified email equals the invited one. The page moves the token to sessionStorage and leaves the address; `lib/claim-token.js`, Clarity, the Sentry replay gate and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redact `/staff-invite/<token>`; the page is `noindex` and `no-referrer`.
+- **No enumeration.** The invite answer is the same whether or not the address has an account.
+- **Becoming an owner ends it.** A claim, an owner invite or a business registration revokes the account's active membership (`services/staff_membership.py`).
+
 ## 17b-0. The owner links her own Google profile (MEH-3641)
 
 An owner can set `producers.google_place_id` herself (`PUT /producers/me/google-profile`), and that id is what switches on the public Google-rating line. The risk is borrowing a stranger's rating.

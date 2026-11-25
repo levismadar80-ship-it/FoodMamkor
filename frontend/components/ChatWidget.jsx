@@ -255,6 +255,7 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
   useEffect(() => {
+    // eslint-disable-next-line no-restricted-syntax -- decides a fixed-position overlay, which floats over the page and cannot move it
     try { setWasOpened(localStorage.getItem("chatWasOpened") === "true"); }
     catch (e) { setWasOpened(false); }
   }, []);
