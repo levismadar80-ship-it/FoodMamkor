@@ -15,7 +15,8 @@ Does NOT: own the waitlist's rules, which live in services/delivery_waitlist.py:
 Related:  app/routers/producers.py join_delivery_waitlist ·
           confirm_delivery_waitlist_host · unsubscribe_delivery_waitlist
           (the callers).
-History:  MEH-3537 (moved verbatim from routers/producers.py). Originally
+History:  MEH-3537 (moved from routers/producers.py; the bodies are verbatim,
+          only join_waitlist now returns (body, created)). Originally
           MEH-2618 · MEH-2673 · MEH-2952.
 """
 
