@@ -4,7 +4,8 @@
  *           lib/filter-taxonomy.js (FILTER_AXES) and lib/map-chips.js
  *           (CATEGORY_CHIPS) hold keys and wiring only; the consumer strings
  *           live in messages/{he,en}.json:
- *             filter_axes.<key>.label / .subtext   (toggle axes)
+ *             filter_axes.<key>.label / .subtext   (toggle axes; an axis
+ *               with `labelKey` reads that key instead, MEH-3824)
  *             map_category_chips.<key>             (/map aggregate categories)
  * Contract: a chip that already carries a `label` (a DB category, the city
  *           chip, a translated "all" sentinel) is returned untouched, so one
@@ -33,7 +34,7 @@ export function resolveChipCopy(t, chip) {
   if (axis) {
     return {
       ...chip,
-      label: t(`filter_axes.${chip.key}.label`),
+      label: t(axis.labelKey ?? `filter_axes.${chip.key}.label`),
       subtext: axis.hasSubtext ? t(`filter_axes.${chip.key}.subtext`) : null,
     };
   }
@@ -45,5 +46,6 @@ export function resolveChipCopy(t, chip) {
 
 /** The label alone, for a bare axis key (diet page H1, aria strings). */
 export function axisLabel(t, key) {
-  return FILTER_AXES[key] ? t(`filter_axes.${key}.label`) : null;
+  const axis = FILTER_AXES[key];
+  return axis ? t(axis.labelKey ?? `filter_axes.${key}.label`) : null;
 }

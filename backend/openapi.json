@@ -10212,6 +10212,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -10220,6 +10225,11 @@
           "has_no_added_sugar_products": {
             "default": false,
             "title": "Has No Added Sugar Products",
+            "type": "boolean"
+          },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
             "type": "boolean"
           },
           "has_owner": {
@@ -10241,6 +10251,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -10731,6 +10746,16 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -12429,6 +12454,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -12439,6 +12469,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -12447,6 +12482,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -12727,6 +12767,16 @@
             "default": 0,
             "title": "Report Count",
             "type": "integer"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -13282,6 +13332,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -13292,6 +13347,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -13300,6 +13360,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -13498,6 +13563,16 @@
             "default": 0,
             "title": "Products Count",
             "type": "integer"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -15167,6 +15242,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -15177,6 +15257,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -15185,6 +15270,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -15514,6 +15604,16 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "rescue_today": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescueTodayOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rescued_recently": {
             "default": false,
@@ -21167,6 +21267,60 @@
           "price_agorot"
         ],
         "title": "RescueScheduleStored",
+        "type": "object"
+      },
+      "RescueTodayOut": {
+        "description": "The business's next bag today, in its card on the map (MEH-3824).\n\nCarried on `ProducerListOut.rescue_today` so the map needs no second\nrequest. Only today's bags, only ones the list would also show (stock,\nwindow still open for reserving, pilot town); the earliest pickup wins.",
+        "properties": {
+          "location_id": {
+            "format": "uuid",
+            "title": "Location Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "offer_id",
+          "location_id",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "qty_left"
+        ],
+        "title": "RescueTodayOut",
         "type": "object"
       },
       "RescueTypicalItemsIn": {
@@ -32550,6 +32704,70 @@
                 }
               ],
               "title": "On Site"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rescue_today",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rescue Today"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group_buy",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group Buy"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event"
+            }
+          },
+          {
+            "in": "query",
+            "name": "experience",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Experience"
             }
           },
           {

@@ -48,6 +48,11 @@ vi.mock("@/components/Lightbox", () => ({
   default: () => null,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   SealCheck: (props) => <span data-testid="seal-icon" {...props} />,
   CaretLeft: (props) => <span data-testid="caret-icon" {...props} />,
   Images: (props) => <span data-testid="images-icon" {...props} />,

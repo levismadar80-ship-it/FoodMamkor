@@ -30,6 +30,7 @@ from app.schemas.catalog import (
 )
 from app.schemas.registration import ProducerOwnerSummary
 from app.schemas.producer import normalize_google_place_id
+from app.schemas.rescue import RescueTodayOut
 
 
 class KashrutCertRef(BaseModel):
@@ -102,6 +103,15 @@ class ProducerListOut(BaseModel):
     # public list/detail and favorites routes compute it — admin payloads that
     # reuse this schema carry a constant False, not data.
     rescued_recently: bool = False
+    # MEH-3824: today's next reservable bag, set by attach_rescue_today on the
+    # public list only; None everywhere else and while the pilot is off.
+    rescue_today: RescueTodayOut | None = None
+    # MEH-3824: the map's offer switches are gated on these (a switch shows
+    # only while a business on the map has that kind). Each mirrors its public
+    # list exactly (services/offer_supply.py).
+    has_open_group_buy: bool = False
+    has_upcoming_event: bool = False
+    has_listed_experience: bool = False
     has_delivery: bool = False
     # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
     # this attribute with `offers_pickup` before serialization (same mechanism

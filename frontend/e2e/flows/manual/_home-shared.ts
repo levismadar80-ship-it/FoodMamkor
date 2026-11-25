@@ -30,6 +30,7 @@ import { ORDER_DAY_KEYS } from "../../../lib/order-window-status.js";
 import { REGIONS } from "../../../data/regions.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CATEGORY_CARDS } from "../../../lib/home-categories.js";
+import { heAxisCopy } from "../_axis-label";
 
 // MEH-2308: the chat launcher's accessible name is its visible pill text on a
 // first desktop visit and the aria-label once it is icon-only — match either.
@@ -233,15 +234,14 @@ export const FRIDAY_EN = en.group_buys.friday_delivery;
 export type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
 // MEH-2748: the taxonomy holds keys only; the Hebrew label/subtext are read from
 // the same he.json the app renders (`filter_axes.<key>`).
-const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
 export const AXES = Object.fromEntries(
-  Object.entries(FILTER_AXES as Record<string, object>).map(([key, axis]) => [
+  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([key, axis]) => [
     key,
-    { key, ...axis, label: AXIS_COPY[key].label, subtext: AXIS_COPY[key].subtext ?? null },
+    { key, ...axis, ...heAxisCopy(he, key, axis) },
   ]),
 ) as Record<string, Axis>;
 export type Chip = { key: string; label: string };
-export const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXIS_COPY[c.key].label })) as Chip[];
+export const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXES[c.key]?.label ?? (he.filter_axes as Record<string, { label: string }>)[c.key].label })) as Chip[];
 
 // MEH-2598: home promotes the shared service trio «משלוח · איסוף עצמי · קנייה
 // במקום» out of CHIPS_CONFIG and files the rest — «מאומת» included — behind the

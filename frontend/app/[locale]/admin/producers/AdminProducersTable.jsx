@@ -623,11 +623,18 @@ function TableHead() {
   return (
     <thead className="bg-gray-50">
       <tr>
-        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
+        {/* MEH-3818: below md the name column takes all the width the other two
+            leave, and they keep their own content's width. Shared out by the
+            browser instead, a search that swapped the rows re-divided it and
+            slid every cell sideways (CLS 0.14 on a phone, MEH-3809 guard). */}
+        <th className="text-start px-4 py-3 font-medium text-muted max-md:w-full">{t("producers.table.columns.name")}</th>
         <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
         <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
         <th className="hidden md:table-cell text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
-        <th className="text-start px-4 py-3 font-medium text-muted">
+        {/* MEH-3818: no wrap. On a phone the label and its (i) broke onto two
+            lines whenever the rows below narrowed the column, so a search
+            result moved the whole table 20px (CLS 0.17, MEH-3809 guard). */}
+        <th className="text-start px-4 py-3 font-medium text-muted whitespace-nowrap">
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
@@ -668,7 +675,13 @@ export default function AdminProducersTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <TableHead />
-          <tbody>
+          {/* MEH-3818: a new set of rows (a search, a filter, another page) is
+              a new list, drawn in place of the old one. Keyed by its ids, a
+              row the search kept was moved from far down the old list to the
+              top, which the browser counts as a layout shift (CLS 0.13 on a
+              phone, MEH-3809 guard). The same rows re-read (after an approve)
+              keep their key and their open menus. */}
+          <tbody key={rows.map((p) => p.id).join(",")}>
             {/* MEH-2096: a failed fetch must never reuse EmptyRow — "no
                 businesses awaiting approval" is the one message that must be
                 true, because manual approval has no automatic fallback. */}

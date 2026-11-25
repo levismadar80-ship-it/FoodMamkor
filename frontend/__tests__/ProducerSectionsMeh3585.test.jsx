@@ -43,6 +43,11 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,

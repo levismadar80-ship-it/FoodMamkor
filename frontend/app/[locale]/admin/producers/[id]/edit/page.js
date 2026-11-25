@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import AdminProductImport from "@/components/admin/AdminProductImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
 import ProducerForm from "@/components/admin/ProducerForm";
@@ -105,7 +106,10 @@ export default function EditProducerPage() {
       .catch(() => {});  // the import panel already reported its own success
   };
 
-  if (loading || !user || fetching) {
+  // MEH-3818: the form's category list, read with the producer so the form
+  // draws once, complete (ProducerForm reads the same cached key).
+  const categories = useApi(user?.role === "admin" ? "/categories" : null);
+  if (loading || !user || fetching || categories.isLoading) {
     return (
       <SkeletonForm fields={6} label={t("common.loading")} className="max-w-4xl mx-auto px-4 py-12" />
     );
