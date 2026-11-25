@@ -116,6 +116,27 @@
 בדיקה (בתוך Ubuntu כ-`ghrunner`): `for t in git curl jq gh zip unzip xz file bc python3 psql pg_dump docker; do command -v $t >/dev/null || echo "MISSING $t"; done`.
 Python 3.11/3.12 (`setup-python`) ו-Playwright 1.65 תומכים ב-Ubuntu 26.04 (נבדק ב-manifest).
 
+**פקודות להדליק / לכבות / לבדוק** (ב-cmd או PowerShell ב-Windows, לא בתוך Ubuntu):
+
+| מה | פקודה |
+|---|---|
+| להדליק (וגם להפעיל אוטומטית אחרי restart) | `wsl -d Ubuntu -u root -- systemctl enable --now actions.runner.levismadar80-ship-it-FoodMamkor.topazschnapp-wsl` |
+| לכבות (וגם לא לעלות אחרי restart) | `wsl -d Ubuntu -u root -- systemctl disable --now actions.runner.levismadar80-ship-it-FoodMamkor.topazschnapp-wsl` |
+| לבדוק אם רץ | `wsl -d Ubuntu -u root -- systemctl is-active actions.runner.levismadar80-ship-it-FoodMamkor.topazschnapp-wsl` (`active` = רץ) |
+
+ובדיקה מהצד של GitHub: Settings → Actions → Runners, ה-runner `Idle` (רץ) או
+`Offline` (כבוי). **כל עוד הריפו ציבורי, ה-runner כבוי** חוץ מבזמן הניסיון של
+שלב 1 למטה: בריפו ציבורי PR מ-fork יכול לשנות `runs-on` ולהריץ קוד על המחשב.
+בין 21/11 ל-25/11 הוא היה כבוי מהסיבה הזאת.
+
+**לא לעשות:**
+- לא `wsl --unregister Ubuntu` ולא התקנה מחדש של Ubuntu 24.04. אין בזה צורך
+  (Python 3.11.18 ו-3.12.16 קיימים ל-26.04 ב-manifest של `actions/python-versions`),
+  והפקודה מוחקת את ה-runner, את Docker ואת כל הכלים.
+- לא להריץ שוב את `admin-power-and-autostart.ps1` לפני שבודקים שהוא מכוון ל-`Ubuntu`.
+  ב-22/11 הוא שונה ל-`Ubuntu-24.04`, שם הפצה שלא קיים במחשב. המשימה שכבר רשומה
+  ב-Task Scheduler מכוונת ל-`Ubuntu` ותקינה.
+
 1. **ה-runner כשירות, לא בחלון פתוח.** בתוך WSL2 (Ubuntu) עם Docker:
    `./config.sh --url https://github.com/levismadar80-ship-it/FoodMamkor --token <מה-GitHub>`
    ואז `sudo ./svc.sh install && sudo ./svc.sh start`

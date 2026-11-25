@@ -16,8 +16,9 @@ const GAP_PX = 8;
  * Purpose:  The business picked on the phone map, as ONE card floating over the
  *           map just above the collapsed bottom sheet (Airbnb / Google Maps
  *           pattern: pin → one preview card → tap to profile). Renders the
- *           shared compact <MapProducerCard active/>; contact happens on the
- *           profile, never here.
+ *           shared compact <MapProducerCard active/> and, under it, the same
+ *           action panel for every pin (MapPickupPointPanel: nav + «לדף בית
+ *           העסק»); contact happens on the profile, never here.
  * Does NOT: live inside the sheet. Until MEH-3119 it was pinned above the list
  *           in the sheet, so the picked business showed twice (pinned + its own
  *           row). MapClient mounts this only while the sheet is at PEEK; with
@@ -139,8 +140,9 @@ export default function MobileSheetSelectedCard({
           direction, or on /en the X would land on the photo. */}
       <div dir="rtl" className="relative rounded-md bg-background shadow-lg">
         <MapProducerCard producer={selectedProducer} active />
-        {/* MEH-3756: a pickup point / market stand says when and how to collect
-            there, and how to reach the business page. Nothing for a branch. */}
+        {/* Every pin: Waze / Google Maps (exact points) and «לדף בית העסק»;
+            a pickup point / market stand also says when and how to collect
+            there (MEH-3756). One card for all pins (Sapir 25/11). */}
         <MapPickupPointPanel producer={selectedProducer} location={selectedLocation} />
         {/* MEH-3824: the bag today, when there is one (price, window, link). */}
         <div className="empty:hidden px-2 pb-2">

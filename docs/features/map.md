@@ -11,7 +11,7 @@
 * `frontend/app/[locale]/map/components/MapPane.jsx` — הלוח, הפקדים, המקרא.
 * `frontend/lib/category-registry.js` · `frontend/lib/category-taxonomy.js` — צבע הסיכה לפי אחת מ-6 הקבוצות והאייקון לפי הקטגוריה עצמה; המקרא מציג את 6 הקבוצות בשפת הקוראת ומסנן קבוצה שלמה (MEH-3076).
 * `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` — כרטיס העסק הנבחר בנייד, כולל סגירה ב-Escape.
-* `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, כשהסיכה היא נקודת איסוף או דוכן (MEH-3756): ימי איסוף, הוראות איסוף, Waze ו-Google לנקודה מדויקת, וכפתור «לדף בית העסק». טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
+* `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, לכל סיכה: Waze ו-Google לנקודה מדויקת וכפתור «לדף בית העסק» (כרטיס אחד לכל הסיכות, ספיר 25/11). בסיכה של נקודת איסוף או דוכן גם ימי איסוף והוראות איסוף (MEH-3756). טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
 * `frontend/app/[locale]/map/components/MapRescueRow.jsx` — מתחת לבית העסק שנבחר (הכרטיס הצף בנייד, והכרטיס הפעיל ברשימה): סל ההפתעה של היום, עם חלון האיסוף והמחיר וקישור לדף הסל (MEH-3824). הסל מגיע בשדה `rescue_today` של רשימת בתי העסק, בלי בקשה נוספת. אין תג על הסיכה, לפי החלטת ספיר מ-25/11. טסט: `frontend/__tests__/MapRescueOnMap.test.jsx`.
 * `frontend/components/MapBottomSheet.jsx` — הגיליון התחתון.
 * `frontend/app/[locale]/map/state/useProducersFeed.js` — הזנת הנתונים, עם אימות Zod.

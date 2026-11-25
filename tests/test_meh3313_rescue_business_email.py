@@ -19,7 +19,7 @@ def _capture(monkeypatch):
     monkeypatch.setattr(
         mod,
         "send_email",
-        lambda to, subject, body, html=None, test_cause=False: sent.append(
+        lambda to, subject, body, html=None, test_cause=False, kind=None: sent.append(
             {"to": to, "subject": subject, "body": body, "test_cause": test_cause}
         ),
     )
