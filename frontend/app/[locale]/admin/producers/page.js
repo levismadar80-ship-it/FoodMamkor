@@ -119,6 +119,10 @@ function ProducersAdminPage() {
   // request) is what it ultimately calls once the checklist is clear/confirmed.
   const checklist = useReviewChecklist(h.quickApprove);
 
+  // MEH-3818: one skeleton until the list answered — the same one the Suspense
+  // boundary shows — so the page appears once, with its rows.
+  if (!h.firstLoadDone) return <SuspenseFallback />;
+
   return (
     <div className="space-y-5">
       <PageHeader count={h.visible.length} />
