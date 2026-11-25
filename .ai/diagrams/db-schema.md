@@ -845,6 +845,14 @@ erDiagram
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
 
+> **MEH-3735 — group-buy no-show (24/11/2026):** `group_buy_commits` gains
+> `pickup_code` (4 digits, UNIQUE per group, backfilled for existing commits),
+> `handed_at` and `no_show_at` (CHECK: at most one is set); `users` gains
+> `group_buy_block_cleared_at`, the admin release. Two no-shows inside 30 days
+> after that stamp block joining new group buys. A count separate from rescue
+> bags on purpose. Adds no table → `EXPECTED_TABLES` unchanged. Migration
+> `f3a7c91e2b64`.
+
 > **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
 > billing will count from: one row per booking a business got through the site,
 > no personal data, written by `services/billing_ledger.py`. Nothing is charged.

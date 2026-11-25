@@ -86,7 +86,7 @@ its editor ships alongside and its row here moves with it.
 
 - `docs/MIGRATIONS.md` — the Expand-Contract workflow and the LEGACY convention
 - `docs/decisions/ADR-007-expand-contract-schema-changes.md` — the pattern
-- `backend/app/routers/producer_me.py` — `_PRODUCER_WRITABLE_FIELDS`, with the
+- `backend/app/services/producer_owner_update.py` — `_PRODUCER_WRITABLE_FIELDS`, with the
   per-field dispositions inline
 - `tests/test_meh1856_closed_write_paths.py` and its per-field siblings — the
   behavioural half (the endpoint really ignores these); this registry is the

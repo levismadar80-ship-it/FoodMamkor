@@ -54,6 +54,7 @@ import {
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
 import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
+import Checkbox from "@/components/ui/Checkbox";
 
 const QUOTE_DELAY_MS = 400;
 
@@ -202,10 +203,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
-          <label className="flex items-start gap-2 text-sm text-text">
-            <input type="checkbox" required checked={form.age} onChange={(e) => set({ age: e.target.checked })} data-testid="order-sheet-age" />
+          <Checkbox
+            className="flex items-start gap-2 text-sm text-text"
+            required
+            checked={form.age}
+            onChange={(e) => set({ age: e.target.checked })}
+            data-testid="order-sheet-age"
+          >
             {t("age")}
-          </label>
+          </Checkbox>
         )}
       </div>
       <Totals quote={quote} delivery={delivery} t={t} />

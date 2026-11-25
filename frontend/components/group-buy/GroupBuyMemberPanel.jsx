@@ -79,6 +79,12 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
       {next && (
         <p className="text-sm text-text text-center" data-testid="group-buy-member-next">{next}</p>
       )}
+      {/* MEH-3735: the code she shows at pickup; the business sees codes, not names. */}
+      {stillOn && gb.user_commit?.pickup_code && (
+        <p className="text-sm text-text text-center" data-testid="group-buy-pickup-code">
+          {t("pickup_code_line", { code: gb.user_commit.pickup_code })}
+        </p>
+      )}
       {/* MEH-3734: the page's approved pay line, repeated where she now looks. */}
       {stillOn && <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>}
       {joinable && full && (

@@ -279,6 +279,25 @@ def _checked_fields(source: str) -> set[str]:
     return checked
 
 
+def _source_with_service_delegates(ep) -> str:
+    """The handler's source plus any `app.services.*` function it calls.
+
+    MEH-3841 (MEH-3537): a thin handler hands its whole body to one service
+    function, so the ownership call now sits one level down. Only a direct
+    call by name from the handler counts, and only into `app.services`.
+    """
+    source = inspect.getsource(ep)
+    for name, obj in inspect.unwrap(ep).__globals__.items():
+        module = getattr(obj, "__module__", "") or ""
+        if (
+            inspect.isfunction(obj)
+            and module.startswith("app.services.")
+            and f"{name}(" in source
+        ):
+            source += inspect.getsource(obj)
+    return source
+
+
 def test_every_route_that_stores_an_image_checks_ownership():
     routes = _image_routes()
     assert len(routes) >= 12, f"control: route walk found only {len(routes)}"
@@ -286,7 +305,7 @@ def test_every_route_that_stores_an_image_checks_ownership():
     for m, p, ep, fields in routes:
         if ep.__name__ in _EXEMPT:
             continue
-        unchecked = set(fields) - _checked_fields(inspect.getsource(ep))
+        unchecked = set(fields) - _checked_fields(_source_with_service_delegates(ep))
         if unchecked:
             missing.append(f"{m} {p} ({ep.__name__}): {sorted(unchecked)}")
     assert missing == [], (

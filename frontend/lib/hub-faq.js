@@ -5,6 +5,6 @@
  * the page files, so the test reads the same lists the pages render.
  */
 export const HUB_FAQ = Object.freeze({
-  groupBuys: { namespace: "group_buys.faq", keys: ["what", "pay", "miss", "cancel", "pickup", "mine"], path: "/group-buys" },
+  groupBuys: { namespace: "group_buys.faq", keys: ["what", "pay", "miss", "cancel", "pickup", "no_show", "mine"], path: "/group-buys" },
   rescue: { namespace: "rescue.faq", keys: ["contents", "allergens", "pay", "cancel", "no_show", "mine"], path: "/rescue" },
 });

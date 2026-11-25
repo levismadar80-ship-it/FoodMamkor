@@ -96,7 +96,7 @@ from fastapi.testclient import TestClient
 
 import app.cloudinary_utils as cloudinary_utils
 import app.routers.admin_decisions as admin_mod
-import app.routers.producer_me as pm
+import app.services.producer_owner_update as pm  # MEH-3841: the save moved here
 from app.database import SessionLocal
 from app.models.models import Producer
 

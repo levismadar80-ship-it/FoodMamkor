@@ -1351,7 +1351,8 @@
       "member_my_groups": "All my group buys",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
-      "calendar_title": "Pickup: {title}"
+      "calendar_title": "Pickup: {title}",
+      "pickup_code_line": "Your pickup code: {code}. Show it at the business when you collect."
     },
     "dashboard": {
       "status": {
@@ -1458,6 +1459,12 @@
         "place_help": "Shown on the group page with a map, and in the reminder participants get before pickup.",
         "allergens_title": "Allergens",
         "allergens_help": "Tick what the product contains. What you tick shows on the group page. With nothing ticked, it says no allergens were listed."
+      },
+      "pickups": {
+        "title": "Pickup codes",
+        "after_pickup": "You can mark «Didn't come» once the pickup time is over.",
+        "no_window": "To mark a no-show, set a pickup time for the group.",
+        "closed": "More than 14 days have passed since the pickup ended, so marking is closed."
       }
     },
     "availability": {
@@ -1562,6 +1569,10 @@
         "pickup": {
           "q": "Where and when is pickup?",
           "a": "The time and place are on the group's page and in the email when the group reaches its goal. A reminder email goes out before pickup."
+        },
+        "no_show": {
+          "q": "What if I don't pick it up?",
+          "a": "The business can mark the order as not collected, and we'll email you about it. Two no-shows within 30 days block joining new group buys. If you can't make it, you can cancel until the group's deadline."
         },
         "mine": {
           "q": "Where do I see my group buys?",
@@ -2321,7 +2332,8 @@
         "unblock": "Unblock",
         "block": "Block",
         "delete": "Delete",
-        "clear_rescue_block": "Release bag block"
+        "clear_rescue_block": "Release bag block",
+        "clear_group_buy_block": "Release group-buy block"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -2352,7 +2364,10 @@
         "blocked_badge": "Blocked from bags ({count} no-shows)",
         "cleared": "Block released"
       },
-      "blocked_hidden": "The account is blocked and the business is hidden."
+      "blocked_hidden": "The account is blocked and the business is hidden.",
+      "group_buy": {
+        "blocked_badge": "Blocked from group buys ({count} no-shows)"
+      }
     },
     "recipes": {
       "title": "Business recipes",
@@ -4670,7 +4685,7 @@
           },
           "orders": {
             "label": "Orders and surprise bags:",
-            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. People the business invited to handle its orders see these details too. For a surprise bag, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. People the business invited to handle its orders see these details too. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
           },
           "messages": {
             "label": "WhatsApp and email messages:",
@@ -7247,7 +7262,8 @@
       "soon": "within the hour",
       "left_short": "{count, plural, one {1 left} other {# left}}",
       "pickup_tomorrow": "Pickup tomorrow {from}–{until}",
-      "cancel_at_tomorrow": "tomorrow at {time}"
+      "cancel_at_tomorrow": "tomorrow at {time}",
+      "worth_and_price": "Worth {worth}, you pay {price}"
     },
     "section": {
       "title": "Rescue bag",
@@ -7262,18 +7278,20 @@
       "allergens_declared": "Contains: {list} · as declared by the business",
       "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
       "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come.",
-      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come."
+      "business_cancelled_tomorrow": "The business cancelled tomorrow's bag, so your reservation was cancelled too. No need to come.",
+      "allergens_undeclared_short": "The business did not list allergens.",
+      "allergens_ask": "Have an allergy? Ask the business at pickup."
     },
     "confirm": {
       "title": "Your bag is reserved",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
-      "terms": "Free cancellation until {cancel_until} · two no-shows = blocked",
+      "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
       "step_reserved": "Reserved",
       "step_collect": "To collect",
       "step_done": "Handed over",
       "cancel": "Cancel the reservation",
-      "terms_no_cancel": "No cancellation · two no-shows = blocked",
+      "terms_no_cancel": "No cancellation · after two bags not collected, new reservations are paused",
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
@@ -7300,7 +7318,7 @@
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "unverified": "Please verify your email address first.",
-      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
+      "blocked": "Two bags were not collected, so new reservations are paused for now. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -7353,7 +7371,13 @@
         "cancel": "Free cancellation until",
         "cancel_half_hour": "Half an hour before pickup",
         "cancel_hour": "An hour before pickup",
-        "cancel_two_hours": "Two hours before pickup"
+        "cancel_two_hours": "Two hours before pickup",
+        "worth": "Bag worth (₪)",
+        "worth_help": "What the bag would cost at full price. Optional. When it is above the price, buyers see it struck through beside the price.",
+        "from_hour": "Pickup start, hour",
+        "from_minute": "Pickup start, minutes",
+        "to_hour": "Pickup end, hour",
+        "to_minute": "Pickup end, minutes"
       },
       "items_title": "What's usually in the bag",
       "items_help": "Separate with commas. This is what customers see before they reserve a bag.",
@@ -7389,7 +7413,12 @@
       "offers_title_tomorrow": "Tomorrow's bags",
       "orders_title_tomorrow": "Tomorrow's reservations",
       "orders_empty_tomorrow": "No reservations for tomorrow yet.",
-      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?"
+      "cancel_offer_title_tomorrow": "Cancel tomorrow's bag?",
+      "allergens_toggle": "Allergens in the bag · optional",
+      "allergens_count": "{count, plural, one {one marked} other {# marked}}",
+      "offers_title_today": "Today's bags",
+      "cancel_offer_row": "Pickup {window} · {count, plural, one {one bag} other {# bags}}",
+      "cancel_offer_aria": "Cancel the bag, pickup {window}"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -7421,7 +7450,7 @@
       "cancel_title": "Cancelling",
       "cancel_body": "Free cancellation until {time}. After that the reservation stands.",
       "cancel_passed": "The free-cancellation time has passed, so a reservation made now stands.",
-      "no_show": "Two missed pickups block new reservations.",
+      "no_show": "After two bags not collected, new reservations are paused. Can't make it? Cancel, so the bag goes to someone else.",
       "business_link": "Go to {name}",
       "state_sold_out": "This bag is sold out for today.",
       "state_cancelled": "The business cancelled today's bag.",
@@ -7458,7 +7487,7 @@
         },
         "no_show": {
           "q": "What if I don't pick it up?",
-          "a": "The business marks the bag as not collected. Two no-shows within 30 days block reserving new bags."
+          "a": "The business marks the bag as not collected. After two bags not collected within 30 days, new reservations are paused."
         },
         "mine": {
           "q": "Where do I see my reservation?",

@@ -1063,6 +1063,9 @@ class User(Base):
     # moment, so one write releases a buyer without deleting the no-show
     # history the chunk-5 metrics read. NULL = never cleared.
     rescue_block_cleared_at = Column(DateTime, nullable=True)
+    # MEH-3735: the same release, for the group-buy no-show count, which is
+    # separate from the rescue one (services/group_buy_no_show.py).
+    group_buy_block_cleared_at = Column(DateTime, nullable=True)
 
     # MEH-2974: `foreign_keys` is REQUIRED here, and the requirement arrived
     # with `producers.owner_invite_created_by`. There are now two foreign-key

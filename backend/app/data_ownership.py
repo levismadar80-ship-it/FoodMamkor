@@ -10,13 +10,13 @@ Does NOT: police admin (`admin.py`), import (`producer_import.py`) or seed
           still exist. It also does not enforce LEGACY expiry dates; that is
           `scripts/checks/legacy-expiry-check.sh` (MEH-1857).
 Related:  docs/DATA_OWNERSHIP.md (the prose registry this mirrors),
-          backend/app/routers/producer_me.py (`_PRODUCER_WRITABLE_FIELDS`),
+          backend/app/services/producer_owner_update.py (`_PRODUCER_WRITABLE_FIELDS`),
           tests/test_data_ownership.py (the fitness function).
 History:  MEH-2145 (creation, MEH-1938 batch B6). MEH-2521 added
           organic_certified and has_delivery.
 """
 
-# Fields REMOVED from `_PRODUCER_WRITABLE_FIELDS` in producer_me.py, each
+# Fields REMOVED from `_PRODUCER_WRITABLE_FIELDS` in producer_owner_update.py, each
 # because the owner PUT accepted a value that no owner-facing UI produced or
 # that no consumer surface rendered. The disposition per field, and the reason
 # re-adding one is a decision rather than a tidy-up, is in

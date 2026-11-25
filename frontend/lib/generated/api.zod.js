@@ -531,6 +531,7 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "group_buy_id": /*#__PURE__*/ zod.uuid(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
@@ -538,6 +539,16 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "user_waitlisted": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserWaitlistedDefault)
 }).check(/*#__PURE__*/ zod.describe('Full detail — includes whether the current user has committed.'))
 export const AdminListGroupBuysAdminGroupBuysGetResponse = /*#__PURE__*/ zod.array(AdminListGroupBuysAdminGroupBuysGetResponseItem)
+
+
+/**
+ * Release a group-buy no-show block. The marks stay; they stop counting.
+ * @summary Clear Group Buy Block
+ */
+export const ClearGroupBuyBlockAdminGroupBuysUsersUserIdClearBlockPostResponse = /*#__PURE__*/ zod.object({
+  "active_no_shows": /*#__PURE__*/ zod.int(),
+  "user_id": /*#__PURE__*/ zod.uuid()
+})
 
 
 /**
@@ -3562,6 +3573,8 @@ export const SetTestBusinessAdminTestBusinessesProducerIdPutResponse = /*#__PURE
  * @summary List Users
  */
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;
+export const listUsersAdminUsersGetResponseGroupBuyActiveNoShowsDefault = 0;
+export const listUsersAdminUsersGetResponseGroupBuyBlockedDefault = false;
 export const listUsersAdminUsersGetResponseIsBlockedDefault = false;
 export const listUsersAdminUsersGetResponseIsSuperAdminDefault = false;
 export const listUsersAdminUsersGetResponseRescueActiveNoShowsDefault = 0;
@@ -3572,6 +3585,8 @@ export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "email": /*#__PURE__*/ zod.string(),
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseFavoritesCountDefault),
+  "group_buy_active_no_shows": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseGroupBuyActiveNoShowsDefault),
+  "group_buy_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseGroupBuyBlockedDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsBlockedDefault),
   "is_super_admin": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsSuperAdminDefault),
@@ -4983,6 +4998,7 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "group_buy_id": /*#__PURE__*/ zod.uuid(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
@@ -5007,6 +5023,31 @@ export const UpdateCommitGroupBuysGroupBuyIdCommitPatchResponse = /*#__PURE__*/ 
  * @summary Commit To Group Buy
  */
 export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Mark Group Buy Handed
+ */
+export const MarkGroupBuyHandedGroupBuysGroupBuyIdCommitsCommitIdHandedPostResponse = /*#__PURE__*/ zod.object({
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "no_show_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "quantity": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * Only after the pickup ended, once per commit; mails the participant.
+ * @summary Mark Group Buy No Show
+ */
+export const MarkGroupBuyNoShowGroupBuysGroupBuyIdCommitsCommitIdNoShowPostResponse = /*#__PURE__*/ zod.object({
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "no_show_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "quantity": /*#__PURE__*/ zod.int()
+})
 
 
 /**
@@ -7012,6 +7053,24 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyGroupBuysProducersMeGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListMyGroupBuysProducersMeGroupBuysGetResponseItem)
+
+
+/**
+ * Codes and quantities of one of the business's group buys.
+ * @summary List Pickups
+ */
+export const ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse = /*#__PURE__*/ zod.object({
+  "can_mark": /*#__PURE__*/ zod.boolean(),
+  "mark_state": /*#__PURE__*/ zod.enum(['open', 'not_funded', 'delivery', 'no_window', 'wait', 'closed']),
+  "pickup_ended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickups": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "no_show_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "quantity": /*#__PURE__*/ zod.int()
+}))
+})
 
 
 /**
