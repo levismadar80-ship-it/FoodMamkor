@@ -26,3 +26,6 @@ tables (alembic_version excluded) at revision `c6e8a0b2d4f5`, which follows
 The revision creates one table, so the schema job counts 69 on a staging of
 68 and fails `CI gate`. If another table lands on staging first, count again
 from the migrations; never from this file.
+
+Applied 25/11 via the web editor (Claude in Chrome) in `97fa9f100`; the committed
+file's sha256 matches the prepared one.
