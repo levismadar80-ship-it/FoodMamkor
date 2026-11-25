@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { CaretDown, CaretRight, ClipboardText } from "@phosphor-icons/react";
 import ReviewEvidence from "./ReviewEvidence";
 import GooglePlaceLink from "./GooglePlaceLink";
+import Checkbox from "@/components/ui/Checkbox";
 
 const CARET_SIZE = 16;
 const HEADER_ICON_SIZE = 18;
@@ -112,13 +113,12 @@ export default function AdminReviewChecklist({
                 return (
                   <li key={item.id}>
                     {/* label wraps the input → no id needed, a11y intact */}
-                    <label className="flex items-start gap-2 cursor-pointer text-xs">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => onToggleItem(item.id)}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                      />
+                    <Checkbox
+                      className="flex items-start gap-2 text-xs"
+                      boxClassName="mt-0.5"
+                      checked={isChecked}
+                      onChange={() => onToggleItem(item.id)}
+                    >
                       <span className="flex flex-col">
                         <span
                           className={
@@ -133,7 +133,7 @@ export default function AdminReviewChecklist({
                           </span>
                         )}
                       </span>
-                    </label>
+                    </Checkbox>
                   </li>
                 );
               })}

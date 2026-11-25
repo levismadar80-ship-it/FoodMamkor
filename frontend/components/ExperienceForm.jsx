@@ -40,6 +40,7 @@ import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
 import ExperienceSessionsField, { isHalfSession } from "@/components/ExperienceSessionsField";
+import Checkbox from "@/components/ui/Checkbox";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -774,10 +775,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       </Field>
 
       <div>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.is_recurring} onChange={setField("is_recurring")} className="w-4 h-4" />
+        <Checkbox
+          className="flex items-center gap-2"
+          checked={form.is_recurring}
+          onChange={setField("is_recurring")}
+        >
           <span className="text-sm">{t("is_recurring")}</span>
-        </label>
+        </Checkbox>
         {form.is_recurring && (
           <div className="mt-2">
             <Input

@@ -8,6 +8,7 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Module:   PublishWithConsentPanel
@@ -141,16 +142,15 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
             <InlineMessage data-testid="consent-publish-screenshot-error">{shotError}</InlineMessage>
           )}
         </div>
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid="consent-publish-consent"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          />
+        <Checkbox
+          className="flex items-start gap-2 text-sm"
+          boxClassName="mt-0.5"
+          data-testid="consent-publish-consent"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+        >
           <span className="leading-relaxed text-text">{t("consent")}</span>
-        </label>
+        </Checkbox>
 
         {error && (
           <InlineMessage data-testid="consent-publish-error">{error}</InlineMessage>
