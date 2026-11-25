@@ -25,6 +25,7 @@
 * `frontend/e2e/flows/manual/map-01.spec.ts` · `frontend/e2e/flows/manual/map-02.spec.ts` (fixtures and `tapMarker`: `frontend/e2e/flows/manual/_map-shared.ts`) — כולל המקרה של MEH-2776, ב-`frontend/e2e/flows/manual/map-02.spec.ts` (פקד אחד, שתי מעטפות).
 * `frontend/e2e/flows/manual/map-back-restore.spec.ts` · `frontend/e2e/flows/manual/map-banner-controls.spec.ts`
 * `frontend/e2e/flows/07-gps-button.spec.ts` · `frontend/e2e/flows/43-minimap-buttons-over-tiles.spec.ts`
+* `frontend/__tests__/CookieBannerHeightBeforePaint.test.jsx` · המקרה של MEH-3820 ב-`frontend/__tests__/MapManualOrigin.test.jsx` — המפה בנייד לא זזה בזמן הטעינה: הסרגל העליון בזרימה, ושטח באנר העוגיות נשמר כבר בציור הראשון (MEH-3820).
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 * `frontend/__tests__/CategoryPinGroupColours.test.jsx` · `frontend/__tests__/useMapFilters.legendGroups.test.js` — צבע לקבוצה, אייקון לקטגוריה, מקרא של 6 קבוצות (MEH-3076).
 * `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והשם המתועתק `byshvl-lpy-hzmnh` שהחזית מסתמכת עליו (MEH-3738).

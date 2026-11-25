@@ -30,10 +30,11 @@ describe("MEH-2533 logout on the mobile admin", () => {
     nav.pathname = "/admin";
   });
 
-  it("an admin gets a md:hidden logout with the shared key, and it logs out", () => {
+  it("an admin gets a md:hidden logout with the shared key, and it logs out", async () => {
     authState.user = { id: "a1", role: "admin", name: "ספיר" };
     render(<AdminLayout><div /></AdminLayout>);
-    const btn = screen.getByTestId("admin-mobile-logout");
+    // MEH-3818: it appears with the home's content, once the counts answered.
+    const btn = await screen.findByTestId("admin-mobile-logout");
     expect(btn).toHaveTextContent("account.menu.logout");
     expect(btn.parentElement.className).toContain("md:hidden");
     fireEvent.click(btn);
@@ -55,10 +56,22 @@ describe("MEH-2533 logout on the mobile admin", () => {
     expect(screen.queryByTestId("admin-mobile-logout")).toBeNull();
   });
 
-  it("is not red on the panel's home", () => {
+  it("is not red on the panel's home", async () => {
     authState.user = { id: "a1", role: "admin", name: "ספיר" };
     render(<AdminLayout><div /></AdminLayout>);
-    expect(screen.getByTestId("admin-mobile-logout").className).not.toContain("text-error");
+    expect((await screen.findByTestId("admin-mobile-logout")).className).not.toContain("text-error");
+  });
+
+  // MEH-3818: under the home's short skeleton the button dropped ~420px when
+  // the home filled in. It now waits for the counts the home waits for.
+  it("waits for the home's counts before it appears", async () => {
+    authState.user = { id: "a1", role: "admin", name: "ספיר" };
+    let answer;
+    apiMock.get.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    render(<AdminLayout><div /></AdminLayout>);
+    expect(screen.queryByTestId("admin-mobile-logout")).toBeNull();
+    answer({ data: { stats: {} } });
+    expect(await screen.findByTestId("admin-mobile-logout")).toBeInTheDocument();
   });
 
   // MEH-3026 (F3): the root layout already renders <main id="main-content">;

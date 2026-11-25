@@ -106,8 +106,14 @@ call site for `initialize()` — in the hook. No component may call it directly.
 
 **Regression spec:** `frontend/e2e/flows/09-login-console-clean.spec.ts`
 
-**Rule:** Any new component that renders a Google Sign-In button must use
-`useGoogleSignIn`, never `window.google.accounts.id.initialize()` directly.
+**Superseded by MEH-3690 (24/11/2026):** the site no longer renders Google's
+button or calls `google.accounts.id.initialize()` at all, so this bug cannot
+recur. Every Google sign-in is our own button (`frontend/components/ui/GoogleButton.jsx`)
+with its own code client per mount (`frontend/lib/use-google-code-sign-in.js`),
+which has no shared callback to go stale. `useGoogleSignIn` is deleted.
+
+**Rule:** a new Google sign-in uses `useGoogleCodeSignIn` and `GoogleButton`;
+never `window.google.accounts.id.initialize()` / `renderButton()`.
 
 ---
 
@@ -280,3 +286,24 @@ that fills the screen with something that eats every touch (a map, a canvas,
 an image viewer) uses the hook.
 
 **Regression spec:** `frontend/__tests__/MiniMap.test.jsx` «MEH-3509».
+
+## A root provider's update during hydration throws the page back to the loader (MEH-3828)
+
+**Symptom:** on a slow phone the whole page turns into the route loader
+(`app/[locale]/loading.js`) about 5 s after load, then mounts again. The
+footer jumps by about a screen (≈ 1.0 CLS) and data the page read is read
+twice. No console error.
+
+**Root cause:** a context provider above the page (here `AuthProvider`) sets
+state from its mount effect as an urgent update. When it reaches a Suspense
+boundary still waiting to hydrate (a `next/dynamic` chunk not loaded yet),
+React drops that boundary's server HTML and shows its fallback
+(https://react.dev/errors/421; React 18 logs it only in development).
+
+**Fix:** set that state inside `startTransition`, so hydration finishes first.
+The cost: consumers see the old value until the page has hydrated.
+
+**Siblings:** a new provider in `app/[locale]/layout.js` that sets state on
+mount does the same.
+
+**Regression spec:** `frontend/__tests__/AuthHydrationNoFallback.test.jsx`.

@@ -118,7 +118,10 @@ export default async function ProducerPage(props) {
   return (
     <>
       <ProducerJsonLd producer={producer} locale={params.locale} />
-      <ProducerDetail />
+      {/* MEH-3819: keyed like the slug route (MEH-1151), so a client move to
+          another business starts its lists and its wait from empty instead of
+          painting the previous business's events first. */}
+      <ProducerDetail key={params.id} />
     </>
   );
 }

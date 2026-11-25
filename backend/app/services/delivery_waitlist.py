@@ -204,9 +204,9 @@ def _email_copy(
     subject = f"{producer_name} מגיעים עכשיו גם ל{city}"
     body = (
         f"היי,\n\n"
-        f"ביקשת שנודיע לך כש{producer_name} יגיעו ל{city} — וזה קרה. "
+        f"ביקשתם שנעדכן כש{producer_name} יגיעו ל{city} — וזה קרה. "
         f"עכשיו אפשר להזמין:\n{_producer_url(producer_id)}\n\n"
-        f"לא רוצה עדכונים על המשלוחים האלה? {_unsubscribe_url(entry_id)}\n"
+        f"לא רוצים עדכונים על המשלוחים האלה? {_unsubscribe_url(entry_id)}\n"
         "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
     return subject, body

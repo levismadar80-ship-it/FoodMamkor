@@ -81,7 +81,6 @@ frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx
 frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx
 frontend/app/[locale]/producer/[id]/components/ReviewExcerpt.jsx
 frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx
-frontend/app/[locale]/producer/[id]/hooks/useLazyReviews.js
 frontend/app/[locale]/producer/[id]/hooks/useProducerData.js
 frontend/app/[locale]/producer/[id]/hooks/useStickyBar.js
 frontend/app/[locale]/producer/[id]/lib/section-nav.js
@@ -246,7 +245,6 @@ frontend/lib/server-first-json.js
 frontend/lib/use-catalog-snapshot.js
 frontend/lib/use-favorite-producers.js
 frontend/lib/use-focus-return.js
-frontend/lib/use-gsi-redraw-on-resize.js
 frontend/lib/use-home-page.js
 frontend/lib/use-test-business-ids.js
 frontend/lib/use-user-city.js

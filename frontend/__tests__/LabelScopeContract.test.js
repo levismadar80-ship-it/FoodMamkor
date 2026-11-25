@@ -292,7 +292,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       delivery: {
         key: "delivery",
         label: "משלוח",
-        tooltip: "העסק מוסר או שולח לכתובת שלך.",
+        tooltip: "העסק מוסר או שולח לכתובת שלכם.",
         color: "muted",
         aboutHref: null,
       },

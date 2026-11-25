@@ -1045,6 +1045,15 @@ A button that is only an icon is `ui/IconButton.jsx` (MEH-3832): `label` is
 required and becomes its name, and it carries `.tap-area`, so a 24px «×» keeps
 its look and still takes a 44px tap. Its look stays the caller's `className`.
 
+When the control must keep its drawn size (an «i» button, a badge chip, a
+crumb, a back link: growing the box would move the line), give it the
+`.tap-area` utility (`app/globals.css`, MEH-3827): an invisible `::before`
+whose insets grow the hit area to 44 × 44 around the control and leave a
+bigger control alone. Used by `ui/BackLink`, `InfoTooltip`, `BadgeRow` and
+`Breadcrumb`. It does not work inside a scroller with `overflow` (the pseudo
+is clipped): use `min-h-touch` there, as the admin phone nav does.
+Neighbouring hit areas may overlap; the later element in the DOM takes the tap.
+
 **Documented exceptions.** These are deliberate and stay below a floor for a
 recorded reason — do not "fix" them:
 

@@ -461,6 +461,19 @@ class GoogleAuthRequest(BaseModel):
     terms_accepted: bool = False
 
 
+class GoogleCodeRequest(BaseModel):
+    """MEH-3690: the one-time code from Google's popup (GIS code client)."""
+
+    code: str = Field(min_length=1, max_length=2048)
+
+
+class GoogleCodeResponse(BaseModel):
+    """MEH-3690: the Google-signed ID token the code was swapped for. The
+    browser posts it to the same routes that take a GIS credential today."""
+
+    id_token: str
+
+
 class AppleAuthRequest(BaseModel):
     id_token: str
     # MEH-3671: emoji dropped, not refused — the person cannot edit this name.

@@ -34,14 +34,14 @@ class TestProducerVariant:
             "dana@example.com", "דנה", "password", flow="producer"
         )
         assert sent["to"] == "dana@example.com"
-        assert sent["subject"] == "ניסיון רישום עסק במהמקור — יש לך כבר חשבון"
+        assert sent["subject"] == "ניסיון רישום עסק במהמקור — כבר יש חשבון"
         body = sent["body"]
         # The whole point of the ticket: say the details were NOT saved.
         assert "פרטי העסק שמולאו בטופס לא נשמרו" in body
         # And give the exact next step, not a bare login link.
         assert "צריך להיכנס לחשבון ולמלא את הטופס" in body
         assert "/login?redirect=/register/producer" in body
-        assert "כבר יש לך חשבון אצלנו עם סיסמה" in body
+        assert "כבר יש חשבון אצלנו עם סיסמה" in body
         assert "הסיסמה לא נחשפה ולא דרושה פעולה" in body
 
     @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ class TestProducerVariant:
             "galya@example.com", "גליה", provider, flow="producer"
         )
         body = sent["body"]
-        assert f"כבר יש לך חשבון אצלנו דרך {label}" in body
+        assert f"כבר יש חשבון אצלנו דרך {label}" in body
         # Same body as the password variant apart from the identity line
         # and the closing reassurance.
         assert "פרטי העסק שמולאו בטופס לא נשמרו" in body
@@ -82,10 +82,10 @@ class TestConsumerVariantUnchanged:
         auth_emails.send_duplicate_attempt_email(
             "noa@example.com", "נועה", "password"
         )
-        assert sent["subject"] == "ניסיון רישום במהמקור — יש לך כבר חשבון"
+        assert sent["subject"] == "ניסיון רישום במהמקור — כבר יש חשבון"
         body = sent["body"]
-        assert "מישהו ניסה להירשם למהמקור עם הכתובת שלך" in body
-        assert "כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, אפשר להיכנס כאן" in body
+        assert "מישהו ניסה להירשם למהמקור עם כתובת המייל הזאת" in body
+        assert "כבר יש חשבון אצלנו עם סיסמה. אם זה הייתם אתם, אפשר להיכנס כאן" in body
         # The consumer flow must never mention a business at all.
         assert "עסק" not in body
         assert "redirect=/register/producer" not in body

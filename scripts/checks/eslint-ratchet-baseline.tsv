@@ -108,7 +108,6 @@ frontend/app/[locale]/admin/reviews/page.jsx	no-restricted-syntax	4
 frontend/app/[locale]/admin/reviews/page.jsx	react-hooks/immutability	1
 frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	design-system/no-html-button	4
 frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	design-system/no-html-heading	2
-frontend/app/[locale]/admin/settings/ChecklistSettings.jsx	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/admin/settings/PasskeySettings.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/admin/settings/page.js	design-system/no-html-button	1
 frontend/app/[locale]/admin/settings/page.js	design-system/no-html-heading	6
@@ -212,13 +211,12 @@ frontend/app/[locale]/producer/[id]/components/OrderWindowStrip.jsx	design-syste
 frontend/app/[locale]/producer/[id]/components/OrderWindowStrip.jsx	react-hooks/set-state-in-effect	3
 frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx	design-system/no-html-heading	2
 frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx	react-hooks/immutability	1
-frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx	react-hooks/purity	1
 frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx	design-system/no-html-anchor	2
 frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx	react-hooks/set-state-in-effect	2
 frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx	design-system/no-html-button	3
 frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx	eqeqeq	7
-frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx	react-hooks/immutability	5
+frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx	react-hooks/immutability	4
 frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/producer/[id]/components/ReviewExcerpt.jsx	design-system/no-html-anchor	1
 frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx	design-system/no-html-anchor	1
@@ -228,6 +226,8 @@ frontend/app/[locale]/producer/dashboard/ChangesRequestedBanner.jsx	design-syste
 frontend/app/[locale]/producer/dashboard/DashboardLayoutClient.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	design-system/no-html-button	1
 frontend/app/[locale]/producer/dashboard/RejectedBanner.jsx	eqeqeq	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-button	1
+frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx	design-system/no-html-button	2
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx	design-system/no-html-button	4
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx	design-system/no-html-select	2
@@ -300,7 +300,7 @@ frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-b
 frontend/app/[locale]/producer/dashboard/reviews/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/share/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-button	1
-frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	4
+frontend/app/[locale]/producer/dashboard/tools/page.js	design-system/no-html-heading	5
 frontend/app/[locale]/producer/dashboard/tools/page.js	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	design-system/no-html-heading	1
 frontend/app/[locale]/producer/dashboard/whats-new/page.js	jsx-a11y/no-redundant-roles	1
@@ -699,7 +699,6 @@ frontend/components/ui/Popover.jsx	react-hooks/refs	1
 frontend/components/ui/Tooltip.jsx	jsx-a11y/click-events-have-key-events	1
 frontend/components/ui/Tooltip.jsx	jsx-a11y/no-static-element-interactions	1
 frontend/components/ui/Tooltip.jsx	react-hooks/preserve-manual-memoization	1
-frontend/lib/auth-context.js	react-hooks/set-state-in-effect	1
 frontend/lib/chip-copy.js	eqeqeq	1
 frontend/lib/dashboard-status-classes.js	no-restricted-syntax	3
 frontend/lib/delivery-fee.js	eqeqeq	1
@@ -727,7 +726,6 @@ frontend/lib/use-admin-action.js	react-hooks/exhaustive-deps	1
 frontend/lib/use-events-nav-gate.js	react-hooks/set-state-in-effect	1
 frontend/lib/use-experiences-nav-gate.js	react-hooks/set-state-in-effect	1
 frontend/lib/use-favorite-producers.js	react-hooks/set-state-in-effect	1
-frontend/lib/use-google-sign-in.js	react-hooks/refs	1
 frontend/lib/use-home-page.js	react-hooks/exhaustive-deps	1
 frontend/lib/use-rescue-reservation.js	react-hooks/refs	1
 frontend/lib/use-user-city.js	react-hooks/set-state-in-effect	1

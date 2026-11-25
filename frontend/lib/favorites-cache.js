@@ -23,7 +23,7 @@ import {
 
 let ids = new Set();
 // MEH-2724: the full producer rows from the SAME response, newest first, for
-// the homepage «המועדפים שלך» strip. Parsed per row (one bad row costs one
+// the homepage «המועדפים שלכם» strip. Parsed per row (one bad row costs one
 // card, as on /favorites). Filtered through `ids` on read, so a heart removed
 // anywhere drops the card at once. Rows with no created_at sort last.
 let rows = [];
