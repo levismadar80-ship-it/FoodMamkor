@@ -25,6 +25,11 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 // Hand-enumerated: every glyph ProducerSections + its children + the nav load.
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   Leaf: () => <span />,
   // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
   SealCheck: () => <span />,

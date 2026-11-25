@@ -295,6 +295,10 @@ export const ProducerListSchema = z.object({
   delivers: z.boolean().nullable().optional(),               // → delivery badge + card fulfillment tag
   offers_pickup: z.boolean().nullable().optional(),          // → card fulfillment tag (PR-3)
   sells_on_site: z.boolean().nullable().optional(),          // → card «קנייה במקום» tag (MEH-2598)
+  // MEH-3824: gate the map's offer switches (one business with one ⇒ the switch shows).
+  has_open_group_buy: z.boolean().nullable().optional(),
+  has_upcoming_event: z.boolean().nullable().optional(),
+  has_listed_experience: z.boolean().nullable().optional(),
   products_count: z.number().nullable().optional(),          // → products
   // MEH-1719: the SEVENTH recurrence, and the first one that is not about
   // badges at all. MEH-1704 declared what `badges.js::earnsBadge` reads and

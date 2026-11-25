@@ -163,6 +163,13 @@ def list_producers(
     # third PEER of the service group (OR-ed with delivery and pickup), the
     # filter twin of the map card's «קנייה במקום» tag.
     on_site: bool | None = None,
+    # MEH-3824: the map's offer switches. OR-ed with each other (a business
+    # with a bag today OR an open group buy...), AND-ed with every other
+    # filter. Each kind reads the public list it mirrors (offer_supply.py).
+    rescue_today: bool | None = None,
+    group_buy: bool | None = None,
+    event: bool | None = None,
+    experience: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
     # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
@@ -261,6 +268,10 @@ def list_producers(
         has_delivery=has_delivery,
         pickup_points=pickup_points,  # MEH-2046
         on_site=on_site,  # MEH-2598
+        rescue_today=rescue_today,  # MEH-3824
+        group_buy=group_buy,
+        event=event,
+        experience=experience,
         verified=verified,
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881

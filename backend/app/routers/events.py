@@ -145,6 +145,27 @@ def _producer_phone(db: Session, producer_id: UUID) -> str | None:
 # ============================================================
 
 
+def public_event_feed_query(db: Session) -> Any:
+    """The rows GET /events lists for a stranger with no filter: active, an
+    approved non-test business, today (Israel) onward (MEH-3824).
+
+    `list_events` builds the same rows inline, because an admin or an owner
+    viewing their own page bypasses the business gate there. The map's
+    «אירועים» switch (services/offer_supply.py) reads this one, and
+    tests/test_meh3824_offer_filters.py pins that the two agree.
+    """
+    return (
+        db.query(Event)
+        .join(Producer, Event.producer_id == Producer.id)
+        .filter(
+            Event.is_active.is_(True),
+            Producer.status == "approved",
+            not_test_producer(),
+            Event.event_date >= israel_today(),
+        )
+    )
+
+
 @router.get("/events", response_model=list[EventOut])
 @limiter.limit("120/minute")
 def list_events(

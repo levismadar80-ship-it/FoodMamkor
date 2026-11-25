@@ -32,6 +32,7 @@ const VOCAB = {
 const OTHER_MEANING = {
   "admin.help.topics.approved_actions.steps.3": "«מוחק לתמיד» — about deleting a business, not about price",
   "nav.opportunities": "«הזדמנויות» — the letters of «מנוי» sit inside the word; it is the tab name, not about price",
+  "filters.sheet.group_offers": "«הזדמנויות» — the same word as nav.opportunities, a filter-sheet heading (MEH-3824), not about price",
 };
 
 /** @returns {Record<string, string>} every string message, by dotted key */

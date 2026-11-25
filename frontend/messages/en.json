@@ -6916,7 +6916,9 @@
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",
-      "clear": "Clear all"
+      "clear": "Clear all",
+      "group_offers": "Finds",
+      "group_happenings": "Events & workshops"
     }
   },
   "whats_this": {
@@ -7753,6 +7755,18 @@
     "no_added_sugar": {
       "label": "No added sugar",
       "subtext": "Businesses with no-added-sugar products in their catalog"
+    },
+    "rescue_today": {
+      "label": "Surprise bags"
+    },
+    "group_buy": {
+      "label": "Group buys"
+    },
+    "event": {
+      "label": "Events"
+    },
+    "experience": {
+      "label": "Experiences"
     }
   },
   "map_category_chips": {

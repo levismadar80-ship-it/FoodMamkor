@@ -56,7 +56,9 @@ import { SwitchTrack } from "@/components/ui/Switch";
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
-const GROUP_ORDER = ["diet", "quality", "service"];
+// MEH-3824: the offer switches lead (Sapir 25/11, the mock she picked). On
+// /producers these groups have no chips, so they render nothing there.
+const GROUP_ORDER = ["offers", "happenings", "diet", "quality", "service"];
 
 // MEH-1507 — Label Scope Contract: each chip carries its own scope-explicit
 // `subtext` (lib/filter-taxonomy.js FILTER_AXES). grass_fed reads "לפי הצהרת בית

@@ -47,6 +47,10 @@ vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{c
 // Enumerated, not a Proxy: a Proxy's getter runs during ProducersClient's
 // import and dereferences the JSX runtime before vitest has initialised it.
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CookingPot: () => null,
   // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
   ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent

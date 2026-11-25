@@ -48,7 +48,7 @@ const ALL_KEYS = Object.keys(FILTER_AXES);
 const SURFACES = ["home", "producers", "map"];
 const SCOPES = ["business", "any-product", "facility"];
 const EVIDENCE = ["self-declared", "admin-verified", "system"];
-const GROUPS = ["diet", "quality", "service"];
+const GROUPS = ["offers", "happenings", "diet", "quality", "service"]; // MEH-3824: the two map-only offer groups
 
 describe("MEH-2130 — axis declarations are complete and well-formed", () => {
   it("every axis declares label, scope, evidence, group and surfaces", () => {

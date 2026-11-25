@@ -67,7 +67,7 @@
  *                false the FilterSheet falls back to a BADGE_CONFIG tooltip
  *                (kosher · verified). All Hebrew copy is Sapir-LOCKED by its
  *                originating ticket — moved VERBATIM to he.json by MEH-2748.
- *   group      — FilterSheet section: diet | quality | service.
+ *   group      — FilterSheet section: offers | happenings | diet | quality | service.
  *   surfaces   — subset of ["home", "producers", "map"]. This is the ONLY
  *                membership declaration in the repo.
  *   homeParam  — home's own URL param name when it differs from `key`. Present
@@ -80,11 +80,57 @@
  *                visibleAxisChips is the one function that reads it. Before
  *                MEH-2767 each surface kept its own gate list and they drifted
  *                (Sapir's two screenshots, 06/11).
+ *   gateMin    — MEH-3824. How many businesses a "count" axis needs before its
+ *                chip renders. Absent ⇒ DIET_CHIP_MIN (5). The offer axes
+ *                use 1: one business with a bag is a working filter.
  *   mapParam   — false when /map deliberately emits NO param for this axis.
  *                Present on exactly one axis, and it marks a DEFECT, not a
  *                design choice (see no_added_sugar).
  */
 export const FILTER_AXES = {
+  // MEH-3824 (Sapir 25/11, option ב): what a business has on besides its
+  // products — the map's four offer switches. /map only: the backend filters
+  // (`?rescue_today` · `?group_buy` · `?event` · `?experience`) are OR-ed with
+  // each other (services/offer_supply.py), and each reads the public list it
+  // mirrors. `gateMin: 1` — one business with a bag today is worth a switch;
+  // none means the switch is not drawn (Sapir: «אם לא קיימים סלים שלא יוצגו
+  // המתגים»). Labels are the site's existing words (Sapir approved 25/11).
+  rescue_today: {
+    scope: "business",
+    evidence: "system",
+    hasSubtext: false,
+    group: "offers",
+    surfaces: ["map"],
+    gate: "count",
+    gateMin: 1,
+  },
+  group_buy: {
+    scope: "business",
+    evidence: "system",
+    hasSubtext: false,
+    group: "offers",
+    surfaces: ["map"],
+    gate: "count",
+    gateMin: 1,
+  },
+  event: {
+    scope: "business",
+    evidence: "system",
+    hasSubtext: false,
+    group: "happenings",
+    surfaces: ["map"],
+    gate: "count",
+    gateMin: 1,
+  },
+  experience: {
+    scope: "business",
+    evidence: "system",
+    hasSubtext: false,
+    group: "happenings",
+    surfaces: ["map"],
+    gate: "count",
+    gateMin: 1,
+  },
   // ── service ────────────────────────────────────────────────────────────
   // MEH-1082. Owner-toggled business property; no external check.
   has_delivery: {
@@ -333,7 +379,20 @@ export const FILTER_AXES = {
  * output must not move. FilterSheet applies its own within-group presentation
  * order (GROUP_CHIP_ORDER) on top of this; that split predates MEH-2130.
  */
+/**
+ * MEH-3824: the FilterSheet groups that live on /map ONLY (Sapir 25/11 chose
+ * the map's «סינון» for them). The one exception to MEH-2767's "every surface
+ * offers the same axes": surfaceParity.test.js holds every OTHER axis to that
+ * rule, and holds these to exactly ["map"].
+ */
+export const MAP_ONLY_GROUPS = ["offers", "happenings"];
+
 export const MAP_CHIP_ORDER = [
+  // MEH-3824: the offer switches lead the sheet (FilterSheet GROUP_ORDER).
+  "rescue_today",
+  "group_buy",
+  "event",
+  "experience",
   "has_delivery",
   "pickup_points",
   "on_site", // MEH-2598

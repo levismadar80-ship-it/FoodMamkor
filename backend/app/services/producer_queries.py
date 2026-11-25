@@ -363,31 +363,16 @@ def attach_rescue_today(producers: list[Any], db: Session) -> list[Any]:
         return producers
     for p in producers:
         p.rescue_today = None
-    if not _rescue_pilot_on():
-        return producers
-    # Call-time imports: rescue_reads imports producer_listing, which imports
-    # this module.
-    from app.routers.rescue import rescue_cities
-    from app.services.rescue_reads import RESERVE_CLOSES_BEFORE_END, public_business_clauses
-    from app.utils.clock import israel_today
+    # MEH-3824: the same query feeds the map's «סלי הפתעה» switch
+    # (services/offer_supply.py), so the row and the switch cannot disagree.
+    from app.services.offer_supply import rescue_today_query
 
-    pilot = rescue_cities()
-    if not pilot:
+    q = rescue_today_query(db)
+    if q is None:
         return producers
     ids = [p.id for p in producers]
     rows = (
-        db.query(RescueOffer, ProducerLocation.producer_id)
-        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
-        .join(Producer, ProducerLocation.producer_id == Producer.id)
-        .filter(
-            ProducerLocation.producer_id.in_(ids),
-            ProducerLocation.city.in_(pilot),
-            RescueOffer.date == israel_today(),
-            RescueOffer.status == "active",
-            RescueOffer.qty_left > 0,
-            RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
-            *public_business_clauses(),
-        )
+        q.filter(ProducerLocation.producer_id.in_(ids))
         .order_by(RescueOffer.pickup_start.asc(), RescueOffer.id.asc())
         .all()
     )

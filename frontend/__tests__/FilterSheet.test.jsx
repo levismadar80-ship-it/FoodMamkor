@@ -75,12 +75,17 @@ describe("FilterSheet (MEH-1075)", () => {
     renderSheet();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("filters.sheet.title")).toBeInTheDocument();
-    for (const group of ["group_diet", "group_quality", "group_service"]) {
+    for (const group of ["group_offers", "group_happenings", "group_diet", "group_quality", "group_service"]) {
       expect(screen.getByText(`filters.sheet.${group}`)).toBeInTheDocument();
     }
     // Labels stay literal (a copy lock — MEH-1418 renamed one of these and this
     // roster is what would catch the next such rename).
     const LABELS = [
+      // MEH-3824: the map's offer switches (Sapir approved the words 25/11).
+      "סלי הפתעה",
+      "קבוצות רכישה",
+      "אירועים",
+      "חוויות",
       // diet — pills (MEH-2169). MEH-1508 chunk 3ב-2: the §6.6 rename. The two
       // 100% axes it added beside them left the sheet in MEH-2677.
       "מתאים לטבעונים",

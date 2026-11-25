@@ -53,6 +53,11 @@ vi.mock("@/components/ImageWithFallback", () => ({
 
 // Mock Phosphor icon
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,
   // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
   SealCheck: () => null,
