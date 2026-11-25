@@ -95,6 +95,7 @@ This page links to those and does not repeat their numbers.
 | Who handles a business's orders besides its owner (MEH-3526) | Postgres `producer_staff`; the invite link's token only as a sha256 hash | read on every request (`services/order_access.py`), never put in the JWT; removal or leaving takes effect on the next request |
 | An order-staff invite link on its way through sign-in (MEH-3526) | browser `sessionStorage`, `mehamakor.staffInviteToken` | moved out of the address on first load; cleared after a successful accept or with the tab; scrubbed from analytics and error events (`lib/claim-token.js`) |
 | A finished order's lines on their way back to the cart, «להזמין שוב» (MEH-3764) | browser `sessionStorage`, `meh_order_again`: the business id, each line's product (and variant) id, quantity and name, and when it was stored | read once by that business's page and removed on read; ignored after 30 minutes or for another business; cleared with the tab |
+| The extra pages of «כל בתי העסק» the reader scrolled through, and her place, on her way to a business card and back (MEH-3810) | browser `sessionStorage`, `list-return:producers`: the query string, the scroll offset, the loaded rows (public catalog data only), the next page number, the total | read only on a Back/Forward step to the same query; written on a link click or `pagehide`; not written above 240 rows or with a filter or sort on; cleared with the tab (`frontend/lib/use-list-return.js`) |
 
 ## What gives first under load
 
