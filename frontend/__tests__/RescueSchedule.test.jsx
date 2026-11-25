@@ -215,6 +215,33 @@ describe("the settings page", () => {
     expect((await screen.findByTestId("rescue-schedule-note")).textContent).toBe(s.saved);
   });
 
+  it("pickup hours are picked on a 24-hour clock, not a time input (MEH-3823 select)", async () => {
+    get.mockResolvedValue({ data: [row()] });
+    render(<Form today={THU} />);
+    const hour = await screen.findByTestId("rescue-schedule-from-hour");
+    expect(screen.queryByDisplayValue("18:00")).toBeNull(); // no <input type="time"> holding the value
+    expect([...hour.querySelectorAll("option")].map((o) => o.value)).toContain("23");
+    fireEvent.change(hour, { target: { value: "19" } });
+    fireEvent.change(screen.getByTestId("rescue-schedule-to-hour"), { target: { value: "21" } });
+    fireEvent.click(screen.getByTestId("rescue-schedule-save"));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls[0][1]).toMatchObject({ pickup_start: "19:00", pickup_end: "21:00" });
+  });
+
+  it("the bag's worth: loaded in shekels, sent in agorot above the price, cleared at or below it", async () => {
+    get.mockResolvedValue({ data: [row({}, { value_min_agorot: 4000 })] });
+    render(<Form today={THU} />);
+    const worth = await screen.findByTestId("rescue-schedule-worth");
+    expect(worth.value).toBe("40");
+    fireEvent.click(screen.getByTestId("rescue-schedule-save"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(1));
+    expect(put.mock.calls[0][1]).toMatchObject({ value_min_agorot: 4000 });
+    fireEvent.change(worth, { target: { value: "15" } }); // equal to the price: buyers would see no struck price
+    fireEvent.click(screen.getByTestId("rescue-schedule-save"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2));
+    expect(put.mock.calls[1][1]).toMatchObject({ value_min_agorot: null });
+  });
+
   it("many points: one form each; a day in the list toggles its skip", async () => {
     get.mockResolvedValue({ data: [row({}, { weekdays: FRIDAY }), row({ producer_location_id: L2, label: "הדוכן בשוק", schedule: null })] });
     render(<Form today={THU} />);

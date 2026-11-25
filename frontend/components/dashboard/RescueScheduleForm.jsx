@@ -11,7 +11,8 @@
  *           here starts the day after tomorrow.
  * Related:  backend/app/routers/rescue.py (schedule routes) ·
  *           app/[locale]/producer/dashboard/rescue/schedule/page.js (the page)
- * History:  MEH-3703 (creation)
+ * History:  MEH-3703 (creation); follow-up: 24-hour hour/minute selects
+ *           (ui/TimeOfDaySelect) and the bag's worth, as on the publish form.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -30,6 +31,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import Checkbox from "@/components/ui/Checkbox";
 import Heading from "@/components/ui/Heading";
 import Select from "@/components/ui/Select";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import WeekdayChips from "@/components/ui/WeekdayChips";
 
 // Tomorrow is the strip's; the list starts the day after.
@@ -37,10 +39,10 @@ const FIRST_LISTED = 2;
 /**
  * The form's state. Quantity and price hold the input's text while it is
  * being typed (it may be empty); the save turns them into numbers.
- * @typedef {{ weekdays: number, pickup_start: string, pickup_end: string, cancel_minutes: number, qty: number | string, price: number | string, paused: boolean }} Draft
+ * @typedef {{ weekdays: number, pickup_start: string, pickup_end: string, cancel_minutes: number, qty: number | string, price: number | string, worth: number | string, paused: boolean }} Draft
  */
 /** @type {Draft} */
-const DEFAULTS = { weekdays: 0, pickup_start: "18:00", pickup_end: "20:00", cancel_minutes: 30, qty: 4, price: 15, paused: false };
+const DEFAULTS = { weekdays: 0, pickup_start: "18:00", pickup_end: "20:00", cancel_minutes: 30, qty: 4, price: 15, worth: "", paused: false };
 
 /**
  * The routine days from the day after tomorrow up to two weeks ahead.
@@ -68,6 +70,7 @@ function draftOf(schedule) {
     cancel_minutes: schedule.cancel_minutes,
     qty: schedule.qty,
     price: agorotToShekels(schedule.price_agorot),
+    worth: typeof schedule.value_min_agorot === "number" ? agorotToShekels(schedule.value_min_agorot) : "",
     paused: Boolean(schedule.paused),
   };
 }
@@ -107,6 +110,9 @@ function PointRoutine({ row, today, onSaved }) {
           cancel_minutes: Number(draft.cancel_minutes),
           qty: Number(draft.qty),
           price_agorot: shekelsToAgorot(Number(draft.price)),
+          // Buyers see a worth only above the price (worthAgorot), so one at
+          // or below it is cleared rather than stored (as on the publish form).
+          value_min_agorot: Number(draft.worth) > Number(draft.price) ? shekelsToAgorot(Number(draft.worth)) : null,
           paused: draft.paused,
         }),
       "saved",
@@ -128,6 +134,9 @@ function PointRoutine({ row, today, onSaved }) {
 
   const place = row.label || row.address || "";
   const daysId = `rescue-schedule-days-${id}`;
+  const worthHelpId = `rescue-schedule-worth-help-${id}`;
+  const fromId = `rescue-schedule-from-label-${id}`;
+  const toId = `rescue-schedule-to-label-${id}`;
   const skips = row.schedule?.skip_dates || [];
   const longDays = tw("days_long").split(",");
 
@@ -157,15 +166,23 @@ function PointRoutine({ row, today, onSaved }) {
           {tf("price")}
           <Input inline size="xs" type="number" min={0} value={draft.price} onChange={(e) => set({ price: e.target.value })} data-testid="rescue-schedule-price" className="w-full mt-1" />
         </label>
-        {/* min-w-0: iOS Safari draws a time input wider than its column (MEH-2730). */}
-        <label className="font-body-sm text-sm min-w-0">
-          {tf("from")}
-          <Input inline size="xs" type="time" value={draft.pickup_start} onChange={(e) => set({ pickup_start: e.target.value })} data-testid="rescue-schedule-from" className="block w-full min-w-0 mt-1" />
-        </label>
-        <label className="font-body-sm text-sm min-w-0">
-          {tf("to")}
-          <Input inline size="xs" type="time" value={draft.pickup_end} onChange={(e) => set({ pickup_end: e.target.value })} data-testid="rescue-schedule-to" className="block w-full min-w-0 mt-1" />
-        </label>
+        <div className="font-body-sm text-sm col-span-2">
+          <label>
+            {tf("worth")}
+            <Input inline size="xs" type="number" min={0} inputMode="numeric" value={draft.worth} onChange={(e) => set({ worth: e.target.value })} aria-describedby={worthHelpId} data-testid="rescue-schedule-worth" className="w-full mt-1" />
+          </label>
+          <p id={worthHelpId} className="text-xs text-fg-muted mt-1">{tf("worth_help")}</p>
+        </div>
+        {/* Hour and minute selects, not <input type="time">, which shows AM/PM
+            on a device set to English (MEH-3823). min-w-0: MEH-2730. */}
+        <div className="font-body-sm text-sm min-w-0" role="group" aria-labelledby={fromId}>
+          <span id={fromId}>{tf("from")}</span>
+          <TimeOfDaySelect value={draft.pickup_start} onChange={(v) => set({ pickup_start: v })} hourLabel={tf("from_hour")} minuteLabel={tf("from_minute")} testId="rescue-schedule-from" className="mt-1" />
+        </div>
+        <div className="font-body-sm text-sm min-w-0" role="group" aria-labelledby={toId}>
+          <span id={toId}>{tf("to")}</span>
+          <TimeOfDaySelect value={draft.pickup_end} onChange={(v) => set({ pickup_end: v })} hourLabel={tf("to_hour")} minuteLabel={tf("to_minute")} testId="rescue-schedule-to" className="mt-1" />
+        </div>
         <label className="font-body-sm text-sm col-span-2">
           {tf("cancel")}
           <Select
