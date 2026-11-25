@@ -19,6 +19,7 @@
 * `frontend/lib/group-buy-pickup.js` + `frontend/components/group-buy/GroupBuyPickupWindowFields.jsx` — מועד איסוף מובנה (`pickup_starts_at` / `pickup_ends_at`): שדה בטופס וב«הגדרות הצטרפות», שורה בכרטיס ובדף, במייל «הגיעה ליעד», מייל למצטרפים כשהמועד נקבע, משתנה או מוסר (`backend/app/services/group_buy_pickup_text.py`), וכפתור «הוספה ליומן» למצטרפים (`frontend/components/group-buy/GroupBuyCalendarButton.jsx`) (MEH-3597).
 * `frontend/components/offer-detail/WhereSection.jsx` + `frontend/components/offer-detail/HowSteps.jsx` — «איסוף ומשלוח» עם מפה ו«איך זה עובד», אותם בלוקים כמו דף הסל (MEH-3597).
 * `frontend/components/group-buy/GroupBuySafetyFields.jsx` + `frontend/components/AllergenPicker.jsx` + `frontend/components/offer-detail/AllergenSection.jsx` + `frontend/components/offer-detail/PickupLine.jsx` — מה שיש לסלים: אלרגנים (אותו בורר ואותו בלוק כמו בסל), סניף לאיסוף מתוך הסניפים של בית העסק (`backend/app/services/group_buy_pickup_place.py`, עם מפה בדף), שורת מועד האיסוף מתחת לכותרת, «אפשר לבטל עד…», כל הפרטים בכרטיס לבן אחד, ותזכורת במייל לפני האיסוף (`backend/app/services/group_buy_pickup_reminder.py`, כל יום ב-17:00) (MEH-3610).
+* `backend/app/services/group_buy_no_show.py` + `backend/app/routers/group_buy_pickup.py` + `frontend/components/group-buy/GroupBuyPickupList.jsx` — «לא הגיע» כמו בסלים: כל מצטרפת מקבלת קוד איסוף של 4 ספרות (בדף הקבוצה), בית העסק רואה בלוח הבקרה רק קודים וכמויות (לא שמות, MEH-1651) ומסמן אחרי סוף האיסוף «נמסר» או «לא הגיע». אי-הגעה שולחת מייל; שתיים בתוך 30 יום חוסמות הצטרפות לקבוצות (403) עד ששחרור ב-`frontend/app/[locale]/admin/users/`. ספירה נפרדת מהסלים (MEH-3735).
 * `frontend/components/GroupBuyProductPicker.jsx` — «מילוי ממוצר קיים» בטופס היצירה: בחירה ממלאת את שם המוצר ואת המחיר הרגיל. כשאין לעסק מוצרים, הרשימה לא מוצגת (MEH-3438). הטסט `frontend/__tests__/GroupBuyFulfillmentRequired.test.jsx`.
 
 **Flags.** אין.
@@ -39,6 +40,7 @@
 * `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` · `frontend/__tests__/GroupBuyGuestLogin.test.jsx` — הצטרפות אחרי Google בחלונית, פעם אחת ובכמות שנבחרה; סגירת החלונית לא שולחת כלום; «היכנסו» נושא את הדרך חזרה (MEH-3679, MEH-2982).
 * `frontend/__tests__/GroupBuyCommitSummary.test.jsx` — אחרי הצטרפות: שורת «מה הלאה» (פתוחה / הגיעה ליעד עם מועד איסוף / בלי), שורת התשלום, ביטול ככפתור וקישור ל«הקבוצות שלי» (`frontend/components/group-buy/GroupBuyMemberPanel.jsx`, MEH-3734).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
+* `tests/test_meh3735_group_buy_no_show.py` — קוד האיסוף, רשימת הקודים בלי שמות, IDOR, סימון רק אחרי האיסוף ופעם אחת, מיילים, חסימה אחרי שתיים, שחרור באדמין (MEH-3735).
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית הרשימה (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 
 **מזהי רישום שזה מכסה.** `group_buys`.
