@@ -163,7 +163,7 @@ test.describe("Map", () => {
     // breadcrumb line and moves nothing, and that stays guarded. On a phone it
     // still takes a line above the gallery; a map tap there is an in-app
     // navigation, where it is drawn before paint, so the shift is left to
-    // card MEH-3836 and only errors are guarded on the phone here.
+    // card MEH-3856 and only errors are guarded on the phone here.
     test.use({ loadGuard: async ({ isMobile }, use) => use(isMobile ? "errors" : "on") });
 
     test("MEH-1414: producer page shows «חזרה למפה» only when reached with ?from=map", async ({
