@@ -44,11 +44,12 @@ import { layoutSettled } from "../_layout-settled";
  * detail-path prefix; a non-card link under that prefix would also open a
  * detail page, which is what the case needs.
  */
-type List = { name: string; path: string; cards: string; loader: "shows" | "never" };
+type List = { name: string; path: string; cards: string; loader: "shows" | "never"; grows?: boolean };
 
 const LISTS: List[] = [
   { name: "home", path: "/", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows" },
-  { name: "all businesses", path: "/producers", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows" },
+  // `grows`: infinite scroll — the scroll to the last card loads the next page.
+  { name: "all businesses", path: "/producers", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows", grows: true },
   { name: "events", path: "/events", cards: 'main a[href^="/events/"]', loader: "shows" },
   { name: "experiences", path: "/experiences", cards: 'main a[href^="/experiences/"]', loader: "never" },
   { name: "group buys", path: "/group-buys", cards: 'a[data-testid="group-buy-card"]', loader: "never" },
@@ -117,6 +118,24 @@ async function detailLoaded(page: Page, fromUrl: string): Promise<boolean> {
   return left && loaders === 0;
 }
 
+/** On a `grows` list, wait until the scroll has appended the next page, so
+ *  the card opened is one Back must bring back (MEH-3810). A list that stops
+ *  growing fails here instead of passing on its first page. */
+async function waitForNextPage(list: List, cards: import("@playwright/test").Locator, firstPage: number) {
+  if (!list.grows) return;
+  await expect
+    .poll(() => cards.count(), { message: `${list.name}: scrolling to the last card loaded no next page`, timeout: 60_000 })
+    .toBeGreaterThan(firstPage);
+}
+
+/** Scroll an element to the middle of the screen. */
+async function scrollToMiddle(el: import("@playwright/test").Locator) {
+  await el.evaluate((node) => {
+    const r = node.getBoundingClientRect();
+    scrollTo(0, Math.max(0, scrollY + r.top - innerHeight / 2));
+  });
+}
+
 /** Distance between the current scroll offset and `before`. */
 async function offsetFrom(page: Page, before: number): Promise<number> {
   return Math.abs((await page.evaluate(() => scrollY)) - before);
@@ -140,9 +159,17 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
       });
 
       // The last card, scrolled to the middle of the screen: the deepest
-      // place the reader can open something from on this list.
-      // Pinned by index: an infinite-scroll page landing after this line must
-      // not change which card `before` is read for and which is clicked.
+      // place the reader can open something from on this list. On an
+      // infinite-scroll list (/producers) that scroll loads the next page, so
+      // the card is chosen again once the layout settles: a card from the
+      // loaded page is the case Back used to lose (MEH-3810: 64 links before,
+      // 48 after, 4515 px for a reader who left at 5160, staging 25/11).
+      const firstPage = await cards.count();
+      await scrollToMiddle(cards.last());
+      await waitForNextPage(list, cards, firstPage);
+      await layoutSettled(cards.last());
+      // Pinned by index: a page landing after this line must not change which
+      // card `before` is read for and which is clicked.
       const card = cards.nth((await cards.count()) - 1);
       await card.evaluate((el) => {
         const r = el.getBoundingClientRect();
