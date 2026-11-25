@@ -43,6 +43,12 @@ vi.mock("@/lib/errors", () => ({
 
 vi.mock("@phosphor-icons/react", () => ({ ChatCircleText: () => null }));
 
+// MEH-3868: the card links to the contact card; a plain anchor stands in for
+// the locale-aware Link.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>,
+}));
+
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => (key, values) => {
     const full = scope ? `${scope}.${key}` : key;
@@ -495,5 +501,32 @@ describe("PhoneVerifyCard — «sent» only after a send (MEH-2926)", () => {
     expect(he.description.startsWith("נשלח קוד")).toBe(false);
     expect(he.description).toContain("בלחיצה על «שלחו קוד אימות»");
     expect(he.code_sent).toBe("שלחנו קוד לוואטסאפ של מספר העסק.");
+  });
+});
+
+describe("PhoneVerifyCard — names the number the code goes to (MEH-3868)", () => {
+  it("a business card with a phone shows that number and a link to change it", () => {
+    render(<PhoneVerifyCard phone="055-9937900" />);
+    expect(screen.getByTestId("phone-verify-number").textContent).toContain(T("sends_to"));
+    expect(screen.getByTestId("phone-verify-number").textContent).toContain("055-9937900");
+    const change = screen.getByTestId("phone-verify-change");
+    expect(change.getAttribute("href")).toBe("/producer/dashboard/edit#contact-channels");
+    expect(change.textContent).toBe(T("change_number"));
+  });
+
+  it("the number stays on the card after the code is sent", async () => {
+    render(<PhoneVerifyCard phone="055-9937900" />);
+    await click(sendBtn());
+    expect(screen.getByTestId("phone-verify-number").textContent).toContain("055-9937900");
+  });
+
+  it("no phone → no number line", () => {
+    render(<PhoneVerifyCard />);
+    expect(screen.queryByTestId("phone-verify-number")).toBeNull();
+  });
+
+  it("the shopper's own-phone flow never shows the business number line", () => {
+    render(<PhoneVerifyCard variant="user" phone="055-9937900" title="t" description="d" />);
+    expect(screen.queryByTestId("phone-verify-number")).toBeNull();
   });
 });

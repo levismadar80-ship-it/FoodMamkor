@@ -245,7 +245,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
         // and reusing it here made `getByTestId` ambiguous — caught by that
         // suite going red, which is the whole reason it holds the name.
         <div className={actionsOnly ? "" : "mt-4"} id="phone-verify" data-testid="draft-phone-verify">
-          <PhoneVerifyCard onVerified={() => {
+          <PhoneVerifyCard phone={producer?.phone} onVerified={() => {
             setServerMissing(null);
             onPhoneVerified?.();
           }} />
