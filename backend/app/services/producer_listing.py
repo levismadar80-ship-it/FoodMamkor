@@ -39,6 +39,7 @@ from app.models import (
 from app.data.cities import canonical_city, city_variants
 from app.schemas.schemas import DELIVERY_DAYS
 from app.services.availability_validation import ON_VACATION
+from app.services.offer_supply import OFFER_KEYS, attach_offer_flags, offer_condition
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
@@ -1303,6 +1304,7 @@ def _finalize_results(
         attach_favorites_counts(results, db)
         attach_rescue_saving(results, db)
         attach_rescue_today(results, db)  # MEH-3824
+        attach_offer_flags(results, db)  # MEH-3824 map switches
         return results
 
     rows = q.offset(offset).limit(limit).all()
@@ -1311,6 +1313,7 @@ def _finalize_results(
     attach_favorites_counts(rows, db)
     attach_rescue_saving(rows, db)
     attach_rescue_today(rows, db)  # MEH-3824
+    attach_offer_flags(rows, db)  # MEH-3824 map switches
     return rows
 
 
@@ -1378,6 +1381,12 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
             near_city=(filters.get("near_city") or "").strip() or None,
         )
         q, count_q = _apply_scalar_filters(q, count_q, **filters)
+        # MEH-3824: the map's offer switches — a business with ANY asked kind
+        # (OR within the group, AND with every other filter).
+        offer_cond = offer_condition(db, [k for k in OFFER_KEYS if filters.get(k)])
+        if offer_cond is not None:
+            q = q.filter(offer_cond)
+            count_q = count_q.filter(offer_cond)
         q, count_q = _apply_search_filter(db, q, count_q, text, geo_search=geo_search)
 
         # MEH-102 — exclude a specific producer (used by similar-producers widget).

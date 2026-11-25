@@ -90,6 +90,8 @@ export default function MapPane({
   // points show when it is selected, and every business's while the
   // «איסוף עצמי» chip is on (this flag, from useMapFilters).
   showAllPickupPoints = false,
+  // MEH-3824: the offer switches that are on; matching pins carry a mark.
+  offerMarks,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -128,6 +130,7 @@ export default function MapPane({
         mapRef={mapRef}
         focusedProducerId={focusedProducerId}
         showAllPickupPoints={showAllPickupPoints}
+        offerMarks={offerMarks}
       />
 
 

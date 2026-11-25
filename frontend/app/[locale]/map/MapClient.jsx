@@ -837,6 +837,7 @@ export default function MapPage() {
       mapRef={sync.mapRef}
       focusedProducerId={focusedProducerId}
       showAllPickupPoints={filters.showAllPickupPoints}
+      offerMarks={filters.offerMarks}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}

@@ -65,6 +65,10 @@ vi.mock("@phosphor-icons/react", () => ({
   // the whole file at import with 'No "X" export is defined' — the same trap
   // the MEH-2131 note above records.
   CalendarBlank: (p) => <span {...p} />,
+  // MEH-3824: the offer-switch glyphs (lib/chip-icons.js).
+  Basket: (p) => <span {...p} />,
+  UsersThree: (p) => <span {...p} />,
+  CookingPot: (p) => <span {...p} />,
   CaretUp: (p) => <span {...p} />,
   X: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,

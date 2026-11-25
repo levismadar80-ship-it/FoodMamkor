@@ -24,6 +24,7 @@
  * would pass against any shipped number at all.
  */
 import { describe, it, expect } from "vitest";
+import { FILTER_AXES, MAP_ONLY_GROUPS } from "@/lib/filter-taxonomy";
 import {
   CHIPS_CONFIG,
   DIET_CHIP_MIN,
@@ -47,7 +48,19 @@ describe("MEH-1934 — diet chip data gate", () => {
     // assert the four older axes were NEVER gated here, while /map gated them
     // (MEH-2170) — the drift Sapir screenshotted. One rule now, on every surface.
     expect([...GATED_DIET_KEYS].sort()).toEqual(
-      ["gluten_free", "grass_fed", "lactose_free", "no_added_sugar", "on_site", "vegan", "vegetarian"],
+      [
+        "event", // MEH-3824: the four map-only offer switches, gated at 1
+        "experience",
+        "gluten_free",
+        "grass_fed",
+        "group_buy",
+        "lactose_free",
+        "no_added_sugar",
+        "on_site",
+        "rescue_today",
+        "vegan",
+        "vegetarian",
+      ],
     );
     // MEH-2047: and the withdrawn axis is not gated either — it is GONE. A
     // stale entry here would keep a chip key alive that no config defines.
@@ -56,7 +69,11 @@ describe("MEH-1934 — diet chip data gate", () => {
 
   it("the gated chip is on the shared row, so both surfaces must gate it", () => {
     const keys = CHIPS_CONFIG.map((c) => c.key);
-    for (const k of GATED_DIET_KEYS) expect(keys).toContain(k);
+    // MEH-3824: the offer switches are /map-only (MAP_ONLY_GROUPS), so they
+    // are on the map's row, not the shared one — surfaceParity.test.js holds that.
+    const mapOnly = GATED_DIET_KEYS.filter((k) => MAP_ONLY_GROUPS.includes(FILTER_AXES[k].group));
+    expect(mapOnly.sort()).toEqual(["event", "experience", "group_buy", "rescue_today"]);
+    for (const k of GATED_DIET_KEYS.filter((k) => !mapOnly.includes(k))) expect(keys).toContain(k);
   });
 
   it("shows a chip at the threshold", () => {
