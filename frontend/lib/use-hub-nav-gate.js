@@ -124,7 +124,18 @@ function loadAny(gate) {
  * response that arrives after unmount. A pilot that is off asks nothing.
  */
 export function useHubNavGate(hub) {
-  const [visible, setVisible] = useState(false);
+  return useHubNavGateState(hub).visible;
+}
+
+/**
+ * @param {"groupBuys" | "rescue"} hub
+ * @returns {{ visible: boolean, settled: boolean }}
+ * MEH-3809: `settled` is true once the answer is known (cache, response, or a
+ * failure, which stays hidden). The Header holds the link's place while it is
+ * not, so a link arriving late does not wrap the row and push the page down.
+ */
+export function useHubNavGateState(hub) {
+  const [state, setState] = useState({ visible: false, settled: false });
 
   // MEH-3049: a LAYOUT effect, so a cached answer lands before the browser
   // paints. Every hub tab is its own route, so ListingHubTabs mounts fresh on
@@ -134,18 +145,21 @@ export function useHubNavGate(hub) {
   // state stays false, so the server HTML and hydration still agree.
   useIsomorphicLayoutEffect(() => {
     const gate = HUB_NAV_GATES[hub];
-    if (!gate || !gate.enabled()) return undefined;
+    if (!gate || !gate.enabled()) {
+      setState({ visible: false, settled: true });
+      return undefined;
+    }
     let alive = true;
 
     if (seenThisVisit.has(gate.cacheKey)) {
-      setVisible(true);
+      setState({ visible: true, settled: true });
       return undefined;
     }
 
     const cached = readCache(gate.cacheKey, gate.ttlMs);
     if (cached !== null) {
       if (cached) seenThisVisit.add(gate.cacheKey);
-      setVisible(cached);
+      setState({ visible: cached, settled: true });
       return () => {
         alive = false;
       };
@@ -153,7 +167,7 @@ export function useHubNavGate(hub) {
 
     loadAny(gate).then((any) => {
       if (any) seenThisVisit.add(gate.cacheKey);
-      if (alive && any !== null) setVisible(any);
+      if (alive) setState({ visible: any === true, settled: true });
     });
 
     return () => {
@@ -161,5 +175,5 @@ export function useHubNavGate(hub) {
     };
   }, [hub]);
 
-  return visible;
+  return state;
 }

@@ -91,21 +91,31 @@ function loadAny() {
  * malformed body, and ignores responses after unmount.
  */
 export function useEventsNavGate() {
-  const [visible, setVisible] = useState(false);
+  return useEventsNavGateState().visible;
+}
+
+/**
+ * @returns {{ visible: boolean, settled: boolean }}
+ * MEH-3809: `settled` is true once the answer is known (cache, response, or a
+ * failure, which stays hidden). The Header holds the link's place while it is
+ * not, so a link arriving late does not wrap the row and push the page down.
+ */
+export function useEventsNavGateState() {
+  const [state, setState] = useState({ visible: false, settled: false });
 
   useEffect(() => {
     let alive = true;
 
     const cached = readCache();
     if (cached !== null) {
-      setVisible(cached);
+      setState({ visible: cached, settled: true });
       return () => {
         alive = false;
       };
     }
 
     loadAny().then((any) => {
-      if (alive && any !== null) setVisible(any);
+      if (alive) setState({ visible: any === true, settled: true });
     });
 
     return () => {
@@ -113,5 +123,5 @@ export function useEventsNavGate() {
     };
   }, []);
 
-  return visible;
+  return state;
 }

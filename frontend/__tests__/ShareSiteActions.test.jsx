@@ -40,8 +40,8 @@ vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), i
 vi.mock("@/lib/env", () => ({ SITE_URL: "https://mehamakor.co.il" }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})), post: vi.fn(() => Promise.resolve({ data: {} })) } }));
 vi.mock("@/components/CitySearch", () => ({ default: () => <input data-testid="city" /> }));
-vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false }));
-vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false, useExperiencesNavGateState: () => ({ visible: !!(false), settled: true }) }));
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false, useEventsNavGateState: () => ({ visible: !!(false), settled: true }) }));
 
 import ShareSiteActions from "@/components/ShareSiteActions";
 import RecommendClient from "@/app/[locale]/recommend/RecommendClient";

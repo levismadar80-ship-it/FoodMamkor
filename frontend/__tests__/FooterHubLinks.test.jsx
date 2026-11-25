@@ -9,9 +9,9 @@ import { render, screen } from "@testing-library/react";
  */
 
 const gates = vi.hoisted(() => ({ events: false, experiences: false, groupBuys: false, rescue: false }));
-vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events }));
-vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => gates.experiences }));
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] }));
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events, useEventsNavGateState: () => ({ visible: !!(gates.events), settled: true }) }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => gates.experiences, useExperiencesNavGateState: () => ({ visible: !!(gates.experiences), settled: true }) }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub], useHubNavGateState: (hub) => ({ visible: !!(gates[hub]), settled: true }) }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,

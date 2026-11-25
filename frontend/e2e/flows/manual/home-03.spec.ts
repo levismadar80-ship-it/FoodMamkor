@@ -634,6 +634,13 @@ test.describe("manual › recently viewed (task 13)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › Friday delivery strip (סרגל שישי)", () => {
+  // MEH-3809: errors only, no CLS. These cases force Friday mode with a
+  // localStorage flag and answer the strip's request from a client-side stub.
+  // The server shell reads the real API, whose Friday list is empty in CI, so
+  // it draws no strip and the client then adds the stub's: a shift the test
+  // itself makes. In real use the server and the client read the same list
+  // (HomeClient.jsx, MEH-3860), and the home CLS is checked by every other case.
+  test.use({ loadGuard: "errors" });
   // MT:FRI:1 — inside the Friday window (forced through the documented
   //   `friday_mode_override` localStorage flag, lib/friday-mode.js:6) and with
   //   businesses delivering on Friday (MEH-2759), the strip renders REAL copy — not an
