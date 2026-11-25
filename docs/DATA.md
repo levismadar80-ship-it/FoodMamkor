@@ -916,6 +916,14 @@ email_events (id uuid PK, svix_id varchar(64) UNIQUE, event_type varchar(40),
                         kind varchar(40), user_id FK→users SET NULL,
                         recipient_domain varchar(255), resend_email_id,
                         detail varchar(80), created_at)               -- MEH-3839
+producer_staff (id uuid PK, producer_id FK→producers CASCADE,
+                        user_id FK→users CASCADE nullable (set on accept),
+                        invited_email varchar(255), role 'orders',
+                        token_hash varchar(64) nullable (sha256; NULL once used),
+                        expires_at, invited_by FK→users SET NULL,
+                        status pending|active|revoked, created_at,
+                        accepted_at, revoked_at;
+                        UNIQUE (user_id) WHERE status='active')     -- MEH-3526
 ```
 
 > **MEH-3839 — what Resend reports back (24/11/2026):** revision `e1a3c5b7d9f2` on `b7d9f1a3c5e8` (MEH-3703), additive: table `email_events` (**`EXPECTED_TABLES` +1**). One row per delivery event Resend reports for an email we sent: `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.suppressed`, `email.failed`, `email.clicked` (`EMAIL_EVENT_TYPES`; `email.sent`, `email.opened` and the rest are acknowledged and dropped — opens are inflated by Apple Mail). Written only by `POST /webhook/resend`. `kind` is the tag `send_email(kind=…)` put on the email (`order_new_order`, `weekly_summary`, `onboarding_2`, …; `other` when untagged or invalid). No address and no text from the receiving server: the recipient's domain, and the user id when the address belongs to an account; `detail` is the bounce `type/subType` or the suppression type. Retried deliveries are one row (`svix_id` unique). Deleted 30 days after `created_at` (`services/retention_purge.py`). We keep no suppression list of our own: Resend skips a hard-bounced or complained address itself and reports `email.suppressed`.

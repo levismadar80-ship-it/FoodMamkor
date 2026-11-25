@@ -173,3 +173,6 @@ DELETE FROM rescue_no_show_tombstones;
 DELETE FROM email_outbox;
 -- MEH-3839: delivery events carry the account id and the recipient's domain.
 DELETE FROM email_events;
+-- MEH-3526: order staff hold an invited address and a live invite hash, and
+-- an active row lets an account into another business's orders.
+DELETE FROM producer_staff;
