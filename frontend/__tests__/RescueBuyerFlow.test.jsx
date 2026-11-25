@@ -80,8 +80,6 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 const fetchOffers = vi.fn();
-const reserveBag = vi.fn();
-const cancelOrder = vi.fn();
 const submitReview = vi.fn();
 const fetchMyOrders = vi.fn();
 let flagOn = true;
@@ -97,8 +95,6 @@ vi.mock("@/lib/rescue", async (importOriginal) => {
     ...actual,
     rescueBagsEnabled: () => flagOn,
     fetchOffers: (...a) => fetchOffers(...a),
-    reserveBag: (...a) => reserveBag(...a),
-    cancelOrder: (...a) => cancelOrder(...a),
     submitReview: (...a) => submitReview(...a),
     fetchMyOrders: (...a) => fetchMyOrders(...a),
   };

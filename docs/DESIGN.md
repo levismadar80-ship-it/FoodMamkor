@@ -1182,8 +1182,9 @@ title + «where» lines, the price with the regular price struck, a gold saving
 line, a beige status band (progress in the logo seeds + a time). On the business
 page the whole card is one link to the offer's own page, with the forward caret
 beside the title, and holds no button, link or fold of its own: reserving,
-joining and cancelling happen on that page (Sapir 22/11, MEH-3586). Both offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so
-they are the same size. A new kind of offer uses this card, never its own copy
+joining and cancelling happen on that page (Sapir 22/11, MEH-3586). Both
+offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so they are the
+same size. A new kind of offer uses this card, never its own copy
 (`OfferCardOneOwnerGuard.test.jsx`).
 
 ## In-place messages (MEH-3072)
