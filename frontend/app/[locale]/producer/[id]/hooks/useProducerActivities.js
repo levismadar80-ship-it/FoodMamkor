@@ -31,12 +31,12 @@ function sameLists(a, b) {
     JSON.stringify([b.events, b.experiences, b.groupBuys]);
 }
 
+/** @param {Promise<{ data: any }>} read @returns {Promise<any[] | null>} */
+const settle = (read) =>
+  read.then((r) => (Array.isArray(r.data) ? r.data : null)).catch(() => null);
+
 /** @param {string} path @returns {Promise<any[] | null>} */
-const readList = (path) =>
-  api
-    .get(path)
-    .then((r) => (Array.isArray(r.data) ? r.data : null))
-    .catch(() => null);
+const readList = (path) => settle(api.get(path));
 
 /**
  * A failed read is an empty list, as it was before: the section hides
@@ -58,17 +58,19 @@ export function useProducerActivities({ producerId, slug = "", initial = null })
     ready: Boolean(initial) || slug === "",
   }));
 
+  // No slug to read by → no recipes, decided during render (React's «adjust
+  // state while rendering» pattern) rather than by a set-state in an effect.
+  if (slug === "" && !recipes.ready) setRecipes({ list: [], ready: true });
+
   useEffect(() => {
-    if (slug === null) return undefined;
-    if (slug === "") {
-      setRecipes((r) => (r.ready ? r : { list: [], ready: true }));
-      return undefined;
-    }
+    if (slug === null || slug === "") return undefined;
     let cancelled = false;
     const cap = setTimeout(() => {
       if (!cancelled) setRecipes((r) => (r.ready ? r : { ...r, ready: true }));
     }, ACTIVITIES_WAIT_MS);
-    readList(`/producers/${encodeURIComponent(slug)}/recipes`).then((got) => {
+    // Spelled as a literal api.get so the route scanner (unwired-route-guard)
+    // sees the page as this route's caller.
+    settle(api.get(`/producers/${encodeURIComponent(slug)}/recipes`)).then((got) => {
       clearTimeout(cap);
       if (cancelled) return;
       // A failed refresh keeps what the server sent; a failed first read hides the section.
