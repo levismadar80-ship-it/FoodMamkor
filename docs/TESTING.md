@@ -77,6 +77,8 @@ green. A spec that provokes errors on purpose opts out with
 `test.use({ loadGuard: "off" })` and a comment saying why; a spec that moves the
 layout itself (enlarges text, taps with `dispatchEvent`, which is not counted
 as input) uses `"errors"`, which keeps the error checks and drops CLS.
+A spec that measures timing itself under a CPU throttle (`flows/manual/nav-throttled.spec.ts`)
+is `"off"` too: the guard's probe changes the frames it counts (MEH-3809).
 
 Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
 1.5 × the largest value measured. A listed page passes under its ceiling and
