@@ -42,7 +42,7 @@ export function splitPastedCities(text) {
  * the backend's job.
  * @param {string} name
  */
-export function cityFold(name) {
+function cityFold(name) {
   return String(name)
     .replace(/[\s\-־–—]+/g, " ")
     .trim()
