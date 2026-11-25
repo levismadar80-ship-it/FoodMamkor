@@ -368,7 +368,10 @@ def attach_rescue_today(producers: list[Any], db: Session) -> list[Any]:
     # Call-time imports: rescue_reads imports producer_listing, which imports
     # this module.
     from app.routers.rescue import rescue_cities
-    from app.services.rescue_reads import RESERVE_CLOSES_BEFORE_END, public_business_clauses
+    from app.services.rescue_reads import (
+        RESERVE_CLOSES_BEFORE_END,
+        public_business_clauses,
+    )
     from app.utils.clock import israel_today
 
     pilot = rescue_cities()

@@ -30,6 +30,7 @@ goes out unchanged. A caller that passes its own html keeps it.
 from __future__ import annotations
 
 import logging
+import re
 from html import escape
 from typing import Any
 
@@ -47,6 +48,19 @@ logger = logging.getLogger(__name__)
 # MEH-1613: Sentry task tag for every event this module reports, so email
 # delivery failures are one filterable stream (`background_task:email_send`).
 _SENTRY_TASK = "email_send"
+
+# MEH-3839: every email carries a `kind` tag that Resend echoes back on its
+# delivery events (app/routers/resend_webhook.py), so bounces and clicks can be
+# counted per kind of email. Resend accepts ASCII letters, digits, `_` and `-`;
+# anything else would make the send fail, so it goes out as "other" instead.
+DEFAULT_KIND = "other"
+KIND_RE = re.compile(r"^[a-z0-9_-]{1,40}$")
+
+
+def _kind_tag(kind: str | None) -> list[dict[str, str]]:
+    value = kind if kind and KIND_RE.fullmatch(kind) else DEFAULT_KIND
+    return [{"name": "kind", "value": value}]
+
 
 # MEH-1613: the missing-key condition is STATIC config, not a per-send event —
 # it is either configured for the whole process or it is not. Reporting it on
@@ -197,6 +211,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     reply_to: str | None = None,
     test_cause: bool = False,
     headers: dict[str, str] | None = None,
+    kind: str | None = None,
 ) -> None:
     """Send a plain-text + HTML email via Resend. Always fail-open.
 
@@ -223,6 +238,9 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     MEH-3212: `headers` adds extra MIME headers (List-Unsubscribe). Omitted
     from the payload when unset, like `reply_to`.
 
+    MEH-3839: `kind` names the email ("order_new", "weekly_summary") and is
+    sent as a Resend tag; omitted or invalid → "other".
+
     MEH-3402 is a SEPARATE, environment-level layer: outside production a
     recipient that is not a staff address is redirected to ADMIN_EMAIL
     (services/outbound_guard.py), whatever `test_cause` says.
@@ -235,7 +253,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         )
         return
 
-    _deliver(to, subject, body, html, reply_to, headers)
+    _deliver(to, subject, body, html, reply_to, headers, kind)
 
 
 def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
@@ -245,6 +263,7 @@ def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
     html: str | None = None,
     reply_to: str | None = None,
     test_cause: bool = False,
+    kind: str | None = None,
 ) -> str:
     """MEH-3296: `send_email`, answering what happened, for a caller that
     retries (the order outbox): "sent", "failed" (worth another try),
@@ -257,7 +276,7 @@ def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
             subject[:80],
         )
         return "skipped_test"
-    return _deliver(to, subject, body, html, reply_to)
+    return _deliver(to, subject, body, html, reply_to, kind=kind)
 
 
 def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
@@ -267,6 +286,7 @@ def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
     html: str | None,
     reply_to: str | None,
     headers: dict[str, str] | None = None,
+    kind: str | None = None,
 ) -> str:
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
@@ -332,6 +352,7 @@ def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
             "to": to,
             "subject": subject,
             "text": body,
+            "tags": _kind_tag(kind),
         }
         # MEH-2112: omitted entirely when unset, rather than sent as None —
         # the key's absence is what keeps every pre-existing caller's payload

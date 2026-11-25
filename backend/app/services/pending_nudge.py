@@ -529,6 +529,7 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
                 subject,
                 body,
                 test_cause=bool(p.is_test or user.is_test),
+                kind="pending_nudge",
             )
             p.email_pending_nudge_sent_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             db.commit()
