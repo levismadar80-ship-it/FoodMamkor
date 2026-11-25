@@ -65,8 +65,9 @@ messages. In order of preference (ADR-037 §Decision):
 
 No singular second person either: `שלך`, `לך`, `אותך` and the like are not
 used in new copy (ADR-037 amendment, 24/11/2026; until then they stayed as
-"unmarked"). Write «המוצרים של העסק» or «אפשר לשמור», or «שלכם» / «לכם» on a
-consumer surface when a pronoun is needed. `brand-lexicon-guard.sh` (rule
+"unmarked"). Write «המוצרים של העסק» or «אפשר לשמור», or «שלכם» / «לכם» when a
+pronoun is needed, on consumer and business surfaces alike (ADR-037
+amendment, 25/11/2026). `brand-lexicon-guard.sh` (rule
 `singular-address`, MEH-3808) fails new ones. `אלייך` is marked feminine and is
 not used. Slash and dot forms are never used (BRAND.md §9).
 
