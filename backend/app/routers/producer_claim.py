@@ -66,6 +66,7 @@ from app.services.auth_notifications import (
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.producer_risk import score_producer
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
+from app.services.staff_membership import end_staff_membership
 
 logger = structlog.get_logger(__name__)
 
@@ -332,6 +333,8 @@ def claim_producer(
     user.producer_id = producer.id
     user.role = "producer"  # type: ignore[assignment]
     user.is_producer = True  # type: ignore[assignment]
+    # MEH-3526: an owner is no longer someone else's order staff.
+    end_staff_membership(db, user.id)
     user.terms_accepted_at = now  # type: ignore[assignment]
     user.terms_version = TERMS_VERSION  # type: ignore[assignment]
     db.commit()

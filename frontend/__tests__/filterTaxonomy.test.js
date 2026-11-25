@@ -48,7 +48,7 @@ const ALL_KEYS = Object.keys(FILTER_AXES);
 const SURFACES = ["home", "producers", "map"];
 const SCOPES = ["business", "any-product", "facility"];
 const EVIDENCE = ["self-declared", "admin-verified", "system"];
-const GROUPS = ["diet", "quality", "service"];
+const GROUPS = ["offers", "happenings", "diet", "quality", "service"]; // MEH-3824: the two map-only offer groups
 
 describe("MEH-2130 — axis declarations are complete and well-formed", () => {
   it("every axis declares label, scope, evidence, group and surfaces", () => {
@@ -59,8 +59,12 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
       const axis = FILTER_AXES[key];
       // MEH-2748: the label is in messages, not on the axis.
       expect(axis.label, `${key}.label must not be stored in code`).toBeUndefined();
-      expect(typeof he.filter_axes[key]?.label, `${key}.label`).toBe("string");
-      expect(he.filter_axes[key].label.length, `${key}.label empty`).toBeGreaterThan(0);
+      // MEH-3824: an axis named after a site section reads that key (labelKey).
+      const label = axis.labelKey
+        ? axis.labelKey.split(".").reduce((node, part) => node?.[part], he)
+        : he.filter_axes[key]?.label;
+      expect(typeof label, `${key}.label`).toBe("string");
+      expect(label.length, `${key}.label empty`).toBeGreaterThan(0);
       expect(SCOPES, `${key}.scope`).toContain(axis.scope);
       expect(EVIDENCE, `${key}.evidence`).toContain(axis.evidence);
       expect(GROUPS, `${key}.group`).toContain(axis.group);
@@ -74,7 +78,7 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
       // non-empty `filter_axes.<key>.subtext` exists (false ⇒ FilterSheet falls
       // back to a BADGE_CONFIG tooltip).
       expect(typeof axis.hasSubtext, `${key}.hasSubtext`).toBe("boolean");
-      const sub = he.filter_axes[key].subtext;
+      const sub = he.filter_axes[key]?.subtext;
       expect(
         axis.hasSubtext ? typeof sub === "string" && sub.length > 0 : sub === undefined,
         `${key}.hasSubtext disagrees with he.json`,

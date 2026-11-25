@@ -14,7 +14,11 @@ import { useChipCopy } from "@/lib/use-chip-copy";
  * lib/chip-copy.js attaches `label` / `subtext` at render time.
  */
 const HEBREW = /[֐-׿]/;
-const AXIS_KEYS = Object.keys(FILTER_AXES).sort();
+// MEH-3824: an axis with `labelKey` names a section of the site and reads
+// that key, so it has no `filter_axes` entry of its own.
+const AXIS_KEYS = Object.keys(FILTER_AXES).filter((k) => !FILTER_AXES[k].labelKey).sort();
+const LABEL_KEY_AXES = Object.keys(FILTER_AXES).filter((k) => FILTER_AXES[k].labelKey);
+const at = (msgs, dotted) => dotted.split(".").reduce((node, part) => node?.[part], msgs);
 const CAT_KEYS = CATEGORY_CHIPS.map((c) => c.key).sort();
 
 describe("MEH-2748 — chip registries carry no words", () => {
@@ -42,6 +46,17 @@ describe("MEH-2748 — chip registries carry no words", () => {
     }
   });
 
+  it.each([
+    ["he", he],
+    ["en", en],
+  ])("%s.json: every labelKey axis reads a real string and has no filter_axes copy", (_, msgs) => {
+    expect(LABEL_KEY_AXES.sort()).toEqual(["event", "experience", "group_buy", "rescue_today"]);
+    for (const key of LABEL_KEY_AXES) {
+      expect(typeof at(msgs, FILTER_AXES[key].labelKey), key).toBe("string");
+      expect(msgs.filter_axes[key], key).toBeUndefined();
+    }
+  });
+
   it("en.json chip copy holds no Hebrew", () => {
     const flat = JSON.stringify([en.filter_axes, en.map_category_chips]);
     expect(flat).not.toMatch(HEBREW);
@@ -50,6 +65,11 @@ describe("MEH-2748 — chip registries carry no words", () => {
 
 describe("MEH-2748 — the resolver", () => {
   const t = (k) => `T(${k})`;
+
+  it("an axis with labelKey reads that key (MEH-3824)", () => {
+    const [chip] = chipsForKeys(["group_buy"]);
+    expect(resolveChipCopy(t, chip).label).toBe("T(nav.footer.group_buys)");
+  });
 
   it("adds label and subtext to an axis chip", () => {
     const [chip] = chipsForKeys(["pickup_points"]);

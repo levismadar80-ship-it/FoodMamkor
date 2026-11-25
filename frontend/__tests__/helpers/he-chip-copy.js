@@ -9,6 +9,7 @@
  */
 import he from "../../messages/he.json";
 import { resolveChipCopy } from "@/lib/chip-copy";
+import { FILTER_AXES } from "@/lib/filter-taxonomy";
 
 /** Root-namespace translator over he.json (dotted path lookup). */
 export const heT = (path) => path.split(".").reduce((node, part) => node?.[part], he);
@@ -16,6 +17,9 @@ export const heT = (path) => path.split(".").reduce((node, part) => node?.[part]
 export const heChipCopy = (chip) => resolveChipCopy(heT, chip);
 
 /** Hebrew label of an axis key, e.g. heAxisLabel("vegan") → "מתאים לטבעונים". */
-export const heAxisLabel = (key) => he.filter_axes[key].label;
+export const heAxisLabel = (key) => {
+  const labelKey = FILTER_AXES[key]?.labelKey;
+  return labelKey ? heT(labelKey) : he.filter_axes[key].label;
+};
 
 export const chipCopyMock = { useChipCopy: () => heChipCopy };

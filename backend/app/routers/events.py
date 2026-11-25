@@ -14,6 +14,7 @@ from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from sqlalchemy.orm import Query as OrmQuery
 from sqlalchemy.orm import Session, joinedload, object_session
 
 from app.limits import enforce_cap
@@ -145,6 +146,28 @@ def _producer_phone(db: Session, producer_id: UUID) -> str | None:
 # ============================================================
 
 
+def public_event_feed_query(db: Session) -> OrmQuery[Event]:
+    """The rows GET /events lists for a stranger with no filter: active, an
+    approved non-test business, today (Israel) onward (MEH-3824).
+
+    `/events/upcoming` and the map's «אירועים» switch
+    (services/offer_supply.py) build on this one. `list_events` keeps its
+    own, because an admin or an owner viewing their own page bypasses the
+    business gate there; tests/test_meh3824_offer_filters.py pins that the
+    two agree.
+    """
+    return (
+        db.query(Event)
+        .join(Producer, Event.producer_id == Producer.id)
+        .filter(
+            Event.is_active.is_(True),
+            Producer.status == "approved",
+            not_test_producer(),
+            Event.event_date >= israel_today(),
+        )
+    )
+
+
 @router.get("/events", response_model=list[EventOut])
 @limiter.limit("120/minute")
 def list_events(
@@ -211,16 +234,10 @@ def upcoming_events(
     db: Session = Depends(get_db),
 ) -> list[EventOut]:
     events = (
-        db.query(Event)
+        # MEH-1161: home-page cards are pure-public — approved producers only
+        # (MEH-2952: no test businesses). The same rows as the map's switch.
+        public_event_feed_query(db)
         .options(joinedload(Event.producer))
-        # MEH-1161: home-page cards are pure-public — approved producers only.
-        .join(Producer, Event.producer_id == Producer.id)
-        .filter(
-            Event.is_active.is_(True),
-            Event.event_date >= israel_today(),
-            Producer.status == "approved",
-            not_test_producer(),  # MEH-2952
-        )
         .order_by(Event.event_date.asc(), Event.event_time.asc())
         .limit(limit)
         .all()
