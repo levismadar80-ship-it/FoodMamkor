@@ -2582,6 +2582,45 @@
         "title": "DraftConsentPublishOut",
         "type": "object"
       },
+      "DraftMergeOut": {
+        "properties": {
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "products_moved": {
+            "title": "Products Moved",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "status",
+          "products_moved"
+        ],
+        "title": "DraftMergeOut",
+        "type": "object"
+      },
+      "DraftMergeRequest": {
+        "description": "MEH-3865: the business the owner registered herself, to merge INTO the\ndraft the admin prepared (routers/admin_draft_merge.py).",
+        "properties": {
+          "target_producer_id": {
+            "format": "uuid",
+            "title": "Target Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_producer_id"
+        ],
+        "title": "DraftMergeRequest",
+        "type": "object"
+      },
       "DraftPreviewLinkOut": {
         "description": "MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant\ndifferent things, and the claim-link inventory test pins that schema to the\none route that mints a claim link.",
         "properties": {
@@ -2600,6 +2639,45 @@
           "expires_at"
         ],
         "title": "DraftPreviewLinkOut",
+        "type": "object"
+      },
+      "DraftTwinOut": {
+        "description": "MEH-3865: one draft-twin match, for the admin producers list.",
+        "properties": {
+          "draft_id": {
+            "format": "uuid",
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "draft_name": {
+            "title": "Draft Name",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "target_id": {
+            "format": "uuid",
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_name": {
+            "title": "Target Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft_id",
+          "target_id",
+          "draft_name",
+          "target_name",
+          "reasons"
+        ],
+        "title": "DraftTwinOut",
         "type": "object"
       },
       "EventCreate": {
@@ -10116,6 +10194,16 @@
               }
             ],
             "title": "Draft Missing"
+          },
+          "draft_twin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DraftTwinOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "dup_name": {
             "default": false,
@@ -25187,6 +25275,64 @@
           }
         ],
         "summary": "List Rejection Presets",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/producers/{draft_id}/merge-owner": {
+      "post": {
+        "operationId": "merge_draft_into_owner_admin_producers__draft_id__merge_owner_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftMergeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Merge Draft Into Owner",
         "tags": [
           "admin"
         ]

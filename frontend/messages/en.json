@@ -1929,7 +1929,25 @@
         "waiting_tooltip_submitted": "Submitted for review: {when}",
         "waiting_tooltip_created": "Created: {when}",
         "waiting_tooltip_resubmitted": "Resubmitted for review: {when}",
-        "resubmission_badge": "Resubmission #{n}"
+        "resubmission_badge": "Resubmission #{n}",
+        "draft_twin": {
+          "tag_on_owner": "A draft is ready",
+          "tag_on_draft": "The business signed up",
+          "merge": "Move the draft to the owner",
+          "confirm": "Move the draft “{draft}” to the account of “{own}”? Their name, contact details, photos, products and pickup points replace the draft's, and their duplicate page is deleted. This can't be undone.",
+          "confirm_yes": "Move",
+          "done": "The draft was moved to the owner",
+          "error": "The move failed",
+          "reasons": {
+            "phone": "Same phone",
+            "email": "Same email",
+            "instagram": "Same Instagram",
+            "website": "Same website",
+            "facebook": "Same Facebook",
+            "name_city": "Same name, same city",
+            "name_contains_city": "Similar name, same city"
+          }
+        }
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
@@ -7191,7 +7209,7 @@
       "switch_account": "Switch account"
     },
     "has_business": {
-      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this is your business's page, write to us and we'll move it to your account. If it belongs to another business, sign in with another account.",
       "dashboard": "Go to dashboard",
       "switch_account": "Switch account"
     },
@@ -7462,7 +7480,6 @@
       "not_found_body": "It may have been for another day. New bags are posted daily.",
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
-      "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
       "calendar_title": "Surprise bag pickup: {business_name}",
       "pickup_title_tomorrow": "Pickup tomorrow",

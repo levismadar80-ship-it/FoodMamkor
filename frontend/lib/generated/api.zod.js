@@ -1097,6 +1097,13 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft_twin": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "draft_id": /*#__PURE__*/ zod.uuid(),
+  "draft_name": /*#__PURE__*/ zod.string(),
+  "reasons": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "target_id": /*#__PURE__*/ zod.uuid(),
+  "target_name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3865: one draft-twin match, for the admin producers list.')),/*#__PURE__*/ zod.null()])),
   "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDupNameDefault),
   "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -1425,6 +1432,13 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft_twin": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "draft_id": /*#__PURE__*/ zod.uuid(),
+  "draft_name": /*#__PURE__*/ zod.string(),
+  "reasons": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "target_id": /*#__PURE__*/ zod.uuid(),
+  "target_name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3865: one draft-twin match, for the admin producers list.')),/*#__PURE__*/ zod.null()])),
   "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDupNameDefault),
   "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -1750,6 +1764,13 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft_twin": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "draft_id": /*#__PURE__*/ zod.uuid(),
+  "draft_name": /*#__PURE__*/ zod.string(),
+  "reasons": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "target_id": /*#__PURE__*/ zod.uuid(),
+  "target_name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3865: one draft-twin match, for the admin producers list.')),/*#__PURE__*/ zod.null()])),
   "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDupNameDefault),
   "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -1933,6 +1954,16 @@ export const ListRejectionPresetsAdminProducersRejectionPresetsGetResponseItem =
   "label": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-226: one row of GET /admin/producers/rejection-presets.\n\nTyped rather than a bare dict so the MEH-1748 codegen chain emits a real\nschema for this route — an untyped handler generates `zod.unknown()`,\nwhich makes the drift guard structurally unable to notice the shape\nchanging.'))
 export const ListRejectionPresetsAdminProducersRejectionPresetsGetResponse = /*#__PURE__*/ zod.array(ListRejectionPresetsAdminProducersRejectionPresetsGetResponseItem)
+
+
+/**
+ * @summary Merge Draft Into Owner
+ */
+export const MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse = /*#__PURE__*/ zod.object({
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "products_moved": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string()
+})
 
 
 /**
@@ -2138,6 +2169,13 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft_twin": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "draft_id": /*#__PURE__*/ zod.uuid(),
+  "draft_name": /*#__PURE__*/ zod.string(),
+  "reasons": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "target_id": /*#__PURE__*/ zod.uuid(),
+  "target_name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3865: one draft-twin match, for the admin producers list.')),/*#__PURE__*/ zod.null()])),
   "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDupNameDefault),
   "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -2463,6 +2501,13 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "draft_twin": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "draft_id": /*#__PURE__*/ zod.uuid(),
+  "draft_name": /*#__PURE__*/ zod.string(),
+  "reasons": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "target_id": /*#__PURE__*/ zod.uuid(),
+  "target_name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3865: one draft-twin match, for the admin producers list.')),/*#__PURE__*/ zod.null()])),
   "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDupNameDefault),
   "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),

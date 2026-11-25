@@ -48,6 +48,7 @@ import {
   AdminCreateProducerAdminProducersPostResponse,
   ClaimProducerProducerClaimPostResponse,
   CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse,
+  MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse,
   CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse,
   GetFavoritesUsersMeFavoritesGetResponseItem,
   GetOwnerInviteAuthOwnerInviteTokenGetResponse,
@@ -141,6 +142,9 @@ export const ProducerClaimResultSchema = ClaimProducerProducerClaimPostResponse;
 export const ProducerAdminCreatedSchema = /* @__PURE__ */ zod.pick(AdminCreateProducerAdminProducersPostResponse, {
   id: true,
 });
+// MEH-3865: the admin's «העברת הטיוטה לבעלים» answer.
+export const DraftMergeSchema = MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse;
+
 export const ProducerClaimLinkSchema = /* @__PURE__ */ CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse.check(
   zod.refine((body) => isUrl(body.url), { message: "claim link is not a URL" }),
 );

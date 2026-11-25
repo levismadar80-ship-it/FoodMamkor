@@ -19,6 +19,7 @@
 * `backend/app/services/admin_audit.py` — יומן הפעולות (MEH-3306): שורה לכל שינוי מוצלח של חשבון אדמין, נכתבת מתוך `backend/app/auth.py`. קריאה: `GET /admin/audit-log` ב-`backend/app/routers/admin_extra.py`.
 * `backend/app/services/admin_dashboard.py` + `backend/app/services/admin_settings.py` — המספרים של דף הבית של האדמין (`GET /admin/dashboard`), דף האנליטיקה (`GET /admin/analytics`), ומתגי ההגדרות ומצב החופשה (`/admin/settings`). ה-handlers ב-`backend/app/routers/admin_extra.py` רק קוראים להם (MEH-3538).
 * `frontend/components/admin/AdminRowMenu.jsx`
+* `backend/app/services/draft_twins.py` + `backend/app/routers/admin_draft_merge.py` + `frontend/app/[locale]/admin/producers/AdminDraftTwin.jsx` — טיוטה שהאדמין הכינה ועסק שבעליו נרשמו לבד נראים כמו אותו עסק (MEH-3865): תג על שתי השורות ברשימה עם הסיבה, וכפתור «העברת הטיוטה לבעלים» עם אישור. ההעברה ב-`POST /admin/producers/{draft_id}/merge-owner`; המייל לאדמין בשליחה לבדיקה והמייל לבעלים ב-`backend/app/services/draft_merge_emails.py`. שומר: `tests/test_meh3865_draft_twin_merge.py`.
 * `frontend/app/[locale]/admin/audit-log/page.jsx` — מסך יומן הפעולות: 50 שורות, «הצגת פעולות קודמות» לפי (created_at, id).
 * `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
 * `backend/app/routers/admin_whatsapp.py` + `frontend/components/admin/WhatsappBlockedSection.jsx` — במסך `frontend/app/[locale]/admin/whatsapp-failures/`: הודעות שלא נמסרו, ומחוץ ל-production גם הודעות שהשומר חסם, עם התוכן (MEH-3402; קוד כניסה מוסתר).
