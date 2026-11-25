@@ -220,7 +220,7 @@ class TestOrganizerCityIsEditable:
 
     def test_approved_organizer_city_change_pings_admin(self, client, db, monkeypatch):
         """Review #3728: same admin signal a business gets for a city move."""
-        import app.routers.producer_me as pm
+        import app.services.producer_owner_update as pm  # MEH-3841: the save moved here
 
         calls = []
         monkeypatch.setattr(

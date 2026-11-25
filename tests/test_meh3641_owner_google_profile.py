@@ -233,7 +233,7 @@ def test_saving_the_same_link_again_calls_nothing_and_pings_no_one(
 ):
     sent = []
     monkeypatch.setattr(
-        "app.routers.producer_me.notify_admin_producer_sensitive_edit",
+        "app.services.producer_owner_update.notify_admin_producer_sensitive_edit",
         lambda name, fields, test_cause=False: sent.append(fields),
     )
     user, producer = _owner(db)
@@ -295,7 +295,7 @@ def test_admin_hears_about_a_link_change_on_an_approved_business(
 ):
     sent = []
     monkeypatch.setattr(
-        "app.routers.producer_me.notify_admin_producer_sensitive_edit",
+        "app.services.producer_owner_update.notify_admin_producer_sensitive_edit",
         lambda name, fields, test_cause=False: sent.append(fields),
     )
     google["places"][PLACE] = _place()

@@ -84,7 +84,7 @@ from app.models.models import PhoneOtpToken
 from tests.conftest import auth_header, make_category, make_producer, make_user
 from app.utils.clock import utc_now
 
-PING_TARGET = "app.routers.producer_me.notify_admin_producer_review_ready"
+PING_TARGET = "app.services.producer_owner_update.notify_admin_producer_review_ready"
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/otp.jpg"
 CODE = "123456"
