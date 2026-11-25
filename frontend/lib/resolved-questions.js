@@ -55,6 +55,9 @@ import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
 import { paymentAnswer } from "@/lib/payment-info";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 
+/** The city slot in an owner's question template («אפשר משלוח ל[עיר]?»). */
+export const CITY_PLACEHOLDER = "[עיר]";
+
 /**
  * The literal the component also strips, on top of the two resolved labels.
  * It is the legacy stock wording ("יש משלוח?") that older custom lists may
@@ -77,7 +80,7 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
 function ownerQuestionLabels(producer, { city = "", deliveryQuestion, orderingQuestion }) {
   return (producer?.custom_questions || [])
     .filter(Boolean)
-    .map((q) => (city ? q.replace("[עיר]", city) : q))
+    .map((q) => (city ? q.replace(CITY_PLACEHOLDER, city) : q))
     .filter((q) => q !== orderingQuestion && q !== deliveryQuestion && q !== DUPLICATE_OF_DELIVERY);
 }
 
@@ -101,7 +104,7 @@ export function ownerQuestionPairs(producer, { city = "", msgCity = "", delivery
       const [label] = ownerQuestionLabels({ custom_questions: [raw] }, { city, ...labels });
       if (!label) return [];
       const c = msgCity || city;
-      return [{ label, msg: c ? raw.replace("[עיר]", c) : raw }];
+      return [{ label, msg: c ? raw.replace(CITY_PLACEHOLDER, c) : raw }];
     });
 }
 

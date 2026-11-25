@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
-import { ownerQuestionPairs } from "@/lib/resolved-questions";
+import { ownerQuestionPairs, CITY_PLACEHOLDER } from "@/lib/resolved-questions";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
@@ -305,7 +305,7 @@ export default function WhatsAppQuestionChips({ producer }) {
   const waQuestions = ownerQuestionPairs(producer, {
     city: producer?.city || "",
     msgCity: visitorCity || "",
-    deliveryTemplate: t("delivery_to_city", { city: "[עיר]" }),
+    deliveryTemplate: t("delivery_to_city", { city: CITY_PLACEHOLDER }),
     deliveryQuestion: deliveryQ,
     orderingQuestion: orderingQ,
   });
