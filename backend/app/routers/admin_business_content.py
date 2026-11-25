@@ -63,8 +63,7 @@ _NO_EXPERIENCE = "החוויה לא נמצאה"
 # business with no owner account cannot host one yet. An event is keyed on the
 # business and has no such limit.
 _NO_OWNER_FOR_EXPERIENCE = (
-    "לבית העסק עוד אין חשבון בעלים, ולכן אי אפשר להוסיף לו חוויה. "
-    "אפשר להוסיף אירוע."
+    "לבית העסק עוד אין חשבון בעלים, ולכן אי אפשר להוסיף לו חוויה. אפשר להוסיף אירוע."
 )
 
 

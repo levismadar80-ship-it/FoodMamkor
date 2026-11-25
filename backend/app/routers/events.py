@@ -305,7 +305,11 @@ def create_event(
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="הפעולה זמינה רק לחשבון של בית עסק")
     return create_event_for(
-        db, user.producer_id, data, actor=user, background_tasks=background_tasks  # type: ignore[arg-type]
+        db,
+        user.producer_id,
+        data,
+        actor=user,
+        background_tasks=background_tasks,  # type: ignore[arg-type]
     )
 
 
