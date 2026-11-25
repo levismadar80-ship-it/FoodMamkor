@@ -12,7 +12,7 @@ Does NOT: exercise the Excel importer (`producer_import.py`, deliberately out
           that half and this file mirrors its shape.
 Related:  backend/app/services/producer_queries.py
           (`upsert_primary_branch_location`, `_demote_other_primaries`);
-          backend/app/routers/admin.py (create + update call sites);
+          backend/app/services/admin_producer_writes.py (create + update call sites);
           tests/conftest.py (make_user, make_producer, make_category).
 History:  MEH-2059 (creation).
 

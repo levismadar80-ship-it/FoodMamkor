@@ -43,6 +43,7 @@ import {
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -251,16 +252,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                   data-testid={`special-hours-date-${i}`}
                   className="numeric"
                 />
-                <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[34px]">
-                  <input
-                    type="checkbox"
-                    checked={row.closed}
-                    onChange={(e) => patchRow(i, { closed: e.target.checked })}
-                    className="w-4 h-4 accent-primary"
-                    data-testid={`special-hours-closed-${i}`}
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-sm"
+                  checked={row.closed}
+                  onChange={(e) => patchRow(i, { closed: e.target.checked })}
+                  data-testid={`special-hours-closed-${i}`}
+                >
                   <span>{t("closed_toggle")}</span>
-                </label>
+                </Checkbox>
                 <button
                   type="button"
                   onClick={() => removeRow(i)}

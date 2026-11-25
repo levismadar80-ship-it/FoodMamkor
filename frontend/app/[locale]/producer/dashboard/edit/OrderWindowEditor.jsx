@@ -31,6 +31,7 @@ import {
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-3475: `saveUrl` — the admin edit page mounts this against
 // PUT /admin/producers/{id}.
@@ -181,16 +182,14 @@ export default function OrderWindowEditor({
           const issueReason = issueByDay.get(i);
           return (
             <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0 min-h-[34px]">
-                <input
-                  type="checkbox"
-                  checked={day.open}
-                  onChange={(e) => patchDay(i, { open: e.target.checked })}
-                  className="w-4 h-4 accent-primary"
-                  aria-label={`${tDays(key)} — ${t("toggle_label")}`}
-                />
+              <Checkbox
+                className="flex items-center gap-2 text-sm w-28 shrink-0"
+                checked={day.open}
+                onChange={(e) => patchDay(i, { open: e.target.checked })}
+                aria-label={`${tDays(key)} — ${t("toggle_label")}`}
+              >
                 <span>{tDays(key)}</span>
-              </label>
+              </Checkbox>
 
               {day.open ? (
                 // MEH-1869: a day holds up to MAX_ORDER_RANGES_PER_DAY ranges

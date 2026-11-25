@@ -42,6 +42,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import FieldHelpLabel from "@/components/FieldHelpLabel";
 import FormFillBox from "@/components/FormFillBox";
 import { applyRecipeDraft } from "@/lib/recipe-draft";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
@@ -358,15 +359,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-sm p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
-                <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 accent-primary"
-                    checked={form.product_ids.includes(p.id)}
-                    onChange={() => toggleProduct(p.id)}
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-sm py-1"
+                  checked={form.product_ids.includes(p.id)}
+                  onChange={() => toggleProduct(p.id)}
+                >
                   <span>{p.name}</span>
-                </label>
+                </Checkbox>
               </li>
             ))}
           </ul>

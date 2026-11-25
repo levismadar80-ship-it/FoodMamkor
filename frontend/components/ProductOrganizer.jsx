@@ -33,6 +33,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import ProductGroupSuggest from "@/components/ProductGroupSuggest";
+import Checkbox from "@/components/ui/Checkbox";
 
 /** @typedef {{ id: string, name: string, position?: number|null, group_id?: string|null, image_url?: string|null }} Product */
 /** @typedef {{ id: string, name: string }} Group */
@@ -479,15 +480,13 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
       data-name={product.name}
     >
       {/* MEH-3477: 44px tap target around a native checkbox. */}
-      <label className="shrink-0 inline-flex items-center justify-center w-11 h-11 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          aria-label={t("select_aria", { name: product.name })}
-          className="w-4 h-4 accent-primary"
-        />
-      </label>
+      <Checkbox
+        className="shrink-0 inline-flex items-center justify-center w-11 h-11"
+        checked={checked}
+        onChange={onToggle}
+        aria-label={t("select_aria", { name: product.name })}
+      >
+      </Checkbox>
       <button
         type="button"
         aria-label={t("drag_aria", { name: product.name })}

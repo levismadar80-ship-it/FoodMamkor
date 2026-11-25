@@ -26,6 +26,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
+import Checkbox from "@/components/ui/Checkbox";
 
 // Mirrors MAX_VARIANTS_PER_PRODUCT (backend/app/limits.py); the server holds it.
 export const MAX_VARIANTS = 10;
@@ -159,10 +160,13 @@ function VariantRow({ row, index, last, edit, move, remove, t }) {
         <Input size="sm" label={t("price_label")} value={row.price} inputMode="decimal" dir="ltr" placeholder={t("price_placeholder")}
           onChange={(e) => edit(index, { price: e.target.value })} />
       </div>
-      <label className="flex items-center gap-1.5 min-h-touch text-sm text-text">
-        <input type="checkbox" checked={row.in_stock} onChange={(e) => edit(index, { in_stock: e.target.checked })} />
+      <Checkbox
+        className="flex items-center gap-1.5 text-sm text-text"
+        checked={row.in_stock}
+        onChange={(e) => edit(index, { in_stock: e.target.checked })}
+      >
         {t("in_stock")}
-      </label>
+      </Checkbox>
       <button type="button" className={ICON_BTN} disabled={index === 0} onClick={() => move(index, -1)} aria-label={t("move_up", { name: label })}>
         <ArrowUp size={18} aria-hidden="true" />
       </button>

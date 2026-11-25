@@ -12,8 +12,8 @@ Does NOT: write ProducerReview.is_hidden. Hidden still means "an admin hid it"
           routers/reviews.py guard 2 / 2b (MEH-2076).
 Related:  routers/reviews.py:_shares_category (the same intersection rule, for
           the write guard) · routers/producer_claim.py · routers/auth.py
-          upgrade path · routers/producer_me.py + routers/admin.py category
-          writes (the recompute triggers).
+          upgrade path · routers/producer_me.py + services/admin_producer_writes.py
+          category writes (the recompute triggers).
 History:  MEH-3258 (creation — grill retro D2, Sapir 14/11).
 """
 

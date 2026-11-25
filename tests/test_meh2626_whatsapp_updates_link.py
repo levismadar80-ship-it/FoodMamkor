@@ -144,7 +144,7 @@ def test_review_gate_opens_for_a_user_whose_only_contact_is_a_whatsapp_group_cli
 # --------------------------------------------------------------------------- #
 # A3 — admin ping on change (MEH-2073 sensitive-edit path)
 # --------------------------------------------------------------------------- #
-PATCH_TARGET = "app.routers.producer_me.notify_admin_producer_sensitive_edit"
+PATCH_TARGET = "app.services.producer_owner_update.notify_admin_producer_sensitive_edit"
 
 
 def test_approved_business_changing_the_link_pings_admin_once(client, db):

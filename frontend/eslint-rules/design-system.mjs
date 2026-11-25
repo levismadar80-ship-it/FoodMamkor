@@ -165,7 +165,7 @@ const plugin = {
     "no-html-button": elementRule("A hand-written <button>", "ui/Button (IconButton for an icon-only control)", (n) => tagName(n) === "button"),
     "no-html-select": elementRule("A hand-written <select>", "ui/Select", (n) => tagName(n) === "select"),
     "no-html-textarea": elementRule("A hand-written <textarea>", "ui/Textarea", (n) => tagName(n) === "textarea"),
-    "no-html-checkbox": elementRule("A hand-written checkbox <input>", "ui/Switch (a shared Checkbox is coming, MEH-3826)", inputOfType(new Set(["checkbox"]))),
+    "no-html-checkbox": elementRule("A hand-written checkbox <input>", "ui/Checkbox (ui/Switch for an on/off setting)", inputOfType(new Set(["checkbox"]))),
     "no-html-radio": elementRule("A hand-written radio <input>", "a shared radio group (none yet, MEH-3826) — keep the count from growing", inputOfType(new Set(["radio"]))),
     "no-html-heading": elementRule("A hand-written <h1>–<h3>", "ui/Heading or ui/SectionHeading", (n) => HEADINGS.has(tagName(n))),
     "no-html-anchor": elementRule("A hand-written <a>", "ui/Link, or Link from @/i18n/navigation for an internal page", (n) => tagName(n) === "a"),

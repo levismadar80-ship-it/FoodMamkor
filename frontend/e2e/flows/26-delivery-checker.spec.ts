@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { settledField } from "./_settled-field";
 
 /**
  * MEH-1536 — "מגיעים אלייך?" delivery checker on the producer detail page.
@@ -52,6 +53,14 @@ const nationwidePlain = (ps: Producer[]) =>
     (p) => p.offers_delivery && p.delivery_nationwide && (p.delivery_excluded_cities || []).length === 0,
   );
 
+// MEH-3835: on CI the checker once resolved to 2 elements right after `goto`
+// (strict mode, run 45462007182). The most likely cause is the MEH-2323
+// streaming copy (`_settled-field.ts`): a hidden server copy next to the copy
+// React renders in the browser, for a moment. It did not reproduce locally
+// (20/20 with and without this change), so that cause is inferred, not
+// observed. Every case that expects the checker waits in `settledField` for
+// one React-owned copy first; after that the input and the verdict below have
+// only one copy to resolve to.
 async function openProducer(page: import("@playwright/test").Page, id: string | number) {
   await page.goto(`/producer/${id}`);
 }
@@ -86,7 +95,7 @@ test.describe("MEH-1536 delivery checker", () => {
     const area = namedAreas(producer!)[0];
     await openProducer(page, producer!.id);
 
-    await expect(page.getByTestId("delivery-checker")).toBeVisible({ timeout: 15_000 });
+    await expect(await settledField(page, "delivery-checker")).toBeVisible();
     await check(page, area.city!);
     await expect(verdict(page)).toHaveAttribute("data-result", "yes");
     await expect(verdict(page)).toContainText(area.city!);
@@ -105,7 +114,7 @@ test.describe("MEH-1536 delivery checker", () => {
     test.skip(!missing, "this producer serves every candidate control city");
     await openProducer(page, producer!.id);
 
-    await expect(page.getByTestId("delivery-checker")).toBeVisible({ timeout: 15_000 });
+    await expect(await settledField(page, "delivery-checker")).toBeVisible();
     await check(page, missing!);
     await expect(verdict(page)).toHaveAttribute("data-result", "no");
 
@@ -123,7 +132,7 @@ test.describe("MEH-1536 delivery checker", () => {
     const excludedCity = producer!.delivery_excluded_cities![0];
     await openProducer(page, producer!.id);
 
-    await expect(page.getByTestId("delivery-checker")).toBeVisible({ timeout: 15_000 });
+    await expect(await settledField(page, "delivery-checker")).toBeVisible();
     await check(page, excludedCity);
     await expect(verdict(page)).toHaveAttribute("data-result", "no");
 

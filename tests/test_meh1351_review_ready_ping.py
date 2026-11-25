@@ -25,7 +25,7 @@ def _pending_producer_user(db, *, images=None, category=None, license_no=None):
     return user, producer
 
 
-PATCH_TARGET = "app.routers.producer_me.notify_admin_producer_review_ready"
+PATCH_TARGET = "app.services.producer_owner_update.notify_admin_producer_review_ready"
 
 
 def test_fires_once_on_first_image(client, db):

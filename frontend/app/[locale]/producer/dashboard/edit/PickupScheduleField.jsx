@@ -16,6 +16,7 @@
  */
 import { useTranslations } from "next-intl";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
+import Checkbox from "@/components/ui/Checkbox";
 import OrderCutoffPicker from "./OrderCutoffPicker"; // MEH-3511: shared with zones
 
 /**
@@ -38,15 +39,14 @@ export default function PickupScheduleField({ days, cutoffDay, cutoffTime, onCha
         <ul className="flex flex-wrap gap-x-4 gap-y-1">
           {DELIVERY_DAYS.map((day) => (
             <li key={day}>
-              <label className="inline-flex min-h-11 items-center gap-1.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={days.includes(day)}
-                  onChange={() => toggle(day)}
-                  data-testid={`pickup-day-${day}`}
-                />
+              <Checkbox
+                className="inline-flex items-center gap-1.5 text-sm"
+                checked={days.includes(day)}
+                onChange={() => toggle(day)}
+                data-testid={`pickup-day-${day}`}
+              >
                 {day}
-              </label>
+              </Checkbox>
             </li>
           ))}
         </ul>

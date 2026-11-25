@@ -39,6 +39,7 @@ from app.services.group_buy_notifications import (
 )
 from app.services import indexnow  # MEH-2852
 from app.services import group_buy_capacity as capacity  # MEH-3592
+from app.services import group_buy_no_show as no_show  # MEH-3735
 from app.services.producer_listing import is_business
 from app.services.group_buy_pickup_text import (
     is_delivery_only,
@@ -423,6 +424,7 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
     capacity.refuse_own_group(gb, current_user)  # MEH-3691
+    no_show.refuse_if_blocked(db, current_user)  # MEH-3735
 
     # MEH-773: fresh count under the lock — gb.commits is a cached
     # relationship and can be stale within the serialized critical section.
@@ -453,6 +455,8 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         group_buy_id=group_buy_id,
         user_id=current_user.id,
         quantity=data.quantity,
+        # MEH-3735: unique within the group (UNIQUE + the row lock above).
+        pickup_code=no_show.new_code(no_show.codes_in_use(db, group_buy_id)),
     )
     db.add(commit)
     # Flush so the just-added commit is visible to the participant-email query

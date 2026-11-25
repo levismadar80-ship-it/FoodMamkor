@@ -174,6 +174,13 @@ test.describe("manual › /map does not move when the page hydrates (MEH-3820)",
       await cold.route(/tile\.openstreetmap\.org\//, (r) => r.fulfill({ status: 204, body: "" }));
       await cold.goto("/map");
       await expect(cold.getByTestId("cookie-banner")).toBeVisible();
+      // The banner sits outside the route's Suspense boundary, so it can be up
+      // while the map is still streaming: on a slow first response the route
+      // loader is on screen and the map waits in React's hidden `S:0`
+      // container (measured on a cold local server: box 0,0, `hidden`
+      // ancestor S:0, 1 of 3 runs; staging push run 45515738073 read the same
+      // 0 at 375x812). Read the box only once the map's own bar is in place.
+      await expect(cold.getByTestId("map-mobile-bar")).toBeVisible({ timeout: 20_000 });
       const before = await mapBox(cold);
       const bannerH = Math.round((await box(cold.getByTestId("cookie-banner"))).height);
       await cold.close();

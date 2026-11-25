@@ -4,6 +4,7 @@
 import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Module:   OwnerInviteConsents
@@ -26,7 +27,6 @@ import { Link } from "@/i18n/navigation";
 
 const LINK_CLASS =
   "text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current";
-const BOX_CLASS = "w-5 h-5 accent-primary mt-0.5 flex-shrink-0";
 
 /**
  * @param {{
@@ -42,14 +42,13 @@ export default function OwnerInviteConsents({ testIdPrefix = "owner-invite", ...
   return (
     <>
       <div>
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid={`${testIdPrefix}-consent`}
-            checked={props.consent}
-            onChange={(e) => props.onConsent(e.target.checked)}
-            className={BOX_CLASS}
-          />
+        <Checkbox
+          className="flex items-start gap-2 text-sm"
+          boxClassName="mt-0.5"
+          data-testid={`${testIdPrefix}-consent`}
+          checked={props.consent}
+          onChange={(e) => props.onConsent(e.target.checked)}
+        >
           <span className="leading-relaxed text-fg-muted">
             {tReg.rich("terms.combined", {
               tos: (chunks) => (
@@ -74,7 +73,7 @@ export default function OwnerInviteConsents({ testIdPrefix = "owner-invite", ...
               ),
             })}
           </span>
-        </label>
+        </Checkbox>
         {/* Always in the DOM so aria-controls resolves; `hidden` while closed. */}
         <p
           id={declarationId}
@@ -87,16 +86,15 @@ export default function OwnerInviteConsents({ testIdPrefix = "owner-invite", ...
       </div>
 
       {props.farmerRequired && (
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid={`${testIdPrefix}-farmer`}
-            checked={props.farmer}
-            onChange={(e) => props.onFarmer(e.target.checked)}
-            className={BOX_CLASS}
-          />
+        <Checkbox
+          className="flex items-start gap-2 text-sm"
+          boxClassName="mt-0.5"
+          data-testid={`${testIdPrefix}-farmer`}
+          checked={props.farmer}
+          onChange={(e) => props.onFarmer(e.target.checked)}
+        >
           <span className="leading-relaxed text-fg-muted">{tReg("terms.farmer_declaration")}</span>
-        </label>
+        </Checkbox>
       )}
     </>
   );

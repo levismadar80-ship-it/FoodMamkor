@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Module:   TagsCard
@@ -182,19 +183,17 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
         <p className="text-xs text-fg-muted">{tGrass("scope_helper")}</p>
         {/* A single checkbox, not a yes/no pair: the column is a plain Boolean
             defaulting to false, so "no" and "not answered" are one value. */}
-        <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            name="grass_fed"
-            checked={grassFed}
-            onChange={(e) => {
+        <Checkbox
+          className="flex items-center gap-1.5 text-sm"
+          name="grass_fed"
+          checked={grassFed}
+          onChange={(e) => {
               setGrassFed(e.target.checked);
               setSaved(false);
             }}
-            className="w-4 h-4 accent-primary"
-          />
+        >
           {tGrass("label")}
-        </label>
+        </Checkbox>
       </section>
 
       {errorMsg && (

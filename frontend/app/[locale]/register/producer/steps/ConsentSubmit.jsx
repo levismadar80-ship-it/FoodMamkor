@@ -13,6 +13,7 @@ import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED } from "../registerProducerShared";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * @param {Record<string, any>} props
@@ -69,47 +70,44 @@ export default function ConsentSubmit({ agreedToTerms, backTestId, beforeSubmit,
           consent (chrome, plural), the binding licensing declaration
           (first-person), and the conditional grower declaration. ADR-014
           voice separation; each locked string is its own verbatim key. */}
-      <label className="flex items-start gap-2 text-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={agreedToTerms}
-          onChange={(e) => setAgreedToTerms(e.target.checked)}
-          className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          required
-        />
+      <Checkbox
+        className="flex items-start gap-2 text-sm"
+        boxClassName="mt-0.5"
+        checked={agreedToTerms}
+        onChange={(e) => setAgreedToTerms(e.target.checked)}
+        required
+      >
         <span className="leading-relaxed text-fg-muted">
           {t("auth.register.producer.terms.intro")}{" "}
           <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{t("auth.register.producer.terms.tos_link")}</Link>{" "}
           {t("auth.register.producer.terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{t("auth.register.producer.terms.privacy_link")}</Link>
         </span>
-      </label>
+      </Checkbox>
 
-      <label className="flex items-start gap-2 text-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={declarationConfirmed}
-          onChange={(e) => setDeclarationConfirmed(e.target.checked)}
-          className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          required
-        />
+      <Checkbox
+        className="flex items-start gap-2 text-sm"
+        boxClassName="mt-0.5"
+        checked={declarationConfirmed}
+        onChange={(e) => setDeclarationConfirmed(e.target.checked)}
+        required
+      >
         <span className="leading-relaxed text-fg-muted">
           {t("auth.register.producer.terms.declaration")}
         </span>
-      </label>
+      </Checkbox>
 
       {farmerDeclarationRequired && (
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={farmerConfirmed}
-            onChange={(e) => setFarmerConfirmed(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-            required
-          />
+        <Checkbox
+          className="flex items-start gap-2 text-sm"
+          boxClassName="mt-0.5"
+          checked={farmerConfirmed}
+          onChange={(e) => setFarmerConfirmed(e.target.checked)}
+          required
+        >
           <span className="leading-relaxed text-fg-muted">
             {t("auth.register.producer.terms.farmer_declaration")}
           </span>
-        </label>
+        </Checkbox>
       )}
 
       {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.

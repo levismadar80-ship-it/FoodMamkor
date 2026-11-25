@@ -8,7 +8,7 @@
 #           audit, which is the only part a script can decide; the quality bar
 #           lives in docs/audits/dashboard-field-guidance-audit.md.
 # Related:  docs/audits/dashboard-field-guidance-audit.md (the baseline source),
-#           backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS),
+#           backend/app/services/producer_owner_update.py (_PRODUCER_WRITABLE_FIELDS; moved from routers/producer_me.py, MEH-3841),
 #           scripts/checks/coverage-ratchet.mjs (the ratchet pattern copied).
 # History:  MEH-1539 (creation — the dashboard field-guidance standard's gate).
 #           Opened under MEH-1897 by mistake and re-homed: that card is the
@@ -41,7 +41,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 AUDIT="$ROOT/docs/audits/dashboard-field-guidance-audit.md"
-ROUTER="$ROOT/backend/app/routers/producer_me.py"
+ROUTER="$ROOT/backend/app/services/producer_owner_update.py"  # MEH-3841: the whitelist moved here
 BASELINE="$ROOT/scripts/checks/dashboard-field-guidance-baseline.txt"
 
 # Field names from the audit table's numbered rows: `| 12 | \`some_field\` | ...`
