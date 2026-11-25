@@ -44,8 +44,8 @@ from app.schemas.schemas import (
     WhatsAppClickIn,
 )
 from app.services.delivery_waitlist_requests import (  # MEH-3537
+    add_to_delivery_waitlist,
     confirm_host,
-    join_waitlist,
     unsubscribe,
 )
 from app.services.analytics import (
@@ -570,7 +570,9 @@ def join_delivery_waitlist(
     services/delivery_waitlist). Rate-limited 10/minute per IP.
     """
     # MEH-3537: the request's rules live in services/delivery_waitlist_requests.py.
-    out, created = join_waitlist(db, producer_id, data, current_user, background_tasks)
+    out, created = add_to_delivery_waitlist(
+        db, producer_id, data, current_user, background_tasks
+    )
     if not created:
         response.status_code = 200
     return out

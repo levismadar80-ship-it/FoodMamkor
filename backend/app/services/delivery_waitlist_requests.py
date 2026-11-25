@@ -10,14 +10,15 @@ Touches:  DB delivery_waitlist rows (commit / rollback here). Queues
 Does NOT: own the waitlist's rules, which live in services/delivery_waitlist.py:
           the entry lookup and insert, the per-address send cap and advisory
           lock, the tokens and the city fan-out. It also doesn't set the HTTP
-          status of a repeat signup: `join_waitlist` says whether the row is
-          new and the router answers 201 or 200.
+          status of a repeat signup: `add_to_delivery_waitlist` says whether
+          the row is new and the router answers 201 or 200.
 Related:  app/routers/producers.py join_delivery_waitlist ·
           confirm_delivery_waitlist_host · unsubscribe_delivery_waitlist
           (the callers).
 History:  MEH-3537 (moved from routers/producers.py; the bodies are verbatim,
-          only join_waitlist now returns (body, created)). Originally
-          MEH-2618 · MEH-2673 · MEH-2952.
+          only add_to_delivery_waitlist now returns (body, created); not
+          named join_waitlist, which group_buy_capacity.py already uses).
+          Originally MEH-2618 · MEH-2673 · MEH-2952.
 """
 
 from typing import Any
@@ -39,7 +40,7 @@ from app.services.producer_listing import is_business
 from app.utils.clock import utc_now
 
 
-def join_waitlist(
+def add_to_delivery_waitlist(
     db: Session,
     producer_id: UUID,
     data: DeliveryWaitlistIn,
