@@ -140,10 +140,14 @@ export default [
           // in <head>) and moves to the visitor's right after. A default
           // parameter (`today = israelToday()`) is the helper's own fallback and
           // is not flagged; its callers are, when they leave `today` out.
+          // Also the helpers whose day defaults to the clock (holidaysOn, bagDay,
+          // upcomingSpecialCount, getUpcomingHoliday). A tripwire, not a proof:
+          // an alias, a namespace import, `new Date()` / `Date.now()` in render
+          // or an explicit `undefined` gets past it.
           selector:
-            "CallExpression[callee.name='israelToday'][arguments.length=0]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='eventWhen'][arguments.length<2]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='matchesWhen'][arguments.length<3]:not(AssignmentPattern > CallExpression)",
+            "CallExpression[callee.name='israelToday'][arguments.length=0]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='eventWhen'][arguments.length<2]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='matchesWhen'][arguments.length<3]:not(AssignmentPattern > CallExpression), CallExpression[callee.name='holidaysOn'][arguments.length=0]:not(AssignmentPattern > CallExpression), CallExpression[callee.name=/^(bagDay|upcomingSpecialCount|getUpcomingHoliday)$/][arguments.length<2]:not(AssignmentPattern > CallExpression)",
           message:
-            "The Israel day, read where it can reach the screen: a page cached before midnight hydrates after it with another day (React 418, MEH-3861). In a component, use useIsraelToday() from lib/use-israel-today.js and pass it on (eventWhen(date, today), matchesWhen(date, when, today)). In a click handler or an effect it is safe: add eslint-disable-next-line no-restricted-syntax -- <where it runs>.",
+            "The Israel day, read where it can reach the screen: a page cached before midnight hydrates after it with another day (React 418, MEH-3861). In a component, use useIsraelToday() from lib/use-israel-today.js and pass it on (eventWhen(date, today), matchesWhen(date, when, today)). In a click handler, an effect, or a part drawn only after a browser fetch it is safe: add eslint-disable-next-line no-restricted-syntax -- <where it runs>. A tripwire, not a proof: an alias or new Date() in render gets past it.",
         },
       ],
     },

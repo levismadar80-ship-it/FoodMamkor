@@ -166,12 +166,14 @@ export function israelTime(iso) {
  *
  * @param {string|null|undefined} iso the `cancel_until` instant
  * @param {(key: string, values?: object) => string} t next-intl `rescue` translator
+ * @param {string} [today] the Israel day the screen draws with: useIsraelToday() in a
+ *   component, so hydration uses the server's day (MEH-3861)
  * @returns {string|null}
  */
-export function rescueCancelText(iso, t) {
+export function rescueCancelText(iso, t, today = israelToday()) {
   const time = israelTime(iso);
   if (!time || !iso) return time;
-  const day = bagDay(israelToday(new Date(iso)));
+  const day = bagDay(israelToday(new Date(iso)), today);
   return day === "tomorrow" ? t("row.cancel_at_tomorrow", { time }) : time;
 }
 

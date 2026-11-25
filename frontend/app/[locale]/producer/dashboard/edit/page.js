@@ -594,6 +594,7 @@ function EditPageInner() {
     // MEH-2264: "filled" = at least one override still ahead. Clock-derived,
     // but this page is client-only (the profile is fetched in the browser),
     // so there is no server pass to disagree with.
+    // eslint-disable-next-line no-restricted-syntax -- MEH-3861: client-only, see the comment above
     specialHours: upcomingSpecialCount(profile.special_hours) > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,

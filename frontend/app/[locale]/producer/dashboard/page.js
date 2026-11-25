@@ -718,6 +718,7 @@ export default function ProducerDashboardPage() {
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
           MEH-2460: its CTA is the catalog — not for an organizer. */}
       {!isOrganizer && (() => {
+        // eslint-disable-next-line no-restricted-syntax -- MEH-3861: the server renders null here (it returns null until auth is read in the browser)
         const h = getUpcomingHoliday();
         if (!h) return null;
         return (

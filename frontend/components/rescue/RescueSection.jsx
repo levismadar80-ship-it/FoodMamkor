@@ -83,6 +83,7 @@ export default function RescueSection({ producer }) {
           if (ticket !== latest.current) return;
           // MEH-3702: today's bag first; tomorrow's when there is none today.
           const own = rows.filter((row) => row.producer?.id === producer?.id);
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the fetch's .then, after the load
           setOffer(own.find((row) => bagDay(row.date) === "today") || own[0] || null);
         })
         .catch(() => {
@@ -115,7 +116,7 @@ export default function RescueSection({ producer }) {
   // business's own LOW estimate (worthAgorot), so never a made-up discount.
   const worthA = worthAgorot(offer);
   const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
-  const cancelUntil = rescueCancelText(offer?.cancel_until, t); // MEH-3702
+  const cancelUntil = rescueCancelText(offer?.cancel_until, t, day); // MEH-3702
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);
