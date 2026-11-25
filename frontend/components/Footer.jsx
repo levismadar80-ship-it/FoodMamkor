@@ -62,14 +62,18 @@ import { currentIsraelYear } from "@/lib/established-year";
  *   - MEH-976: newsletter input switched to unicode-bidi:plaintext (+ pe-11)
  *     so the Hebrew placeholder no longer collides with the submit arrow;
  *     replaces the MEH-968 dir="ltr" + ps-11 attempt.
+ *   - MEH-3847: «גלו» holds the height of all six links on desktop from the
+ *     first paint (DISCOVER_RESERVE), so the gated links no longer push the
+ *     footer down when they arrive.
  */
 // MEH-3847: «גלו» gets up to four links (events, experiences, group buys,
 // rescue bags) only once their checks answer, after the first paint. On
 // desktop the groups are stacked, so a growing list pushed the rest of the
 // footer down (CLS 0.42 on /recommend, MEH-3809 guard). Its space is held for
-// all six links from the first paint: 6 × 20px lines + 5 × 8px gaps = 160px.
-// On a phone the list is a closed accordion row, so nothing is held there.
-const DISCOVER_RESERVE = "md:min-h-40";
+// all six links from the first paint: 6 × 24px rows + 5 × 8px gaps = 184px
+// (each <li> measured 24px at 1280, 25/11). On a phone the list is a closed
+// accordion row, so nothing is held there.
+const DISCOVER_RESERVE = "md:min-h-[11.5rem]";
 
 export default function Footer() {
   const t = useTranslations();
