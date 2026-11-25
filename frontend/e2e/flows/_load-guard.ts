@@ -26,6 +26,12 @@
  *   apart, window ≤ 5 s), shifts within 500 ms of input excluded by the browser
  *   (`hadRecentInput`). Playwright clicks are real input events, so a panel a
  *   test opens is not counted. Same 0.1 limit as scripts/checks/lighthouserc.cjs.
+ * - Blind spot on the `mobile` project: Chromium's phone emulation (isMobile)
+ *   marks every shift in roughly the first 0.5–0.7 s after a navigation as
+ *   `hadRecentInput`, with no input sent (measured 25/11: a block at 300 or
+ *   500 ms → flagged, at 700 ms or later → counted; desktop counts all three).
+ *   So a shift that early is seen on desktop only. The self-test's late block
+ *   lands at 1 s for that reason.
  * - Hydration mismatches are never allowlisted (HYDRATION below).
  */
 import type { Page, TestInfo } from "@playwright/test";

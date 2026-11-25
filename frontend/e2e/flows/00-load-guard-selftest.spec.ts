@@ -31,21 +31,21 @@ const LATE_BLOCK = `
       b.id = "late-banner";
       b.style.height = "400px";
       document.body.prepend(b);
-    }, 300);
+    }, 1000);
   </script>`;
 
 const STABLE = `<div id="content" style="height:2000px;background:#eee">content</div>`;
 
 async function settle(page: import("@playwright/test").Page) {
   // Two animation frames after the late block's timer: the shift is reported.
-  // A fixed wait on purpose: the page's own 300 ms timer is the subject, and
+  // A fixed wait on purpose: the page's own 1 s timer is the subject, and
   // "no shift happened" has nothing in the DOM to await.
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(1500);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 test.describe("load guard self-test (MEH-3809)", () => {
-  test("a block inserted 300 ms after load fails the CLS check, naming the page", async ({ page, browserName }) => {
+  test("a block inserted 1 s after load fails the CLS check, naming the page", async ({ page, browserName }) => {
     // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: layout-shift entries are Chromium-only
     test.skip(browserName !== "chromium", "layout-shift entries exist only in Chromium; the guard says so instead of reading 0");
     await servePage(LATE_BLOCK)({ page });
