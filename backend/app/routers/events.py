@@ -350,7 +350,7 @@ def create_event_for(
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
-        phone=_producer_phone(db, producer_id),  # type: ignore[arg-type]
+        phone=_producer_phone(db, producer_id),
         registration_url=data.registration_url,
     )
     if problem:
