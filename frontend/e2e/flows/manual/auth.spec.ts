@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
 import { settledField } from "../_settled-field";
+import { layoutSettled } from "../_layout-settled";
 
 /**
  * Spec:     manual/auth
@@ -444,8 +445,19 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
 
     const form = page.getByTestId("register-form-pane");
     const hero = page.getByTestId("register-hero-pane");
-    const formBox = (await form.boundingBox())!;
-    const heroBox = (await hero.boundingBox())!;
+    await expect(form).toBeVisible();
+    await expect(hero).toBeVisible();
+    // MEH-3833: two separate boundingBox() calls could straddle a layout shift
+    // (the received gap was always 64px). Wait for quiet, then read both boxes
+    // in one frame, so the comparison is between the same layout.
+    await layoutSettled(form);
+    const [formBox, heroBox] = await page.evaluate(() => {
+      const box = (id: string) => {
+        const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      };
+      return [box("register-form-pane"), box("register-hero-pane")];
+    });
 
     // RTL page: START is the right edge. The form must be the right-hand pane.
     expect(
