@@ -39,6 +39,9 @@ import SectionHeading from "@/components/ui/SectionHeading";
 /** @param {{ producerId: string }} props */
 export default function AdminBusinessEventsPanel({ producerId }) {
   const t = useTranslations("admin.business_events");
+  const tCommon = useTranslations("admin.common");
+  const tEvents = useTranslations("dashboard.producer.manage_events");
+  const tStatus = useTranslations("rescue.dashboard.status");
   const locale = useLocale();
   const today = useIsraelToday();
   const { data, error, isLoading, mutate } = useUserApi(`/admin/producers/${producerId}/events`);
@@ -62,7 +65,7 @@ export default function AdminBusinessEventsPanel({ producerId }) {
       <SectionHeading>{t("title")}</SectionHeading>
       <p className="text-sm text-text-muted mb-4">{t("intro")}</p>
 
-      {isLoading && <p className="text-sm text-text-muted">{t("loading")}</p>}
+      {isLoading && <p className="text-sm text-text-muted">{tCommon("loading")}</p>}
       {error && !data && (
         <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {t("load_error")}
@@ -81,7 +84,7 @@ export default function AdminBusinessEventsPanel({ producerId }) {
             <li key={ev.id} className="py-3 flex flex-wrap items-center gap-3">
               <span className="font-medium">{ev.title}</span>
               <span className="text-sm text-text-muted">{formatDate(ev.event_date, locale)}</span>
-              {ev.is_active === false && <Badge>{t("cancelled")}</Badge>}
+              {ev.is_active === false && <Badge>{tStatus("cancelled")}</Badge>}
               {ev.is_active !== false && today && ev.event_date < today && <Badge>{t("past")}</Badge>}
               <span className="ms-auto flex gap-2">
                 <Button
@@ -92,7 +95,7 @@ export default function AdminBusinessEventsPanel({ producerId }) {
                   disabled={open !== null}
                   data-testid="admin-business-event-copy"
                 >
-                  {t("duplicate")}
+                  {tEvents("action_duplicate")}
                 </Button>
                 <Button
                   type="button"
@@ -102,7 +105,7 @@ export default function AdminBusinessEventsPanel({ producerId }) {
                   disabled={open !== null}
                   data-testid="admin-business-event-edit"
                 >
-                  {t("edit")}
+                  {tCommon("edit")}
                 </Button>
               </span>
             </li>

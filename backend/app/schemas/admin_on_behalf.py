@@ -1,3 +1,4 @@
+# guard-ok: backend/pyproject.toml is edit-denied for CC; Sapir adds this file to [tool.mypy].files (MEH-3873 PR)
 """
 Module:   schemas/admin_on_behalf
 Purpose:  Request bodies for an admin writing a business's events and

@@ -184,7 +184,7 @@ describe("AdminBusinessEventsPanel", () => {
     ];
     wrap(<AdminBusinessEventsPanel producerId="p1" />);
     expect(screen.getAllByTestId("admin-business-event-edit")).toHaveLength(3);
-    expect(screen.getAllByText(A.cancelled)).toHaveLength(1);
+    expect(screen.getAllByText(he.rescue.dashboard.status.cancelled)).toHaveLength(1);
     expect(screen.getAllByText(A.past)).toHaveLength(1);
   });
 
