@@ -7,9 +7,11 @@ flow — no mocks, no API stubs. Specs at this root cover RTL and
 screenshots; named user flows live under `frontend/e2e/flows/`.
 
 ## Canonical pattern
-`frontend/e2e/flows/01-home-load.spec.ts:1-9` — minimal `test.describe`
+`frontend/e2e/flows/01-home-load.spec.ts` — minimal `test.describe`
 + `test()` block using `page.goto("/")`, real selectors
-(`[data-testid="hero-search"]`), and `toBeVisible({ timeout: 15_000 })`.
+(`[data-testid="hero-search"]`), and `toBeVisible({ timeout: 15_000 })` /
+`filter({ visible: true })` + `toHaveCount(1)` where a hidden streamed copy
+can share the selector (MEH-3834).
 Mirror this shape for new flows; keep timeouts explicit, not implicit.
 
 ## Conventions specific to this dir
