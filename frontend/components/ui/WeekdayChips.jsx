@@ -14,7 +14,8 @@
  *
  * Without «כל הימים» the seven chips sit in a 7-column grid, so they always
  * fit one row, the way a calendar's repeat picker does. Each keeps the 44px
- * height; at 375 each is about 40px wide. With «כל הימים» the eight chips
+ * height; at 375 each is about 40px wide, and max-w-sm keeps them chip-sized
+ * on a desktop. With «כל הימים» the eight chips
  * still wrap, as before.
  */
 
@@ -48,7 +49,7 @@ export default function WeekdayChips({ labelledBy, value, onChange, everyLabel =
     onChange(mask === null && !withEvery ? (1 << DAYS_IN_WEEK) - 1 : mask);
   };
   return (
-    <div role="group" aria-labelledby={labelledBy} className={withEvery ? "flex flex-wrap gap-2" : "grid grid-cols-7 gap-1"}>
+    <div role="group" aria-labelledby={labelledBy} className={withEvery ? "flex flex-wrap gap-2" : "grid grid-cols-7 gap-1 max-w-sm"}>
       {withEvery && (
         <button type="button" aria-pressed={every} onClick={() => onChange(null)} className={`${CHIP} ${every ? ON : OFF}`} data-testid={everyTestId}>
           {everyLabel}
