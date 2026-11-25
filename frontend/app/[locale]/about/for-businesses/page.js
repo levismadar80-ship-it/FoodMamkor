@@ -81,6 +81,8 @@ const CATEGORIES = [
       { key: "analytics" },
       { key: "repeat_customers" },
       { key: "visibility" },
+      // MEH-3869: where customers come from while the site is new.
+      { key: "new_site" },
     ],
   },
   {
