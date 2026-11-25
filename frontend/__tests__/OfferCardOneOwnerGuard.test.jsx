@@ -60,6 +60,12 @@ function shape(card) {
     h3: card.querySelector("h3")?.className,
     // Neither card draws a generic icon tile (Sapir 21/11, MEH-2659).
     noIconTile: !card.querySelector("span.w-11.h-11"),
+    // MEH-3586 follow-up (Sapir 22/11): both cards are the way in to their
+    // own page. The whole card is one link with the forward caret, and
+    // nothing inside it is a control of its own (a reserve button was).
+    link: card.tagName === "A" && Boolean(card.getAttribute("href")),
+    caret: Boolean(card.querySelector("svg.ltr\\:rotate-180")),
+    noInnerControl: card.querySelectorAll("button, a, details, input").length === 0,
   };
 }
 

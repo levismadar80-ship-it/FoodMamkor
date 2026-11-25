@@ -20,7 +20,8 @@ import useIsraelToday from "@/lib/use-israel-today";
  *           (03/11 ruling, which removed the 10-minute hold).
  *           It also does NOT promise an SMS — nothing in this stack sends one,
  *           so the copy says «אומרים בקופה» and stops there.
- * Related:  components/rescue/RescueSection.jsx (reserves, then renders this)
+ * Related:  app/[locale]/rescue/[offerId]/RescueOfferAction.jsx (the bag page
+ *           reserves, then renders this; MEH-3586)
  * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
  *           cutoff the terms say it can no longer be cancelled) · MEH-3704
  *           (send the code to a friend; `place` = the business and the

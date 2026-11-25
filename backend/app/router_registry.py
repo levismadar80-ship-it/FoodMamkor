@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.routers import (
     admin,
     admin_decisions,
+    admin_draft_merge,
     admin_experiences,
     admin_checklist,
     admin_extra,
@@ -132,6 +133,8 @@ def _include_admin(app: FastAPI) -> None:
     # as the owner's routes via services/product_organize.py. Here, not in
     # register_routers, to keep that function under the statement limit.
     app.include_router(admin_product_organize.router)
+    # MEH-3865: move a prepared draft to the owner who registered herself.
+    app.include_router(admin_draft_merge.router)
     # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
     app.include_router(admin_test_business.router)
     # MEH-3690: POST /auth/google/code, our own Google button's code swap.

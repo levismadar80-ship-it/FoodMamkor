@@ -546,6 +546,16 @@ class _ZonesOut(BaseModel):
         return self
 
 
+class DraftTwinOut(BaseModel):
+    """MEH-3865: one draft-twin match, for the admin producers list."""
+
+    draft_id: UUID
+    target_id: UUID
+    draft_name: str
+    target_name: str
+    reasons: list[str]
+
+
 class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
     # deliberately NOT on ProducerDetailOut/ListOut, matching the
@@ -584,6 +594,10 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # in one query; every other route leaves them False (no badge). Admin-only.
     dup_name: bool = False
     dup_phone: bool = False
+    # MEH-3865: the ownerless draft and the business its owner registered
+    # herself, when they look like one business (services/draft_twins.py), with
+    # the reason codes. Hydrated by GET /admin/producers only; None elsewhere.
+    draft_twin: DraftTwinOut | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

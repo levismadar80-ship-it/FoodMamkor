@@ -10,7 +10,8 @@ Does NOT: block, merge or hide anything (a signal only, as MEH-1421 set it),
           that is app/utils/phone.py, mobile-only on purpose.
 Related:  app/routers/admin.py list_producers (the only caller);
           app/schemas/producer_out.py ProducerAdminOut.dup_name / dup_phone.
-History:  MEH-3408 (creation).
+History:  MEH-3408 (creation). MEH-3865: name_key is the shared
+          business_name_key (quote marks / invisible characters dropped).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models import Producer
+from app.services.business_name_key import name_key as business_name_key
 
 _NON_DIGIT = re.compile(r"\D")
 # An Israeli number has 8 (landline) or 9 (mobile) digits after the trunk 0.
@@ -31,8 +33,13 @@ _MIN_NATIONAL_DIGITS = 8
 
 
 def name_key(name: str | None) -> str | None:
-    """Trimmed, lower-cased name; None when empty (two blanks never match)."""
-    key = (name or "").strip().lower()
+    """The shared business-name key; None when empty (two blanks never match).
+
+    MEH-3865: the same key as the registration name check (quote marks and
+    invisible characters dropped), so «ג׳חנון» and «ג'חנון» are one name here
+    too. It was strip().lower() before, and missed that pair.
+    """
+    key = business_name_key((name or ""))
     return key or None
 
 

@@ -80,8 +80,6 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 const fetchOffers = vi.fn();
-const reserveBag = vi.fn();
-const cancelOrder = vi.fn();
 const submitReview = vi.fn();
 const fetchMyOrders = vi.fn();
 let flagOn = true;
@@ -97,8 +95,6 @@ vi.mock("@/lib/rescue", async (importOriginal) => {
     ...actual,
     rescueBagsEnabled: () => flagOn,
     fetchOffers: (...a) => fetchOffers(...a),
-    reserveBag: (...a) => reserveBag(...a),
-    cancelOrder: (...a) => cancelOrder(...a),
     submitReview: (...a) => submitReview(...a),
     fetchMyOrders: (...a) => fetchMyOrders(...a),
   };
@@ -172,23 +168,6 @@ let RescueSection;
 let RescueList;
 let RescueHomeModule;
 let RescueConfirmation;
-
-/**
- * Runs `fn` with Date frozen at 10:00 Israel (08:00 UTC, winter) and the list
- * mock rebuilt on that clock. On the real clock the default cutoff
- * (now + 30 min) is already tomorrow from 23:30 Israel, so a test that wants
- * the bare «today» time went red at that hour (MEH-3704 CI, 21:39 UTC).
- */
-async function atTenInIsrael(fn) {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  try {
-    vi.setSystemTime(new Date("2026-12-10T08:00:00Z"));
-    fetchOffers.mockResolvedValue([offer()]);
-    await fn();
-  } finally {
-    vi.useRealTimers();
-  }
-}
 
 beforeEach(async () => {
   vi.clearAllMocks();
@@ -476,7 +455,7 @@ describe("the business-page section — landing from a bag link", () => {
   it("scrolls to the bag when the URL carries #section-rescue", async () => {
     window.history.replaceState(null, "", "/hatzala#section-rescue");
     render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
+    await screen.findByTestId("rescue-section-card");
     // MEH-3217: the scroll runs in an effect after the bag renders — wait for it.
     await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(1));
   });
@@ -484,17 +463,33 @@ describe("the business-page section — landing from a bag link", () => {
   it("does not scroll on an ordinary visit", async () => {
     window.history.replaceState(null, "", "/hatzala");
     render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
+    await screen.findByTestId("rescue-section-card");
     expect(scrolled).not.toHaveBeenCalled();
   });
 });
 
-describe("the business-page section — reserve and confirm", () => {
-  it("shows the price big, and says on the CTA that payment is AT THE COUNTER", async () => {
+describe("the business-page section — the bag card", () => {
+  // MEH-3586 follow-up (Sapir 22/11): the card is the way in, as each
+  // group-buy card is. Reserve, the login prompt, cancel and the errors live
+  // on the bag page only (RescueOfferReserveFlow.test.jsx).
+  it("the whole card is one link to the bag page, with the group-buy caret", async () => {
     render(<RescueSection producer={PRODUCER} />);
-    const cta = await screen.findByTestId("rescue-reserve");
-    expect(cta.textContent).toBe("לשריין את הסל · משלמים בקופה");
+    const card = await screen.findByTestId("rescue-section-card");
+    expect(card.tagName).toBe("A");
+    expect(card.getAttribute("href")).toBe("/rescue/o1");
+    expect(card.querySelector("svg.ltr\\:rotate-180")).not.toBeNull();
     expect(screen.getByTestId("rescue-section-price").textContent).toBe("15 ₪");
+  });
+
+  it("nothing on the card can be pressed by itself: no reserve button, no link under it, no fold", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    const card = await screen.findByTestId("rescue-section-card");
+    expect(card.querySelectorAll("button, a, details, input")).toHaveLength(0);
+    expect(screen.queryByTestId("rescue-reserve")).toBeNull();
+    expect(screen.queryByTestId("rescue-section-details")).toBeNull();
+    expect(screen.queryByTestId("rescue-section-allergens")).toBeNull();
+    expect(screen.queryByTestId("rescue-section-terms")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   // MEH-2713: the struck "worth" is the business's own LOW estimate, shown only
@@ -509,7 +504,7 @@ describe("the business-page section — reserve and confirm", () => {
 
     fetchOffers.mockResolvedValue([offer({ value_min_agorot: 1000 })]);
     render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
+    await screen.findByTestId("rescue-section-card");
     expect(screen.queryByTestId("rescue-section-worth")).toBeNull();
   });
 
@@ -534,70 +529,6 @@ describe("the business-page section — reserve and confirm", () => {
     expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(4);
   });
 
-  // Sapir 6/11: the no-show rule is too much on the card; it stays on the
-  // confirmation, where it applies (asserted in "reserve swaps the CTA…").
-  it("keeps only the free-cancel cutoff under the CTA, without the no-show rule", async () => {
-    await atTenInIsrael(async () => {
-      render(<RescueSection producer={PRODUCER} />);
-      const terms = await screen.findByTestId("rescue-section-terms");
-      expect(terms.textContent).toBe("ביטול חינם עד 10:30");
-      expect(terms.textContent).not.toContain("לא נאספו");
-    });
-  });
-
-  it("folds the allergens under «אלרגנים», closed until tapped", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    const box = await screen.findByTestId("rescue-section-allergens");
-    expect(box.tagName).toBe("DETAILS");
-    expect(box.open).toBe(false);
-    expect(box.querySelector("summary").textContent).toBe("אלרגנים");
-  });
-
-  it("MEH-2752: shows what THIS business declared, attributed to it", async () => {
-    fetchOffers.mockResolvedValue([offer({ allergens: ["gluten", "sesame"] })]);
-    render(<RescueSection producer={PRODUCER} />);
-    const line = await screen.findByTestId("rescue-section-allergens-declared");
-    // Hebrew labels come from the product sheet's vocabulary, not a second copy.
-    expect(line.textContent).toContain("גלוטן");
-    expect(line.textContent).toContain("שומשום");
-    // The attribution is the point: mehamakor does not verify this.
-    expect(line.textContent).toContain("לפי הצהרת בית העסק");
-    expect(screen.queryByTestId("rescue-section-allergens-none")).toBeNull();
-  });
-
-  it("MEH-2752: says plainly when nothing was declared, and warns nobody falsely", async () => {
-    fetchOffers.mockResolvedValue([offer({ allergens: null })]);
-    render(<RescueSection producer={PRODUCER} />);
-    const line = await screen.findByTestId("rescue-section-allergens-none");
-    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים.");
-    // The old fixed sentence warned every buyer about four allergens that may
-    // not be in the bag. It must not come back.
-    const box = screen.getByTestId("rescue-section-allergens");
-    expect(box.textContent).not.toContain("ייתכנו גלוטן");
-  });
-
-  // MEH-3823: the fixed line sits outside the closed fold, so a buyer sees it
-  // without opening anything, whatever the business declared.
-  it.each([
-    ["declared", ["milk"]],
-    ["not declared", null],
-  ])("MEH-3823: the «ask at pickup» line is outside the allergen fold (%s)", async (_n, allergens) => {
-    fetchOffers.mockResolvedValue([offer({ allergens })]);
-    render(<RescueSection producer={PRODUCER} />);
-    const ask = await screen.findByTestId("rescue-section-allergens-ask");
-    expect(ask.textContent).toBe("יש אלרגיה? כדאי לשאול בבית העסק באיסוף.");
-    expect(ask.closest("details")).toBeNull();
-  });
-
-  it("MEH-2752: an empty list is treated as 'not declared', never as 'none'", async () => {
-    // The API should never send [], but if one ever arrives it must not read
-    // as a clean bill of health.
-    fetchOffers.mockResolvedValue([offer({ allergens: [] })]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-section-allergens-none")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-section-allergens-declared")).toBeNull();
-  });
-
   // MEH-3585: the group-buy card's anatomy — the pickup window sits in the
   // beige status band beside what is left; the address under the title.
   it("puts the pickup window in the status band with the stock, and the address under the title", async () => {
@@ -608,7 +539,6 @@ describe("the business-page section — reserve and confirm", () => {
     // Same band: stock on its start side, pickup on its end side.
     const band = screen.getByTestId("rescue-section-stock").parentElement.parentElement;
     expect(band.contains(pickup)).toBe(true);
-    expect(band.contains(screen.getByTestId("rescue-reserve"))).toBe(false);
     const title = screen.getByTestId("rescue-section-typical");
     expect(title.tagName).toBe("H3");
     expect(title.parentElement.parentElement.contains(screen.getByTestId("rescue-section-address"))).toBe(true);
@@ -623,7 +553,7 @@ describe("the business-page section — reserve and confirm", () => {
 
     fetchOffers.mockResolvedValue([offer({ value_min_agorot: 1000 })]);
     render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
+    await screen.findByTestId("rescue-section-card");
     expect(screen.queryByTestId("rescue-section-saving")).toBeNull();
   });
 
@@ -638,7 +568,7 @@ describe("the business-page section — reserve and confirm", () => {
   it("no typical items: no card title, the section heading is the only «סל הפתעה»", async () => {
     fetchOffers.mockResolvedValue([offer({ typical_items: [] })]);
     render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
+    await screen.findByTestId("rescue-section-card");
     expect(screen.queryByTestId("rescue-section-typical")).toBeNull();
     expect(screen.getAllByText("סל הפתעה")).toHaveLength(1);
     expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
@@ -648,26 +578,6 @@ describe("the business-page section — reserve and confirm", () => {
     fetchOffers.mockResolvedValue([offer({ producer: { ...PRODUCER, id: "someone-else" } })]);
     const { container } = render(<RescueSection producer={PRODUCER} />);
     await waitFor(() => expect(container.firstChild).toBeNull());
-  });
-
-  it("reserving swaps the CTA for the code — no checkout page in between", async () => {
-    reserveBag.mockResolvedValue(order());
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const code = await screen.findByTestId("rescue-confirmation-code");
-    expect(code.textContent).toBe("0431");
-    expect(code.getAttribute("dir")).toBe("ltr");
-    expect(screen.queryByTestId("rescue-reserve")).toBeNull();
-  });
-
-  it("the confirmation states the counter payment and the cancel cutoff", async () => {
-    reserveBag.mockResolvedValue(order());
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    expect((await screen.findByTestId("rescue-confirmation-price")).textContent).toContain("15");
-    const terms = screen.getByTestId("rescue-confirmation-terms");
-    expect(terms.textContent).toContain("ביטול חינם עד");
-    expect(terms.textContent).toContain("אחרי שני סלים שלא נאספו, אי אפשר לשריין סלים חדשים");
   });
 
   it("there is no countdown anywhere in the confirmation", async () => {
@@ -699,62 +609,13 @@ describe("the business-page section — reserve and confirm", () => {
   });
 });
 
-describe("every error the API actually returns", () => {
-  const cases = [
-    [422, undefined, "rescue.errors.blocked"],
-    [409, "לא נשארו מספיק סלים", "rescue.errors.sold_out"],
-    [409, "אפשר לשריין עד שני סלים", "rescue.errors.max_two"],
-    [401, undefined, "rescue.errors.sign_in"],
-    [404, undefined, "rescue.errors.gone"],
-    [500, undefined, "rescue.errors.generic"],
-  ];
-
-  it.each(cases)("status %s → its own message", async (status, detail, key) => {
-    reserveBag.mockRejectedValue({ response: { status, data: { detail } } });
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe(plain(key));
-  });
-
-  it("403 email_unverified → the resend notice with the reserve wording (MEH-3225)", async () => {
-    reserveBag.mockRejectedValue({
-      response: {
-        status: 403,
-        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } },
-      },
-    });
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const notice = await screen.findByTestId("unverified-email-notice");
-    expect(notice.textContent).toContain(lookup("rescue.errors.unverified"));
-    expect(notice.textContent).not.toContain(lookup("auth.verify.publish_gate"));
-    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
-  });
-
-  it("the block message is the backend's string, verbatim", () => {
+describe("the block message", () => {
+  it("is the backend's string, verbatim", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
     expect(plain("rescue.errors.blocked")).toBe(
       "שני סלים לא נאספו, ולכן אי אפשר לשריין סלים חדשים כרגע. כתבו לנו",
     );
-  });
-
-  it("«כתבו לנו» on the block message links to the contact page (MEH-3226)", async () => {
-    reserveBag.mockRejectedValue({ response: { status: 422, data: {} } });
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const link = await screen.findByTestId("rescue-blocked-contact");
-    expect(link.getAttribute("href")).toBe("/contact");
-    expect(link.textContent).toBe("כתבו לנו");
-  });
-
-  it("no other error carries the contact link", async () => {
-    reserveBag.mockRejectedValue({ response: { status: 409, data: {} } });
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    await screen.findByTestId("rescue-section-error");
-    expect(screen.queryByTestId("rescue-blocked-contact")).toBeNull();
   });
 });
 
@@ -774,40 +635,28 @@ describe("5-state matrix — (0 / 1 / many) × (not reserved / reserved)", () =>
     expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
   });
 
-  it.each(counts)("%s bags × reserved (the section shows the code, list unaffected)", async (n) => {
+  // MEH-3586 follow-up: a reservation no longer changes the business page.
+  // The card stays the way to the bag page, where her code is.
+  it.each(counts)("%s bags × reserved (the business page shows the card, never the code)", async (n) => {
     fetchOffers.mockResolvedValue(
       n === 0
         ? []
         : [offer(), ...Array.from({ length: n - 1 }, (_, i) => offer({ id: `y${i}`, producer: { ...PRODUCER, id: `other${i}` } }))],
     );
-    reserveBag.mockResolvedValue(order());
-    render(<RescueSection producer={PRODUCER} />);
+    fetchMyOrders.mockResolvedValue([{ ...order(), producer_id: PRODUCER.id }]);
+    const { container } = render(<RescueSection producer={PRODUCER} />);
     if (n === 0) {
-      // No bag for this business → nothing to reserve, so no confirmation.
-      await waitFor(() => expect(screen.queryByTestId("rescue-reserve")).toBeNull());
-      expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
-      return;
+      await waitFor(() => expect(fetchOffers).toHaveBeenCalled());
+      await waitFor(() => expect(container.firstChild).toBeNull());
+    } else {
+      expect(await screen.findAllByTestId("rescue-section-card")).toHaveLength(1);
     }
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+    expect(fetchMyOrders).not.toHaveBeenCalled();
   });
 });
 
 describe("the review", () => {
-  it("appears only after the business marked the bag handed", async () => {
-    reserveBag.mockResolvedValue(order({ status: "reserved" }));
-    const { unmount } = render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    await screen.findByTestId("rescue-confirmation");
-    expect(screen.queryByTestId("rescue-review")).toBeNull();
-    unmount();
-
-    reserveBag.mockResolvedValue(order({ status: "handed" }));
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
-  });
-
   it("cannot submit without a rating, and sends the chosen contents tags", async () => {
     submitReview.mockResolvedValue({ id: "r1" });
     const { default: RescueReview } = await import("@/components/rescue/RescueReview");
@@ -831,145 +680,6 @@ describe("the review", () => {
     const submit = screen.getByTestId("rescue-review-submit");
     // Node.compareDocumentPosition: 4 = submit FOLLOWS problem.
     expect(problem.compareDocumentPosition(submit) & 4).toBeTruthy();
-  });
-});
-
-describe("a reload keeps the order (MEH-2680)", () => {
-  const mine = (over = {}) => ({ ...order(over), producer_id: PRODUCER.id, reviewed: false, ...over });
-
-  it("a guest is never asked for their orders — a 401 would toast 'session expired'", async () => {
-    authUser = null;
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
-    expect(fetchMyOrders).not.toHaveBeenCalled();
-  });
-
-  it("a signed-in buyer sees her code again after a reload", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-reserve")).toBeNull();
-  });
-
-  it("the last bag sold — offer gone from the list — still restores her order", async () => {
-    authUser = { id: "u1" };
-    fetchOffers.mockResolvedValue([]);
-    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
-  });
-
-  it("an order at another business is not shown here", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([mine({ producer_id: "someone-else" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
-    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
-    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
-  });
-
-  it("handed and not yet reviewed brings up the review", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([mine({ status: "handed" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
-  });
-
-  it("handed and already reviewed does not ask again", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([mine({ status: "handed", reviewed: true })]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-review-thanks")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-review")).toBeNull();
-  });
-
-  it("one bag handed and a newer one reserved: the reserved code is shown", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([
-      mine({ id: "old", status: "handed", pickup_code: "1111" }),
-      mine({ id: "new", status: "reserved", pickup_code: "2222" }),
-    ]);
-    render(<RescueSection producer={PRODUCER} />);
-    const box = await screen.findByTestId("rescue-confirmation");
-    expect(box.textContent).toContain("2222");
-    expect(box.textContent).not.toContain("1111");
-  });
-
-  it("coming back to the tab re-reads, so 'handed' shows without a reload", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-confirmation");
-    expect(screen.queryByTestId("rescue-review")).toBeNull();
-    fetchMyOrders.mockResolvedValueOnce([mine({ status: "handed" })]);
-    window.dispatchEvent(new Event("focus"));
-    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
-  });
-});
-
-describe("the business cancelled the bag (MEH-2738)", () => {
-  const mine = (over = {}) => ({
-    ...order(over),
-    producer_id: PRODUCER.id,
-    reviewed: false,
-    cancelled_by_business: false,
-    ...over,
-  });
-  const byBusiness = (over = {}) =>
-    mine({ status: "cancelled", cancelled_by_business: true, ...over });
-  const TEXT = "בית העסק ביטל את הסל של היום, ולכן השריון שלכם בוטל. אין צורך להגיע.";
-
-  it("says so in words, with no code, when the offer left the list", async () => {
-    authUser = { id: "u1" };
-    fetchOffers.mockResolvedValue([]);
-    fetchMyOrders.mockResolvedValue([byBusiness()]);
-    render(<RescueSection producer={PRODUCER} />);
-    const notice = await screen.findByTestId("rescue-business-cancelled");
-    expect(notice.textContent).toBe(TEXT);
-    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
-  });
-
-  it("a code on screen gives way to the line when the tab is re-read", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-confirmation");
-    fetchMyOrders.mockResolvedValueOnce([byBusiness()]);
-    window.dispatchEvent(new Event("focus"));
-    expect(await screen.findByTestId("rescue-business-cancelled")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
-  });
-
-  it("a bag handed over before the cancel still shows the handed order, not the line", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([
-      mine({ id: "got", status: "handed" }),
-      byBusiness({ id: "lost" }),
-    ]);
-    render(<RescueSection producer={PRODUCER} />);
-    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
-  });
-
-  it("a cancelled row the business did not cancel shows nothing", async () => {
-    authUser = { id: "u1" };
-    fetchOffers.mockResolvedValue([]);
-    fetchMyOrders.mockResolvedValue([mine({ status: "cancelled" })]);
-    const { container } = render(<RescueSection producer={PRODUCER} />);
-    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
-    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
-    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
-    expect(container.textContent).toBe("");
-  });
-
-  it("another business's cancel is not shown here", async () => {
-    authUser = { id: "u1" };
-    fetchMyOrders.mockResolvedValue([byBusiness({ producer_id: "someone-else" })]);
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
-    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
-    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
   });
 });
 
@@ -1000,203 +710,13 @@ describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
   });
 });
 
-describe("a guest taps reserve (MEH-2700)", () => {
-  // MEH-3130: the inline line had no way to sign in — the shared login prompt
-  // now says why AND offers «היכנסו» back to this section.
-  it("gets the login prompt (title, why, a way to sign in) and no request is sent", async () => {
-    authUser = null;
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByRole("heading").textContent).toBe(lookup("rescue.login_prompt_title"));
-    expect(dialog).toHaveTextContent(lookup("rescue.login_prompt_message"));
-    expect(within(dialog).getByRole("link").getAttribute("href")).toMatch(
-      /^\/login\?redirect=.*section-rescue/,
-    );
-    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
-    expect(reserveBag).not.toHaveBeenCalled();
-  });
-});
-
-// MEH-2737 — copy approved word for word by Sapir on 6/11 («מאשרת 1-8»).
-describe("cancelling a reservation (MEH-2737)", () => {
-  async function reservedSection() {
-    reserveBag.mockResolvedValue(order());
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    await screen.findByTestId("rescue-confirmation-code");
-  }
-
-  it("the first tap asks, and nothing is cancelled yet", async () => {
-    await reservedSection();
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    const ask = screen.getByTestId("rescue-cancel-ask");
-    expect(ask.textContent).toContain("לבטל את השריון?");
-    expect(ask.textContent).toContain("הסל יחזור לרשימה ומישהו אחר יוכל לשריין אותו.");
-    expect(screen.getByTestId("rescue-cancel-yes").textContent).toBe("כן, לבטל");
-    expect(screen.getByTestId("rescue-cancel-no").textContent).toBe("לא, להשאיר");
-    expect(cancelOrder).not.toHaveBeenCalled();
-  });
-
-  it("«לא, להשאיר» closes the question and keeps the code", async () => {
-    await reservedSection();
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-no"));
-    expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull();
-    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
-    expect(cancelOrder).not.toHaveBeenCalled();
-  });
-
-  it("«כן, לבטל» cancels and says so, and the reserve button is back", async () => {
-    cancelOrder.mockResolvedValue({ ...order(), status: "cancelled" });
-    await reservedSection();
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    const done = await screen.findByTestId("rescue-cancelled-notice");
-    expect(done.textContent).toBe("השריון בוטל, והסל חזר לרשימה.");
-    expect(cancelOrder).toHaveBeenCalledWith("ord1");
-    expect(screen.queryByTestId("rescue-confirmation-code")).toBeNull();
-    expect(screen.getByTestId("rescue-reserve")).toBeTruthy();
-  });
-
-  it("the notice shows even when the bag had been sold out and left the list", async () => {
-    // Her bag was the last one: the public list dropped it, so the section
-    // holds only her order. After the cancel there is no offer to show — the
-    // notice must still render instead of the section vanishing.
-    fetchOffers.mockResolvedValue([]);
-    fetchMyOrders.mockResolvedValue([{ ...order(), producer_id: PRODUCER.id }]);
-    cancelOrder.mockResolvedValue({ ...order(), status: "cancelled" });
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-confirmation-cancel"));
-    // The cancel put the bag back on the list; the re-read brings the card back.
-    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
-      "השריון בוטל, והסל חזר לרשימה.",
-    );
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר סל אחד");
-  });
-
-  it("a cancel refused because the cutoff passed says so, and the code stays", async () => {
-    // The page loaded before the cutoff; the cutoff passes while the request
-    // is in flight, and the server refuses with 409.
-    reserveBag.mockResolvedValue(order({ cancel_until: new Date(Date.now() + 400).toISOString() }));
-    cancelOrder.mockImplementation(
-      () =>
-        new Promise((_res, rej) =>
-          setTimeout(() => rej({ response: { status: 409, data: { detail: "x" } } }), 700),
-        ),
-    );
-    render(<RescueSection producer={PRODUCER} />);
-    fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    await screen.findByTestId("rescue-confirmation-code");
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe("מועד הביטול החינמי כבר עבר, אז השריון נשאר בתוקף.");
-    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
-    // The question is closed: a second «כן» could only be refused again.
-    await waitFor(() => expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull());
-  });
-
-  it("a 409 before the cutoff on an order still reserved is not called «too late»", async () => {
-    authUser = { id: "u1" };
-    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
-    await reservedSection();
-    fetchMyOrders.mockResolvedValue([{ ...order(), producer_id: PRODUCER.id, cancelled_by_business: false }]);
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect((await screen.findByTestId("rescue-section-error")).textContent).toBe(
-      lookup("rescue.errors.generic"),
-    );
-  });
-
-  // MEH-2738 (reviewer, #4059): cancelled already in another tab, then again
-  // here — the server's 409 must read as the cancel it is, not «משהו נתקע».
-  it("a 409 because it was already cancelled elsewhere shows the cancelled notice", async () => {
-    authUser = { id: "u1" };
-    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
-    await reservedSection();
-    fetchMyOrders.mockResolvedValue([]);
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
-      "השריון בוטל, והסל חזר לרשימה.",
-    );
-    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
-    expect(screen.queryByTestId("rescue-confirmation-code")).toBeNull();
-  });
-
-  it("a 409 because the business cancelled meanwhile says the business did", async () => {
-    authUser = { id: "u1" };
-    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
-    await reservedSection();
-    fetchMyOrders.mockResolvedValue([
-      { ...order(), status: "cancelled", producer_id: PRODUCER.id, cancelled_by_business: true },
-    ]);
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect(await screen.findByTestId("rescue-business-cancelled")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
-  });
-
-  it("a 409 because the bag was handed meanwhile shows the handed order, no error", async () => {
-    authUser = { id: "u1" };
-    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
-    await reservedSection();
-    fetchMyOrders.mockResolvedValue([
-      { ...order(), status: "handed", producer_id: PRODUCER.id, cancelled_by_business: false },
-    ]);
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
-    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
-  });
-
-  it("any other cancel failure shows the generic line next to the code", async () => {
-    cancelOrder.mockRejectedValue({ response: { status: 500 } });
-    await reservedSection();
-    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
-    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
-    expect((await screen.findByTestId("rescue-section-error")).textContent).toBe(
-      lookup("rescue.errors.generic"),
-    );
-  });
-});
-
-describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
+describe("the confirmation past the free-cancel cutoff (MEH-2737)", () => {
   const past = () => new Date(Date.now() - 60_000).toISOString();
-
-  it("under the CTA: the bag can no longer be cancelled, never a time that has passed", async () => {
-    fetchOffers.mockResolvedValue([offer({ cancel_until: past() })]);
-    render(<RescueSection producer={PRODUCER} />);
-    const terms = await screen.findByTestId("rescue-section-terms");
-    expect(terms.textContent).toBe("את הסל הזה כבר אי אפשר לבטל");
-  });
-
-  it("before the cutoff the line still gives the time (control)", async () => {
-    await atTenInIsrael(async () => {
-      render(<RescueSection producer={PRODUCER} />);
-      const terms = await screen.findByTestId("rescue-section-terms");
-      expect(terms.textContent).toBe("ביטול חינם עד 10:30");
-    });
-  });
 
   it("the confirmation keeps the no-show rule and drops the time", () => {
     render(<RescueConfirmation order={order({ cancel_until: past() })} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-terms").textContent).toBe(
       "אי אפשר לבטל · אחרי שני סלים שלא נאספו, אי אפשר לשריין סלים חדשים",
-    );
-  });
-});
-
-// MEH-3570: who the customer deals with, at the reserve button — not only in the terms.
-describe("the business-page section — not a party", () => {
-  it("names the business under the reserve button and says Mehamakor is not the seller", async () => {
-    render(<RescueSection producer={PRODUCER} />);
-    await screen.findByTestId("rescue-reserve");
-    expect(screen.getByTestId("rescue-not-a-party").textContent).toBe(
-      "את העסקה עושים ישירות מול מאפיית ההצלה. מהמקור לא המוכרת ולא צד לעסקה.",
     );
   });
 });
