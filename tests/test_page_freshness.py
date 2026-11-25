@@ -100,6 +100,7 @@ class TestSend:
         assert sent[0]["subject"] == "העמוד של גבינות הגליל במהמקור: הכול עדיין נכון?"
         assert "/freshness/confirm?token=" in sent[0]["body"]
         assert "/producer/dashboard" in sent[0]["body"]
+        assert sent[0]["kind"] == "page_freshness"  # MEH-3839
         db.refresh(producer)
         assert producer.freshness_email_sent_at is not None
         # A second run in the same month sends nothing.
