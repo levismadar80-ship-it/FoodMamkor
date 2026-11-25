@@ -116,6 +116,15 @@ delivery_waitlist.notified_at	identity	email and town of someone waiting for del
 delivery_waitlist.producer_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.user_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.wants_to_host	identity	email and town of someone waiting for delivery to their town
+email_events.created_at	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.detail	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.event_type	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.kind	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.recipient_domain	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.resend_email_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.svix_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
+email_events.user_id	messages	a delivery event Resend reported for an email we sent (delivered, bounced, clicked); no address or content, only the recipient's domain and the account id; purged after 30 days (MEH-3839)
 email_outbox.attempts	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
 email_outbox.body	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
 email_outbox.created_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days

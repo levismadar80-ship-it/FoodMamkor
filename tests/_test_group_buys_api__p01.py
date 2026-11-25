@@ -803,7 +803,7 @@ class TestFundedNotificationPrivacy:
     def test_producer_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None, test_cause=False):
+        def _capture(to, subject, body, html=None, test_cause=False, kind=None):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(
@@ -824,7 +824,7 @@ class TestFundedNotificationPrivacy:
     def test_participant_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None, test_cause=False):
+        def _capture(to, subject, body, html=None, test_cause=False, kind=None):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(

@@ -46,6 +46,7 @@ GET	/admin/recipes/pending	scanner-miss	frontend/e2e/golden/07-a1-admin.spec.ts
 # Called by hand with an admin token; the doc says how.
 POST	/admin/seed-cities	ops-manual	docs/DEPLOYMENT.md
 GET	/webhook/whatsapp	webhook
+POST	/webhook/resend	webhook
 POST	/webhook/whatsapp	webhook
 GET	/health	health
 GET	/health/places	health

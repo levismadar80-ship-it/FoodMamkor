@@ -13,6 +13,7 @@ Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           MEH-3225: also `rescue_no_show_tombstones`, 30 days after the
           bag's pickup_end (the no-show rule's own window).
           MEH-3535: also `email_outbox`, 30 days after created_at.
+          MEH-3839: also `email_events`, 30 days after created_at.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -55,6 +56,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy import ColumnElement, CursorResult, delete, or_, select, update
 from sqlalchemy.orm import Session
 
+from app.models.email_events import EmailEvent  # MEH-3839
 from app.models.email_outbox import EmailOutbox  # MEH-3535
 from app.models.models import (
     AlertLog,
@@ -77,6 +79,7 @@ logger = logging.getLogger(__name__)
 #: Sapir's ruling 05/09 — internal alert logs keep 30 days.
 ALERT_LOG_RETENTION_DAYS = 30
 EMAIL_OUTBOX_RETENTION_DAYS = 30  # MEH-3535
+EMAIL_EVENTS_RETENTION_DAYS = 30  # MEH-3839
 
 #: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
 #: (approved 6/11). Counted from the event's / experience's own date.
@@ -105,6 +108,7 @@ class PurgeResult:
     contact_clicks_anonymized: int = 0
     tombstones_deleted: int = 0
     email_outbox_deleted: int = 0
+    email_events_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -299,6 +303,15 @@ def run_purge(
         now - timedelta(days=EMAIL_OUTBOX_RETENTION_DAYS),
     )
 
+    # MEH-3839: Resend delivery events — 30 days, the same as email_outbox:
+    # the privacy page says an email's send record is deleted after 30 days.
+    events = _delete_in_batches(
+        db,
+        EmailEvent,
+        EmailEvent.created_at,
+        now - timedelta(days=EMAIL_EVENTS_RETENTION_DAYS),
+    )
+
     result = PurgeResult(
         boundary,
         views,
@@ -309,6 +322,7 @@ def run_purge(
         contacts,
         tombstones,
         outbox,
+        events,
     )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

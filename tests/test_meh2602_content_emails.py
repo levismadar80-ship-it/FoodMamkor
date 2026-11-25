@@ -235,7 +235,7 @@ def test_owner_written_names_never_break_the_subject_line(monkeypatch):
     monkeypatch.setattr(
         cn,
         "send_email",
-        lambda to, subject, body, test_cause=False: sent.append(subject),
+        lambda to, subject, body, test_cause=False, kind=None: sent.append(subject),
     )
     cn.notify_recipe_approved("o@sample.co.il", "עוגה\r\nBcc: x@evil.test", "/x")
     cn.notify_owner_new_review("o@sample.co.il", "מאפייה\nשנייה", 5, "/p/x")

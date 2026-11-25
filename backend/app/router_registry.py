@@ -75,6 +75,7 @@ from app.routers import (
     system,
     upload,
     users_me,
+    resend_webhook,
     whatsapp_webhook,
 )
 
@@ -183,6 +184,14 @@ def _register_flagged_features(app: FastAPI) -> None:
     app.include_router(my_orders_any.router)
 
 
+def _include_webhooks(app: FastAPI) -> None:
+    """Inbound webhooks from outside services; each one checks a signature."""
+    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
+    app.include_router(whatsapp_webhook.router)
+    # MEH-3839: Resend delivery events. /webhook/resend.
+    app.include_router(resend_webhook.router)
+
+
 def register_routers(app: FastAPI) -> None:
     """Register every router in the same order they appeared in main.py.
 
@@ -258,6 +267,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)
-    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
-    app.include_router(whatsapp_webhook.router)
+    _include_webhooks(app)
     _register_flagged_features(app)

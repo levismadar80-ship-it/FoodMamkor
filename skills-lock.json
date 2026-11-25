@@ -415,6 +415,11 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "8c56dc3f924cf7e1f28bb5626690c5090952e73fd00967935368c87dd0788869"
+    },
+    "screenshot-review": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "39cd70a75337d332ca64404b0d17d7c0b736a133d142188a22d7cbea60371ad8"
     }
   }
 }
