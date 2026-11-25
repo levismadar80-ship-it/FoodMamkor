@@ -27,7 +27,7 @@ class TestFundedNotificationDispatch:
     @staticmethod
     def _capture_sends(monkeypatch):
         sends = []
-        def capture(to, subject, body, html=None, test_cause=False):
+        def capture(to, subject, body, html=None, test_cause=False, kind=None):
             # MEH-3591: the join confirmation is its own email with its own
             # tests (test_meh3591_missing_emails.py); these count funded mail.
             if subject.startswith(JOIN_SUBJECT_PREFIX):
@@ -532,7 +532,7 @@ class TestCancelNotification:
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
             # MEH-3591: skip the join confirmation, as in the class above.
-            lambda to, subject, body, html=None, test_cause=False: None
+            lambda to, subject, body, html=None, test_cause=False, kind=None: None
             if subject.startswith(JOIN_SUBJECT_PREFIX)
             else sends.append({"to": to, "subject": subject, "body": body}),
         )
@@ -559,7 +559,7 @@ class TestCancelNotification:
     def test_template_wording_and_no_contact_details(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None, test_cause=False):
+        def _capture(to, subject, body, html=None, test_cause=False, kind=None):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _capture):

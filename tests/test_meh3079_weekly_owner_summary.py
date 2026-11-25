@@ -119,11 +119,12 @@ def sent(monkeypatch):
     calls: list[dict] = []
 
     def fake_send(  # noqa: PLR0913 — mirrors send_email
-        to, subject, body, html=None, reply_to=None, test_cause=False, headers=None
+        to, subject, body, html=None, reply_to=None, test_cause=False, headers=None,
+        kind=None,
     ):
         calls.append(
             {"to": to, "subject": subject, "body": body, "html": html,
-             "test_cause": test_cause, "headers": headers}
+             "test_cause": test_cause, "headers": headers, "kind": kind}
         )
 
     monkeypatch.setattr(wos, "send_email", fake_send)

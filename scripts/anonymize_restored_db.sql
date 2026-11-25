@@ -171,3 +171,5 @@ DELETE FROM rescue_no_show_tombstones;
 -- MEH-3535: queued emails hold an address and the words; a restored copy
 -- must also never send a production email.
 DELETE FROM email_outbox;
+-- MEH-3839: delivery events carry the account id and the recipient's domain.
+DELETE FROM email_events;

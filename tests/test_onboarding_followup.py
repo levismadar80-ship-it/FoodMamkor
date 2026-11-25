@@ -29,7 +29,7 @@ def sent_log(monkeypatch):
     Each call appends (to, subject, body)."""
     captured: list[tuple[str, str, str]] = []
 
-    def fake_send_email(to, subject, body, html=None, test_cause=False):
+    def fake_send_email(to, subject, body, html=None, test_cause=False, kind=None):
         captured.append((to, subject, body))
 
     monkeypatch.setattr(onboarding_followup, "send_email", fake_send_email)

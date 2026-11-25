@@ -1328,3 +1328,6 @@ import app.models.admin_passkeys  # noqa: E402,F401
 
 # MEH-3535: the durable email queue (own module, same reason).
 import app.models.email_outbox  # noqa: E402,F401
+
+# MEH-3839: Resend delivery events (own module, same reason).
+import app.models.email_events  # noqa: E402,F401
