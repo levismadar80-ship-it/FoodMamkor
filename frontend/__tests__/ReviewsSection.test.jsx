@@ -720,6 +720,16 @@ describe("ReviewsSection — when page 1 is read (MEH-3836)", () => {
     await act(async () => {});
     expect(apiMock.get).not.toHaveBeenCalled();
   });
+
+  it("no reviews at mount, then a first one posted → still no read (the new row is not swapped for loading rows)", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 0, pages: 1 } });
+    const { rerender } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    await act(async () => {});
+    rerender(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={1} />);
+    await act(async () => {});
+    expect(apiMock.get).not.toHaveBeenCalled();
+  });
 });
 
 // MEH-2705: the surname initial is the first LETTER of the surname, never a

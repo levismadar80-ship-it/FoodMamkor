@@ -58,7 +58,7 @@ describe("useProducerActivities (MEH-3819)", () => {
     await answer("/experiences", []);
     await answer("/group-buys", []);
     expect(result.current.ready).toBe(true);
-    expect(api.get.mock.calls.map((c) => c[0])).not.toContain(expect.stringContaining("/recipes"));
+    expect(api.get.mock.calls.some((c) => String(c[0]).includes("/recipes"))).toBe(false);
   });
 
   it("is ready only once all three lists answered; a failed list is empty", async () => {

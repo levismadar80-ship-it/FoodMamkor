@@ -787,8 +787,9 @@ export default function ProducerSections({
         {/* MEH-3819: mounted with the page, so its heading, summary and
             loading rows hold their place; it was mounted only near the screen
             (useLazyReviews), growing from nothing under a reader who landed
-            on #reviews (≈ 0.4 CLS on a phone). The FETCH stays lazy:
-            ReviewsSection reads /reviews only once it is in view. */}
+            on #reviews (≈ 0.4 CLS on a phone). MEH-3836: a business with
+            reviews reads page 1 at mount, shared with the header quote; one
+            with none reads only once the section is in view. */}
         <ReviewsSection
           producerId={producer.id}
           avgRating={producer.avg_rating ?? 0}

@@ -72,7 +72,11 @@ export function useProducerActivities({ producerId, slug = "", initial = null })
       clearTimeout(cap);
       if (cancelled) return;
       // A failed refresh keeps what the server sent; a failed first read hides the section.
-      setRecipes((r) => ({ list: got ?? (r.ready ? r.list : []), ready: true }));
+      setRecipes((r) => {
+        const list = got ?? (r.ready ? r.list : []);
+        // Same answer → same state object, so a fresh page does not re-render.
+        return r.ready && JSON.stringify(list) === JSON.stringify(r.list) ? r : { list, ready: true };
+      });
     });
     return () => {
       cancelled = true;

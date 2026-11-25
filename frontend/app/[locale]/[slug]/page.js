@@ -80,9 +80,11 @@ async function getProducerActivities(producerId, slug) {
       list(`/events?producer_id=${id}`),
       list(`/experiences?producer_id=${id}`),
       list(`/group-buys?producer_id=${id}`),
-      slug ? list(`/producers/${encodeURIComponent(slug)}/recipes`) : Promise.resolve([]),
+      // A failed recipes read costs only the recipes (null → the browser
+      // reads them), not the three lists above.
+      slug ? list(`/producers/${encodeURIComponent(slug)}/recipes`).catch(() => null) : Promise.resolve([]),
     ]);
-    return { events, experiences, groupBuys, recipes };
+    return { events, experiences, groupBuys, ...(recipes ? { recipes } : {}) };
   } catch (err) {
     // Not silent: reported, and the browser reads the lists itself. A 429 is
     // the per-IP limit on the server's one egress address (SYSTEM_MAP «What

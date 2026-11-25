@@ -465,7 +465,9 @@ export default function ReviewsSection({
   // CLS guide: content that loads late either has its space held or arrives
   // before it is in view. A business with no reviews keeps the scroll gate
   // below, so its page makes no reviews request until it is needed.
-  const eager = reviewCount > 0;
+  // Decided once, at mount: a first review posted on this page raises
+  // reviewCount, and a re-read then would swap the new row for the skeleton.
+  const [eager] = useState(() => reviewCount > 0);
   useEffect(() => {
     if (producerId && eager) fetchPage(1);
   }, [producerId, eager]); // eslint-disable-line react-hooks/exhaustive-deps

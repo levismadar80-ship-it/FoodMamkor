@@ -522,6 +522,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `rescue.js` | The one place the rescue-bags pilot's flag, its fetches and its unit formatting live, so no component re-derives any of them. |
 | `resolved-questions.js` | Resolve WHICH ready-made questions a producer's public page shows right now, and how each one is served (answered in-page vs opens a channel). … |
 | `review-invite.js` | Keep the owner's "request a review" token ('?rt=' on the shared link) for the producer it was minted for, so ReviewsSection can unlock the form and forward it … |
+| `reviews-page.js` | One read of a business's reviews page 1 shared by the two parts of the business page that need it: the quote under the header (ReviewExcerpt) and the reviews … |
 | `route-memory.js` | Small facts about client-side navigation that the page components cannot learn on their own, and one use of them: 1. … |
 | `safe-redirect.js` | Clamp a post-login '?redirect=' value to an internal, same-origin path so an attacker-supplied param can't bounce the user off-site. |
 | `saved-cache.js` | In-memory set of the current user's saved recipes / events / experiences (MEH-2558), keyed "<type>:<id>". … |
@@ -1002,7 +1003,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/[id]/components/ReservistBadgeLine.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/ReviewExcerpt.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/StickyContactBar.jsx` | — אין כותרת — |
-| `[locale]/producer/[id]/hooks/useProducerActivities.js` | The business page's upcoming events, experiences and open group buys, read together so the page paints them in one go instead of inserting each list above the … |
+| `[locale]/producer/[id]/hooks/useProducerActivities.js` | The business page's upcoming events, experiences, open group buys and recipes, read together so the page paints them in one go instead of inserting each list … |
 | `[locale]/producer/[id]/hooks/useProducerData.js` | — אין כותרת — |
 | `[locale]/producer/[id]/hooks/useStickyBar.js` | — אין כותרת — |
 | `[locale]/producer/[id]/lib/order-status.js` | Pure mapper + formatters behind the producer page's SINGLE status element — resolves which of the five precedence branches wins and formats the Israel-local … |
