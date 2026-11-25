@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-25 — סלי הפתעה: סדר שבועי ושעון 24 שעות (PR #5316, #5290, #5324)
+
+**שורה אחת:** שלושה PR-ים ב-staging. בית עסק קובע סדר שבועי לכל נקודת איסוף, והסל מתפרסם לבד. השעות נבחרות בשעון 24 שעות בשני הטפסים, ושני הטפסים כוללים את «שווי הסל».
+
+**מה צריך לדעת לפני עבודה:**
+- **שעה ביום:** משתמשים ב-`frontend/components/ui/TimeOfDaySelect.jsx`, לא ב-`<input type="time">`, שמציג AM/PM במכשיר באנגלית. הערך נשמר כ-`HH:MM`.
+- **הסדר השבועי** נשמר בעמודה `producer_locations.rescue_schedule` ולא בטבלה, כי טבלה חדשה דורשת שינוי ב-`EXPECTED_TABLES` של ה-workflow. המשימה השעתית לא נוגעת ביום שיש בו סל כלשהו, גם סל שבוטל, ולכן הרצה חוזרת בטוחה.
+- **«שווי הסל»:** נשלח רק כשהוא גבוה מהמחיר. אחרת שולחים `null`, כי לקוחה לא תראה מחיר מחוק. אין ממשק שקובע את `value_max_agorot`, ושמירה של הסדר השבועי מוחקת אותו.
+- **`WeekdayChips` בלי «כל הימים»** מציג שורה של 7 עמודות עד `max-w-sm`. עם «כל הימים» (ימים של מוצר) הוא לא השתנה.
+- **פתוח אצל ספיר:** איפה להראות סלים על המפה (MEH-3824). הקוד נוגע ב-`MapClient.jsx`, שהוא רכיב מרכזי (RED), ולכן לא מתחילים לפני שהיא בוחרת.
+
 ## 2026-11-24 — מסך הטעינה עולה לראש הדף (PR #5266)
 
 **שורה אחת:** במעבר מרשימה גלולה לדף, מסך הטעינה הוצג בגובה הגלילה הישן, ולכן רואים רק את ה-footer. ‏`useScrollTopOnArrival()` ב-`frontend/lib/route-memory.js` גולל לראש הדף בלחיצה על קישור.
