@@ -200,8 +200,9 @@ export default function CitySearch({
   }, [knownKeys, value, onKnownChange]);
 
   const matches = useMemo(() => {
+    // MEH-3857: offered only on a truly empty field; a space is her typing.
+    if (!value && suggestion) return [suggestion];
     const q = (value || "").trim();
-    if (q.length === 0 && suggestion) return [suggestion];
     if (q.length < 2) return [];
     // MEH-2318: matched on the same key, so «תל אביב - יפו» or «תל אביב יפו»
     // typed by hand still finds «תל אביב-יפו».
@@ -258,6 +259,7 @@ export default function CitySearch({
 
   const handleClear = () => {
     emit("", false);
+    setHighlight(0);
     inputRef.current?.focus();
   };
 

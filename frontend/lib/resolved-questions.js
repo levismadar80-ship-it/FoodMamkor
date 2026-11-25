@@ -74,11 +74,35 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
  * @param {{ city?: string, deliveryQuestion: string, orderingQuestion: string }} opts
  * @returns {string[]}
  */
-export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, orderingQuestion }) {
+function ownerQuestionLabels(producer, { city = "", deliveryQuestion, orderingQuestion }) {
   return (producer?.custom_questions || [])
     .filter(Boolean)
     .map((q) => (city ? q.replace("[עיר]", city) : q))
     .filter((q) => q !== orderingQuestion && q !== deliveryQuestion && q !== DUPLICATE_OF_DELIVERY);
+}
+
+/**
+ * MEH-3857: the owner's Q3+ rows for the business page, as `{ label, msg }`.
+ * The label (what is on screen) reads «[עיր]» as the business's own city,
+ * which the server knows, so it never changes after the load; the WhatsApp
+ * message reads it as the visitor's saved city when there is one (MEH-2602).
+ * A row whose template IS the delivery question («אפשר משלוח ל[עיר]?», the
+ * `deliveryTemplate`) is dropped whatever city either side holds, so the
+ * dedupe against Q1 cannot depend on browser storage either.
+ *
+ * @param {object|null|undefined} producer
+ * @param {{ city?: string, msgCity?: string, deliveryTemplate?: string, deliveryQuestion: string, orderingQuestion: string }} opts
+ * @returns {Array<{ label: string, msg: string }>}
+ */
+export function ownerQuestionPairs(producer, { city = "", msgCity = "", deliveryTemplate = "", ...labels }) {
+  return (producer?.custom_questions || [])
+    .filter((raw) => raw && raw !== deliveryTemplate)
+    .flatMap((raw) => {
+      const [label] = ownerQuestionLabels({ custom_questions: [raw] }, { city, ...labels });
+      if (!label) return [];
+      const c = msgCity || city;
+      return [{ label, msg: c ? raw.replace("[עיר]", c) : raw }];
+    });
 }
 
 /**

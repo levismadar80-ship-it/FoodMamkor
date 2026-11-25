@@ -44,6 +44,25 @@ describe("visitor city in the delivery question (MEH-2602)", () => {
     expect(links[0]).not.toHaveTextContent("חדרה");
     expect(links[0]).not.toHaveTextContent("רעננה");
   });
+
+  // MEH-3857 reviewer: her own «אפשר משלוח ל[עיר]?» repeats Q1. It is dropped
+  // with or without a saved city, so the row count cannot change after load.
+  it.each([["with a saved city", "חדרה"], ["without one", null]])(
+    "drops an owner question that is the delivery question, %s",
+    async (_case, saved) => {
+      if (saved) localStorage.setItem("user_city", saved);
+      render(
+        <WhatsAppQuestionChips
+          producer={{ phone: PHONE, city: "רעננה", custom_questions: ["אפשר משלוח ל[עיר]?", "יש חלה לשבת?"] }}
+        />,
+      );
+      const links = await screen.findAllByTestId("question-link");
+      expect(links.map((l) => l.textContent)).toEqual([
+        expect.stringContaining("אפשר משלוח לאזור שלי?"),
+        expect.stringContaining("יש חלה לשבת?"),
+      ]);
+    },
+  );
 });
 
 describe("buildDeliveryAnswer (MEH-1302)", () => {

@@ -41,7 +41,7 @@ const GB = {
   user_committed: false,
   user_commit: null,
 };
-const ALL = { open: 3, funded: 1, fulfilled: 1 };
+const ALL = { open: 3, funded: 0, fulfilled: 0 };
 const listCalls = () => api.get.mock.calls.filter(([url, cfg]) => url === "/group-buys" && cfg?.params?.status);
 const cityAsked = () => api.get.mock.calls.some(([, cfg]) => cfg?.params?.city);
 const field = () => screen.getByRole("combobox");

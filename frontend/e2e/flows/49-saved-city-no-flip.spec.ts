@@ -18,6 +18,10 @@ import { settledField } from "./_settled-field";
 
 const WAIT_MS = 3_000;
 
+/** A group-buys counts or list read for one city. */
+const isCityRead = (r: import("@playwright/test").Request) =>
+  r.url().includes("/group-buys") && r.url().includes("city=");
+
 async function saveCity(page: import("@playwright/test").Page, city: string) {
   await page.addInitScript((c) => {
     try {
@@ -37,11 +41,11 @@ test.describe("MEH-3857 the saved city is offered, never filled in", () => {
     const city = rows.find((r) => r.city)?.city || "זכרון יעקב";
     await saveCity(page, city);
 
-    // The unwanted event: a counts or list read for the saved city.
-    const cityRead = page.waitForRequest(
-      (r) => r.url().includes("/group-buys") && r.url().includes("city="),
-      { timeout: WAIT_MS },
-    );
+    // The unwanted event: a counts or list read for the saved city. Every
+    // matching request is recorded from the first byte, so one that left
+    // during the load is not missed by a wait set up later.
+    const requests: import("@playwright/test").Request[] = [];
+    page.on("request", (r) => requests.push(r));
     await page.goto("/group-buys");
     await settledField(page, "group-buys-status-hint");
     const field = page.locator("#group-buys-city");
@@ -51,7 +55,10 @@ test.describe("MEH-3857 the saved city is offered, never filled in", () => {
     );
     expect(chipsAtLoad, "the chip row must be found next to its hint").toBeGreaterThan(0);
 
-    await expect(cityRead, "no read for the saved city may leave on its own").rejects.toThrow(/Timeout/);
+    // Then a bounded wait for a late one, caught at once (MEH-2972).
+    const late = await page.waitForRequest(isCityRead, { timeout: WAIT_MS }).catch((e: Error) => e);
+    expect(late, "no read for the saved city may leave on its own").toBeInstanceOf(Error);
+    expect(requests.filter(isCityRead).map((r) => r.url()), "no read for the saved city may have left during the load").toEqual([]);
     expect(await page.evaluate(() => localStorage.getItem("user_city")), "the saved city must be in storage").toBe(city);
     await expect(field).toHaveValue("");
     const chipsAfter = await page.getByTestId("group-buys-status-hint").evaluate(

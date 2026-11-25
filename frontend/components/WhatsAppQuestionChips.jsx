@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quick-answers";
-import { ownerQuestionLabels } from "@/lib/resolved-questions";
+import { ownerQuestionPairs } from "@/lib/resolved-questions";
 import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
@@ -299,15 +299,15 @@ export default function WhatsAppQuestionChips({ producer }) {
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
   // the category stock set no longer renders. One derivation, shared with the
   // dashboard preview (lib/resolved-questions.js), so the two cannot drift.
-  // Each owner question: the label with «[עיר]» read as the business's own
-  // city (known to the server), the message with the visitor's city when she
-  // saved one (MEH-2602), else the same.
-  const labelOpts = { city: producer?.city || "", deliveryQuestion: deliveryQ, orderingQuestion: orderingQ };
-  const waQuestions = (producer?.custom_questions || []).filter(Boolean).flatMap((raw) => {
-    const [label] = ownerQuestionLabels({ custom_questions: [raw] }, labelOpts);
-    if (!label) return [];
-    const msgCity = visitorCity || producer?.city || "";
-    return [{ label, msg: msgCity ? raw.replace("[עיר]", msgCity) : raw }];
+  // MEH-3857: the label reads «[עיר]» as the business's city (server-known,
+  // stable); the message as the visitor's saved city (MEH-2602). The dedupe
+  // against Q1 is on the template, so it cannot flip with storage either.
+  const waQuestions = ownerQuestionPairs(producer, {
+    city: producer?.city || "",
+    msgCity: visitorCity || "",
+    deliveryTemplate: t("delivery_to_city", { city: "[עיר]" }),
+    deliveryQuestion: deliveryQ,
+    orderingQuestion: orderingQ,
   });
 
   const items = [];
