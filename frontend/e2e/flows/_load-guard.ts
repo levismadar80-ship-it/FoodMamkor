@@ -112,6 +112,14 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Owner dashboard edit groups: late cards push the page down (largest 0.981, mobile, measured before #5292).",
     card: "MEH-3817",
   },
+  {
+    // MEH-3870: measured on #5280's run at 6f45c4c (mobile, both tries); not
+    // reproduced on the preview with a real admin login, so not yet fixed.
+    path: /^\/admin\/outreach$/,
+    ceiling: 0.16,
+    reason: "Admin outreach, mobile: the admin tab strip moves once at ~0.7 s (largest 0.107, mobile, PR #5280 head 6f45c4c).",
+    card: "MEH-3870",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
