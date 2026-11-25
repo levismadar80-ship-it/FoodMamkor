@@ -119,6 +119,9 @@ describe("the strip", () => {
     const line = await screen.findByTestId("rescue-schedule-line");
     expect(line.textContent).toContain("בלוח של מחר: 4 סלים ב-15 ₪");
     expect(line.textContent).not.toContain("הסניף בכרמל");
+    // The window is isolated left-to-right (LRI … PDI), or inside the Hebrew
+    // line it reads backwards, «20:00–18:00» (screenshot, 25/11).
+    expect(line.textContent).toContain("\u206618:00–20:00\u2069");
     expect(screen.getByTestId("rescue-schedule-edit-link").getAttribute("href")).toBe("/producer/dashboard/rescue/schedule");
   });
 

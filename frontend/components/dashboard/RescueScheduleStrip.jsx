@@ -114,7 +114,10 @@ export default function RescueScheduleStrip({ today, onChanged }) {
       {shown.map((row) => {
         const s = row.schedule;
         const place = row.label || row.address || "";
-        const values = { place, qty: s.qty, price: `${shekels(s.price_agorot)} ₪`, from: s.pickup_start, to: s.pickup_end };
+        // The window is isolated left-to-right (LRI before {from}, PDI after
+        // {to}, the dash between them inside), or the Hebrew line shows it
+        // backwards, «20:00–18:00».
+        const values = { place, qty: s.qty, price: `${shekels(s.price_agorot)} ₪`, from: `\u2066${s.pickup_start}`, to: `${s.pickup_end}\u2069` };
         // Whole keys, never built from parts, so the unused-key scan can read them.
         const key = row.skipped
           ? many && place ? "strip_skipped_at" : "strip_skipped"
