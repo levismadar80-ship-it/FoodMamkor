@@ -26,6 +26,9 @@ const PREFIX = "list-return:";
 /** Above this many loaded rows nothing is saved: the list starts over. */
 export const MAX_RESTORED_ITEMS = 240;
 const RESTORE_TOLERANCE_PX = 100;
+/** A stash older than this is another visit: the list starts over (the same
+ *  bound as `meh_order_again`, docs/SYSTEM_MAP.md). */
+const MAX_AGE_MS = 30 * 60 * 1000;
 /** Frames to wait for the restored rows to make the page tall enough. */
 const REACH_WAIT_FRAMES = 120;
 
@@ -56,7 +59,7 @@ export function useListReturn({ key, enabled, pages, restore }) {
     const saved = readSaved(key);
     if (!saved) return;
     latest.current.restore(saved.pages);
-    scrollWhenReachable(saved.y);
+    return scrollWhenReachable(saved.y);
   }, [key]);
 
   useEffect(() => {
@@ -68,10 +71,14 @@ export function useListReturn({ key, enabled, pages, restore }) {
       const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
       if (a && /** @type {HTMLAnchorElement} */ (a).target !== "_blank") stash();
     };
+    // popstate: Back/Forward away from the list fires before the router
+    // renders the next route, so the offset is still the list's.
     window.addEventListener("pagehide", stash);
+    window.addEventListener("popstate", stash);
     document.addEventListener("click", onClick, true);
     return () => {
       window.removeEventListener("pagehide", stash);
+      window.removeEventListener("popstate", stash);
       document.removeEventListener("click", onClick, true);
     };
   }, [key]);
@@ -84,7 +91,7 @@ function writeSaved(key, { enabled, pages }) {
       window.sessionStorage.removeItem(PREFIX + key);
       return;
     }
-    const entry = { search: window.location.search, y: window.scrollY, pages };
+    const entry = { search: window.location.search, y: window.scrollY, at: Date.now(), pages };
     window.sessionStorage.setItem(PREFIX + key, JSON.stringify(entry));
   } catch {
     // private mode or a full quota — Back then starts the list over, as before.
@@ -99,8 +106,11 @@ function readSaved(key) {
     const e = raw ? JSON.parse(raw) : null;
     // Another query (a filter, ?page=N) is another list.
     if (!e || e.search !== window.location.search) return null;
+    if (!Number.isFinite(e.at) || Date.now() - e.at > MAX_AGE_MS) return null;
     const p = e.pages;
-    const ok = Array.isArray(p?.items) && Number.isFinite(p.nextPage) && typeof p.hasMore === "boolean" && Number.isFinite(e.y);
+    const ok =
+      Array.isArray(p?.items) && Number.isFinite(p.nextPage) && typeof p.hasMore === "boolean" &&
+      Number.isFinite(p.total) && Number.isFinite(e.y);
     return ok ? { y: e.y, pages: p } : null;
   } catch {
     return null;
@@ -108,16 +118,27 @@ function readSaved(key) {
 }
 
 /** Scroll to `y` once the restored rows make it reachable; leave a correct
- *  native restore alone (overriding it moved the card, MEH-2714). */
+ *  native restore alone (overriding it moved the card, MEH-2714). Gives up
+ *  when the reader scrolls or taps herself, or the list unmounts.
+ *  @returns {() => void} cancel */
 function scrollWhenReachable(/** @type {number} */ y) {
   let frames = 0;
+  let raf = 0;
+  const INPUT = ["wheel", "touchstart", "keydown", "pointerdown"];
+  const cancel = () => {
+    cancelAnimationFrame(raf);
+    for (const ev of INPUT) window.removeEventListener(ev, cancel, true);
+  };
   const tick = () => {
     const reachable = document.documentElement.scrollHeight - window.innerHeight >= y;
     if (reachable || frames++ >= REACH_WAIT_FRAMES) {
+      cancel();
       if (Math.abs(window.scrollY - y) > RESTORE_TOLERANCE_PX) window.scrollTo(0, y);
       return;
     }
-    requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
   };
-  requestAnimationFrame(tick);
+  for (const ev of INPUT) window.addEventListener(ev, cancel, { capture: true, passive: true });
+  raf = requestAnimationFrame(tick);
+  return cancel;
 }

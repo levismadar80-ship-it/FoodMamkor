@@ -141,7 +141,9 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
 
       // The last card, scrolled to the middle of the screen: the deepest
       // place the reader can open something from on this list.
-      const card = cards.last();
+      // Pinned by index: an infinite-scroll page landing after this line must
+      // not change which card `before` is read for and which is clicked.
+      const card = cards.nth((await cards.count()) - 1);
       await card.evaluate((el) => {
         const r = el.getBoundingClientRect();
         scrollTo(0, Math.max(0, scrollY + r.top - innerHeight / 2));

@@ -388,7 +388,9 @@ export default function ProducersClient({
       })
       .then((r) => {
         const items = Array.isArray(r.data) ? r.data : [];
-        setAppendItems((prev) => [...prev, ...items]);
+        // MEH-3810: by id, so a page that lands twice (an observer from before a
+        // Back restore) is not drawn twice.
+        setAppendItems((prev) => [...prev, ...items.filter((it) => !prev.some((p) => p.id === it.id))]);
         // MEH-159: sync total from fresh header on every page load.
         const freshTotal = Number(r.headers["x-total-count"]);
         if (!Number.isNaN(freshTotal) && freshTotal >= 0) setLiveTotal(freshTotal);

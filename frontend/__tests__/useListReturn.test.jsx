@@ -42,6 +42,22 @@ describe("useListReturn (MEH-3810)", () => {
     expect(restore).toHaveBeenCalledWith({ items: [{ id: "p25" }], nextPage: 3, hasMore: true, total: 60 });
   });
 
+  it("a stash older than 30 minutes is another visit: nothing is restored", () => {
+    leaveByCard({});
+    const entry = JSON.parse(window.sessionStorage.getItem(KEY));
+    window.sessionStorage.setItem(KEY, JSON.stringify({ ...entry, at: Date.now() - 31 * 60 * 1000 }));
+    historyReturn = true;
+    const restore = vi.fn();
+    render(<List items={[]} restore={restore} />);
+    expect(restore).not.toHaveBeenCalled();
+  });
+
+  it("Back/Forward away from the list (popstate) also saves it", () => {
+    render(<List />);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(JSON.parse(window.sessionStorage.getItem(KEY)).pages.items).toEqual([{ id: "p25" }]);
+  });
+
   it("a fresh arrival (a link, not Back) starts the list over", () => {
     leaveByCard({});
     const restore = vi.fn();
