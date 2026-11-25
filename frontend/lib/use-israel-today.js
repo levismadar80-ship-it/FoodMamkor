@@ -32,7 +32,7 @@ import { documentRenderTime } from "@/lib/render-time";
 const ISRAEL_TODAY_CHECK_MS = 60_000;
 
 /** @param {() => void} onChange */
-function subscribe(onChange) {
+function subscribeToDayChange(onChange) {
   const id = setInterval(onChange, ISRAEL_TODAY_CHECK_MS);
   document.addEventListener("visibilitychange", onChange);
   return () => {
@@ -57,5 +57,5 @@ function serverDay() {
  * @returns {string} `YYYY-MM-DD` in Israel, updated when the day changes.
  */
 export default function useIsraelToday() {
-  return useSyncExternalStore(subscribe, clientDay, serverDay);
+  return useSyncExternalStore(subscribeToDayChange, clientDay, serverDay);
 }
