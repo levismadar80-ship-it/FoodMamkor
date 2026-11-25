@@ -378,7 +378,7 @@ def send_owner_delisted(  # noqa: PLR0913 — one flag per line of the email (ME
         )
     lines.append(f"לשאלות אפשר לכתוב לנו: {contact}")
     body = "שלום,\n\n" + "\n".join(lines) + "\n\nבברכה,\nצוות מהמקור"
-    send_email(to, subject, body, test_cause=test_cause)
+    send_email(to, subject, body, test_cause=test_cause, kind="booking_cancelled")
 
 
 def queue_owner_delisted(  # noqa: PLR0913 — the email's flags, passed through (MEH-3768)

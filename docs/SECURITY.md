@@ -890,9 +890,10 @@ route template), on what (`target_type`, `target_id`), a reduced before/after
 ## 17a. Webhook HMAC verification (MEH-509 PR2c)
 
 The Meta WhatsApp Cloud API delivers inbound messages via
-`POST /webhook/whatsapp`. This is the only public endpoint on
-`mehamakor.online` that writes to a producer-adjacent DB table
-(`inbound_messages`) without a JWT or `require_admin` dependency —
+`POST /webhook/whatsapp`. This and `POST /webhook/resend` (§17b) are the
+only public endpoints on
+`mehamakor.online` that write to a DB table
+(`inbound_messages`, `email_events`) without a JWT or `require_admin` dependency —
 **the HMAC-SHA256 signature on the request body IS the authentication
 gate**. A subtle bug here is the difference between a private inbox
 and an open-firehose write endpoint for anyone on the public internet.
@@ -954,6 +955,28 @@ the mismatch.
   merge.
 
 ---
+
+
+## 17b. Resend delivery events — Svix signature (MEH-3839)
+
+`POST /webhook/resend` (`backend/app/routers/resend_webhook.py`) takes
+Resend's delivery events (delivered, bounced, complained, suppressed, failed,
+clicked) and writes `email_events`. The Svix signature is the gate.
+
+- **Verified by the Resend SDK** (`resend.Webhooks.verify`): HMAC-SHA256 over
+  `svix-id.svix-timestamp.body` with the `whsec_` secret, every `v1,`
+  signature compared in constant time, timestamp within ±5 minutes. Any
+  failure, a body that is not UTF-8 included, is 401. A replay inside the
+  window hits the unique `svix_id` and inserts nothing; after it the
+  timestamp refuses it.
+- **Off until `RESEND_WEBHOOK_SECRET` is set:** 503, so Resend keeps retrying
+  and nothing is accepted unsigned.
+- **Bounded:** 300/minute, a 64 KB cap on the declared Content-Length and on
+  the body read (a chunked body is bounded by the proxy, as for WhatsApp).
+- **No address stored or logged:** the row keeps the recipient's domain and
+  the account id; the 401 log line carries the SDK's reason only; the handler
+  never logs the payload. Rows are deleted after 30 days and by
+  `scripts/anonymize_restored_db.sql`.
 
 ## 17b. Draft-preview link (MEH-3377)
 

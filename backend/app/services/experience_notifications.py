@@ -28,9 +28,10 @@ def host_test_cause(host: Any) -> bool:
 
 
 def _send_email(
-    to_email: str, subject: str, body: str, test_cause: bool = False
+    to_email: str, subject: str, body: str, test_cause: bool = False, **opts: Any
 ) -> None:
-    send_email(to_email, subject, body, test_cause=test_cause)
+    # MEH-3839: `kind=` passes through in opts.
+    send_email(to_email, subject, body, test_cause=test_cause, **opts)
 
 
 # --- Templates ---
@@ -63,7 +64,13 @@ def notify_admin_new_submission(
         f"לעיון ואישור: {settings.frontend_url}/admin/experiences\n\n"
         f"בברכה,\nמערכת מהמקור"
     )
-    _send_email(settings.admin_email, subject, body, test_cause=test_cause)
+    _send_email(
+        settings.admin_email,
+        subject,
+        body,
+        test_cause=test_cause,
+        kind="admin_experience",
+    )
 
 
 def notify_host_approved(
@@ -77,7 +84,9 @@ def notify_host_approved(
         f"לצפייה: {settings.frontend_url}/experiences/{experience_id}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(host_email, subject, body, test_cause=test_cause)
+    _send_email(
+        host_email, subject, body, test_cause=test_cause, kind="experience_approved"
+    )
 
 
 def notify_host_changes_requested(
@@ -99,7 +108,9 @@ def notify_host_changes_requested(
         f"לעריכה: {settings.frontend_url}/producer/dashboard/experiences/{experience_id}/edit\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(host_email, subject, body, test_cause=test_cause)
+    _send_email(
+        host_email, subject, body, test_cause=test_cause, kind="experience_changes"
+    )
 
 
 def notify_host_rejected(
@@ -120,4 +131,6 @@ def notify_host_rejected(
         f"{settings.frontend_url}/about\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(host_email, subject, body, test_cause=test_cause)
+    _send_email(
+        host_email, subject, body, test_cause=test_cause, kind="experience_rejected"
+    )

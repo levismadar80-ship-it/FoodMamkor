@@ -150,7 +150,14 @@ def send_owner_new_registration(
     to: str, m: OwnerNewEmail, test_cause: bool = False
 ) -> None:
     mail = compose_owner_new_registration(m)
-    send_email(to, mail.subject, mail.body, html=mail.html, test_cause=test_cause)
+    send_email(
+        to,
+        mail.subject,
+        mail.body,
+        html=mail.html,
+        test_cause=test_cause,
+        kind="registration_new",
+    )
 
 
 @dataclass(frozen=True)
@@ -168,7 +175,14 @@ def send_owner_cancellation(
     body = f"{subject}\n\nשם: {m.name}\n\n{m.manage_url}\n\nצוות מהמקור"
     e = html_escape
     html = _shell(e(subject), f"<b>שם:</b> {e(m.name)}", _button(m.manage_url, title))
-    send_email(to, subject, body, html=html, test_cause=test_cause)
+    send_email(
+        to,
+        subject,
+        body,
+        html=html,
+        test_cause=test_cause,
+        kind="registration_cancelled",
+    )
 
 
 # ---------- MEH-3227 (D1): the visitor's sign-up was cancelled or moved ----------

@@ -38,6 +38,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/analytics.py` | Counters and daily rollups: page views, contact and WhatsApp clicks, per-day analytics. |
 | `models/billing.py` | The 'billable_events' table — one row per booking a business got through the site (ADR-042), kept so the count survives after the booking itself is purged or … |
 | `models/catalog.py` | What a business sells and where: products, delivery areas, locations (branches and sale points) and offers. |
+| `models/email_events.py` | One delivery event Resend reported for an email we sent (delivered, bounced, marked as spam, suppressed, clicked), so we can see which emails reach people and … |
 | `models/email_outbox.py` | One email the site owes someone, written in the same transaction as the thing that caused it (a business approved, a sign-up taken), so a deploy, a crash or a … |
 | `models/engagement.py` | What visitors do with a business page: favourites, saved items, alerts, delivery waitlist, reviews, newsletter, contact messages, reports, search queries. |
 | `models/events.py` | Events, workshops (experiences), their registrations and group buys. |
@@ -116,6 +117,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/reports.py` | — אין כותרת — |
 | `routers/rescue.py` | The rescue-bags pilot API — a business publishes today's or tomorrow's bags (MEH-3702), a buyer reserves one and gets a 4-digit code, the business marks it … |
 | `routers/rescue_pilot.py` | Tell the business, before the publish form, which of its pickup points are in a town the rescue-bags pilot is open in (MEH-2921 c). |
+| `routers/resend_webhook.py` | Receive Resend's signed delivery events (delivered, bounced, complained, suppressed, failed, clicked) and keep one row each, so a business owner whose address … |
 | `routers/review_reply_suggest.py` | «הצעת תשובה» (MEH-3480): Claude drafts a short reply from the business to one review; the owner edits it in the reply box and only her own «שמירה» sends it. |
 | `routers/reviews.py` | Producer reviews (1-5 stars + optional body, 10-500 chars). |
 | `routers/saved_items.py` | MEH-2557 — save recipes, events and experiences to «המועדפים שלי». |
@@ -968,7 +970,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/components/MapCardList.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapKey.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPane.jsx` | — אין כותרת — |
-| `[locale]/map/components/MapPickupPointPanel.jsx` | MEH-3756 — under the picked-business card on the phone map, when the tapped pin is a pickup point or a market stand: when and how to collect there (its hours, … |
+| `[locale]/map/components/MapPickupPointPanel.jsx` | The action panel under the picked-business card on the phone map, for EVERY pin (one card for all pins, Sapir 25/11 — Google Maps / Apple Maps give every … |
 | `[locale]/map/components/MobileSheetSelectedCard.jsx` | — אין כותרת — |
 | `[locale]/map/components/NearMePill.jsx` | — אין כותרת — |
 | `[locale]/map/components/ServiceChipRow.jsx` | — אין כותרת — |

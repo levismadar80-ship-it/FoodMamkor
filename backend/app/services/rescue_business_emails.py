@@ -62,7 +62,7 @@ def send_business_reservation_email(
         f"{settings.frontend_url}/producer/dashboard/rescue\n\n"
         "צוות מהמקור"
     )
-    send_email(to, subject, body, test_cause=test_cause)
+    send_email(to, subject, body, test_cause=test_cause, kind="rescue_business")
 
 
 def queue_business_reservation_email(
