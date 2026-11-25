@@ -191,25 +191,11 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
   const [loading, setLoading] = useState(() => !initialList);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
-  // MEH-3736: start from the city the user saved on the site, but only when
-  // that city has an open group buy — with few groups, a saved city with none
-  // would open on an empty list. Once the user types, the seed never lands.
-  // Typing filters only; it does not write the saved city (a keystroke is not
-  // a choice of home city).
+  // MEH-3736 → MEH-3857: the city the user saved on the site is offered as
+  // the first option of the empty city field, not filled in after the load.
+  // Filling it in changed the field and the chip row a moment after the first
+  // paint (staging, iPhone, 25/11).
   const { city: savedCity } = useUserCity();
-  const userTyped = useRef(false);
-  const seedTried = useRef(false);
-  useEffect(() => {
-    if (!savedCity || seedTried.current) return;
-    seedTried.current = true;
-    api
-      .get("/group-buys/counts", { params: { city: savedCity } })
-      .then((r) => {
-        const parsed = StatusCountsOut.safeParse(r.data);
-        if (!userTyped.current && parsed.success && (parsed.data.open ?? 0) > 0) setCity(savedCity);
-      })
-      .catch(() => {}); // no seed: the list stays on all cities
-  }, [savedCity]);
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
   // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
@@ -297,10 +283,8 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
             id="group-buys-city"
             label={tHub("filter_city_label")}
             value={city}
-            onChange={(v) => {
-              userTyped.current = true; // MEH-3736: a late seed answer must not override her
-              setCity(v);
-            }}
+            onChange={(v) => setCity(v)}
+            suggestion={savedCity}
             placeholder={tHub("filter_city_placeholder")}
             className="flex-1 md:max-w-xs"
           />

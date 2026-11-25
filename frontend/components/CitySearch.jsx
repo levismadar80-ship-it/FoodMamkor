@@ -82,7 +82,7 @@ function cityKey(name) {
 }
 const STATIC_KEYS = new Set(STATIC_CITIES_SORTED.map(cityKey));
 
-/** @param {{ value?: string, onChange?: (value: string, meta: { known: boolean }) => void, placeholder?: string, label?: import("react").ReactNode, labelVisible?: boolean, id?: string, onSubmit?: (value: string) => void, onKnownChange?: (known: boolean) => void, useBackend?: boolean, className?: string, pill?: boolean, required?: boolean, "aria-describedby"?: string, "aria-invalid"?: boolean }} props */
+/** @param {{ value?: string, onChange?: (value: string, meta: { known: boolean }) => void, placeholder?: string, label?: import("react").ReactNode, labelVisible?: boolean, id?: string, onSubmit?: (value: string) => void, onKnownChange?: (known: boolean) => void, useBackend?: boolean, className?: string, pill?: boolean, required?: boolean, "aria-describedby"?: string, "aria-invalid"?: boolean, suggestion?: string | null }} props */
 export default function CitySearch({
   value,
   onChange,
@@ -106,6 +106,12 @@ export default function CitySearch({
   // two-mechanisms smell, MEH-271); this just points the input at it.
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
+  // MEH-3857: the visitor's saved city, offered as the one option of an
+  // empty field when it is focused. Offered, never filled in: a value written
+  // after the first paint changed the page under her eyes (/group-buys, the
+  // delivery checker). Sapir's choice, 25/11; Airbnb and Google Maps offer
+  // recent places the same way.
+  suggestion = null,
 }) {
   const t = useTranslations("search.city_search");
   const inputPlaceholder = placeholder ?? t("placeholder");
@@ -195,6 +201,7 @@ export default function CitySearch({
 
   const matches = useMemo(() => {
     const q = (value || "").trim();
+    if (q.length === 0 && suggestion) return [suggestion];
     if (q.length < 2) return [];
     // MEH-2318: matched on the same key, so «תל אביב - יפו» or «תל אביב יפו»
     // typed by hand still finds «תל אביב-יפו».
@@ -210,7 +217,7 @@ export default function CitySearch({
       else if (k.includes(qKey)) contains.push(c);
     }
     return [...starts, ...contains].slice(0, MAX_MATCHES);
-  }, [value, allCities]);
+  }, [value, allCities, suggestion]);
 
   // Close on outside click
   useEffect(() => {

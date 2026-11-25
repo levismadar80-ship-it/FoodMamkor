@@ -32,11 +32,16 @@ const PHONE = "0501234567";
 describe("visitor city in the delivery question (MEH-2602)", () => {
   afterEach(() => localStorage.clear());
 
-  it("names the city the visitor picked, not the business's", async () => {
+  // MEH-3857: the city the visitor saved is in the WhatsApp message, never in
+  // the label on screen — the label renders the same on the server and after
+  // the load, so the row does not change under her eyes.
+  it("puts the city the visitor picked in the message, not the business's, and keeps the label generic", async () => {
     localStorage.setItem("user_city", "חדרה");
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "רעננה" }} />);
     const links = await screen.findAllByTestId("question-link");
-    await waitFor(() => expect(links[0]).toHaveTextContent("חדרה"));
+    await waitFor(() => expect(decodeURIComponent(links[0].getAttribute("href"))).toContain("חדרה"));
+    expect(decodeURIComponent(links[0].getAttribute("href"))).not.toContain("רעננה");
+    expect(links[0]).not.toHaveTextContent("חדרה");
     expect(links[0]).not.toHaveTextContent("רעננה");
   });
 });

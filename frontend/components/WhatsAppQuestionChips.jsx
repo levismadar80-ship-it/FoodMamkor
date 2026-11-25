@@ -266,9 +266,13 @@ export default function WhatsAppQuestionChips({ producer }) {
   // home «איפה אתם?») when there is one, else «אפשר משלוח לאזור שלי?».
   const name = producer?.name || "";
 
-  const deliveryQ = visitorCity
-    ? t("delivery_to_city", { city: visitorCity })
-    : t("delivery_to_my_area");
+  // MEH-3857: what is ON SCREEN never depends on the visitor's saved city.
+  // The city lives in this browser only, so the server cannot render it, and
+  // a label that changed after the load («לאזור שלי» → «לזכרון יעקב») moved
+  // the row under the visitor's eyes. Her city goes into the WhatsApp
+  // message, built when the link is tapped.
+  const deliveryQ = t("delivery_to_my_area");
+  const deliveryMsg = visitorCity ? t("delivery_to_city", { city: visitorCity }) : deliveryQ;
   // «איך מזמינים?» is no longer asked (Sapir 19/11): its answer was built
   // from the primary CTA's own href, so it only ever repeated the button right
   // above it. The label is still resolved — an owner's custom question with
@@ -295,12 +299,15 @@ export default function WhatsAppQuestionChips({ producer }) {
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
   // the category stock set no longer renders. One derivation, shared with the
   // dashboard preview (lib/resolved-questions.js), so the two cannot drift.
-  const waQuestions = ownerQuestionLabels(producer, {
-    // An owner's own «[עיר]» placeholder keeps its pre-2602 reading (the
-    // business city) unless the visitor has told us hers.
-    city: visitorCity || producer?.city || "",
-    deliveryQuestion: deliveryQ,
-    orderingQuestion: orderingQ,
+  // Each owner question: the label with «[עיר]» read as the business's own
+  // city (known to the server), the message with the visitor's city when she
+  // saved one (MEH-2602), else the same.
+  const labelOpts = { city: producer?.city || "", deliveryQuestion: deliveryQ, orderingQuestion: orderingQ };
+  const waQuestions = (producer?.custom_questions || []).filter(Boolean).flatMap((raw) => {
+    const [label] = ownerQuestionLabels({ custom_questions: [raw] }, labelOpts);
+    if (!label) return [];
+    const msgCity = visitorCity || producer?.city || "";
+    return [{ label, msg: msgCity ? raw.replace("[עיר]", msgCity) : raw }];
   });
 
   const items = [];
@@ -317,7 +324,7 @@ export default function WhatsAppQuestionChips({ producer }) {
     );
   } else if (!deliveryOnPage && waEnabled) {
     items.push(
-      <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
+      <WaItem key="delivery" href={waHref(deliveryMsg)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
     );
   }
 
@@ -335,9 +342,9 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   // Q3+ — her custom questions, WhatsApp only.
   if (waEnabled) {
-    waQuestions.forEach((q, i) => {
+    waQuestions.forEach(({ label, msg }, i) => {
       items.push(
-        <WaItem key={`wa-${i}-${q}`} href={waHref(q)} question={q} onTrack={trackWhatsAppOpen} />,
+        <WaItem key={`wa-${i}-${label}`} href={waHref(msg)} question={label} onTrack={trackWhatsAppOpen} />,
       );
     });
   }
