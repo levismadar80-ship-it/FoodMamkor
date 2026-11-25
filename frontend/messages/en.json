@@ -6938,7 +6938,8 @@
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",
-      "clear": "Clear all"
+      "clear": "Clear all",
+      "group_happenings": "Events & workshops"
     }
   },
   "whats_this": {

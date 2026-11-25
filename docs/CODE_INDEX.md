@@ -253,6 +253,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/moderation_schemas.py` | MEH-2351: JSON schemas for the moderation calls' structured outputs. |
 | `services/newsletter_sync.py` | Mirror newsletter subscribers into Resend Contacts (MEH-2611). |
 | `services/oauth_verifiers.py` | OAuth provider verification + Google avatar re-host. |
+| `services/offer_supply.py` | Which businesses have something on today besides their products: a surprise bag today, an open group buy, an upcoming event, a listed experience (MEH-3824). … |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
 | `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |
@@ -462,6 +463,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `listing-supply.js` | — אין כותרת — |
 | `map-chips.js` | Map filter chips (MEH-14). Category chips: all · meat · produce · dairy · bread (keys). … |
 | `map-city-params.js` | /map's city → GET /producers param, in one place. |
+| `map-offer-marks.js` | MEH-3824 — the small mark on a business's pin while one of the map's offer switches is on (סלי הפתעה · קבוצות רכישה · אירועים · חוויות). … |
 | `map-pin-labels.js` | The business name next to its pin once the map is zoomed in close (Google Maps pattern) — so a pin can be read without tapping it. … |
 | `map-ssr-producers.js` | Fetch a representative batch of businesses server-side, for the sr-only index /map renders so Googlebot can see the businesses the interactive map holds … |
 | `map-view-state.js` | MEH-1414 — persist the /map camera (center + zoom) across navigation so back-navigation from a producer page lands on the spot the visitor left, not the … |

@@ -33,7 +33,7 @@ function producers({ vegan = 0, vegetarian = 0, gluten_free = 0, lactose_free = 
 }
 
 describe("MEH-2170 — visibleMapToggleChips", () => {
-  it("gates exactly the five diet axes, on_site and grass_fed, and nothing else", () => {
+  it("gates exactly the five diet axes, on_site, grass_fed and the four offer switches, and nothing else", () => {
     expect([...DIET_GATED_KEYS].sort()).toEqual([
       "vegan",
       "vegetarian",
@@ -42,6 +42,11 @@ describe("MEH-2170 — visibleMapToggleChips", () => {
       "no_added_sugar",
       "on_site", // MEH-2598: new axis, gated on sells_on_site
       "grass_fed", // MEH-2767: one rule on every surface
+      // MEH-3824: the four offer switches, gated at 1 (gateMin)
+      "rescue_today",
+      "group_buy",
+      "event",
+      "experience",
       // MEH-2677: the 100% pair left the filter, so it is no longer gated.
     ].sort());
     // Every gated key is a real /map chip — a typo here would gate nothing.

@@ -390,6 +390,7 @@ files = [
     "app/services/producer_insights.py",
     "app/services/producer_listing.py",
     "app/services/producer_queries.py",
+    "app/services/offer_supply.py",
     "app/services/producer_recipe_moderation.py",
     "app/services/producer_risk.py",
     "app/services/product_order_actions.py",

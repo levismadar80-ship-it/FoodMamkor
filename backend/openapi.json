@@ -10212,6 +10212,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -10220,6 +10225,11 @@
           "has_no_added_sugar_products": {
             "default": false,
             "title": "Has No Added Sugar Products",
+            "type": "boolean"
+          },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
             "type": "boolean"
           },
           "has_owner": {
@@ -10241,6 +10251,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -12439,6 +12454,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -12449,6 +12469,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -12457,6 +12482,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -13302,6 +13332,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -13312,6 +13347,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -13320,6 +13360,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -15197,6 +15242,11 @@
             "title": "Has Lactose Free Products",
             "type": "boolean"
           },
+          "has_listed_experience": {
+            "default": false,
+            "title": "Has Listed Experience",
+            "type": "boolean"
+          },
           "has_low_carb_products": {
             "default": false,
             "title": "Has Low Carb Products",
@@ -15207,6 +15257,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_open_group_buy": {
+            "default": false,
+            "title": "Has Open Group Buy",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -15215,6 +15270,11 @@
           "has_producer_license": {
             "default": false,
             "title": "Has Producer License",
+            "type": "boolean"
+          },
+          "has_upcoming_event": {
+            "default": false,
+            "title": "Has Upcoming Event",
             "type": "boolean"
           },
           "has_vegan_products": {
@@ -32775,6 +32835,70 @@
                 }
               ],
               "title": "On Site"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rescue_today",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rescue Today"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group_buy",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group Buy"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event"
+            }
+          },
+          {
+            "in": "query",
+            "name": "experience",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Experience"
             }
           },
           {
