@@ -57,17 +57,22 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // repeats exactly it.
   const lastLoad = useRef(() => loadProducers({}));
 
-  // MEH-3908: true from `beforeunload` until the page is live again. While
+  // MEH-3908: true from `beforeunload` / `pagehide` (WebKit can skip
+  // beforeunload on a phone) until the page is live again. While
   // the browser leaves the page it cancels the request in flight; WebKit
   // reports that as axios "Network Error". That is not a failed load: the
   // user is already gone, so no log, no toast, no error state. Cleared by
   // `pageshow` and by the next request, so a cancelled navigation (a
   // download link, a declined prompt) leaves real failures reported.
   const leavingPage = useRef(false);
+  // MEH-3908: after an in-app route change the hook is gone but its request
+  // still answers; a failure then must not toast on the next page.
+  const unmounted = useRef(false);
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
   const handleLoadFailure = (reason) => {
+    if (unmounted.current) return;
     if (leavingPage.current && isNetworkError(reason)) return;
     console.error("[חפשי באזור זה] GET /producers failed:", reason);
     setAllProducers([]);
@@ -124,6 +129,9 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         if (snapshot) setSnapshotPending(false);
         if (!isLatest()) return;
         handleLoadFailure(reason);
+        // MEH-3908: leaving the page — the chained load would only be
+        // cancelled too, and it would clear the leaving flag.
+        if (leavingPage.current && isNetworkError(reason)) return;
         // MEH-2598: a failed snapshot must not swallow the filtered load.
         then?.();
       })
@@ -176,10 +184,14 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
     const back = () => {
       leavingPage.current = false;
     };
+    unmounted.current = false;
     window.addEventListener("beforeunload", leave);
+    window.addEventListener("pagehide", leave);
     window.addEventListener("pageshow", back);
     return () => {
+      unmounted.current = true;
       window.removeEventListener("beforeunload", leave);
+      window.removeEventListener("pagehide", leave);
       window.removeEventListener("pageshow", back);
     };
   }, []);

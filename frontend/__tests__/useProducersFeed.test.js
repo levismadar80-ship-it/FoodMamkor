@@ -328,6 +328,40 @@ describe("useProducersFeed — MEH-3908 request cancelled by leaving the page", 
     expect(result.current.loadError).toBe(false);
   });
 
+  it("a network error after pagehide alone (WebKit can skip beforeunload) is not reported", async () => {
+    const rejecter = heldProducers();
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    act(() => { window.dispatchEvent(new Event("pagehide")); });
+    await act(async () => { rejecter()(networkError()); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(showToast.error).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("a failure that answers after an in-app route change (hook unmounted) does not toast on the next page", async () => {
+    const rejecter = heldProducers();
+    const { unmount } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    unmount();
+    await act(async () => { rejecter()(Object.assign(new Error("Request failed with status code 500"), { isAxiosError: true, response: { status: 500 } })); });
+    expect(showToast.error).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("a deep link's chained filtered load is not started while leaving the page", async () => {
+    let reject;
+    api.get.mockImplementation((url) => {
+      if (url === "/producers") return new Promise((_, r) => { reject = r; });
+      return Promise.resolve({ data: [] });
+    });
+    renderHook(() => useProducersFeed({ readInitialParams: () => ({ has_delivery: 1 }) }));
+    await waitFor(() => expect(reject).toBeTypeOf("function"));
+    act(() => { window.dispatchEvent(new Event("beforeunload")); });
+    await act(async () => { reject(networkError()); });
+    expect(api.get.mock.calls.filter(([url]) => url === "/producers")).toHaveLength(1);
+  });
+
   it("the same network error with no beforeunload is reported", async () => {
     const rejecter = heldProducers();
     const { result } = renderHook(() => useProducersFeed());
