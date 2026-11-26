@@ -271,7 +271,9 @@ def offer_detail(
     ).strip() or None
     link = prepay_link(producer.payment_info)  # MEH-3895
     out["producer"]["prepay_link"] = link
-    out["producer"]["prepay_timing"] = (producer.payment_info or {}).get("timing") if link else None
+    out["producer"]["prepay_timing"] = (
+        (producer.payment_info or {}).get("timing") if link else None
+    )
     return out
 
 

@@ -129,8 +129,11 @@ def send_business_refund_email(
         "צוות מהמקור"
     )
     send_email(
-        to, f"בוטל שריון של סל הפתעה ב{name}", body,
-        test_cause=test_cause, kind="rescue_business",
+        to,
+        f"בוטל שריון של סל הפתעה ב{name}",
+        body,
+        test_cause=test_cause,
+        kind="rescue_business",
     )
 
 
@@ -158,7 +161,9 @@ def queue_business_refund_email(
     recipients = owner_emails(db, producer)
     for to in recipients:
         background_tasks.add_task(
-            send_business_refund_email, to, facts,
+            send_business_refund_email,
+            to,
+            facts,
             deposit=(producer.payment_info or {}).get("timing") == "deposit",
             test_cause=bool(producer.is_test),  # MEH-2952
         )
