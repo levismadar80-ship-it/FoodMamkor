@@ -238,7 +238,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
       {/* MEH-2992: one shared masthead (was a byte-identical copy per page).
           MEH-2989: no date tile on the cover — the date row carries it. */}
       <EntityCover
-        imageUrl={ex.image_url}
+        imageUrl={ex.image_url || ex.owner_image_url /* MEH-3894, as events */}
         alt={ex.title}
         tone="accent"
         Icon={CatIcon}

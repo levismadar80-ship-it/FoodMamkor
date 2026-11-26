@@ -630,7 +630,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/admin/help` | GAP | `frontend/__tests__/AdminHelp.test.jsx:7` | covered |
 | `/admin/kashrut` | GAP | `frontend/__tests__/AdminKashrutPage.test.jsx:5` | covered |
 | `/admin/name-change-requests` | GAP | GAP | GAP |
-| `/admin/outreach` | `frontend/e2e/flows/37-outreach-prefill.spec.ts:328` | `frontend/__tests__/AdminOutreach.test.jsx:3` | covered |
+| `/admin/outreach` | `frontend/e2e/flows/30-admin-panel-tabs.spec.ts:201` | `frontend/__tests__/AdminOutreach.test.jsx:3` | covered |
 | `/admin` | `frontend/e2e/flows/25-role-reachability.spec.ts:130` | `frontend/__tests__/AdminDashboardStats.test.jsx:3` | covered |
 | `/admin/producers/[id]/edit` | `frontend/e2e/flows/46-owner-invite.spec.ts:259` | `frontend/__tests__/AdminClaimLink.test.jsx:19` | covered |
 | `/admin/producers/new` | `frontend/e2e/flows/manual/admin-producer-form-licence.spec.ts:291` | GAP | covered |
@@ -671,7 +671,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 3 | `reserved` → `cancelled` (buyer) | rescue.py:989 | — | GAP | — |
 | 3 | `reserved` → `cancelled` (bulk, offer pulled) | rescue.py:581 | `POST /admin/rescue/users/{user_id}/clear-block` | `tests/test_meh3225_no_show_tombstones.py:132` | — |
 | 4 | ∅ → `(pending, verdict, true)` | experiences.py:459 | `POST /experiences` | `tests/_test_experiences__p01.py:47` | — |
-| 4 | content edit on `approved`/`rejected`/`changes_requested` → `(pending, fresh verdict, is_active unchanged)` | experiences.py:588, experiences.py:622 | `POST /experiences`, `PUT /experiences/{experience_id}` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted |
+| 4 | content edit on `approved`/`rejected`/`changes_requested` → `(pending, fresh verdict, is_active unchanged)` | experiences.py:588, experiences.py:622 | `POST /experiences`, `PUT /experiences/{experience_id}` | `tests/_test_experiences__p01.py:47` | — |
 | 4 | `is_active` flip only | experiences.py:560, experiences.py:567 | `POST /experiences` | `tests/_test_experiences__p01.py:47` | — |
 | 4 | → `approved` | admin_experiences.py:88 | `POST /admin/experiences/{experience_id}/approve` | `tests/_test_experiences__p01.py:735` | — |
 | 4 | → `changes_requested` | admin_experiences.py:128 | `POST /admin/experiences/{experience_id}/request-changes` | `tests/_test_experiences__p01.py:791` | — |
@@ -688,7 +688,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/_test_api__p04.py:120` | a delete transition reached no DELETE handler — audit line may be off |
 | 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:122` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
-| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted; nearest write handler — audit line may have drifted |
+| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest write handler — audit line may have drifted |
 | 9 | `registrations.status` | registrations.py:375, registrations.py:377, registrations.py:383, registrations.py:226 … | `POST /events/{event_id}/registrations`, `POST /experiences/{experience_id}/registrations`, `POST /experiences`, `POST /registrations/{token}/cancel` | `tests/test_meh2763_registrations.py:116` | nearest function — audit line may have drifted |
 | 9 | `events` | — | — | GAP | — |
 | 9 | `users` | admin_extra.py:185, auth.py:627, auth.py:830, producer_claim.py:249 | `GET /admin/audit-log`, `POST /auth/logout-all-devices`, `POST /auth/reset-password`, `POST /producer-claim/new-link-request` | `tests/test_meh3306_admin_audit_log.py:371` | — |

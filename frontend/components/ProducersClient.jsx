@@ -1251,7 +1251,13 @@ export default function ProducersClient({
       ) : showCatalogEmpty ? (
         <CatalogEmptyState />
       ) : (
-        <>
+        // MEH-3874: while more pages are coming, a screen of room under the list
+        // keeps the site footer off screen until the last page has arrived.
+        // Without it the footer was in view when the next page landed above it
+        // and jumped down (CLS 0.15, slow phone). Padding, not a spacer block:
+        // this box's top never moves, while a spacer would itself be pushed
+        // down by every page, and an empty block that moves counts as a shift.
+        <div className={!hasActiveChips && hasMore ? "pb-[100svh]" : undefined} data-testid="producers-list">
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4" data-testid="producers-grid">
             {displayItems.map((p, i) => (
               <ProducerCard
@@ -1285,7 +1291,7 @@ export default function ProducersClient({
               )}
             </>
           )}
-        </>
+        </div>
       )}
 
       <LocationModal

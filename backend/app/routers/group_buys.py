@@ -50,6 +50,7 @@ from app.services.group_buy_pickup_place import (  # MEH-3610
     own_location,
     place_line,
 )
+from app.services.producer_images import first_image  # MEH-3894
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -68,9 +69,8 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         # MEH-2544: the card / page photo — the business's first image, the
         # same pick as ProducerCard (images[0]). Read-only; a group buy has
         # no image of its own.
-        "producer_image_url": (gb.producer.images or [None])[0]
-        if gb.producer
-        else None,
+        # MEH-3894: the shared pick skips a blank first entry.
+        "producer_image_url": first_image(gb.producer.images) if gb.producer else None,
         "title": gb.title,
         "description": gb.description,
         "product_name": gb.product_name,

@@ -30,6 +30,7 @@ from app.models.models import (
     RescueOrder,
     RescueTypicalItems,
 )
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.utils.clock import utc_now
 from app.utils.pii import round_coord
@@ -194,7 +195,7 @@ def _public_row(
             "name": producer.name,
             "slug": producer.slug,
             "city": producer.city,
-            "image_url": (producer.images or [None])[0],
+            "image_url": first_image(producer.images),  # MEH-3894
             "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,

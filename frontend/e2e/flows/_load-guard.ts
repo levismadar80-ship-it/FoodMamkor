@@ -116,14 +116,6 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     card: "MEH-3817",
   },
   {
-    // MEH-3870: measured on #5280's run at 6f45c4c (mobile, both tries); not
-    // reproduced on the preview with a real admin login, so not yet fixed.
-    path: /^\/admin\/outreach$/,
-    ceiling: 0.16,
-    reason: "Admin outreach, mobile: the admin tab strip moves once at ~0.7 s (largest 0.107, mobile, PR #5280 head 6f45c4c).",
-    card: "MEH-3870",
-  },
-  {
     // MEH-3875: staging f08f421 (run 45701938236), desktop, hard fail on both tries.
     path: /^\/admin\/users$/,
     ceiling: 0.18,

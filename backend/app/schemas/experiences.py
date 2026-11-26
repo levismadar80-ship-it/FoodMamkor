@@ -451,6 +451,8 @@ class ExperienceListOut(BaseModel):
     course_meetings: list[CourseMeetingOut] = []
     status: str
     host: ExperienceHostOut | None = None
+    # MEH-3894: the host business's first photo (fallback for image_url).
+    owner_image_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

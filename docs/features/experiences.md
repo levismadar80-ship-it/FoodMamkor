@@ -10,6 +10,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/admin_business_content.py` — אדמין יוצרת ועורכת חוויה בשם בית עסק שיש לו חשבון בעלים (המארח הוא החשבון הזה), עם `owner_consent: true` בכל שמירה. עוברת לאותו תור אישור ואותה בדיקת תוכן כמו חוויה של בעל העסק. אותה פונקציה משותפת: `submit_experience_for` / `update_experience_row` ב-`backend/app/routers/experiences.py` (MEH-3873).
 * `backend/app/routers/experiences.py`
+* `backend/app/services/producer_images.py` — `first_image`: התמונה הראשונה (לא ריקה) של בית העסק המארח נשלחת בכל חוויה כ-`owner_image_url`, ושורה, כרטיס ודף חוויה בלי תמונה משלה מציגים אותה, כמו באירועים (MEH-3894). הטסטים `tests/test_meh3894_first_image.py` · `frontend/__tests__/MEH3894PhotoFallbacks.test.jsx`.
 * `backend/app/services/experience_moderation.py` — בדיקת AI, נכשלת פתוח בלי `ANTHROPIC_API_KEY`.
 * `backend/app/services/moderation_common.py` — הלקוח, קריאת התשובה והקריאה למודל המהיר, משותפים לבדיקת החוויות, המתכונים ומוצרי השכנים (MEH-3619).
 * `backend/app/services/experience_sessions.py` — מועדים של סדנה חוזרת (MEH-3441): עד 12 קדימה, ומקומות, המתנה ורישום כפול לכל מועד. סדנה חוזרת בלי מועדים נשארת מאגר מקומות אחד.

@@ -4718,6 +4718,17 @@
             ],
             "title": "Moderation Suggestion"
           },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -5018,6 +5029,17 @@
               }
             ],
             "title": "Min Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,
@@ -14666,6 +14688,17 @@
             "title": "Locations",
             "type": "array"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -23229,6 +23262,17 @@
               }
             ],
             "title": "Min Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,

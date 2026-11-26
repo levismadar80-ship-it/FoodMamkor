@@ -158,4 +158,57 @@ test.describe("MEH-217 — admin panel tabs", () => {
       ).toBeAttached();
     }
   });
+
+  test("phone: the tab strip is first painted already scrolled to the current tab (MEH-3870)", async ({
+    page,
+  }, testInfo) => {
+    // The strip is md:hidden, so only the phone project has one to measure.
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the project, which the product cannot move
+    test.skip(testInfo.project.name !== "mobile", "the tab strip exists below md only");
+    // MEH-2426 scrolls the ~1700px strip so the current tab is in view. That
+    // ran in an effect AFTER the tabs were painted, so for one frame the strip
+    // showed its start and then jumped sideways by ~1100px: a visible jump,
+    // and a layout shift the load guard caught on /admin/outreach (CLS 0.107
+    // in CI). Every painted frame with tabs must already show the current one.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __strip: boolean[]; __stripShift: number };
+      w.__strip = [];
+      // Layout shift whose source is the strip or a node inside it. When the
+      // scroller was the wrapper div, scrolling in the same frame that the tabs
+      // replaced the placeholder moved the <nav> box: 0.083 on every load.
+      w.__stripShift = 0;
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries() as Array<PerformanceEntry & { value: number; hadRecentInput: boolean; sources?: Array<{ node?: Node | null }> }>) {
+          if (e.hadRecentInput) continue;
+          const strip = document.querySelector('[data-testid="admin-tab-strip"]');
+          if ((e.sources || []).some((src) => src.node && strip && (src.node === strip || strip.contains(src.node)))) {
+            w.__stripShift += e.value;
+          }
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+      const tick = () => {
+        const strip = document.querySelector('[data-testid="admin-tab-strip"]');
+        const cur = strip?.querySelector('[aria-current="page"]');
+        if (strip && cur) {
+          const s = strip.getBoundingClientRect();
+          const c = cur.getBoundingClientRect();
+          w.__strip.push(c.left >= s.left - 1 && c.right <= s.right + 1);
+        }
+        if (w.__strip.length < 120) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.goto("/admin/outreach");
+    await expect(page.getByTestId(DENIED)).toHaveCount(0);
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __strip: boolean[] }).__strip.length), {
+        message: "frames with the tabs painted",
+      })
+      .toBeGreaterThanOrEqual(120);
+    const frames = await page.evaluate(() => (window as unknown as { __strip: boolean[] }).__strip);
+    const outOfView = frames.filter((inView) => !inView).length;
+    expect(outOfView, `painted frames with the current tab outside the strip (of ${frames.length})`).toBe(0);
+    const stripShift = await page.evaluate(() => (window as unknown as { __stripShift: number }).__stripShift);
+    expect(stripShift, "layout shift attributed to the tab strip").toBe(0);
+  });
 });

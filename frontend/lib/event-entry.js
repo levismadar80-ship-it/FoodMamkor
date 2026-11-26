@@ -47,8 +47,9 @@ export function toEventEntry(row, tab, t) {
     // until now it showed only on the event page itself.
     image: row.image_url || null,
     // MEH-2546: the owner's first photo — the row's fallback when the event
-    // has none (Meetup shows the group cover the same way). Events only.
-    ownerImage: isExp ? null : row.owner_image_url || null,
+    // has none (Meetup shows the group cover the same way). MEH-3894: the
+    // experience API sends the host business's photo too.
+    ownerImage: row.owner_image_url || null,
     // MEH-3009: experiences carry the host's initial too, so every row with a
     // picture is marked the same way.
     ownerInitial:
