@@ -54,7 +54,7 @@ def day30_numbers(db: Session, producer_id: UUID) -> Day30Numbers:
     }
 
 
-def rows(n: Day30Numbers) -> list[tuple[str, int]]:
+def day30_rows(n: Day30Numbers) -> list[tuple[str, int]]:
     """Label → number; a zero row is left out, so the email never says
     «צפיות בעמוד: 0» (card acceptance: 0 / 1 / many)."""
     # REUSES: backend/app/services/weekly_owner_summary.py:202 — the labels.
@@ -67,10 +67,10 @@ def rows(n: Day30Numbers) -> list[tuple[str, int]]:
     return [(label, value) for label, value in candidates if value > 0]
 
 
-def block(name: str, n: Day30Numbers, frontend_url: str) -> str:
+def day30_block(name: str, n: Day30Numbers, frontend_url: str) -> str:
     """Plain-text block ending in a blank line; "" when every number is 0,
     and the email then reads as before without it."""
-    shown = rows(n)
+    shown = day30_rows(n)
     if not shown:
         return ""
     clean = " ".join((name or "").split())

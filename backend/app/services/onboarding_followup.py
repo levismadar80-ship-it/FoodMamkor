@@ -312,7 +312,7 @@ def _day30_block(db: Session, producer: Producer) -> str:
             exc_info=True,
         )
         return ""
-    return day30.block(str(producer.name or ""), n, settings.frontend_url)
+    return day30.day30_block(str(producer.name or ""), n, settings.frontend_url)
 
 
 # ---------- public entry point ----------

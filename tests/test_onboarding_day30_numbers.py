@@ -119,13 +119,13 @@ class TestNumbers:
             assert line in body
 
     def test_rows_hide_zeros_and_keep_order(self):
-        assert day30.rows(_numbers()) == []
-        assert day30.rows(_numbers(views=12, saves=2)) == [
+        assert day30.day30_rows(_numbers()) == []
+        assert day30.day30_rows(_numbers(views=12, saves=2)) == [
             ("צפיות בעמוד", 12),
             ("שמירות במועדפים", 2),
         ]
         # No views but a click still shows, without a «צפיות בעמוד: 0» row.
-        assert day30.rows(_numbers(whatsapp=1)) == [("קליקים בוואטסאפ", 1)]
+        assert day30.day30_rows(_numbers(whatsapp=1)) == [("קליקים בוואטסאפ", 1)]
 
     def test_a_numbers_failure_never_costs_the_email(self, db, sent_log, monkeypatch):
         _make_producer_user(db, days_old=30, license_number="12345")
