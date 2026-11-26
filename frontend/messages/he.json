@@ -2002,7 +2002,7 @@
       "form": {
         "errors": {
           "image_upload": "שגיאה בהעלאת תמונה",
-          "images_failed": "{failed} מתוך {total} תמונות לא הועלו: {reason}",
+          "images_failed": "{failed, plural, one {תמונה אחת מתוך {total} לא הועלתה} other {# מתוך {total} תמונות לא הועלו}}: {reason}",
           "unsaved_sections": "יש שינויים שלא נשמרו: {sections}. שמרו כל חלק בכפתור «שמירה» שלו, ואז שמרו כאן.",
           "save": "שגיאה בשמירה"
         },

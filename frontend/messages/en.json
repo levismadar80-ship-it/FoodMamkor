@@ -2002,7 +2002,7 @@
       "form": {
         "errors": {
           "image_upload": "Image upload error",
-          "images_failed": "{failed} of {total} photos were not uploaded: {reason}",
+          "images_failed": "{failed, plural, one {1 of {total} photos was not uploaded} other {# of {total} photos were not uploaded}}: {reason}",
           "unsaved_sections": "Unsaved changes: {sections}. Save each section with its own Save button, then save here.",
           "save": "Save error"
         },

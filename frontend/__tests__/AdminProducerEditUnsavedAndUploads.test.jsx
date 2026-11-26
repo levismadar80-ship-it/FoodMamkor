@@ -160,6 +160,15 @@ describe("gallery upload failures surface and keep what uploaded (MEH-3915)", ()
     expect(formPuts()[0][1].images).toEqual(["https://res.cloudinary.com/x/one.jpg"]);
   });
 
+  it("one photo, refused: the message speaks of one photo", async () => {
+    api.post.mockRejectedValueOnce({ response: { status: 429, data: {} } });
+    mount(<ProducerForm initial={PRODUCER} producerId="p-1" />);
+    await screen.findByText(FORM.sections.basic);
+    pick(1);
+    const msg = await screen.findByTestId("gallery-upload-error");
+    expect(msg).toHaveTextContent("תמונה אחת מתוך 1 לא הועלתה");
+  });
+
   it("all photos upload: no message, all saved", async () => {
     api.post
       .mockResolvedValueOnce({ data: { url: "https://res.cloudinary.com/x/a.jpg" } })
