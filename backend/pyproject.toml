@@ -221,6 +221,7 @@ files = [
     "app/routers/category_requests.py",
     "app/routers/chat.py",
     "app/routers/cities.py",
+    "app/routers/producer_identity_check.py",  # MEH-3884
     "app/routers/events.py",
     "app/routers/experiences.py",
     "app/routers/favorites.py",
@@ -284,6 +285,7 @@ files = [
     "app/schemas/experiences.py",
     "app/schemas/group_buy_counts.py",
     "app/schemas/cities_match.py",
+    "app/schemas/identity_check.py",  # MEH-3884
     "app/schemas/group_buys_requests.py",
     "app/schemas/owner_detach.py",
     "app/schemas/owner_invite_existing.py",
@@ -392,6 +394,7 @@ files = [
     "app/services/producer_duplicates.py",
     "app/services/business_name_key.py",  # MEH-3865
     "app/services/draft_twins.py",  # MEH-3865
+    "app/services/business_identity.py",  # MEH-3884
     "app/services/draft_merge_emails.py",  # MEH-3865
     "app/routers/admin_draft_merge.py",  # MEH-3865
     "app/services/draft_merge_policy.py",  # MEH-3865
