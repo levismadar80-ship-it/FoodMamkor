@@ -217,7 +217,7 @@ test.describe("load guard self-test (MEH-3809)", () => {
   test("the recorder marks a cancelled chunk request as having no response", async ({ page }) => {
     const state = await loadChunks(page);
     await expect.poll(() => failed(state, ABORTED_CHUNK).length).toBeGreaterThan(0);
-    expect(failed(state, ABORTED_CHUNK).map((f) => f.status)).toEqual(failed(state, ABORTED_CHUNK).map(() => null));
+    expect(failed(state, ABORTED_CHUNK).every((f) => f.status === null)).toBe(true);
   });
 
   test("the recorder keeps the 404 of a missing chunk that Chromium also reports as failed", async ({ page, browserName }) => {

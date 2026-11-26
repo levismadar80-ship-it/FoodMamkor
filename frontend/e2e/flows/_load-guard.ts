@@ -34,7 +34,7 @@
  *   lands at 1 s for that reason.
  * - Hydration mismatches are never allowlisted (HYDRATION below).
  */
-import type { Page, TestInfo } from "@playwright/test";
+import type { Page, Request, TestInfo } from "@playwright/test";
 
 export type LoadGuardMode = "on" | "errors" | "off";
 
@@ -209,14 +209,18 @@ export type LoadGuardState = {
    *  got a 404, so the status is what tells a cancelled load from a missing
    *  file. Optional so a hand-built state in the self-test still type-checks. */
   failedRequests?: { path: string; errorText: string; status: number | null }[];
+  /** The `requestfailed` handlers still awaiting their response; teardown
+   *  waits for them so a late push cannot turn an excused error into a fail. */
+  pending?: Promise<void>[];
   shifts: Shift[];
   ready: Ready[];
 };
 
 /** Install the probes on a page. Call before the first navigation. */
 export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
-  const state: LoadGuardState = { errors: [], shifts: [], ready: [], failedRequests: [] };
-  page.on("requestfailed", async (r) => {
+  const state: LoadGuardState = { errors: [], shifts: [], ready: [], failedRequests: [], pending: [] };
+  page.on("requestfailed", (r) => state.pending?.push(recordFailed(r)));
+  const recordFailed = async (r: Request) => {
     let path = r.url();
     try {
       path = new URL(r.url()).pathname;
@@ -226,7 +230,7 @@ export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
     const errorText = r.failure()?.errorText ?? "";
     const status = (await r.response().catch(() => null))?.status() ?? null;
     state.failedRequests?.push({ path, errorText, status });
-  });
+  };
   page.on("pageerror", (e) => state.errors.push(`pageerror: ${e?.message ?? String(e)}`));
   page.on("console", (m) => {
     if (m.type() === "error") state.errors.push(`console.error: ${m.text()}`);
@@ -314,7 +318,10 @@ function maxSessionCls(shifts: readonly Shift[]): { value: number; worst: Shift[
  *  and the old page logs ChunkLoadError on its way out. Excused only when the
  *  chunk's request failed with no response or mid-way through a 2xx body. A
  *  chunk that is really missing (stale build, wrong path) got a 404 first, and
- *  one that never failed a request at all is not excused either. */
+ *  one that never failed a request at all is not excused either. Deliberately
+ *  not gated on the engine or on the reason text: a chunk request that never
+ *  got an answer from the local server is not an application error on either
+ *  engine, and WebKit's cancel wording is not measured. */
 const CHUNK_LOAD_ERROR = /^ChunkLoadError: Failed to load chunk (\/\S+) from module \d+$/;
 
 function isCancelledChunk(text: string, state: LoadGuardState): boolean {
@@ -381,6 +388,7 @@ export async function enforceLoadGuard(
   opts: { browserName: string; mode: LoadGuardMode },
 ): Promise<void> {
   const { browserName } = opts;
+  await Promise.all(state.pending ?? []);
   const navigated = state.ready.length > 0 || !/^about:blank$/.test(page.url());
   const failures = loadGuardFailures(state, { browserName, navigated, cls: opts.mode === "on" });
   if (failures.length === 0) return;
