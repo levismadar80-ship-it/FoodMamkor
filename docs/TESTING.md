@@ -70,6 +70,9 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 - logged a React hydration mismatch (never allowlistable);
 - shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
   right after a click or key press excluded; same limit as `lighthouserc.cjs`).
+  The failure names each shifted element with its old and new box
+  (`y h w → y h w`) plus the viewport and scroll offset (MEH-3893), so the CI
+  log alone tells a late block above it from the element resizing.
 
 CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
 page whose observer never reported fails the test, so a dead probe cannot read
@@ -82,7 +85,8 @@ is `"off"` too: the guard's probe adds work to every frame it counts (MEH-3809).
 
 Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
 1.5 × the largest value measured. A listed page passes under its ceiling and
-fails above it; every other page fails at 0.1. The list only shrinks: a fix
+fails above it; every other page fails at 0.1. A row can also take a `query`
+pattern, so it covers one state of a page (home with `?city=`) and not every load. The list only shrinks: a fix
 removes its row, and a new shift gets a fix, not a row. The guard's own
 self-test is `flows/00-load-guard-selftest.spec.ts`.
 

@@ -50,3 +50,31 @@ export function toEventEntry(row, tab, t) {
       Array.from(((isExp ? row.host?.producer_name || row.host?.name : row.producer_name) || "").trim())[0] ?? "",
   };
 }
+
+/**
+ * MEH-3892: on the owner's OWN page (business page, organizer page) a row with
+ * no photo of its own takes one from that owner's gallery. The cover
+ * (images[0]) already heads the page, so the other photos come first, in turn
+ * by row order — a weekly event reads as four rows, not one row four times.
+ * Only one photo → that one. None → unchanged (the category tile).
+ * Rows keep their own photo, and no owner initial is added (the caller clears
+ * it: every row here is this owner's).
+ *
+ * @template {Record<string, any>} E
+ * @param {E[]} entries rows in display order (each may carry `image`)
+ * @param {unknown} images the owner's `images` array from the API
+ * @returns {(E & { ownerImage: string | null })[]}
+ */
+export function withOwnGallery(entries, images) {
+  const all = (Array.isArray(images) ? images : [])
+    .filter((u) => typeof u === "string" && u.trim())
+    .map((u) => u.trim());
+  const pool = all.length > 1 ? all.slice(1) : all;
+  let next = 0;
+  return entries.map((e) => {
+    if (e.image || pool.length === 0) return { ...e, ownerImage: null };
+    const ownerImage = pool[next % pool.length];
+    next += 1;
+    return { ...e, ownerImage };
+  });
+}
