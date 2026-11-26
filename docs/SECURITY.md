@@ -527,6 +527,14 @@ registration / owner-invite / account-delete route) exactly as before.
 - **The token is verified twice:** in the swap
   (`services/google_code_exchange.py`: issuer, audience = our client id,
   expiry, plus `email_verified`) and again by the route that signs in.
+- **`email_verified` is checked for every Google token (MEH-3813):**
+  `verify_google_token` (`services/oauth_verifiers.py`) returns None unless
+  the claim is exactly `True`, so `/auth/google`,
+  `/auth/register/producer/oauth`, the owner invite and the account delete
+  all refuse a Google account whose email Google has not verified, with the
+  same 401 / 403 / 422 they give any bad token. Before, only the swap checked
+  it, and a token posted straight to `/auth/google` could match an existing
+  account by an unproven email.
 - **No state, no cookie:** the swap writes nothing and sets no cookie. It
   returns the token in the JSON body only, which CORS keeps from other sites,
   so Google's suggested `X-Requested-With` check would add nothing here.

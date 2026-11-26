@@ -68,11 +68,9 @@ def exchange_google_code(code: str) -> str | ExchangeFailure:
     # DO NOT skip this because the token came straight from Google over TLS:
     # it is the same aud/iss/exp check /auth/google runs, and the one place a
     # token minted for another client id would be stopped here (MEH-3690).
-    # email_verified: stricter than /auth/google, which never checked it. A
-    # Google account whose email Google has not verified cannot sign in with
-    # our button (MEH-3690 review; /auth/google itself: MEH-3813).
-    claims = verify_google_token(id_token)
-    if not claims or claims.get("email_verified") is not True:
+    # email_verified is checked inside verify_google_token for every consumer
+    # since MEH-3813 (it used to be checked here only, MEH-3690 review).
+    if not verify_google_token(id_token):
         return ExchangeFailure.REFUSED
     return id_token
 
