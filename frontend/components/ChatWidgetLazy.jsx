@@ -19,10 +19,9 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 
 // MEH-2512: form pages whose primary control sits under the mobile launcher.
 // Exact path or a subpath ("/register/producer"), never a shared prefix.
-// MEH-2602: the owner dashboard joins — at 375 the launcher sat over the
-// availability chips on the overview and over fields on the edit pages
-// (staging sweep 29/10). Mobile only; desktop keeps it, as for every form.
-const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact", "/producer/dashboard"];
+// MEH-2602 put the owner dashboard here (the launcher sat over its chips at
+// 375); MEH-3902 takes the site chat off the dashboard altogether, below.
+const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
 
 // MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
 // page (/producer/[id]) ONLY (MEH-3489: the widget is still mounted there, as
@@ -70,6 +69,11 @@ export default function ChatWidgetLazy() {
   // its bottom-END corner sat over the row-action column of the approvals
   // table. Same pathname gate as above.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
+  // MEH-3902: the owner dashboard has its own assistant, which knows her
+  // business and the screen she is on (components/owner-assistant/, in the
+  // dashboard's tab row). Two assistants on one screen would answer the same
+  // question two ways, so the site chat stays off the whole subtree.
+  if (pathname === "/producer/dashboard" || pathname.startsWith("/producer/dashboard/")) return null;
   // MEH-2512: on phones the launcher's bottom-END corner sat over the primary
   // control of every form page (login submit, register preflight, password
   // field, contact input). No floating launcher over a form — mobile only; on

@@ -30,7 +30,12 @@ export function toEventEntry(row, tab, t) {
     city: row.city,
     // MEH-2476: a recurring experience names its schedule in the meta line,
     // so the date rail reads as the first occasion, not the only one.
-    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
+    // MEH-3898: a course says so, with its number of meetings.
+    schedule: isExp && row.is_recurring
+      ? row.recurring_schedule?.trim() || null
+      : isExp && row.course_meetings?.length
+        ? t("course_meetings", { count: row.course_meetings.length }) || null
+        : null,
     // an older experience row stores the English key («workshop»);
     // the row chip shows the Hebrew value the other rows carry.
     category: isExp ? findExperienceCategory(row.category)?.key ?? row.category : row.category,
@@ -42,8 +47,9 @@ export function toEventEntry(row, tab, t) {
     // until now it showed only on the event page itself.
     image: row.image_url || null,
     // MEH-2546: the owner's first photo — the row's fallback when the event
-    // has none (Meetup shows the group cover the same way). Events only.
-    ownerImage: isExp ? null : row.owner_image_url || null,
+    // has none (Meetup shows the group cover the same way). MEH-3894: the
+    // experience API sends the host business's photo too.
+    ownerImage: row.owner_image_url || null,
     // MEH-3009: experiences carry the host's initial too, so every row with a
     // picture is marked the same way.
     ownerInitial:

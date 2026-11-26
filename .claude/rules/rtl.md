@@ -102,7 +102,7 @@ brackets (`z-1010`), or the sync test counts a phantom owner (MEH-2115).
 | `cursor` | 10001 | 1 | `app/globals.css` `.custom-cursor` | custom cursor dot — **top of the scale**, see below (MEH-2300) |
 | `skip-link` | 10000 | 1 | `app/[locale]/layout.js` | skip-to-content link, on focus only |
 | `tooltip` | 9999 | 3 | `components/ui/Tooltip.jsx` · `InfoTooltip.jsx` | tooltips |
-| `chat` | 9999 | 2 | `components/ChatWidget.jsx` (inline style) | chat panel + DESKTOP launcher |
+| `chat` | 9999 | 3 | `components/ChatWidget.jsx` (inline style) · `components/owner-assistant/OwnerAssistantPanel.jsx` | chat panel + DESKTOP launcher; the dashboard assistant's panel (MEH-3902 — the site chat is off on the dashboard, so the two never share a screen) |
 | `install-prompt` | 9997 | 1 | `components/InstallPrompt.jsx` | PWA install prompt |
 | `modal-interrupt` | 9500 | 1 | `components/LoginPromptModal.jsx` | **interrupt modals** — must sit above an ordinary modal; 6 → 1 in MEH-3096, which moved the outreach dialogs and the group-buy cancel dialog onto the shared `ui/Dialog` (ordinary tier) |
 | `modal` | 9000 | 7 | `components/ui/Dialog.jsx` · `LocationModal.jsx` · `Lightbox.jsx` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; the tier grew to 24 through MEH-2137 / 2435 / 2518 / 3043 and fell to 7 in MEH-3096, which moved the centred dialogs onto the one shared shell `components/ui/Dialog.jsx` |

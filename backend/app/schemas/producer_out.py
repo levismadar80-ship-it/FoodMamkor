@@ -49,6 +49,10 @@ class KashrutCertRef(BaseModel):
 class ProducerListOut(BaseModel):
     id: UUID
     name: str
+    # MEH-3611: the business's logo beside its name; null = no logo.
+    # MEH-3894: on the list too — a card with no photo shows it in the
+    # corner (ProducerCard), so it moved up from ProducerDetailOut.
+    logo_url: str | None = None
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
@@ -462,9 +466,6 @@ class ProducerDetailOut(ProducerListOut):
     # page (MEH-1334, dormant variants). NULL = card stays compact.
     owner_bio: str | None = None
     owner_photo_url: str | None = None
-    # MEH-3611: the business's logo beside its name; null = no logo. Detail
-    # only — the list cards do not show it.
-    logo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-1543: optional weekly order-acceptance window (JSONB). NULL = feature

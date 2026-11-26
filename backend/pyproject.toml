@@ -169,6 +169,7 @@ plugins = ["pydantic.mypy"]
 files = [
     "app/schemas/payment_link.py",
     "app/services/rescue_payment.py",
+    "app/services/producer_images.py",  # MEH-3894
     "app/utils/money.py",
     "app/services/email_layout.py",
     "app/site_pages.py",
@@ -193,6 +194,8 @@ files = [
     "app/models/billing.py",
     "app/models/catalog.py",
     "app/models/email_events.py",
+    "app/models/share_links.py",
+    "app/services/share_links.py",
     "app/models/engagement.py",
     "app/models/events.py",
     "app/models/home_products.py",
@@ -343,6 +346,7 @@ files = [
     "app/services/email.py",
     "app/services/email_branding.py",
     "app/services/experience_moderation.py",
+    "app/services/course_meetings.py",
     "app/services/experience_sessions.py",
     "app/services/experience_notifications.py",
     "app/services/farmer_declaration.py",

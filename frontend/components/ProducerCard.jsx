@@ -32,6 +32,7 @@ import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { deriveAvailability } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
+import Avatar from "@/components/ui/Avatar";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { enqueueFavoriteOnLogin } from "@/lib/post-login-action";
@@ -47,6 +48,7 @@ import RatingCompact from "@/components/ui/RatingCompact";
 import { hasCardRating } from "@/lib/rating-gate";
 import { producerPath } from "@/lib/producer-path";
 import useIsraelToday from "@/lib/use-israel-today";
+import useImageLoads from "@/lib/use-image-loads";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
 // DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
@@ -286,6 +288,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   // row instead of a chip. MEH-2744: that row then shows only the threshold.
   // MEH-3861: the same Israel day OfferBadge reads, so card and chip agree.
   const today = useIsraelToday();
+  // MEH-3894: a logo that fails to load falls back to the seed, not a broken image.
+  const logoSrc = useImageLoads(producer.logo_url ? optimizeCloudinary(producer.logo_url, { width: 112 }) : null);
   const freeAbove = freeDeliveryThreshold(producer.active_offer, today);
   const alwaysFree = cardFee.fee === 0 && !cardFee.from;
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
@@ -479,7 +483,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               <div
                 // MEH-2837: pt clears the heart (34px at top-2 → 42px; 44px
                 // at sm:top-3 → 56px), so a 3-line name never reaches it.
-                className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pt-12 pb-12 sm:p-5 sm:pt-16 sm:pb-14"
+                // MEH-3894: with the logo in the corner (56px at top-3) the
+                // name clears it — pt-20 (80px) / sm:pt-20.
+                className={`absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pb-12 sm:p-5 sm:pb-14 ${logoSrc && !startCornerControl ? "pt-20 sm:pt-20" : "pt-12 sm:pt-16"}`}
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
@@ -498,7 +504,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                     also has a control in the start corner (startCornerControl,
                     /favorites' bell), both corners are taken and no seed is
                     drawn. */}
-                {!startCornerControl && (
+                {/* MEH-3894 (Sapir 26/11): a business with no photo but a logo
+                    shows the logo in that corner instead of the seed — its own
+                    mark, never a stock image. Same corner rule as the seed. */}
+                {!startCornerControl && logoSrc && (
+                  <Avatar
+                    src={logoSrc}
+                    size={56}
+                    fit="contain"
+                    tone="none"
+                    decorative
+                    data-testid="card-logo"
+                    className="absolute top-3 start-3 bg-surface shadow-sm"
+                  />
+                )}
+                {!startCornerControl && !logoSrc && (
                   <Seed
                     color={seedColorFor(producer.id).fill}
                     size={70}

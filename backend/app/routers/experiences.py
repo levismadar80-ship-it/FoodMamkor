@@ -30,6 +30,7 @@ from app.auth import (
     require_verified_producer,
 )
 from app.database import get_db
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import is_business, is_business_row  # MEH-2459
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
@@ -46,9 +47,11 @@ from app.schemas.schemas import (
 from app.services import billing_ledger  # MEH-3179
 from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
+from app.services import course_meetings as course_svc  # MEH-3898
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.services.booking_cancellations import (  # MEH-3227
     after_item_edit,
+    notify_course_changed,
     cancel_item_signups,
     cancel_session_signups,
     is_test_item,
@@ -122,6 +125,13 @@ def _sessions_out(ex: Experience, *, owner: bool = False) -> list[dict[str, Any]
     return sessions_svc.public_list(session, ex, owner=owner)
 
 
+def _host_image(host: User | None) -> str | None:
+    producer = host.producer if host is not None else None
+    if producer is None or not is_business_row(producer):
+        return None
+    return first_image(producer.images)
+
+
 def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
     """Public shape — no private fields (address, moderation context).
     `registered` (MEH-2763) comes from one grouped query on list routes; a
@@ -150,6 +160,7 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
             else _compute_spots_left(ex, registered)
         ),
         "sessions": _sessions_out(ex),
+        "course_meetings": course_svc.meetings_out(ex.course_meetings),  # type: ignore[arg-type]  # MEH-3898
         "registration_method": ex.registration_method or "site_form",
         "registration_url": ex.registration_url,
         "price_per_person": ex.price_per_person,
@@ -157,6 +168,10 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
         "recurring_schedule": ex.recurring_schedule,
         "status": ex.status,
         "host": _serialize_host(ex.host),
+        # MEH-3894: the host business's photo — the row / card / page falls
+        # back to it when the experience has no image of its own, the same
+        # rule events have had since MEH-2546. Only for a public business.
+        "owner_image_url": _host_image(ex.host),
         "created_at": ex.created_at,
     }
 
@@ -512,14 +527,22 @@ def submit_experience_for(
         .count(),
         "experiences",
     )
+    # MEH-3898: a course signs up once, against its first meeting.
+    meetings = course_svc.normalise_meetings(
+        [m.model_dump() for m in data.course_meetings or []], None
+    )
+    course_svc.refuse_with_recurring(meetings is not None, data.is_recurring)
+    start_date, start_time = (
+        course_svc.first(meetings) if meetings else (data.event_date, data.event_time)
+    )
     ex = Experience(
         title=data.title.strip(),
         description=data.description.strip(),
         image_url=data.image_url,
         category=data.category,
         host_user_id=host.id,
-        event_date=data.event_date,
-        event_time=data.event_time,
+        event_date=start_date,
+        event_time=start_time,
         duration_minutes=data.duration_minutes,
         location_type=data.location_type,
         city=data.city,
@@ -541,6 +564,7 @@ def submit_experience_for(
             if data.is_recurring and data.sessions
             else None
         ),
+        course_meetings=meetings,
         registration_method=data.registration_method,
         registration_url=data.registration_url,
         status="pending",
@@ -645,6 +669,33 @@ def _sessions_edit(ex: Experience, payload: dict[str, Any]) -> list[Any]:
     return sessions_svc.removed(ex.sessions, new)  # type: ignore[arg-type]
 
 
+def _course_edit(ex: Experience, payload: dict[str, Any]) -> None:
+    """MEH-3898: normalise the course meetings in `payload` in place (422 on
+    a past new meeting, a duplicate, fewer than 2 or more than 20, or a
+    course that is also recurring), and keep event_date / event_time on the
+    first meeting, so sign-ups close when it starts. Mutates `payload`."""
+    if "course_meetings" in payload and payload["course_meetings"] is None:
+        payload.pop("course_meetings")  # null = unchanged; [] ends the course
+    if "course_meetings" in payload:
+        payload["course_meetings"] = course_svc.normalise_meetings(
+            payload["course_meetings"] or [],
+            ex.course_meetings,  # type: ignore[arg-type]
+        )
+    meetings = payload.get("course_meetings", ex.course_meetings)
+    course_svc.refuse_with_recurring(
+        bool(meetings), payload.get("is_recurring", ex.is_recurring)
+    )
+    if not meetings:
+        return
+    d, t = course_svc.first(meetings)
+    stored: tuple[Any, Any] = (ex.event_date, ex.event_time)
+    if (d, t) != stored:
+        payload["event_date"], payload["event_time"] = d, t
+    else:  # unchanged: a date sent with it is ignored, never a "move"
+        payload.pop("event_date", None)
+        payload.pop("event_time", None)
+
+
 def _experience_for_edit(
     db: Session, experience_id: UUID, data: ExperienceUpdate
 ) -> Experience | None:
@@ -697,6 +748,7 @@ def update_experience_row(
     # experience to pending, which takes its public page down.
     was_public = _is_public(ex)
     payload = data.model_dump(exclude_unset=True)
+    _course_edit(ex, payload)  # MEH-3898: before the date rules read it
     # MEH-3224 (D6): same rule as events.update_event.
     refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
     assert_own_new_images(actor, payload.get("image_url"), ex.image_url)  # MEH-3247
@@ -732,12 +784,21 @@ def update_experience_row(
     )
     gone = _sessions_edit(ex, payload)  # MEH-3441
     before = item_state(ex)
+    old_meetings = ex.course_meetings  # MEH-3898
     for field, value in payload.items():
         setattr(ex, field, value)
     # MEH-3441: a removed date's sign-ups are cancelled and mailed.
     cancel_session_signups(db, ex, gone, background_tasks, is_test_item(ex))
     # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
-    after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
+    if not after_item_edit(db, ex, before, background_tasks, is_test_item(ex)):
+        # MEH-3898: a later meeting of a course changed → registrants told.
+        notify_course_changed(
+            db,
+            ex,
+            old_meetings,  # type: ignore[arg-type]
+            background_tasks,
+            is_test_item(ex),
+        )
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
     # the cap — the dashboard clamps, and a direct PUT is clamped the same way.

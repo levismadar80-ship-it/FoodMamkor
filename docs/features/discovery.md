@@ -25,6 +25,7 @@
 
 **טסטים**
 * `frontend/e2e/flows/02-search-producer.spec.ts` · `frontend/e2e/flows/16-producers-browse.spec.ts` · `frontend/e2e/flows/17-producers-search.spec.ts`
+* `frontend/e2e/flows/53-producers-footer-after-list.spec.ts` — בגלילה אינסופית הפוטר נשאר מחוץ למסך עד שהעמוד האחרון הגיע, והעמוד הבא לא מזיז שום דבר שנראה (MEH-3874).
 * `frontend/e2e/flows/manual/producers.spec.ts` · `frontend/e2e/flows/manual/home-01.spec.ts` · `frontend/e2e/flows/manual/home-02.spec.ts` · `frontend/e2e/flows/manual/home-03.spec.ts` (fixtures: `frontend/e2e/flows/manual/_home-shared.ts`)
 * `frontend/e2e/flows/26-delivery-checker.spec.ts` · `frontend/e2e/flows/27-delivery-day-discoverability.spec.ts`
 * `frontend/__tests__/HomeGridRefetchKeepsResults.test.jsx` · `frontend/__tests__/HomeRegionFallbackOneCommit.test.jsx` — שינוי סינון בעמוד הבית לא מכווץ את הרשת (MEH-3821).

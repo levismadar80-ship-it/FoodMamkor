@@ -22,6 +22,7 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o{ share_links : "short preview / claim links (MEH-3896)"
     producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
@@ -303,6 +304,16 @@ erDiagram
         timestamp created_at "deleted after 30 days"
     }
 
+    share_links {
+        uuid id PK
+        string code_hash UK "sha256 of the 12-char code, never the code (MEH-3896)"
+        string scope "draft_preview or producer_claim (CHECK)"
+        uuid producer_id FK "CASCADE"
+        timestamp expires_at "14 days; deleted 90 days after"
+        timestamp created_at
+        uuid created_by FK "nullable, SET NULL"
+    }
+
     product_order_items {
         uuid id PK
         uuid order_id FK "CASCADE"
@@ -567,6 +578,7 @@ erDiagram
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
         jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
+        jsonb course_meetings "MEH-3898 course meetings [{date,time}], one sign-up; NULL = not a course"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"

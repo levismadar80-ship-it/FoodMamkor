@@ -32,8 +32,8 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 
 בעמוד העריכה של טיוטה מופיע הפאנל **«קישור הזמנה לבעלת העסק»**
 (`components/admin/ClaimLinkPanel.jsx`, שמציג את `components/admin/AdminLinkPanel.jsx` — אותו פאנל כמו «קישור תצוגה מקדימה», MEH-3464): «יצירת קישור» → `POST
-/admin/producers/{id}/claim-link` → קישור `/claim/<token>` לתוקף 14 יום + כפתור
-העתקה. כל לחיצה מנפיקה טוקן חדש (stateless, בלי כתיבה ל-DB). טיוטה שכבר שויכה
+/admin/producers/{id}/claim-link` → קישור קצר `/c/<12 תווים>` לתוקף 14 יום + כפתור
+העתקה (MEH-3896; עד אז `/claim/<JWT>`, שממשיך לעבוד עד שפג תוקפו). כל לחיצה מנפיקה קוד חדש, שנשמר רק כ-hash בטבלה `share_links`. טיוטה שכבר שויכה
 עדיין מציגה את הפאנל — השרת עונה 409 וההודעה שלו מוצגת כמו שהיא.
 כשבעלת העסק קולטת את הטיוטה, נשלח לאדמין מייל (בלי וואטסאפ מאז MEH-3589): מי קלטה, איזה עסק, העיר וקישור ל-`/admin/producers` (MEH-3410, `notify_admin_draft_claimed` ב-`backend/app/services/auth_notifications.py`).
 
@@ -41,7 +41,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 
 **קישור תצוגה מקדימה + פרסום בהסכמה (MEH-3377).** בעמוד העריכה של טיוטה **בלי בעלים**
 מופיעים שני פאנלים נוספים. **«קישור תצוגה מקדימה»** (`components/admin/DraftPreviewLinkPanel.jsx`):
-«יצירת קישור» → `POST /admin/producers/{id}/preview-link` → קישור `/draft-preview/<token>` לתוקף 14 יום.
+«יצירת קישור» → `POST /admin/producers/{id}/preview-link` → קישור קצר `/v/<12 תווים>` לתוקף 14 יום (MEH-3896; הקישורים הישנים `/draft-preview/<JWT>` ממשיכים לעבוד עד שפג תוקפם).
 מי שפותח אותו רואה את העמוד כמו שייראה באתר, עם פס שמסביר שהוא עוד לא פורסם. הקישור לקריאה בלבד: אי אפשר
 לקלוט דרכו את העמוד, והוא מפסיק לעבוד כשהטיוטה מתפרסמת, נקלטת או נמחקת. ממנו מצלמים את הסרטון
 (`node scripts/capture-page-video.mjs <url> <name>` מתוך `frontend/`). **«פרסום בהסכמה»**
@@ -379,7 +379,8 @@ npx playwright test             # E2E
   מתחת ל-md כל שורה = כרטיס, כל תא «תווית: ערך» מ-`data-label`, תא הפעולות
   (`data-cell="actions"`) ברוחב מלא. טבלה חדשה בלי זה — `AdminTablesStackGuard.test.js`
   אדום. החריג היחיד: `AdminProducersTable` (מסתירה עמודות, MEH-2070). בנייד ה-strip
-  העליון גולל את הטאב הפעיל לתוך המסך.
+  העליון גולל את הטאב הפעיל לתוך המסך. ה-`nav` עצמו הוא הגולל, והגלילה רצה ב-layout
+  effect, כך שכבר הציור הראשון מראה את הטאב הפעיל והפס לא קופץ הצידה (MEH-3870).
 
 ## Trust Ladder — MEH-51 (April 2026)
 

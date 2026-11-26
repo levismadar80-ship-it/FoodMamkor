@@ -15,7 +15,9 @@
  *           reloads it through `onPublished` (ProductsSection's reloadKey).
  * Related:  backend/app/routers/menu_import.py · components/MenuReviewRow.jsx ·
  *           lib/menu-image.js.
- * History:  MEH-3430 (creation).
+ * History:  MEH-3430 (creation); MEH-3902 (`initialRows`: the dashboard
+ *           assistant hands rows it read from the owner's chat text straight
+ *           to the same review).
  */
 
 import { useRef, useState } from "react";
@@ -96,14 +98,19 @@ async function buildForm(files) {
  * `hidden`: a product form is open. The entry point steps aside, but a read or
  * review in progress stays — closing it would drop rows the owner paid a read
  * for (review 18/11).
- * @param {{ productCount: number, onPublished: () => void, hidden?: boolean }} props
+ * `initialRows`: rows already read (MenuRow shape) — open in review.
+ * @param {{ productCount: number, onPublished: () => void, hidden?: boolean, initialRows?: any[] | null }} props
  */
-export default function MenuImport({ productCount, onPublished, hidden = false }) {
+export default function MenuImport({ productCount, onPublished, hidden = false, initialRows = null }) {
   const t = useTranslations("settings.products.menu_import");
   const tp = useTranslations("settings.products");
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
-  const [phase, setPhase] = useState(/** @type {"idle"|"reading"|"review"|"publishing"} */ ("idle"));
-  const [rows, setRows] = useState(/** @type {import("./MenuReviewRow").MenuDraftRow[]} */ ([]));
+  const [phase, setPhase] = useState(
+    /** @type {"idle"|"reading"|"review"|"publishing"} */ (initialRows?.length ? "review" : "idle"),
+  );
+  const [rows, setRows] = useState(
+    /** @type {import("./MenuReviewRow").MenuDraftRow[]} */ ((initialRows ?? []).map(toDraft)),
+  );
   const [error, setError] = useState("");
 
   const onFiles = async (/** @type {FileList | null} */ list) => {

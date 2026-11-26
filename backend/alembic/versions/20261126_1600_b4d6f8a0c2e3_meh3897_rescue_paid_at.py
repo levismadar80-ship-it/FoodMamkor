@@ -1,7 +1,7 @@
 """meh3897_rescue_paid_at
 
 Revision ID: b4d6f8a0c2e3
-Revises: c6e8a0b2d4f5
+Revises: a9c3e5f7b1d2
 Create Date: 2026-11-26 16:00:00.000000+00:00
 
 MEH-3897, EXPAND only: one nullable column, nothing existing is touched.
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "b4d6f8a0c2e3"
-down_revision = "c6e8a0b2d4f5"
+down_revision = "a9c3e5f7b1d2"
 branch_labels = None
 depends_on = None
 

@@ -187,6 +187,7 @@ experiences.registration_url	business	an experience or workshop a host publishes
 experiences.rejection_reason	business	an experience or workshop a host publishes
 experiences.requirements	business	an experience or workshop a host publishes
 experiences.sessions	business	an experience or workshop a host publishes
+experiences.course_meetings	business	an experience or workshop a host publishes
 experiences.status	business	an experience or workshop a host publishes
 experiences.title	business	an experience or workshop a host publishes
 experiences.updated_at	business	an experience or workshop a host publishes
@@ -828,3 +829,10 @@ group_buy_commits.pickup_code	orders	a user joining a group buy; the only thing 
 group_buy_commits.handed_at	orders	when the business marked a group-buy order collected
 group_buy_commits.no_show_at	orders	when the business marked a group-buy order not collected
 users.group_buy_block_cleared_at	orders	when a group-buy no-show block was lifted
+share_links.code_hash	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+share_links.created_at	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+share_links.created_by	not-personal	the admin account that made the short link (the founder's own account, never a customer or a business owner); SET NULL when that account goes (MEH-3896)
+share_links.expires_at	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+share_links.id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+share_links.producer_id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+share_links.scope	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)

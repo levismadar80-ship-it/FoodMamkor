@@ -179,6 +179,22 @@ class ExperienceSessionOut(BaseModel):
     registered: int | None
 
 
+class CourseMeetingIn(BaseModel):
+    """MEH-3898: one meeting of a course, as the owner's form sends it. The
+    future, uniqueness and 2..20 are checked on save
+    (services/course_meetings.normalise_meetings)."""
+
+    date: _dt.date
+    time: _dt.time
+
+
+class CourseMeetingOut(BaseModel):
+    """MEH-3898: one meeting of a course, as the page shows it."""
+
+    date: _dt.date
+    time: str  # "HH:MM"
+
+
 class ExperienceCreate(BaseModel):
     title: str = Field(..., min_length=4, max_length=300)
     description: str = Field(..., min_length=20)
@@ -218,6 +234,9 @@ class ExperienceCreate(BaseModel):
     # MEH-3441: a recurring workshop's dates. max_length bounds the body
     # (MEH-3022); the rule of 12 upcoming is checked against what is stored.
     sessions: list[ExperienceSessionIn] | None = Field(None, max_length=24)
+    # MEH-3898: a course's meetings (one sign-up for all). max_length bounds
+    # the body (MEH-3022); 2..20 and the future are checked on save.
+    course_meetings: list[CourseMeetingIn] | None = Field(None, max_length=40)
     # MEH-2763: «איך נרשמים?» — the router checks the method's prerequisite
     # (a mobile for whatsapp, a phone for phone, a URL for external_url).
     registration_method: RegistrationMethod = "site_form"
@@ -299,6 +318,9 @@ class ExperienceUpdate(BaseModel):
     # MEH-3441: a recurring workshop's dates. max_length bounds the body
     # (MEH-3022); the rule of 12 upcoming is checked against what is stored.
     sessions: list[ExperienceSessionIn] | None = Field(None, max_length=24)
+    # MEH-3898: a course's meetings (one sign-up for all). max_length bounds
+    # the body (MEH-3022); 2..20 and the future are checked on save.
+    course_meetings: list[CourseMeetingIn] | None = Field(None, max_length=40)
     is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
     # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
     # Bookkeeping, not content — the router keeps it out of moderation.
@@ -425,8 +447,12 @@ class ExperienceListOut(BaseModel):
     recurring_schedule: str | None = None
     # MEH-3441: upcoming dates with places left; [] = no dates (one pool).
     sessions: list[ExperienceSessionOut] = []
+    # MEH-3898: a course's meetings, soonest first; [] = not a course.
+    course_meetings: list[CourseMeetingOut] = []
     status: str
     host: ExperienceHostOut | None = None
+    # MEH-3894: the host business's first photo (fallback for image_url).
+    owner_image_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
