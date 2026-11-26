@@ -78,3 +78,17 @@ export function paymentAnswer(info) {
 export function groupBuyAwaitsPayment(status) {
   return status === "funded";
 }
+
+/**
+ * MEH-3895: what the group-buy member card gets as its `prepay` prop — the
+ * business's link and timing once the group is funded, else null (no button,
+ * «לא משלמים עכשיו» stays).
+ * @param {{ status?: string } | null | undefined} gb
+ * @param {any} paymentInfo the business's payment_info
+ * @returns {{ link: string, timing: string | null } | null}
+ */
+export function groupBuyPrepay(gb, paymentInfo) {
+  if (!groupBuyAwaitsPayment(gb?.status)) return null;
+  const link = prepayLink(paymentInfo);
+  return link ? { link, timing: paymentInfo?.timing ?? null } : null;
+}

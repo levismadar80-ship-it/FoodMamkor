@@ -58,6 +58,7 @@ def test_no_link_keeps_the_old_shape():
         "https://user:pw@evil.example/x",  # shows one host, opens another
         "https://good.co.il\\@evil.example/x",  # a browser reads \\ as /
         "https://good.co.il:abc/x",  # a port that is not a number
+        "https://[::1/x",  # a malformed IPv6 host: urlsplit itself raises
         "https://good.co.il/\x00x",  # a control character
         "https://www.bitpay.co.il/a b",  # whitespace
         "https://localhost/pay",  # no dot in the host
@@ -66,8 +67,10 @@ def test_no_link_keeps_the_old_shape():
     ],
 )
 def test_a_bad_link_is_refused(bad):
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         _upd({"timing": "advance", "link": bad})
+    # The 422 detail a business sees stays Hebrew, whatever urlsplit says.
+    assert any("\u0590" <= c <= "\u05ff" for c in str(e.value)), str(e.value)
 
 
 def test_the_buyer_sees_it_only_when_paying_before_pickup():

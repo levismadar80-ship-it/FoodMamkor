@@ -43,9 +43,11 @@ def payment_link(raw: Any) -> str | None:
         raise ValueError(f"הקישור לתשלום ארוך מדי (עד {PAYMENT_LINK_MAX} תווים)")
     if any(c.isspace() for c in link) or not link.isprintable() or "\\" in link:
         raise ValueError("בקישור לתשלום אסור שיהיו רווחים או תווים מיוחדים")
-    parts = urlsplit(link)
     try:
-        parts.port  # noqa: B018 — raises on a port that is not a number
+        # urlsplit raises on a malformed IPv6 host ("https://[::1/x"), .port
+        # on a port that is not a number; both keep the Hebrew detail.
+        parts = urlsplit(link)
+        parts.port  # noqa: B018
     except ValueError:
         raise ValueError("הקישור לתשלום לא תקין") from None
     if parts.scheme.lower() != "https" or not parts.hostname or "." not in parts.hostname:

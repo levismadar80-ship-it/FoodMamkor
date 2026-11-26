@@ -13,7 +13,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { renderHe as render } from "./helpers/render-with-he";
 import he from "../messages/he.json";
 import { israelToday } from "@/lib/israel-date";
-import { prepayLink, linkHost, serializePaymentInfo, paymentStateFrom, groupBuyAwaitsPayment } from "@/lib/payment-info";
+import { prepayLink, linkHost, serializePaymentInfo, paymentStateFrom, groupBuyAwaitsPayment, groupBuyPrepay } from "@/lib/payment-info";
 
 vi.mock("@/lib/api", () => ({ default: { put: vi.fn(() => Promise.resolve({})) } }));
 
@@ -70,6 +70,14 @@ describe("lib rule", () => {
     expect(groupBuyAwaitsPayment("funded")).toBe(true); // also after the deadline: pickup follows
     expect(groupBuyAwaitsPayment("fulfilled")).toBe(false);
     expect(groupBuyAwaitsPayment("cancelled")).toBe(false);
+  });
+
+  it("group buy: the card's prop — the page passes exactly this", () => {
+    const info = { timing: "advance", link: BIT };
+    expect(groupBuyPrepay({ status: "open" }, info)).toBeNull(); // a link, but the group can still fail
+    expect(groupBuyPrepay({ status: "funded" }, info)).toEqual({ link: BIT, timing: "advance" });
+    expect(groupBuyPrepay({ status: "funded" }, { timing: "on_pickup", link: BIT })).toBeNull();
+    expect(groupBuyPrepay(null, info)).toBeNull();
   });
 });
 

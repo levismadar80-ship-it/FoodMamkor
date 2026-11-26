@@ -5953,7 +5953,7 @@
         "revert_cta": "Discard changes",
         "summary_empty": "Not set",
         "link_label": "Prepayment link (optional)",
-        "link_help": "A link from Bit, PayBox or your own clearing. Customers see it after they reserve a surprise bag, and in a group buy only once the group has succeeded. The money comes straight to you, and customers write their pickup code in the payment note."
+        "link_help": "A link from Bit, PayBox or your own clearing. Customers see it after they reserve a surprise bag, and in a group buy only once the group has reached its minimum. The money comes straight to you, and customers write their pickup code in the payment note."
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
