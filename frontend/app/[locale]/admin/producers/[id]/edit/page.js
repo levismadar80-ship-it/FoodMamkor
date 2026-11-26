@@ -275,6 +275,7 @@ export default function EditProducerPage() {
         initial={producer}
         producerId={id}
         unsavedSections={unsavedSections}
+        reportDirty={reportDirty}
       />
       {/* MEH-3475: delivery day + minimum per city, order window, payment —
           the owner's own editors, saved through the admin PUT. */}

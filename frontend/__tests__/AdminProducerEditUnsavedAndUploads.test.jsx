@@ -3,7 +3,8 @@
  *
  * 1. «שמרו שינויים» saved only ProducerForm's own fields and left the page, so
  *    a delivery fee typed into «משלוחים ואיסוף» (its own «שמירה») was thrown
- *    away unseen. Cells: 0 unsaved sections → saves · 1 → held, named · many →
+ *    away unseen; the same for a location typed in the locations editor and
+ *    not saved. Cells: 0 unsaved sections → saves · 1 → held, named · many →
  *    held, all named · section saved → the hold lifts.
  * 2. A gallery batch whose 2nd photo got 429 dropped the 1st one too, and the
  *    only sign was a passing toast. Cells: 1 ok + 1 limited → the ok one stays,
@@ -48,7 +49,12 @@ function Page() {
   const { reportDirty, unsavedSections } = useUnsavedSections();
   return (
     <>
-      <ProducerForm initial={PRODUCER} producerId="p-1" unsavedSections={unsavedSections} />
+      <ProducerForm
+        initial={PRODUCER}
+        producerId="p-1"
+        unsavedSections={unsavedSections}
+        reportDirty={reportDirty}
+      />
       <AdminDeliveryPaymentPanel producerId="p-1" producer={PRODUCER} reportDirty={reportDirty} />
     </>
   );
@@ -122,6 +128,24 @@ describe("unsaved sections hold «שמרו שינויים» (MEH-3915)", () => {
     expect(formPuts()).toHaveLength(0);
   });
 
+  it("a new location typed but not saved holds the save; «ביטול» lifts it", async () => {
+    mount(<Page />);
+    await screen.findByText(FORM.sections.basic);
+    fireEvent.click(await screen.findByText(he.settings.locations.empty_cta));
+    fireEvent.change(screen.getByPlaceholderText(he.settings.locations.form.label_placeholder), {
+      target: { value: "הדוכן בשוק" },
+    });
+    submit();
+    const msg = await screen.findByTestId("unsaved-sections-error");
+    expect(msg).toHaveTextContent(he.settings.locations.section_heading);
+    expect(msg).not.toHaveTextContent(P.delivery.heading);
+    expect(formPuts()).toHaveLength(0);
+    fireEvent.click(within(screen.getByTestId("admin-locations-editor")).getAllByRole("button", { name: he.settings.locations.cancel_cta })[0]);
+    await waitFor(() => expect(screen.queryByTestId("unsaved-sections-error")).not.toBeInTheDocument());
+    submit();
+    await waitFor(() => expect(formPuts()).toHaveLength(1));
+  });
+
   it("leaving the page asks first only while a section is unsaved", async () => {
     mount(<Page />);
     await screen.findByText(FORM.sections.basic);
@@ -152,7 +176,7 @@ describe("gallery upload failures surface and keep what uploaded (MEH-3915)", ()
     pick(3);
     const msg = await screen.findByTestId("gallery-upload-error");
     // Photos 2 and 3: the limit answers every file after the first refusal.
-    expect(msg).toHaveTextContent(`2 מתוך 3`);
+    expect(msg).toHaveTextContent("שתי תמונות מתוך 3 לא הועלו");
     expect(msg).toHaveTextContent(he.error.mapper.rate_limited);
     expect(api.post).toHaveBeenCalledTimes(2);
     submit();

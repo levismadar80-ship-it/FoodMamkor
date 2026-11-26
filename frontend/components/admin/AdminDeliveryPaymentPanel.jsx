@@ -27,7 +27,7 @@ import PaymentInfoEditor from "@/app/[locale]/producer/dashboard/edit/PaymentInf
  * (The editors' own keys: DeliveryCard "delivery", OrderWindowEditor
  * "orderWindow", PaymentInfoEditor "paymentInfo".)
  */
-export const SECTION_TITLE_KEYS = {
+const SECTION_TITLE_KEYS = {
   delivery: "delivery.heading",
   orderWindow: "order_window.heading",
   paymentInfo: "payment_info.heading",
@@ -36,8 +36,8 @@ export const SECTION_TITLE_KEYS = {
 const noop = () => {};
 
 /**
- * MEH-3915: the edit page's record of which of these sections hold unsaved
- * edits. Pass `reportDirty` to the panel; `unsavedSections` (the headings)
+ * MEH-3915: the edit page's record of which of these sections, and the
+ * locations editor, hold unsaved edits. Pass `reportDirty` to the panel; `unsavedSections` (the headings)
  * holds ProducerForm's save and PageFillPanel's (whose save remounts the
  * panel); leaving the page asks first, as on the owner's dashboard.
  */
@@ -50,9 +50,15 @@ export function useUnsavedSections() {
       setDirty((d) => (!!d[key] === isDirty ? d : { ...d, [key]: isDirty })),
     [],
   );
-  const unsavedSections = Object.entries(SECTION_TITLE_KEYS)
-    .filter(([key]) => dirty[key])
-    .map(([, titleKey]) => t(titleKey));
+  // The locations editor (inside ProducerForm, saves per location) reports
+  // "locations" the same way; it comes first, as on the page.
+  const tLoc = useTranslations("settings.locations");
+  /** @type {[string, string][]} */
+  const titles = [
+    ["locations", tLoc("section_heading")],
+    ...Object.entries(SECTION_TITLE_KEYS).map(([key, titleKey]) => /** @type {[string, string]} */ ([key, t(titleKey)])),
+  ];
+  const unsavedSections = titles.filter(([key]) => dirty[key]).map(([, title]) => title);
   useUnsavedGuard(unsavedSections.length > 0, t("unsaved_guard.confirm"));
   return { reportDirty, unsavedSections };
 }

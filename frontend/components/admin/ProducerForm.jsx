@@ -317,11 +317,13 @@ function Field({ label, children, full = false }) {
 }
 
 /**
- * @param {{ initial?: any, producerId?: any, unsavedSections?: string[] }} props
+ * @param {{ initial?: any, producerId?: any, unsavedSections?: string[],
+ *   reportDirty?: (key: string, dirty: boolean) => void }} props
  *   unsavedSections — MEH-3915: titles of the edit page's sections that have
  *   their own save and hold unsaved edits; while any does, the save waits.
+ *   reportDirty — handed to the locations editor below, which is one of them.
  */
-export default function ProducerForm({ initial = null, producerId = null, unsavedSections = [] }) {
+export default function ProducerForm({ initial = null, producerId = null, unsavedSections = [], reportDirty = undefined }) {
   // MEH-3861: the first date a picker allows, the same in both renders.
   const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
@@ -1395,7 +1397,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
     {producerId && (
       <div className="mt-6 max-w-4xl" data-testid="admin-locations-editor">
         <Section title={t("producers.form.sections.delivery_pickup")}>
-          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} />
+          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} reportDirty={reportDirty} />
         </Section>
       </div>
     )}
