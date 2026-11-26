@@ -17,11 +17,11 @@ History:  MEH-3865 (creation). Rules approved by Sapir 25/11: one strong
           Instagram, website domain, Facebook) is enough; a name signal
           (same name, or one name inside the other) counts only in the same
           city; a city or a category alone never matches.
+          MEH-3884: the key functions moved to services/business_identity.py.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
@@ -29,15 +29,25 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models import Producer, User
+
+# MEH-3884: the keys and the strong reason codes live in business_identity
+# (shared with the signup check); re-exported here for existing callers.
+from app.services.business_identity import (  # noqa: F401 — re-exports
+    EMAIL,
+    FACEBOOK,
+    INSTAGRAM,
+    PHONE,
+    WEBSITE,
+    email_key,
+    facebook_key,
+    instagram_key,
+    real_phone,
+    website_key,
+)
 from app.services.business_name_key import name_key
 from app.services.producer_duplicates import phone_key
 
-# Reason codes, strongest first. The admin UI renders each as a short label.
-PHONE = "phone"
-EMAIL = "email"
-INSTAGRAM = "instagram"
-WEBSITE = "website"
-FACEBOOK = "facebook"
+# Reason codes of the name rule (the strong ones are imported above).
 NAME_CITY = "name_city"
 NAME_CONTAINS_CITY = "name_contains_city"
 
@@ -48,123 +58,6 @@ OWNED_STATUSES = ("draft", "pending")
 # A name inside another counts only when the shorter one is a real name:
 # «מאפיית ארז» inside «מאפיית ארז וליאת», never «חלה» inside «חלה של שבת».
 _MIN_CONTAINED_WORDS = 2
-
-_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://")
-# A link on a shared host is not a website of its own.
-_SHARED_HOSTS = frozenset(
-    {
-        "instagram.com",
-        "facebook.com",
-        "fb.com",
-        "linktr.ee",
-        "wa.me",
-        "api.whatsapp.com",
-        "tiktok.com",
-        "google.com",
-        "goo.gl",
-        "maps.app.goo.gl",
-        "sites.google.com",
-        "docs.google.com",
-        "forms.gle",
-        "bit.ly",
-        "tinyurl.com",
-        "wa.link",
-        "t.me",
-        "taplink.cc",
-        "linkin.bio",
-        "lnk.bio",
-        "beacons.ai",
-        "youtube.com",
-        "youtu.be",
-        "vm.tiktok.com",
-        "m.facebook.com",
-        "wolt.com",
-    }
-)
-# A first path segment that is not an account: a post, a reel, a share link.
-_INSTAGRAM_RESERVED = frozenset({"p", "reel", "reels", "tv", "explore", "stories", "s"})
-# Facebook paths whose account is in the NEXT segment (or, for profile.php, in ?id=).
-_FACEBOOK_NESTED = frozenset({"pages", "groups", "people", "pg"})
-_FACEBOOK_RESERVED = frozenset(
-    {
-        "share",
-        "sharer",
-        "sharer.php",
-        "watch",
-        "events",
-        "photo",
-        "story.php",
-        "permalink.php",
-    }
-)
-# A dummy number typed to get past a required field («050-0000000»): at most
-# two distinct digits never identifies a business.
-_MIN_PHONE_DIGITS_DISTINCT = 3
-
-
-def instagram_key(value: str | None) -> str | None:
-    """`@Erez.Bakery`, `instagram.com/erez.bakery/` and the full URL → `erez.bakery`."""
-    v = (value or "").strip().lower()
-    v = _SCHEME.sub("", v)
-    v = v.split("?", 1)[0].split("#", 1)[0]
-    for prefix in ("www.instagram.com/", "instagram.com/", "m.instagram.com/"):
-        if v.startswith(prefix):
-            v = v[len(prefix) :]
-            break
-    v = v.strip("/").lstrip("@")
-    v = v.split("/", 1)[0]
-    if v in _INSTAGRAM_RESERVED:
-        return None
-    return v or None
-
-
-def website_key(value: str | None) -> str | None:
-    """The host without `www.`: `https://www.Erez.co.il/shop` → `erez.co.il`.
-
-    A link to a shared host (an Instagram, Facebook or Linktree page) is not a
-    website of its own and never matches on the host alone.
-    """
-    v = (value or "").strip().lower()
-    v = _SCHEME.sub("", v)
-    host = v.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0].split(":", 1)[0]
-    host = host.removeprefix("www.")
-    if "." not in host or host in _SHARED_HOSTS:
-        return None
-    return host
-
-
-def facebook_key(value: str | None) -> str | None:
-    """`https://www.facebook.com/ErezBakery/` → `erezbakery`.
-
-    `profile.php?id=1` → `id:1`; `pages/Name/123` → `name`. A share or post
-    link names no account and never matches.
-    """
-    v = (value or "").strip().lower()
-    v = _SCHEME.sub("", v)
-    for prefix in ("www.facebook.com/", "facebook.com/", "m.facebook.com/", "fb.com/"):
-        if v.startswith(prefix):
-            v = v[len(prefix) :]
-            break
-    else:
-        return None
-    path, _, query = v.partition("?")
-    path = path.split("#", 1)[0]
-    parts = [p for p in path.split("/") if p]
-    if not parts:
-        return None
-    if parts[0] == "profile.php":
-        ids = [q[3:] for q in query.split("&") if q.startswith("id=") and q[3:]]
-        return f"id:{ids[0]}" if ids else None
-    if parts[0] in _FACEBOOK_NESTED:
-        return parts[1] if len(parts) > 1 else None
-    if parts[0] in _FACEBOOK_RESERVED:
-        return None
-    return parts[0]
-
-
-def email_key(value: str | None) -> str | None:
-    v = (value or "").strip().lower()
-    return v if "@" in v else None
 
 
 def _name_words(value: str | None) -> list[str]:
@@ -192,13 +85,6 @@ def _name_reason(a: Any, b: Any) -> str | None:
     return None
 
 
-def _real_phone(value: str | None) -> str | None:
-    key = phone_key(value)
-    if key is None or len(set(key)) < _MIN_PHONE_DIGITS_DISTINCT:
-        return None
-    return key
-
-
 def _equal(a: str | None, b: str | None) -> bool:
     return a is not None and a == b
 
@@ -211,7 +97,7 @@ def twin_reasons(owned: Any, owner: Any | None, draft: Any) -> list[str]:
     works, so the rule can be tested without a database.
     """
     reasons: list[str] = []
-    draft_phone = _real_phone(draft.phone)
+    draft_phone = real_phone(draft.phone)
     owned_phones = {phone_key(owned.phone), phone_key(getattr(owner, "phone", None))}
     if draft_phone is not None and draft_phone in owned_phones:
         reasons.append(PHONE)
