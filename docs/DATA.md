@@ -1723,6 +1723,9 @@ PUT    /admin/experiences/{experience_id}         admin       the handlers call 
                                                               moderation as the owner's. The consent is recorded on the admin
                                                               audit row (`details.after.owner_consent = true`). Unknown
                                                               business / event / experience → 404. 60–120/hr.
+GET    /admin/producers/{producer_id}/experiences admin     — MEH-3876: every experience hosted by an account of the
+                                                              business (any status, cancelled too, newest first,
+                                                              ExperienceDetailOut); none when it has no account.
 GET    /admin/test-businesses                     admin     — MEH-2952 chunk 4: {producer_ids: [uuid]} of the businesses hidden as test rows
 PUT    /admin/test-businesses/{producer_id}       admin       («עסק בדיקה — מוסתר מהאתר»). PUT body {hidden: bool} (extra keys 422) →
                                                               {producer_id, hidden}. Writes producers.is_test only; status untouched,
@@ -1879,7 +1882,7 @@ its admin-override, so an admin still deletes (→ 200).
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
 GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419). Each row carries owner_image_url = the host business's first non-blank photo, or null for a host with no public business (MEH-3894; the row/card/page fallback for image_url, as events).
-GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
+GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3. 120/min, the budget of the other nav reads (the nav reads it on every page load, and CI runs from one IP).
 GET    /group-buys/counts               public  — {"open": N, "funded": N, "fulfilled": N} for ?city= (MEH-3128). Same `_status_tab_query` as GET /group-buys, so a tab's count and its list agree. Declared before /{group_buy_id}. 60/min. /group-buys hides a status tab whose count is 0 (the selected one stays; a failed count shows every tab).
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
