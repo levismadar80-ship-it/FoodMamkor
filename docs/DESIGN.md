@@ -635,6 +635,11 @@ count only go down. The owner table is `frontend/components/CLAUDE.md`.
   its owner's first photo (`owner_image_url`), the photo its card and list row
   already show (MEH-2546); the green band only when neither exists. The share
   preview (OG / Twitter) follows the same order.
+- **Event rows on the owner's own page (MEH-3892):** on the business page and
+  the organizer page a row without its own photo takes one of the owner's
+  gallery photos (`withOwnGallery`, `frontend/lib/event-entry.js`): the
+  non-cover photos first, in turn by date; the cover only when it is the only
+  one; the category tile only when there are none. No owner initial there.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single

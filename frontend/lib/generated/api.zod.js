@@ -5708,6 +5708,16 @@ export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.ob
 
 
 /**
+ * @summary Producer Identity Check
+ */
+export const ProducerIdentityCheckProducerIdentityCheckPostResponse = /*#__PURE__*/ zod.object({
+  "match": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "owner_email": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])
+}).check(/*#__PURE__*/ zod.describe('`owner_email` is masked (`o***@farmerim.com`); None = a page with no account.')),/*#__PURE__*/ zod.null()])
+})
+
+
+/**
  * Live businesses whose name equals `name` (exact, after `name_key`).
  *
  * Exact match only — DO NOT turn this into a prefix or substring match:

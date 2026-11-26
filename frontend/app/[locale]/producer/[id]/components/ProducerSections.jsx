@@ -748,6 +748,7 @@ export default function ProducerSections({
           reshaped under MEH #2659. */}
       <ProducerActivities
         producerId={producer.id}
+        images={producer.images}
         events={events}
         experiences={experiences}
         groupBuys={groupBuys}

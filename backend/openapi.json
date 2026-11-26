@@ -7256,6 +7256,65 @@
         "title": "HandedIn",
         "type": "object"
       },
+      "IdentityCheckIn": {
+        "description": "What the form has typed so far. A signed-in user's own account email\nand phone are added by the server; nothing else is read from the body.",
+        "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "title": "IdentityCheckIn",
+        "type": "object"
+      },
+      "IdentityCheckMatch": {
+        "description": "`owner_email` is masked (`o***@farmerim.com`); None = a page with no account.",
+        "properties": {
+          "owner_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Email"
+          }
+        },
+        "required": [
+          "owner_email"
+        ],
+        "title": "IdentityCheckMatch",
+        "type": "object"
+      },
+      "IdentityCheckOut": {
+        "properties": {
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityCheckMatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "match"
+        ],
+        "title": "IdentityCheckOut",
+        "type": "object"
+      },
       "KashrutApproveIn": {
         "properties": {
           "expires_on": {
@@ -33989,6 +34048,52 @@
         "summary": "Preview Claim",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/producer-identity-check": {
+      "post": {
+        "operationId": "producer_identity_check_producer_identity_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Producer Identity Check",
+        "tags": [
+          "producers"
         ]
       }
     },
