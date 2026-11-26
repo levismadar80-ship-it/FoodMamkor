@@ -50,7 +50,8 @@ export default function useDuplicateSource(kind) {
         // schedule text on purpose: a weekly workshop repeats as a weekly one.
         // MEH-3447: its listed dates are dates too, and carry the source's
         // sign-up counts — a copy starts with none.
-        done(row ? { ...row, id: undefined, event_date: "", sessions: [] } : null);
+        // MEH-3898: a course's meetings are dates too — a copy picks its own.
+        done(row ? { ...row, id: undefined, event_date: "", sessions: [], course_meetings: [] } : null);
       })
       .catch(() => done(null));
     return () => {

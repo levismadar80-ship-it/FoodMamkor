@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-97 send sites · 94 on a single channel.
+98 send sites · 95 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -94,6 +94,7 @@
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_owner_cancellation` | מייל | בעלת העסק |
 | `services/registration_emails.py` | `send_owner_new_registration` | מייל | בעלת העסק |
+| `services/registration_emails.py` | `send_registrant_course_changed` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registrant_moved` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registration_reminder` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_visitor_confirmation` | מייל | לקוחה |

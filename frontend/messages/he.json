@@ -3358,7 +3358,8 @@
       "organizer_line": "מארגן: {name}",
       "tab_experiences_short": "חוויות",
       "tab_group_buys": "קבוצות רכישה",
-      "tab_rescue": "סלי הפתעה"
+      "tab_rescue": "סלי הפתעה",
+      "course_meetings": "קורס · {count} מפגשים"
     },
     "categories": {
       "all": "הכל",
@@ -3480,7 +3481,9 @@
       "duration_mixed": "{hours} ו-{minutes} דקות",
       "recurring": "מתקיימת באופן קבוע: {schedule}",
       "recurring_bare": "מתקיימת באופן קבוע",
-      "starts_from": "החל מ-{date}"
+      "starts_from": "החל מ-{date}",
+      "course_meeting": "מפגש {n}",
+      "course_starts": "הקורס מתחיל ב{date}"
     },
     "new": {
       "crumb_current": "חוויה חדשה",
@@ -3544,7 +3547,14 @@
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
       "error_whole_number": "יש להזין מספר שלם",
       "error_image_upload": "העלאת התמונה נכשלה. נסו שוב.",
-      "save_cta": "שמירה"
+      "save_cta": "שמירה",
+      "is_course": "קורס עם כמה מפגשים (נרשמים פעם אחת לכולם)",
+      "course_title": "מפגשי הקורס",
+      "course_hint": "הוסיפו את כל המפגשים. נרשמים פעם אחת לקורס כולו, וההרשמה נסגרת כשהמפגש הראשון מתחיל.",
+      "course_add": "הוספת מפגש",
+      "course_max": "אפשר להוסיף עד 20 מפגשים.",
+      "course_remove": "הסרת מפגש",
+      "course_error": "הוסיפו לפחות 2 מפגשים, עם תאריך ושעה לכל אחד."
     }
   },
   "errors": {
