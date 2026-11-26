@@ -96,6 +96,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/producer_claim.py` | Owner-claim link — an admin prepares a DRAFT business with no owner, sends its owner a signed link, and she takes it over with her OWN account and her own … |
 | `routers/producer_draft_preview.py` | The two steps between "the admin built a draft page for a business" and "the page is live because its owner said yes" (MEH-3377): a read-only preview link the … |
 | `routers/producer_google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): see whether her business is linked to its Google profile, search for it, link or unlink it, and check that … |
+| `routers/producer_identity_check.py` | Tell the sign-up form, before the business is created, that this business already has a page on Mehamakor, and (masked) which account holds it, so a staff … |
 | `routers/producer_me.py` | — אין כותרת — |
 | `routers/producer_me_analytics.py` | The owner's own traffic numbers under /producers/me/analytics: views, WhatsApp clicks and favourites per window, measured on the Israel calendar day. |
 | `routers/producer_me_locations.py` | The owner's branches and sale points under /producers/me/locations: list, add, edit (which also sets the primary), delete. |
@@ -148,6 +149,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
 | `schemas/group_buy_pickup.py` | MEH-3735 — what the business sees at pickup: codes and quantities, and the mark it wrote. Never a name, email or user id (MEH-1651). |
 | `schemas/group_buys_requests.py` | Group buys, category requests and business name-change requests. |
+| `schemas/identity_check.py` | Body and answer of POST /producer-identity-check — the sign-up form asks whether the business being registered already has a page (MEH-3884). |
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
 | `schemas/my_orders_any.py` | The answer of GET /users/me/orders/any (MEH-3698): whether «ההזמנות שלי» has anything to show the caller. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
@@ -199,6 +201,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/billing_summary.py` | Read the billable-events ledger: what one business got through the site in a month, and — for the admin — which businesses passed the results threshold and … |
 | `services/bio_generator.py` | AI description writer for producer profiles (MEH-56; MEH-1173). |
 | `services/booking_cancellations.py` | When bookings stop being real, cancel them and tell the people who made them (D1 of the 14/11 grill retro, MEH-3227): 1. … |
+| `services/business_identity.py` | The one answer to «is this already a business we have?». Compares the strong identity signals (phone, email, Instagram, website, Facebook) of a business being … |
 | `services/business_name_key.py` | The one comparison key for a business name: lower-case, no quote marks or invisible characters, single spaces. «ג׳חנון» and «ג'חנון» get the same key. |
 | `services/capabilities.py` | The one place that answers "what may this business do?" — so no route reads 'producer.plan' or a billing column on its own. … |
 | `services/category_slug.py` | Produce the stable ASCII identity for a category row, server-side, so 'categories.slug' can be NOT NULL without any writer having to remember it. |
@@ -751,6 +754,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `PromotedServiceChips.jsx` | — אין כותרת — |
 | `RecipeForm.jsx` | RecipeForm — MEH-590 chunk 3/4 of the producer-recipes epic. |
 | `RecipeStatusBadge.jsx` | RecipeStatusBadge — MEH-590 chunk 3/4 of the producer-recipes epic. |
+| `RegisterIdentityCheck.jsx` | Under the phone field of the sign-up form: when this business already has a page (any status, with an account or without), say so before a second one is … |
 | `RegisterNameCheck.jsx` | Under the business-name field of the sign-up form: when a live business already carries the typed name, say so and point its owner at the existing page … |
 | `RegistrationCta.jsx` | The sign-up block on a public event / workshop page, by the owner's «איך נרשמים?» choice (MEH-2768): site_form → «הרשמה לסדנה/לאירוע» opens the form below it, … |
 | `RegistrationMethodField.jsx` | «איך נרשמים?» — the owner picks how visitors sign up to an event or an experience (MEH-2762 chunk 2): on-site form (default), WhatsApp, phone, or an external … |

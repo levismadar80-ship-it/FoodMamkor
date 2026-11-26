@@ -37,6 +37,10 @@ from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services.draft_merge_emails import notify_admin_draft_twin  # MEH-3865
 from app.services.draft_twins import twins_for  # MEH-3865
+from app.services.business_identity import (  # MEH-3884
+    AlertContext,
+    queue_identity_alerts,
+)
 from app.services.submission_gate import submission_missing_items
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.services.review_invite import review_invite_url
@@ -680,4 +684,15 @@ def submit_for_review(
             twin.reasons,
             test_cause=p_test,
         )
+    # MEH-3884: every OTHER business that shares a phone, email, Instagram,
+    # website or Facebook with this one, owned ones included (a draft twin
+    # above already has its own email, with the merge link).
+    queue_identity_alerts(
+        db,
+        background_tasks,
+        p_id,  # type: ignore[arg-type]
+        AlertContext(
+            "submit", test_cause=p_test, skip_ids=tuple(t.draft_id for t in twins)
+        ),
+    )
     return {"detail": "הפרופיל נשלח לבדיקה"}
