@@ -75,7 +75,8 @@ export async function generateMetadata(props) {
     openGraph: {
       type: "article",
       locale: OG_LOCALE[locale],
-      images: experience?.image_url ? [experience.image_url] : [siteOgImageUrl(locale)],
+      // MEH-3894: the host business's photo before the site image, as events.
+      images: [experience?.image_url || experience?.owner_image_url || siteOgImageUrl(locale)],
     },
     alternates,
     ...(untranslatedRobots ? { robots: untranslatedRobots } : {}),

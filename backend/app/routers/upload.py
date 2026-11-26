@@ -23,7 +23,7 @@ from app.auth import get_current_user, require_admin
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, Product, User
-from app.rate_limit import limiter
+from app.rate_limit import get_real_client_ip, limiter
 from app.services.image_ownership import owner_key  # MEH-3247
 
 log = logging.getLogger("app.upload")
@@ -92,12 +92,47 @@ async def read_validated_image(file: UploadFile) -> bytes:
     return contents
 
 
+# MEH-3906: several admin threads upload gallery photos from one browser, so
+# they share one IP and hit the 20/hour per-IP limit (429). The admin gets her
+# own bucket on this same route, keyed per admin user; everyone else keeps
+# 20/hour per IP. Admin uploads are exempt from the per-IP bucket only.
+UPLOAD_IMAGE_LIMIT = "20/hour"
+ADMIN_UPLOAD_IMAGE_LIMIT = "200/hour"
+
+
+def _mark_uploader(request: Request, user: User = Depends(get_current_user)) -> User:
+    # Runs before slowapi's decorator check (decorated routes are skipped by
+    # the middleware), so the key and exemptions below can read it.
+    if user.role == "admin":
+        request.state.admin_upload_key = f"admin-upload:{user.id}"
+    return user
+
+
+def _is_admin_upload(request: Request) -> bool:
+    return bool(getattr(request.state, "admin_upload_key", None))
+
+
+def _is_not_admin_upload(request: Request) -> bool:
+    return not _is_admin_upload(request)
+
+
+def _admin_upload_key(request: Request) -> str:
+    return getattr(request.state, "admin_upload_key", None) or get_real_client_ip(
+        request
+    )
+
+
 @router.post("/image", response_model=None)
-@limiter.limit("20/hour")
+@limiter.limit(UPLOAD_IMAGE_LIMIT, exempt_when=_is_admin_upload)
+@limiter.limit(
+    ADMIN_UPLOAD_IMAGE_LIMIT,
+    key_func=_admin_upload_key,
+    exempt_when=_is_not_admin_upload,
+)
 async def upload_image(
     request: Request,
     file: UploadFile,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_mark_uploader),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Upload image to Cloudinary. Validates size and real content type.
