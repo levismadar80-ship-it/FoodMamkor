@@ -57,6 +57,10 @@ test.describe("load guard self-test (MEH-3809)", () => {
     expect(cls, failures.join("\n")).toHaveLength(1);
     expect(cls[0]).toContain(SELFTEST);
     expect(cls[0]).toContain(`> ${CLS_LIMIT}`);
+    // MEH-3893: the moved element's old and new box, so a CI log alone tells
+    // a block pushed down (y grows, h same) from an element that resized.
+    expect(cls[0]).toMatch(/div#content \(y-?\d+ h\d+ w\d+ → y-?\d+ h\d+ w\d+\)/);
+    expect(cls[0]).toMatch(/viewport \d+x\d+ scrollY \d+/);
   });
 
   test("the same page without the late block is clean", async ({ page, browserName }) => {
