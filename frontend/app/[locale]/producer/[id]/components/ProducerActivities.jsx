@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyDiscountPct, groupBuyFulfillment } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
+import { withOwnGallery } from "@/lib/event-entry";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
 import OfferCard from "@/components/ui/OfferCard";
@@ -23,7 +24,9 @@ import { parseNaiveUtc } from "@/lib/dates";
 //   page's EventEntryRow, under the existing «אירועים קרובים» heading. They
 //   used to be two lists of grey one-line cards with different headings.
 // - The business name is dropped from each row (it is the page's own title),
-//   and so is the owner photo fallback (it is the page's own hero).
+//   and so was the owner photo fallback (it is the page's own hero). Since
+//   MEH-3892 a row with no photo takes one of the business's OTHER photos
+//   (withOwnGallery) instead of a category icon.
 // - A group buy is a compact card with no photo: the 16:9 photo on the hub
 //   card is the business's own image, which this page already shows at the
 //   top. The hub card (GroupBuysClient.jsx GroupBuyCard) is unchanged.
@@ -124,7 +127,7 @@ function GroupBuyRow({ gb }) {
 /**
  * @param {{ producerId: string, events?: any[], experiences?: any[], groupBuys?: any[], sectionRefs?: any }} props
  */
-export default function ProducerActivities({ producerId, events = [], experiences: givenExperiences, groupBuys: givenGroupBuys, sectionRefs }) {
+export default function ProducerActivities({ producerId, images, events = [], experiences: givenExperiences, groupBuys: givenGroupBuys, sectionRefs }) {
   const t = useTranslations("producer.detail.sections");
   // MEH-3819: the page reads the lists (useProducerActivities) so they paint
   // with it; this component reads them itself only when it is given none.
@@ -163,9 +166,9 @@ export default function ProducerActivities({ producerId, events = [], experience
       ...experiences.map((ex) => toEventEntry(ex, "experiences", noT)),
       // MEH-3009: no owner initial either — every row here is this business's
       // own, so its letter on each photo would only repeat the page title.
-    ].map((e) => ({ ...e, who: null, ownerImage: null, ownerInitial: "" }));
-    return list.sort(byDateTime);
-  }, [events, experiences]);
+    ].map((e) => ({ ...e, who: null, ownerInitial: "" }));
+    return withOwnGallery(list.sort(byDateTime), images);
+  }, [events, experiences, images]);
 
   const shown = showAll ? entries : entries.slice(0, EVENTS_PREVIEW);
 
