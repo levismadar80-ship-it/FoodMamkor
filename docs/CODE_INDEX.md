@@ -288,6 +288,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/pending_nudge.py` | Daily-scheduler entry point for the nudge emails sent to a business that registered but has not reached the review queue. … |
 | `services/phone_reverify.py` | A business that changes its WhatsApp number loses its phone verification, and any code sent to the old number stops working. |
 | `services/pickup_schedule.py` | Keep a location's pickup schedule consistent after a write: a branch holds no pickup days or cutoff, and the stored cutoff is a day and a time together or … |
+| `services/prepay_copy.py` | How a bag paid ahead through the business's own link (MEH-3895) is described in the reservation emails: the buyer's code email and its reminder, and the … |
+| `services/prepay_refunds.py` | When money may have been paid ahead through the business's own link (MEH-3895) and the thing it paid for is gone, the business is told what to return: a … |
 | `services/producer_approval.py` | What approving a business page does to its row: slug guard and minting, the approvable-state check, applying the approved state and persisting it with … |
 | `services/producer_catalog.py` | The small public catalog reads (total count, one random business) and the request checks of GET /producers. |
 | `services/producer_detail.py` | Load one public business page (by slug or by id) and build the ProducerDetailOut it answers with. |

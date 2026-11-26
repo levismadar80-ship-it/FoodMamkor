@@ -29,6 +29,8 @@ from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models.models import Producer, RescueOffer, RescueOrder, User
+from app.services.prepay_copy import prepay_from_info
+from app.services.prepay_refunds import bag_business_cancel_mails, queue_mails
 from app.services.rescue_emails import (
     ReservationEmail,
     day_word,
@@ -120,6 +122,8 @@ def queue_business_cancel_emails(
             test_cause=bool(producer.is_test),  # MEH-2952
             tomorrow=day_word(offer.date, today) == "מחר",  # type: ignore[arg-type]  # MEH-3702
         )
+    # MEH-3897: a business that takes the money ahead is told what to return.
+    queue_mails(background_tasks, bag_business_cancel_mails(db, offer, buyer_ids))
 
 
 def pickup_note(offer: RescueOffer) -> str | None:
@@ -179,6 +183,7 @@ def queue_reservation_email(
                 if israel_date(offer.cancel_until) == today  # type: ignore[arg-type]
                 else day_word(israel_date(offer.cancel_until), today)  # type: ignore[arg-type]
             ),
+            prepay=prepay_from_info(producer.payment_info),  # MEH-3897
         ),
         # MEH-2952: a test business or a test buyer → dropped and logged.
         test_cause=bool(producer.is_test or user.is_test),

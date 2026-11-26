@@ -14,7 +14,7 @@ Related:  app/routers/rescue.py::create_order, app/services/auth_emails.py
           (same HTML conventions), app/services/email.py
           MEH-2952: each sender takes `test_cause` (the business or the buyer
           is a seeded test row) and send_email then sends nothing.
-History:  MEH-2715 (creation)
+History:  MEH-2715 (creation) · MEH-3897 (a prepaid bag: the business's link)
 """
 
 from dataclasses import dataclass
@@ -25,6 +25,7 @@ from app.config import settings
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
 from app.services.email_layout import frame
+from app.services.prepay_copy import Prepay, buyer_pay_lines
 from app.utils.money import shekels_text
 
 
@@ -73,6 +74,9 @@ class ReservationEmail:
     # empty when the cutoff falls on the day of writing.
     pickup_day: str = "היום"
     cancel_day: str = ""
+    # MEH-3897: the business takes the money ahead through its own link; the
+    # email carries the link instead of «ומשלמים X ₪» at the counter.
+    prepay: Prepay | None = None
 
 
 def send_reservation_email(
@@ -107,9 +111,16 @@ def render_reservation_email(
         else "\n"
     )
     note_text = f"הוראות איסוף: {m.pickup_note}\n" if m.pickup_note else ""
+    pay_text = (
+        f"הקוד שלכם: {m.pickup_code}.\n"
+        + "\n".join(buyer_pay_lines(m.prepay, m.pickup_code, price))
+        + "\n"
+        if m.prepay
+        else f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
+    )
     body = (
         f"{subject}\n\n"
-        f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
+        f"{pay_text}"
         f"איסוף {m.pickup_day} {m.pickup_from}–{m.pickup_until}{where}.\n"
         f"{note_text}"
         f"{cancel_text}"
@@ -136,6 +147,12 @@ def render_reservation_email(
           <tr><td style="padding:0 0 24px;"></td></tr>
 """
     )
+    pay_html = (
+        _prepay_html(m.prepay, m.pickup_code, price)
+        if m.prepay
+        else f"""\
+            <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">אומרים אותו בקופה ומשלמים <b style="color:#2e6853;">{e(price)}&nbsp;₪</b>.</div>"""
+    )
     html_body = frame(
         subject_html,
         "",
@@ -143,7 +160,7 @@ def render_reservation_email(
           <tr><td style="padding:22px 22px 6px;text-align:center;">
             <div style="font-size:14px;color:#5c584f;margin:0 0 8px;">הקוד שלכם:</div>
             <div style="display:inline-block;background:#eaf3de;border:2px dashed #2e6853;border-radius:12px;padding:10px 22px;font-family:Georgia,'Times New Roman',serif;font-size:44px;font-weight:bold;letter-spacing:10px;color:#1c1a17;direction:ltr;">{e(m.pickup_code)}</div>
-            <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">אומרים אותו בקופה ומשלמים <b style="color:#2e6853;">{e(price)}&nbsp;₪</b>.</div>
+{pay_html}
           </td></tr>
           <tr><td style="padding:16px 22px 4px;">
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e5dfd3;border-radius:10px;">
@@ -156,6 +173,19 @@ def render_reservation_email(
 """,
     )
     return subject, body, html_body
+
+
+def _prepay_html(p: Prepay, code: str, price: str) -> str:
+    """MEH-3897: the ask, a «לתשלום» button to the business's link, where it
+    goes, the code-in-the-note line, then what happens at the counter."""
+    e = html_escape
+    ask_line, via_line, counter = buyer_pay_lines(p, code, price)
+    ask = ask_line.split(". לתשלום:")[0] + "."
+    return f"""\
+            <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">{e(ask)}</div>
+            <div style="margin:12px 0 0;"><a href="{e(p.link)}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לתשלום</a></div>
+            <div style="font-size:13px;color:#5c584f;margin:8px 0 0;line-height:1.6;">{e(via_line)}</div>
+            <div style="font-size:15px;color:#1c1a17;margin:10px 0 0;line-height:1.6;">{e(counter)}</div>"""
 
 
 def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> None:

@@ -10,7 +10,8 @@ Does NOT: email the buyer (rescue_emails.send_reservation_email) or decide
 Related:  app/routers/rescue.py::create_order (the caller, after the commit),
           app/services/booking_cancellations.py::owner_emails
 History:  MEH-3313 (creation) · MEH-3895 (a buyer's cancel of a bag the
-          business takes prepaid: «להחזיר X ₪»)
+          business takes prepaid: «להחזיר X ₪») · MEH-3897 (the reservation
+          email says the money was asked for ahead, not «בקופה»)
 """
 
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ from app.models.models import RescueOffer, RescueOrder
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
 from app.schemas.payment_link import prepay_link
+from app.services.prepay_copy import Prepay, business_pay_line, prepay_from_info
 from app.services.rescue_emails import day_word, israel_hhmm
 from app.utils.money import shekels_text
 
@@ -40,6 +42,8 @@ class BusinessReservation:
     pickup_until: str
     # MEH-3702: a bag reserved a day ahead says «מחר» (copy approved 24/11).
     tomorrow: bool = False
+    # MEH-3897: the business asks for the money ahead (its own link).
+    prepay: Prepay | None = None
 
 
 def _qty_line(qty: int) -> str:
@@ -57,8 +61,13 @@ def send_business_reservation_email(
     body = (
         "שלום,\n\n"
         f"{_qty_line(m.qty)} עכשיו מסלי ההפתעה של {day}.\n"
-        f"קוד האיסוף: {m.pickup_code}. בקופה אומרים את הקוד ומשלמים "
-        f"{shekels_text(m.total_agorot)} ₪.\n"
+        + (
+            business_pay_line(m.prepay, m.pickup_code, shekels_text(m.total_agorot))
+            if m.prepay
+            else f"קוד האיסוף: {m.pickup_code}. בקופה אומרים את הקוד ומשלמים "
+            f"{shekels_text(m.total_agorot)} ₪."
+        )
+        + "\n"
         f"איסוף {day} {m.pickup_from}–{m.pickup_until}.\n\n"
         f"את כל השריונים {which} אפשר לראות בלוח הבקרה:\n"
         f"{settings.frontend_url}/producer/dashboard/rescue\n\n"
@@ -88,6 +97,7 @@ def queue_business_reservation_email(
         pickup_from=israel_hhmm(offer.pickup_start),  # type: ignore[arg-type]
         pickup_until=israel_hhmm(offer.pickup_end),  # type: ignore[arg-type]
         tomorrow=today is not None and day_word(offer.date, today) == "מחר",  # type: ignore[arg-type]
+        prepay=prepay_from_info(producer.payment_info),  # MEH-3897
     )
     recipients = owner_emails(db, producer)
     for to in recipients:

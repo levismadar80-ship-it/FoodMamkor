@@ -31,6 +31,7 @@ from sqlalchemy.orm import Query, Session, selectinload
 from app.models.email_outbox import EmailOutbox
 from app.models.models import ProducerLocation, RescueOffer, RescueOrder
 from app.services.email_outbox import enqueue_email
+from app.services.prepay_copy import prepay_from_info
 from app.services.rescue_emails import (
     ReservationEmail,
     israel_hhmm,
@@ -125,6 +126,7 @@ def _reminder_card(order: RescueOrder, now: datetime) -> ReservationEmail:
             israel_hhmm(offer.cancel_until) if offer.cancel_until > now else None
         ),
         pickup_note=location.pickup_note,
+        prepay=prepay_from_info(location.producer.payment_info),  # MEH-3897
     )
 
 
