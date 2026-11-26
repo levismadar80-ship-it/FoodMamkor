@@ -61,7 +61,7 @@ graph LR
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
-    App --> AdminBusinessContent[admin_business_content.router<br/>/admin/producers/:producer_id/events + /experiences, /admin/events/:id, /admin/experiences/:id (MEH-3873, owner_consent on every save; writes through events/experiences shared writers)]
+    App --> AdminBusinessContent[admin_business_content.router<br/>/admin/producers/:producer_id/events + /experiences (GET lists both, MEH-3876), /admin/events/:id, /admin/experiences/:id (MEH-3873, owner_consent on every save; writes through events/experiences shared writers)]
     App --> AdminTestBusiness[admin_test_business.router<br/>/admin/test-businesses (MEH-2952 chunk 4: «עסק בדיקה — מוסתר מהאתר», writes producers.is_test)]
     App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner)]
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
@@ -276,13 +276,14 @@ graph LR
     BagPage[/rescue/:offerId bag page · MEH-3586] --> One[GET /rescue/offers/:id<br/>🌐 one of today's bags + state available/sold_out/cancelled/ended<br/>+ pickup lat/lng + business avg_rating/reviews_count<br/>404 for another day, test/unapproved business, town outside the pilot]
 
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
-    Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
+    Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation · MEH-3895: and the owners «להחזיר X ₪» when the business shows a prepay link]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
     Buyer --> History[GET /rescue/orders/history<br/>🔑 own reservations, any day, newest first, max 50<br/>+ producer_name, no pickup_code — «ההזמנות שלי» MEH-3698]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
     Counter --> NoShow[POST /rescue/orders/:id/no-show<br/>👤 owner or admin, only after pickup_end<br/>increments users.rescue_no_show_count<br/>MEH-3226: mails the buyer each time (warning / block on)]
+    Counter --> Paid[POST /rescue/orders/:id/paid<br/>👤 owner or admin · body paid: bool<br/>reserved or handed only, else 409<br/>MEH-3897 stamps or clears rescue_orders.paid_at]
 
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics<br/>MEH-3226: /admin/users row menu «שחרור חסימת סלים»]
 

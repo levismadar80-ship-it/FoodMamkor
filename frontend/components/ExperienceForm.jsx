@@ -22,7 +22,12 @@
  *           MEH-2012 (image_url became a file upload against POST /upload/image
  *           — this was the LAST surface still asking an owner to paste a
  *           Cloudinary URL; the client-side URL validation went with it, because
- *           the endpoint can legitimately answer with a relative path).
+ *           the endpoint can legitimately answer with a relative path);
+ *           MEH-3876 (`adminProducerId`: the same form, saved by an admin for
+ *           that business through POST /admin/producers/{id}/experiences and
+ *           PUT /admin/experiences/{id}, with a required «בית העסק אישר» box
+ *           whose value goes out as `owner_consent: true` — the EventForm
+ *           shape of MEH-3873).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -153,6 +158,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "min_participants",
   "sessions",
   "registration_url",
+  "owner_consent", // MEH-3876: admin only
 ];
 
 const EXPERIENCE_FIELD_ID = {
@@ -173,6 +179,7 @@ const EXPERIENCE_FIELD_ID = {
   // MEH-3447: the first empty half of an incomplete date row.
   sessions: "experience-session-incomplete",
   registration_url: "registration_url",
+  owner_consent: "experience-owner-consent",
 };
 
 // MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
@@ -263,16 +270,21 @@ function validateExperienceForm(f, t, tReg) {
  * @param {(data:object)=>void} props.onSuccess  called with the created/updated row
  * @param {string} [props.cancelHref]
  * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
+ * @param {string|null} [props.adminProducerId]  MEH-3876: an admin writes for this business
+ * @param {() => void} [props.onCancel]  MEH-3876: cancel in place instead of the cancel link
  */
 // MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
 // up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
-export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false }) {
+export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false, adminProducerId = null, onCancel = undefined }) {
   const t = useTranslations("experiences.new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+  const tAdmin = useTranslations("admin"); // MEH-3876
+  // MEH-3876: the admin's confirmation that the business agreed, every save.
+  const [ownerConsent, setOwnerConsent] = useState(false);
   const [form, setForm] = useState(() => seed(initial));
   const [verdict, setVerdict] = useState(null); // { status, reason, suggestion }
   const [checking, setChecking] = useState(false);
@@ -396,6 +408,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setUnverifiedHits(0);
 
     const errors = validateExperienceForm(form, t, tReg);
+    if (adminProducerId && !ownerConsent) errors.owner_consent = tAdmin("business_events.consent_required");
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
@@ -447,9 +460,15 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
     setSubmitting(true);
     try {
-      const r = isEdit
-        ? await api.put(`/experiences/${initial.id}`, payload)
-        : await api.post("/experiences", payload);
+      // REUSES: components/EventForm.jsx (MEH-3873) — the admin routes take the
+      // owner's body plus `owner_consent: true`.
+      const r = adminProducerId
+        ? isEdit
+          ? await api.put(`/admin/experiences/${initial.id}`, { ...payload, owner_consent: true })
+          : await api.post(`/admin/producers/${adminProducerId}/experiences`, { ...payload, owner_consent: true })
+        : isEdit
+          ? await api.put(`/experiences/${initial.id}`, payload)
+          : await api.post("/experiences", payload);
       onSuccess?.(r.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -869,6 +888,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         url={form.registration_url}
         onUrlChange={(v) => setField("registration_url")({ target: { value: v } })}
         urlError={fieldErrors.registration_url}
+        businessUrl={adminProducerId ? `/admin/producers/${adminProducerId}` : undefined}
       />
 
       <CollectionNotice
@@ -877,10 +897,38 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         testId="experience-collection-notice"
       />
 
+      {adminProducerId && (
+        <div>
+          <Checkbox
+            id={EXPERIENCE_FIELD_ID.owner_consent}
+            checked={ownerConsent}
+            onChange={(e) => {
+              setOwnerConsent(e.target.checked);
+              setFieldErrors((errs) => (errs.owner_consent ? { ...errs, owner_consent: undefined } : errs));
+            }}
+            aria-describedby={fieldErrors.owner_consent ? `${EXPERIENCE_FIELD_ID.owner_consent}-error` : undefined}
+            data-testid="experience-owner-consent"
+          >
+            {tAdmin("business_experiences.consent_label")}
+          </Checkbox>
+          {fieldErrors.owner_consent && (
+            <span id={`${EXPERIENCE_FIELD_ID.owner_consent}-error`} className="text-xs text-error mt-1 block">
+              {fieldErrors.owner_consent}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-4 border-t border-border">
-        <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
-          {t("cancel")}
-        </Link>
+        {onCancel ? (
+          <Button type="button" variant="outlined" onClick={onCancel}>
+            {t("cancel")}
+          </Button>
+        ) : (
+          <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
+            {t("cancel")}
+          </Link>
+        )}
         <Button
           type="submit"
           // MEH-2012: `uploading` joins the gate. Submitting mid-upload would

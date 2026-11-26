@@ -9,7 +9,8 @@ Does NOT: email the buyer (rescue_emails.send_reservation_email) or decide
           The task gets plain values only; it never sees the Session.
 Related:  app/routers/rescue.py::create_order (the caller, after the commit),
           app/services/booking_cancellations.py::owner_emails
-History:  MEH-3313 (creation)
+History:  MEH-3313 (creation) · MEH-3895 (a buyer's cancel of a bag the
+          business takes prepaid: «להחזיר X ₪»)
 """
 
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from app.config import settings
 from app.models.models import RescueOffer, RescueOrder
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
+from app.schemas.payment_link import prepay_link
 from app.services.rescue_emails import day_word, israel_hhmm
 from app.utils.money import shekels_text
 
@@ -94,5 +96,88 @@ def queue_business_reservation_email(
             to,
             facts,
             test_cause=bool(producer.is_test),  # MEH-2952
+        )
+    return len(recipients)
+
+
+def _bags(qty: int) -> str:
+    return "סל אחד" if qty == 1 else f"{'שני' if qty == 2 else qty} סלים"
+
+
+def send_business_refund_email(
+    to: str,
+    m: BusinessReservation,
+    deposit: bool = False,
+    test_cause: bool = False,
+    paid: bool = False,
+) -> None:
+    """MEH-3895 — a reservation of a prepaid bag was cancelled by the buyer.
+
+    The money went to the business directly (its own link), so only the
+    business can return it; the email says how much. «אם התשלום התקבל»: the
+    link does not tell us whether she paid.
+    """
+    name = " ".join(m.producer_name.split())
+    body = (
+        "שלום,\n\n"
+        f"שריון של {_bags(m.qty)} בוטל עכשיו (קוד האיסוף {m.pickup_code}).\n"
+        + (
+            # MEH-3897: the business marked it paid, so no «אם».
+            "סימנת שהמקדמה התקבלה, ולכן צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
+            if paid and deposit
+            else f"סימנת שהתשלום מראש התקבל, ולכן צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
+            "באותה דרך שבה שולם.\n\n"
+            if paid
+            # A deposit's size is the business's, not ours: no amount.
+            else "אם המקדמה כבר התקבלה, צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
+            if deposit
+            else f"אם התשלום מראש כבר התקבל, צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
+            "באותה דרך שבה שולם.\n\n"
+        )
+        + "את כל השריונים אפשר לראות בלוח הבקרה:\n"
+        f"{settings.frontend_url}/producer/dashboard/rescue\n\n"
+        "צוות מהמקור"
+    )
+    send_email(
+        to,
+        f"בוטל שריון של סל הפתעה ב{name}",
+        body,
+        test_cause=test_cause,
+        kind="rescue_business",
+    )
+
+
+def queue_business_refund_email(
+    background_tasks: BackgroundTasks,
+    db: Session,
+    offer: RescueOffer,
+    order: RescueOrder,
+) -> int:
+    """Queue the refund note to every owner login, AFTER the cancel's commit,
+    when the business shows a prepay link or marked this order paid
+    (MEH-3897: a mark outlives a link removed since). Returns how many were
+    queued (0 = no prepayment and no mark, or no owner has an email)."""
+    location = offer.location
+    producer = location.producer if location else None
+    paid = order.paid_at is not None
+    if producer is None or (prepay_link(producer.payment_info) is None and not paid):
+        return 0
+    facts = BusinessReservation(
+        producer_name=str(producer.name or ""),
+        qty=int(order.qty),
+        pickup_code=str(order.pickup_code),
+        total_agorot=int(offer.price_agorot) * int(order.qty),
+        pickup_from=israel_hhmm(offer.pickup_start),  # type: ignore[arg-type]
+        pickup_until=israel_hhmm(offer.pickup_end),  # type: ignore[arg-type]
+    )
+    recipients = owner_emails(db, producer)
+    for to in recipients:
+        background_tasks.add_task(
+            send_business_refund_email,
+            to,
+            facts,
+            deposit=(producer.payment_info or {}).get("timing") == "deposit",
+            test_cause=bool(producer.is_test),  # MEH-2952
+            paid=paid,
         )
     return len(recipients)

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
 import ShareCodeButton, { shareCodeText } from "@/components/rescue/ShareCodeButton";
+import PrepayButton from "@/components/ui/PrepayButton";
 
 import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
 import useIsraelToday from "@/lib/use-israel-today";
@@ -15,19 +16,27 @@ import useIsraelToday from "@/lib/use-israel-today";
  * Purpose:  What a buyer sees the moment a bag is reserved — the 4-digit code
  *           they read out at the counter, what to pay there, and until when
  *           cancelling is free.
- * Does NOT: take payment or count down. The pilot has neither: the money
- *           changes hands at the counter and the reservation does not expire
- *           (03/11 ruling, which removed the 10-minute hold).
+ * Does NOT: take payment or count down. The money changes hands at the
+ *           counter, or through the business's own link (MEH-3895), and the
+ *           reservation does not expire (03/11 ruling, which removed the
+ *           10-minute hold).
  *           It also does NOT promise an SMS — nothing in this stack sends one,
  *           so the copy says «אומרים בקופה» and stops there.
  * Related:  app/[locale]/rescue/[offerId]/RescueOfferAction.jsx (the bag page
  *           reserves, then renders this; MEH-3586)
- * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
+ * History:  MEH-3897 (the business's «סמן כשולם»: `order.paid_at` swaps the
+ *           pay button for «בית העסק אישר…» and the price for «שולם מראש») ·
+ *           MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
  *           cutoff the terms say it can no longer be cancelled) · MEH-3704
  *           (send the code to a friend; `place` = the business and the
- *           pickup address, which the order itself does not carry)
+ *           pickup address, which the order itself does not carry) · MEH-3895
+ *           (`prepay` = the business's own prepay link and its timing)
  */
-export default function RescueConfirmation({ order, onCancel, cancelling = false, place = null }) {
+/**
+ * @param {{ order: any, onCancel?: any, cancelling?: boolean, place?: any,
+ *   prepay?: { link: string | null, timing: string | null } | null }} props
+ */
+export default function RescueConfirmation({ order, onCancel, cancelling = false, place = null, prepay = null }) {
   const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // MEH-2737: the cancel link asks before it acts — one stray tap used to
@@ -49,6 +58,20 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   const cancellable =
     order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
+  // MEH-3897: once the business marked the payment received, the pay button
+  // gives way to a line saying so — paying twice is the mistake to prevent.
+  // Only on a live order: a cancelled or no-show one is a refund, not a payment.
+  const paidConfirmed = Boolean(order.paid_at) && ["reserved", "handed"].includes(order.status);
+  const hasPrepay = Boolean(prepay?.link) && order.status === "reserved";
+  const showPrepay = hasPrepay && !paidConfirmed;
+  // A deposit is part of the price; the rest is still paid at the counter,
+  // so the line says the bag's price and where the rest goes.
+  // MEH-3897: a marked order drives the price line by itself — handed, or
+  // after the business removed its link — so a paid bag never falls back to
+  // «לשלם בקופה». Only a deposit keeps the counter line.
+  const deposit = prepay?.timing === "deposit";
+  const payDeposit = (hasPrepay || paidConfirmed) && deposit;
+  const payAhead = !payDeposit && (paidConfirmed || (hasPrepay && prepay?.timing === "advance"));
   const when = from && until
     ? t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })
     : null;
@@ -78,7 +101,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {price !== null && (
         <p className="font-headline-md text-base font-black text-text mt-3" data-testid="rescue-confirmation-price">
-          {t("confirm.pay", { price })}
+          {t(payAhead ? (paidConfirmed ? "confirm.paid_ahead" : "confirm.pay_ahead") : payDeposit ? "confirm.pay_deposit" : "confirm.pay", { price })}
         </p>
       )}
 
@@ -96,6 +119,19 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
             ? t("confirm.terms_no_cancel")
             : t("confirm.terms", { cancel_until: cancelUntil })}
         </p>
+      )}
+
+      {/* MEH-3895: only while the bag waits — once handed or cancelled there is
+          nothing left to pay for. */}
+      {paidConfirmed && (
+        <p className="mt-4 font-body-sm text-sm text-primary font-semibold" data-testid="rescue-paid-confirmed">
+          {t("confirm.paid_confirmed")}
+        </p>
+      )}
+      {showPrepay && (
+        <div className="mt-4">
+          <PrepayButton link={prepay.link} timing={prepay.timing} code={order.pickup_code} testId="rescue-prepay" />
+        </div>
       )}
 
       {/* Three steps, and the last is disabled until the window opens: before
