@@ -30,6 +30,7 @@ from app.auth import (
     require_verified_producer,
 )
 from app.database import get_db
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import is_business, is_business_row  # MEH-2459
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
@@ -122,6 +123,11 @@ def _sessions_out(ex: Experience, *, owner: bool = False) -> list[dict[str, Any]
     return sessions_svc.public_list(session, ex, owner=owner)
 
 
+def _host_image(host: User | None) -> str | None:
+    producer = host.producer if host is not None else None
+    return first_image(producer.images) if is_business_row(producer) else None
+
+
 def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
     """Public shape — no private fields (address, moderation context).
     `registered` (MEH-2763) comes from one grouped query on list routes; a
@@ -157,6 +163,10 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
         "recurring_schedule": ex.recurring_schedule,
         "status": ex.status,
         "host": _serialize_host(ex.host),
+        # MEH-3894: the host business's photo — the row / card / page falls
+        # back to it when the experience has no image of its own, the same
+        # rule events have had since MEH-2546. Only for a public business.
+        "owner_image_url": _host_image(ex.host),
         "created_at": ex.created_at,
     }
 

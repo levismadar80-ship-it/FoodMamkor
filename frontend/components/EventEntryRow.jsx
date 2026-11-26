@@ -28,6 +28,7 @@ import {
 } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 import SaveButton from "./SaveButton";
+import useImageLoads from "@/lib/use-image-loads";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
@@ -89,7 +90,14 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   // own), else a category tile. Never an empty box, never a stock photo.
   // `compact` (home preview, ~400px rows 3-up from lg): the picture moves to a
   // band across the top of the row there instead of being dropped.
-  const picture = entry.image || entry.ownerImage;
+  // MEH-3894: a photo the browser cannot load falls back to the tile, not
+  // an empty box (useImageLoads probes the thumbnail this row paints).
+  const wanted = entry.image || entry.ownerImage;
+  const picture = useImageLoads(
+    wanted ? optimizeCloudinary(wanted, { aspectRatio: "1:1", width: 224 }) : null,
+  )
+    ? wanted
+    : null;
   const cols = compact
     ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
     : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
@@ -201,7 +209,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
         <div
           aria-hidden="true"
           data-testid="event-row-image"
-          data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
+          data-kind={!picture ? "category" : entry.image ? "event" : "owner"}
           className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-md bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
           style={thumbBg}
         >

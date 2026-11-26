@@ -45,6 +45,7 @@ from app.services.booking_cancellations import (  # MEH-3227
 )
 from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import (  # MEH-2952
     is_live_owner_row,
     not_test_producer,
@@ -100,14 +101,7 @@ def _serialize(event: Event, registered: int | None = None) -> EventOut:
         # when the event has no image of its own (Meetup's group-cover rule).
         # Read-only, no schema change.
         # The first non-blank entry; blank / whitespace entries are skipped.
-        owner_image_url=(
-            next(
-                (u.strip() for u in (event.producer.images or []) if u and u.strip()),
-                None,
-            )
-            if event.producer
-            else None
-        ),
+        owner_image_url=first_image(event.producer.images) if event.producer else None,
         title=event.title,
         description=event.description,
         event_date=event.event_date,

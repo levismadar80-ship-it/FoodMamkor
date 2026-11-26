@@ -8,6 +8,7 @@ import { Basket } from "@phosphor-icons/react";
 
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import useImageLoads from "@/lib/use-image-loads";
 import { israelTime, shekels, walkingMinutes, worthAgorot } from "@/lib/rescue";
 import StruckPrice from "@/components/ui/StruckPrice";
 
@@ -54,7 +55,10 @@ export default function BagRow({ offer, headingTag = "h3" }) {
   const items = (offer.typical_items || []).filter(Boolean).join(", ");
   const hasDistance = offer.distance_km !== null && offer.distance_km !== undefined;
   const where = producer.location_address || producer.location_city || producer.city || "";
-  const image = producer.image_url ? optimizeCloudinary(producer.image_url, { aspectRatio: "1:1", width: 160 }) : null;
+  // MEH-3894: a photo that fails to load shows the basket tile, not a grey box.
+  const image = useImageLoads(
+    producer.image_url ? optimizeCloudinary(producer.image_url, { aspectRatio: "1:1", width: 160 }) : null,
+  );
 
   // h3 under the home block's h2; h2 on /rescue, whose only heading is the h1.
   const Heading = headingTag;

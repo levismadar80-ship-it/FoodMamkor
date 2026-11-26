@@ -125,6 +125,7 @@ from app.services.auth_emails import (
     send_owner_invite_code_email,
     send_owner_invite_email,
 )
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.password_policy import validate_password
 
 logger = structlog.get_logger(__name__)
@@ -244,7 +245,7 @@ def _preview(producer: Producer) -> ProducerClaimPreviewOut:
         name=producer.name,
         city=producer.city,
         short_description=producer.short_description,
-        image=(producer.images or [None])[0],
+        image=first_image(producer.images),  # MEH-3894
         category_names=[c.name for c in producer.categories],
     )
 
