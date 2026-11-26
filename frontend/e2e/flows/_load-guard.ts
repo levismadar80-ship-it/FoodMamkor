@@ -94,11 +94,14 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
   },
 ];
 
-type KnownCls = { path: RegExp; ceiling: number; reason: string; card: string };
+/** `query`, when set, must also match the URL's query string ("?city=x"), so a
+ *  row can cover one state of a page without loosening every load of it. */
+type KnownCls = { path: RegExp; query?: RegExp; ceiling: number; reason: string; card: string };
 
 /** Pages that already shift above CLS_LIMIT, measured on PR #5280's E2E runs
  *  and the first staging runs after it (Chromium, desktop + mobile). `path` is matched against the pathname with
- *  no locale prefix and no query. `ceiling` is 1.5 × the largest value seen,
+ *  no locale prefix and no query (`query`, when set, is matched against the
+ *  query string). `ceiling` is 1.5 × the largest value seen,
  *  so a page that gets worse still fails. Remove a row when its card is fixed;
  *  never add one to get a new shift green — a new shift gets a fix. */
 export const KNOWN_CLS: readonly KnownCls[] = [
@@ -165,11 +168,34 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Register: the page grows at ~2 s and pushes the footer (largest 0.130, mobile, staging 2b777a0).",
     card: "MEH-3863",
   },
+  {
+    // MEH-3878: /recommend, the footer moves at load. Release PR run
+    // 45826156160 (staging c8ea4a4), share.spec.ts:115, flaky.
+    path: /^\/recommend$/,
+    ceiling: 0.62,
+    reason: "Recommend: the page grows at load and pushes the footer (largest 0.410, staging c8ea4a4).",
+    card: "MEH-3878",
+  },
+  {
+    // MEH-3887: home with ?city= only; home without a city still fails at 0.1.
+    // A fixed vv-pin element moves once; run 45826156160 (staging c8ea4a4),
+    // 27-delivery-day-discoverability.spec.ts:150, mobile, flaky.
+    path: /^\/$/,
+    query: /[?&]city=/,
+    ceiling: 0.16,
+    reason: "Home with a city, mobile: a fixed vv-pin element moves once (largest 0.105, staging c8ea4a4).",
+    card: "MEH-3887",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
 function barePath(url: string): string {
   return url.replace(/[?#].*$/, "").replace(/^\/en(?=\/|$)/, "") || "/";
+}
+
+/** "/?city=x#y" → "?city=x". */
+function queryOf(url: string): string {
+  return url.replace(/#.*$/, "").replace(/^[^?]*/, "");
 }
 
 type Shift = { doc: number; url: string; t: number; v: number; src: string };
@@ -296,7 +322,7 @@ export function loadGuardFailures(
       const { value, worst } = maxSessionCls(list);
       if (value > CLS_LIMIT) {
         const top = [...worst].sort((a, b) => b.v - a.v)[0];
-        const k = known.find((x) => x.path.test(barePath(top.url)));
+        const k = known.find((x) => x.path.test(barePath(top.url)) && (!x.query || x.query.test(queryOf(top.url))));
         if (k && value <= k.ceiling) continue;
         if (k) {
           out.push(

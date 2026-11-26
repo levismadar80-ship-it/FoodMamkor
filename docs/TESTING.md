@@ -85,7 +85,8 @@ is `"off"` too: the guard's probe adds work to every frame it counts (MEH-3809).
 
 Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
 1.5 × the largest value measured. A listed page passes under its ceiling and
-fails above it; every other page fails at 0.1. The list only shrinks: a fix
+fails above it; every other page fails at 0.1. A row can also take a `query`
+pattern, so it covers one state of a page (home with `?city=`) and not every load. The list only shrinks: a fix
 removes its row, and a new shift gets a fix, not a row. The guard's own
 self-test is `flows/00-load-guard-selftest.spec.ts`.
 

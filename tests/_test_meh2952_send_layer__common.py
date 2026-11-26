@@ -163,6 +163,14 @@ def _loud(caplog):
     ]
 
 
+def _identity_match():
+    import uuid
+
+    from app.services.business_identity import IdentityMatch
+
+    return IdentityMatch(uuid.uuid4(), "y", "draft", None, ["phone"])
+
+
 def _notifier_calls():
     from app.services import auth_notifications as an
     from app.services import draft_merge_emails as dm
@@ -211,6 +219,12 @@ def _notifier_calls():
         (
             "draft_twin",
             lambda tc: dm.notify_admin_draft_twin("x", "y", ["phone"], test_cause=tc),
+        ),
+        (
+            "identity_matches",
+            lambda tc: dm.notify_admin_identity_matches(
+                "x", [_identity_match()], "signup", test_cause=tc
+            ),
         ),
         (
             "draft_merged",
@@ -787,6 +801,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # MEH-3865: a draft looks like a business sent for review — admin email;
     # the owner's email after the admin moved the draft to her account.
     ("services/draft_merge_emails.py", "notify_admin_draft_twin", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
+    # MEH-3884: a new business looks like one we already have — one admin email.
+    ("services/draft_merge_emails.py", "notify_admin_identity_matches", "send_email"): (
         1,
         BUS,
         "same",
