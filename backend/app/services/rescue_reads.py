@@ -324,6 +324,7 @@ def my_reservations(db: Session, *, user_id: Any, today: date) -> list[dict[str,
             "status": o.status,
             "handed_at": o.handed_at,
             "cancelled_at": o.cancelled_at,
+            "paid_at": o.paid_at,
             "created_at": o.created_at,
             "price_agorot": o.offer.price_agorot,
             "cancel_until": o.offer.cancel_until,
@@ -436,6 +437,8 @@ def business_orders_today(
 
     No buyer identity is returned; see RescueOwnerOrderOut for why.
     """
+    producer = db.get(Producer, producer_id)
+    prepay = bool(producer and prepay_link(producer.payment_info))
     rows = (
         db.query(RescueOrder, RescueOffer)
         .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
@@ -460,9 +463,13 @@ def business_orders_today(
             "status": order.status,
             "handed_at": order.handed_at,
             "cancelled_at": order.cancelled_at,
+            "paid_at": order.paid_at,
             "created_at": order.created_at,
             "pickup_start": offer.pickup_start,
             "pickup_end": offer.pickup_end,
+            # MEH-3897: the dashboard offers «סמן כשולם» only to a business
+            # that asks buyers to pay ahead through its own link.
+            "prepay": prepay,
         }
         for order, offer in rows
     ]

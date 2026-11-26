@@ -55,7 +55,10 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   const cancellable =
     order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
-  const showPrepay = Boolean(prepay?.link) && order.status === "reserved";
+  // MEH-3897: once the business marked the payment received, the pay button
+  // gives way to a line saying so — paying twice is the mistake to prevent.
+  const paidConfirmed = Boolean(order.paid_at) && order.status !== "cancelled";
+  const showPrepay = Boolean(prepay?.link) && order.status === "reserved" && !paidConfirmed;
   // A deposit is part of the price; the rest is still paid at the counter,
   // so the line says the bag's price and where the rest goes.
   const payAhead = showPrepay && prepay.timing === "advance";
@@ -111,6 +114,11 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {/* MEH-3895: only while the bag waits — once handed or cancelled there is
           nothing left to pay for. */}
+      {paidConfirmed && (
+        <p className="mt-4 font-body-sm text-sm text-primary font-semibold" data-testid="rescue-paid-confirmed">
+          {t("confirm.paid_confirmed")}
+        </p>
+      )}
       {showPrepay && (
         <div className="mt-4">
           <PrepayButton link={prepay.link} timing={prepay.timing} code={order.pickup_code} testId="rescue-prepay" />

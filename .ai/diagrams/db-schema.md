@@ -802,6 +802,7 @@ erDiagram
         timestamp handed_at
         uuid handed_by FK "SET NULL — keep the record, lose the account"
         timestamp cancelled_at
+        timestamp paid_at "MEH-3897 nullable — the business marked the prepay received"
         timestamp created_at
     }
 

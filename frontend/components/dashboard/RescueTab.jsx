@@ -30,7 +30,7 @@ import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect"; // MEH-3823
  * Does NOT: take money or show who the buyer is. Handing a bag over needs
  *           four digits; the API deliberately returns no buyer identity.
  * Related:  backend GET /producers/me/rescue/orders · POST /rescue/orders/{id}/handed
- *           · POST /rescue/orders/{id}/no-show · PUT /producers/me/rescue/typical-items
+ *           · POST /rescue/orders/{id}/no-show · POST /rescue/orders/{id}/paid (MEH-3897) · PUT /producers/me/rescue/typical-items
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  *           · MEH-3823 (allergens folded, «שווי הסל», publish first, 24-hour
  *           times, each cancel link names its bag)
@@ -38,6 +38,8 @@ import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect"; // MEH-3823
 
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
+// MEH-3897: the statuses the API lets a business mark as paid (rescue_payment.MARKABLE).
+const PAYABLE = ["reserved", "handed"];
 
 // MEH-2730: the boxes a message can belong to (see `notice` below).
 const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish", items: "items", leftover: "leftover" };
@@ -250,15 +252,45 @@ export default function RescueTab() {
         ) : (
           <span className="justify-self-end font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
         )}
+        {paidCell(o)}
       </li>
     );
+  }
+
+  // MEH-3897: a business that takes payment ahead (a prepay link) marks the
+  // payment received by hand, as a shop's «manual payment» does — we never
+  // see the money. Only on an active or handed reservation; undo is one tap.
+  function paidCell(o) {
+    if (!o.prepay || !PAYABLE.includes(o.status)) return null;
+    const busy = busyId === o.id;
+    return (
+      <span className="col-span-3 flex items-center justify-end gap-2" data-testid="rescue-order-paid-cell">
+        {o.paid_at ? (
+          <>
+            <span className="font-body-sm text-sm text-primary" data-testid="rescue-order-paid">{t("paid")}</span>
+            <Button variant="text" size="sm" disabled={busy} onClick={() => markPaid(o, false)} data-testid="rescue-order-unpaid">
+              {t("unmark_paid")}
+            </Button>
+          </>
+        ) : (
+          <Button variant="outlined" size="sm" disabled={busy} onClick={() => markPaid(o, true)} data-testid="rescue-order-mark-paid">
+            {t("mark_paid")}
+          </Button>
+        )}
+      </span>
+    );
+  }
+
+  // MEH-3897: its own literal path, so the route's caller is greppable.
+  function markPaid(order, paid) {
+    return act(order, () => api.post(`/rescue/orders/${order.id}/paid`, { paid }));
   }
 
   async function act(order, what, at = "orders") {
     setBusyId(order.id);
     clearNotice();
     try {
-      await api.post(`/rescue/orders/${order.id}/${what}`);
+      await (typeof what === "function" ? what() : api.post(`/rescue/orders/${order.id}/${what}`));
       await load();
     } catch (err) {
       setNotice(at, reason(err));

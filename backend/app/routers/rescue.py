@@ -91,6 +91,7 @@ from app.schemas.rescue import (
     RescueDonatedIn,
     RescueOwnerOfferOut,
     RescueOwnerOrderOut,
+    RescuePaidIn,
     RescueReviewCreate,
     RescueReviewOut,
     RescueTypicalItemsIn,
@@ -130,6 +131,7 @@ from app.services.rescue_no_show import (  # MEH-3226
 )
 from app.utils.clock import israel_today, utc_now
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
+from app.services.rescue_payment import set_paid  # MEH-3897
 from app.services.rescue_writes import (  # MEH-3554
     active_no_shows,
     add_review,
@@ -476,6 +478,24 @@ def mark_handed(
     honest answer is "already done at 18:42".
     """
     return hand_over(db, user=current_user, order_id=order_id, lock=_offer_for_update)
+
+
+@router.post(
+    "/orders/{order_id}/paid",
+    response_model=RescueOrderOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("60/minute")
+def mark_paid(
+    request: Request,
+    order_id: UUID,
+    body: RescuePaidIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RescueOrderOut | RescueOrder:
+    """MEH-3897: the business marks the prepay received (its own Bit / PayBox,
+    MEH-3895), or undoes a mistaken mark with `paid: false`."""
+    return set_paid(db, user=current_user, order_id=order_id, paid=body.paid)
 
 
 @router.post(

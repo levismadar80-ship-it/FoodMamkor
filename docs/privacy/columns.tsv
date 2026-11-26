@@ -751,6 +751,7 @@ rescue_orders.handed_at	orders	a surprise-bag reservation
 rescue_orders.handed_by	orders	a surprise-bag reservation
 rescue_orders.id	orders	a surprise-bag reservation
 rescue_orders.offer_id	orders	a surprise-bag reservation
+rescue_orders.paid_at	orders	a surprise-bag reservation (when the business marked the prepay received)
 rescue_orders.pickup_code	orders	a surprise-bag reservation
 rescue_orders.qty	orders	a surprise-bag reservation
 rescue_orders.status	orders	a surprise-bag reservation

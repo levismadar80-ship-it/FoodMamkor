@@ -235,6 +235,9 @@ class RescueOrder(Base):
         nullable=True,
     )
     cancelled_at = Column(DateTime, nullable=True)
+    # MEH-3897: the business marked the prepay as received (its own Bit /
+    # PayBox, MEH-3895 — we never see the money). NULL = not marked.
+    paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     offer = relationship("RescueOffer", back_populates="orders")

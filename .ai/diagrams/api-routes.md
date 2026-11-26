@@ -280,6 +280,7 @@ graph LR
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
     Counter --> NoShow[POST /rescue/orders/:id/no-show<br/>👤 owner or admin, only after pickup_end<br/>increments users.rescue_no_show_count<br/>MEH-3226: mails the buyer each time (warning / block on)]
+    Counter --> Paid[POST /rescue/orders/:id/paid<br/>👤 owner or admin · body paid: bool<br/>reserved or handed only, else 409<br/>MEH-3897 stamps or clears rescue_orders.paid_at]
 
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics<br/>MEH-3226: /admin/users row menu «שחרור חסימת סלים»]
 
