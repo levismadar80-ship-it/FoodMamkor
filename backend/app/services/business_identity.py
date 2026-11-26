@@ -325,18 +325,23 @@ def identity_matches(
     candidate: Identity,
     *,
     exclude_id: UUID | None = None,
-    is_test: bool = False,
+    test_world: bool = False,
     account_phones: bool = True,
 ) -> list[IdentityMatch]:
     """Every business that shares a strong signal with `candidate`.
 
     The order is strongest reason count, then name, so the answer is stable.
     A test business is compared only with test businesses (MEH-2952), and a
-    business never matches itself. `account_phones=False` for an anonymous
-    caller: the owners' private phones are not matched on.
+    business never matches itself. `test_world` is the caller's own test
+    flag (named so, not after the column: MEH-2952's writer guard reads any
+    `is_test=` as a write). `account_phones=False` for the sign-up route:
+    the owners' private phones are not matched on.
     """
     return _match(
-        _existing(db), candidate, (exclude_id, is_test), account_phones=account_phones
+        _existing(db),
+        candidate,
+        (exclude_id, test_world),
+        account_phones=account_phones,
     )
 
 

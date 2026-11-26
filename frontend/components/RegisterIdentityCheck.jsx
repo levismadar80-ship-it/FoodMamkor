@@ -27,7 +27,7 @@ import { validateIsraeliPhone } from "@/lib/validators";
 
 const DEBOUNCE_MS = 600;
 
-/** @typedef {{ owner_email: string | null }} IdentityMatch */
+/** @typedef {{ owner_email?: string | null }} IdentityMatch */
 
 /**
  * The page this business already has, or null. A signed-in user is checked

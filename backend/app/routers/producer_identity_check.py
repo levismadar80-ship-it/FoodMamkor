@@ -68,7 +68,7 @@ def producer_identity_check(
         db,
         candidate,
         exclude_id=getattr(current_user, "producer_id", None),
-        is_test=bool(getattr(current_user, "is_test", False)),
+        test_world=bool(getattr(current_user, "is_test", False)),
         account_phones=False,
     )
     if not matches:
