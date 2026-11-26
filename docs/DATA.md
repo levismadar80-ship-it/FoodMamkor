@@ -2386,6 +2386,27 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  button resolves to (chat_business_extras.contact_channel, the
                                  port of lib/contact-method.js getResolvedMethod) — a name, never
                                  the number or link.
+POST /chat/owner                 👤 owner (require_producer) — MEH-3902, the dashboard
+                                 assistant (routers/chat_owner.py). Body {messages, section,
+                                 locale}: section = the dashboard path she is on, kept only
+                                 when it is a screen in app/owner_sections.py (else null);
+                                 locale he|en picks the answer language. The prompt lists every
+                                 dashboard screen and edit card; a fenced <owner_business>
+                                 block carries her status, what still blocks «שליחה לבדיקה»
+                                 and where to fix it, and empty fields. Answer {reply, draft,
+                                 products, action, unanswered}. Tools: fill_page_from_chat →
+                                 draft (services/page_filler.read_page on HER messages only);
+                                 products_from_chat → products (menu_reader.read_menu_text,
+                                 her messages only; none found → action add_products);
+                                 show_in_chat → action add_products | upload_photos |
+                                 send_for_review (the last for a draft only); note_unanswered
+                                 → unanswered = a screen key or "other", never her words.
+                                 Saves nothing: the widget opens the dashboard's own card
+                                 (PUT /producers/me, POST /producers/me/menu-import/publish,
+                                 POST /upload/image, POST /producers/me/submit-for-review).
+                                 Limits 20/min · 120/h per IP, 150/day per business; the site
+                                 chat's daily cap and ai_budget "fast" (+ "menu" for products)
+                                 apply. No key → offline line.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`

@@ -9831,6 +9831,109 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerChatRequest": {
+        "properties": {
+          "locale": {
+            "default": "he",
+            "enum": [
+              "he",
+              "en"
+            ],
+            "title": "Locale",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "title": "OwnerChatRequest",
+        "type": "object"
+      },
+      "OwnerChatResponse": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "enum": [
+                  "add_products",
+                  "upload_photos",
+                  "send_for_review"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "products": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MenuRow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Products"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "unanswered": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unanswered"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "OwnerChatResponse",
+        "type": "object"
+      },
       "OwnerDetachIn": {
         "properties": {
           "confirm_name": {
@@ -31528,6 +31631,53 @@
           }
         },
         "summary": "Chat",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/chat/owner": {
+      "post": {
+        "description": "Answer the owner inside her dashboard, or hand back a page draft.",
+        "operationId": "owner_chat_chat_owner_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerChatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Owner Chat",
         "tags": [
           "chat"
         ]

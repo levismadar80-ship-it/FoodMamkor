@@ -24,6 +24,7 @@ from app.routers import (
     business_suggestions,
     category_requests,
     chat,
+    chat_owner,
     cities,
     events,
     experiences,
@@ -98,6 +99,8 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(review_reply_suggest.router)
     # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
     app.include_router(page_fill.router)
+    # owner assistant (26/11): POST /chat/owner, the dashboard's own assistant
+    app.include_router(chat_owner.router)
     # MEH-3740: «יש לכם מתכון כתוב?» — one draft route for every dashboard form
     app.include_router(form_fill.router)
     # MEH-3641: «הפרופיל שלכם בגוגל» — /producers/me/google-profile

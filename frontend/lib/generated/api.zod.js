@@ -4564,6 +4564,44 @@ export const ChatChatPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * Answer the owner inside her dashboard, or hand back a page draft.
+ * @summary Owner Chat
+ */
+export const ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax = 20;
+
+export const ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax = 300;
+
+export const ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault = `unit`;
+
+export const OwnerChatChatOwnerPostResponse = /*#__PURE__*/ zod.object({
+  "action": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['add_products', 'upload_photos', 'send_for_review']),/*#__PURE__*/ zod.null()])),
+  "draft": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "category_ids": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.int()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax))),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_cities": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax))),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Every field is optional: what the text does not say stays None.')),/*#__PURE__*/ zod.null()])),
+  "products": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']), ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault),
+  "section": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "uncertain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.enum(['name', 'description', 'price', 'unit'])))
+}).check(/*#__PURE__*/ zod.describe('One product as read from the menu. Nothing is saved yet.'))),/*#__PURE__*/ zod.null()])),
+  "reply": /*#__PURE__*/ zod.string(),
+  "unanswered": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
  * Autocomplete: cities table (canonical) ∪ live business cities,
  * with the static list as the unseeded-env fallback (MEH-1349).
  *

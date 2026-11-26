@@ -48,6 +48,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/product_orders.py` | The tables behind on-site ordering («בקשת הזמנה»): a business's ordering settings, an order, its lines, and the log of its status changes. |
 | `models/recipes.py` | Recipes a business publishes on its page, and their moderation state. |
 | `models/rescue.py` | The rescue-bags pilot: offers, orders, reviews and the typical items a business lists for its bags. |
+| `owner_sections.py` | The one list of owner-dashboard screens the owner assistant knows: each screen's path, name and what is on it, and the edit-page cards it may send the owner … |
 | `pricing.py` | The server's copy of the price list (ADR-042) and the two fee calculations the billing ledger needs. Money is in agorot, as ints. |
 | `rate_limit.py` | Shared rate limiter instance used across all routers. |
 | `router_registry.py` | — אין כותרת — |
@@ -75,6 +76,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/business_suggestions.py` | Let a visitor suggest a business that is not on Mehamakor yet, and turn that suggestion into an ordinary outreach lead the team works by hand. … |
 | `routers/category_requests.py` | MEH-141: Category request flow — public submit + admin review. |
 | `routers/chat.py` | Chat assistant router — answers questions about mehamakor.co.il via Claude. |
+| `routers/chat_owner.py` | POST /chat/owner — the assistant inside the business owner's dashboard. It knows her business (status, what still blocks «שליחה לבדיקה», empty fields), the … |
 | `routers/cities.py` | MEH-213: GET /cities — autocomplete endpoint backed by the canonical cities table. … |
 | `routers/events.py` | Events feature — sits on top of producers. |
 | `routers/experiences.py` | Public + authenticated routes for the experiences (community workshops) feature. |
@@ -151,6 +153,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
 | `schemas/my_orders_any.py` | The answer of GET /users/me/orders/any (MEH-3698): whether «ההזמנות שלי» has anything to show the caller. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
+| `schemas/owner_chat.py` | The owner-dashboard assistant's request and answer: her chat, the screen she is on and her interface language; … |
 | `schemas/owner_detach.py` | Request body for the admin's «ניתוק בעלים» (MEH-3256, grill retro D9). |
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
 | `schemas/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner's free text in, a draft of the business-page fields out. Nothing is saved by the read. |
@@ -267,6 +270,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |
 | `services/outbound_guard.py` | Outside production, no message reaches a real person. Every channel that can reach a person asks this module first, so the protection comes from the … |
 | `services/outreach_lead_registration.py` | Mark an outreach lead «registered» when its owner signs up through the lead's prefill link (MEH-3026 F11) — until now the pipeline status never moved, so the … |
+| `services/owner_assistant.py` | What the owner-dashboard assistant knows and may do: the prompt (every dashboard screen, the edit cards it links to), the owner's own business state (status, … |
 | `services/owner_attention.py` | The «מה ממתין לטיפול» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her … |
 | `services/owner_detach.py` | The one mail of the admin «ניתוק בעלים» action: tells the former owner that her account is no longer linked to the business and that the account itself stays. |
 | `services/owner_invite_google.py` | Let a FRESH Google sign-in stand in for the email code when a signed-in account accepts an owner invite (MEH-3675, Sapir's choice 22/11: «כן, רק בכניסה טרייה»). |
@@ -497,6 +501,9 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |
 | `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
+| `owner-assistant-store.js` | Keep the owner's assistant conversation in this browser for a week, so closing the tab or reloading does not lose it. |
+| `owner-page-updated.js` | Tell the open dashboard screen that the business was saved from somewhere else on the page (the dashboard assistant's fill), so it reads the business again … |
+| `owner-pages.js` | The dashboard paths the owner assistant may link to, which screen a dashboard URL belongs to, and the function that splits an answer into text and links to … |
 | `owner-preview.js` | One rule for "an owner or admin is opening an item that may not be public yet" (MEH-2977 follow-up). … |
 | `page-fill.js` | «ספרו לנו על העסק» (MEH-3483): turn the server's draft of the page fields into preview rows, and the rows the owner kept into the writes that save them. |
 | `pagination.js` | Pagination helpers (MEH-23). Pure functions — no React, no DOM. |
@@ -729,6 +736,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `OwnerRow.jsx` | OwnerRow — who runs an event or an experience, as one tappable row: initial avatar, the line, and a forward chevron (the Eventbrite «Organized by» / Airbnb … |
 | `OwnerSectionEditLink.jsx` | Owner-only per-section edit affordance on the public business page (MEH-1306) — a calm muted pencil beside a mapped section that deep-links into the matching … |
 | `PageFillPanel.jsx` | «ספרו לנו על העסק» (MEH-3483). The owner writes about her business in her own words; Claude drafts the page fields; … |
+| `PageFillReview.jsx` | The second half of «ספרו לנו על העסק» (MEH-3483): a draft of the page fields shown field by field, each with a checkbox, and the save of only what the owner … |
 | `Pagination.jsx` | — אין כותרת — |
 | `PasskeyRecoveryPanel.jsx` | PasskeyRecoveryPanel — the second sign-in step when the passkey did not answer (MEH-3305): the admin cancelled the device prompt, or the device is gone. … |
 | `PasswordInput.jsx` | MEH-306 — reusable password input with live policy feedback. |
@@ -856,6 +864,11 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `offer-detail/HowSteps.jsx` | «איך זה עובד» as numbered steps, one look for every offer page (group buy, rescue bag). Airbnb draws stays and experiences from one set of listing sections; … |
 | `offer-detail/PickupLine.jsx` | The pickup time as one line right under an offer's title (clock, bold label, the window): the first thing a buyer decides on, and on a phone the «where» … |
 | `offer-detail/WhereSection.jsx` | «איפה ומתי מקבלים» for an offer page: icon rows (when, where, pickup, delivery), then the map with Waze / Google, or — when only a text address is known — the … |
+| `owner-assistant/OwnerAssistant.jsx` | The dashboard assistant's entry: one «עוזרת» button in the dashboard's tab row (phone and desktop, the same element), and the panel it opens. … |
+| `owner-assistant/OwnerAssistantCard.jsx` | What an assistant answer opens inside the chat: the page-fields review, the product rows read from her text, the menu upload, the photos card, or the WhatsApp … |
+| `owner-assistant/OwnerAssistantNudge.jsx` | The assistant speaks first: on the dashboard home of a business in draft that still has items before «שליחה לבדיקה», one line says how many are left and a … |
+| `owner-assistant/OwnerAssistantPanel.jsx` | The conversation inside the owner's dashboard assistant: her messages, the answers (with links to the right screen or card), questions to tap for the screen … |
+| `owner-assistant/OwnerAssistantText.jsx` | One owner-assistant answer, with the dashboard screens, edit cards and site pages it names turned into links. |
 | `producer/BusinessQrCard.jsx` | — אין כותרת — |
 | `producer/DraftSubmitBanner.jsx` | — אין כותרת — |
 | `producer/FeedPostCanvas.jsx` | MEH-3330 — the «פוסט מוכן לשיתוף» card in the owner's share kit. She picks a moment (this week · a new product · an upcoming holiday), sees the 4:5 post built … |
