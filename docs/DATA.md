@@ -1725,6 +1725,9 @@ PUT    /admin/experiences/{experience_id}         admin       the handlers call 
                                                               moderation as the owner's. The consent is recorded on the admin
                                                               audit row (`details.after.owner_consent = true`). Unknown
                                                               business / event / experience → 404. 60–120/hr.
+GET    /admin/producers/{producer_id}/experiences admin     — MEH-3876: every experience hosted by an account of the
+                                                              business (any status, cancelled too, newest first,
+                                                              ExperienceDetailOut); none when it has no account.
 GET    /admin/test-businesses                     admin     — MEH-2952 chunk 4: {producer_ids: [uuid]} of the businesses hidden as test rows
 PUT    /admin/test-businesses/{producer_id}       admin       («עסק בדיקה — מוסתר מהאתר»). PUT body {hidden: bool} (extra keys 422) →
                                                               {producer_id, hidden}. Writes producers.is_test only; status untouched,

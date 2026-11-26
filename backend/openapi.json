@@ -27149,6 +27149,57 @@
       }
     },
     "/admin/producers/{producer_id}/experiences": {
+      "get": {
+        "description": "MEH-3876: every experience hosted by an account of the business, in\nevery status (pending, approved, rejected, cancelled), newest first — the\nlist the owner sees (experiences.py list_my_experiences), widened from one\nhost to the business's accounts. A business with no account has none.",
+        "operationId": "admin_list_business_experiences_admin_producers__producer_id__experiences_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExperienceDetailOut"
+                  },
+                  "title": "Response Admin List Business Experiences Admin Producers  Producer Id  Experiences Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Business Experiences",
+        "tags": [
+          "admin-business-content"
+        ]
+      },
       "post": {
         "operationId": "admin_create_business_experience_admin_producers__producer_id__experiences_post",
         "parameters": [

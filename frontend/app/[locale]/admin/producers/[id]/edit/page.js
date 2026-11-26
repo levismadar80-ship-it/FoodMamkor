@@ -30,6 +30,7 @@ import BackLink from "@/components/ui/BackLink";
 import AdminVerifiedPanel from "@/components/admin/AdminVerifiedPanel"; // MEH-3524
 import AdminAlcoholPanel from "@/components/admin/AdminAlcoholPanel"; // MEH-3524
 import AdminBusinessEventsPanel from "@/components/admin/AdminBusinessEventsPanel"; // MEH-3873
+import AdminBusinessExperiencesPanel from "@/components/admin/AdminBusinessExperiencesPanel"; // MEH-3876
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -270,6 +271,8 @@ export default function EditProducerPage() {
       />
       {/* MEH-3873: the business's events, written on its behalf with consent. */}
       <AdminBusinessEventsPanel producerId={String(id)} />
+      {/* MEH-3876: its experiences, same shape; needs an owner account (the host). */}
+      <AdminBusinessExperiencesPanel producerId={String(id)} hasOwner={producer.has_owner} />
     </div>
   );
 }
