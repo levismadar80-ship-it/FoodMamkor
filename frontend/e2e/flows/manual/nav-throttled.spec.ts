@@ -31,13 +31,17 @@ import { layoutSettled } from "../_layout-settled";
 
 /**
  * `loader`: whether the route loader appears between this list and its
- * detail page. Measured 3/3 on a local production build, mobile, throttled
- * (25/11): it paints on home, /producers and /events, and never on
- * /experiences and /group-buys, where the list stays on screen until the
- * detail page is ready. On a "never" list no footer can flash under the
- * loader, and the check says so by asserting 0 loader frames; if a loader
- * starts to paint there, the row goes red and is moved to "shows", so the
- * flash check gets a real control.
+ * detail page, once Next has prefetched that page (the spec waits for the
+ * prefetch before the click, see `waitForPrefetch`). Without that wait it was
+ * a race, not a property of the list: /experiences painted 0 frames on a click
+ * made at once and 21–26 frames on a click made 8 s later, 3/3 each, local
+ * production build, mobile, throttled (MEH-3877, 26/11; the 25/11 "never"
+ * reading was the fast click). With the wait, measured 3/3: it paints on home,
+ * /events and /experiences, and never on /group-buys, where the list stays on
+ * screen until the detail page is ready. On a "never" list no footer can
+ * flash under the loader, and the check says so by asserting 0 loader frames;
+ * if a loader starts to paint there, the row goes red and is moved to
+ * "shows", so the flash check gets a real control.
  *
  * `cards`: group buys carry a card testid. Event and experience rows
  * (EventEntryRow) carry none, so those two are scoped to `main` and the
@@ -51,7 +55,7 @@ const LISTS: List[] = [
   // `grows`: infinite scroll — the scroll to the last card loads the next page.
   { name: "all businesses", path: "/producers", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows", grows: true },
   { name: "events", path: "/events", cards: 'main a[href^="/events/"]', loader: "shows" },
-  { name: "experiences", path: "/experiences", cards: 'main a[href^="/experiences/"]', loader: "never" },
+  { name: "experiences", path: "/experiences", cards: 'main a[href^="/experiences/"]', loader: "shows" },
   { name: "group buys", path: "/group-buys", cards: 'a[data-testid="group-buy-card"]', loader: "never" },
 ];
 
@@ -111,6 +115,29 @@ function expectLoaderControl(list: List, painted: number) {
   expect(painted, `${list.name}: the route loader painted for ${painted} frames on a list measured as "never" — move it to "shows" in LISTS`).toBe(0);
 }
 
+/** Pathnames of every finished Next router prefetch, from the first request on. */
+function recordPrefetches(page: Page): Set<string> {
+  const done = new Set<string>();
+  page.on("requestfinished", (req) => {
+    if (req.headers()["next-router-prefetch"]) done.add(new URL(req.url()).pathname);
+  });
+  return done;
+}
+
+/** Wait until the prefetch of the card's detail route has finished. `href`
+ *  is locale-less and may carry a query (home: `?from=home`); the prefetch
+ *  URL carries the locale and `_rsc`, so only the path is compared. */
+async function waitForPrefetch(page: Page, done: Set<string>, list: List, href: string | null) {
+  expect(href, `${list.name}: the card has no href`).toBeTruthy();
+  const path = new URL(href as string, page.url()).pathname;
+  await expect
+    .poll(() => [...done].some((p) => p === path || p.endsWith(path)), {
+      message: `${list.name}: Next never prefetched ${path}, so the click cannot be made at the moment the loader would show`,
+      timeout: 60_000,
+    })
+    .toBe(true);
+}
+
 /** The click has left `fromUrl` and the route loader is gone. */
 async function detailLoaded(page: Page, fromUrl: string): Promise<boolean> {
   const left = page.url() !== fromUrl;
@@ -144,8 +171,9 @@ async function offsetFrom(page: Page, before: number): Promise<number> {
 test.describe("navigation on a slow phone (MEH-3810)", () => {
   // MEH-3809: the load guard is off here. This spec counts frames on a CPU
   // throttled 4x, and the guard's probe (an init script and a binding call per
-  // shift) changes what it counts: with the guard on, /experiences painted the
-  // loader for 18 frames on both tries, and 0 without it (staging, ae0bd17).
+  // shift) adds work to every frame it counts. (The 18 loader frames on
+  // /experiences once blamed on the guard were the prefetch race above: they
+  // came back with the guard off, MEH-3877.)
   // It also scrolls to the end on purpose so /producers loads the next page,
   // which moves the footer (MEH-3874). The other flows specs keep the guard
   // on every page this one opens.
@@ -156,9 +184,11 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
       test.skip(browserName !== "chromium", "CDP network and CPU throttling exist only in Chromium");
       // eslint-disable-next-line playwright/no-skipped-test -- gated on the Playwright project, which the product cannot move: the case is the phone's (see header)
       test.skip(testInfo.project.name !== "mobile", "a phone case; the desktop project would only double the run");
-      // The three waits below are 60 + 60 + 30 s at most; the rest is the click.
+      // A ceiling, not a budget: each wait below has its own 60 s or 30 s bound,
+      // and a run that reaches this one is already failing.
       test.setTimeout(180_000);
       await throttle(page);
+      const prefetched = recordPrefetches(page);
 
       await page.goto(list.path);
       const cards = page.locator(list.cards);
@@ -192,6 +222,13 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
       await layoutSettled(card);
       const before = await page.evaluate(() => scrollY);
       const fromUrl = page.url();
+      // The loader can paint only if Next's viewport prefetch of this card's
+      // detail route finished before the click; a click that beats the
+      // prefetch keeps the list on screen until the page is ready, with no
+      // loader at all (MEH-3877: measured 3/3 each way on /experiences). So the
+      // click waits for that prefetch: a reader whose card sat on screen a
+      // moment, the case MEH-3800 was, and one the control can count on.
+      await waitForPrefetch(page, prefetched, list, await card.getAttribute("href"));
 
       await startSampler(page);
       await card.click();
