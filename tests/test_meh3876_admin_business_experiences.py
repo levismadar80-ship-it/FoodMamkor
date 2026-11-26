@@ -8,6 +8,7 @@ what came back.
 import uuid
 from datetime import timedelta
 
+from app.models.models import Experience
 from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
 
@@ -102,3 +103,47 @@ def test_the_business_owner_is_refused(client, db):
     owner = _owner_of(db, producer, email="owner-403-3876@example.com")
     resp = _list(client, owner, producer.id)
     assert resp.status_code == 403
+
+
+def test_every_status_and_a_cancelled_one_are_listed(client, db):
+    producer = make_producer(db, status="approved")
+    _owner_of(db, producer, email="owner-status-3876@example.com")
+    admin = _admin(db)
+    ids = [_create(client, admin, producer, f"סדנה מספר {n}")["id"] for n in range(4)]
+    rows = {str(r.id): r for r in db.query(Experience).filter(Experience.id.in_(ids)).all()}
+    rows[ids[0]].status = "approved"
+    rows[ids[1]].status = "rejected"
+    rows[ids[2]].status = "changes_requested"
+    rows[ids[3]].is_active = False
+    db.commit()
+
+    resp = _list(client, admin, producer.id)
+
+    assert resp.status_code == 200, resp.text
+    by_id = {r["id"]: r for r in resp.json()}
+    assert set(by_id) == set(ids)
+    assert by_id[ids[0]]["status"] == "approved"
+    assert by_id[ids[1]]["status"] == "rejected"
+    assert by_id[ids[2]]["status"] == "changes_requested"
+    assert by_id[ids[3]]["is_active"] is False
+
+
+def test_experiences_of_a_second_account_of_the_business_are_listed(client, db):
+    producer = make_producer(db, status="approved")
+    _owner_of(db, producer, email="owner-a-3876@example.com")
+    second = _owner_of(db, producer, email="owner-b-3876@example.com")
+    admin = _admin(db)
+    made = _create(client, admin, producer, "סדנה של החשבון הראשון")
+    row = db.get(Experience, made["id"])
+    row.host_user_id = second.id
+    db.commit()
+
+    resp = _list(client, admin, producer.id)
+
+    assert [r["title"] for r in resp.json()] == ["סדנה של החשבון הראשון"]
+
+
+def test_no_token_is_401(client, db):
+    producer = make_producer(db, status="approved")
+    resp = client.get(f"/admin/producers/{producer.id}/experiences")
+    assert resp.status_code == 401

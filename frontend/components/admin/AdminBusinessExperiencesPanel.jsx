@@ -87,8 +87,13 @@ export default function AdminBusinessExperiencesPanel({ producerId, hasOwner = n
   const experiences = Array.isArray(data) ? data : [];
   const isEdit = open?.kind === "edit";
 
-  const onSaved = async () => {
-    showToast.success(isEdit ? tEvents("updated") : t("created"));
+  // An edit that changed the content sends the experience back to the queue
+  // (experiences.py update_experience_row, `content_changed`); the toast says
+  // so only when the server answered with `pending`.
+  /** @param {{ status?: string } | undefined} saved */
+  const onSaved = async (saved) => {
+    const editMsg = saved?.status === "pending" ? t("updated") : tEvents("updated");
+    showToast.success(isEdit ? editMsg : t("created"));
     setOpen(null);
     await mutate();
   };
@@ -122,7 +127,7 @@ export default function AdminBusinessExperiencesPanel({ producerId, hasOwner = n
  * The bottom of the panel: the explanation (no owner), the add button, or
  * the open form. Editing a listed row works with or without the flag — a row
  * can only be listed when an account of the business hosts it.
- * @param {{ producerId: string, hasOwner: boolean | null, open: OpenState, setOpen: (o: OpenState) => void, onSaved: () => Promise<void> }} props
+ * @param {{ producerId: string, hasOwner: boolean | null, open: OpenState, setOpen: (o: OpenState) => void, onSaved: (saved?: { status?: string }) => Promise<void> }} props
  */
 function PanelAction({ producerId, hasOwner, open, setOpen, onSaved }) {
   const t = useTranslations("admin.business_experiences");

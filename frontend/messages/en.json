@@ -1746,6 +1746,7 @@
       "no_owner": "This business has no owner account yet, so an experience can't be added. You can add an event.",
       "add": "Add an experience",
       "consent_label": "The business agreed in writing to this experience and its details",
+      "updated": "Changes saved. The experience went back to the approval queue",
       "created": "The experience was sent to the approval queue",
       "load_error": "We couldn't load the experiences. Try refreshing the page."
     },

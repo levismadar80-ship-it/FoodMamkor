@@ -37,9 +37,18 @@ vi.mock("@/components/AddressSearch", () => ({
     <input id={id} value={value} onChange={(e) => onChange(e.target.value)} />
   ),
 }));
-const apiState = vi.hoisted(() => ({ rows: /** @type {any[]} */ ([]), mutate: vi.fn() }));
+const apiState = vi.hoisted(() => ({
+  rows: /** @type {any} */ ([]),
+  error: /** @type {any} */ (null),
+  isLoading: false,
+  mutate: vi.fn(),
+  urls: /** @type {string[]} */ ([]),
+}));
 vi.mock("@/lib/use-api", () => ({
-  useUserApi: () => ({ data: apiState.rows, error: null, isLoading: false, mutate: apiState.mutate }),
+  useUserApi: (url) => {
+    apiState.urls.push(url);
+    return { data: apiState.rows, error: apiState.error, isLoading: apiState.isLoading, mutate: apiState.mutate };
+  },
 }));
 vi.mock("@/lib/use-israel-today", () => ({ default: () => "2026-11-26" }));
 
@@ -71,6 +80,9 @@ function wrap(node) {
 beforeEach(() => {
   vi.clearAllMocks();
   apiState.rows = [];
+  apiState.error = null;
+  apiState.isLoading = false;
+  apiState.urls = [];
 });
 
 describe("ExperienceForm in admin mode", () => {
@@ -85,6 +97,8 @@ describe("ExperienceForm in admin mode", () => {
     fireEvent.click(screen.getByRole("button", { name: T.save_cta }));
     expect(api.put).not.toHaveBeenCalled();
     expect(screen.getByText(he.admin.business_events.consent_required)).toBeTruthy();
+    // The only invalid field is the box, so focus lands on it.
+    expect(document.activeElement).toBe(document.getElementById("experience-owner-consent"));
   });
 
   it("an edit with consent goes to PUT /admin/experiences/{id} with owner_consent", async () => {
@@ -127,6 +141,63 @@ describe("ExperienceForm in admin mode", () => {
 });
 
 describe("AdminBusinessExperiencesPanel", () => {
+  it("reads the list from this business's admin route", () => {
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    expect(apiState.urls).toContain("/admin/producers/p1/experiences");
+  });
+
+  it("loading: the loading line, no empty line", () => {
+    apiState.rows = undefined;
+    apiState.isLoading = true;
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    expect(screen.getByText(he.admin.common.loading)).toBeTruthy();
+    expect(screen.queryByTestId("admin-business-experiences-empty")).toBeNull();
+  });
+
+  it("load error: the error message, no empty line", () => {
+    apiState.rows = undefined;
+    apiState.error = new Error("500");
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    expect(screen.getByText(A.load_error)).toBeTruthy();
+    expect(screen.queryByTestId("admin-business-experiences-empty")).toBeNull();
+  });
+
+  it("1 experience, open for a new one: an empty form under the row", () => {
+    apiState.rows = [ROW];
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    fireEvent.click(screen.getByTestId("admin-business-experience-add"));
+    expect(document.getElementById("experience-title").value).toBe("");
+    expect(screen.getByRole("button", { name: T.submit_cta })).toBeTruthy();
+    expect(screen.getByTestId("admin-business-experiences-list").querySelectorAll("li")).toHaveLength(1);
+  });
+
+  it("many experiences, open for edit of the second: the form holds that row", () => {
+    apiState.rows = [ROW, { ...ROW, id: "ex-2", title: "סדנה שנייה" }];
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    fireEvent.click(screen.getAllByTestId("admin-business-experience-edit")[1]);
+    expect(document.getElementById("experience-title").value).toBe("סדנה שנייה");
+    expect(screen.getByRole("button", { name: T.save_cta })).toBeTruthy();
+  });
+
+  it("an edit the server sent back to the queue says so in the toast", async () => {
+    const { showToast } = await import("@/lib/toast");
+    api.put.mockResolvedValue({ data: { ...ROW, status: "pending" } });
+    apiState.rows = [ROW];
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner />);
+    fireEvent.click(screen.getByTestId("admin-business-experience-edit"));
+    fireEvent.click(screen.getByTestId("experience-owner-consent"));
+    fireEvent.click(screen.getByRole("button", { name: T.save_cta }));
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledWith(A.updated));
+  });
+
+  it("no owner account but rows listed: rows shown, explanation instead of add", () => {
+    apiState.rows = [ROW];
+    wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner={false} />);
+    expect(screen.getByTestId("admin-business-experiences-list").querySelectorAll("li")).toHaveLength(1);
+    expect(screen.getByTestId("admin-business-experiences-no-owner")).toBeTruthy();
+    expect(screen.queryByTestId("admin-business-experience-add")).toBeNull();
+  });
+
   it("no owner account: the explanation, and no add button", () => {
     wrap(<AdminBusinessExperiencesPanel producerId="p1" hasOwner={false} />);
     expect(screen.getByTestId("admin-business-experiences-no-owner").textContent).toBe(A.no_owner);

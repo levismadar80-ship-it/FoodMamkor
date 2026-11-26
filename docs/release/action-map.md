@@ -17,7 +17,7 @@
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
 | API routes (actor actions) | 360 | 345 | 10 | 5 | 0 |
-| — negative cell of gated routes (401/403) | 273 | 185 | 0 | 88 | 0 |
+| — negative cell of gated routes (401/403) | 273 | 186 | 0 | 87 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 55 | 52 | 1 | 2 | 0 |
 | Pages — public | 64 | 52 | 0 | 12 | 0 |
@@ -28,7 +28,7 @@
 
 Pages opened by a CI-run Playwright spec: **43 / 112** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 123** (route positive 5 · route negative 88 · tools 2 · pages 19 · machine rows 8 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 122** (route positive 5 · route negative 87 · tools 2 · pages 19 · machine rows 8 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -298,7 +298,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 223 | GET | `/admin/producers/{producer_id}/events` | `admin_business_content.admin_list_business_events` | admin | `tests/test_meh3873_admin_business_content.py:275` | `tests/test_meh3873_admin_business_content.py:309` | — | 3 |
 | 224 | POST | `/admin/producers/{producer_id}/events` | `admin_business_content.admin_create_business_event` | admin | `tests/test_meh3873_admin_business_content.py:73` | `tests/test_meh3873_admin_business_content.py:176` | — | 5 |
 | 225 | PUT | `/admin/events/{event_id}` | `admin_business_content.admin_update_business_event` | admin | `tests/test_meh3873_admin_business_content.py:217` | `tests/test_meh3873_admin_business_content.py:258` | — | 5 |
-| 226 | GET | `/admin/producers/{producer_id}/experiences` | `admin_business_content.admin_list_business_experiences` | admin | `tests/test_meh3876_admin_business_experiences.py:52` | GAP | — | 5 |
+| 226 | GET | `/admin/producers/{producer_id}/experiences` | `admin_business_content.admin_list_business_experiences` | admin | `tests/test_meh3876_admin_business_experiences.py:53` | `tests/test_meh3876_admin_business_experiences.py:149` | — | 3 |
 | 227 | POST | `/admin/producers/{producer_id}/experiences` | `admin_business_content.admin_create_business_experience` | admin | `tests/test_meh3873_admin_business_content.py:321` | GAP | — | 7 |
 | 228 | PUT | `/admin/experiences/{experience_id}` | `admin_business_content.admin_update_business_experience` | admin | `tests/test_meh3873_admin_business_content.py:377` | GAP | — | 7 |
 | 229 | POST | `/admin/producers/{producer_id}/product-import` | `admin_product_import.admin_import_products` | admin | `tests/test_admin_product_import.py:56` | `tests/test_admin_product_import.py:73` (table row) | — | 5 |
