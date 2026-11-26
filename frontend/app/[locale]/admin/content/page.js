@@ -47,8 +47,11 @@ export default function AdminContentPage() {
 }
 
 // MEH-3911: same shape as the backend CategoryCreate.slug pattern.
-// Two characters at least, as CategoryCreate.slug (schemas/site.py) demands.
-const ENGLISH_SLUG = /^(?=.{2,50}$)[a-z0-9]+(-[a-z0-9]+)*$/;
+// 2–50 characters, as CategoryCreate.slug (schemas/site.py) demands. Checked
+// per hyphen-separated part: no nested-quantifier regex (security/detect-unsafe-regex).
+const SLUG_PART = /^[a-z0-9]+$/;
+const isEnglishSlug = (s) =>
+  s.length >= 2 && s.length <= 50 && s.split("-").every((part) => SLUG_PART.test(part));
 
 function CategoriesEditor() {
   const t = useTranslations("admin");
@@ -75,7 +78,7 @@ function CategoriesEditor() {
   const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (!ENGLISH_SLUG.test(slug)) {
+    if (!isEnglishSlug(slug)) {
       setSlugInvalid(true);
       return;
     }

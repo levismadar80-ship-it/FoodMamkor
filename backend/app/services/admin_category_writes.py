@@ -95,9 +95,13 @@ def create_category_row(db: Session, data: CategoryCreate) -> Category:
     # clear 400, not a silent `-2` (the admin chose that word on purpose).
     # MEH-3911: a static segment under /producers/ would shadow the category page.
     if data.slug in RESERVED_CATEGORY_SLUGS:
-        raise HTTPException(status_code=400, detail="הכתובת הזאת שמורה לאתר, בחרו כתובת אחרת")
+        raise HTTPException(
+            status_code=400, detail="הכתובת הזאת שמורה לאתר, בחרו כתובת אחרת"
+        )
     if data.slug and db.query(Category.id).filter(Category.slug == data.slug).first():
-        raise HTTPException(status_code=400, detail="הכתובת באנגלית כבר בשימוש בקטגוריה אחרת")
+        raise HTTPException(
+            status_code=400, detail="הכתובת באנגלית כבר בשימוש בקטגוריה אחרת"
+        )
     cat = Category(
         name=data.name,
         emoji=data.emoji,
