@@ -14,11 +14,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from app.models import ProducerPageView
+from app.models import ContactClick, Favorite, ProducerPageView, ProducerWhatsAppClick
 from app.services import onboarding_day30_numbers as day30
 from app.services import onboarding_followup
 from app.services import page_freshness as pf
-from conftest import israel_days_ago
+from conftest import israel_days_ago, make_user
 from test_onboarding_followup import _make_producer_user, sent_log  # noqa: F401
 from test_page_freshness import NOW, _business, enabled, sent  # noqa: F401
 
@@ -94,6 +94,30 @@ class TestNumbers:
         assert "צפיות בעמוד: 3\n" in body
         assert body.index("צפיות בעמוד") < body.index('תג "מאומת"')
 
+    def test_every_row_from_the_real_tables(self, db, sent_log):
+        """Review finding: each of the four cells is read from its own table,
+        so a wrong metric key cannot silently drop the block (fail-open)."""
+        producer, _ = _make_producer_user(db, days_old=30, license_number="12345")
+        _views(db, producer, 2)
+        fan = make_user(db, role="consumer", email_verified=True)
+        db.add(
+            ProducerWhatsAppClick(
+                producer_id=producer.id, clicked_at=israel_days_ago(3)
+            )
+        )
+        db.add(ContactClick(producer_id=producer.id, user_id=None, method="phone"))
+        db.add(Favorite(user_id=fan.id, producer_id=producer.id))
+        db.commit()
+        onboarding_followup.send_due_followups(db)
+        _to, _subject, body = _step5(sent_log)
+        for line in (
+            "צפיות בעמוד: 2\n",
+            "קליקים בוואטסאפ: 1\n",
+            "קליקים על טלפון, אתר ועוד: 1\n",
+            "שמירות במועדפים: 1\n",
+        ):
+            assert line in body
+
     def test_rows_hide_zeros_and_keep_order(self):
         assert day30.rows(_numbers()) == []
         assert day30.rows(_numbers(views=12, saves=2)) == [
@@ -125,6 +149,12 @@ class TestNotOnTheSameDayAsFreshness:
         assert sent == []
         db.refresh(producer)
         assert producer.freshness_email_sent_at is None  # asked on a later day
+
+    def test_exactly_seven_days_still_waits(self, db, sent, enabled):
+        producer, _owner = _business(db, age_days=90)
+        producer.email_followup_5_sent_at = NOW - pf.AFTER_ONBOARDING_DAY30
+        db.commit()
+        assert pf.send_freshness_emails(db, now=NOW)["sent"] == 0
 
     def test_sent_once_day30_email_is_over_a_week_old(self, db, sent, enabled):
         producer, _owner = _business(db, age_days=90)
