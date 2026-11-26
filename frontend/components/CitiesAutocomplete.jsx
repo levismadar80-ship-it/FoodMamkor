@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { REGIONS } from "@/data/regions";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { useCitiesPaste } from "@/components/cities-paste";
 
 /**
  * MEH-213: Multi-select city autocomplete backed by GET /cities?q=.
@@ -36,6 +38,12 @@ import { REGIONS } from "@/data/regions";
  * ProducerForm). Clicking a region unions its data/regions.js city list
  * into value (dedupe); a fully-selected region renders disabled ("נוסף").
  * UI sugar only — no region entity is persisted.
+ *
+ * MEH-3867 — paste a list: two or more names pasted at once (comma, newline,
+ * semicolon, tab) are checked in one POST /cities/match; known names become
+ * chips, unknown ones are listed under the field instead of dropped
+ * (components/cities-paste.js). Every consumer gets it; the hint line shows in
+ * the delivery contexts (showRegionChips), where long lists are pasted.
  */
 export default function CitiesAutocomplete({
   value = [],
@@ -51,6 +59,7 @@ export default function CitiesAutocomplete({
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const listboxId = useRef(`cities-listbox-${Math.random().toString(36).slice(2)}`).current;
+  const { pasteResult, onPaste, clearPasteResult } = useCitiesPaste({ value, onChange });
 
   const fetchSuggestions = useCallback((q) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -76,6 +85,7 @@ export default function CitiesAutocomplete({
 
   const handleInput = (e) => {
     const q = e.target.value;
+    clearPasteResult();
     setQuery(q);
     fetchSuggestions(q);
   };
@@ -229,6 +239,13 @@ export default function CitiesAutocomplete({
           value={query}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
+          onPaste={(e) => {
+            // MEH-3867: a list paste closes the suggestions, and cancels a
+            // pending fetch that would reopen them over the result line.
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            setOpen(false);
+            onPaste(e);
+          }}
           onFocus={() => { if (suggestions.length > 0) setOpen(true); else fetchSuggestions(query); }}
           onBlur={handleBlur}
           placeholder={value.length === 0 ? t("placeholder") : ""}
@@ -248,6 +265,29 @@ export default function CitiesAutocomplete({
           "picking from the list" — PR #1811 review). */}
       {query.trim() !== "" && activeIdx < 0 && (
         <p className="mt-1 text-xs text-fg-muted">{t("commit_hint")}</p>
+      )}
+
+      {/* MEH-3867: how to paste a list, and what the last paste did. */}
+      {showRegionChips && !pasteResult && (
+        <p className="mt-1 text-xs text-fg-muted">{t("paste_hint")}</p>
+      )}
+      {pasteResult && (
+        <div className="mt-1 space-y-0.5" data-testid="cities-paste-result">
+          {pasteResult.error && (
+            <InlineMessage size="xs">{t("paste_error")}</InlineMessage>
+          )}
+          {!pasteResult.error && pasteResult.added > 0 && (
+            <InlineMessage tone="success" size="xs">{t("paste_added", { count: pasteResult.added })}</InlineMessage>
+          )}
+          {!pasteResult.error && pasteResult.added === 0 && pasteResult.unmatched.length === 0 && (
+            <InlineMessage tone="info" size="xs">{t("paste_all_present")}</InlineMessage>
+          )}
+          {pasteResult.unmatched.length > 0 && (
+            <InlineMessage size="xs" data-testid="cities-paste-unmatched">
+              {t("paste_unmatched", { cities: pasteResult.unmatched.join(", ") })}
+            </InlineMessage>
+          )}
+        </div>
       )}
 
       {/* Dropdown */}

@@ -99,6 +99,10 @@ function probe(page: Page): Promise<Probe> {
 }
 
 test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
+  // MEH-3809: this spec enlarges the root font on a loaded page, so the page
+  // reflows by design and every reflow is a layout shift with no input. The
+  // error checks stay on; CLS is measured by every other spec on these pages.
+  test.use({ loadGuard: "errors" });
   for (const path of ROUTES) {
     test(path, async ({ page }, info) => {
       const passes = info.project.use.isMobile

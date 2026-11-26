@@ -21,10 +21,14 @@
  * network request per session.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
+
+// MEH-3809: a cached answer lands before the first paint (as use-hub-nav-gate.js,
+// MEH-3049), so the Header's held place never paints and then goes.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Below this many upcoming public experiences the link stays hidden.
@@ -111,21 +115,31 @@ function loadCount() {
  *     route change is dropped rather than warned about.
  */
 export function useExperiencesNavGate() {
-  const [visible, setVisible] = useState(false);
+  return useExperiencesNavGateState().visible;
+}
 
-  useEffect(() => {
+/**
+ * @returns {{ visible: boolean, settled: boolean }}
+ * MEH-3809: `settled` is true once the answer is known (cache, response, or a
+ * failure, which stays hidden). The Header holds the link's place while it is
+ * not, so a link arriving late does not wrap the row and push the page down.
+ */
+export function useExperiencesNavGateState() {
+  const [state, setState] = useState({ visible: false, settled: false });
+
+  useIsomorphicLayoutEffect(() => {
     let alive = true;
 
     const cached = readCache();
     if (cached !== null) {
-      setVisible(cached >= EXPERIENCES_NAV_THRESHOLD);
+      setState({ visible: cached >= EXPERIENCES_NAV_THRESHOLD, settled: true });
       return () => {
         alive = false;
       };
     }
 
     loadCount().then((count) => {
-      if (alive && count !== null) setVisible(count >= EXPERIENCES_NAV_THRESHOLD);
+      if (alive) setState({ visible: count !== null && count >= EXPERIENCES_NAV_THRESHOLD, settled: true });
     });
 
     return () => {
@@ -133,5 +147,5 @@ export function useExperiencesNavGate() {
     };
   }, []);
 
-  return visible;
+  return state;
 }

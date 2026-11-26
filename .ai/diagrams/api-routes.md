@@ -84,6 +84,7 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
+    GCities -.same fold.-> PCitiesMatch[POST /cities/match<br/>🌐 MEH-3867 pasted list → matched / unmatched<br/>read-only, 30/min, ≤300 names]
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]

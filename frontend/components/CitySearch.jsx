@@ -231,9 +231,12 @@ export default function CitySearch({
 
   const handleKeyDown = (e) => {
     if (!isOpen || matches.length === 0) {
-      if (e.key === "Enter" && onSubmit) {
+      // MEH-3867: Enter never submits the surrounding form. Without this, in
+      // the admin «פרטי בסיס» form a city typed with no list open (an off-list
+      // spelling, «תל-מונד») was saved with the whole business on Enter.
+      if (e.key === "Enter") {
         e.preventDefault();
-        onSubmit(value);
+        onSubmit?.(value);
       }
       return;
     }

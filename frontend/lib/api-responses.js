@@ -68,6 +68,7 @@ import {
   RandomProducerProducersRandomGetResponse,
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
   GoogleCodeAuthGoogleCodePostResponse,
+  MatchCitiesCitiesMatchPostResponse,
 } from "@/lib/generated/api.zod";
 
 /** @param {unknown} value */
@@ -90,6 +91,10 @@ const rowOf = (objectSchema, key) => objectSchema.shape[key].def.element;
 export const CategoriesResponseSchema = ListCategoriesCategoriesGetResponse;
 export const StatsSchema = GetStatsStatsGetResponse;
 export const RandomProducerSchema = RandomProducerProducersRandomGetResponse;
+
+// --- city fields ----------------------------------------------------------
+// MEH-3867: a pasted list of cities, checked in one request.
+export const CitiesMatchSchema = MatchCitiesCitiesMatchPostResponse;
 
 // --- favorites and saved items -------------------------------------------
 // The hearts' cache needs `producer_id` only. Picking it keeps one bad nested

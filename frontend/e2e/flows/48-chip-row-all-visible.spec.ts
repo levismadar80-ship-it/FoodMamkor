@@ -192,7 +192,10 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
   // (CI shard 1/4 on 9670cb7). The bug is a phone bug, so this proof runs at
   // 390×844 in every project.
   test.describe("phone width", () => {
-    test.use({ viewport: { width: 390, height: 844 } });
+    // MEH-3847: the stub below answers only the browser's read, so the server
+    // HTML still holds the real list and the client swaps it for the stub —
+    // a shift no visitor sees, made by the test. Errors stay guarded.
+    test.use({ viewport: { width: 390, height: 844 }, loadGuard: "errors" });
 
     test("/events: with every chip lit, «הכל» is in view", async ({ page }) => {
       const cats = ["שוק", "קטיף", "טעימות"];

@@ -142,6 +142,14 @@ async function offsetFrom(page: Page, before: number): Promise<number> {
 }
 
 test.describe("navigation on a slow phone (MEH-3810)", () => {
+  // MEH-3809: the load guard is off here. This spec counts frames on a CPU
+  // throttled 4x, and the guard's probe (an init script and a binding call per
+  // shift) changes what it counts: with the guard on, /experiences painted the
+  // loader for 18 frames on both tries, and 0 without it (staging, ae0bd17).
+  // It also scrolls to the end on purpose so /producers loads the next page,
+  // which moves the footer (MEH-3874). The other flows specs keep the guard
+  // on every page this one opens.
+  test.use({ loadGuard: "off" });
   for (const list of LISTS) {
     test(`${list.name}: scroll → open a card → back`, async ({ page, browserName }, testInfo) => {
       // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: CDP throttling is Chromium-only

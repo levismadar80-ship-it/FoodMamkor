@@ -27,7 +27,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 const gates = { groupBuys: false, rescue: false };
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub], useHubNavGateState: (hub) => ({ visible: !!(gates[hub]), settled: true }) }));
 
 import ListingHubTabs, { HUB_TABS } from "@/components/ListingHubTabs";
 

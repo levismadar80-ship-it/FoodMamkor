@@ -66,11 +66,12 @@ vi.mock("@phosphor-icons/react", () => ({
 // rescue bags open a separate «הזדמנויות» tab. One ref per hook so a
 // case can say WHICH type cleared the gate.
 const gates = { events: false, experiences: false, groupBuys: false, rescue: false };
-vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events }));
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events, useEventsNavGateState: () => ({ visible: !!(gates.events), settled: true }) }));
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => gates.experiences,
+  useExperiencesNavGateState: () => ({ visible: !!(gates.experiences), settled: true }),
 }));
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] ?? false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] ?? false, useHubNavGateState: (hub) => ({ visible: !!(gates[hub] ?? false), settled: true }) }));
 
 // The account tab toggles AccountSheet — stub it so this suite stays scoped to
 // BottomNav's own structure (the sheet has its own focus/close tests).

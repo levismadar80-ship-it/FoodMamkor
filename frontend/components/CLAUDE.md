@@ -72,6 +72,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |
 | City / address field | `CitySearch.jsx` · `AddressSearch.jsx` | ESLint `no-restricted-syntax` |
+| Several cities as chips (delivery areas, region chips, paste a whole list — MEH-3867) | `CitiesAutocomplete.jsx` (+ `cities-paste.js`) | `CitiesAutocompletePaste` |
 | Image with branded fallback | `ImageWithFallback.jsx` | — |
 | Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
 | Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
