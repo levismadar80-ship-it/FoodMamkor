@@ -208,10 +208,19 @@ def _empty_fields(producer: Producer) -> list[str]:
     """Page fields that help but do not block review, still empty."""
     description = (producer.description or "").strip()
     checks = (
-        ("תיאור העסק", description and description not in gate.DEFAULT_PRODUCER_DESCRIPTIONS),
+        (
+            "תיאור העסק",
+            description and description not in gate.DEFAULT_PRODUCER_DESCRIPTIONS,
+        ),
         ("שעות פתיחה", _has_hours(producer)),
-        ("אינסטגרם / פייסבוק / אתר", producer.instagram or producer.facebook or producer.website),
-        ("«מאחורי העסק» (סיפור ותמונה של בעלת העסק)", producer.owner_bio or producer.owner_photo_url),
+        (
+            "אינסטגרם / פייסבוק / אתר",
+            producer.instagram or producer.facebook or producer.website,
+        ),
+        (
+            "«מאחורי העסק» (סיפור ותמונה של בעלת העסק)",
+            producer.owner_bio or producer.owner_photo_url,
+        ),
         ("לוגו", producer.logo_url),
     )
     return [label for label, value in checks if not _filled(value)]
@@ -219,9 +228,9 @@ def _empty_fields(producer: Producer) -> list[str]:
 
 def _has_hours(producer: Producer) -> bool:
     locations = getattr(producer, "locations", None) or []
-    return any(_filled(getattr(loc, "opening_hours", None)) for loc in locations) or _filled(
-        producer.opening_hours
-    )
+    return any(
+        _filled(getattr(loc, "opening_hours", None)) for loc in locations
+    ) or _filled(producer.opening_hours)
 
 
 def load_owner_business(db: Session, user: User) -> Producer | None:

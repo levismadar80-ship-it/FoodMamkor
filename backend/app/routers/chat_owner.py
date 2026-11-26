@@ -175,7 +175,9 @@ def _draft_is_empty(draft: PageDraft) -> bool:
     )
 
 
-def _fill(text: str, categories: list[tuple[int, str]], lines: dict[str, str]) -> OwnerChatResponse:
+def _fill(
+    text: str, categories: list[tuple[int, str]], lines: dict[str, str]
+) -> OwnerChatResponse:
     if len(text) < TEXT_MIN:
         return OwnerChatResponse(reply=lines["draft_too_short"])
     draft = page_filler.read_page(text, categories)
@@ -196,7 +198,9 @@ def _read_products(text: str, lines: dict[str, str]) -> OwnerChatResponse:
     return OwnerChatResponse(reply=lines["products_ready"], products=rows)
 
 
-def _show(what: object, text: str, lines: dict[str, str], can_submit: bool) -> OwnerChatResponse | None:
+def _show(
+    what: object, text: str, lines: dict[str, str], can_submit: bool
+) -> OwnerChatResponse | None:
     if what not in owner_assistant.ACTIONS:
         return None
     if what == "send_for_review" and not can_submit:
@@ -206,7 +210,10 @@ def _show(what: object, text: str, lines: dict[str, str], can_submit: bool) -> O
 
 
 def _owner_answer(
-    response: Any, ctx: "_Ctx", api_messages: list[dict[str, Any]], lines: dict[str, str]
+    response: Any,
+    ctx: "_Ctx",
+    api_messages: list[dict[str, Any]],
+    lines: dict[str, str],
 ) -> OwnerChatResponse:
     """The model's text and tool calls → one answer. A fill or a product read
     replaces the text with its fixed line; a card keeps the model's line."""
@@ -215,7 +222,10 @@ def _owner_answer(
     calls = {b.name: b.input for b in response.content if b.type == "tool_use"}
     out: OwnerChatResponse | None = None
     owner_words = owner_assistant.owner_text(api_messages)
-    heavy = owner_assistant.FILL_TOOL_NAME in calls or owner_assistant.PRODUCTS_TOOL_NAME in calls
+    heavy = (
+        owner_assistant.FILL_TOOL_NAME in calls
+        or owner_assistant.PRODUCTS_TOOL_NAME in calls
+    )
     if heavy and not _heavy_allowed(ctx.business):
         out = OwnerChatResponse(reply=lines["heavy_limit"])
     elif owner_assistant.FILL_TOOL_NAME in calls:
@@ -236,7 +246,11 @@ def _owner_answer(
 
 class _Ctx:
     def __init__(
-        self, facts_block: str, categories: list[tuple[int, str]], can_submit: bool, business: str = ""
+        self,
+        facts_block: str,
+        categories: list[tuple[int, str]],
+        can_submit: bool,
+        business: str = "",
     ) -> None:
         self.facts_block = facts_block
         self.business = business
@@ -252,7 +266,9 @@ def _context(db: Session, user: User, section_path: str | None) -> _Ctx:
         producer = owner_assistant.load_owner_business(db, user)
         if producer is None:
             raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
-        data = owner_assistant.business_facts(producer, owner_assistant.section_key(section_path))
+        data = owner_assistant.business_facts(
+            producer, owner_assistant.section_key(section_path)
+        )
         rows = db.query(Category.id, Category.name).order_by(Category.id).all()
         categories = [(int(cid), str(name)) for cid, name in rows]
         # The send-for-review card also verifies the phone, so it is offered
@@ -288,7 +304,9 @@ def owner_chat(
     rescue_on = site_chat._rescue_knowledge() is not None
     ctx.topics = owner_assistant.topics(rescue_on)
     prompt = owner_assistant.system_prompt(
-        rescue_on=rescue_on, site_knowledge=site_chat._base_system_prompt(), locale=body.locale
+        rescue_on=rescue_on,
+        site_knowledge=site_chat._base_system_prompt(),
+        locale=body.locale,
     )
     tools = [
         owner_assistant.FILL_TOOL,
@@ -300,7 +318,10 @@ def owner_chat(
         response = client.messages.create(
             **ai_fast_request_kwargs(),
             max_tokens=MAX_OUTPUT_TOKENS,
-            system=[cached_text_block(prompt), {"type": "text", "text": ctx.facts_block}],
+            system=[
+                cached_text_block(prompt),
+                {"type": "text", "text": ctx.facts_block},
+            ],
             tools=tools,
             messages=api_messages,
         )

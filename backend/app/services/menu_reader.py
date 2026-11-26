@@ -261,7 +261,9 @@ def read_menu_text(text: str) -> list[MenuRow] | None:
     if response.stop_reason != "end_turn":
         logger.warning("[menu] text read stopped: %s", response.stop_reason)
         return None
-    raw = next((b.text for b in response.content if getattr(b, "type", "") == "text"), "")
+    raw = next(
+        (b.text for b in response.content if getattr(b, "type", "") == "text"), ""
+    )
     try:
         items = json.loads(raw)["items"]
     except (ValueError, KeyError, TypeError):
