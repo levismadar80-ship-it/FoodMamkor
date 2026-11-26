@@ -64,6 +64,7 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_risk import score_producer
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 from app.services.staff_membership import end_staff_membership
@@ -184,7 +185,7 @@ def preview_claim(
         name=producer.name,
         city=producer.city,
         short_description=producer.short_description,
-        image=(producer.images or [None])[0],
+        image=first_image(producer.images),  # MEH-3894
         # Public on the business page anyway. The claim page needs them for
         # the SAME rule registration applies: an agricultural category adds
         # the grower declaration (RegisterProducerClient FARMER_DECLARATION_*).

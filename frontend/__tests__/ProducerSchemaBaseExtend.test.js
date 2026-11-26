@@ -53,9 +53,8 @@ const DETAIL_ONLY = [
   // MEH-3055: detail-only — the producer page's group chips; the snapshot
   // lists it on ProducerDetailOut and not on ProducerListOut.
   "product_groups",
-  // MEH-3611: detail-only — the business logo shows on the producer page
-  // (cover corner) and the bag page, not on list cards.
-  "logo_url",
+  // MEH-3611's logo_url left this list in MEH-3894: a list card with no
+  // photo shows it, so it is on ProducerListOut / ProducerListSchema now.
   // MEH-3339: detail-only — the second phone + its label, shown as one text
   // line in the contact card; on ProducerDetailOut, not ProducerListOut.
   "secondary_phone",
