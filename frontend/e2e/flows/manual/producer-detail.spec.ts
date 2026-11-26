@@ -250,11 +250,11 @@ async function openProducer(page: Page, id: string): Promise<Locator> {
   page.on("pageerror", onError);
   page.on("response", onResponse);
   page.on("requestfailed", onFailed);
-  await page.goto(`/producer/${id}?preview=1`);
   const root = scope(page).getByTestId("producer-detail-root");
-  // Count gate first: the strict checks below would throw rather than wait if a
-  // transition copy ever landed inside the landmark.
   try {
+    await page.goto(`/producer/${id}?preview=1`);
+    // Count gate first: the strict checks below would throw rather than wait if a
+    // transition copy ever landed inside the landmark.
     await expect(root).toHaveCount(1, CLIENT_FETCH);
   } catch (err) {
     const shown = (await scope(page).innerText({ timeout: 1_000 }).catch(() => "(no #main-content)")).trim();
