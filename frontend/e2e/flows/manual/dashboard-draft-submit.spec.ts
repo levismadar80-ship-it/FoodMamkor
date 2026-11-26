@@ -191,12 +191,14 @@ test.describe("draft card — matrix cells", () => {
     await expect(missingList(page)).toHaveCount(0);
   });
 
-  // (many × open) — every row missing, ONE open.
-  test("everything missing — four rows, one open, no chips", async ({ page }) => {
+  // (many × open) — every row missing: the first one open, and WhatsApp open
+  // too (MEH-3886), so the code button is reachable from the start.
+  test("everything missing — four rows, the first and WhatsApp open, no chips", async ({ page }) => {
     await stubOverview(page, NOTHING_DONE);
     await openOverview(page);
     await expect(missingRows(page)).toHaveCount(4);
-    await expect(checklist(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(1);
+    await expect(checklist(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(2);
+    await expect(checklist(page).getByTestId("completeness-open-phone_verified")).toBeVisible();
     await expect(checklist(page).getByText("חובה", { exact: true })).toHaveCount(0);
     await expect(checklist(page).getByText("מומלץ", { exact: true })).toHaveCount(0);
     await expect(page.getByTestId("completeness-counter")).toHaveText("0 מתוך 4");
