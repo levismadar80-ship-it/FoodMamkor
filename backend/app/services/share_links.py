@@ -49,6 +49,8 @@ def looks_like_share_code(value: str) -> bool:
     return bool(_CODE_RE.match(value))
 
 
+# REUSES: backend/app/services/product_order_create.py:129 token_hash — the
+# same plain sha256 hex that producer_staff.py stores as token_hash.
 def _hash(code: str) -> str:
     return hashlib.sha256(code.encode("ascii")).hexdigest()
 

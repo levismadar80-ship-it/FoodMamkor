@@ -378,3 +378,22 @@ def test_redact_url_tokens_leaves_other_paths(raw):
     from app.utils.pii import redact_url_tokens
 
     assert redact_url_tokens(raw) == raw
+
+
+def test_redact_url_tokens_hides_an_encoded_short_code():
+    from app.utils.pii import redact_url_tokens
+
+    raw = "/login?redirect=%2Fhe%2Fc%2FK7m2Qx9aPbR4"
+    assert redact_url_tokens(raw) == "/login?redirect=%2Fhe%2Fc%2F[token]"
+
+
+def test_a_code_is_dead_at_the_exact_expiry_instant(monkeypatch, client, db):
+    """Boundary: `expires_at <= now` is dead, one second before is live."""
+    p = _draft(db)
+    code = _mint_via_admin(client, db, p, "v")
+    row = db.query(ShareLink).one()
+    at = row.expires_at
+    monkeypatch.setattr(share_links_service, "utc_now", lambda: at)
+    assert resolve_share_code(db, code, "draft_preview") is None
+    monkeypatch.setattr(share_links_service, "utc_now", lambda: at - timedelta(seconds=1))
+    assert resolve_share_code(db, code, "draft_preview") == p.id

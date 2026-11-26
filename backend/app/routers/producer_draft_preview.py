@@ -116,7 +116,12 @@ def create_preview_link(
     new link does not cancel an earlier one. Every link dies when the draft
     is published, claimed or deleted (the read checks the row).
     """
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    # MEH-3896: FOR UPDATE now that this route writes — a delete committing
+    # between the check and our commit would otherwise fail the share_links
+    # FK as a 500. Same one-row lock as create_claim_link.
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     if not _ownerless_draft(db, producer):
