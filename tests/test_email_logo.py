@@ -29,7 +29,8 @@ from tests.conftest import make_producer
 
 BACKEND_APP = Path(__file__).resolve().parents[1] / "backend" / "app"
 LOGO_IMG = re.compile(
-    r'<img src="(?P<src>[^"]+)" width="168" height="\d+" alt="(?P<alt>[^"]+)"'
+    r'<img src="(?P<src>[^"]+)" '
+    rf'width="{email_branding.EMAIL_LOGO_WIDTH}" height="\d+" alt="(?P<alt>[^"]+)"'
 )
 HTML_DOC = re.compile(r"<html[\s>]", re.IGNORECASE)
 
@@ -320,6 +321,8 @@ def _png_rgba(path: Path) -> tuple[int, int, list[bytes]]:
                 p = a + b - c
                 pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
                 line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 0xFF
+            else:
+                assert f == 0, f"{path.name}: row {y} has filter type {f}"
         rows.append(bytes(line))
         prev = line
     return w, h, rows
@@ -341,6 +344,14 @@ def test_email_logo_is_a_cream_badge_with_transparent_corners():
         assert _px(rows, x, y) == (0xF5, 0xF0, 0xE8, 0xFF), (
             f"badge pixel ({x},{y}) is {_px(rows, x, y)}, want opaque #F5F0E8"
         )
+    # And the lockup is on it: a blank cream badge would pass the lines above.
+    dark = sum(
+        1
+        for y in range(h // 4, 3 * h // 4)
+        for x in range(w // 4, 3 * w // 4)
+        if sum(_px(rows, x, y)[:3]) < 200
+    )
+    assert dark > 100, f"only {dark} dark wordmark pixels in the badge centre"
 
 
 def _logo_calls(src: str) -> int:
