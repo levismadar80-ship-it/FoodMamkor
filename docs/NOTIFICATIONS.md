@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-96 send sites · 93 on a single channel.
+97 send sites · 94 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -63,6 +63,7 @@
 | `services/delivery_waitlist.py` | `_notify_cities` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `send_host_confirmation` | מייל | לקוחה |
 | `services/draft_merge_emails.py` | `notify_admin_draft_twin` | מייל | בית עסק / מנהלת |
+| `services/draft_merge_emails.py` | `notify_admin_identity_matches` | מייל | בית עסק / מנהלת |
 | `services/draft_merge_emails.py` | `send_owner_draft_merged` | מייל | בית עסק / מנהלת |
 | `services/email_outbox.py` | `_handle` | מייל | בלי שורת עסק |
 | `services/experience_notifications.py` | `notify_admin_new_submission` | מייל | בית עסק / מנהלת |

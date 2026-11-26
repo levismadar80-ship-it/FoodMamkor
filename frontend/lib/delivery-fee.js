@@ -28,3 +28,38 @@ export function resolveDeliveryFee(producerFee, areas = []) {
   if (distinct.size === 1) return { fee: effective[0], from: false };
   return { fee: fallback, from: false };
 }
+
+/**
+ * MEH-3891: a list page's first paint (home, /producers) carried every card's
+ * full delivery_areas, and one business with 191 cities (62 KB) put the home
+ * page over the Lighthouse byte budget. A card reads those rows only through
+ * resolveDeliveryFee above, whose answer depends only on the SET of per-area
+ * fees. So the server page keeps the first row of each distinct fee: the card
+ * shows exactly what it showed with the full list, at a fraction of the bytes.
+ * `delivery_count` comes from the server and is not touched. The business page
+ * and every client-side fetch still get the full list.
+ *
+ * Only for the server-rendered default lists. A list fetched with a city
+ * filter is rendered from client fetches, which keep their rows (the region
+ * fallback reads delivery days per city, HomeProducersGrid.jsx).
+ *
+ * @template {{ delivery_areas?: Array<{delivery_fee?: number|null}|null>|null }} P
+ * @param {P[]|null|undefined} list
+ * @returns {P[]|null|undefined}
+ */
+export function slimCardList(list) {
+  if (!Array.isArray(list)) return list;
+  return list.map((producer) => {
+    const areas = producer?.delivery_areas;
+    if (!Array.isArray(areas) || areas.length < 2) return producer;
+    const seen = new Set();
+    const kept = areas.filter((area) => {
+      if (!area) return false;
+      const key = area.delivery_fee ?? null;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return { ...producer, delivery_areas: kept };
+  });
+}
