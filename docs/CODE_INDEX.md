@@ -210,6 +210,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/chat_site_knowledge.py` | The prompt paragraph that tells the AI assistant which tools a business gets — built from the site's own tool registry, not written by hand, so a new tool … |
 | `services/city_centroid.py` | Answer "where is this town?" from the seeded 'cities' table, so a business that gave only a town (no street address) still gets a usable, approximate map … |
 | `services/content_notifications.py` | Email notifications for recipe and kashrut moderation, and for reviews. |
+| `services/course_meetings.py` | MEH-3898 — a course: one experience that meets several times (a 5-meeting cheese-making course), with ONE sign-up for all of them. … |
 | `services/date_rules.py` | One rule for "an event or experience date may not be in the past" (D6 of the 14/11 grill retro, MEH-3224), read by both routers. |
 | `services/delivery_validation.py` | Guard the MEH-1255 delivery-exclusion invariant on PATCH-style producer updates: an exclusion list ("לכל הארץ חוץ מ:") is only legal while delivery_nationwide … |
 | `services/delivery_waitlist.py` | The one owner of the waitlist's two writes — adding an entry (POST /producers/{id}/delivery-waitlist, routers/producers.py) and the once-only email fan-out … |
@@ -654,6 +655,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ContactCtaVariants.jsx` | — אין כותרת — |
 | `CookieBanner.jsx` | — אין כותרת — |
 | `CookieSettingsButton.jsx` | — אין כותרת — |
+| `CourseMeetingsList.jsx` | MEH-3898 — the meetings of a course on the experience page, one line each: «מפגש 2 · יום שלישי, 12 בינואר 2027 · 18:00». … |
 | `CoverageRequestCta.jsx` | — אין כותרת — |
 | `CustomCursor.jsx` | — אין כותרת — |
 | `DashboardFooter.jsx` | MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with localeDetection off an /en reader landed on the Hebrew page. |

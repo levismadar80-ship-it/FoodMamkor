@@ -529,6 +529,21 @@
             "title": "City",
             "type": "string"
           },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
+          },
           "description": {
             "minLength": 20,
             "title": "Description",
@@ -764,6 +779,21 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
           },
           "description": {
             "anyOf": [
@@ -2932,6 +2962,47 @@
         "title": "ContactIn",
         "type": "object"
       },
+      "CourseMeetingIn": {
+        "description": "MEH-3898: one meeting of a course, as the owner's form sends it. The\nfuture, uniqueness and 2..20 are checked on save\n(services/course_meetings.normalise_meetings).",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "time": {
+            "format": "time",
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "CourseMeetingIn",
+        "type": "object"
+      },
+      "CourseMeetingOut": {
+        "description": "MEH-3898: one meeting of a course, as the page shows it.",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "CourseMeetingOut",
+        "type": "object"
+      },
       "DeliveryAreaCreate": {
         "properties": {
           "city": {
@@ -4228,6 +4299,21 @@
             "title": "City",
             "type": "string"
           },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
+          },
           "description": {
             "minLength": 20,
             "title": "Description",
@@ -4469,6 +4555,14 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
           },
           "created_at": {
             "format": "date-time",
@@ -4823,6 +4917,14 @@
             ],
             "title": "City"
           },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -5135,6 +5237,21 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
           },
           "description": {
             "anyOf": [
@@ -22946,6 +23063,14 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
           },
           "created_at": {
             "format": "date-time",

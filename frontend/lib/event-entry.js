@@ -30,7 +30,12 @@ export function toEventEntry(row, tab, t) {
     city: row.city,
     // MEH-2476: a recurring experience names its schedule in the meta line,
     // so the date rail reads as the first occasion, not the only one.
-    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
+    // MEH-3898: a course says so, with its number of meetings.
+    schedule: isExp && row.is_recurring
+      ? row.recurring_schedule?.trim() || null
+      : isExp && row.course_meetings?.length
+        ? t("course_meetings", { count: row.course_meetings.length }) || null
+        : null,
     // an older experience row stores the English key («workshop»);
     // the row chip shows the Hebrew value the other rows carry.
     category: isExp ? findExperienceCategory(row.category)?.key ?? row.category : row.category,

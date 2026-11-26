@@ -187,6 +187,7 @@ experiences.registration_url	business	an experience or workshop a host publishes
 experiences.rejection_reason	business	an experience or workshop a host publishes
 experiences.requirements	business	an experience or workshop a host publishes
 experiences.sessions	business	an experience or workshop a host publishes
+experiences.course_meetings	business	an experience or workshop a host publishes
 experiences.status	business	an experience or workshop a host publishes
 experiences.title	business	an experience or workshop a host publishes
 experiences.updated_at	business	an experience or workshop a host publishes

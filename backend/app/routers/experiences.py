@@ -46,6 +46,7 @@ from app.schemas.schemas import (
 from app.services import billing_ledger  # MEH-3179
 from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
+from app.services import course_meetings as course_svc  # MEH-3898
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.services.booking_cancellations import (  # MEH-3227
     after_item_edit,
@@ -150,6 +151,7 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
             else _compute_spots_left(ex, registered)
         ),
         "sessions": _sessions_out(ex),
+        "course_meetings": course_svc.meetings_out(ex.course_meetings),  # type: ignore[arg-type]  # MEH-3898
         "registration_method": ex.registration_method or "site_form",
         "registration_url": ex.registration_url,
         "price_per_person": ex.price_per_person,
@@ -512,14 +514,22 @@ def submit_experience_for(
         .count(),
         "experiences",
     )
+    # MEH-3898: a course signs up once, against its first meeting.
+    meetings = course_svc.normalise_meetings(
+        [m.model_dump() for m in data.course_meetings or []], None
+    )
+    course_svc.refuse_with_recurring(meetings is not None, data.is_recurring)
+    start_date, start_time = (
+        course_svc.first(meetings) if meetings else (data.event_date, data.event_time)
+    )
     ex = Experience(
         title=data.title.strip(),
         description=data.description.strip(),
         image_url=data.image_url,
         category=data.category,
         host_user_id=host.id,
-        event_date=data.event_date,
-        event_time=data.event_time,
+        event_date=start_date,
+        event_time=start_time,
         duration_minutes=data.duration_minutes,
         location_type=data.location_type,
         city=data.city,
@@ -541,6 +551,7 @@ def submit_experience_for(
             if data.is_recurring and data.sessions
             else None
         ),
+        course_meetings=meetings,
         registration_method=data.registration_method,
         registration_url=data.registration_url,
         status="pending",
@@ -645,6 +656,30 @@ def _sessions_edit(ex: Experience, payload: dict[str, Any]) -> list[Any]:
     return sessions_svc.removed(ex.sessions, new)  # type: ignore[arg-type]
 
 
+def _course_edit(ex: Experience, payload: dict[str, Any]) -> None:
+    """MEH-3898: normalise the course meetings in `payload` in place (422 on
+    a past new meeting, a duplicate, fewer than 2 or more than 20, or a
+    course that is also recurring), and keep event_date / event_time on the
+    first meeting, so sign-ups close when it starts. Mutates `payload`."""
+    if "course_meetings" in payload:
+        payload["course_meetings"] = course_svc.normalise_meetings(
+            payload["course_meetings"] or [],
+            ex.course_meetings,  # type: ignore[arg-type]
+        )
+    meetings = payload.get("course_meetings", ex.course_meetings)
+    course_svc.refuse_with_recurring(
+        bool(meetings), payload.get("is_recurring", ex.is_recurring)
+    )
+    if not meetings:
+        return
+    d, t = course_svc.first(meetings)  # type: ignore[arg-type]
+    if (d, t) != (ex.event_date, ex.event_time):
+        payload["event_date"], payload["event_time"] = d, t
+    else:  # unchanged: a date sent with it is ignored, never a "move"
+        payload.pop("event_date", None)
+        payload.pop("event_time", None)
+
+
 def _experience_for_edit(
     db: Session, experience_id: UUID, data: ExperienceUpdate
 ) -> Experience | None:
@@ -697,6 +732,7 @@ def update_experience_row(
     # experience to pending, which takes its public page down.
     was_public = _is_public(ex)
     payload = data.model_dump(exclude_unset=True)
+    _course_edit(ex, payload)  # MEH-3898: before the date rules read it
     # MEH-3224 (D6): same rule as events.update_event.
     refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
     assert_own_new_images(actor, payload.get("image_url"), ex.image_url)  # MEH-3247

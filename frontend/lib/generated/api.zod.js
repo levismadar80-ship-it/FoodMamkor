@@ -278,6 +278,7 @@ export const AdminUpdateBusinessEventAdminEventsEventIdPutResponse = /*#__PURE__
 /**
  * @summary Admin List Experiences
  */
+export const adminListExperiencesAdminExperiencesGetResponseCourseMeetingsDefault = [];
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
 export const adminListExperiencesAdminExperiencesGetResponseIsRecurringDefault = false;
 export const adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault = 0;
@@ -290,6 +291,10 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminListExperiencesAdminExperiencesGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -340,6 +345,7 @@ export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod
 /**
  * @summary Admin Update Business Experience
  */
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseCourseMeetingsDefault = [];
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
@@ -352,6 +358,10 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -401,6 +411,7 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
 /**
  * @summary Approve Experience
  */
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseCourseMeetingsDefault = [];
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsActiveDefault = true;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsRecurringDefault = false;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault = 0;
@@ -413,6 +424,10 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), approveExperienceAdminExperiencesExperienceIdApprovePostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -462,6 +477,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
 /**
  * @summary Reject Experience
  */
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseCourseMeetingsDefault = [];
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsActiveDefault = true;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsRecurringDefault = false;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault = 0;
@@ -474,6 +490,10 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -523,6 +543,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
 /**
  * @summary Request Changes
  */
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseCourseMeetingsDefault = [];
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsActiveDefault = true;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsRecurringDefault = false;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault = 0;
@@ -535,6 +556,10 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -2878,6 +2903,7 @@ export const AdminCreateBusinessEventAdminProducersProducerIdEventsPostResponse 
 /**
  * @summary Admin Create Business Experience
  */
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseCourseMeetingsDefault = [];
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsActiveDefault = true;
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsRecurringDefault = false;
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault = 0;
@@ -2890,6 +2916,10 @@ export const AdminCreateBusinessExperienceAdminProducersProducerIdExperiencesPos
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -4891,6 +4921,7 @@ export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE_
  * experiences drop out of the public feed automatically.
  * @summary List Experiences
  */
+export const listExperiencesExperiencesGetResponseCourseMeetingsDefault = [];
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
 export const listExperiencesExperiencesGetResponseParticipantsCountDefault = 0;
 export const listExperiencesExperiencesGetResponseRegisteredCountDefault = 0;
@@ -4900,6 +4931,10 @@ export const listExperiencesExperiencesGetResponseSessionsDefault = [];
 export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), listExperiencesExperiencesGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -4942,6 +4977,7 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 /**
  * @summary Submit Experience
  */
+export const submitExperienceExperiencesPostResponseCourseMeetingsDefault = [];
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
 export const submitExperienceExperiencesPostResponseIsRecurringDefault = false;
 export const submitExperienceExperiencesPostResponseParticipantsCountDefault = 0;
@@ -4954,6 +4990,10 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), submitExperienceExperiencesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5022,6 +5062,7 @@ export const CountExperiencesExperiencesCountGetResponse = /*#__PURE__*/ zod.obj
 /**
  * @summary List My Experiences
  */
+export const listMyExperiencesExperiencesMineGetResponseCourseMeetingsDefault = [];
 export const listMyExperiencesExperiencesMineGetResponseIsActiveDefault = true;
 export const listMyExperiencesExperiencesMineGetResponseIsRecurringDefault = false;
 export const listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault = 0;
@@ -5034,6 +5075,10 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), listMyExperiencesExperiencesMineGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5103,6 +5148,7 @@ export const DeleteExperienceExperiencesExperienceIdDeleteResponse = /*#__PURE__
 /**
  * @summary Get Experience
  */
+export const getExperienceExperiencesExperienceIdGetResponseCourseMeetingsDefault = [];
 export const getExperienceExperiencesExperienceIdGetResponseIsActiveDefault = true;
 export const getExperienceExperiencesExperienceIdGetResponseIsRecurringDefault = false;
 export const getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault = 0;
@@ -5115,6 +5161,10 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), getExperienceExperiencesExperienceIdGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5164,6 +5214,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
 /**
  * @summary Update Experience
  */
+export const updateExperienceExperiencesExperienceIdPutResponseCourseMeetingsDefault = [];
 export const updateExperienceExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const updateExperienceExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
@@ -5176,6 +5227,10 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), updateExperienceExperiencesExperienceIdPutResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -10991,6 +11046,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
 export const getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault = 0;
 export const getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault = `site_form`;
+export const getSavedUsersMeSavedGetResponseExperiencesItemCourseMeetingsDefault = [];
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
 export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
@@ -11031,6 +11087,10 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "experiences": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), getSavedUsersMeSavedGetResponseExperiencesItemCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),

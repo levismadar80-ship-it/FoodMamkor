@@ -85,7 +85,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 10 | POST | `/auth/forgot-password` | `auth.forgot_password` | anonymous | `tests/_test_meh2952_send_layer__p01.py:285` | n/a | e2e-mock `frontend/e2e/flows/30-login-journey-c.spec.ts:535` | 9 |
 | 11 | POST | `/auth/reset-password` | `auth.reset_password` | anonymous | `tests/_test_api__p05.py:724` | n/a | — | 9 |
 | 12 | GET | `/auth/verify-email` | `auth.verify_email` | anonymous | `tests/test_meh3095_email_change_reverify.py:70` | n/a | — | 4 |
-| 13 | POST | `/auth/resend-verify` | `auth.resend_verify` | registered user | `tests/test_meh2901_resend_verify.py:60` | `tests/test_meh2901_resend_verify.py:107` | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:244` | 9 |
+| 13 | POST | `/auth/resend-verify` | `auth.resend_verify` | registered user | `tests/test_meh2901_resend_verify.py:60` | `tests/test_meh2901_resend_verify.py:107` | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:246` | 9 |
 | 14 | POST | `/auth/me/delete` | `auth.delete_account` | registered user | `tests/_test_meh2952_send_layer__p01.py:300` | `tests/test_meh3248_account_delete_safeguards.py:47` | — | 9 |
 | 15 | POST | `/auth/register/producer` | `auth_register_producer.register_producer` | anonymous (optional auth) | `tests/_test_api__p01.py:115` | n/a | e2e-mock `frontend/e2e/flows/18-producer-register-wizard.spec.ts:42` | 9 |
 | 16 | POST | `/auth/register/producer/oauth` | `auth_register_producer.register_producer_oauth` | anonymous | `tests/test_email_verified_creation_paths.py:131` | n/a | e2e-mock `frontend/e2e/flows/10-producer-oauth-409.spec.ts:31` | 7 |
@@ -117,7 +117,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 42 | GET | `/producers/me/kashrut-requests` | `producer_me_review.list_kashrut_requests` | business/organizer | `tests/_test_api__p07.py:48` | `tests/_test_api__p07.py:84` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:133` | 3 |
 | 43 | GET | `/producers/me/review-link` | `producer_me_review.get_review_invite_link` | business/organizer | `tests/test_reviews.py:931` | `tests/test_reviews.py:921` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:103` | 3 |
 | 44 | POST | `/producers/me/request-review` | `producer_me_review.request_producer_review` | business/organizer | `tests/_test_api__p03.py:503` | `tests/_test_api__p03.py:528` | e2e-mock `frontend/e2e/flows/manual/producers.spec.ts:332` | 7 |
-| 45 | POST | `/producers/me/submit-for-review` | `producer_me_review.submit_for_review` | business/organizer | `tests/_test_meh2952_send_layer__p01.py:216` | `tests/test_meh2100_draft_submit.py:405` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:329` | 7 |
+| 45 | POST | `/producers/me/submit-for-review` | `producer_me_review.submit_for_review` | business/organizer | `tests/_test_meh2952_send_layer__p01.py:216` | `tests/test_meh2100_draft_submit.py:405` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:331` | 7 |
 | 46 | GET | `/producers/me/locations` | `producer_me_locations.list_my_locations` | business/organizer | `tests/test_admin_locations.py:164` | `tests/test_producer_locations_crud.py:181` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:133` | 3 |
 | 47 | POST | `/producers/me/locations` | `producer_me_locations.create_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:64` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:133` | 7 |
 | 48 | PUT | `/producers/me/locations/{location_id}` | `producer_me_locations.update_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:221` | `tests/test_producer_locations_crud.py:150` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:133` | 7 |
@@ -562,7 +562,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/owner-invite/[token]` | `frontend/e2e/flows/46-owner-invite.spec.ts:323` | GAP | covered |
 | `/owner-invite` | GAP | GAP | GAP |
 | `/p/[slug]` | GAP | `frontend/__tests__/VanityRedirectKeepsQuery.test.js:16` | covered |
-| `/` | `frontend/e2e/flows/00-load-guard-selftest.spec.ts:180` | GAP | covered |
+| `/` | `frontend/e2e/flows/00-load-guard-selftest.spec.ts:194` | GAP | covered |
 | `/privacy` | GAP | `frontend/__tests__/title-pattern.test.js:160` | covered |
 | `/producer/[id]` | `frontend/e2e/flows/12-axe-a11y.spec.ts:112` | `frontend/__tests__/EntityResolverErrorSeparation.test.jsx:71` | covered |
 | `/producers/[category]/[region]` | GAP | `frontend/__tests__/RegionLandingPage.test.jsx:67` | covered |
@@ -687,7 +687,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/_test_api__p04.py:120` | a delete transition reached no DELETE handler — audit line may be off |
 | 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:122` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
-| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PUT /experiences/{experience_id}`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted; nearest write handler — audit line may have drifted |
+| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted; nearest write handler — audit line may have drifted |
 | 9 | `registrations.status` | registrations.py:375, registrations.py:377, registrations.py:383, registrations.py:226 … | `POST /events/{event_id}/registrations`, `POST /experiences/{experience_id}/registrations`, `POST /experiences`, `POST /registrations/{token}/cancel` | `tests/test_meh2763_registrations.py:116` | nearest function — audit line may have drifted |
 | 9 | `events` | — | — | GAP | — |
 | 9 | `users` | admin_extra.py:185, auth.py:627, auth.py:830, producer_claim.py:249 | `GET /admin/audit-log`, `POST /auth/logout-all-devices`, `POST /auth/reset-password`, `POST /producer-claim/new-link-request` | `tests/test_meh3306_admin_audit_log.py:371` | — |

@@ -567,6 +567,7 @@ erDiagram
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
         jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
+        jsonb course_meetings "MEH-3898 course meetings [{date,time}], one sign-up; NULL = not a course"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
