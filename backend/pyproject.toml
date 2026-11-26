@@ -281,6 +281,7 @@ files = [
     "app/schemas/events.py",
     "app/schemas/experiences.py",
     "app/schemas/group_buy_counts.py",
+    "app/schemas/cities_match.py",
     "app/schemas/group_buys_requests.py",
     "app/schemas/owner_detach.py",
     "app/schemas/owner_invite_existing.py",
