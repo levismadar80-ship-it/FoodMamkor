@@ -63,7 +63,7 @@ const goldenProject = defineGoldenProject(process.argv, typeof process.send === 
     ]
   : [];
 
-export default defineConfig({
+const __probeConfig = defineConfig({
   testDir: "./e2e",
   // MEH-1241 / MEH-1528: provision authenticated storageState for the seeded QA
   // accounts (demo-owner=producer / demo-consumer / demo-admin), one file per
@@ -267,3 +267,10 @@ export default defineConfig({
     ...goldenProject,
   ],
 });
+
+// MEH-3845 PROBE BRANCH ONLY — never merged. Every project (incl. the WebKit
+// shadow, which runs with no spec args) runs producer-detail.spec.ts only.
+export default {
+  ...__probeConfig,
+  projects: (__probeConfig.projects || []).map((p) => ({ ...p, testMatch: /manual\/producer-detail\.spec\.ts$/ })),
+};
