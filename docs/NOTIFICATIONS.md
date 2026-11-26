@@ -94,6 +94,7 @@
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_owner_cancellation` | מייל | בעלת העסק |
 | `services/registration_emails.py` | `send_owner_new_registration` | מייל | בעלת העסק |
+| `services/registration_emails.py` | `send_registrant_course_changed` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registrant_moved` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registration_reminder` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_visitor_confirmation` | מייל | לקוחה |
