@@ -50,6 +50,13 @@ _URL_TOKEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         re.compile(r"(/producer-preview|/draft-preview)/eyJ[\w-]*\.[\w-]+\.[\w-]+"),
         r"\1/[token]",
     ),
+    # MEH-3896: the short links — /producer-preview/<code> (API), /v/<code> and
+    # /c/<code> (the pages, seen in Referer). 12 base62 characters; the
+    # look-ahead keeps a longer word out.
+    (
+        re.compile(r"(/producer-preview|/v|/c)/[A-Za-z0-9]{12}(?![\w-])"),
+        r"\1/[token]",
+    ),
     # /owner-invite/<token_urlsafe(32)> — the page, and /auth/owner-invite/…,
     # which this matches as a substring.
     (re.compile(r"/owner-invite/[\w-]{40,}"), "/owner-invite/[token]"),

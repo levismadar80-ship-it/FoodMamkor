@@ -85,3 +85,4 @@ meh-3750-tailwind-major-ignore	applied	.github/dependabot.yml	dependency-name: "
 meh-3806-mypy-ai-fill	applied	backend/pyproject.toml	"app/services/form_filler.py",	2026-11-24	committed 24/11 via the web editor (Claude in Chrome), 97bf5e47ce, sha256 matched the prepared file
 meh-3839-expected-tables-68	applied	.github/workflows/pr-checks.yml	MEH-3839: email_events	2026-11-24	committed 25/11 via the web editor (Claude in Chrome), 8079fd63a, sha256 matched the prepared file
 meh-3526-expected-tables-69	applied	.github/workflows/pr-checks.yml	MEH-3526: producer_staff	2026-11-25	committed 25/11 via the web editor (Claude in Chrome), 97fa9f100, sha256 matched the prepared file
+meh-3896-expected-tables-70	pending	.github/workflows/pr-checks.yml	MEH-3896: share_links	2026-11-26	prepared 26/11; to be committed on feature/meh-3896-short-links via the web editor (Claude in Chrome)

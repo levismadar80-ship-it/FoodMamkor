@@ -76,6 +76,8 @@ left in v1" vs "what's planned for v2".
 | `/unsubscribe/weekly` | Stop the weekly owner summary email (MEH-3079) |
 | `/freshness/confirm` | «כן, הכול נכון» landing from the monthly owner freshness email (MEH-3393) |
 | `/draft-preview/[token]` | Token link: an owner previews her draft business page and consents to publish (MEH-3377) |
+| `/v/[token]` | Short token link (`mehamakor.co.il/v/<12 characters>`) to the same draft preview; the new form of `/draft-preview/[token]` (MEH-3896) |
+| `/c/[token]` | Short token link (`mehamakor.co.il/c/<12 characters>`) to the owner-claim page; the new form of `/claim/[token]` (MEH-3896) |
 | `/delivery-waitlist/host-confirm` | A pickup-point host confirms from the email link |
 
 ### Business owners
