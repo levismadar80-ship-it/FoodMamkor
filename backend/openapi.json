@@ -21064,6 +21064,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "maxLength": 4,
             "minLength": 4,
@@ -21691,6 +21703,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "maxLength": 4,
             "minLength": 4,
@@ -21790,6 +21814,18 @@
             "format": "uuid",
             "title": "Offer Id",
             "type": "string"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
           },
           "pickup_code": {
             "maxLength": 4,
@@ -21935,6 +21971,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "title": "Pickup Code",
             "type": "string"
@@ -21948,6 +21996,11 @@
             "format": "date-time",
             "title": "Pickup Start",
             "type": "string"
+          },
+          "prepay": {
+            "default": false,
+            "title": "Prepay",
+            "type": "boolean"
           },
           "qty": {
             "title": "Qty",
@@ -21976,6 +22029,20 @@
           "pickup_end"
         ],
         "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescuePaidIn": {
+        "description": "MEH-3897: the business marks a reservation paid, or undoes a mistaken\nmark (`paid: false`).",
+        "properties": {
+          "paid": {
+            "title": "Paid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paid"
+        ],
+        "title": "RescuePaidIn",
         "type": "object"
       },
       "RescuePilotLocationsOut": {
@@ -40120,7 +40187,7 @@
     },
     "/rescue/offers/{offer_id}/cancel": {
       "post": {
-        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nNo refund, because nothing was paid. MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nMEH-3897: a reservation the business marked paid gets the owners' refund\nemail too (the money went to its own link). MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
         "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
         "parameters": [
           {
@@ -40418,6 +40485,65 @@
           }
         ],
         "summary": "Mark No Show",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/paid": {
+      "post": {
+        "description": "MEH-3897: the business marks the prepay received (its own Bit / PayBox,\nMEH-3895), or undoes a mistaken mark with `paid: false`.",
+        "operationId": "mark_paid_rescue_orders__order_id__paid_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescuePaidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Paid",
         "tags": [
           "rescue"
         ]
