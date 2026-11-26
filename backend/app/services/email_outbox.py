@@ -138,6 +138,7 @@ def _handle(row: EmailOutbox, now: datetime) -> str:
         str(row.body or ""),
         html=str(row.html) if row.html else None,
         reply_to=str(row.reply_to) if row.reply_to else None,
+        kind=str(row.kind),
     )
     if outcome != _WAIT:
         _finish(row, outcome, now)

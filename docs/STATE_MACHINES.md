@@ -88,6 +88,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
 | draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden; a missing licence does not block, MEH-3026) |
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
+| draft (ownerless) → pending or stays draft, and her own draft/pending row → deleted | admin moves a prepared draft to the owner who registered herself (MEH-3865) | `routers/admin_draft_merge.py` `merge_draft_into_owner` | draft ownerless, target draft/pending with one owner, no open orders; pending only if hers was pending and the merged page passes `submission_missing_items` |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
@@ -190,6 +191,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
 | Queued email (`email_outbox.outcome`, MEH-3535) | pending → sent / skipped (a final non-send answer, or `stale` after 2 days) / failed (5 tries, a provider error or a crash on the row each spending one); a try that fails keeps it pending with a later `send_after` | the outbox dispatcher only (`services/email_outbox.py:dispatch_due`), run by the worker or the web scheduler |
+| Order staff (`producer_staff.status`, MEH-3526) | pending → active (the invited person accepts: one conditional UPDATE, `routers/producer_staff.py` `accept_staff_invite`; the token is cleared) · active → revoked (the owner removes, `remove_staff`; the staff member leaves, `leave_staff`; the account becomes a business owner through a claim, an owner invite or a business registration, `services/staff_membership.py` `end_staff_membership`) · a pending invite the owner withdraws is deleted, not revoked (`remove_staff`), so withdrawn invites leave no rows. A pending row past `expires_at` (7 days) stays pending, stops counting toward the cap of 5 and is minted again by a new invite to the same address. An active row grants order access only while the business still has an owner (`services/order_access.py`) | owner, invited person |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
 ## Every status column
@@ -214,6 +216,7 @@ section above when it has transitions worth drawing.
 | `producer_reviews.reply_ai_moderation_status` | 6 |
 | `outbound_messages.status` | 6 |
 | `billable_events.status` | 6 |
+| `producer_staff.status` | 6 |
 | `business_billing.state` | "What does not exist" (no writer) |
 | `product_orders.status` | "What does not exist" (no route yet) |
 | `product_orders.payment_status` | "What does not exist" (no route yet) |

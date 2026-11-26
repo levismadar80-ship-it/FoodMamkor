@@ -11,7 +11,7 @@
  *           claim «no allergens»: null and an empty list read the same way,
  *           as «not declared» (MEH-2752).
  * Related:  app/[locale]/rescue/[offerId]/RescueOfferDetails.jsx (the block
- *           this was taken from, MEH-3586) · components/rescue/RescueSection.jsx
+ *           this was taken from, MEH-3586)
  * History:  MEH-3610 (creation)
  *
  * `askAtPickup` (MEH-3823, the rescue bag): a fixed «ask at pickup» line under

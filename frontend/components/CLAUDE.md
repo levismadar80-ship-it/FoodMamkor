@@ -97,12 +97,14 @@ display is usually written inside its own file, where nobody searching `ui/` fin
 it, so two uses is the trigger. Known copies to fold the next time one of them is
 touched (21/11):
 - Allergens: `public/ProductFacts.jsx:38` (reads `lib/allergens.js`) and
-  `rescue/RescueSection.jsx:395` (its own `allergen_${code}` lookup).
+  `offer-detail/AllergenSection.jsx:42` (its own `allergen_${code}` lookup).
 - Price with the regular price struck through: `rescue/BagRow.jsx:125`,
-  `HomeWhatsOn.jsx:533`, and the group-buy pages
+  `HomeWhatsOn.jsx:533`, `app/[locale]/map/components/MapRescueRow.jsx`, and
+  the group-buy pages
   (`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:293`,
   `app/[locale]/group-buys/GroupBuysClient.jsx:105`).
-- Pickup time line: `rescue/BagRow.jsx:80` and `rescue/RescueSection.jsx:347`.
+- Pickup time line: `rescue/BagRow.jsx:80`, `rescue/RescueSection.jsx:163` and
+  `app/[locale]/map/components/MapRescueRow.jsx`.
 
 **Say what you checked.** A PR that adds a file under `frontend/components`,
 `frontend/lib`, `frontend/hooks` or `backend/app/services` carries

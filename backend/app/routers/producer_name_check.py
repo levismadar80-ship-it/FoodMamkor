@@ -14,7 +14,8 @@ Does NOT: search. GET /producers?q= is the search, and it records every
 Related:  backend/app/services/producer_listing.py `is_business` (the one
           rule for "a live business"); backend/app/routers/cities.py (the
           same shape: anonymous, rate-limited, read-only lookup).
-History:  MEH-3086 (creation).
+History:  MEH-3086 (creation). MEH-3865: name_key moved to
+          services/business_name_key.py (shared with the duplicate signals).
 """
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -25,34 +26,17 @@ from app.database import get_db
 from app.models import Producer
 from app.rate_limit import limiter
 from app.schemas.schemas import NameCheckOut, NameMatch
+from app.services.business_name_key import SQL_FROM, SQL_TO, name_key
 from app.services.producer_listing import is_business
 
 router = APIRouter(tags=["producers"])
 
 MIN_NAME_LEN = 3
 MAX_MATCHES = 3
-# Quote marks people type differently for the same name: «ג׳חנון» / «ג'חנון».
-_QUOTES = "\"'`״׳“”‘’"
-# Invisible characters a pasted name carries: bidi marks and zero-width.
-_INVISIBLE = "\u200e\u200f\u200b\u200c\u200d\ufeff\u202a\u202b\u202c\u202d\u202e"
-# Spaces Postgres' `\s` does not match but Python's str.split() does.
-_ODD_SPACES = "\u00a0\u0085\u2007\u2009\u202f\u3000"
-# translate(): each _ODD_SPACES char -> a plain space; the rest -> dropped.
-_FROM = _ODD_SPACES + _QUOTES + _INVISIBLE
-_TO = " " * len(_ODD_SPACES)
-_PY_TABLE = {
-    **{ord(ch): " " for ch in _ODD_SPACES},
-    **{ord(ch): None for ch in _QUOTES + _INVISIBLE},
-}
-
-
-def name_key(value: str) -> str:
-    """Lower-case, no quote marks or invisible characters, single spaces.
-
-    `_name_key_sql` computes the same key in Postgres; the two are held
-    together by tests/test_meh3086_name_check.py (stored-vs-typed pairs).
-    """
-    return " ".join(value.translate(_PY_TABLE).split()).lower()
+# MEH-3865: the key and its translation tables live in services/business_name_key.py,
+# shared with the «כפילות?» signal and the draft-twin match.
+_FROM = SQL_FROM
+_TO = SQL_TO
 
 
 def _name_key_sql() -> ColumnElement[str]:

@@ -13,6 +13,7 @@
  * fail.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { SWRConfig } from "swr";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
@@ -34,9 +35,13 @@ const NAME_LABEL = new RegExp(he.admin.producers.form.fields.name);
 
 function renderForm() {
   return render(
-    <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-      <ProducerForm />
-    </NextIntlClientProvider>,
+    // MEH-3818: the categories come through the shared read cache; a fresh
+    // cache per render, so one test's list never answers the next.
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProducerForm />
+      </NextIntlClientProvider>
+    </SWRConfig>,
   );
 }
 

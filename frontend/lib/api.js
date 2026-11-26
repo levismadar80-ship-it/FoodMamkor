@@ -73,6 +73,7 @@ api.interceptors.request.use((config) => {
     return config;
   }
   if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -134,6 +135,7 @@ function _expireSession() {
   // stays silent — one auth:expired, one toast, not five. A guest with no
   // stored session never gets a "session expired" notice at all.
   // Every sign-in path stores `token`, so its presence is the session.
+  // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
   const hadSession = localStorage.getItem("token") !== null;
   localStorage.removeItem("token");
   localStorage.removeItem("user");

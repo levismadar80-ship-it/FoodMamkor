@@ -18,10 +18,14 @@
  * costs trust.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
+
+// MEH-3809: a cached answer lands before the first paint (as use-hub-nav-gate.js,
+// MEH-3049), so the Header's held place never paints and then goes.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const CACHE_KEY = "meh_events_upcoming_any";
 const TTL_MS = 60 * 60 * 1000; // 1h — supply moves in days, not seconds.
@@ -31,6 +35,7 @@ const UpcomingSchema = z.array(z.unknown());
 
 function readCache() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- nav-link cache, read in a layout effect before the first paint (MEH-2965)
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
@@ -90,21 +95,31 @@ function loadAny() {
  * malformed body, and ignores responses after unmount.
  */
 export function useEventsNavGate() {
-  const [visible, setVisible] = useState(false);
+  return useEventsNavGateState().visible;
+}
 
-  useEffect(() => {
+/**
+ * @returns {{ visible: boolean, settled: boolean }}
+ * MEH-3809: `settled` is true once the answer is known (cache, response, or a
+ * failure, which stays hidden). The Header holds the link's place while it is
+ * not, so a link arriving late does not wrap the row and push the page down.
+ */
+export function useEventsNavGateState() {
+  const [state, setState] = useState({ visible: false, settled: false });
+
+  useIsomorphicLayoutEffect(() => {
     let alive = true;
 
     const cached = readCache();
     if (cached !== null) {
-      setVisible(cached);
+      setState({ visible: cached, settled: true });
       return () => {
         alive = false;
       };
     }
 
     loadAny().then((any) => {
-      if (alive && any !== null) setVisible(any);
+      if (alive) setState({ visible: any === true, settled: true });
     });
 
     return () => {
@@ -112,5 +127,5 @@ export function useEventsNavGate() {
     };
   }, []);
 
-  return visible;
+  return state;
 }

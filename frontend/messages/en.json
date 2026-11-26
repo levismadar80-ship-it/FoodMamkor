@@ -456,7 +456,8 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out",
-      "view_page": "View page"
+      "view_page": "View page",
+      "staff_orders": "Orders to handle"
     },
     "sheet": {
       "connected": "Signed in",
@@ -798,6 +799,9 @@
       "description": "What is free for businesses on Mehamakor, what costs money and when payment starts. Your page is free, and during the launch period so is every tool.",
       "og_title": "Price list for businesses",
       "og_description": "What is free, what costs money, and when payment starts."
+    },
+    "staff_invite": {
+      "description": "Handling a business's orders on Mehamakor"
     }
   },
   "producer": {
@@ -1925,7 +1929,25 @@
         "waiting_tooltip_submitted": "Submitted for review: {when}",
         "waiting_tooltip_created": "Created: {when}",
         "waiting_tooltip_resubmitted": "Resubmitted for review: {when}",
-        "resubmission_badge": "Resubmission #{n}"
+        "resubmission_badge": "Resubmission #{n}",
+        "draft_twin": {
+          "tag_on_owner": "A draft is ready",
+          "tag_on_draft": "The business signed up",
+          "merge": "Move the draft to the owner",
+          "confirm": "Move the draft “{draft}” to the account of “{own}”? Their name, contact details, photos, products and pickup points replace the draft's, and their duplicate page is deleted. This can't be undone.",
+          "confirm_yes": "Move",
+          "done": "The draft was moved to the owner",
+          "error": "The move failed",
+          "reasons": {
+            "phone": "Same phone",
+            "email": "Same email",
+            "instagram": "Same Instagram",
+            "website": "Same website",
+            "facebook": "Same Facebook",
+            "name_city": "Same name, same city",
+            "name_contains_city": "Similar name, same city"
+          }
+        }
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
@@ -4554,6 +4576,10 @@
         "q": "How do I avoid disappearing among all the businesses on the site? Is there paid promotion?",
         "a": "There is no paid promotion — no business buys a place above you. What sets you apart on Mehamakor is your story, and we help you write it: guides, examples and personal support during your first month. And your page also shows up in Google search — an online presence even if you don't have a site of your own."
       },
+      "new_site": {
+        "q": "The site is still new. Will it really bring me customers?",
+        "a": "Your page works for you from day one, before the site is big. It holds your story, photos, products with prices and delivery areas, with a button that opens a WhatsApp chat. An AI assistant answers customers' questions from what your page says, and every customer can check on their own whether you deliver to their town. Instead of answering the same questions again and again, you send one link.\n\nThere are also tools that bring sales: group buys, events and workshops, and offers. Customers who save your business get an update when something new goes up, and there is a printable QR code and ready-made cards to share on social media.\n\nAnd while you sell, we work to bring you traffic. We build the page with you, we share every new business on our social channels, and your page is open to Google search and to chat assistants like ChatGPT. Businesses that join now are among the first in their field. Your dashboard shows how many people visited your page and how many contacted you, so you don't have to take our word for it: you can see it."
+      },
       "reviews": {
         "q": "What happens if someone writes a hurtful review about me anonymously?",
         "a": "Not anonymously: writing a review requires a signed-in account, and only people who contacted the business through Mehamakor, or got a review link from it, can write one. You can reply to any review, and if something isn't right, write to us and we'll look into it."
@@ -4681,7 +4707,7 @@
           },
           "orders": {
             "label": "Orders and surprise bags:",
-            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. People the business invited to handle its orders see these details too. For a surprise bag, the business sees only the pickup code. In a group buy too, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
           },
           "messages": {
             "label": "WhatsApp and email messages:",
@@ -5227,6 +5253,9 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_15": {
+            "i0": "Order staff: add up to 5 people to handle your orders. They see only the orders tab. Add them from the «Tools» tab."
+          },
           "v1_5_14": {
             "i0": "Before you open orders, you can see how the order form looks to customers. If something is missing, it says what to add.",
             "i1": "Paste text and get a draft of a recipe, an event or your order settings. Every field has a «?» with a short explanation.",
@@ -6308,7 +6337,8 @@
         "preview_no_products": "No product is open for ordering yet, so customers won't see a way to order here.",
         "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
         "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
-        "preview_fix_link": "Go to the orders tab"
+        "preview_fix_link": "Go to the orders tab",
+        "staff_note": "Handling the orders of {name}."
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
@@ -6318,6 +6348,23 @@
       "closed_day_orders": {
         "warning": "{count, plural, one {One order you already accepted falls} other {# orders you already accepted fall}} on days you closed: {list}. They stay valid, so let your customers know.",
         "action": "To orders"
+      },
+      "staff": {
+        "heading": "Order team",
+        "intro": "You can add up to {max} people to handle orders. They see only the orders tab, including the phone and address of whoever ordered.",
+        "email_label": "Email address of the person joining",
+        "invite": "Send a join link",
+        "sent": "We sent a join link to {email}. It is valid for 7 days.",
+        "empty": "No one on the team yet.",
+        "count": "{count} of {max}",
+        "status_active": "On the team",
+        "status_pending": "Link sent",
+        "status_expired": "Link expired",
+        "resend": "Send again",
+        "remove": "Remove",
+        "remove_aria": "Remove {email} from the team",
+        "full": "The team is full. To add someone new, remove someone first.",
+        "load_error": "We couldn't load the team."
       }
     },
     "page_preview": {
@@ -6916,7 +6963,8 @@
       "group_quality": "Source & quality",
       "group_service": "Service & trust",
       "apply": "Show {count} businesses",
-      "clear": "Clear all"
+      "clear": "Clear all",
+      "group_happenings": "Events & workshops"
     }
   },
   "whats_this": {
@@ -7168,7 +7216,7 @@
       "switch_account": "Switch account"
     },
     "has_business": {
-      "body": "This account already has a business on Mehamakor, and each account runs one business. If this page belongs to another business, sign in with another account or write to us.",
+      "body": "This account already has a business on Mehamakor, and each account runs one business. If this is your business's page, write to us and we'll move it to your account. If it belongs to another business, sign in with another account.",
       "dashboard": "Go to dashboard",
       "switch_account": "Switch account"
     },
@@ -7439,7 +7487,6 @@
       "not_found_body": "It may have been for another day. New bags are posted daily.",
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
-      "details_link": "All bag details",
       "bar_cta": "Reserve the bag",
       "calendar_title": "Surprise bag pickup: {business_name}",
       "pickup_title_tomorrow": "Pickup tomorrow",
@@ -8177,6 +8224,8 @@
     "dead_title": "This link is no longer active. You can update your page from your dashboard."
   },
   "phone_verify": {
+    "sends_to": "WhatsApp number to verify:",
+    "change_number": "Change number",
     "title": "Verify your business phone",
     "reverify_title": "Your business WhatsApp number isn't verified yet",
     "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
@@ -8399,5 +8448,15 @@
     "hours_title": "Opening hours",
     "hours_note": "Each side writes hours differently, so compare them yourself.",
     "empty_value": "—"
+  },
+  "staff_invite": {
+    "title": "Join a business's team",
+    "intro": "A business on Mehamakor is asking you to help handle its orders. Once you join, you will see its orders tab, and only that.",
+    "guest": "To join, sign in with the account of the email address that got the link.",
+    "register": "Create an account",
+    "accept": "Join the team",
+    "invalid_title": "This link is not valid",
+    "invalid_body": "You can ask the business to send a new link.",
+    "error": "We couldn't add you. You can try again."
   }
 }

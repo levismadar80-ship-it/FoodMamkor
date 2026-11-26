@@ -84,11 +84,11 @@ describe("MEH-2799 · /join v2 structure", () => {
     expect(container.querySelectorAll("[data-join-hero-cta]")).toHaveLength(1);
   });
 
-  it("the FAQ has six questions, the first one the locked cost answer", async () => {
+  it("the FAQ has seven questions, the first one the locked cost answer", async () => {
     render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
     const items = screen.getAllByTestId("join-faq-item");
-    // MEH-2841 (08/11) added q_price and q_updates — 4 → 6.
-    expect(items).toHaveLength(6);
+    // MEH-2841 (08/11) added q_price and q_updates — 4 → 6; MEH-3869 q_new_site — 7.
+    expect(items).toHaveLength(7);
     // getTranslations is mocked to echo the key, so this pins WHICH key renders.
     expect(items[0].textContent).toContain("faq.a_cost");
   });
@@ -105,10 +105,10 @@ describe("MEH-2799 · /join v2 structure", () => {
       expect(summary, "each question is the <summary>").not.toBeNull();
       expect(summary.querySelector("h3")).not.toBeNull(); // the heading outline stays
     }
-    // Six entries since MEH-2841, not four. Written as an array rather than
+    // Seven entries since MEH-3869 (six since MEH-2841). Written as an array rather than
     // `.every(...)` on purpose: it pins the COUNT as well as the state, so
     // a dropped question cannot pass as "all closed".
-    expect(items.map((d) => d.open)).toEqual([false, false, false, false, false, false]);
+    expect(items.map((d) => d.open)).toEqual([false, false, false, false, false, false, false]);
     expect(items[0].querySelector("summary").textContent).toContain("faq.q_cost");
   });
 

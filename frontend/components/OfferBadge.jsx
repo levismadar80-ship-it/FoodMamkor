@@ -26,7 +26,7 @@
 import { Gift } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 
 // The typed vocabulary, mirrored from schemas.py OFFER_TYPES / THRESHOLD_UNITS.
 // An unknown value renders nothing rather than a raw key — a backend that grows
@@ -76,8 +76,9 @@ const AMOUNT_SLOT = "\u0001";
 // MEH-2676: the date-window half of the guard below, shared with
 // freeDeliveryThreshold() so ProducerCard cannot show a threshold for an offer
 // this component would hide.
-function isWithinWindow(offer) {
-  const today = israelToday();
+// MEH-3861: `today` comes from the caller's useIsraelToday(), so a card in
+// cached HTML hydrates with the day it was drawn with.
+function isWithinWindow(offer, today) {
   if (offer.expires_at && offer.expires_at < today) return false;
   if (offer.starts_at && offer.starts_at > today) return false;
   return true;
@@ -88,16 +89,20 @@ function isWithinWindow(offer) {
  * row, or null. Returns { value, unit } only for a live `free_delivery_above`
  * offer that carries a valid threshold. A threshold-less free-delivery offer
  * returns null: its chip («משלוח חינם») is short and never truncates.
+ *
+ * @param {any} offer
+ * @param {string} today `YYYY-MM-DD` in Israel, from useIsraelToday().
  */
-export function freeDeliveryThreshold(offer) {
+export function freeDeliveryThreshold(offer, today) {
   if (!offer || offer.offer_type !== "free_delivery_above") return null;
   if (offer.threshold_value == null || !UNITS.has(offer.threshold_unit)) return null;
-  if (!isWithinWindow(offer)) return null;
+  if (!isWithinWindow(offer, today)) return null;
   return { value: offer.threshold_value, unit: offer.threshold_unit };
 }
 
 export default function OfferBadge({ offer, variant = "badge", className = "" }) {
   const t = useTranslations("producer.offer");
+  const today = useIsraelToday();
   if (!offer || !OFFER_TYPES.has(offer.offer_type)) return null;
 
   // Defence in depth only — see "Does NOT" above. Date-only comparison against
@@ -111,7 +116,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
   // The leak is not reachable today (the server filters both ends), but a
   // comment promising a two-sided check over a one-sided one is what makes the
   // next reader trust a guarantee that is not there.
-  if (!isWithinWindow(offer)) return null;
+  if (!isWithinWindow(offer, today)) return null;
 
   // MEH-1898 — the `custom` branch, and the empty case it exists to catch.
   //

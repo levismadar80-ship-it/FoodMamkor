@@ -23,6 +23,7 @@ import api from "@/lib/api";
 import { ListMySchedulesProducersMeRescueSchedulesGetResponse as SchedulesOut } from "@/lib/generated/api.zod";
 import { DAY_MS, shekels } from "@/lib/rescue";
 import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -64,6 +65,7 @@ export default function RescueScheduleStrip({ today, onChanged }) {
   const [asking, setAsking] = useState(/** @type {string | null} */ (null));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const fallbackDay = useIsraelToday(); // MEH-3861: when no `today` is passed
 
   const load = useCallback(() => {
     api
@@ -78,9 +80,9 @@ export default function RescueScheduleStrip({ today, onChanged }) {
   useEffect(load, [load]);
 
   if (!rows) return null;
-  const shown = tomorrowRows(rows, today || israelToday());
+  const shown = tomorrowRows(rows, today || fallbackDay);
   if (shown.length === 0) return null;
-  const { day } = tomorrowOf(today || israelToday());
+  const { day } = tomorrowOf(today || fallbackDay);
   const many = shown.length > 1;
 
   /** @param {any} row @param {boolean} [confirmed] the business said yes to cancelling reservations */

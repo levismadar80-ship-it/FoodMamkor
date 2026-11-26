@@ -4,6 +4,7 @@
 
 export function isFridayMode() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the same test runs before the first paint (data-friday-mode, lib/prehydration-flags-inline.js), and spec 50 seeds the override (MEH-3860)
     if (typeof window !== "undefined" && localStorage.getItem("friday_mode_override") === "1") {
       return true;
     }
@@ -15,7 +16,8 @@ export function isFridayMode() {
       timeZone: "Asia/Jerusalem",
       weekday: "short",
       hour: "2-digit",
-      hour12: false,
+      // h23, not hour12:false: some engines print midnight as "24" (MEH-3860).
+      hourCycle: "h23",
     }).formatToParts(new Date());
     const weekday = parts.find((p) => p.type === "weekday")?.value; // "Thu" / "Fri"
     const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);

@@ -912,7 +912,21 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
                         outcome default 'pending', send_after, attempts int
                         default 0, last_error varchar(20), sent_at,
                         created_at)                                   -- MEH-3535
+email_events (id uuid PK, svix_id varchar(64) UNIQUE, event_type varchar(40),
+                        kind varchar(40), user_id FK→users SET NULL,
+                        recipient_domain varchar(255), resend_email_id,
+                        detail varchar(80), created_at)               -- MEH-3839
+producer_staff (id uuid PK, producer_id FK→producers CASCADE,
+                        user_id FK→users CASCADE nullable (set on accept),
+                        invited_email varchar(255), role 'orders',
+                        token_hash varchar(64) nullable (sha256; NULL once used),
+                        expires_at, invited_by FK→users SET NULL,
+                        status pending|active|revoked, created_at,
+                        accepted_at, revoked_at;
+                        UNIQUE (user_id) WHERE status='active')     -- MEH-3526
 ```
+
+> **MEH-3839 — what Resend reports back (24/11/2026):** revision `e1a3c5b7d9f2` on `b7d9f1a3c5e8` (MEH-3703), additive: table `email_events` (**`EXPECTED_TABLES` +1**). One row per delivery event Resend reports for an email we sent: `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.suppressed`, `email.failed`, `email.clicked` (`EMAIL_EVENT_TYPES`; `email.sent`, `email.opened` and the rest are acknowledged and dropped — opens are inflated by Apple Mail). Written only by `POST /webhook/resend`. `kind` is the tag `send_email(kind=…)` put on the email (`order_new_order`, `weekly_summary`, `onboarding_2`, …; `other` when untagged or invalid). No address and no text from the receiving server: the recipient's domain, and the user id when the address belongs to an account; `detail` is the bounce `type/subType` or the suppression type. Retried deliveries are one row (`svix_id` unique). Deleted 30 days after `created_at` (`services/retention_purge.py`). We keep no suppression list of our own: Resend skips a hard-bounced or complained address itself and reports `email.suppressed`.
 
 > **MEH-3535 — the durable email queue (20/11/2026):** revision `c5e7a9b1d3f6` on `b4e6a8c0d2f3`, additive: table `email_outbox` (**`EXPECTED_TABLES` +1**). An email the site owes, queued by `services/email_outbox.py::enqueue_email` and sent by `dispatch_due` (same rules as the order outbox below: `SKIP LOCKED`, one commit per row, at least once). A Resend `failed` is retried after 2 min doubling, up to 5 tries, then `failed`, and ends that batch (an outage costs one 10 s timeout per tick); an unexpected error on a row (a DB blip at the commit, a bug) is retried the same way, never final at once; `unconfigured` (no Resend key in that process) leaves the row untouched and stops the batch, so a dispatcher with the key takes it; any other non-`sent` answer is a final `skipped` with the code in `last_error`; a row more than 2 days old is `skipped` / `stale`. A finished row keeps only `kind`, `outcome` and the times: address, subject, body, html and reply-to are set to NULL. Rows are deleted 30 days after `created_at` (`services/retention_purge.py`), and a restored copy deletes them all (`scripts/anonymize_restored_db.sql`). A **pending** row does hold the address and the words (for an owner's «הרשמה חדשה», the registrant's name, phone and email) until it is finished: minutes normally; if no dispatcher runs at all nothing marks it stale, and it holds them until the 30-day purge. An email caused by a test business or user is never queued (MEH-2952). **Who queues today:** the admin decisions on a business (`producer_approved`, `producer_rejected`, `producer_changes_requested`, `routers/admin_decisions.py`, in the decision's own commit — the approval's through `_persist_approval(before_commit=…)`, re-queued on its slug-collision retry) and an event or workshop sign-up (`visitor_confirmation`, `waitlist_confirmation`, `owner_new_registration`, `routers/registrations.py`, in the sign-up's own transaction; a composer or queue error is reported and the sign-up kept). **Who dispatches:** the web scheduler every minute while `OUTBOX_EXTERNAL_WORKER` is false (default); the worker service `python -u -m app.worker` every 30 s once it is true. No route.
 
@@ -969,6 +983,10 @@ email_outbox (id uuid PK, kind varchar(40), to_email, subject text, body, html,
 > **MEH-2680 — rescue bags: the buyer's own orders (05/11/2026):** `GET /rescue/orders/mine` 🔑 — the caller's `reserved`/`handed` orders on **today's** offers (Israel date), same fields as the `POST /rescue/orders` response plus `reviewed` (a review exists) and `producer_id`. The business page reads it on mount and on window focus, so a reload no longer loses the pickup code and the review appears once the counter marks the bag handed. It matches on `producer_id`, not `offer_id`, because `GET /rescue/offers` drops a sold-out offer. Guests are never asked (their 401 would end in the session-expired toast). Behind the same flag.
 
 > **MEH-2716 — «מצילים מזון» badge (06/11/2026):** `ProducerListOut.rescued_recently` (bool, computed, no column) — True when the business, in the last 30 days, handed a surprise bag over (`rescue_orders.status='handed'`, `handed_at` in window) or reported bags given away free (`rescue_offers.qty_donated>0`, `pickup_end` in window). Set by `attach_rescue_saving()` (`services/producer_queries.py`) on `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and the favorites list — two queries per page, none and always False while `RESCUE_BAGS_ENABLED` is off. Drives the `rescue_saving` badge (evidence `system`); never ranking.
+
+> **MEH-3824 — the bag today on the map (25/11/2026):** `ProducerListOut.rescue_today` (object or null, computed, no column) — the business's earliest bag TODAY from the set `GET /rescue/offers` would list (active, `qty_left>0`, still reservable, approved non-test business, pickup point in a pilot town): `offer_id`, `location_id`, `price_agorot`, `value_min_agorot`, `pickup_start`, `pickup_end`, `qty_left`. Set by `attach_rescue_today()` (`services/producer_queries.py`) on `GET /producers` only, one query per page, none and always null while `RESCUE_BAGS_ENABLED` is off or `RESCUE_BAGS_CITIES` is empty. The list is edge-cached 30 s (+30 s stale), so a bag can show up to a minute after it sold out; the bag page and the reserve guard are the truth. Read by the map's `MapRescueRow`.
+
+> **MEH-3824 — the map's offer switches (25/11/2026):** four boolean query params on `GET /producers` — `rescue_today`, `group_buy`, `event`, `experience` — keep the businesses that have ANY of the asked kinds (OR between them, AND with every other filter; `X-Total-Count` agrees). `ProducerListOut` gains three computed flags, no column: `has_open_group_buy`, `has_upcoming_event`, `has_listed_experience` (the bag already rides `rescue_today`). Each kind reads the ONE query its own public list runs (`services/offer_supply.py`): group buys `group_buys._status_tab_query(db, "open", None)`, experiences `experiences._public_listing_query(db)`, events `events.public_event_feed_query(db)` (the feed with no filter), bags `rescue_today_query` (shared with `attach_rescue_today`). So a flag is true exactly when that list would show the business something; `tests/test_meh3824_offer_filters.py` pins each flag against its list. Set by `attach_offer_flags()` on `GET /producers`, one query per kind per page. While the bag pilot is off, `?rescue_today=true` matches no business. The map's «סינון» shows a switch only when at least one business in its mount snapshot has the flag (`gate: "count"`, `gateMin: 1` in `lib/filter-taxonomy.js`).
 
 > **MEH-2756 — rescue bags: the pickup_start codes digest (06/11/2026):** `rescue_offers.codes_sent_at` (`timestamptz` **NULL**able, no default, no backfill; migration `a3f7c21e9b05`, no table, `EXPECTED_TABLES` unchanged) is when the day's pickup codes for that offer were sent to the **business** over WhatsApp, and it is the whole duplicate-send guarantee. **No endpoint reads or writes it** — the only writer is the scheduler job `services/rescue_digest.py::send_rescue_digests`, registered on the existing `followup_scheduler` at a 5-minute interval (`startup.py`), because `pickup_start` is per-offer and no daily hour is the start of every business's window. Due = active · `codes_sent_at IS NULL` · `pickup_start` passed · `pickup_end` **not** passed · town in `RESCUE_BAGS_CITIES` · ≥1 `reserved` order. **An offer whose window closes undigested stays `NULL` forever** — `pickup_end > now` drops it from the candidate set, so NULL means "not digested" and the filter, not the column, separates "not yet" from "never". Gated by a second flag, `RESCUE_DIGEST_ENABLED` (default **False**), because the send needs the Meta-approved template `rescue_codes_digest_v1` — before approval every send answers 132001 and `send_template` returns False without raising. Each send appends one `alert_log` row on channel **`whatsapp_digest`**, deliberately NOT the consumer `whatsapp` channel: the cap key is `(user_id, producer_id, channel, sent_at)` and excludes `alert_type`, so a shared channel would make a business digest and a consumer favourite-alert share one 24h budget. **Note the mixed timezone on this table** — `codes_sent_at` is `timestamptz` while `pickup_start`/`pickup_end`/`created_at` are naive-UTC; that is intentional, matching `producers.email_pending_nudge_sent_at`, since a send-stamp is compared against `utc_now()` and never rendered on the Israel clock.
 
@@ -1365,6 +1383,14 @@ POST   /producer-claim                     auth   — 10/hour. Body {token, decl
 POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D). ProductCreate → ProductOut, 201. ONLY while the draft is claimable
                                                      (draft + no owner, producer row locked FOR UPDATE); otherwise 409. No new-product alert (a draft is not public). The six diet flags (is_*) are DROPPED — they are the owner's self-declaration, set from her dashboard after the claim (Sapir, 26/10).
 DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
+POST   /admin/producers/{draft_id}/merge-owner  admin — 30/hour. MEH-3865. Body {target_producer_id}: a business its owner registered herself (draft or pending, exactly one
+                                                     owner). The admin list offers the pairs `services/draft_twins.py` matched; the route itself does not re-run the match (an admin
+                                                     action). Every refusal before any write (409, Hebrew): not an ownerless draft · target approved/rejected/inactive · different kind
+                                                     or is_test · no owner · two owners · open orders · > MAX_PRODUCTS after the merge · same row. Both producers locked in id order.
+                                                     What survives, column by column and child table by child table: `services/draft_merge_policy.py` (her name, contacts, images,
+                                                     declarations and history win; the admin's prose stays; her delivery / pickup setup replaces the draft's whole). Her row is
+                                                     deleted through admin_delete_producer in the same transaction. Pending stays pending only if the merged page passes submission_missing_items.
+                                                     Background: the owner's email (send_owner_draft_merged). → {producer_id, status, products_moved}.
                                                      Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 
@@ -1467,6 +1493,22 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template;
                                                      not sent for a held page (that email says the page is visible). /accept-existing follows the same rule.
 ```
+### Order staff (`app/routers/producer_staff.py`) — MEH-3526
+
+Table `producer_staff` (migration `c6e8a0b2d4f5`, expand-only, a new table: `EXPECTED_TABLES` +1): `id` · `producer_id` (FK CASCADE) · `user_id` (FK CASCADE, NULL until accepted) · `invited_email` · `role` (`'orders'`, CHECK) · `token_hash` (sha256 hex, NULL after accept) · `expires_at` (7 days) · `invited_by` (FK SET NULL) · `status` (`pending · active · revoked`, CHECK) · `created_at` · `accepted_at` · `revoked_at`. One active membership per user (partial unique on `user_id WHERE status='active'`); one live row per (business, lower(email)). Cap 5 per business in `limits.py` (`staff`), pending invites included until they expire. The permission is read from this table on every request (`services/order_access.py` `require_order_access`), never from the JWT; it applies to the eight routes of `product_order_business.py` that list and move orders, and to nothing else. Staff see open orders and those closed in the last 7 days. `/auth/me` carries `staff_of: {producer_id, name} | null`. A pending invite the owner withdraws is deleted; removing an active member, the member leaving, or the account becoming a business owner (claim, owner invite, business registration: `services/staff_membership.py`) marks the row `revoked`.
+
+```
+GET    /producers/me/staff                       owner — the list + max_staff
+POST   /producers/me/staff                       owner — 10/hour. {email}. Same answer whether the address has an account or not; 409 Hebrew at the cap,
+                                                 for the owner's own address, or an address already on the team. An expired invite is minted again.
+DELETE /producers/me/staff/{id}                  owner — revokes (pending or active). 404 for another business's row.
+POST   /staff-invites/accept                     signed in, verified email equal to the invited one — 10/hour. {token}. One conditional UPDATE, rowcount
+                                                 checked; 409 for an owner, staff elsewhere, or a business with no owner. Answers {producer_id, name}.
+DELETE /users/me/staff-membership                the staff member leaves.
+```
+
+The invite page is `frontend/app/[locale]/staff-invite/`, on the `/claim` token flow: first load moves the token into the tab's sessionStorage and replaces the address with `/staff-invite`; `noindex`, `no-referrer`; Sentry, Speed Insights and Clarity scrub or skip `/staff-invite/<x>`.
+
 ### Producers (`app/routers/producers.py`, `producer_me.py` + `producer_me_analytics.py`, `producer_me_review.py`, `producer_me_locations.py`)
 
 ```
@@ -1988,6 +2030,18 @@ GET    /admin/reports                          admin — producer reports inbox
 ```
 GET    /webhook/whatsapp     public — Meta subscription challenge, verify_token gate
 POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signature gate
+```
+
+### Resend delivery events (`app/routers/resend_webhook.py`) — MEH-3839
+
+```
+POST   /webhook/resend       public — Resend (Svix) signed events, 300/minute.
+                             503 «קליטת האירועים כבויה» until RESEND_WEBHOOK_SECRET
+                             is set (Resend retries, nothing lost); 413 over 64 KB;
+                             401 «החתימה לא תקינה» on a bad or >5-minute-old
+                             signature (resend.Webhooks.verify); 200 otherwise —
+                             an event type we don't keep is acknowledged and
+                             dropped; a retry with the same svix-id is a no-op.
 ```
 
 ### Admin — undelivered WhatsApp (`app/routers/admin_whatsapp.py`) — MEH-771 Chunk C

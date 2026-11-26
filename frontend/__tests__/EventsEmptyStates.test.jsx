@@ -108,7 +108,7 @@ vi.mock("@/components/CitySearch", () => ({
 // events/experiences pair it was written for, and so the gates' requests
 // do not land in this file's api.get expectations. The four-tab row has
 // its own file: __tests__/ListingHubTabs.test.jsx.
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false, useHubNavGateState: () => ({ visible: !!(false), settled: true }) }));
 vi.mock("@/components/ChipScrollRow", () => ({
   // MEH-2847: EventsClient passes the selection as an `activeKeys` Set (the
   // real ChipScrollRow's multi-select prop); «הכל» is active while it is empty.

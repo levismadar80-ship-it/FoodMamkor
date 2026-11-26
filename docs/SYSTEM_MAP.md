@@ -24,6 +24,7 @@ This page links to those and does not repeat their numbers.
                                  (Railway)      ├─▶ Cloudinary  (signed upload, delete)
                                                 └─▶ Google Places (rating, owner's profile tool)
                     WhatsApp ──webhook──▶ backend (delivery receipts, opt-out)
+                    Resend   ──webhook──▶ backend (delivered, bounced, clicked → email_events)
 ```
 
 | Component | What it is | Where |
@@ -56,6 +57,7 @@ This page links to those and does not repeat their numbers.
 | Backend | Google Places | a business's Google rating | the rating line disappears |
 | Backend | Google Places | the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): search, link check, live comparison; only the place_id is stored; 10/hour per route | the tool says «לא זמין» (503); nothing else depends on it |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
+| Resend (via Svix) | Backend | `POST /webhook/resend`, signature-checked, MEH-3839: delivery, bounce, spam-complaint, suppression and click events of the emails we sent | no new rows in `email_events`; email still goes out. Off (503, Resend keeps retrying) until `RESEND_WEBHOOK_SECRET` is set |
 | Grafana Cloud k6, or a GitHub runner (`.github/workflows/load-test.yml`, manual only, MEH-3564) | Staging backend | k6 load test (`scripts/load-test.js`); results kept in Grafana Cloud when `K6_CLOUD_TOKEN` is set | the run goes red; nothing else depends on it. Refuses any URL but the staging backend |
 | Scheduled Claude Code task «בדיקת בריאות שבועית לריפו» (Thursday 09:00 Israel, MEH-3615) | GitHub (read the repo) · Linear (cards) · Sapir (one Hebrew report) | runs `scripts/health/weekly-repo-health.sh`: orphan folders, due `Re-check:` dates, Python dead code, knip totals, expiry dates; one card per new finding | no report that week; nothing in the product depends on it |
 | GitHub Actions (`.github/workflows/staging-health.yml`) | GitHub commit statuses | `Staging health` on every open PR into staging, rule 41 (`scripts/ci/staging_health.py`) | posts failure («could not read staging runs»); a PR labeled `fixes-staging-red` gets green |
@@ -73,6 +75,7 @@ This page links to those and does not repeat their numbers.
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
 | An email the site owes (business approved / rejected / changes requested, event and workshop sign-up confirmations, MEH-3535) | Postgres, `email_outbox` | written in the same transaction as its cause (the approval email through `_persist_approval(before_commit=…)`, re-queued on its slug retry); address and words cleared the moment the row is sent, skipped or failed; the bare row deleted after 30 days by the retention purge |
+| What happened to each email we sent (delivered, bounced, marked as spam, suppressed, clicked), MEH-3839 | Postgres, `email_events` | written only by the Resend webhook; the recipient's domain and account id, never the address or the words; deleted after 30 days by the retention purge |
 | Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
@@ -89,7 +92,10 @@ This page links to those and does not repeat their numbers.
 | Which «קישור אחד לכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
 | The page a customer signed up from by email (MEH-3661) | browser `localStorage`, `post_auth_return`: an internal path and when it was stored | 24 hours (the verify link's own life); read by /verify-email to send her back, then cleared; only paths `isReturnablePath` allows (no auth screens, no token flows) |
 | Whether the account menus show «ההזמנות שלי» (MEH-3525; since MEH-3698: whether the person has an order, a group buy or a bag, from `GET /users/me/orders/any`) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored; dropped after an order, a group-buy join or leave, or a bag reservation (`frontend/lib/my-orders-nav-cache.js`) |
+| Who handles a business's orders besides its owner (MEH-3526) | Postgres `producer_staff`; the invite link's token only as a sha256 hash | read on every request (`services/order_access.py`), never put in the JWT; removal or leaving takes effect on the next request |
+| An order-staff invite link on its way through sign-in (MEH-3526) | browser `sessionStorage`, `mehamakor.staffInviteToken` | moved out of the address on first load; cleared after a successful accept or with the tab; scrubbed from analytics and error events (`lib/claim-token.js`) |
 | A finished order's lines on their way back to the cart, «להזמין שוב» (MEH-3764) | browser `sessionStorage`, `meh_order_again`: the business id, each line's product (and variant) id, quantity and name, and when it was stored | read once by that business's page and removed on read; ignored after 30 minutes or for another business; cleared with the tab |
+| The extra pages of «כל בתי העסק» the reader scrolled through, and her place, on her way to a business card and back (MEH-3810) | browser `sessionStorage`, `list-return:producers`: the query string, the scroll offset, the loaded rows (public catalog data only), the next page number, the total | read only on a Back/Forward step to the same query; written on a link click or `pagehide`; not written above 240 rows or with a filter or sort on; cleared with the tab (`frontend/lib/use-list-return.js`) |
 
 ## What gives first under load
 
@@ -113,8 +119,8 @@ inventory.
    bucket and get 429s on ordinary reads.
    Server-side reads from Vercel share one egress address too: a business
    page on its slug route (`/{slug}`) reads `/events`, `/experiences` and
-   `/group-buys` by `producer_id` on the server (MEH-3819), cached 60 s per
-   business. Under a crawl across many slugs these can hit the 120/min limit;
+   `/group-buys` by `producer_id` (MEH-3819) and `/producers/{slug}/recipes`
+   (MEH-3836) on the server, four reads cached 60 s per business. Under a crawl across many slugs these can hit the 120/min limit;
    the page then falls back to reading the lists in the browser.
 4. **Server-rendered pages on Vercel.** Almost every public page renders on
    each request, about 140 ms of CPU each. Traffic raises cost linearly; there

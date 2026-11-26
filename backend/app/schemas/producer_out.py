@@ -30,6 +30,7 @@ from app.schemas.catalog import (
 )
 from app.schemas.registration import ProducerOwnerSummary
 from app.schemas.producer import normalize_google_place_id
+from app.schemas.rescue import RescueTodayOut
 
 
 class KashrutCertRef(BaseModel):
@@ -102,6 +103,15 @@ class ProducerListOut(BaseModel):
     # public list/detail and favorites routes compute it — admin payloads that
     # reuse this schema carry a constant False, not data.
     rescued_recently: bool = False
+    # MEH-3824: today's next reservable bag, set by attach_rescue_today on the
+    # public list only; None everywhere else and while the pilot is off.
+    rescue_today: RescueTodayOut | None = None
+    # MEH-3824: the map's offer switches are gated on these (a switch shows
+    # only while a business on the map has that kind). Each mirrors its public
+    # list exactly (services/offer_supply.py).
+    has_open_group_buy: bool = False
+    has_upcoming_event: bool = False
+    has_listed_experience: bool = False
     has_delivery: bool = False
     # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
     # this attribute with `offers_pickup` before serialization (same mechanism
@@ -536,6 +546,16 @@ class _ZonesOut(BaseModel):
         return self
 
 
+class DraftTwinOut(BaseModel):
+    """MEH-3865: one draft-twin match, for the admin producers list."""
+
+    draft_id: UUID
+    target_id: UUID
+    draft_name: str
+    target_name: str
+    reasons: list[str]
+
+
 class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
     # deliberately NOT on ProducerDetailOut/ListOut, matching the
@@ -574,6 +594,10 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # in one query; every other route leaves them False (no badge). Admin-only.
     dup_name: bool = False
     dup_phone: bool = False
+    # MEH-3865: the ownerless draft and the business its owner registered
+    # herself, when they look like one business (services/draft_twins.py), with
+    # the reason codes. Hydrated by GET /admin/producers only; None elsewhere.
+    draft_twin: DraftTwinOut | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

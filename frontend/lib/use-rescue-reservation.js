@@ -26,8 +26,8 @@ export const UNVERIFIED_KEY = "errors.unverified";
  * Does NOT: render anything, or fetch the offer itself: each caller reads the
  *           offer its own way (by business on the business page, by id on
  *           the bag page) and passes `onCancelled` to re-read it.
- * Related:  components/rescue/RescueSection.jsx,
- *           app/[locale]/rescue/[offerId]/RescueOfferPage.jsx, lib/rescue.js
+ * Related:  app/[locale]/rescue/[offerId]/RescueOfferPage.jsx (its only
+ *           user since the business-page card became a link), lib/rescue.js
  * History:  MEH-3586 (moved out of RescueSection unchanged: MEH-2680 read-back,
  *           MEH-2700 guest prompt, MEH-2737 cancel, MEH-2738 business cancel,
  *           MEH-3225 unverified email, MEH-3130 login modal) · MEH-3702 (which
@@ -85,6 +85,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
         const byBusiness = here.find((row) => row.cancelled_by_business);
         if (!hit && byBusiness) {
           setOrder(null);
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the reservations fetch's callback, after the load
           setBusinessCancelledDay(bagDay(byBusiness.date));
           setBusinessCancelled(true);
           return;
@@ -156,6 +157,7 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
     }
     if (row.cancelled_by_business) {
       setOrder(null);
+      // eslint-disable-next-line no-restricted-syntax -- MEH-3861: in the reservations fetch's callback, after the load
       setBusinessCancelledDay(bagDay(row.date));
       setBusinessCancelled(true);
       return true;

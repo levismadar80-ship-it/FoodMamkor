@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { showToast } from "@/lib/toast";
 import { warnClosedDayOrders } from "@/lib/closed-day-orders"; // MEH-3770
 import { getUpcomingHoliday } from "@/lib/holidays";
@@ -91,6 +92,8 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 // accepting_orders, the only other value since MEH-2782.
 
 export default function ProducerDashboardPage() {
+  // MEH-3861: the vacation picker's first allowed day, the same in both renders.
+  const today = useIsraelToday();
   const t = useTranslations("dashboard.producer");
   const locale = useLocale();
   const tSignup = useTranslations("auth.register.producer.success");
@@ -221,6 +224,7 @@ export default function ProducerDashboardPage() {
         showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
         // MEH-3770: orders she already accepted on the days she is away.
         warnClosedDayOrders(
+          // eslint-disable-next-line no-restricted-syntax -- MEH-3861: inside the save handler, after hydration; nothing is drawn from it
           { from: israelToday(), until: vacationUntil || null, openEnded: !vacationUntil },
           { t: (key, values) => t(`closed_day_orders.${key}`, values), locale },
         );
@@ -520,6 +524,7 @@ export default function ProducerDashboardPage() {
         <div id="phone-verify">
           <PhoneVerifyCard
             variant="reverify"
+            phone={profile.phone}
             onVerified={() =>
               setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
             }
@@ -714,6 +719,7 @@ export default function ProducerDashboardPage() {
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
           MEH-2460: its CTA is the catalog — not for an organizer. */}
       {!isOrganizer && (() => {
+        // eslint-disable-next-line no-restricted-syntax -- MEH-3861: the server renders null here (it returns null until auth is read in the browser)
         const h = getUpcomingHoliday();
         if (!h) return null;
         return (
@@ -795,7 +801,7 @@ export default function ProducerDashboardPage() {
                 // MEH-1983: Israel's today, not UTC's — the server validates
                 // vacation_until against israel_today(), so the UTC date
                 // offered a value the server would then reject.
-                min={israelToday()}
+                min={today}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}

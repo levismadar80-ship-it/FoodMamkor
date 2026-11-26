@@ -421,7 +421,7 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
           openContent={(r) =>
             r.key === "phone_verified" ? (
               <div data-testid="draft-phone-verify">
-                <PhoneVerifyCard variant="inline" onVerified={() => onPhoneVerified?.()} />
+                <PhoneVerifyCard variant="inline" phone={producer.phone} onVerified={() => onPhoneVerified?.()} />
               </div>
             ) : r.key === "email_verified" ? (
               <EmailResend t={t} />

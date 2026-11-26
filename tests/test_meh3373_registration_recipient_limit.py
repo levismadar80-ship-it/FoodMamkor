@@ -223,7 +223,7 @@ def test_signup_name_and_phone_do_not_reach_the_visitor_mail(
     # capture sits at the outbox's send call.
     import app.services.email_outbox as email_outbox
 
-    def _capture(to, subject, body, html=None, reply_to=None):
+    def _capture(to, subject, body, html=None, reply_to=None, kind=None):
         mails.append((to, subject, body, html or ""))
         return "sent"
 

@@ -119,8 +119,9 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
       params: { slug: "meshek-tamar", locale: "he" },
     });
     expect(jsx).toBeTruthy();
-    // MEH-3819: the producer first, then its three activity lists.
-    expect(serverFetch).toHaveBeenCalledTimes(4);
+    // MEH-3819: the producer first, then its three activity lists;
+    // MEH-3836: and its recipes.
+    expect(serverFetch).toHaveBeenCalledTimes(5);
     expect(String(serverFetch.mock.calls[0][0])).toContain(
       "/producers/by-slug/meshek-tamar",
     );
@@ -134,19 +135,22 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
       .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
       .mockResolvedValueOnce(list([{ id: "e1" }]))
       .mockResolvedValueOnce(list([]))
-      .mockResolvedValueOnce(list([{ id: "g1" }]));
+      .mockResolvedValueOnce(list([{ id: "g1" }]))
+      .mockResolvedValueOnce(list([{ id: "r1" }]));
     const detail = (jsx) => jsx.props.children.find((c) => c?.props?.initialProducer);
     const page = await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
     expect(detail(page).props.initialActivities).toEqual({
       events: [{ id: "e1" }],
       experiences: [],
       groupBuys: [{ id: "g1" }],
+      recipes: [{ id: "r1" }],
     });
     const urls = serverFetch.mock.calls.slice(1).map((c) => String(c[0]));
     expect(urls).toEqual([
       expect.stringContaining("/events?producer_id=p-1"),
       expect.stringContaining("/experiences?producer_id=p-1"),
       expect.stringContaining("/group-buys?producer_id=p-1"),
+      expect.stringContaining("/producers/meshek-tamar/recipes"),
     ]);
 
     serverFetch.mockReset();
@@ -154,6 +158,7 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
       .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
       .mockResolvedValueOnce(list([]))
       .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+      .mockResolvedValueOnce(list([]))
       .mockResolvedValueOnce(list([]));
     const fallback = await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
     // The browser reads them itself (useProducerActivities); the page still renders.
@@ -172,6 +177,7 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
         .mockResolvedValueOnce(list({ id: "p-1", name: "משק תמר", slug: "meshek-tamar" }))
         .mockResolvedValueOnce(list([]))
         .mockResolvedValueOnce({ ok: false, status, json: async () => ({}) })
+        .mockResolvedValueOnce(list([]))
         .mockResolvedValueOnce(list([]));
       await ProducerSlugPage({ params: { slug: "meshek-tamar", locale: "he" } });
     };

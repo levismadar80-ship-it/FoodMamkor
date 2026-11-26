@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-93 send sites · 90 on a single channel.
+96 send sites · 93 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -62,6 +62,8 @@
 | `services/content_notifications.py` | `notify_reviewer_reply` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `_notify_cities` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `send_host_confirmation` | מייל | לקוחה |
+| `services/draft_merge_emails.py` | `notify_admin_draft_twin` | מייל | בית עסק / מנהלת |
+| `services/draft_merge_emails.py` | `send_owner_draft_merged` | מייל | בית עסק / מנהלת |
 | `services/email_outbox.py` | `_handle` | מייל | בלי שורת עסק |
 | `services/experience_notifications.py` | `notify_admin_new_submission` | מייל | בית עסק / מנהלת |
 | `services/experience_notifications.py` | `notify_host_approved` | מייל | בעלת העסק |
@@ -103,6 +105,7 @@
 | `services/rescue_emails.py` | `send_cancel_email` | מייל | לקוחה |
 | `services/rescue_emails.py` | `send_reservation_email` | מייל | לקוחה |
 | `services/rescue_no_show.py` | `send_no_show_email` | מייל | לקוחה |
+| `services/staff_emails.py` | `send_staff_invite_email` | מייל | בית עסק / מנהלת |
 | `services/submission_confirmation.py` | `send_submission_confirmation` | מייל | בעלת העסק |
 | `services/weekly_owner_summary.py` | `send_weekly_summaries` | מייל | בעלת העסק |
 

@@ -39,10 +39,13 @@
     "has_delivery",
     "has_gluten_free_products",
     "has_lactose_free_products",
+    "has_listed_experience",
     "has_low_carb_products",
     "has_no_added_sugar_products",
+    "has_open_group_buy",
     "has_physical_location",
     "has_producer_license",
+    "has_upcoming_event",
     "has_vegan_products",
     "has_vegetarian_products",
     "id",
@@ -70,6 +73,7 @@
     "price_range",
     "primary_contact_method",
     "products_count",
+    "rescue_today",
     "rescued_recently",
     "reservist_owned",
     "reviews_count",
@@ -125,10 +129,13 @@
     "has_delivery",
     "has_gluten_free_products",
     "has_lactose_free_products",
+    "has_listed_experience",
     "has_low_carb_products",
     "has_no_added_sugar_products",
+    "has_open_group_buy",
     "has_physical_location",
     "has_producer_license",
+    "has_upcoming_event",
     "has_vegan_products",
     "has_vegetarian_products",
     "id",
@@ -165,6 +172,7 @@
     "products",
     "products_count",
     "report_count",
+    "rescue_today",
     "rescued_recently",
     "reservist_owned",
     "reviews_count",
@@ -272,6 +280,15 @@
       "storage_info",
       "variants"
     ],
+    "ProducerDetailOut.rescue_today": [
+      "location_id",
+      "offer_id",
+      "pickup_end",
+      "pickup_start",
+      "price_agorot",
+      "qty_left",
+      "value_min_agorot"
+    ],
     "ProducerListOut.active_offer": [
       "expires_at",
       "headline",
@@ -321,6 +338,15 @@
       "pickup_days",
       "pickup_note",
       "precision"
+    ],
+    "ProducerListOut.rescue_today": [
+      "location_id",
+      "offer_id",
+      "pickup_end",
+      "pickup_start",
+      "price_agorot",
+      "qty_left",
+      "value_min_agorot"
     ]
   }
 }

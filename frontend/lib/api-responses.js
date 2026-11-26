@@ -48,6 +48,7 @@ import {
   AdminCreateProducerAdminProducersPostResponse,
   ClaimProducerProducerClaimPostResponse,
   CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse,
+  MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse,
   CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse,
   GetFavoritesUsersMeFavoritesGetResponseItem,
   GetOwnerInviteAuthOwnerInviteTokenGetResponse,
@@ -56,10 +57,12 @@ import {
   GetSavedIdsUsersMeSavedIdsGetResponse,
   GetSavedUsersMeSavedGetResponse,
   GetStatsStatsGetResponse,
+  InviteStaffProducersMeStaffPostResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
   ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
+  ListStaffProducersMeStaffGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
   RandomProducerProducersRandomGetResponse,
@@ -139,6 +142,9 @@ export const ProducerClaimResultSchema = ClaimProducerProducerClaimPostResponse;
 export const ProducerAdminCreatedSchema = /* @__PURE__ */ zod.pick(AdminCreateProducerAdminProducersPostResponse, {
   id: true,
 });
+// MEH-3865: the admin's «העברת הטיוטה לבעלים» answer.
+export const DraftMergeSchema = MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse;
+
 export const ProducerClaimLinkSchema = /* @__PURE__ */ CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse.check(
   zod.refine((body) => isUrl(body.url), { message: "claim link is not a URL" }),
 );
@@ -199,3 +205,7 @@ export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResp
 // --- sign-in --------------------------------------------------------------
 // MEH-3690: our own Google button reads the ID token the code was swapped for.
 export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;
+
+// MEH-3526: the owner's order-staff list, and the row an invite answers with.
+export const StaffListOutSchema = ListStaffProducersMeStaffGetResponse;
+export const StaffMemberOutSchema = InviteStaffProducersMeStaffPostResponse;

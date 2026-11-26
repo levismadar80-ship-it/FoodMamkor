@@ -5,7 +5,7 @@ import { useState } from "react";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
-import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
+import FridayDeliveryStrip, { FridayStripSkeleton } from "@/components/FridayDeliveryStrip";
 import BackToTop from "@/components/BackToTop";
 import HomeWhatsOn from "@/components/HomeWhatsOn";
 import {
@@ -57,6 +57,9 @@ export default function HomeClient({
   // of useHomePage's state — nothing on this page mutates the set, and the
   // module below hides itself when there are fewer than three of them.
   initialInSeason = null,
+  // MEH-3860: the nationwide Friday-delivery list, fetched by the server shell
+  // so the strip's first paint is its real cards (or nothing, when empty).
+  initialFriday = null,
 }) {
   const t = useTranslations();
   const {
@@ -94,7 +97,6 @@ export default function HomeClient({
   return (
     <div>
       <HomeHero
-        fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
         onDeliveryCta={handleDeliveryCta}
@@ -111,8 +113,21 @@ export default function HomeClient({
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
           MEH-879: highest banner precedence — reports visibility so Holiday +
           Location yield to it. */}
-      {fridayMode && (
-        <FridayDeliveryStrip city={userCity} onVisibilityChange={setFridayVisible} />
+      {/* MEH-3860: until the client knows (fridayMode === null: server HTML
+          and hydration), a skeleton holds the strip's slot and CSS shows it
+          only in Friday mode (data-friday-mode, set before the first paint).
+          The loaded strip opens on the same skeleton, so nothing moves. */}
+      {Array.isArray(initialFriday) && initialFriday.length === 0 ? (
+        // MEH-3860: the server found no Friday business. Nothing is drawn and
+        // no slot is held; the strip still asks the API once Friday mode is
+        // known, in case this cached page is older than a new one.
+        fridayMode && <FridayDeliveryStrip city={userCity} initialProducers={initialFriday} onVisibilityChange={setFridayVisible} />
+      ) : fridayMode === null ? (
+        <div data-friday-only="">
+          {Array.isArray(initialFriday) ? <FridayDeliveryStrip initialProducers={initialFriday} /> : <FridayStripSkeleton />}
+        </div>
+      ) : fridayMode && (
+        <FridayDeliveryStrip city={userCity} initialProducers={initialFriday} onVisibilityChange={setFridayVisible} />
       )}
 
       {/* =========================

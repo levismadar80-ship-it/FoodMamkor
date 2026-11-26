@@ -186,6 +186,7 @@ export default function HoursCard({
   }, [anyRowDirty, reportDirty]);
 
   const windowDays = Object.keys(profile.order_window || {}).length;
+  // eslint-disable-next-line no-restricted-syntax -- MEH-3861: drawn only after the browser fetched the profile, so the server never renders it
   const specialCount = upcomingSpecialCount(profile.special_hours);
   const summary = [
     resolveStoreHours({ ...profile, locations }) ? tFields("hours") : null,

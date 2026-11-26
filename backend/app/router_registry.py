@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.routers import (
     admin,
     admin_decisions,
+    admin_draft_merge,
     admin_experiences,
     admin_checklist,
     admin_extra,
@@ -57,6 +58,7 @@ from app.routers import (
     page_fill,
     form_fill,
     product_order_business,
+    producer_staff,
     product_order_buyer,
     product_order_offer,
     product_variants,
@@ -75,6 +77,7 @@ from app.routers import (
     system,
     upload,
     users_me,
+    resend_webhook,
     whatsapp_webhook,
 )
 
@@ -130,6 +133,8 @@ def _include_admin(app: FastAPI) -> None:
     # as the owner's routes via services/product_organize.py. Here, not in
     # register_routers, to keep that function under the statement limit.
     app.include_router(admin_product_organize.router)
+    # MEH-3865: move a prepared draft to the owner who registered herself.
+    app.include_router(admin_draft_merge.router)
     # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
     app.include_router(admin_test_business.router)
     # MEH-3690: POST /auth/google/code, our own Google button's code swap.
@@ -171,6 +176,10 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3526: order staff — invite, accept, remove, leave.
+    app.include_router(producer_staff.owner_router)
+    app.include_router(producer_staff.invite_router)
+    app.include_router(producer_staff.member_router)
     # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
     app.include_router(group_buy_capacity.router)
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
@@ -181,6 +190,14 @@ def _register_flagged_features(app: FastAPI) -> None:
     app.include_router(group_buy_pickup.admin_router)
     # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
     app.include_router(my_orders_any.router)
+
+
+def _include_webhooks(app: FastAPI) -> None:
+    """Inbound webhooks from outside services; each one checks a signature."""
+    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
+    app.include_router(whatsapp_webhook.router)
+    # MEH-3839: Resend delivery events. /webhook/resend.
+    app.include_router(resend_webhook.router)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -258,6 +275,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)
-    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
-    app.include_router(whatsapp_webhook.router)
+    _include_webhooks(app)
     _register_flagged_features(app)

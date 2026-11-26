@@ -13,20 +13,22 @@
 
 **Routes**
 * `frontend/app/[locale]/rescue/`
-* `frontend/app/[locale]/rescue/[offerId]/` — דף משלו לכל סל: מחיר מול שווי, איסוף, מפה, מה בדרך כלל בסל, אלרגנים, איך זה עובד, ביטול, שריון. קורא `GET /rescue/offers/{id}`, שמחזיר גם סל שאזל / בוטל / נסגר עם `state` (MEH-3586). השורה ב-`/rescue` והכרטיס בבית פותחים אותו. «הוראות איסוף» של נקודת האיסוף (`producer_locations.pickup_note`, נערכות עם הכתובת במיקומים) מופיעות שם מתחת לכתובת, כשיש (MEH-3593).
+* `frontend/app/[locale]/rescue/[offerId]/` — דף משלו לכל סל: מחיר מול שווי, איסוף, מפה, מה בדרך כלל בסל, אלרגנים, איך זה עובד, ביטול, שריון. קורא `GET /rescue/offers/{id}`, שמחזיר גם סל שאזל / בוטל / נסגר עם `state` (MEH-3586). השורה ב-`/rescue`, הכרטיס בבית והכרטיס בדף העסק פותחים אותו. שומר השריון והביטול: `frontend/__tests__/RescueOfferReserveFlow.test.jsx`. «הוראות איסוף» של נקודת האיסוף (`producer_locations.pickup_note`, נערכות עם הכתובת במיקומים) מופיעות שם מתחת לכתובת, כשיש (MEH-3593).
 * `frontend/app/[locale]/producer/dashboard/rescue/` ‏(+ `counter-card`)
 * `frontend/app/[locale]/producer/dashboard/rescue/schedule/` — הלוח הקבוע (MEH-3703)
 
 **קבצים מרכזיים**
 * `backend/app/routers/rescue.py` · `backend/app/routers/rescue_pilot.py` — אילו נקודות איסוף של העסק ביישוב פיילוט, לפני הטופס (MEH-2921)
 * `backend/app/services/rescue_reads.py` — מה שמסכי הסלים קוראים: רשימת הסלים של היום, השריונים של הקונה, ההזמנות והסלים של בית העסק היום, «בדרך כלל», ומספרי הפיילוט לאדמין. ה-handlers ב-`backend/app/routers/rescue.py` קוראים את השעון ואת ערי הפיילוט ומעבירים אותם (MEH-3541).
-* `backend/app/services/rescue_writes.py` — מה שמסכי הסלים כותבים: פרסום סל, ביטול, שריון, מסירה, אי-הגעה, ביטול של קונה, ביקורת, סלים שנתרמו וניקוי חסימה. ה-router מעביר את נעילת השורה (`_offer_for_update`), את השעון ואת בדיקת עיר הפיילוט, ושולח את המיילים בעצמו (MEH-3554).
-* `frontend/components/rescue/RescueSection.jsx` — מתחת לכפתור «לשריין» שורה שמציינת מול איזה בית עסק עושים את העסקה ושמהמקור לא צד לה (`frontend/components/public/NotAPartyLine.jsx`, MEH-3570).
+* `backend/app/services/rescue_writes.py` — מה שמסכי הסלים כותבים: פרסום סל, ביטול, שריון, מסירה, אי-הגעה, ביטול של קונה, ביקורת, סלים שנתרמו וניקוי חסימה. ה-router מעביר את נעילת השורה (`_offer_for_update`), את השעון ואת בדיקת עיר הפיילוט (MEH-3554).
+* `backend/app/services/rescue_notify.py` — מה שנשלח אחרי שהכתיבה נשמרה: ההתראה לעוקבים על סל להיום, מייל השריון ומייל הביטול לקונה, ומייל לכל קונה כשבית העסק מבטל. ה-router מעביר את השעון, ומשאיר את ה-`try` שמונע ממייל שנכשל להפוך פעולה שנשמרה לשגיאה (MEH-3537).
+* `backend/app/services/rescue_routine_writes.py` — הכללים של הלוח הקבוע מאחורי `/producers/me/rescue`: נקודת האיסוף של העסק, שמירה ועצירה של הלוח, דילוג על יום וביטול הדילוג, והשורה שהלוח קורא. ביטול הסל של יום שדילגו עליו נשאר ב-router, עם הנעילה שלו (MEH-3537).
+* `frontend/components/rescue/RescueSection.jsx` — הסל בדף העסק: כרטיס אחד שכולו קישור לדף הסל, עם החץ של כרטיס קבוצת הרכישה. אין עליו כפתור «לשריין», ביטול, אלרגנים או קישור נוסף; כל אלה בדף הסל (Sapir 22/11, MEH-3586). שומר: `frontend/__tests__/OfferCardOneOwnerGuard.test.jsx`.
 * `frontend/components/rescue/RescueList.jsx` — רשימת הסלים של היום בלשונית «הזדמנויות». בזמן טעינה: שלד של שלוש שורות; כשאין סלים: `EmptyState` עם אייקון סל, כותרת, שורת משנה והתראה, כמו בקבוצות הרכישה (MEH-3626). שומר: `frontend/__tests__/RescueBuyerFlow.test.jsx`.
 * מיון הרשימה (MEH-3704): «לפי שעת האיסוף» (ברירת המחדל, הסדר של השרת), «הכי קרוב» (רק כשיש מיקום שמור, ואז הרשימה נשלחת עם lat/lng), «הכי זול», «הדירוג הכי גבוה». הבקרה מופיעה רק משני סלים. הסדר ב-`frontend/lib/rescue-sort.js`.
 * `frontend/components/rescue/ShareCodeButton.jsx` — «לשלוח לחבר שיאסוף» באישור השריון, כל עוד הסל משוריין: קוד, בית העסק, החלון, הכתובת ומה אומרים בקופה. גיליון השיתוף של הטלפון, ובלעדיו ווטסאפ (MEH-3704). השריון לא עובר לאדם אחר: מי שאומר את הקוד אוסף. שומר: `frontend/__tests__/RescueShareSort.test.jsx`.
-* `frontend/app/[locale]/rescue/[offerId]/RescueOfferAction.jsx` — הכרטיס בדף הסל. מתחת לכפתור «לשריין» אותה שורה: מול איזה בית עסק העסקה ושמהמקור לא צד לה (MEH-3570).
-* `frontend/lib/use-rescue-reservation.js` — שריון, קריאה חוזרת אחרי טעינה, ביטול. אותו hook בדף העסק ובדף הסל (MEH-3586).
+* `frontend/app/[locale]/rescue/[offerId]/RescueOfferAction.jsx` — הכרטיס בדף הסל, המקום היחיד שבו משריינים. מתחת לכפתור «לשריין» שורה (`frontend/components/public/NotAPartyLine.jsx`): מול איזה בית עסק העסקה ושמהמקור לא צד לה (MEH-3570).
+* `frontend/lib/use-rescue-reservation.js` — שריון, קריאה חוזרת אחרי טעינה, ביטול. רק דף הסל משתמש בו (MEH-3586).
 * `frontend/components/offer-detail/AllergenSection.jsx` + `frontend/components/offer-detail/PickupLine.jsx` — בלוק האלרגנים ושורת שעת האיסוף בדף הסל, אותם רכיבים כמו בדף קבוצת הרכישה (MEH-3610).
 * `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי הפיילוט ב-`/admin/analytics` (`GET /admin/rescue/metrics`, MEH-3524); כשהפיילוט כבוי לא מוצג כלום.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
@@ -46,6 +48,7 @@
 * `tests/test_meh3703_rescue_schedule.py` · `frontend/__tests__/RescueSchedule.test.jsx` — הלוח הקבוע: ימים, דילוג, ביטול ביד שלא חוזר, מעבר שעון, בעלות, והשורה והדף (MEH-3703).
 * `frontend/__tests__/RescueSimplerScreens.test.jsx` — המסכים הפשוטים לבית עסק חדש: אלרגנים מקופלים, «שווי הסל», כרטיס הפרסום קודם כשאין סל בחוץ, שעון 24 שעות (`frontend/components/ui/TimeOfDaySelect.jsx`), שורת ביטול שמציינת את הסל, ושורת «לשאול באיסוף» קבועה לקונים (MEH-3823).
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
+* `tests/test_meh3824_rescue_today_on_map.py` · `frontend/__tests__/MapRescueOnMap.test.jsx` — הסל של היום בכרטיס של בית העסק במפה (`rescue_today`, `attach_rescue_today` ב-`backend/app/services/producer_queries.py`).
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית רשימת הסלים (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
 
 **מזהי רישום שזה מכסה.** `rescue_bags`.

@@ -48,6 +48,7 @@ export default function OrderCustomersCard() {
   const download = () =>
     downloadCsv(
       customersCsv(customers, [t("csv.name"), t("csv.phone"), t("csv.orders"), t("csv.last")], date),
+      // eslint-disable-next-line no-restricted-syntax -- MEH-3861: the file name, built in the download handler
       `customers-${israelToday()}.csv`,
     );
 

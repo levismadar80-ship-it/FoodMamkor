@@ -85,6 +85,7 @@ function allocateCaps(counts, total) {
 
 function readRecent() {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- read inside a click or submit handler, after the page is on screen
     const raw = typeof window !== "undefined" && localStorage.getItem(RECENT_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);

@@ -17,6 +17,7 @@ import { firstMomentsKey, retireMoment, stepMoments } from "@/lib/first-moments"
 /** @param {string} key */
 function readMomentState(key) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- the screen it feeds renders only after the client has auth, so nothing server-painted changes (measured 0 on the dashboard, MEH-3858)
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const s = JSON.parse(raw);
