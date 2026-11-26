@@ -115,10 +115,10 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
   }, [seedPayload]);
 
   // MEH-3895: the link field follows the timing (progressive disclosure, as a
-  // deposit amount does on Booking / Wix): on «באיסוף» it is hidden and not
-  // sent, so a stale link can never be shown to a buyer.
+  // deposit amount does on Booking / Wix): on «באיסוף» it is hidden, and
+  // serializePaymentInfo does not send it.
   const prepay = PREPAY_TIMINGS.includes(state.timing);
-  const current = serializePaymentInfo(prepay ? state : { ...state, link: "" });
+  const current = serializePaymentInfo(state);
   const dirty = JSON.stringify(current) !== seedPayload;
   const allOn = PAYMENT_METHODS.every((m) => state.methods.has(m));
 

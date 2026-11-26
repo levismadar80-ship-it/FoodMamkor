@@ -12,8 +12,7 @@ import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
-import PrepayButton from "@/components/ui/PrepayButton";
-import { prepayLink } from "@/lib/payment-info";
+import { groupBuyAwaitsPayment, prepayLink } from "@/lib/payment-info";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
@@ -479,14 +478,14 @@ export default function GroupBuyDetailClient({ id }) {
 
         {/* Already committed — MEH-3592: quantity edit + the last-day leave rule. */}
         {gb.user_committed && (
-          <GroupBuyMemberPanel gb={gb} joinable={joinable} full={full} cancelling={cancelling} onCancel={handleCancel} onChanged={load} />
-        )}
-        {/* MEH-3895: the business's own prepay link, for those who joined a
-            group that still stands. */}
-        {gb.user_committed && !cancelled && !expired && (
-          <div className="mt-4">
-            <PrepayButton link={prepayLink(producer?.payment_info)} timing={producer?.payment_info?.timing} testId="group-buy-prepay" />
-          </div>
+          <GroupBuyMemberPanel
+            gb={gb} joinable={joinable} full={full} cancelling={cancelling} onCancel={handleCancel} onChanged={load}
+            // MEH-3895: the business's own prepay link, once the group is
+            // funded — never while it can still fail.
+            prepay={groupBuyAwaitsPayment(gb.status)
+              ? { link: prepayLink(producer?.payment_info), timing: producer?.payment_info?.timing ?? null }
+              : null}
+          />
         )}
 
         {/* MEH-3287: the daily job cancels a group that missed its minimum by the

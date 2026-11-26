@@ -13,7 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models.models import Producer
-from app.schemas.payment_link import payment_link_host, prepay_link
+from app.schemas.payment_link import prepay_link
 from app.schemas.schemas import ProducerUpdate
 from app.services import rescue_business_emails as mod
 from tests.conftest import auth_header, make_user
@@ -29,6 +29,15 @@ def _upd(v):
 def test_a_link_is_stored_with_the_rest():
     out = _upd({"methods": ["bit"], "timing": "advance", "link": f"  {BIT}  "})
     assert out == {"methods": ["bit"], "timing": "advance", "note": None, "link": BIT}
+
+
+def test_a_link_is_dropped_unless_paying_before_pickup():
+    # A link on «באיסוף» could never be shown, and a stale one would come
+    # back if the business later picked «מראש».
+    assert _upd({"methods": ["bit"], "timing": "on_pickup", "link": BIT}) == {
+        "methods": ["bit"], "timing": "on_pickup", "note": None,
+    }
+    assert _upd({"timing": None, "link": BIT}) is None
 
 
 def test_no_link_keeps_the_old_shape():
@@ -47,6 +56,9 @@ def test_no_link_keeps_the_old_shape():
         "javascript:alert(1)",
         "data:text/html,hi",
         "https://user:pw@evil.example/x",  # shows one host, opens another
+        "https://good.co.il\\@evil.example/x",  # a browser reads \\ as /
+        "https://good.co.il:abc/x",  # a port that is not a number
+        "https://good.co.il/\x00x",  # a control character
         "https://www.bitpay.co.il/a b",  # whitespace
         "https://localhost/pay",  # no dot in the host
         "https://" + "a" * 300 + ".co.il",  # too long
@@ -65,7 +77,6 @@ def test_the_buyer_sees_it_only_when_paying_before_pickup():
     assert prepay_link({"timing": None, "link": BIT}) is None
     assert prepay_link({"timing": "advance"}) is None
     assert prepay_link(None) is None
-    assert payment_link_host(BIT) == "bitpay.co.il"
 
 
 def _pay(db, producer_id, info):
@@ -124,9 +135,29 @@ def test_a_cancel_of_a_prepaid_bag_tells_the_owner_what_to_return(
     assert "צריך להחזיר 30 ₪" in body  # 2 × 15 ₪
 
 
+def test_a_deposit_names_no_amount(client, db, shop, rescue_on, monkeypatch):
+    sent = _capture(monkeypatch)
+    _pay(db, shop["producer"].id, {"methods": ["bit"], "timing": "deposit", "note": None, "link": BIT})
+    _reserve_and_cancel(client, db, shop, qty=1)
+    (m,) = [m for m in sent if m["subject"].startswith("בוטל שריון")]
+    assert "אם המקדמה כבר התקבלה, צריך להחזיר אותה" in m["body"]
+    assert "₪" not in m["body"]
+
+
+def test_a_failing_refund_email_leaves_the_cancel_done(client, db, shop, rescue_on, monkeypatch):
+    _capture(monkeypatch)
+    _pay(db, shop["producer"].id, {"methods": ["bit"], "timing": "advance", "note": None, "link": BIT})
+
+    def boom(*a, **kw):
+        raise RuntimeError("queue down")
+
+    monkeypatch.setattr("app.routers.rescue.queue_business_refund_email", boom)
+    _reserve_and_cancel(client, db, shop, qty=1)  # asserts the cancel answered 200
+
+
 def test_no_link_no_refund_email(client, db, shop, rescue_on, monkeypatch):
     sent = _capture(monkeypatch)
-    # A link stored while paying at pickup is never shown, so there is nothing to return.
-    _pay(db, shop["producer"].id, {"methods": ["bit"], "timing": "on_pickup", "note": None, "link": BIT})
+    # Paying at pickup: nothing was paid ahead, so there is nothing to return.
+    _pay(db, shop["producer"].id, {"methods": ["bit"], "timing": "on_pickup", "note": None})
     _reserve_and_cancel(client, db, shop, qty=1)
     assert not [m for m in sent if m["subject"].startswith("בוטל שריון")]

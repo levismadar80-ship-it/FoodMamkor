@@ -105,7 +105,7 @@ def _bags(qty: int) -> str:
 
 
 def send_business_refund_email(
-    to: str, m: BusinessReservation, test_cause: bool = False
+    to: str, m: BusinessReservation, deposit: bool = False, test_cause: bool = False
 ) -> None:
     """MEH-3895 — a reservation of a prepaid bag was cancelled by the buyer.
 
@@ -117,9 +117,14 @@ def send_business_refund_email(
     body = (
         "שלום,\n\n"
         f"שריון של {_bags(m.qty)} בוטל עכשיו (קוד האיסוף {m.pickup_code}).\n"
-        f"אם התשלום מראש כבר התקבל, צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
-        "באותה דרך שבה שולם.\n\n"
-        "את כל השריונים אפשר לראות בלוח הבקרה:\n"
+        + (
+            # A deposit's size is the business's, not ours: no amount.
+            "אם המקדמה כבר התקבלה, צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
+            if deposit
+            else f"אם התשלום מראש כבר התקבל, צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
+            "באותה דרך שבה שולם.\n\n"
+        )
+        + "את כל השריונים אפשר לראות בלוח הבקרה:\n"
         f"{settings.frontend_url}/producer/dashboard/rescue\n\n"
         "צוות מהמקור"
     )
@@ -154,6 +159,7 @@ def queue_business_refund_email(
     for to in recipients:
         background_tasks.add_task(
             send_business_refund_email, to, facts,
+            deposit=(producer.payment_info or {}).get("timing") == "deposit",
             test_cause=bool(producer.is_test),  # MEH-2952
         )
     return len(recipients)

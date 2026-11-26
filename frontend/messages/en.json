@@ -5953,7 +5953,7 @@
         "revert_cta": "Discard changes",
         "summary_empty": "Not set",
         "link_label": "Prepayment link (optional)",
-        "link_help": "A link from Bit, PayBox or your own card payments. Customers see it after they reserve a surprise bag or join a group buy, and the money goes straight to you."
+        "link_help": "A link from Bit, PayBox or your own clearing. Customers see it after they reserve a surprise bag, and in a group buy only once the group has succeeded. The money comes straight to you, and customers write their pickup code in the payment note."
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -7342,7 +7342,8 @@
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
       "cancel_no": "No, keep it",
-      "pay_ahead": "Pay in advance: {price} ₪"
+      "pay_ahead": "Pay in advance: {price} ₪",
+      "pay_deposit": "Bag price: {price} ₪ · the rest is paid at the counter"
     },
     "review": {
       "title": "How was the bag?",
@@ -8482,7 +8483,8 @@
   "prepay": {
     "cta": "Pay",
     "via": "Payment goes straight to the business, via {host}",
+    "note": "In the payment note, write the code {code} so the business knows who paid",
     "ask_advance": "The business asks you to pay in advance",
-    "ask_deposit": "The business asks for a deposit in advance"
+    "ask_deposit": "The business asks for a deposit"
   }
 }

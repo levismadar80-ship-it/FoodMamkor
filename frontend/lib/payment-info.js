@@ -35,8 +35,9 @@ export function serializePaymentInfo({ methods, timing, note, link = "" }) {
     timing: timing || null,
     note: note.trim() || null,
   };
-  // MEH-3895: only when set, so a row saved before the link keeps its shape.
-  if (link.trim()) out.link = link.trim();
+  // MEH-3895: only when set, so a row saved before the link keeps its shape;
+  // and only on a prepay timing, as the API keeps it (schemas._payment_info_validator).
+  if (link.trim() && PREPAY_TIMINGS.includes(out.timing)) out.link = link.trim();
   if (out.methods.length === 0 && !out.timing && !out.note && !out.link) return null;
   return out;
 }
@@ -67,4 +68,13 @@ export function paymentAnswer(info) {
   const note = (info?.note || "").trim();
   if (methods.length === 0 && !timing && !note) return null;
   return { methods, timing, note };
+}
+
+/** MEH-3895: whether a member of a group buy is shown the prepay button —
+ *  only once the group is funded (also after the deadline: pickup follows),
+ *  never while it may still fail. Kickstarter and Groupon charge only after
+ *  the threshold is reached, and the join form promises «לא משלמים עכשיו».
+ *  Not once handed (fulfilled) or cancelled. */
+export function groupBuyAwaitsPayment(status) {
+  return status === "funded";
 }

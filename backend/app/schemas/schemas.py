@@ -11,7 +11,7 @@ from pydantic import (
 
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
-from app.schemas.payment_link import payment_link
+from app.schemas.payment_link import PREPAY_TIMINGS, payment_link
 
 # MEH-2236: the letter class behind MEH-555's "at least 3 letter characters"
 # floor. Hebrew + Latin + **Arabic letters**. Arabic was added because MEH-2020
@@ -175,6 +175,10 @@ def _payment_info_validator(v: Any) -> dict[str, Any] | None:
         "note": _payment_note(v.get("note")),
     }
     link = payment_link(v.get("link"))
+    # A link is kept only while the money is paid before pickup; on «באיסוף»
+    # it could never be shown, and a stale one would come back on a switch.
+    if timing not in PREPAY_TIMINGS:
+        link = None
     if link is not None:
         # MEH-3895: stored only when set, so every row written before stays
         # byte-equal to what the dashboard reads back.

@@ -41,9 +41,13 @@ def payment_link(raw: Any) -> str | None:
         return None
     if len(link) > PAYMENT_LINK_MAX:
         raise ValueError(f"הקישור לתשלום ארוך מדי (עד {PAYMENT_LINK_MAX} תווים)")
-    if any(c.isspace() for c in link):
-        raise ValueError("בקישור לתשלום אסור שיהיו רווחים")
+    if any(c.isspace() for c in link) or not link.isprintable() or "\\" in link:
+        raise ValueError("בקישור לתשלום אסור שיהיו רווחים או תווים מיוחדים")
     parts = urlsplit(link)
+    try:
+        parts.port  # noqa: B018 — raises on a port that is not a number
+    except ValueError:
+        raise ValueError("הקישור לתשלום לא תקין") from None
     if parts.scheme.lower() != "https" or not parts.hostname or "." not in parts.hostname:
         raise ValueError("הקישור לתשלום צריך להתחיל ב-https://")
     if parts.username or parts.password:
@@ -61,10 +65,3 @@ def prepay_link(info: Any) -> str | None:
         return None
     return link if info.get("timing") in PREPAY_TIMINGS else None
 
-
-def payment_link_host(link: str | None) -> str | None:
-    """The host printed beside the button («דרך www.bitpay.co.il»)."""
-    if not link:
-        return None
-    host = urlsplit(link).hostname
-    return host.removeprefix("www.") if host else None

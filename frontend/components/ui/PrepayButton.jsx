@@ -10,7 +10,7 @@
  * Does NOT: decide when a link is shown — the caller passes
  *           lib/payment-info.js prepayLink(info), null = render nothing. Does
  *           not take or check payment: the money goes straight to the business.
- * Related:  components/rescue/RescueConfirmation.jsx · group-buys/[id]/GroupBuyDetailClient.jsx ·
+ * Related:  components/rescue/RescueConfirmation.jsx · components/group-buy/GroupBuyMemberPanel.jsx ·
  *           backend/app/schemas/payment_link.py (https-only validation)
  * History:  MEH-3895 (creation)
  */
@@ -21,8 +21,8 @@ import { ArrowSquareOut } from "@phosphor-icons/react";
 import { buttonLook } from "@/components/ui/Button";
 import { linkHost } from "@/lib/payment-info";
 
-/** @param {{ link: string | null, timing?: string | null, testId?: string }} props */
-export default function PrepayButton({ link, timing = "advance", testId = "prepay" }) {
+/** @param {{ link: string | null, timing?: string | null, code?: string | null, testId?: string }} props */
+export default function PrepayButton({ link, timing = "advance", code = null, testId = "prepay" }) {
   const t = useTranslations("prepay");
   const host = link ? linkHost(link) : null;
   if (!link || !host) return null;
@@ -43,9 +43,17 @@ export default function PrepayButton({ link, timing = "advance", testId = "prepa
         {t("cta")}
         <ArrowSquareOut size={18} aria-hidden="true" />
       </a>
-      <p className="font-body-sm text-xs text-fg-muted" data-testid={`${testId}-via`}>
+      <p className="font-body-sm text-xs text-fg-muted text-center" data-testid={`${testId}-via`}>
         {t("via", { host })}
       </p>
+      {/* MEH-3895: the business gets money from many people through one Bit /
+          PayBox account; the pickup code in the payment note is what ties a
+          payment to a reservation (and to a refund email, which names it). */}
+      {code && (
+        <p className="font-body-sm text-xs text-fg-muted text-center" data-testid={`${testId}-note`}>
+          {t("note", { code })}
+        </p>
+      )}
     </div>
   );
 }

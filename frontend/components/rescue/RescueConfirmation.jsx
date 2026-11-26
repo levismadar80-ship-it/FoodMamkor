@@ -56,8 +56,10 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
     order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
   const showPrepay = Boolean(prepay?.link) && order.status === "reserved";
-  // A deposit is part of the price; the rest is still paid at the counter.
+  // A deposit is part of the price; the rest is still paid at the counter,
+  // so the line says the bag's price and where the rest goes.
   const payAhead = showPrepay && prepay.timing === "advance";
+  const payDeposit = showPrepay && prepay.timing === "deposit";
   const when = from && until
     ? t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })
     : null;
@@ -87,16 +89,8 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {price !== null && (
         <p className="font-headline-md text-base font-black text-text mt-3" data-testid="rescue-confirmation-price">
-          {t(payAhead ? "confirm.pay_ahead" : "confirm.pay", { price })}
+          {t(payAhead ? "confirm.pay_ahead" : payDeposit ? "confirm.pay_deposit" : "confirm.pay", { price })}
         </p>
-      )}
-
-      {/* MEH-3895: only while the bag waits — once handed or cancelled there is
-          nothing left to pay for. */}
-      {showPrepay && (
-        <div className="mt-3">
-          <PrepayButton link={prepay.link} timing={prepay.timing} testId="rescue-prepay" />
-        </div>
       )}
 
       {from && until && (
@@ -113,6 +107,14 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
             ? t("confirm.terms_no_cancel")
             : t("confirm.terms", { cancel_until: cancelUntil })}
         </p>
+      )}
+
+      {/* MEH-3895: only while the bag waits — once handed or cancelled there is
+          nothing left to pay for. */}
+      {showPrepay && (
+        <div className="mt-4">
+          <PrepayButton link={prepay.link} timing={prepay.timing} code={order.pickup_code} testId="rescue-prepay" />
+        </div>
       )}
 
       {/* Three steps, and the last is disabled until the window opens: before

@@ -544,6 +544,7 @@ def cancel_order(
         queue_business_refund_email(background_tasks, db, offer, order)
     except Exception as exc:  # noqa: BLE001 — fail-open, same reason as above
         capture_background_exception(exc, task="rescue_refund_email")
+        logger.error("rescue refund email not queued: %s", type(exc).__name__)
     return order
 
 
