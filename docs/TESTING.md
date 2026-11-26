@@ -70,6 +70,9 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 - logged a React hydration mismatch (never allowlistable);
 - shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
   right after a click or key press excluded; same limit as `lighthouserc.cjs`).
+  The failure names each shifted element with its old and new box
+  (`y h w → y h w`) plus the viewport and scroll offset (MEH-3893), so the CI
+  log alone tells a late block above it from the element resizing.
 
 CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
 page whose observer never reported fails the test, so a dead probe cannot read
