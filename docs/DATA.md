@@ -2405,9 +2405,12 @@ POST /chat/owner                 👤 owner (require_producer) — MEH-3902, the
                                  Saves nothing: the widget opens the dashboard's own card
                                  (PUT /producers/me, POST /producers/me/menu-import/publish,
                                  POST /upload/image, POST /producers/me/submit-for-review).
-                                 Limits 20/min · 120/h per IP, 150/day per business; the site
-                                 chat's daily cap and ai_budget "fast" (+ "menu" for products)
-                                 apply. No key → offline line.
+                                 Limits 20/min · 120/h per IP, 150/day per business, and
+                                 20/day per business for a fill or a product read (each is a
+                                 second, larger model call; over it → the heavy_limit line).
+                                 ai_budget "fast" (+ "menu" for products) is the global ceiling;
+                                 the public site chat's anonymous cap does not apply. No key →
+                                 offline line.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`

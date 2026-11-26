@@ -65,23 +65,39 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(/** @type {any} */ (null));
   const logRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+  const sendingRef = useRef(false);
+  // Bumped by «שיחה חדשה»: an answer to the old conversation is dropped.
+  const generation = useRef(0);
 
   useEffect(() => {
     logRef.current?.scrollTo?.({ top: logRef.current.scrollHeight });
   }, [messages, sending]);
 
-  const loadProfile = async () => {
-    const res = await api.get("/producers/me");
-    const parsed = OwnerProfile.safeParse(res.data);
-    // The review compares with the raw row (locations, contact fields); a
-    // shape the schema rejects is not shown at all.
-    if (!parsed.success) throw new Error("shape");
-    setProfile(res.data);
-  };
+  useEffect(() => {
+    /** @type {HTMLElement | null} */ (document.querySelector('[data-testid="owner-assistant-input"]'))?.focus();
+  }, []);
+
+  // The cards compare with and save onto her page, so it is read whenever an
+  // open card is on screen and it is not loaded yet: after an answer, and
+  // again when the panel is reopened (it unmounts on close). A failed read
+  // leaves the answer in place; the card waits for the next try.
+  const needsProfile = messages.some((m) => !m.done && (m.draft || m.products || m.action));
+  useEffect(() => {
+    if (!needsProfile || profile) return undefined;
+    let live = true;
+    api.get("/producers/me").then((res) => {
+      // The review compares with the raw row (locations, contact fields); a
+      // shape the schema rejects is not shown at all.
+      if (live && OwnerProfile.safeParse(res.data).success) setProfile(res.data);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [needsProfile, profile]);
 
   const send = async (/** @type {string} */ text, /** @type {string} */ source = "typed") => {
     const trimmed = text.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sendingRef.current) return;
+    sendingRef.current = true;
+    const gen = generation.current;
     trackEvent("owner_assistant_ask", { section, source });
     setError("");
     const history = [...messages, /** @type {OwnerMessage} */ ({ role: "user", content: trimmed })];
@@ -96,9 +112,9 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
       });
       const parsed = OwnerChatOut.safeParse(res.data);
       if (!parsed.success) throw new Error("shape");
+      if (gen !== generation.current) return;
       const { reply, draft, products, action, unanswered } = parsed.data;
       if (draft || products?.length || action) {
-        await loadProfile();
         trackEvent("owner_assistant_card", { section, kind: draft ? "fields" : products?.length ? "products" : action });
       }
       if (unanswered) trackEvent("owner_assistant_unanswered", { section, topic: unanswered });
@@ -110,8 +126,9 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
         action: action || undefined,
       }]);
     } catch (e) {
-      setError(/** @type {any} */ (e)?.response?.status === 429 ? t("error_rate_limit") : t("error_generic"));
+      if (gen === generation.current) setError(/** @type {any} */ (e)?.response?.status === 429 ? t("error_rate_limit") : t("error_generic"));
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
@@ -155,7 +172,7 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
-            <IconButton label={t("new_chat")} onClick={() => { setError(""); onNewChat(); }}
+            <IconButton label={t("new_chat")} onClick={() => { generation.current += 1; setError(""); onNewChat(); }}
               className="p-2 rounded-full hover:bg-white/10 focus-ring" data-testid="owner-assistant-new-chat">
               <ArrowCounterClockwise size={18} weight="bold" aria-hidden="true" />
             </IconButton>

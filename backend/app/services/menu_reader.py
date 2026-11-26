@@ -243,7 +243,7 @@ def read_menu_text(text: str) -> list[MenuRow] | None:
     client = _get_client()
     if client is None or not ai_budget.allow("menu"):
         return None
-    body = text[:TEXT_MAX].replace("<", "\\u003c").replace(">", "\\u003e")
+    body = text[-TEXT_MAX:].replace("<", "\\u003c").replace(">", "\\u003e")
     content = [
         {"type": "text", "text": f"<owner_text>\n{body}\n</owner_text>"},
         {"type": "text", "text": _TEXT_PROMPT},

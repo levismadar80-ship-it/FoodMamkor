@@ -25,6 +25,7 @@ import logging
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from limits import parse as parse_limit
 from sqlalchemy.orm import Session
 
 from app.auth import require_producer
@@ -80,6 +81,10 @@ LINES: dict[str, dict[str, str]] = {
         "send_for_review": "כאן מאמתים את הוואטסאפ ושולחים את העמוד לבדיקה.",
         "failed": "משהו השתבש בצד שלי. נסו שוב בעוד רגע.",
         "unclear": "לא הצלחתי להבין את השאלה. אפשר לנסח אותה מחדש?",
+        "heavy_limit": (
+            "להיום הכנתי כבר את כל ההצעות שאפשר. אפשר להמשיך מחר, או למלא "
+            "ישירות ב- /producer/dashboard/edit."
+        ),
         "offline": site_chat.OFFLINE_REPLY,
     },
     "en": {
@@ -110,6 +115,10 @@ LINES: dict[str, dict[str, str]] = {
         "send_for_review": "Verify your WhatsApp number and send your page for review here.",
         "failed": "Something went wrong on my side. Please try again in a moment.",
         "unclear": "I didn't understand the question. Could you rephrase it?",
+        "heavy_limit": (
+            "I've prepared all the suggestions I can for today. Continue "
+            "tomorrow, or fill in the details at /producer/dashboard/edit."
+        ),
         "offline": "The assistant isn't available right now. Please try again later.",
     },
 }
@@ -119,6 +128,24 @@ DRAFT_NOTHING = LINES["he"]["draft_nothing"]
 DRAFT_TOO_SHORT = LINES["he"]["draft_too_short"]
 DRAFT_FAILED = LINES["he"]["draft_failed"]
 FAILED_REPLY = LINES["he"]["failed"]
+
+
+# A page fill or a product read is a second, larger model call (page_filler /
+# menu_reader), so it has its own, tighter daily count per business on top of
+# DAILY_CAP, which is sized for one fast answer.
+HEAVY_DAILY = 20
+HEAVY_NAMESPACE = "owner_chat_heavy"
+
+
+def _heavy_allowed(business: str) -> bool:
+    """Spend one fill / product read for this business today. Fail-open like
+    ai_budget.allow: a broken counter must not switch the tool off."""
+    try:
+        item = parse_limit(f"{HEAVY_DAILY}/day")
+        return bool(limiter._limiter.hit(item, HEAVY_NAMESPACE, business))
+    except Exception as e:  # noqa: BLE001 — best-effort ceiling, logged
+        logger.warning("owner chat heavy counter unavailable: %s", e)
+        return True
 
 
 def _business_key(request: Request) -> str:
@@ -188,7 +215,10 @@ def _answer(
     calls = {b.name: b.input for b in response.content if b.type == "tool_use"}
     out: OwnerChatResponse | None = None
     owner_words = owner_assistant.owner_text(api_messages)
-    if owner_assistant.FILL_TOOL_NAME in calls:
+    heavy = owner_assistant.FILL_TOOL_NAME in calls or owner_assistant.PRODUCTS_TOOL_NAME in calls
+    if heavy and not _heavy_allowed(ctx.business):
+        out = OwnerChatResponse(reply=lines["heavy_limit"])
+    elif owner_assistant.FILL_TOOL_NAME in calls:
         out = _fill(owner_words, ctx.categories, lines)
     elif owner_assistant.PRODUCTS_TOOL_NAME in calls:
         out = _products(owner_words, lines)
@@ -205,8 +235,11 @@ def _answer(
 
 
 class _Ctx:
-    def __init__(self, facts_block: str, categories: list[tuple[int, str]], can_submit: bool) -> None:
+    def __init__(
+        self, facts_block: str, categories: list[tuple[int, str]], can_submit: bool, business: str = ""
+    ) -> None:
         self.facts_block = facts_block
+        self.business = business
         self.categories = categories
         self.can_submit = can_submit
         self.topics: list[str] = []
@@ -227,7 +260,8 @@ def _context(db: Session, user: User, section_path: str | None) -> _Ctx:
         can_submit = data["status"] == "draft"
     finally:
         db.rollback()
-    return _Ctx(owner_assistant.fenced(data), categories, can_submit)
+    business = f"{user.producer_id or user.id}"
+    return _Ctx(owner_assistant.fenced(data), categories, can_submit, business)
 
 
 @router.post("/owner", response_model=OwnerChatResponse)
@@ -247,7 +281,9 @@ def owner_chat(
     client = site_chat._get_client()
     if client is None:
         return OwnerChatResponse(reply=lines["offline"])
-    if not site_chat._global_chat_allowed() or not ai_budget.allow("fast"):
+    # Not the site chat's anonymous daily cap (chat.py): public traffic must not
+    # switch the owners' assistant off. ai_budget is the global ceiling here.
+    if not ai_budget.allow("fast"):
         return OwnerChatResponse(reply=lines["offline"])
     rescue_on = site_chat._rescue_knowledge() is not None
     ctx.topics = owner_assistant.topics(rescue_on)

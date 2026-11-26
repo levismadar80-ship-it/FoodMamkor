@@ -76,6 +76,9 @@ const NO_VISUAL = new Set([
   // MEH-3483: an owner-only step on the edit screen; the /join demo pictures
   // the public page it fills, not the form.
   "page_fill",
+  // MEH-3902: an owner-only panel inside the dashboard; the /join demo
+  // pictures the public page, not the dashboard.
+  "owner_assistant",
   // MEH-3703: an owner-only settings page; the /join demo already pictures
   // the bag it publishes (rescue_bags).
   "rescue_schedule",

@@ -37,6 +37,8 @@ import { useOpenOwnerAssistant } from "@/lib/owner-page-updated";
 import { clearOwnerChat, loadOwnerChat, saveOwnerChat } from "@/lib/owner-assistant-store";
 
 const OPEN_ID = "owner-assistant-open";
+/** @typedef {import("./OwnerAssistantPanel").OwnerMessage} Msg */
+const EMPTY = /** @type {Msg[]} */ ([]);
 
 /** @param {{ className?: string }} props */
 export default function OwnerAssistant({ className = "" }) {
@@ -46,22 +48,28 @@ export default function OwnerAssistant({ className = "" }) {
   const userId = user?.id;
   const [open, setOpen] = useState(false);
   const [ask, setAsk] = useState(/** @type {string | null} */ (null));
-  const [messages, setMessages] = useState(/** @type {import("./OwnerAssistantPanel").OwnerMessage[]} */ ([]));
+  // The conversation carries the user it belongs to: a different user (or
+  // none) sees an empty chat at once, and nothing of one person's is ever
+  // saved under another's key.
+  const [chat, setChat] = useState(/** @type {{ owner: unknown, messages: Msg[] }} */ ({ owner: undefined, messages: [] }));
+  const messages = chat.owner === userId ? chat.messages : EMPTY;
+  const setMessages = useCallback((/** @type {(m: Msg[]) => Msg[]} */ update) => {
+    setChat((c) => ({ owner: userId, messages: update(c.owner === userId ? c.messages : EMPTY) }));
+  }, [userId]);
   const [mounted, setMounted] = useState(false);
   const loadedFor = useRef(/** @type {unknown} */ (undefined));
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- portal target and browser storage exist only after mount (hydration)
   useEffect(() => setMounted(true), []);
   // Read the stored conversation once per signed-in user, then keep it saved.
   useEffect(() => {
     if (!userId || loadedFor.current === userId) return;
     loadedFor.current = userId;
-    const stored = loadOwnerChat(userId);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage is read after mount (hydration)
-    if (stored.length) setMessages(stored);
+    setChat({ owner: userId, messages: loadOwnerChat(userId) });
   }, [userId]);
   useEffect(() => {
-    if (loadedFor.current === userId && messages.length) saveOwnerChat(userId, messages);
-  }, [messages, userId]);
+    if (userId && chat.owner === userId && chat.messages.length) saveOwnerChat(userId, chat.messages);
+  }, [chat, userId]);
 
   const openPanel = useCallback((/** @type {string | null} */ prompt = null) => {
     setAsk(prompt);
@@ -71,7 +79,7 @@ export default function OwnerAssistant({ className = "" }) {
   useOpenOwnerAssistant((prompt) => openPanel(prompt || null));
   const newChat = () => {
     clearOwnerChat(userId);
-    setMessages([]);
+    setChat({ owner: userId, messages: [] });
   };
 
   const close = useCallback(() => {

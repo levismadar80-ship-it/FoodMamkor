@@ -7904,6 +7904,9 @@
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
       },
+      "owner_assistant": {
+        "label": "Dashboard assistant: answers questions, fills in details and adds products from the chat"
+      },
       "product_details": {
         "label": "Products with price, ingredients and allergens",
         "tile_title": "Products",

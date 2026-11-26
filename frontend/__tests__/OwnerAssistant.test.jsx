@@ -24,7 +24,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: { id: 7, role: "producer", producer_id: 3 } }) }));
+let authUser = { id: 7, role: "producer", producer_id: 3 };
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: authUser }) }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 const { trackEvent } = await import("@/lib/analytics");
 const { default: OwnerAssistantNudge } = await import("@/components/owner-assistant/OwnerAssistantNudge");
@@ -58,6 +59,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   pathname = "/producer/dashboard/edit";
   localStorage.clear();
+  authUser = { id: 7, role: "producer", producer_id: 3 };
 });
 
 describe("ownerSectionFor", () => {
@@ -232,6 +234,56 @@ describe("OwnerAssistant", () => {
     fireEvent.click(screen.getByTestId("owner-assistant-new-chat"));
     expect(screen.queryByText("תשובה שמורה")).toBeNull();
     expect(localStorage.getItem("mehamakor:owner-assistant:7")).toBeNull();
+  });
+
+  it("another user signing in on the same screen does not see or inherit the chat", async () => {
+    api.post.mockResolvedValue({ data: { reply: "תשובה של 7" } });
+    const view = renderIt();
+    openPanel();
+    ask("שאלה של 7");
+    await screen.findByText("תשובה של 7");
+    authUser = { id: 8, role: "producer", producer_id: 4 };
+    view.rerender(
+      <NextIntlClientProvider locale="he" messages={he}>
+        <OwnerAssistant />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() => expect(screen.queryByText("תשובה של 7")).toBeNull());
+    expect(localStorage.getItem("mehamakor:owner-assistant:8")).toBeNull();
+  });
+
+  it("an answer that arrives after «שיחה חדשה» is dropped", async () => {
+    let answer;
+    api.post.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+    renderIt();
+    openPanel();
+    ask("שאלה ישנה");
+    fireEvent.click(screen.getByTestId("owner-assistant-new-chat"));
+    answer({ data: { reply: "תשובה ישנה" } });
+    await waitFor(() => expect(screen.queryByTestId("owner-assistant-typing")).toBeNull());
+    expect(screen.queryByText("תשובה ישנה")).toBeNull();
+  });
+
+  it("a card is still there after the panel is closed and opened again", async () => {
+    api.post.mockResolvedValue({ data: { reply: "כאן שולחים", action: "send_for_review" } });
+    api.get.mockResolvedValue({ data: { ...PROFILE, status: "draft" } });
+    renderIt();
+    openPanel();
+    ask("לשלוח לבדיקה");
+    await screen.findByTestId("draft-submit-banner");
+    fireEvent.click(screen.getByTestId("owner-assistant-open")); // close
+    openPanel();
+    expect(await screen.findByTestId("draft-submit-banner")).toBeTruthy();
+  });
+
+  it("a failed page read keeps the answer", async () => {
+    api.post.mockResolvedValue({ data: { reply: "כאן שולחים", action: "send_for_review" } });
+    api.get.mockRejectedValue(new Error("down"));
+    renderIt();
+    openPanel();
+    ask("לשלוח לבדיקה");
+    expect(await screen.findByText("כאן שולחים")).toBeTruthy();
+    expect(screen.queryByText(A.error_generic)).toBeNull();
   });
 });
 

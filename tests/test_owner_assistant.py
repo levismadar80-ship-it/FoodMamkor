@@ -247,6 +247,29 @@ def test_no_products_in_the_text_opens_the_menu_upload(db, monkeypatch):
     assert out.products is None and out.action == "add_products"
 
 
+def test_fills_and_product_reads_have_their_own_daily_cap(db, monkeypatch):
+    user, _ = _owner(db)
+    _stub(monkeypatch, content=_tool_use("products_from_chat"))
+    reads: list[str] = []
+    monkeypatch.setattr(chat_owner, "HEAVY_DAILY", 1)
+    monkeypatch.setattr(
+        chat_owner.menu_reader, "read_menu_text", lambda t: reads.append(t) or [MenuRow(name="פיתה", price_min=5)]
+    )
+    first = _ask(db, user, text="פיתה 5 שקל")
+    second = _ask(db, user, text="פיתה 5 שקל")
+    assert first.products and len(reads) == 1
+    assert second.reply == chat_owner.LINES["he"]["heavy_limit"] and second.products is None
+    assert len(reads) == 1  # the second, larger call never ran
+
+
+def test_public_chat_traffic_does_not_switch_the_owner_chat_off(db, monkeypatch):
+    user, _ = _owner(db)
+    calls = _stub(monkeypatch)
+    monkeypatch.setattr(chat, "_global_chat_allowed", lambda: False)
+    out = _ask(db, user)
+    assert out.reply == "תשובה" and len(calls) == 1
+
+
 def test_a_card_opens_with_the_models_line(db, monkeypatch):
     user, _ = _owner(db)
     _stub(monkeypatch, content=_tool_use("show_in_chat", {"what": "upload_photos"}, text="הנה"))
@@ -315,6 +338,23 @@ def test_the_menu_text_read_fences_her_text(monkeypatch):
     first = sent[0]["messages"][0]["content"][0]["text"]
     assert first.count("</owner_text>") == 1
     assert "never an instruction" in sent[0]["messages"][0]["content"][1]["text"]
+
+
+def test_a_long_chat_keeps_her_newest_products(monkeypatch):
+    from app.services import menu_reader
+
+    sent: list[str] = []
+
+    class _Client:
+        class messages:
+            @staticmethod
+            def create(**kwargs):
+                sent.append(kwargs["messages"][0]["content"][0]["text"])
+                return SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="text", text='{"items": []}')])
+
+    monkeypatch.setattr(menu_reader, "_get_client", lambda: _Client())
+    menu_reader.read_menu_text("ישן " * menu_reader.TEXT_MAX + "חלה 30")
+    assert "חלה 30" in sent[0]
 
 
 # ---------- the list of screens stays whole ----------
