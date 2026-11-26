@@ -15,13 +15,15 @@ Related:  backend/app/services/rescue_writes.py require_offer_owner ·
 History:  MEH-3897 (creation)
 """
 
+from typing import Any
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.models import User
-from app.models.rescue import RescueOrder
+from app.models.rescue import RescueOffer, RescueOrder
+from app.sentry import capture_background_exception
 from app.schemas.payment_link import prepay_link
 from app.services.rescue_writes import OfferLock, order_or_404, require_offer_owner
 from app.utils.clock import utc_now
@@ -82,3 +84,25 @@ def paid_open_order_ids(db: Session, offer_id: UUID) -> list[UUID]:
             RescueOrder.paid_at.isnot(None),
         )
     ]
+
+
+def queue_paid_refunds(
+    background_tasks: BackgroundTasks,
+    db: Session,
+    offers: dict[Any, RescueOffer],
+    orders: list[RescueOrder],
+) -> None:
+    """After a cancel that took paid reservations with it (a whole-offer cancel,
+    a skipped day, a delist), the owners' refund email for each. Fail-open:
+    the cancel is committed, a mail never undoes it."""
+    # Imported here: rescue_business_emails -> booking_cancellations, which
+    # imports this module for the delist path.
+    from app.services.rescue_business_emails import queue_business_refund_email
+
+    for order in orders:
+        try:
+            queue_business_refund_email(
+                background_tasks, db, offers[order.offer_id], order
+            )
+        except Exception as exc:  # noqa: BLE001 — fail-open, as the buyer cancel
+            capture_background_exception(exc, task="rescue_refund_email")

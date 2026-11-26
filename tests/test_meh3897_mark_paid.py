@@ -197,9 +197,12 @@ def test_a_mark_survives_the_link_being_removed_and_can_still_be_undone(
 
 def test_the_list_says_whether_to_offer_the_mark(client, db, shop, rescue_on):
     _reserve(client, db, shop)
-    rows = lambda: client.get(
-        "/producers/me/rescue/orders", headers=auth_header(shop["owner"])
-    ).json()  # noqa: E731
+
+    def rows():
+        return client.get(
+            "/producers/me/rescue/orders", headers=auth_header(shop["owner"])
+        ).json()
+
     assert [r["prepay"] for r in rows()] == [False]  # pays at the counter: no button
     _prepay(db, shop, timing="deposit")
     assert [r["prepay"] for r in rows()] == [True]
@@ -258,3 +261,27 @@ def test_the_business_cancelling_the_bag_is_told_to_refund_the_paid_ones(
     refunds = _refunds(sent)
     assert len(refunds) == 1  # the paid one only
     assert "סימנת שהתשלום מראש התקבל" in refunds[0]["body"]
+
+
+def test_a_business_taken_off_the_site_is_told_to_refund_the_paid_ones(
+    client, db, shop, rescue_on
+):
+    from fastapi import BackgroundTasks
+
+    from app.services.booking_cancellations import delist_business
+
+    _prepay(db, shop)
+    offer = _seed_offer(db, shop["location"])
+    _, paid_oid = _reserve(
+        client, db, shop, email="paid-delist@example.com", offer=offer
+    )
+    _reserve(client, db, shop, email="unpaid-delist@example.com", offer=offer)
+    _paid(client, shop["owner"], paid_oid)
+
+    tasks = BackgroundTasks()
+    delist_business(db, db.get(Producer, shop["producer"].id), tasks, "hidden")
+    db.commit()
+    refunds = [t for t in tasks.tasks if t.func is mails.send_business_refund_email]
+    assert len(refunds) == 1  # the paid reservation only, to the one owner login
+    assert refunds[0].args[0] == shop["owner"].email
+    assert refunds[0].kwargs["paid"] is True

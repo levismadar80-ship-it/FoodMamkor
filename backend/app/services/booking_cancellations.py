@@ -277,6 +277,17 @@ def _cancel_live_bags(
         .filter(_not_own(producer))
         if email
     }
+    # MEH-3897: reservations the business marked paid, read under the same
+    # lock before the cancel — each one's owners get the refund email.
+    paid: list[RescueOrder] = (
+        db.query(RescueOrder)
+        .filter(
+            RescueOrder.offer_id.in_(offer_ids),
+            RescueOrder.status == "reserved",
+            RescueOrder.paid_at.isnot(None),
+        )
+        .all()
+    )
     cancelled = (
         db.query(RescueOrder)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
@@ -284,6 +295,12 @@ def _cancel_live_bags(
     )
     for offer in offers:
         offer.status = "cancelled"  # type: ignore[assignment]
+    if paid:
+        # Imported here: rescue_payment -> rescue_writes, kept off this
+        # module's import graph.
+        from app.services.rescue_payment import queue_paid_refunds
+
+        queue_paid_refunds(background_tasks, db, {o.id: o for o in offers}, paid)
     for email in sorted(emails):
         background_tasks.add_task(
             send_delisted_cancel_email,

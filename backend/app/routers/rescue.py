@@ -131,7 +131,11 @@ from app.services.rescue_no_show import (  # MEH-3226
 )
 from app.utils.clock import israel_today, utc_now
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
-from app.services.rescue_payment import paid_open_order_ids, set_paid  # MEH-3897
+from app.services.rescue_payment import (  # MEH-3897
+    paid_open_order_ids,
+    queue_paid_refunds,
+    set_paid,
+)
 from app.services.rescue_writes import (  # MEH-3554
     active_no_shows,
     add_review,
@@ -375,24 +379,23 @@ def cancel_offer(
         )
     except Exception as exc:  # the cancel is committed; a mail never undoes it
         capture_background_exception(exc, task="rescue_business_cancel_email")
-    _queue_paid_refunds(background_tasks, db, offer, paid_ids)
+    _refund_paid_after_cancel(background_tasks, db, offer, paid_ids)
     return offer
 
 
-def _queue_paid_refunds(
+def _refund_paid_after_cancel(
     background_tasks: BackgroundTasks, db: Session, offer: RescueOffer, ids: list[UUID]
 ) -> None:
-    """MEH-3897: after a whole-offer cancel, the refund email for each order
-    that was marked paid and is now cancelled. Fail-open, after the commit."""
+    """MEH-3897: the orders read as paid before a whole-offer cancel that are
+    now cancelled get the owners' refund email (queue_paid_refunds)."""
     if not ids:
         return
-    for order in db.query(RescueOrder).filter(
-        RescueOrder.id.in_(ids), RescueOrder.status == "cancelled"
-    ):
-        try:
-            queue_business_refund_email(background_tasks, db, offer, order)
-        except Exception as exc:  # noqa: BLE001 — the cancel is committed
-            capture_background_exception(exc, task="rescue_refund_email")
+    orders = (
+        db.query(RescueOrder)
+        .filter(RescueOrder.id.in_(ids), RescueOrder.status == "cancelled")
+        .all()
+    )
+    queue_paid_refunds(background_tasks, db, {offer.id: offer}, orders)
 
 
 @router.get(
@@ -890,7 +893,7 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
             )
         except Exception as exc:  # the cancel is committed; a mail never undoes it
             capture_background_exception(exc, task="rescue_business_cancel_email")
-        _queue_paid_refunds(background_tasks, db, offer, paid_ids)
+        _refund_paid_after_cancel(background_tasks, db, offer, paid_ids)
     db.refresh(location)
     return schedule_row(db, location, call)
 
