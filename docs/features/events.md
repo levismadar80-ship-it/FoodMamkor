@@ -19,6 +19,8 @@
 * `frontend/components/EventForm.jsx` · `backend/app/data/form_maps/event.json` · `frontend/lib/event-draft.js` — «יש לכם מודעה על האירוע?» (MEH-3751): בטופס אירוע חדש מדביקים פוסט או הודעה ומקבלים טיוטה של הטופס, בלי שמירה. אותו מנוע ואותו route כמו במתכונים (`backend/app/services/form_filler.py`, `POST /producers/me/ai-fill/event`): קטגוריה רק מהארבע, תאריך רק מהיום ועד שנה, עיר רק מהרשימה ורק אם היא כתובה בטקסט, מחיר ומספר מקומות רק כשהמספר כתוב ליד היחידה שלו («20 ש״ח», «40 משתתפים», «בחינם» הוא 0). כתובת מהטיוטה מנקה את הנעיצה ומעבירה נקודה שמורה שנבחרה ל«כתובת אחרת». לכל שדה «?» עם ההסבר מ-`events.form.help`. הטסטים: `tests/test_meh3751_event_fill.py` · `frontend/__tests__/EventFormAiFill.test.jsx`.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת האירועים פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ברשימה של העסק עצמו, `/events/mine` (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
+* `backend/app/routers/admin_business_content.py` · `frontend/components/admin/AdminBusinessEventsPanel.jsx` — האדמין מוסיפה ועורכת אירועים (וחוויות, דרך ה-API) בשם בית עסק, מתוך עמוד העריכה של העסק באדמין (MEH-3873). אותו `EventForm` (`adminProducerId`), עם תיבה חובה שבית העסק אישר בכתב; ההסכמה נרשמת ביומן פעולות האדמין. עובד גם לעסק שעוד אין לו חשבון בעלים; חוויה צריכה חשבון בעלים. הטסט `tests/test_meh3873_admin_business_content.py`.
+
 **Flags.** אין.
 
 **טסטים**

@@ -28,14 +28,14 @@ import Input from "@/components/ui/Input";
  * `null` while loading — nothing is disabled until the answer arrives, so a
  * slow request never flashes the options off.
  */
-function useBusinessPhone() {
+function useBusinessPhone(businessUrl) {
   const [phone, setPhone] = useState(null);
   useEffect(() => {
     let alive = true;
     // Wrapped so a missing/mocked client degrades to "unknown" (nothing
     // disabled) instead of throwing inside the effect.
     Promise.resolve()
-      .then(() => api.get("/producers/me"))
+      .then(() => api.get(businessUrl))
       .then((r) => alive && setPhone(r.data?.phone || ""))
       // 403/404 = no business on this account → no phone to reach, so
       // WhatsApp and phone are off (the server would refuse them). Any other
@@ -48,7 +48,7 @@ function useBusinessPhone() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [businessUrl]);
   return phone;
 }
 
@@ -59,10 +59,12 @@ function useBusinessPhone() {
  * @param {string} props.url                   registration_url (external_url only)
  * @param {(u:string)=>void} props.onUrlChange
  * @param {string} [props.urlError]
+ * @param {string} [props.businessUrl]  MEH-3873: where the business's phone is read
+ *                                       (`/admin/producers/{id}` when an admin writes for it)
  */
-export default function RegistrationMethodField({ value, onChange, url, onUrlChange, urlError }) {
+export default function RegistrationMethodField({ value, onChange, url, onUrlChange, urlError, businessUrl = "/producers/me" }) {
   const t = useTranslations("registration.form");
-  const phone = useBusinessPhone();
+  const phone = useBusinessPhone(businessUrl);
   // normalizePhone accepts Israeli MOBILE numbers only — the same rule the
   // public page uses to build wa.me (ExperienceDetailClient.jsx).
   const noMobile = phone !== null && !normalizePhone(phone);

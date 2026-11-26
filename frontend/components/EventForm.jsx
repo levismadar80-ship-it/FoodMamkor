@@ -22,7 +22,11 @@
  *           FormFillBox: a pasted post fills the fields as a draft, nothing is
  *           saved until the owner presses publish; every field carries a «?»,
  *           FieldHelpLabel, whose text is events.form.help.<key>, the keys of
- *           backend/app/data/form_maps/event.json).
+ *           backend/app/data/form_maps/event.json);
+ *           MEH-3873 (`adminProducerId`: the same form, saved by an admin for
+ *           that business through /admin/producers/{id}/events and
+ *           /admin/events/{id}, with a required «בית העסק אישר» box whose
+ *           value goes out as `owner_consent: true`).
  */
 
 import { useEffect, useState } from "react";
@@ -43,6 +47,7 @@ import RegistrationMethodField from "@/components/RegistrationMethodField";
 import InlineMessage from "@/components/ui/InlineMessage";
 import FieldHelpLabel from "@/components/FieldHelpLabel";
 import FormFillBox from "@/components/FormFillBox";
+import Checkbox from "@/components/ui/Checkbox"; // MEH-3873
 import { applyEventDraft, eventDraftKeys } from "@/lib/event-draft";
 
 const DEFAULTS = {
@@ -170,10 +175,12 @@ function validateEventForm(f, t, tReg) {
  * @param {(data:object)=>void} props.onSuccess  called with the created/updated event
  * @param {string} [props.cancelHref]  where the cancel link points
  * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
+ * @param {string|null} [props.adminProducerId]  MEH-3873: an admin writes for this business
+ * @param {() => void} [props.onCancel]  MEH-3873: cancel in place instead of the cancel link
  */
 // MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
 // up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
-export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard", emailUnverified = false }) {
+export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard", emailUnverified = false, adminProducerId = null, onCancel = undefined }) {
   const t = useTranslations("sweep_tail.event_new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
@@ -182,6 +189,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+  const tAdmin = useTranslations("admin.business_events"); // MEH-3873
+  // MEH-3873: the admin's confirmation that the business agreed, every save.
+  const [ownerConsent, setOwnerConsent] = useState(false);
 
   // MEH-2932: the business's own selling points, so an event at one of them is
   // a choice rather than a retype. Read-only here — the rows are owned by the
@@ -199,7 +209,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   useEffect(() => {
     let cancelled = false;
     api
-      .get("/producers/me/locations")
+      .get(adminProducerId ? `/admin/producers/${adminProducerId}/locations` : "/producers/me/locations")
       .then((r) => {
         if (!cancelled) setSavedLocations(Array.isArray(r.data) ? r.data : []);
       })
@@ -209,7 +219,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [adminProducerId]);
 
   // label · address · city, skipping whatever the row does not carry. Built
   // from the row rather than from a copy string, so a business that named her
@@ -288,9 +298,10 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     setUnverifiedHits(0);
 
     const errors = validateEventForm(form, t, tReg);
+    if (adminProducerId && !ownerConsent) errors.owner_consent = tAdmin("consent_required");
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      const firstInvalid = EVENT_FIELD_ORDER.find((field) => errors[field]);
+      const firstInvalid = [...EVENT_FIELD_ORDER, "owner_consent"].find((field) => errors[field]);
       const el = document.getElementById(firstInvalid);
       el?.focus();
       el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
@@ -311,9 +322,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         registration_url:
           form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
       };
-      const r = isEdit
-        ? await api.put(`/events/${initial.id}`, payload)
-        : await api.post("/events", payload);
+      const r = adminProducerId
+        ? isEdit
+          ? await api.put(`/admin/events/${initial.id}`, { ...payload, owner_consent: true })
+          : await api.post(`/admin/producers/${adminProducerId}/events`, { ...payload, owner_consent: true })
+        : isEdit
+          ? await api.put(`/events/${initial.id}`, payload)
+          : await api.post("/events", payload);
       // MEH-3213: awaited, so the button stays disabled while the page decides
       // where to land (events/new may still be asking for the business status).
       await onSuccess?.(r.data);
@@ -337,7 +352,8 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </InlineMessage>
       )}
 
-      {!isEdit && (
+      {/* MEH-3873: the paste-to-fill box reads /producers/me (owner only). */}
+      {!isEdit && !adminProducerId && (
         <div className="mb-5">
           <FormFillBox form="event" title={tForm("fill.title")} intro={tForm("fill.intro")} onDraft={onDraft} />
         </div>
@@ -616,6 +632,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           url={form.registration_url}
           onUrlChange={(v) => update("registration_url")({ target: { value: v } })}
           urlError={fieldErrors.registration_url}
+          businessUrl={adminProducerId ? `/admin/producers/${adminProducerId}` : undefined}
         />
 
         <CollectionNotice
@@ -623,6 +640,28 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           linkLabel={tPrivacyLink("privacy_link")}
           testId="event-collection-notice"
         />
+
+        {adminProducerId && (
+          <div>
+            <Checkbox
+              id="owner_consent"
+              checked={ownerConsent}
+              onChange={(e) => {
+                setOwnerConsent(e.target.checked);
+                setFieldErrors((errs) => (errs.owner_consent ? { ...errs, owner_consent: undefined } : errs));
+              }}
+              aria-describedby={fieldErrors.owner_consent ? "owner_consent-error" : undefined}
+              data-testid="event-owner-consent"
+            >
+              {tAdmin("consent_label")}
+            </Checkbox>
+            {fieldErrors.owner_consent && (
+              <span id="owner_consent-error" className="text-xs text-error mt-1 block">
+                {fieldErrors.owner_consent}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button
@@ -632,12 +671,18 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           >
             {submitting ? (isEdit ? t("saving") : t("submit_publishing")) : isEdit ? t("save") : t("submit")}
           </Button>
-          <Link
-            href={cancelHref}
-            className="border border-border text-text px-6 py-3 rounded-sm hover:bg-green-50 transition"
-          >
-            {t("cancel")}
-          </Link>
+          {onCancel ? (
+            <Button type="button" variant="outlined" size="lg" onClick={onCancel}>
+              {t("cancel")}
+            </Button>
+          ) : (
+            <Link
+              href={cancelHref}
+              className="border border-border text-text px-6 py-3 rounded-sm hover:bg-green-50 transition"
+            >
+              {t("cancel")}
+            </Link>
+          )}
         </div>
       </form>
 

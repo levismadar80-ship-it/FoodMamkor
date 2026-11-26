@@ -1702,6 +1702,18 @@ DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city
                                                               sync). A location of ANOTHER business under the path →
                                                               404 (not 403); unknown business → 404. 120/hr on writes.
                                                               No admin "sensitive edit" ping — the actor is the admin.
+GET    /admin/producers/{producer_id}/events      admin     — MEH-3873: every event of the business (past and cancelled
+POST   /admin/producers/{producer_id}/events      admin       too, newest first), and create/edit on its behalf. Body =
+PUT    /admin/events/{event_id}                   admin       EventCreate / EventUpdate + `owner_consent: true` (missing or
+POST   /admin/producers/{producer_id}/experiences admin       false → 422, nothing saved). Same rules as the owner path:
+PUT    /admin/experiences/{experience_id}         admin       the handlers call events.create_event_for / update_event_row and
+                                                              experiences.submit_experience_for / update_experience_row. An
+                                                              experience is hosted by the business's owner account (oldest
+                                                              users row with that producer_id); no owner account → 409. An
+                                                              admin-written experience goes to the same pending queue and
+                                                              moderation as the owner's. The consent is recorded on the admin
+                                                              audit row (`details.after.owner_consent = true`). Unknown
+                                                              business / event / experience → 404. 60–120/hr.
 GET    /admin/test-businesses                     admin     — MEH-2952 chunk 4: {producer_ids: [uuid]} of the businesses hidden as test rows
 PUT    /admin/test-businesses/{producer_id}       admin       («עסק בדיקה — מוסתר מהאתר»). PUT body {hidden: bool} (extra keys 422) →
                                                               {producer_id, hidden}. Writes producers.is_test only; status untouched,

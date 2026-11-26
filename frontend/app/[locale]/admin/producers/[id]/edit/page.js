@@ -29,6 +29,7 @@ import { SkeletonForm } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
 import AdminVerifiedPanel from "@/components/admin/AdminVerifiedPanel"; // MEH-3524
 import AdminAlcoholPanel from "@/components/admin/AdminAlcoholPanel"; // MEH-3524
+import AdminBusinessEventsPanel from "@/components/admin/AdminBusinessEventsPanel"; // MEH-3873
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -267,6 +268,8 @@ export default function EditProducerPage() {
         producerId={String(id)}
         producer={producer}
       />
+      {/* MEH-3873: the business's events, written on its behalf with consent. */}
+      <AdminBusinessEventsPanel producerId={String(id)} />
     </div>
   );
 }

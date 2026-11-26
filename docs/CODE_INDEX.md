@@ -52,6 +52,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `rate_limit.py` | Shared rate limiter instance used across all routers. |
 | `router_registry.py` | — אין כותרת — |
 | `routers/admin.py` | — אין כותרת — |
+| `routers/admin_business_content.py` | Admin creates and edits a business's events and experiences on its behalf, with the business's written consent confirmed on every save (the box on the form → … |
 | `routers/admin_checklist.py` | MEH-1399 Phase 2 — the pre-approval review checklist as data. Serves the editable item list and records which items an admin ticked for a given producer, with … |
 | `routers/admin_decisions.py` | The admin review decisions under /admin/producers: the pending queue, approve, reject (with presets), request changes, and the verified badge, plus the two … |
 | `routers/admin_draft_merge.py` | Move a draft the admin prepared to the owner who registered the same business herself: the draft becomes the page in her account, and what she had added moves … |
@@ -131,6 +132,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/whatsapp_webhook.py` | Meta WhatsApp Cloud API webhook receiver — GET verification challenge + POST inbound-message persistence + outbound-status reconciliation, all gated by … |
 | `schemas/__init__.py` | Load schemas.py first: its sibling modules import the shared validators from it, and it re-exports them at its bottom (MEH-3270). |
 | `schemas/admin_block.py` | Admin moderation switches on a user or a business. |
+| `schemas/admin_on_behalf.py` | Request bodies for an admin writing a business's events and experiences: the owner's own create/update shapes plus one required field, 'owner_consent', that … |
 | `schemas/admin_passkey.py` | Request and response shapes of the admin passkey routes (MEH-3305). |
 | `schemas/admin_review.py` | Admin review inputs and outputs: kashrut requests and reminders, checklist, review checks, approve / reject / request-changes bodies. |
 | `schemas/billing.py` | Response shapes for the billing summary routes (MEH-3181). |
@@ -781,6 +783,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsAppUpdatesPill.jsx` | — אין כותרת — |
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
+| `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |

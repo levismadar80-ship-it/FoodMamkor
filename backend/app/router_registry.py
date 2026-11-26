@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_business_content,
     admin_decisions,
     admin_draft_merge,
     admin_experiences,
@@ -200,6 +201,15 @@ def _include_webhooks(app: FastAPI) -> None:
     app.include_router(resend_webhook.router)
 
 
+def _register_admin_on_behalf(app: FastAPI) -> None:
+    """Admin writes made on a business's behalf. Its own function because
+    register_routers sits at ruff's 50-statement cap (PLR0915)."""
+    # MEH-3333: admin CRUD for a business's locations (pickup points).
+    app.include_router(admin_producer_locations.router)
+    # MEH-3873: admin writes a business's events + experiences, with consent.
+    app.include_router(admin_business_content.router)
+
+
 def register_routers(app: FastAPI) -> None:
     """Register every router in the same order they appeared in main.py.
 
@@ -243,8 +253,7 @@ def register_routers(app: FastAPI) -> None:
     # MEH-589: producer recipes chunk 2/4
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
-    # MEH-3333: admin CRUD for a business's locations (pickup points).
-    app.include_router(admin_producer_locations.router)
+    _register_admin_on_behalf(app)
     # MEH-2312: admin catalog import → drafts → approve.
     app.include_router(admin_product_import.router)
     app.include_router(reviews.router)
