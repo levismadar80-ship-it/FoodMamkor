@@ -3248,9 +3248,10 @@ export const AdminReadPageTextAdminProducersProducerIdPageFillReadPostResponse =
 
 
 /**
- * Mint a 14-day read-only link to the draft's full page. Stateless: no
- * write, and a new link does not cancel an earlier one. Every link dies
- * when the draft is published, claimed or deleted (the read checks the row).
+ * Mint a 14-day read-only link to the draft's full page. MEH-3896: a
+ * short /v/<code> link backed by a share_links row (the only write here); a
+ * new link does not cancel an earlier one. Every link dies when the draft
+ * is published, claimed or deleted (the read checks the row).
  * @summary Create Preview Link
  */
 export const CreatePreviewLinkAdminProducersProducerIdPreviewLinkPostResponse = /*#__PURE__*/ zod.object({

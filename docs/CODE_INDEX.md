@@ -48,6 +48,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/product_orders.py` | The tables behind on-site ordering («בקשת הזמנה»): a business's ordering settings, an order, its lines, and the log of its status changes. |
 | `models/recipes.py` | Recipes a business publishes on its page, and their moderation state. |
 | `models/rescue.py` | The rescue-bags pilot: offers, orders, reviews and the typical items a business lists for its bags. |
+| `models/share_links.py` | A short link an admin sends a business (MEH-3896): a random 12-character code that opens one draft's preview or claim page, instead of a ~250-character JWT … |
 | `owner_sections.py` | The one list of owner-dashboard screens the owner assistant knows: each screen's path, name and what is on it, and the edit-page cards it may send the owner … |
 | `pricing.py` | The server's copy of the price list (ADR-042) and the two fee calculations the billing ledger needs. Money is in agorot, as ints. |
 | `rate_limit.py` | Shared rate limiter instance used across all routers. |
@@ -341,6 +342,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/review_invite.py` | The one builder of a business's «request a review» URL — the verified-review link ('?rt=<30-day invite token>') that the owner shares from her dashboard and … |
 | `services/review_reports.py` | «דיווח על ביקורת» (MEH-3260) — build the admin email for a visitor's report on one review, and drop a repeat of the same report. |
 | `services/sanitization.py` | HTML sanitization helper — defense-in-depth per ASVS V13 (MEH-329). |
+| `services/share_links.py` | Mint and resolve the short code behind a draft's preview link (/v/<code>) and claim link (/c/<code>) — MEH-3896. … |
 | `services/signup_fill_digest.py` | Once a week (Sunday, Israel clock) check what share of the businesses that signed up in the last 7 days have a referral source («מאיפה שמעתם») and a location, … |
 | `services/staff_emails.py` | The email a business sends to invite someone to handle its orders. |
 | `services/staff_membership.py` | End a person's active order-staff membership when the same account becomes a business owner, so the old business's team list and its 5 seats stop counting … |

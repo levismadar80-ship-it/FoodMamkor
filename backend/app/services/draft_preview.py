@@ -27,6 +27,8 @@ DRAFT_PREVIEW_SCOPE = "producer_draft_preview"
 DRAFT_PREVIEW_TTL_DAYS = 14
 
 
+# MEH-3896: no app caller since the short links; kept because the tests
+# mint old-style links with it to prove those still open until `exp`.
 def create_draft_preview_token(producer_id: UUID) -> tuple[str, datetime]:
     """Return (token, expires_at)."""
     now = datetime.now(timezone.utc)

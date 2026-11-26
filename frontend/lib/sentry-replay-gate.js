@@ -11,7 +11,8 @@
  */
 
 /** Same pattern ClarityScript.jsx uses — one list of token paths. */
-const TOKEN_LINK_PATH = /\/(claim|owner-invite|staff-invite)\/[^/]/;
+// MEH-3896: /c/<code>, the short claim link, is the same credential.
+const TOKEN_LINK_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]/;
 
 /**
  * @param {string} pathname

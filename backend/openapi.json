@@ -27840,7 +27840,7 @@
     },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
-        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "description": "Mint a 14-day read-only link to the draft's full page. MEH-3896: a\nshort /v/<code> link backed by a share_links row (the only write here); a\nnew link does not cancel an earlier one. Every link dies when the draft\nis published, claimed or deleted (the read checks the row).",
         "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
         "parameters": [
           {
