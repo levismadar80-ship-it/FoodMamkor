@@ -3,6 +3,7 @@
 
 import { createContext, startTransition, useContext, useEffect, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
+import { afterStreamSettled } from "@/lib/stream-settled";
 import { useTranslations } from "next-intl";
 import api from "./api";
 import {
@@ -86,6 +87,11 @@ export function AuthProvider({ children }) {
   // has hydrated (a chunk that fails rejects to its error boundary, so this
   // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
   // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
+  // MEH-3718: a transition is not enough while a streamed boundary is still
+  // queued for its reveal (`$~`, up to ~300 ms after the first paint): React
+  // then renders it again in the browser beside the hidden server copy. So the
+  // bootstrap state also waits for the reveal (lib/stream-settled.js).
+  const publish = (/** @type {() => void} */ update) => afterStreamSettled(() => startTransition(update));
   const loadSession = () => {
     // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
@@ -93,7 +99,7 @@ export function AuthProvider({ children }) {
       api
         .get("/auth/me")
         .then((res) => {
-          startTransition(() => {
+          publish(() => {
             setUser(res.data);
             setAuthUnreachable(false);
           });
@@ -116,12 +122,12 @@ export function AuthProvider({ children }) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
           } else {
-            startTransition(() => setAuthUnreachable(true));
+            publish(() => setAuthUnreachable(true));
           }
         })
-        .finally(() => startTransition(() => setLoading(false)));
+        .finally(() => publish(() => setLoading(false)));
     } else {
-      startTransition(() => setLoading(false));
+      publish(() => setLoading(false));
     }
   };
 
