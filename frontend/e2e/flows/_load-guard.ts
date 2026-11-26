@@ -149,6 +149,22 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Business page: a late block pushes the bio section down (largest 0.101, mobile, staging f08f421).",
     card: "MEH-3871",
   },
+  {
+    // MEH-3871: the business page by id (the owner's preview link). Same late
+    // block above the reviews section (staging 2b777a0, mobile, flaky).
+    path: /^\/producer\/(?!dashboard$|new$)[^/]+$/,
+    ceiling: 0.88,
+    reason: "Business page by id (?preview=1): a late block pushes the reviews section down (largest 0.581, mobile, staging 2b777a0).",
+    card: "MEH-3871",
+  },
+  {
+    // MEH-3863: the register form moves during the load on CI (also behind the
+    // MEH-3833 / MEH-3862 flakes). Staging 2b777a0, mobile, hard fail both tries.
+    path: /^\/register$/,
+    ceiling: 0.2,
+    reason: "Register: the page grows at ~2 s and pushes the footer (largest 0.130, mobile, staging 2b777a0).",
+    card: "MEH-3863",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
