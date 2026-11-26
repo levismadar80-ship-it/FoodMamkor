@@ -115,7 +115,11 @@ def _bags(qty: int) -> str:
 
 
 def send_business_refund_email(
-    to: str, m: BusinessReservation, deposit: bool = False, test_cause: bool = False
+    to: str,
+    m: BusinessReservation,
+    deposit: bool = False,
+    test_cause: bool = False,
+    paid: bool = False,
 ) -> None:
     """MEH-3895 — a reservation of a prepaid bag was cancelled by the buyer.
 
@@ -128,8 +132,14 @@ def send_business_refund_email(
         "שלום,\n\n"
         f"שריון של {_bags(m.qty)} בוטל עכשיו (קוד האיסוף {m.pickup_code}).\n"
         + (
+            # MEH-3897: the business marked it paid, so no «אם».
+            "סימנת שהמקדמה התקבלה, ולכן צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
+            if paid and deposit
+            else f"סימנת שהתשלום מראש התקבל, ולכן צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
+            "באותה דרך שבה שולם.\n\n"
+            if paid
             # A deposit's size is the business's, not ours: no amount.
-            "אם המקדמה כבר התקבלה, צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
+            else "אם המקדמה כבר התקבלה, צריך להחזיר אותה באותה דרך שבה שולמה.\n\n"
             if deposit
             else f"אם התשלום מראש כבר התקבל, צריך להחזיר {shekels_text(m.total_agorot)} ₪ "
             "באותה דרך שבה שולם.\n\n"
@@ -154,11 +164,13 @@ def queue_business_refund_email(
     order: RescueOrder,
 ) -> int:
     """Queue the refund note to every owner login, AFTER the cancel's commit,
-    only when the business shows a prepay link. Returns how many were queued
-    (0 = the business takes no prepayment, or no owner has an email)."""
+    when the business shows a prepay link or marked this order paid
+    (MEH-3897: a mark outlives a link removed since). Returns how many were
+    queued (0 = no prepayment and no mark, or no owner has an email)."""
     location = offer.location
     producer = location.producer if location else None
-    if producer is None or prepay_link(producer.payment_info) is None:
+    paid = order.paid_at is not None
+    if producer is None or (prepay_link(producer.payment_info) is None and not paid):
         return 0
     facts = BusinessReservation(
         producer_name=str(producer.name or ""),
@@ -176,5 +188,6 @@ def queue_business_refund_email(
             facts,
             deposit=(producer.payment_info or {}).get("timing") == "deposit",
             test_cause=bool(producer.is_test),  # MEH-2952
+            paid=paid,
         )
     return len(recipients)

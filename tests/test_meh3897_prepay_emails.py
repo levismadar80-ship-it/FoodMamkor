@@ -164,7 +164,7 @@ def test_a_business_cancel_of_a_prepaid_bag_lists_what_to_return(
     notes = [(s, b) for to, s, b in outbox if to == "owner@example.com"]
     assert [s for s, _b in notes] == ["בוטל סל הפתעה במאפיית ההצלה: מה להחזיר"]
     body = notes[0][1]
-    assert "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה." in body
+    assert "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה, שלא סימנתם «שולם»." in body
     by_code = dict(zip(codes, ("15", "30")))
     for code in sorted(codes):
         assert f"• קוד {code}: {by_code[code]} ₪" in body
@@ -330,3 +330,23 @@ def test_a_test_business_marks_its_notes_as_test(db):
     db.commit()
     mails = refunds.group_buy_cancel_mails(db, gb, "owner")
     assert mails and all(test_cause for *_rest, test_cause in mails)
+
+
+def test_a_reservation_marked_paid_is_not_listed_twice(client, db, shop, rescue_on, outbox):
+    # MEH-3897 «סמן כשולם» (#5385) sends its own refund email for a marked
+    # reservation; the list holds only the unmarked ones.
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    _a, marked = _reserve(client, db, offer, "marked3897@example.com")
+    _b, plain = _reserve(client, db, offer, "plain3897@example.com")
+    r = client.post(
+        f"/rescue/orders/{marked['id']}/paid", json={"paid": True}, headers=auth_header(shop["owner"])
+    )
+    assert r.status_code == 200, r.text
+    outbox.clear()
+    client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
+    ((_s, body),) = [(s, b) for to, s, b in outbox if "מה להחזיר" in s]
+    assert f"• קוד {plain['pickup_code']}: 15 ₪" in body
+    assert marked["pickup_code"] not in body
+    certain = [b for _to, s, b in outbox if s.startswith("בוטל שריון")]
+    assert len(certain) == 1 and marked["pickup_code"] in certain[0]

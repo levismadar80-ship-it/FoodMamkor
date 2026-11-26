@@ -204,6 +204,10 @@ def bag_business_cancel_mails(
             RescueOrder.status == "cancelled",
             RescueOrder.cancelled_at == last,
             RescueOrder.user_id.in_(buyer_ids),
+            # A reservation marked «שולם» gets its own, certain refund email
+            # (rescue_payment.queue_paid_refunds); listing it again here
+            # would tell the business to return it twice.
+            RescueOrder.paid_at.is_(None),
         )
         .order_by(RescueOrder.pickup_code)
         .all()
@@ -212,7 +216,7 @@ def bag_business_cancel_mails(
         return []
     name = " ".join(str(producer.name or "").split())
     body = _refund_body(
-        "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה.",
+        "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה, שלא סימנתם «שולם».",
         [(o.pickup_code, int(offer.price_agorot) * int(o.qty)) for o in orders],
         p.deposit,
         "/producer/dashboard/rescue",
