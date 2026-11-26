@@ -214,6 +214,47 @@ describe("PublishWithConsentPanel", () => {
     expect(api.post.mock.calls[0]).toHaveLength(2);
   });
 
+  it("MEH-3914: no English address yet — the suggestion appears, and the second publish sends it", async () => {
+    api.post
+      .mockRejectedValueOnce({
+        response: { status: 422, data: { detail: { code: "slug_required", message: "x", suggested: "sndra-pro" } } },
+      })
+      .mockResolvedValueOnce({ data: { status: "approved" } });
+    const onPublished = vi.fn();
+    wrap(<PublishWithConsentPanel producerId="d-1" onPublished={onPublished} />);
+    expect(screen.queryByTestId("consent-publish-slug")).not.toBeInTheDocument();
+    fill();
+    tick("consent-publish-consent");
+    fireEvent.click(submit());
+    const field = await screen.findByTestId("consent-publish-slug");
+    expect(field.value).toBe("sndra-pro");
+    expect(screen.getByTestId("consent-publish-error")).toHaveTextContent(P.slug_needed);
+    expect(onPublished).not.toHaveBeenCalled();
+    fireEvent.change(field, { target: { value: "Sandra Perot" } });
+    fireEvent.click(submit());
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1));
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/admin/producers/d-1/publish-with-consent",
+      { consent_confirmed: true, consent_note: "אישרו בוואטסאפ, 17.11" },
+      { params: { slug: "sandra-perot" } },
+    );
+  });
+
+  it("MEH-3914: a Hebrew address in that field is refused without a request", async () => {
+    api.post.mockRejectedValueOnce({
+      response: { status: 422, data: { detail: { code: "slug_required", message: "x", suggested: "" } } },
+    });
+    wrap(<PublishWithConsentPanel producerId="d-1" />);
+    fill();
+    tick("consent-publish-consent");
+    fireEvent.click(submit());
+    const field = await screen.findByTestId("consent-publish-slug");
+    fireEvent.change(field, { target: { value: "סנדרה" } });
+    fireEvent.click(submit());
+    expect(await screen.findByText(P.slug_invalid)).toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledTimes(1);
+  });
+
   it("a refusal shows the server's reason and does not report success", async () => {
     api.post.mockRejectedValue({ response: { data: { detail: "לא ניתן לאשר בית עסק ללא תמונה." } } });
     const onPublished = vi.fn();

@@ -2171,7 +2171,11 @@
         "screenshot_attached": "Screenshot attached. View",
         "screenshot_remove": "Remove",
         "screenshot_error": "Could not upload the screenshot",
-        "screenshot_view": "Screenshot of the approval"
+        "screenshot_view": "Screenshot of the approval",
+        "slug_needed": "This business has no English address yet. Check the suggestion below, edit it if needed, and publish again.",
+        "slug_label": "Page address in English",
+        "slug_hint": "English letters, numbers and hyphens, up to 40 characters",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -2332,6 +2336,15 @@
         "saved": "Saved.",
         "error": "We couldn't save. Please try again.",
         "load_error": "We couldn't load the mark. Refresh the page."
+      },
+      "slug_confirm": {
+        "title": "English address for the page",
+        "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
+        "label": "Page address in English",
+        "hint": "English letters, numbers and hyphens, up to 40 characters",
+        "invalid": "Use an English address: lowercase letters, numbers and hyphens",
+        "confirm": "Approve and publish",
+        "cancel": "Cancel"
       }
     },
     "users": {

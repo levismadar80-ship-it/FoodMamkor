@@ -131,11 +131,19 @@ function useProducerActions(loadAllProducers, deps) {
 
   // MEH-3026: a missing licence number no longer blocks approve, so the
   // MEH-2299 `allow_without_license` override (and its opts) is gone.
-  const quickApprove = (producer) =>
+  // MEH-3914: a business with no English address yet (no Instagram, a
+  // Hebrew-only name) answers 422 `slug_required` with a suggestion. The
+  // admin confirms or edits it in SlugConfirmDialog, which calls this again
+  // with `slug`.
+  const [slugPrompt, setSlugPrompt] = useState(null); // {producer, suggested} | null
+  const quickApprove = (producer, slug) =>
     run(
       `approve:${producer.id}`,
       async () => {
-        await api.post(`/admin/producers/${producer.id}/approve`);
+        const url = `/admin/producers/${producer.id}/approve`;
+        // A one-argument call without a slug, as before (AdminApproveWithoutLicense).
+        await (slug ? api.post(url, undefined, { params: { slug } }) : api.post(url));
+        setSlugPrompt(null);
         loadAllProducers();
         showToast.success(t("producers.toast_approved")); // MEH-1446
       },
@@ -143,6 +151,16 @@ function useProducerActions(loadAllProducers, deps) {
       // return 422. Instead of a dead-end toast, auto-open request-changes with
       // the gate-matched chip prefilled so the admin can send it in one click.
       (err) => {
+        const detail = err?.response?.data?.detail;
+        if (err?.response?.status === 422 && detail?.code === "slug_required") {
+          setSlugPrompt({ producer, suggested: detail.suggested || "" });
+          return;
+        }
+        if (err?.response?.status === 422 && typeof detail === "object" && detail?.message) {
+          // A typed address was refused (slug_not_latin, …): say why, keep the dialog.
+          showToast.error(detail.message);
+          return;
+        }
         if (err?.response?.status === 422) {
           const reason = approveGateReason(err.response.data?.detail);
           if (reason === "phone") {
@@ -206,6 +224,8 @@ function useProducerActions(loadAllProducers, deps) {
   };
   return {
     quickApprove, toggleStatus, deleteProducer,
+    // MEH-3914: the English-address confirm before approval.
+    slugPrompt, closeSlugPrompt: () => setSlugPrompt(null),
     // MEH-1027 Chunk B: delete confirm dialog controller.
     confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
   };

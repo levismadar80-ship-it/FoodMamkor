@@ -311,7 +311,7 @@ def test_approval_queues_the_welcome_email_and_resend_down_does_not_lose_it(
     provider["script"] = ["failed"]
 
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     (row,) = _rows(db)
@@ -360,7 +360,7 @@ def test_a_slug_collision_retry_queues_one_email_with_the_slug_that_won(
 
     monkeypatch.setattr(producer_approval, "_ensure_unique_slug", racing_ensure)
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     assert calls["n"] == 2, "the collision never happened; this test proves nothing"
@@ -377,7 +377,7 @@ def test_approving_a_test_business_queues_nothing(client, db, provider, quiet_wh
     producer = _approvable(db, is_test=True)
     admin = make_user(db, role="admin")
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     assert _rows(db) == []
@@ -515,7 +515,7 @@ def test_an_approval_whose_email_cannot_be_queued_still_answers_200(
 
     monkeypatch.setattr(admin_module, "enqueue_email", _boom)
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     db.expire_all()

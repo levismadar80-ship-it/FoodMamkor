@@ -52,6 +52,7 @@ from app.services.producer_approval import (
     _apply_approval_state,
     _assert_approvable,
     _persist_approval,
+    assert_slug_decided,
 )
 from app.services.producer_queries import attach_badge_fields
 from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
@@ -91,12 +92,15 @@ def pending_producers(
 
 
 @router.post("/producers/{producer_id}/approve", response_model=None)
-def approve_producer(
+def approve_producer(  # noqa: PLR0913 — +slug query (MEH-3914); five FastAPI-injected params plus two query flags
     producer_id: UUID,
     background_tasks: BackgroundTasks,
     # MEH-2121: the same shape, for the WhatsApp-verification gate. Default
     # False, so an admin has to ask for the door in the URL.
     allow_unverified_phone: bool = Query(default=False),
+    # MEH-3914: the English address the admin confirmed after a 422
+    # `slug_required` (assert_slug_decided).
+    slug: str | None = Query(default=None, max_length=60),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -133,6 +137,8 @@ def approve_producer(
     # after its re-read so the retry path cannot approve a row this path would
     # have rejected.
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
+    # MEH-3914: after the content gates, so a missing photo is reported first.
+    overrides = overrides._replace(slug=assert_slug_decided(producer, slug))
     # MEH-1817: the approval column writes live in _apply_approval_state so the
     # retry path below can re-apply exactly the same set after a rollback.
     _apply_approval_state(producer)

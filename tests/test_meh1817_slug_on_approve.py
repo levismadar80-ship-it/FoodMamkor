@@ -41,10 +41,18 @@ def _admin(db):
 
 
 def _approve(client, db, producer):
-    return client.post(
-        f"/admin/producers/{producer.id}/approve",
-        headers=auth_header(_admin(db)),
-    )
+    """Approve the way the admin screen does since MEH-3914: a Hebrew-only
+    name with no Instagram answers 422 `slug_required` with a suggestion, and
+    the admin confirms it. The suggestion is the same `latin_slug` the mint
+    used before, so every value asserted below is unchanged."""
+    url = f"/admin/producers/{producer.id}/approve"
+    resp = client.post(url, headers=auth_header(_admin(db)))
+    detail = resp.json().get("detail") if resp.status_code == 422 else None
+    if isinstance(detail, dict) and detail.get("code") == "slug_required" and detail["suggested"]:
+        resp = client.post(
+            url, params={"slug": detail["suggested"]}, headers=auth_header(_admin(db))
+        )
+    return resp
 
 
 def _pending(db, **kwargs):
@@ -136,20 +144,36 @@ def test_a_name_matching_a_reserved_route_is_suffixed_not_taken(client, db):
 # ---------- the empty-slugify edge ----------
 
 
-def test_a_name_that_slugifies_to_nothing_leaves_the_slug_null(client, db):
-    """Punctuation-only names must leave NULL, not "".
+def test_a_name_that_slugifies_to_nothing_asks_the_admin_and_never_stores_empty(client, db):
+    """Punctuation-only names must never store "".
 
     `_ensure_unique_slug` returns "" unchanged for an empty base, so without
     the `or None` in the fix the column would hold an empty string — neither a
     slug nor NULL, and it would satisfy the `not producer.slug` guard forever
     after while breaking the id-URL fallback's NULL check.
+
+    MEH-3914: such a name has nothing to suggest, so approval stops and asks
+    the admin for an address (suggestion "") and the row stays NULL; the
+    address she types is what goes live.
     """
     producer = _pending(db, name="!!!")
 
-    assert _approve(client, db, producer).status_code == 200
-
+    resp = _approve(client, db, producer)
+    assert resp.status_code == 422
+    assert resp.json()["detail"]["code"] == "slug_required"
+    assert resp.json()["detail"]["suggested"] == ""
     db.refresh(producer)
     assert producer.slug is None, f"expected NULL, got {producer.slug!r}"
+    assert producer.status == "pending"
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve",
+        params={"slug": "bang-farm"},
+        headers=auth_header(_admin(db)),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.slug == "bang-farm"
 
 
 # ---------- the NULL-slug census (report only, no backfill) ----------
@@ -347,14 +371,14 @@ def test_a_non_slug_integrity_error_propagates_instead_of_being_retried(
     real_mint = admin_module._mint_slug_if_absent
     state = {"armed": False, "fired": False}
 
-    def arming_mint(session, prod):
+    def arming_mint(session, prod, typed_slug=None):
         # ONE-SHOT. Re-arming on the retry's mint call is what made the second
         # version of this test non-discriminating too: the bare-except build
         # raised again from the retry's commit, that raise landed outside the
         # try, and the exception propagated in both worlds.
         if not state["fired"]:
             state["armed"] = True
-        return real_mint(session, prod)
+        return real_mint(session, prod, typed_slug)
 
     def commit_raising_unrelated(self, *args, **kwargs):
         if state["armed"]:

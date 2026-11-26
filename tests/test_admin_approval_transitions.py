@@ -119,7 +119,7 @@ def test_legit_approve_from_rejected_fires_hook_once(client, db, monkeypatch):
         db, status="rejected", images=[TEST_IMAGE], phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -140,7 +140,7 @@ def test_approve_imageless_producer_is_blocked(client, db, monkeypatch):
     )
     producer = make_producer(db, status="pending")
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"] == (
@@ -159,7 +159,7 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
         db, status="pending", images=[TEST_IMAGE], phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -200,7 +200,7 @@ def test_approve_license_required_no_license_is_approved_without_badge(
         db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )  # producer_license_number defaults to NULL
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -226,7 +226,7 @@ def test_approve_license_required_with_license_succeeds(client, db, monkeypatch)
     )
     _set_license(db, producer, "1234567")
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -243,7 +243,7 @@ def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatc
         db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -292,7 +292,7 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
     db.commit()
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
 
@@ -330,7 +330,7 @@ def test_approve_draft_is_blocked(client, db, monkeypatch):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
 
     assert resp.status_code == 409, resp.text
@@ -354,7 +354,7 @@ def test_approve_draft_has_no_override(client, db, monkeypatch):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve"
+        f"/admin/producers/{producer.id}/approve?slug=test-farm"
         "?allow_without_license=true&allow_unverified_phone=true",
         headers=auth_header(_admin(db)),
     )
@@ -414,7 +414,7 @@ def test_approve_unverified_phone_is_blocked(client, db, monkeypatch):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
 
     # 422, not 409: an approve-time CONTENT gate, like the photo and licence
@@ -436,7 +436,7 @@ def test_approve_unverified_phone_with_override_succeeds(client, db, monkeypatch
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+        f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true&slug=test-farm",
         headers=auth_header(_admin(db)),
     )
 
@@ -467,7 +467,7 @@ def test_the_phone_override_is_audited_like_the_license_one(
 
     with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
-            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true&slug=test-farm",
             headers=auth_header(admin),
         )
     assert resp.status_code == 200, resp.text
@@ -500,7 +500,7 @@ def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, 
 
     with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
-            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
+            f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true&slug=test-farm",
             headers=auth_header(_admin(db)),
         )
     assert resp.status_code == 200, resp.text
