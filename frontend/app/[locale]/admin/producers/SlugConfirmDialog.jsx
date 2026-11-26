@@ -33,7 +33,7 @@ export default function SlugConfirmDialog({ slugPrompt, busy, onConfirm, onCance
   if (!slugPrompt) return null;
   // Keyed by producer so a second prompt starts from its own suggestion.
   return (
-    <SlugConfirmForm key={slugPrompt.producer.id} slugPrompt={slugPrompt} busy={busy} onConfirm={onConfirm} onCancel={onCancel} />
+    <SlugConfirmForm key={`${slugPrompt.producer.id}:${slugPrompt.suggested}`} slugPrompt={slugPrompt} busy={busy} onConfirm={onConfirm} onCancel={onCancel} />
   );
 }
 

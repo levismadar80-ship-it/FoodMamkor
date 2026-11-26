@@ -243,7 +243,7 @@ def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parame
     overrides = ApprovalOverrides(unverified_phone=True)
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
     # MEH-3914: after the content gates, so a missing photo is reported first.
-    overrides = overrides._replace(slug=assert_slug_decided(producer, slug))
+    overrides = overrides._replace(slug=assert_slug_decided(db, producer, slug))
     _apply_approval_state(producer)
     # The audit record, in the column the owner invite also writes: one
     # business, one statement of what its owner agreed to and where.

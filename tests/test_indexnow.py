@@ -232,7 +232,9 @@ class TestProducerWritePoints:
         p = make_producer(
             db, status="pending", images=[TEST_IMAGE], phone_verified=True
         )
-        resp = client.post(f"/admin/producers/{p.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(
+            f"/admin/producers/{p.id}/approve?slug=test-farm", headers=_admin(db)
+        )
         assert resp.status_code == 200, resp.text
         db.refresh(p)
         assert _urls(posts) == indexnow.producer_urls(p)
@@ -409,7 +411,7 @@ class TestExperienceWritePoints:
     def test_approve_pings(self, client, db, posts):
         _, host = _owner(db)
         ex = _experience(db, host)
-        resp = client.post(f"/admin/experiences/{ex.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(f"/admin/experiences/{ex.id}/approve", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert _urls(posts) == _both(f"/experiences/{ex.id}")
 
@@ -439,7 +441,7 @@ class TestExperienceWritePoints:
     def test_approving_for_a_pending_business_does_not_ping(self, client, db, posts):
         _, host = _owner(db, status="pending")
         ex = _experience(db, host)
-        resp = client.post(f"/admin/experiences/{ex.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(f"/admin/experiences/{ex.id}/approve", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert posts == []
 
@@ -529,7 +531,7 @@ class TestRecipeWritePoints:
     def test_approve_pings(self, client, db, posts):
         p = self._producer(db)
         r = _recipe(db, p)
-        resp = client.post(f"/admin/recipes/{r.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(f"/admin/recipes/{r.id}/approve", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert _urls(posts) == _both(f"/{p.slug}/recipes/{r.id}")
 
@@ -575,14 +577,14 @@ class TestOrganizerContentIsNotPinged:
         producer, host = _owner(db)
         _as_organizer(db, producer)
         ex = _experience(db, host)
-        resp = client.post(f"/admin/experiences/{ex.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(f"/admin/experiences/{ex.id}/approve", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert posts == []
 
     def test_approving_an_organizers_recipe_does_not_ping(self, client, db, posts):
         producer = _as_organizer(db, make_producer(db, status="approved"))
         r = _recipe(db, producer)
-        resp = client.post(f"/admin/recipes/{r.id}/approve?slug=test-farm", headers=_admin(db))
+        resp = client.post(f"/admin/recipes/{r.id}/approve", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert posts == []
 

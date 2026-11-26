@@ -275,10 +275,25 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
         return real_ensure(session, base_slug, **kwargs)
 
     monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
+    # MEH-3914: the admin confirms the address before the mint, and that read
+    # is the one the winner raced past — it saw the slug free.
+    real_is_free = admin_module._slug_is_free
+    gate_reads = {"n": 0}
 
-    resp = _approve(client, db, loser)
+    def free_at_the_gate(session, candidate, exclude_id=None):
+        gate_reads["n"] += 1
+        return gate_reads["n"] == 1 or real_is_free(session, candidate, exclude_id)
+
+    monkeypatch.setattr(admin_module, "_slug_is_free", free_at_the_gate)
+
+    resp = client.post(
+        f"/admin/producers/{loser.id}/approve",
+        params={"slug": "choot-htomim"},
+        headers=auth_header(_admin(db)),
+    )
 
     assert resp.status_code == 200, resp.text
+    assert gate_reads["n"] >= 1, "the address gate never read the slug"
     assert calls["n"] == 2, (
         "the retry must have re-derived the slug; a single call means the "
         "collision never happened and this test proves nothing"

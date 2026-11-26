@@ -22,6 +22,7 @@ notification hooks fail-open in the test config; we monkeypatch
 notify_producer_approved to assert fire-count (exactly once on the legit
 path, zero on a blocked toggle).
 """
+
 import pytest
 
 import app.routers.admin_decisions as admin_module
@@ -57,7 +58,9 @@ def test_toggle_approved_to_inactive(client, db):
 def test_toggle_inactive_to_approved(client, db):
     # MEH-2945: un-pausing runs the approval gates, so the row passes them
     # (the gated cases live in test_meh2945_unpause_gate.py).
-    producer = make_producer(db, status="inactive", images=[TEST_IMAGE], phone_verified=True)
+    producer = make_producer(
+        db, status="inactive", images=[TEST_IMAGE], phone_verified=True
+    )
     resp = _toggle(client, producer.id, _admin(db))
     assert resp.status_code == 200, resp.text
     assert resp.json()["status"] == "approved"
@@ -119,7 +122,8 @@ def test_legit_approve_from_rejected_fires_hook_once(client, db, monkeypatch):
         db, status="rejected", images=[TEST_IMAGE], phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -140,7 +144,7 @@ def test_approve_imageless_producer_is_blocked(client, db, monkeypatch):
     )
     producer = make_producer(db, status="pending")
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"] == (
@@ -152,14 +156,13 @@ def test_approve_imageless_producer_is_blocked(client, db, monkeypatch):
 
 
 def test_approve_with_image_succeeds(client, db, monkeypatch):
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -200,7 +203,8 @@ def test_approve_license_required_no_license_is_approved_without_badge(
         db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )  # producer_license_number defaults to NULL
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -217,16 +221,15 @@ def test_approve_license_required_no_license_is_approved_without_badge(
 
 def test_approve_license_required_with_license_succeeds(client, db, monkeypatch):
     """(c) license-required category + license present → approved (no override)."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     _set_license(db, producer, "1234567")
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -235,15 +238,14 @@ def test_approve_license_required_with_license_succeeds(client, db, monkeypatch)
 
 def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatch):
     """(d) non-license category + NULL license → approved (guard does not fire)."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     cat = make_category(db, name="ירקות", emoji="🥬")  # not license-required
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], category=cat, phone_verified=True
     )
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -280,7 +282,9 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
         # asserts the SUBJECT (MEH-2113), and the HTML part's own contract lives
         # in tests/test_meh2151_approval_email_cta.py.
         # MEH-3535: the wrapper now takes (db, kind, ...) and queues.
-        lambda db, kind, to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
+        lambda db, kind, to, subject, body, html=None, test_cause=False: sent.append(
+            (to, subject, body)
+        ),
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 
@@ -292,7 +296,8 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
     db.commit()
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
 
@@ -330,7 +335,7 @@ def test_approve_draft_is_blocked(client, db, monkeypatch):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
 
     assert resp.status_code == 409, resp.text
@@ -346,15 +351,13 @@ def test_approve_draft_has_no_override(client, db, monkeypatch):
     to approve something that was never submitted, and the owner pressing the
     button is the only thing that should move it.
     """
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     producer = make_producer(
         db, status="draft", images=[TEST_IMAGE], phone_verified=True
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm"
+        f"/admin/producers/{producer.id}/approve"
         "?allow_without_license=true&allow_unverified_phone=true",
         headers=auth_header(_admin(db)),
     )
@@ -414,7 +417,7 @@ def test_approve_unverified_phone_is_blocked(client, db, monkeypatch):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
 
     # 422, not 409: an approve-time CONTENT gate, like the photo and licence
@@ -428,9 +431,7 @@ def test_approve_unverified_phone_is_blocked(client, db, monkeypatch):
 def test_approve_unverified_phone_with_override_succeeds(client, db, monkeypatch):
     """?allow_unverified_phone=true — the same explicit door the licence guard
     has had since MEH-971."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], phone_verified=False
     )
@@ -457,9 +458,7 @@ def test_the_phone_override_is_audited_like_the_license_one(
     fact: the row ends up approved either way, and nothing records that a human
     chose it.
     """
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     admin = _admin(db)
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], phone_verified=False
@@ -491,9 +490,7 @@ def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, 
     otherwise the audit trail fills with lines recording overrides that never
     happened, and the signal it exists to carry is gone.
     """
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     producer = make_producer(
         db, status="pending", images=[TEST_IMAGE], phone_verified=True
     )

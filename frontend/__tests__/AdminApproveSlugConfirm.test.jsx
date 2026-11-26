@@ -93,4 +93,32 @@ describe("approve asks for the English address (MEH-3914)", () => {
     await waitFor(() => expect(screen.queryByTestId("slug-confirm-dialog")).not.toBeInTheDocument());
     expect(approveCalls()).toHaveLength(1);
   });
+
+  it("a taken address reopens the dialog on the free variant the server offers", async () => {
+    const TAKEN = {
+      response: { status: 409, data: { detail: { code: "slug_taken", message: "תפוסה", suggested: "sandra-perot-amikam" } } },
+    };
+    apiMock.post.mockImplementation((url, _body, config) => {
+      if (url !== URL) return Promise.resolve({ data: {} });
+      if (!config?.params?.slug) return Promise.reject(SLUG_REQUIRED);
+      return config.params.slug === "sandra-perot" ? Promise.reject(TAKEN) : Promise.resolve({ data: {} });
+    });
+    await clickApprove();
+    fireEvent.change(await screen.findByTestId("slug-confirm-input"), { target: { value: "sandra-perot" } });
+    fireEvent.click(screen.getByText("admin.producers.slug_confirm.confirm"));
+    await waitFor(() => expect(screen.getByTestId("slug-confirm-input").value).toBe("sandra-perot-amikam"));
+    expect(toastMock.error).toHaveBeenCalledWith("תפוסה");
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+
+  it("another refusal on the retry closes the address dialog", async () => {
+    const PHONE = { response: { status: 422, data: { detail: "הטלפון לא אומת" } } };
+    apiMock.post.mockImplementation((url, _body, config) =>
+      url !== URL ? Promise.resolve({ data: {} }) : Promise.reject(config?.params?.slug ? PHONE : SLUG_REQUIRED),
+    );
+    await clickApprove();
+    await screen.findByTestId("slug-confirm-input");
+    fireEvent.click(screen.getByText("admin.producers.slug_confirm.confirm"));
+    await waitFor(() => expect(screen.queryByTestId("slug-confirm-dialog")).not.toBeInTheDocument());
+  });
 });

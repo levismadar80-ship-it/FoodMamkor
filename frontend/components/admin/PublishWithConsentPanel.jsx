@@ -89,9 +89,9 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
       onPublished?.();
     } catch (err) {
       const detail = err?.response?.data?.detail;
-      if (detail?.code === "slug_required") {
+      if (detail?.code === "slug_required" || detail?.code === "slug_taken") {
         setSlug(detail.suggested || "");
-        setError(t("slug_needed"));
+        setError(detail.code === "slug_taken" ? detail.message : t("slug_needed"));
       } else {
         setError(detailToMessage(detail) || t("error"));
       }

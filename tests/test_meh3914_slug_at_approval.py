@@ -7,13 +7,14 @@ as the suggestion; the admin confirms it (or types another) with `?slug=`.
 """
 
 from conftest import SUBMIT_READY_IMAGE, auth_header, make_producer, make_user
-
-from app.slug_utils import latin_slug
-
-CONSENT = {"consent_confirmed": True, "consent_note": "אישרו בוואטסאפ, 26.11"}
-
+from sqlalchemy.orm import Session
 
 from app.models import User
+from app.services import producer_approval
+from app.slug_utils import latin_slug
+from tests.test_meh1817_slug_on_approve import _integrity_error
+
+CONSENT = {"consent_confirmed": True, "consent_note": "אישרו בוואטסאפ, 26.11"}
 
 
 def _admin(db):
@@ -99,7 +100,9 @@ def test_a_missing_photo_is_reported_before_the_address(client, db):
 
 
 def test_publish_with_consent_asks_for_the_address_too(client, db):
-    draft = make_producer(db, status="draft", name="סנדרה פרו", images=[SUBMIT_READY_IMAGE])
+    draft = make_producer(
+        db, status="draft", name="סנדרה פרו", images=[SUBMIT_READY_IMAGE]
+    )
     url = f"/admin/producers/{draft.id}/publish-with-consent"
     resp = client.post(url, json=CONSENT, headers=auth_header(_admin(db)))
     assert resp.status_code == 422
@@ -108,7 +111,62 @@ def test_publish_with_consent_asks_for_the_address_too(client, db):
     assert draft.status == "draft"
 
     resp = client.post(
-        url, params={"slug": "sandra-perot"}, json=CONSENT, headers=auth_header(_admin(db))
+        url,
+        params={"slug": "sandra-perot"},
+        json=CONSENT,
+        headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["slug"] == "sandra-perot"
+
+
+def test_a_taken_address_is_offered_back_not_suffixed_silently(client, db):
+    _pending(db, name="אחרת", slug="sandra-perot")
+    producer = _pending(db, name="סנדרה פרו", city="פרדס חנה")
+    resp = _approve(client, db, producer, slug="sandra-perot")
+    assert resp.status_code == 409
+    detail = resp.json()["detail"]
+    assert detail["code"] == "slug_taken"
+    assert detail["suggested"] not in ("", "sandra-perot")
+    assert detail["suggested"].startswith("sandra-perot-")
+    db.refresh(producer)
+    assert producer.status == "pending"
+    assert producer.slug is None
+    # Confirming the offered variant goes live under exactly that address.
+    assert _approve(client, db, producer, slug=detail["suggested"]).status_code == 200
+    db.refresh(producer)
+    assert producer.slug == detail["suggested"]
+
+
+def test_the_retry_after_a_slug_race_keeps_the_typed_address(client, db, monkeypatch):
+    """`_persist_approval` re-mints after a producers_slug_key race; the retry
+    must mint from the address the admin typed, not from the transliteration."""
+    producer = _pending(db, name="סנדרה פרו")
+    assert latin_slug("סנדרה פרו") != "my-bakery"
+    real_commit = Session.commit
+    real_mint = producer_approval._mint_slug_if_absent
+    state = {"armed": False, "fired": False, "minted": []}
+
+    def arming_mint(session, prod, typed_slug=None):
+        state["minted"].append(typed_slug)
+        if not state["fired"]:
+            state["armed"] = True
+        return real_mint(session, prod, typed_slug)
+
+    def commit_raising_once(self, *args, **kwargs):
+        if state["armed"]:
+            state["armed"] = False
+            state["fired"] = True
+            raise _integrity_error("producers_slug_key")
+        return real_commit(self, *args, **kwargs)
+
+    monkeypatch.setattr(producer_approval, "_mint_slug_if_absent", arming_mint)
+    monkeypatch.setattr(Session, "commit", commit_raising_once)
+    resp = _approve(client, db, producer, slug="my-bakery")
+    monkeypatch.undo()
+    assert state["fired"], "the race was never simulated"
+    assert state["minted"] == ["my-bakery", "my-bakery"], state["minted"]
+    assert resp.status_code == 200, resp.text
+    db.expire_all()
+    db.refresh(producer)
+    assert producer.slug == "my-bakery"

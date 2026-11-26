@@ -201,7 +201,7 @@ class TestJourney1RecipePipeline:
 
         # Hop 5 — admin approves → published
         ok = client.post(
-            f"/admin/recipes/{recipe_id}/approve?slug=test-farm", headers=auth_header(admin)
+            f"/admin/recipes/{recipe_id}/approve", headers=auth_header(admin)
         )
         assert ok.status_code == 200
         db.expire_all()
@@ -328,7 +328,8 @@ class TestJourney2ProducerRegistration:
         producer.phone_verified = True
         db.commit()
         ok = client.post(
-            f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
+            f"/admin/producers/{producer.id}/approve?slug=test-farm",
+            headers=auth_header(admin),
         )
         assert ok.status_code == 200, ok.text
 
@@ -586,7 +587,7 @@ class TestJourney8Experience:
 
         # Hop — approve → public
         ok = client.post(
-            f"/admin/experiences/{ex_id}/approve?slug=test-farm", headers=auth_header(admin)
+            f"/admin/experiences/{ex_id}/approve", headers=auth_header(admin)
         )
         assert ok.status_code == 200
         assert ex_id in [e["id"] for e in client.get("/experiences").json()]
@@ -684,7 +685,7 @@ class TestJourney10AuthorizationMatrix:
         assert client.get("/admin/dashboard", headers=h).status_code == 403
         assert client.get("/admin/recipes", headers=h).status_code == 403
         assert (
-            client.post(f"/admin/recipes/{uuid4()}/approve?slug=test-farm", headers=h).status_code
+            client.post(f"/admin/recipes/{uuid4()}/approve", headers=h).status_code
             == 403
         )
 
@@ -696,11 +697,11 @@ class TestJourney10AuthorizationMatrix:
         assert client.get("/admin/dashboard", headers=h).status_code == 403
         assert client.get("/admin/recipes", headers=h).status_code == 403
         assert (
-            client.post(f"/admin/recipes/{uuid4()}/approve?slug=test-farm", headers=h).status_code
+            client.post(f"/admin/recipes/{uuid4()}/approve", headers=h).status_code
             == 403
         )
         assert (
-            client.post(f"/admin/experiences/{uuid4()}/approve?slug=test-farm", headers=h).status_code
+            client.post(f"/admin/experiences/{uuid4()}/approve", headers=h).status_code
             == 403
         )
 

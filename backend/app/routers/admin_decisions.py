@@ -138,7 +138,7 @@ def approve_producer(  # noqa: PLR0913 — +slug query (MEH-3914); five FastAPI-
     # have rejected.
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
     # MEH-3914: after the content gates, so a missing photo is reported first.
-    overrides = overrides._replace(slug=assert_slug_decided(producer, slug))
+    overrides = overrides._replace(slug=assert_slug_decided(db, producer, slug))
     # MEH-1817: the approval column writes live in _apply_approval_state so the
     # retry path below can re-apply exactly the same set after a rollback.
     _apply_approval_state(producer)

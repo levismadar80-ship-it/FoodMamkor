@@ -152,10 +152,16 @@ function useProducerActions(loadAllProducers, deps) {
       // the gate-matched chip prefilled so the admin can send it in one click.
       (err) => {
         const detail = err?.response?.data?.detail;
-        if (err?.response?.status === 422 && detail?.code === "slug_required") {
+        if (detail?.code === "slug_required" || detail?.code === "slug_taken") {
+          // slug_taken (409): the typed address belongs to another business;
+          // the dialog reopens on the free variant the server proposes.
+          if (detail.code === "slug_taken") showToast.error(detail.message);
           setSlugPrompt({ producer, suggested: detail.suggested || "" });
           return;
         }
+        // Any other refusal ends the address step: the dialog would otherwise
+        // stay open over the request-changes modal or the toast below.
+        setSlugPrompt(null);
         if (err?.response?.status === 422 && typeof detail === "object" && detail?.message) {
           // A typed address was refused (slug_not_latin, …): say why, keep the dialog.
           showToast.error(detail.message);
