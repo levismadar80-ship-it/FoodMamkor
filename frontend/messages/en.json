@@ -1745,6 +1745,17 @@
     }
   },
   "admin": {
+    "business_experiences": {
+      "title": "The business's experiences",
+      "intro": "Add and update experiences here on the business's behalf, once it has agreed in writing. A new experience, and any change to an experience's content, goes to the approval queue and shows on the business page once approved.",
+      "empty": "This business has no experiences yet. Add the first one.",
+      "no_owner": "This business has no owner account yet, so an experience can't be added. You can add an event.",
+      "add": "Add an experience",
+      "consent_label": "The business agreed in writing to this experience and its details",
+      "updated": "Changes saved. The experience went back to the approval queue",
+      "created": "The experience was sent to the approval queue",
+      "load_error": "We couldn't load the experiences. Try refreshing the page."
+    },
     "business_events": {
       "title": "The business's events",
       "intro": "Add and update events here on the business's behalf, after it agreed in writing. The event shows on the business's page.",

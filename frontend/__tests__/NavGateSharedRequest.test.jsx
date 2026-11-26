@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "@testing-library/react";
  * MEH-2965 — one request per endpoint per page load, however many consumers
  * mount. Header, Footer and BottomNav mount in the same commit; each used to
  * miss the session cache (written only when the response lands) and fire its
- * own request, and `/experiences/count` is limited to 60/minute per IP.
+ * own request, and `/experiences/count` is limited to 120/minute per IP (60 until #5380).
  *
  * Shown failing against the old hooks: with three consumers each endpoint was
  * called 3 times.
