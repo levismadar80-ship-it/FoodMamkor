@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.16 (26/11): pasting a list of delivery cities (#5353) improves an
+  // existing field; the admin events panel (#5356) is for the team, not for
+  // businesses; the rest is tests and docs. Nothing new for businesses, so
+  // items: 0.
+  { version: "1.5.16", key: "v1_5_16", date: "2026-11-26", items: 0 },
   // 1.5.15 (25/11): one line for businesses, staff who handle only orders
   // (#5317, MEH-3526), approved word for word by Sapir on the release
   // thread's decision card on 25/11. The rest is the map, the home page, the
