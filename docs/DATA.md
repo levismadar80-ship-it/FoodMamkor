@@ -1307,6 +1307,19 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > public list card, the group page hero and its og:image use it; a group buy
 > has no photo of its own. No schema change.
 >
+> **MEH-1943 — the error contract for new errors.** A new error a person reads is
+> `detail = {code, message, params}`, built by `api_error_detail()` in
+> `backend/app/api_errors.py`. Its copy is `error.api.<code>` in
+> `frontend/messages/he.json` (the same words as `message`) and `en.json`;
+> `errorMessage()` in `frontend/lib/errors.js` renders that key, any other consumer
+> renders `message`. `scripts/checks/backend-error-copy-guard.sh` holds it. Codes
+> today: badge_request_pending, distance_sort_needs_location,
+> email_change_needs_password, order_no_show_too_early,
+> product_price_max_below_min, product_price_max_needs_min,
+> rejection_other_needs_reason, rescue_no_show_too_early,
+> rescue_paid_mark_needs_prepay, rescue_paid_mark_wrong_status,
+> role_producer_by_hand_refused. Each was a plain Hebrew string before.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת המייל תחילה"}` (all four gated creates — the three above plus
@@ -1538,7 +1551,7 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                radius filter, no has_physical_location filter), tiebreak created_at DESC. Attaches
                                                distance_km per row (null for a coordinate-less producer). X-Total-Count is the same
                                                number as under any other sort with the same filters (count_q untouched).
-                                               sort=distance without lat or lng → 422 "מיון לפי מרחק דורש מיקום — lat ו-lng חובה".
+                                               sort=distance without lat or lng → 422 {code: "distance_sort_needs_location", message: "כדי למיין לפי מרחק צריך לשתף את המיקום"} (MEH-1943).
                                                With radius_km the request is geo mode and the sort axis is ignored, as before.
                                                MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
                                                ids (a producer in any selected category matches). A single ?category=5 still works

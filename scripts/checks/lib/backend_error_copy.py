@@ -62,6 +62,7 @@ ALLOWED_WORDS = {
     "JPG", "JPEG", "PNG", "WebP", "GIF", "HEIC", "PDF", "CSV", "MB", "KB",
     "Excel", "URL", "SMS", "PayBox", "Bit", "Cloudinary",
 }
+PLACEHOLDER = re.compile(r"\{(\w+)\}")
 LEAKY_CALLS = {"join", "sorted", "list", "str", "repr", "set", "tuple"}
 LEAKY_NAMES = {"exc", "e", "err", "error"}
 
@@ -78,6 +79,14 @@ def _text(node: ast.AST) -> str | None:
         return None if left is None or right is None else left + right
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
+        return _text(node.left)  # "…%s" % x
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "format"
+    ):
+        return _text(node.func.value)  # "…{}".format(x)
     if isinstance(node, ast.JoinedStr):
         return "".join(
             v.value for v in node.values
@@ -101,14 +110,16 @@ def _leaky_interpolation(node: ast.AST) -> str | None:
 
 
 def _module_constants(tree: ast.Module) -> dict[str, ast.AST]:
+    """Names assigned a value anywhere in the file (module constants and
+    function locals alike); the first assignment wins."""
     out: dict[str, ast.AST] = {}
-    for node in tree.body:
+    for node in ast.walk(tree):
         if isinstance(node, ast.Assign) and len(node.targets) == 1:
             target = node.targets[0]
             if isinstance(target, ast.Name):
-                out[target.id] = node.value
+                out.setdefault(target.id, node.value)
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value:
-            out[node.target.id] = node.value
+            out.setdefault(node.target.id, node.value)
     return out
 
 
@@ -202,6 +213,10 @@ def check(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
                 fails.append(f"{rel}:{line}: E2 message differs from he.json error.api.{code}: {he_api[code]!r}")
             if code not in en_api:
                 fails.append(f"{rel}:{line}: E2 code {code!r} has no en.json error.api.{code}")
+            names = set(PLACEHOLDER.findall(msg))
+            for lang, table in (("he", he_api), ("en", en_api)):
+                if code in table and set(PLACEHOLDER.findall(table[code])) != names:
+                    fails.append(f"{rel}:{line}: E2 {lang}.json error.api.{code} placeholders differ from the message's {sorted(names)}")
     for key in sorted(set(he_api) | set(en_api)):
         if key not in emitted:
             fails.append(f"{HE_JSON}:1: E2 error.api.{key} is emitted by no {HELPER} call — a dead key")
@@ -241,6 +256,11 @@ def self_test() -> int:
         'raise HTTPException(422, detail="צ\'יפס לא זמין")\n'
         'raise HTTPException(422, detail=f"נשארו {left} יחידות")\n'
         'raise HTTPException(422, detail=api_error_detail("x_y", "שלום"))\n'
+        'raise HTTPException(422, detail="נכשל %s" % x)\n'
+        'raise HTTPException(422, detail="נכשל {}".format(x))\n'
+        'def f():\n'
+        '    msg = "שגיאה מקומית"\n'
+        '    raise HTTPException(422, detail=msg)\n'
     )
     raw, coded = scan(src)
     by_line = {line: leaks(text, node) for line, node, text in raw}
@@ -252,7 +272,7 @@ def self_test() -> int:
     expect('gershayim (ש"ח) is not a quote', by_line.get(8) == [])
     expect("geresh (צ'יפס) is not a quote", by_line.get(9) == [])
     expect("plain count interpolation passes", by_line.get(10) == [])
-    expect("raw count = 8 (helper call not counted)", len(raw) == 8)
+    expect("raw count = 11: % and .format and a function local are counted, the helper call is not", len(raw) == 11)
     expect("helper call read as (code, message)", coded == [(11, "x_y", "שלום")])
     # Anchored to real repo files (MEH-1909): the checker must see what is there.
     real = (ROOT / "backend/app/services/owner_products.py").read_text()
