@@ -783,9 +783,9 @@ def update_experience_row(
         notify_course_changed(
             db,
             ex,
-            old_meetings,
+            old_meetings,  # type: ignore[arg-type]
             background_tasks,
-            is_test_item(ex),  # type: ignore[arg-type]
+            is_test_item(ex),
         )
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
