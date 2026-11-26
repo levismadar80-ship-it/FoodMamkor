@@ -70,7 +70,13 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
   // Suspense boundary; an effect also cannot mismatch hydration (MEH-517).
   // MEH-3019: before paint (like HistoryBackLink's own read), so a map arrival
   // never paints «→ חזרה» for a frame before «חזרה למפה» replaces it.
-  const [fromMap, setFromMap] = useState(false);
+  // MEH-3856: null until that read — the server HTML and the first client
+  // render then carry the row marked data-from-map-only, which globals.css
+  // shows only when the inline flags script saw ?from=map. A link opened
+  // fresh on a phone so has the row from the first paint, instead of the row
+  // pushing the gallery down after hydration. After the read it is a plain
+  // true / false, so a later in-app visit never relies on the stale flag.
+  const [fromMap, setFromMap] = useState(/** @type {boolean | null} */ (null));
   useIsomorphicLayoutEffect(() => {
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
@@ -203,7 +209,7 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
           read this render. Margins sit on the children, so a direct arrival on
           a phone leaves no empty gap above the gallery. */}
       <div className="lg:mb-4 lg:relative" data-testid="producer-breadcrumb-block">
-        {!fromMap && !hideHistoryBack && <HistoryBackLink className="lg:hidden mb-2" />}
+        {fromMap !== true && !hideHistoryBack && <HistoryBackLink className="lg:hidden mb-2" />}
         <Breadcrumb
           // MEH-3836: room at the line's end for «חזרה למפה», always, so a
           // long name never runs under it and the link never re-wraps the line.
@@ -220,8 +226,11 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
             at its end. The page is static, so the link can only be added
             after it is on screen; on a line of its own it pushed the gallery
             and everything under it down 33px (CLS 0.19–0.22, load guard). */}
-        {fromMap && (
-          <p className="mb-2 lg:mb-0 lg:absolute lg:inset-y-0 lg:end-0 lg:flex lg:items-center">
+        {fromMap !== false && (
+          <p
+            className="mb-2 lg:mb-0 lg:absolute lg:inset-y-0 lg:end-0 lg:flex lg:items-center"
+            data-from-map-only={fromMap === null ? "" : undefined}
+          >
             {/* MEH-3085: the site BackLink. /map restores the camera the
                 visitor left on its own (lib/map-view-state.js). */}
             <BackLink href="/map" data-testid="back-to-map" label={t("producer.detail.back_to_map")} />
