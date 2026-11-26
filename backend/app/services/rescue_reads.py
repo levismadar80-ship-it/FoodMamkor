@@ -22,6 +22,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
+from app.schemas.payment_link import prepay_link
 from app.data.cities import canonical_city
 from app.models.models import (
     Producer,
@@ -268,6 +269,9 @@ def offer_detail(
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None
+    link = prepay_link(producer.payment_info)  # MEH-3895
+    out["producer"]["prepay_link"] = link
+    out["producer"]["prepay_timing"] = (producer.payment_info or {}).get("timing") if link else None
     return out
 
 

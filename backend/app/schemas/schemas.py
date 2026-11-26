@@ -11,6 +11,7 @@ from pydantic import (
 
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
+from app.schemas.payment_link import payment_link
 
 # MEH-2236: the letter class behind MEH-555's "at least 3 letter characters"
 # floor. Hebrew + Latin + **Arabic letters**. Arabic was added because MEH-2020
@@ -117,7 +118,8 @@ def _validate_order_day(day: str, hours: Any) -> list[dict[str, str]]:
 PAYMENT_METHODS = ("bit", "paybox", "bank_transfer", "cash", "credit_card")
 PAYMENT_TIMINGS = ("advance", "on_pickup", "deposit")
 PAYMENT_NOTE_MAX = 80
-_PAYMENT_INFO_KEYS = frozenset({"methods", "timing", "note"})
+# MEH-3895: "link" = the business's own prepay link (schemas/payment_link.py).
+_PAYMENT_INFO_KEYS = frozenset({"methods", "timing", "note", "link"})
 _LETTER_RE = re.compile(r"[א-תa-zA-Z]")
 
 
@@ -172,7 +174,12 @@ def _payment_info_validator(v: Any) -> dict[str, Any] | None:
         "timing": timing,
         "note": _payment_note(v.get("note")),
     }
-    if not out["methods"] and out["timing"] is None and out["note"] is None:
+    link = payment_link(v.get("link"))
+    if link is not None:
+        # MEH-3895: stored only when set, so every row written before stays
+        # byte-equal to what the dashboard reads back.
+        out["link"] = link
+    if not out["methods"] and out["timing"] is None and out["note"] is None and link is None:
         return None
     return out
 

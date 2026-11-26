@@ -298,6 +298,11 @@ class RescueProducerDetail(RescueProducerSummary):
     reviews_count: int = 0
     # The business's own one-line description, so the page says who it is.
     short_description: str | None = None
+    # MEH-3895: the business's own prepay link (Bit / PayBox / its clearing),
+    # only when it takes payment before pickup; None = pay at the counter.
+    prepay_link: str | None = None
+    # Which of the two: the whole price before pickup, or a deposit.
+    prepay_timing: Literal["advance", "deposit"] | None = None
 
 
 class RescueOfferDetailOut(RescueOfferPublicOut):

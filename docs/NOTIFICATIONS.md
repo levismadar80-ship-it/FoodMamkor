@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-96 send sites · 93 on a single channel.
+97 send sites · 94 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -99,6 +99,7 @@
 | `services/registration_emails.py` | `send_waitlist_confirmation` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_waitlist_offer` | מייל | לקוחה |
 | `services/report_notifications.py` | `notify_admin_new_report` | מייל | בית עסק / מנהלת |
+| `services/rescue_business_emails.py` | `send_business_refund_email` | מייל | בעלת העסק |
 | `services/rescue_business_emails.py` | `send_business_reservation_email` | מייל | בעלת העסק |
 | `services/rescue_digest.py` | `_digest_one` | וואטסאפ | בעלת העסק |
 | `services/rescue_emails.py` | `_send_bag_cancelled` | מייל | לקוחה |

@@ -5951,7 +5951,9 @@
         "save_success": "Saved",
         "save_error": "Save failed. Please try again.",
         "revert_cta": "Discard changes",
-        "summary_empty": "Not set"
+        "summary_empty": "Not set",
+        "link_label": "Prepayment link (optional)",
+        "link_help": "A link from Bit, PayBox or your own card payments. Customers see it after they reserve a surprise bag or join a group buy, and the money goes straight to you."
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -7339,7 +7341,8 @@
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
-      "cancel_no": "No, keep it"
+      "cancel_no": "No, keep it",
+      "pay_ahead": "Pay in advance: {price} ₪"
     },
     "review": {
       "title": "How was the bag?",
@@ -8475,5 +8478,11 @@
     "invalid_title": "This link is not valid",
     "invalid_body": "You can ask the business to send a new link.",
     "error": "We couldn't add you. You can try again."
+  },
+  "prepay": {
+    "cta": "Pay",
+    "via": "Payment goes straight to the business, via {host}",
+    "ask_advance": "The business asks you to pay in advance",
+    "ask_deposit": "The business asks for a deposit in advance"
   }
 }

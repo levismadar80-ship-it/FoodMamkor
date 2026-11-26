@@ -21757,6 +21757,32 @@
             "title": "Name",
             "type": "string"
           },
+          "prepay_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepay Link"
+          },
+          "prepay_timing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "advance",
+                  "deposit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepay Timing"
+          },
           "reviews_count": {
             "default": 0,
             "title": "Reviews Count",
