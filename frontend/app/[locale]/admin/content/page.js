@@ -134,7 +134,9 @@ function CategoriesEditor() {
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="space-y-2">
-        <div className="flex gap-2">
+        {/* Phone: the English address takes its own row under the name, so
+            its placeholder is never cut (390 px, MEH-3911 screenshots). */}
+        <div className="flex flex-wrap sm:flex-nowrap gap-2">
           <Input inline size="md"
             placeholder={t("content.categories.name_placeholder")}
             value={name}
@@ -150,7 +152,7 @@ function CategoriesEditor() {
               setSlug(e.target.value.trim().toLowerCase());
               setSlugInvalid(false);
             }}
-            className="flex-1 min-w-0"
+            className="basis-full order-last sm:order-none sm:basis-0 sm:flex-1 min-w-0"
           />
           <Button
             type="submit"
