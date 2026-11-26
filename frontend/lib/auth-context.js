@@ -62,6 +62,9 @@ async function replayPostLoginAction(t) {
   }
 }
 
+/** MEH-3718: the bootstrap state waits for the streamed reveal, then lands in a transition. */
+const publish = (/** @type {() => void} */ update) => afterStreamSettled(() => startTransition(update));
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +95,7 @@ export function AuthProvider({ children }) {
   // queued for its reveal (`$~`, up to ~300 ms after the first paint): React
   // then renders it again in the browser beside the hidden server copy. So the
   // bootstrap state also waits for the reveal (lib/stream-settled.js).
-  const publish = (/** @type {() => void} */ update) => afterStreamSettled(() => startTransition(update));
+  // (`publish`, at module scope so loadSession depends on nothing that changes.)
   const loadSession = () => {
     // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
