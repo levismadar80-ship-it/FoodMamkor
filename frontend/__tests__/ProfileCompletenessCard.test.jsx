@@ -232,12 +232,26 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(screen.queryByTestId("completeness-footer")).toBeNull();
   });
 
-  it("many missing (fresh signup: no photo, no product, phone not verified) → one open row, the photo", () => {
+  // MEH-3886: the photo is the next step, and the WhatsApp row is open too, so
+  // the code button is never hidden behind other steps (Farmerim, 26/11).
+  it("many missing (fresh signup: no photo, no product, phone not verified) → the photo row and the WhatsApp row are open", () => {
     render(<ProfileCompletenessCard producer={{ ...draft, images: [], products: [], phone_verified: false }} />);
     expect(counter()).toBe("1 מתוך 4");
-    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-image"]);
+    expect(openRows().map((r) => r.dataset.testid)).toEqual([
+      "completeness-open-image",
+      "completeness-open-phone_verified",
+    ]);
     expect(screen.getByTestId("completeness-row-details").dataset.done).toBe("true");
-    // WhatsApp is not open yet, so the OTP card is not mounted
+    expect(screen.getByTestId("completeness-row-product").dataset.done).toBe("false");
+    const phone = screen.getByTestId("completeness-open-phone_verified");
+    expect(phone.id).toBe("phone-verify");
+    expect(within(phone).getByTestId("phone-verify-card")).toBeInTheDocument();
+  });
+
+  it("product missing, phone verified → only the product row is open, no OTP card", () => {
+    render(<ProfileCompletenessCard producer={{ ...draft, products: [], phone_verified: true }} />);
+    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-product"]);
+    expect(screen.getByTestId("completeness-row-phone_verified").dataset.done).toBe("true");
     expect(screen.queryByTestId("phone-verify-card")).toBeNull();
   });
 
