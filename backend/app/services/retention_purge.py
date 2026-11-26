@@ -14,6 +14,7 @@ Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           bag's pickup_end (the no-show rule's own window).
           MEH-3535: also `email_outbox`, 30 days after created_at.
           MEH-3839: also `email_events`, 30 days after created_at.
+          MEH-3896: also `share_links`, 90 days after expires_at.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -58,6 +59,7 @@ from sqlalchemy.orm import Session
 
 from app.models.email_events import EmailEvent  # MEH-3839
 from app.models.email_outbox import EmailOutbox  # MEH-3535
+from app.models.share_links import ShareLink  # MEH-3896
 from app.models.models import (
     AlertLog,
     ContactClick,
@@ -80,6 +82,9 @@ logger = logging.getLogger(__name__)
 ALERT_LOG_RETENTION_DAYS = 30
 EMAIL_OUTBOX_RETENTION_DAYS = 30  # MEH-3535
 EMAIL_EVENTS_RETENTION_DAYS = 30  # MEH-3839
+#: MEH-3896: a short link is dead at expires_at, but the «send me a new link»
+#: request still reads it for PRODUCER_CLAIM_RENEW_GRACE_DAYS (90) after.
+SHARE_LINK_RETENTION_AFTER_EXPIRY = timedelta(days=90)
 
 #: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
 #: (approved 6/11). Counted from the event's / experience's own date.
@@ -109,6 +114,7 @@ class PurgeResult:
     tombstones_deleted: int = 0
     email_outbox_deleted: int = 0
     email_events_deleted: int = 0
+    share_links_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -312,6 +318,14 @@ def run_purge(
         now - timedelta(days=EMAIL_EVENTS_RETENTION_DAYS),
     )
 
+    # MEH-3896: short preview / claim links, once even the renew window is over.
+    share_links = _delete_in_batches(
+        db,
+        ShareLink,
+        ShareLink.expires_at,
+        now - SHARE_LINK_RETENTION_AFTER_EXPIRY,
+    )
+
     result = PurgeResult(
         boundary,
         views,
@@ -323,6 +337,7 @@ def run_purge(
         tombstones,
         outbox,
         events,
+        share_links,
     )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

@@ -259,3 +259,32 @@ describe("draft-preview link", () => {
     expect(JSON.stringify(event)).not.toContain(TOKEN);
   });
 });
+
+/**
+ * MEH-3896 — the short links. /v/<code> stays in the address while the
+ * preview is open; /c/<code> is in the first page view before ClaimClient
+ * swaps it to /claim. The code is 12 base62 characters.
+ */
+describe("short preview and claim links", () => {
+  const CODE = "K7m2Qx9aPbR4";
+  it.each([
+    [`https://mehamakor.co.il/v/${CODE}`, "https://mehamakor.co.il/v/[token]"],
+    [`https://mehamakor.co.il/c/${CODE}`, "https://mehamakor.co.il/c/[token]"],
+    [`/en/v/${CODE}?utm=x`, "/en/v/[token]?utm=x"],
+    [`/api/producer-preview/${CODE}`, "/api/producer-preview/[token]"],
+    [`/login?redirect=%2Fhe%2Fc%2F${CODE}`, "/login?redirect=%2Fhe%2Fc%2F[token]"],
+  ])("%s", (input, expected) => {
+    expect(redactClaimPath(input)).toBe(expected);
+  });
+
+  it.each([
+    "webpack://_N_E/./app/[locale]/v/[token]/page.js",
+    "webpack://_N_E/./app/[locale]/c/[token]/page.js",
+    // 13 characters: not a code, a word.
+    "/c/abcdefghijklm",
+    // A business slug that merely starts with a 12-letter word.
+    "/v/abcdefghijkl-bakery",
+  ])("leaves %s alone", (value) => {
+    expect(redactClaimPath(value)).toBe(value);
+  });
+});

@@ -6,6 +6,7 @@
     "account-deleted",
     "admin",
     "business-gone",
+    "c",
     "claim",
     "contact",
     "delivery-waitlist",
@@ -42,6 +43,7 @@
     "staff-invite",
     "terms",
     "unsubscribe",
+    "v",
     "verify-email"
   ]
 }

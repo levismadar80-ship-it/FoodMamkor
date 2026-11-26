@@ -110,6 +110,9 @@ const ROUTES = {
   "/claim/[token]": { kind: "noindex" },
   "/contact": { kind: "noindex" },
   "/draft-preview/[token]": { kind: "noindex" },
+  // MEH-3896: the short forms of the preview and claim links.
+  "/v/[token]": { kind: "noindex" },
+  "/c/[token]": { kind: "noindex" },
   "/delivery-waitlist/host-confirm": { kind: "noindex" },
   "/delivery-waitlist/unsubscribe": { kind: "noindex" },
   "/favorites": { kind: "noindex" },

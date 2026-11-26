@@ -48,6 +48,7 @@ import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { useNewTools } from "@/hooks/useWhatsNew";
 import { dashboardTabForHref } from "@/lib/business-features";
+import OwnerAssistant from "@/components/owner-assistant/OwnerAssistant";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -347,6 +348,12 @@ export default function ProducerDashboardLayout({ children }) {
               <Eye size={20} aria-hidden="true" />
               <span data-testid="dashboard-view-page-label">{t("view_page")}</span>
             </Link>
+          )}
+          {/* MEH-3902: the dashboard assistant — the owner only (staff see one
+              screen, and the route is require_producer). After «צפייה בעמוד»
+              so the tabs keep their places. */}
+          {user.role === "producer" && user.producer_id && (
+            <OwnerAssistant className={isOrganizer ? "sm:ms-auto" : ""} />
           )}
         </div>
       </nav>

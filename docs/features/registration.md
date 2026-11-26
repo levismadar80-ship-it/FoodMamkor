@@ -10,6 +10,7 @@
 * `frontend/app/[locale]/claim/` · `frontend/app/[locale]/claim/[token]/`
 * `frontend/app/[locale]/owner-invite/` · `frontend/app/[locale]/owner-invite/[token]/`
 * `frontend/app/[locale]/draft-preview/[token]/` — הטיוטה כמו שתיראה באתר, לקריאה בלבד.
+* `frontend/app/[locale]/v/[token]/` · `frontend/app/[locale]/c/[token]/` — הקישורים הקצרים לתצוגה ולבעלות (MEH-3896), `mehamakor.co.il/v/<12 תווים>` ו-`/c/<12 תווים>`. הקישורים הארוכים הישנים ממשיכים לעבוד עד שפג תוקפם.
 * `frontend/app/[locale]/recommend/` — המלצה על בית עסק מצד הקהל.
 
 **קבצים מרכזיים**
@@ -20,6 +21,7 @@
 * `frontend/app/[locale]/claim/claim-metadata.js` — התצוגה המקדימה של קישור ה-claim בוואטסאפ: עם טוקן תקף היא מציגה את שם העסק ואת התמונה הראשית; טוקן שפג או בוטל, או תקלה בשרת, משאירים את הכרטיס הכללי. הטוקן לא נכתב לאף תגית (MEH-3403).
 * `backend/app/services/auth_notifications.py` — `notify_admin_draft_claimed`: מייל לאדמין כשבעלת עסק קולטת טיוטה (MEH-3410; בלי וואטסאפ מאז MEH-3589).
 * `backend/app/services/admin_draft_missing.py` · `frontend/app/[locale]/admin/producers/AdminDraftMissing.jsx` — מה חסר בטיוטה שנקלטה, ברשימת האדמין (MEH-3409).
+* `backend/app/services/share_links.py` · `backend/app/models/share_links.py` — הקוד הקצר: נוצר באקראי, נשמר רק כ-hash, ונבדק מול הסוג (תצוגה או בעלות) ומול התוקף (MEH-3896).
 * `backend/app/routers/producer_draft_preview.py` · `backend/app/services/draft_preview.py` · `frontend/components/admin/DraftPreviewLinkPanel.jsx` (also renders `frontend/components/admin/AdminLinkPanel.jsx`) · `frontend/components/admin/PublishWithConsentPanel.jsx` · `frontend/scripts/capture-page-video.mjs`
 * `frontend/app/[locale]/owner-invite/OwnerInviteConsents.jsx` — תיבת ההסכמה האחת (תנאים + הצהרת רישוי, ההצהרה המלאה נפתחת בלחיצה) והצהרת החקלאית, משותפת להזמנת בעלים ול-claim. בהזמנת בעלים הטופס נפתח שלב אחרי שלב (מייל, קוד, סיסמה ותיבה), ויש «המשך עם Google» שמעביר לטופס של חשבון קיים (MEH-3662). כניסה עם Google שנעשתה בדף הזה לפני פחות מ-5 דקות מחליפה שם את הקוד במייל (MEH-3675, `backend/app/services/owner_invite_google.py`, `frontend/app/[locale]/owner-invite/useFreshGoogleCredential.js`).
 * `backend/app/services/pending_nudge.py` — מיילי ההמשך לעסק שלא סיים.

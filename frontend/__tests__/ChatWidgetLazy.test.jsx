@@ -58,14 +58,19 @@ describe("ChatWidgetLazy", () => {
     expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-business-only", "false");
   });
 
-  it("keeps the FAB on the producer dashboard subtree", async () => {
-    mockUsePathname.mockReturnValue("/producer/dashboard/edit");
-    render(<ChatWidgetLazy />);
-    expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
-  });
+  // MEH-3902: the owner dashboard has its own assistant (OwnerAssistant in
+  // the tab row), so the site chat is off on the whole subtree, root included.
+  it.each(["/producer/dashboard", "/producer/dashboard/edit", "/producer/dashboard/events/new"])(
+    "does NOT render the site widget on the owner dashboard %s",
+    (route) => {
+      mockUsePathname.mockReturnValue(route);
+      const { container } = render(<ChatWidgetLazy />);
+      expect(container).toBeEmptyDOMElement();
+    },
+  );
 
-  it("keeps the FAB on the dashboard root (exact, no trailing slash)", async () => {
-    mockUsePathname.mockReturnValue("/producer/dashboard");
+  it("still renders on a page that only shares the prefix (/producer/dashboards-help)", async () => {
+    mockUsePathname.mockReturnValue("/producer/dashboards-help/x");
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
   });
@@ -80,8 +85,7 @@ describe("ChatWidgetLazy", () => {
   // MEH-2512: on phones the launcher sat over primary form buttons (login
   // submit, register preflight, password field, contact input). Form pages
   // ask the widget to skip mobile; desktop keeps it.
-  // MEH-2602: the owner dashboard too — the launcher covered the availability chips.
-  it.each(["/login", "/register", "/register/producer", "/forgot-password", "/reset-password", "/contact", "/producer/dashboard", "/producer/dashboard/edit"])(
+  it.each(["/login", "/register", "/register/producer", "/forgot-password", "/reset-password", "/contact"])(
     "asks the widget to hide on mobile on the form page %s",
     async (route) => {
       mockUsePathname.mockReturnValue(route);
