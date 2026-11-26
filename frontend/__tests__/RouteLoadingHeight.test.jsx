@@ -31,6 +31,14 @@ describe("route loading fallback (MEH-2754)", () => {
     // The loader is inside it, still announcing to assistive tech.
     expect(box.querySelector('[role="status"]')).not.toBeNull();
   });
+
+  // MEH-3878: the marker the globals.css rule reads to keep the footer out of
+  // sight while the loader shows (the browser half: e2e/flows/51-footer-waits-for-page.spec.ts).
+  it("carries data-route-loader, the marker that holds the footer back", async () => {
+    const { default: Loading } = await import("@/app/[locale]/loading");
+    render(<Loading />);
+    expect(screen.getByTestId("route-loading").hasAttribute("data-route-loader")).toBe(true);
+  });
 });
 
 /**
