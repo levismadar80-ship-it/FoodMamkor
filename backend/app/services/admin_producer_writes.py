@@ -283,6 +283,7 @@ def admin_create_producer_row(
         # MEH-213 — location mode
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
+        by_arrangement=data.by_arrangement,  # MEH-2447
         delivery_nationwide=data.delivery_nationwide,
         # MEH-1255: nationwide exclusion list — schema validator already
         # rejected excluded-without-nationwide on create.

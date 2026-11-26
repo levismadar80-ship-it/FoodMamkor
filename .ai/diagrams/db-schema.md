@@ -630,6 +630,10 @@ erDiagram
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
 
+> **MEH-2447 `producers.by_arrangement` (migration `b8ee10dc69a9`):** bool, NOT
+> NULL, default false — the owner's «בתיאום מראש» answer. No CHECK: readers AND it
+> with `has_physical_location`.
+
 > **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
 > `__table_args__`):** `producers` carries two CHECK constraints — a producer
 > must be reachable (`producer_location_mode`: `has_physical_location OR

@@ -61,6 +61,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | kashrut certificate | `KashrutCard` | `upload_label` (format + size) | ✓ `filter_hint` — unlocks the כשר filter | — | ✓ `intro` | ok |
 | address | `LocationCard` | `heading` | ✓ `current_prefix` | — | ✓ `subtitle` — position on the map | ok |
 | `has_physical_location` | `DeliveryCard` | ✓ | ✓ `scope_helper` | — | ✓ `scope_helper` (MEH-1540) | ok |
+| `by_arrangement` | `DeliveryCard` | ✓ `place_arranged` | ✓ `subtitle` | — | ✓ `map_preview_label` — the «בתיאום מראש» tag shown live (MEH-2447) | ok |
 | `offers_delivery` | `DeliveryCard` | ✓ | ✓ `scope_helper` | — | ✓ | ok |
 | `delivery_nationwide` | `DeliveryCard` | ✓ | ✓ | — | ✓ | ok |
 | delivery cities | `DeliveryCard` | `delivery_cities_label` | ✓ `scope_helper` | — | ✓ | ok |
@@ -259,6 +260,7 @@ surface; **"לא ידוע"** means no renderer was found, not that none exists.
 | 52 | `delivery_days_min` | `producers.delivery_days_min` | other | `DeliveryTimeFields.jsx` «מ-» (MEH-3511) | `DeliveryTerms.jsx` «מגיע תוך {min}–{max} ימי עסקים» | `delivery_days_max`, the zone's own pair | L | label «זמן משלוח (ימי עסקים)», hint gives the example «עד 5»; 1..30 and from ≤ to, Hebrew 422 | ✓ |
 | 53 | `delivery_days_max` | `producers.delivery_days_max` | other | `DeliveryTimeFields.jsx` «עד» (MEH-3511) | `DeliveryTerms.jsx` | `delivery_days_min` | L | «עד» alone is valid and reads «מגיע תוך עד X ימי עסקים» | ✓ |
 | 54 | `logo_url` | `producers.logo_url` | other | `LogoCard.jsx` at the top of «תמונות» (MEH-3611) | `ProducerHeader.jsx` / `ImageGallery.jsx` masthead · the bag page business row — beside the name | `images`, `owner_photo_url` | L | label «לוגו», where-line «מופיע ליד שם העסק בדף העסק ובדף הסל», hint gives the example «מומלץ לוגו מרובע על רקע בהיר»; without a logo the business page shows no mark, the bag page row keeps the first letter | ✓ |
+| 55 | `by_arrangement` | `producers.by_arrangement` | scope | `DeliveryCard.jsx` «איסוף או ביקור אצלכם, בתיאום מראש» (MEH-2447) | `MapProducerCard.jsx` tag · `ProducerSections.jsx` location line | `has_physical_location` (read together, no CHECK) | M | checkbox, exclusive with «בשעות קבועות»; the live map-tag preview is its where-it-appears | ✓ |
 
 **Row count: 54** — row 54 (`logo_url`, MEH-3611) added on 21/11 (`pickup_note`, MEH-3593, the same day, is in the locations table, not numbered here); rows 51–53 (the MEH-3511 delivery terms) added on 20/11; row 48 (`payment_info`) added by MEH-3035 on 13/11; row 45 (`special_hours`) added by MEH-2264 on 05/09; rows 1–44 are the MEH-1539 freeze. _This line used to read "`len(_PRODUCER_WRITABLE_FIELDS)` = 44"; that stopped being true as fields were closed (MEH-1851/1856/1938 batches) and the ratchet measured 34 writable on 05/09. The writable count is derived at run time by `scripts/checks/dashboard-field-guidance-ratchet.sh` and is not restated here._
 

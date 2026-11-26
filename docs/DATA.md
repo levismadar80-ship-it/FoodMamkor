@@ -262,6 +262,7 @@ producers (
   has_delivery bool, pickup_points bool,
   -- MEH-213 location mode + MEH-1255 nationwide exclusion list
   has_physical_location bool, offers_delivery bool,
+  by_arrangement bool NOT NULL default false (MEH-2447: «איסוף או ביקור בתיאום מראש»; read only AND has_physical_location — no «קנייה במקום» / not in ?on_site; written by POST /auth/register/producer, PUT /producers/me, admin create/update; no CHECK),
   delivery_nationwide bool, delivery_excluded_cities text[] NOT NULL default '{}',
   admin_notes, is_available_today bool (legacy column — no reader, no writer, in no response since MEH-2272; dropped by MEH-2273),
   avg_rating float, reviews_count int,

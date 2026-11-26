@@ -10768,6 +10768,11 @@
             "title": "As Draft",
             "type": "boolean"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "category_ids": {
             "items": {
               "type": "integer"
@@ -11154,6 +11159,11 @@
             "default": 0,
             "title": "Business Days Waiting",
             "type": "integer"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
           },
           "categories": {
             "default": [],
@@ -12403,6 +12413,17 @@
             ],
             "title": "Availability State"
           },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
+          },
           "category_ids": {
             "anyOf": [
               {
@@ -13497,6 +13518,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -14460,6 +14486,11 @@
             "default": 0,
             "title": "Avg Rating",
             "type": "number"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
           },
           "categories": {
             "default": [],
@@ -16264,6 +16295,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -17636,6 +17672,11 @@
             ],
             "title": "Address"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "category_ids": {
             "items": {
               "type": "integer"
@@ -18066,6 +18107,17 @@
               }
             ],
             "title": "Availability State"
+          },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
           },
           "category_ids": {
             "anyOf": [

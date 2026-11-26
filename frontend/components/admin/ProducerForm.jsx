@@ -33,6 +33,7 @@ import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Checkbox from "@/components/ui/Checkbox";
+import { placeChecks, togglePlace } from "@/lib/fulfillment-tags";
 
 // MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -225,6 +226,7 @@ const EMPTY = {
   images: [],
   // MEH-213 — location mode
   has_physical_location: true,
+  by_arrangement: false, // MEH-2447
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
@@ -239,6 +241,7 @@ const EMPTY = {
 /** MEH-3475: the delivery fields the edit page's panel owns. */
 const DELIVERY_GROUP = [
   "has_physical_location",
+  "by_arrangement",
   "offers_delivery",
   "delivery_nationwide",
   "delivery_area_cities",
@@ -434,6 +437,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         opening_hours: initial.opening_hours ?? "",
         // MEH-213 — location mode
         has_physical_location: initial.has_physical_location ?? true,
+        by_arrangement: initial.by_arrangement ?? false,
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
         // MEH-903 A: the single cities input is populated from the delivery_areas
@@ -610,6 +614,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       images: form.images,
       // MEH-213 — location mode
       has_physical_location: form.has_physical_location,
+      by_arrangement: form.has_physical_location && form.by_arrangement,
       offers_delivery: form.offers_delivery,
       delivery_nationwide: form.delivery_nationwide,
       // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
@@ -1103,13 +1108,23 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       {!producerId && (
       <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
-          <Checkbox
-            className="flex items-center gap-2 text-sm"
-            checked={form.has_physical_location}
-            onChange={(e) => update("has_physical_location", e.target.checked)}
-          >
-            {t("producers.form.fields.has_physical_location")}
-          </Checkbox>
+          {/* MEH-2447: fixed hours or by arrangement, so a farm is no longer
+              saved as «חנות פיזית». Same pair as the owner's DeliveryCard. */}
+          {/** @type {("onsite"|"arranged")[]} */ (["onsite", "arranged"]).map((axis) => (
+            <Checkbox
+              key={axis}
+              className="flex items-center gap-2 text-sm"
+              data-testid={`admin-place-${axis}`}
+              checked={placeChecks(form.has_physical_location, form.by_arrangement)[axis]}
+              onChange={(e) => {
+                const next = togglePlace(axis, e.target.checked);
+                update("has_physical_location", next.hasPhysical);
+                update("by_arrangement", next.byArrangement);
+              }}
+            >
+              {t(`producers.form.fields.place_${axis}`)}
+            </Checkbox>
+          ))}
           <Checkbox
             className="flex items-center gap-2 text-sm"
             checked={form.offers_delivery}

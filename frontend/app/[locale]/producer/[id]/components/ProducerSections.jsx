@@ -902,7 +902,13 @@ export default function ProducerSections({
               turn up unannounced at a home producer. */}
           {/* MEH-3028: a fact line like the city above it, so it leads with
               its kind's icon (clock) — the city had a pin and this had none. */}
-          {!storeHours && (
+          {/* MEH-2447: the owner's own «בתיאום מראש» answer wins over the
+              hours guess — said even when hours are listed. */}
+          {producer.by_arrangement ? (
+            <FactLine icon={Clock} data-testid="location-by-arrangement" className="text-sm text-fg-muted mb-3">
+              {t("producer.detail.sections.location_by_arrangement")}
+            </FactLine>
+          ) : !storeHours && (
             <FactLine icon={Clock} data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
             </FactLine>

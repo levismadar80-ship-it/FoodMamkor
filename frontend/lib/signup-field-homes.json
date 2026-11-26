@@ -28,6 +28,7 @@
     "referral_source_other": { "shown_with": "referral_source" },
     "has_physical_location": { "signup": "testid:register-fulfilment", "dashboard": "delivery" },
     "offers_delivery": { "signup": "testid:register-fulfilment", "dashboard": "delivery" },
+    "by_arrangement": { "signup": "testid:register-fulfilment", "dashboard": "delivery" },
     "delivery_nationwide": { "dashboard": "delivery" },
     "delivery_cities": { "dashboard": "delivery" },
     "delivery_areas": { "dashboard": "delivery" },

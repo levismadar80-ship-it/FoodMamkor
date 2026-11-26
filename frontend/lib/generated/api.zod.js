@@ -1078,6 +1078,7 @@ export const listProducersAdminProducersGetResponseAmbassadorDefault = false;
 export const listProducersAdminProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const listProducersAdminProducersGetResponseAvgRatingDefault = 0;
 export const listProducersAdminProducersGetResponseBusinessDaysWaitingDefault = 0;
+export const listProducersAdminProducersGetResponseByArrangementDefault = false;
 export const listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersAdminProducersGetResponseCategoriesDefault = [];
 export const listProducersAdminProducersGetResponseCoverageCtaEnabledDefault = true;
@@ -1166,6 +1167,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersAdminProducersGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1413,6 +1415,7 @@ export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = fa
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminCreateProducerAdminProducersPostResponseAvgRatingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault = 0;
+export const adminCreateProducerAdminProducersPostResponseByArrangementDefault = false;
 export const adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const adminCreateProducerAdminProducersPostResponseCategoriesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseCoverageCtaEnabledDefault = true;
@@ -1501,6 +1504,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminCreateProducerAdminProducersPostResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1745,6 +1749,7 @@ export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault =
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const pendingProducersAdminProducersPendingGetResponseAvgRatingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault = 0;
+export const pendingProducersAdminProducersPendingGetResponseByArrangementDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseCoverageCtaEnabledDefault = true;
@@ -1833,6 +1838,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), pendingProducersAdminProducersPendingGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -2150,6 +2156,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefaul
 export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseByArrangementDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
@@ -2238,6 +2245,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -2482,6 +2490,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDef
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault = 0;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseByArrangementDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCoverageCtaEnabledDefault = true;
@@ -2570,6 +2579,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -5912,6 +5922,7 @@ export const ProducerNameCheckProducerNameCheckGetResponse = /*#__PURE__*/ zod.o
 export const readDraftPreviewProducerPreviewTokenGetResponseAmbassadorDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const readDraftPreviewProducerPreviewTokenGetResponseAvgRatingDefault = 0;
+export const readDraftPreviewProducerPreviewTokenGetResponseByArrangementDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesItemIsSystemDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseCoverageCtaEnabledDefault = true;
@@ -5991,6 +6002,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), readDraftPreviewProducerPreviewTokenGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6178,6 +6190,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
 export const listProducersProducersGetResponseAmbassadorDefault = false;
 export const listProducersProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const listProducersProducersGetResponseAvgRatingDefault = 0;
+export const listProducersProducersGetResponseByArrangementDefault = false;
 export const listProducersProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersProducersGetResponseCategoriesDefault = [];
 export const listProducersProducersGetResponseDeliversDefault = false;
@@ -6242,6 +6255,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersProducersGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6387,6 +6401,7 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
 export const createProducerProducersPostResponseAmbassadorDefault = false;
 export const createProducerProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
 export const createProducerProducersPostResponseAvgRatingDefault = 0;
+export const createProducerProducersPostResponseByArrangementDefault = false;
 export const createProducerProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const createProducerProducersPostResponseCategoriesDefault = [];
 export const createProducerProducersPostResponseCoverageCtaEnabledDefault = true;
@@ -6466,6 +6481,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), createProducerProducersPostResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6653,6 +6669,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 export const getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault = 0;
+export const getProducerBySlugProducersBySlugSlugGetResponseByArrangementDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseCoverageCtaEnabledDefault = true;
@@ -6732,6 +6749,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6931,6 +6949,7 @@ export const ProducersCountProducersCountGetResponse = /*#__PURE__*/ zod.unknown
 export const getMyProducerProducersMeGetResponseAmbassadorDefault = false;
 export const getMyProducerProducersMeGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getMyProducerProducersMeGetResponseAvgRatingDefault = 0;
+export const getMyProducerProducersMeGetResponseByArrangementDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesDefault = [];
 export const getMyProducerProducersMeGetResponseCoverageCtaEnabledDefault = true;
@@ -7017,6 +7036,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getMyProducerProducersMeGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -7226,6 +7246,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
 export const updateMyProducerProducersMePutResponseAmbassadorDefault = false;
 export const updateMyProducerProducersMePutResponseAvailabilityStateDefault = `accepting_orders`;
 export const updateMyProducerProducersMePutResponseAvgRatingDefault = 0;
+export const updateMyProducerProducersMePutResponseByArrangementDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesDefault = [];
 export const updateMyProducerProducersMePutResponseCoverageCtaEnabledDefault = true;
@@ -7312,6 +7333,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), updateMyProducerProducersMePutResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -9423,6 +9445,7 @@ export const RandomProducerProducersRandomGetResponse = /*#__PURE__*/ zod.object
 export const getProducerProducersProducerIdGetResponseAmbassadorDefault = false;
 export const getProducerProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getProducerProducersProducerIdGetResponseAvgRatingDefault = 0;
+export const getProducerProducersProducerIdGetResponseByArrangementDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesDefault = [];
 export const getProducerProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
@@ -9502,6 +9525,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerProducersProducerIdGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -10838,6 +10862,7 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
 export const getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault = `accepting_orders`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault = 0;
+export const getFavoritesUsersMeFavoritesGetResponseProducerByArrangementDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliversDefault = false;
@@ -10904,6 +10929,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),

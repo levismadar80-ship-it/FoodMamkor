@@ -294,7 +294,7 @@ async function openNewProducer(page: Page): Promise<void> {
 }
 const saveBtn = (page: Page) => page.getByRole("button", { name: "צור עסק" });
 const typeSection = (page: Page) => page.getByTestId("business-type-section");
-const physical = (page: Page) => page.getByRole("checkbox", { name: "חנות פיזית (קבלת לקוחות)" });
+const physical = (page: Page) => page.getByTestId("admin-place-onsite"); // MEH-2447: «קנייה או איסוף במקום, בשעות קבועות»
 const delivery = (page: Page) => page.getByRole("checkbox", { name: "משלוחים", exact: true });
 const nationwide = (page: Page) => page.getByRole("checkbox", { name: "משלוחים לכל הארץ" });
 /** The delivery-cities block (not the nationwide exclusion block, which has its own combobox). */
@@ -398,7 +398,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
 
 test.describe("/admin/producers/new — «סוג העסק»", () => {
   // MT:MEH-213:1 — defaults: physical checked, delivery unchecked, save enabled.
-  test("defaults: «חנות פיזית» checked, «משלוחים» unchecked, «צור עסק» enabled", async ({ page }) => {
+  test("defaults: «בשעות קבועות» checked, «משלוחים» unchecked, «צור עסק» enabled", async ({ page }) => {
     await stubAdmin(page);
     await openNewProducer(page);
     await expect(typeSection(page).getByRole("checkbox")).toHaveCount(2);
@@ -409,11 +409,11 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
   });
 
   // MT:MEH-213:2 — neither → inline error, save disabled.
-  test("unticking both shows «חייב לסמן לפחות אחד מהשניים» and disables save", async ({ page }) => {
+  test("unticking both shows «חייב לסמן לפחות אפשרות אחת» and disables save", async ({ page }) => {
     await stubAdmin(page);
     await openNewProducer(page);
     await setChecked(physical(page), false);
-    const err = page.getByText("חייב לסמן לפחות אחד מהשניים");
+    const err = page.getByText("חייב לסמן לפחות אפשרות אחת");
     await expect(err).toBeVisible();
     await expect(err).toHaveClass(/text-danger-600/);
     await expect(saveBtn(page)).toBeDisabled();

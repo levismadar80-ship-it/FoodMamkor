@@ -17,7 +17,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
-import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
+import { fulfillmentTags, placeChecks, togglePlace, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
 import { resolveStoreHours } from "@/lib/hours";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -66,6 +66,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
   const tMap = useTranslations("map.producer_card");
   const initial = {
     hasPhysical: profile?.has_physical_location ?? true,
+    // MEH-2447: the owner's «בתיאום מראש» answer.
+    byArrangement: profile?.by_arrangement ?? false,
     offersDelivery: profile?.offers_delivery ?? false,
     nationwide: profile?.delivery_nationwide ?? false,
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
@@ -131,6 +133,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
 
   const dirty =
     form.hasPhysical !== baseline.hasPhysical ||
+    form.byArrangement !== baseline.byArrangement ||
     form.offersDelivery !== baseline.offersDelivery ||
     form.nationwide !== baseline.nationwide ||
     form.cities.length !== baseline.cities.length ||
@@ -174,11 +177,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       offersPickup: (profile?.locations ?? []).some(
         (loc) => loc?.kind === "pickup" || loc?.kind === "market_stand",
       ),
-      storeWithHours: form.hasPhysical && !!resolveStoreHours(profile),
+      storeWithHours: form.hasPhysical && !form.byArrangement && !!resolveStoreHours(profile),
+      byArrangement: form.hasPhysical && form.byArrangement,
     },
     tMap,
   );
-  const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged";
+  // The hint explains how to earn a green tag — not shown to an owner who
+  // chose «בתיאום מראש» herself.
+  const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged" && !form.byArrangement;
+  const place = placeChecks(form.hasPhysical, form.byArrangement);
   const citiesMissing =
     form.offersDelivery && !form.nationwide && form.cities.length === 0;
   const blocked = neitherType || citiesMissing;
@@ -200,6 +207,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     const toNullableInt = (v) => (v === "" || v == null ? null : Number(v));
     const normalized = {
       hasPhysical: form.hasPhysical,
+      byArrangement: form.hasPhysical && form.byArrangement,
       offersDelivery: form.offersDelivery,
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
@@ -242,6 +250,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     try {
       await api.put(saveUrl, {
         has_physical_location: normalized.hasPhysical,
+        by_arrangement: normalized.byArrangement,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
@@ -256,6 +265,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
         has_physical_location: normalized.hasPhysical,
+        by_arrangement: normalized.byArrangement,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
@@ -352,13 +362,19 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       </div>
 
       <div className="space-y-3">
-        <Checkbox
-          className="flex items-center gap-2 text-sm"
-          checked={form.hasPhysical}
-          onChange={(e) => set({ hasPhysical: e.target.checked })}
-        >
-          {t("has_physical_location")}
-        </Checkbox>
+        {/* MEH-2447: the place as two exclusive answers — fixed hours, or by
+            arrangement — instead of one «חנות פיזית» box farms ticked to save. */}
+        {/** @type {("onsite"|"arranged")[]} */ (["onsite", "arranged"]).map((axis) => (
+          <Checkbox
+            key={axis}
+            className="flex items-center gap-2 text-sm"
+            data-testid={`delivery-place-${axis}`}
+            checked={place[axis]}
+            onChange={(e) => set(togglePlace(axis, e.target.checked))}
+          >
+            {t(`place_${axis}`)}
+          </Checkbox>
+        ))}
         <Checkbox
           className="flex items-center gap-2 text-sm"
           checked={form.offersDelivery}
