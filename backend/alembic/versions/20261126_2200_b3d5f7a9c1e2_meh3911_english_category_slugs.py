@@ -1,7 +1,7 @@
 """meh3911_english_category_slugs
 
 Revision ID: b3d5f7a9c1e2
-Revises: d2f4b6a8c0e1
+Revises: a9c3e5f7b1d2
 Create Date: 2026-11-26 22:00:00.000000+00:00
 
 MEH-3911. Data only — no table, column or constraint changes. Three categories
@@ -34,7 +34,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b3d5f7a9c1e2"
-down_revision: Union[str, None] = "d2f4b6a8c0e1"
+down_revision: Union[str, None] = "a9c3e5f7b1d2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

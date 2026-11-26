@@ -20,15 +20,15 @@
 | — negative cell of gated routes (401/403) | 273 | 186 | 0 | 87 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 56 | 53 | 1 | 2 | 0 |
-| Pages — public | 64 | 52 | 0 | 12 | 0 |
+| Pages — public | 66 | 52 | 0 | 14 | 0 |
 | Pages — dashboard | 26 | 22 | 0 | 4 | 0 |
 | Pages — admin | 22 | 19 | 0 | 3 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 36 | 1 | 8 | 0 |
 | Mandatory extra rows (§B.3) | 25 | 23 | 1 | 1 | 0 |
 
-Pages opened by a CI-run Playwright spec: **43 / 112** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
+Pages opened by a CI-run Playwright spec: **43 / 114** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 122** (route positive 5 · route negative 87 · tools 2 · pages 19 · machine rows 8 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 124** (route positive 5 · route negative 87 · tools 2 · pages 21 · machine rows 8 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -149,12 +149,12 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 74 | POST | `/admin/producers/{producer_id}/claim-link` | `producer_claim.create_claim_link` | admin | `tests/test_meh2496_claim_link_sent_at.py:65` | `tests/test_meh2496_claim_link_sent_at.py:117` | — | 8 |
 | 75 | POST | `/producer-claim/preview` | `producer_claim.preview_claim` | anonymous (token in request) | `tests/test_meh3865_draft_twin_merge.py:631` | n/a | — | 7 |
 | 76 | POST | `/producer-claim/new-link-request` | `producer_claim.request_new_claim_link` | anonymous (token in request) | `tests/test_meh3122_claim_new_link.py:73` | n/a | — | 9 |
-| 77 | POST | `/producer-claim` | `producer_claim.claim_producer` | registered user | `tests/test_meh3258_review_conflicts.py:191` | `tests/test_producer_claim.py:363` | — | 9 |
+| 77 | POST | `/producer-claim` | `producer_claim.claim_producer` | registered user | `tests/test_meh3258_review_conflicts.py:191` | `tests/test_producer_claim.py:366` | — | 9 |
 | 78 | POST | `/admin/producers/{producer_id}/products` | `producer_claim.admin_create_draft_product` | admin | `tests/test_admin_draft_products.py:57` | `tests/test_admin_draft_products.py:83` | — | 5 |
 | 79 | DELETE | `/admin/producers/{producer_id}/products/{product_id}` | `producer_claim.admin_delete_draft_product` | admin | `tests/test_admin_draft_products.py:150` | `tests/test_admin_draft_products.py:181` | — | 6 |
-| 80 | POST | `/admin/producers/{producer_id}/preview-link` | `producer_draft_preview.create_preview_link` | admin | `tests/test_producer_draft_preview.py:86` | `tests/test_producer_draft_preview.py:97` | — | 5 |
-| 81 | GET | `/producer-preview/{token}` | `producer_draft_preview.read_draft_preview` | anonymous (token in request) | `tests/test_producer_draft_preview.py:122` | n/a | — | 4 |
-| 82 | POST | `/admin/producers/{producer_id}/publish-with-consent` | `producer_draft_preview.publish_draft_with_consent` | admin | `tests/test_producer_draft_preview.py:195` | `tests/test_producer_draft_preview.py:236` | — | 7 |
+| 80 | POST | `/admin/producers/{producer_id}/preview-link` | `producer_draft_preview.create_preview_link` | admin | `tests/test_meh3896_share_links.py:94` | `tests/test_producer_draft_preview.py:99` | — | 5 |
+| 81 | GET | `/producer-preview/{token}` | `producer_draft_preview.read_draft_preview` | anonymous (token in request) | `tests/test_meh3896_share_links.py:122` | n/a | — | 4 |
+| 82 | POST | `/admin/producers/{producer_id}/publish-with-consent` | `producer_draft_preview.publish_draft_with_consent` | admin | `tests/test_producer_draft_preview.py:197` | `tests/test_producer_draft_preview.py:238` | — | 7 |
 | 83 | POST | `/admin/producers/{producer_id}/owner-invite` | `producer_owner_invite.create_owner_invite` | admin | GAP | GAP | — | 13 |
 | 84 | POST | `/admin/producers/{producer_id}/owner-invite/resend` | `producer_owner_invite.resend_owner_invite` | admin | GAP | GAP | — | 13 |
 | 85 | DELETE | `/admin/producers/{producer_id}/owner-invite` | `producer_owner_invite.cancel_owner_invite` | admin | GAP | GAP | — | 12 |
@@ -537,6 +537,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/accessibility` | GAP | `frontend/__tests__/title-pattern.test.js:161` | covered |
 | `/account-deleted` | GAP | GAP | GAP |
 | `/business-gone` | GAP | `frontend/__tests__/ProducerGonePage.test.jsx:202` | covered |
+| `/c/[token]` | GAP | GAP | GAP |
 | `/claim/[token]` | GAP | GAP | GAP |
 | `/claim` | GAP | `frontend/__tests__/title-pattern.test.js:173` | covered |
 | `/contact` | GAP | `frontend/__tests__/title-pattern.test.js:162` | covered |
@@ -565,12 +566,12 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/owner-invite/[token]` | `frontend/e2e/flows/46-owner-invite.spec.ts:323` | GAP | covered |
 | `/owner-invite` | GAP | GAP | GAP |
 | `/p/[slug]` | GAP | `frontend/__tests__/VanityRedirectKeepsQuery.test.js:16` | covered |
-| `/` | `frontend/e2e/flows/00-load-guard-selftest.spec.ts:194` | GAP | covered |
+| `/` | `frontend/e2e/flows/00-load-guard-selftest.spec.ts:248` | GAP | covered |
 | `/privacy` | GAP | `frontend/__tests__/title-pattern.test.js:160` | covered |
 | `/producer/[id]` | `frontend/e2e/flows/12-axe-a11y.spec.ts:112` | `frontend/__tests__/EntityResolverErrorSeparation.test.jsx:71` | covered |
 | `/producers/[category]/[region]` | GAP | `frontend/__tests__/RegionLandingPage.test.jsx:67` | covered |
 | `/producers/diet/[dietSlug]` | GAP | `frontend/__tests__/DietLandingPage.test.jsx:88` | covered |
-| `/producers` | `frontend/e2e/flows/03-view-producer-detail.spec.ts:46` | `frontend/__tests__/LaunchHardening.test.jsx:75` | covered |
+| `/producers` | `frontend/e2e/flows/03-view-producer-detail.spec.ts:46` | `frontend/__tests__/LaunchHardening.test.jsx:78` | covered |
 | `/recommend` | `frontend/e2e/flows/manual/share.spec.ts:117` | `frontend/__tests__/RecommendNoindex.test.js:25` | covered |
 | `/register/organizer` | GAP | `frontend/__tests__/RegisterOrganizerMeta.test.js:18` | covered |
 | `/register` | `frontend/e2e/flows/09-login-console-clean.spec.ts:146` | `frontend/__tests__/title-pattern.test.js:164` | covered |
@@ -584,6 +585,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/staff-invite` | GAP | GAP | GAP |
 | `/terms` | GAP | `frontend/__tests__/title-pattern.test.js:141` | covered |
 | `/unsubscribe/weekly` | GAP | `frontend/__tests__/title-pattern.test.js:178` | covered |
+| `/v/[token]` | GAP | GAP | GAP |
 | `/verify-email` | GAP | `frontend/__tests__/title-pattern.test.js:168` | covered |
 
 ### Dashboard
@@ -632,7 +634,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/admin/help` | GAP | `frontend/__tests__/AdminHelp.test.jsx:7` | covered |
 | `/admin/kashrut` | GAP | `frontend/__tests__/AdminKashrutPage.test.jsx:5` | covered |
 | `/admin/name-change-requests` | GAP | GAP | GAP |
-| `/admin/outreach` | `frontend/e2e/flows/37-outreach-prefill.spec.ts:328` | `frontend/__tests__/AdminOutreach.test.jsx:3` | covered |
+| `/admin/outreach` | `frontend/e2e/flows/30-admin-panel-tabs.spec.ts:201` | `frontend/__tests__/AdminOutreach.test.jsx:3` | covered |
 | `/admin` | `frontend/e2e/flows/25-role-reachability.spec.ts:130` | `frontend/__tests__/AdminDashboardStats.test.jsx:3` | covered |
 | `/admin/producers/[id]/edit` | `frontend/e2e/flows/46-owner-invite.spec.ts:259` | `frontend/__tests__/AdminClaimLink.test.jsx:19` | covered |
 | `/admin/producers/new` | `frontend/e2e/flows/manual/admin-producer-form-licence.spec.ts:291` | GAP | covered |
@@ -673,7 +675,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 3 | `reserved` → `cancelled` (buyer) | rescue.py:989 | — | GAP | — |
 | 3 | `reserved` → `cancelled` (bulk, offer pulled) | rescue.py:581 | `POST /admin/rescue/users/{user_id}/clear-block` | `tests/test_meh3225_no_show_tombstones.py:132` | — |
 | 4 | ∅ → `(pending, verdict, true)` | experiences.py:459 | `POST /experiences` | `tests/_test_experiences__p01.py:47` | — |
-| 4 | content edit on `approved`/`rejected`/`changes_requested` → `(pending, fresh verdict, is_active unchanged)` | experiences.py:588, experiences.py:622 | `POST /experiences`, `PUT /experiences/{experience_id}` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted |
+| 4 | content edit on `approved`/`rejected`/`changes_requested` → `(pending, fresh verdict, is_active unchanged)` | experiences.py:588, experiences.py:622 | `POST /experiences`, `PUT /experiences/{experience_id}` | `tests/_test_experiences__p01.py:47` | — |
 | 4 | `is_active` flip only | experiences.py:560, experiences.py:567 | `POST /experiences` | `tests/_test_experiences__p01.py:47` | — |
 | 4 | → `approved` | admin_experiences.py:88 | `POST /admin/experiences/{experience_id}/approve` | `tests/_test_experiences__p01.py:735` | — |
 | 4 | → `changes_requested` | admin_experiences.py:128 | `POST /admin/experiences/{experience_id}/request-changes` | `tests/_test_experiences__p01.py:791` | — |
@@ -690,7 +692,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/_test_api__p04.py:120` | a delete transition reached no DELETE handler — audit line may be off |
 | 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:122` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
-| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest function — audit line may have drifted; nearest write handler — audit line may have drifted |
+| 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | `POST /experiences`, `PATCH /producers/me/recipes/{recipe_id}`, `DELETE /admin/categories/{category_id}`, `POST /admin/users/{user_id}/block` | `tests/_test_experiences__p01.py:47` | nearest write handler — audit line may have drifted |
 | 9 | `registrations.status` | registrations.py:375, registrations.py:377, registrations.py:383, registrations.py:226 … | `POST /events/{event_id}/registrations`, `POST /experiences/{experience_id}/registrations`, `POST /experiences`, `POST /registrations/{token}/cancel` | `tests/test_meh2763_registrations.py:116` | nearest function — audit line may have drifted |
 | 9 | `events` | — | — | GAP | — |
 | 9 | `users` | admin_extra.py:185, auth.py:627, auth.py:830, producer_claim.py:249 | `GET /admin/audit-log`, `POST /auth/logout-all-devices`, `POST /auth/reset-password`, `POST /producer-claim/new-link-request` | `tests/test_meh3306_admin_audit_log.py:371` | — |

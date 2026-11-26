@@ -1131,6 +1131,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test / host_test_cause(host)",
     ),
+    # MEH-3904: a course's later meetings changed — same caller as «moved».
+    ("services/registration_emails.py", "send_registrant_course_changed", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← is_test_item(item) via notify_item_moved",
+    ),
     ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
         1,
         OWN,
