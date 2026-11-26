@@ -53,9 +53,12 @@ def _fail_open(fn: _F) -> _F:
     """A refund note must never turn a done leave or cancel into a 500."""
 
     @functools.wraps(fn)
-    def wrapper(*args: Any, **kwargs: Any) -> list[Mail]:
+    def wrapper(db: Session, *args: Any, **kwargs: Any) -> list[Mail]:
         try:
-            return fn(*args, **kwargs)
+            # A savepoint: a failed read must not leave the caller's
+            # transaction aborted, or its own commit would 500 after all.
+            with db.begin_nested():
+                return fn(db, *args, **kwargs)
         except Exception as exc:  # noqa: BLE001 — fail-open, as every other email
             capture_background_exception(exc, task="prepay_refund_email")
             logger.exception("[prepay] refund note not built")

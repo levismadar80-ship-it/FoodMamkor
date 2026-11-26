@@ -47,6 +47,8 @@ def prepay_from_info(info: Any) -> Prepay | None:
 
 
 def buyer_pay_lines(p: Prepay, code: str, price: str) -> list[str]:
+    # [ask, via + note, counter]; the text email puts the link after the ask,
+    # the HTML a «לתשלום» button.
     """The buyer's code email (and its reminder), in place of «אומרים אותו
     בקופה ומשלמים X ₪». The ask / via / note lines are the bag page's
     (messages/he.json «prepay»), so the email and the page say the same."""
@@ -61,7 +63,7 @@ def buyer_pay_lines(p: Prepay, code: str, price: str) -> list[str]:
         else "בקופה אומרים את הקוד ומקבלים את הסל."
     )
     return [
-        f"{ask}. לתשלום: {p.link}",
+        f"{ask}.",
         f"התשלום עובר ישירות לבית העסק, דרך {p.host}. "
         f"בהערה לתשלום כתבו את הקוד {code}, כדי שבית העסק ידע של מי התשלום.",
         counter,

@@ -113,7 +113,7 @@ def render_reservation_email(
     note_text = f"הוראות איסוף: {m.pickup_note}\n" if m.pickup_note else ""
     pay_text = (
         f"הקוד שלכם: {m.pickup_code}.\n"
-        + "\n".join(buyer_pay_lines(m.prepay, m.pickup_code, price))
+        + _prepay_text(m.prepay, m.pickup_code, price)
         + "\n"
         if m.prepay
         else f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
@@ -175,12 +175,16 @@ def render_reservation_email(
     return subject, body, html_body
 
 
+def _prepay_text(p: Prepay, code: str, price: str) -> str:
+    ask, via_line, counter = buyer_pay_lines(p, code, price)
+    return f"{ask} לתשלום: {p.link}\n{via_line}\n{counter}"
+
+
 def _prepay_html(p: Prepay, code: str, price: str) -> str:
     """MEH-3897: the ask, a «לתשלום» button to the business's link, where it
     goes, the code-in-the-note line, then what happens at the counter."""
     e = html_escape
-    ask_line, via_line, counter = buyer_pay_lines(p, code, price)
-    ask = ask_line.split(". לתשלום:")[0] + "."
+    ask, via_line, counter = buyer_pay_lines(p, code, price)
     return f"""\
             <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">{e(ask)}</div>
             <div style="margin:12px 0 0;"><a href="{e(p.link)}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לתשלום</a></div>
