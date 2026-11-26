@@ -31,5 +31,6 @@
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 * `frontend/__tests__/CategoryPinGroupColours.test.jsx` · `frontend/__tests__/useMapFilters.legendGroups.test.js` — צבע לקבוצה, אייקון לקטגוריה, מקרא של 6 קבוצות (MEH-3076).
 * `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והשם המתועתק `byshvl-lpy-hzmnh` שהחזית מסתמכת עליו (MEH-3738).
+* `frontend/__tests__/CakesCategoryReady.test.js` · `tests/test_meh3911_cakes_slug.py` — הקטגוריה «עוגות וקינוחים» (נוצרת מהאדמין): אייקון משלה, קבוצת המאפים במפה, שם ושורת דוגמה בשתי השפות, והשם המתועתק `avgvt-vkynvchym` (MEH-3911).
 
 **מזהי רישום שזה מכסה.** `map_precision`, `multi_locations` (הצד הציבורי).

@@ -44,6 +44,7 @@ import {
   FlowerLotus,
   CoffeeBean,
   BowlFood,
+  Cake,
 } from "@phosphor-icons/react";
 
 /* ---------- vendored line shell (Tabler MIT, viewBox 24, normalized) ----------
@@ -196,4 +197,6 @@ export const CATEGORY_GLYPHS = {
   kph: CoffeeBean,
   // MEH-3738: cooked to order — a served bowl, apart from «מוצרים מוכנים»'s pot.
   "byshvl-lpy-hzmnh": BowlFood,
+  // MEH-3911: cakes and desserts — apart from «לחמים ואפייה»'s loaf.
+  "avgvt-vkynvchym": Cake,
 };

@@ -101,6 +101,8 @@ const REST_DESC_SLUGS = new Set([
   "kph",
   // MEH-3738: «בישול לפי הזמנה», created from the admin like coffee.
   "byshvl-lpy-hzmnh",
+  // MEH-3911: «עוגות וקינוחים», created from the admin like coffee.
+  "avgvt-vkynvchym",
   "honey",
   "fish",
 ]);

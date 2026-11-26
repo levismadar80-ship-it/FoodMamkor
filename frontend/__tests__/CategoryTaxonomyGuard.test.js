@@ -23,6 +23,8 @@ const COFFEE_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3401_coffee_slu
 const COFFEE_SLUG = COFFEE_PY.match(/slug_for_name\("קפה"\)\s*==\s*"([a-z]+)"/)?.[1];
 const COOKED_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3738_cooked_food_slug.py"), "utf8");
 const COOKED_SLUG = COOKED_PY.match(/slug_for_name\("בישול לפי הזמנה"\)\s*==\s*"([a-z-]+)"/)?.[1];
+const CAKES_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3911_cakes_slug.py"), "utf8");
+const CAKES_SLUG = CAKES_PY.match(/slug_for_name\("עוגות וקינוחים"\)\s*==\s*"([a-z-]+)"/)?.[1];
 
 const slugs = CATEGORY_TAXONOMY.map((c) => c.slug);
 const groupKeys = CATEGORY_CHIPS.filter((c) => c.matches).map((c) => c.key);
@@ -33,6 +35,7 @@ describe("category taxonomy = the backend's categories (MEH-3076)", () => {
     expect(BACKEND.length).toBe(18);
     expect(COFFEE_SLUG).toBe("kph");
     expect(COOKED_SLUG).toBe("byshvl-lpy-hzmnh");
+    expect(CAKES_SLUG).toBe("avgvt-vkynvchym");
   });
 
   it("every seeded category is in the list with the same name and slug", () => {
@@ -47,6 +50,8 @@ describe("category taxonomy = the backend's categories (MEH-3076)", () => {
       { slug: COFFEE_SLUG, name: "קפה", group: "pantry" },
       // MEH-3738
       { slug: COOKED_SLUG, name: "בישול לפי הזמנה", group: "pantry" },
+      // MEH-3911
+      { slug: CAKES_SLUG, name: "עוגות וקינוחים", group: "bread" },
     ]);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
