@@ -532,9 +532,13 @@ registration / owner-invite / account-delete route) exactly as before.
   the claim is exactly `True`, so `/auth/google`,
   `/auth/register/producer/oauth`, the owner invite and the account delete
   all refuse a Google account whose email Google has not verified, with the
-  same 401 / 403 / 422 they give any bad token. Before, only the swap checked
-  it, and a token posted straight to `/auth/google` could match an existing
-  account by an unproven email.
+  same 401 / 403 / 422 they give any bad token. Before, only the swap and the
+  owner invite checked it, so a token posted straight to `/auth/google`
+  created an account stamped `email_verified=True` on an address Google had
+  not verified (passing every verified-email gate and squatting the address).
+  Known trade-off: a linked Google-only account whose token ever came with
+  `email_verified:false` could neither sign in nor re-confirm a delete; Google
+  sends `true` for Gmail, Workspace and Cloud Identity accounts.
 - **No state, no cookie:** the swap writes nothing and sets no cookie. It
   returns the token in the JSON body only, which CORS keeps from other sites,
   so Google's suggested `X-Requested-With` check would add nothing here.

@@ -307,9 +307,10 @@ def verify_google_token(id_token: str) -> dict[str, Any] | None:
         )
         # MEH-3813: DO NOT move this check back into a consumer — every caller
         # (/auth/google, /auth/register/producer/oauth, /auth/google/code,
-        # owner invite, account delete) matches accounts by this token, and an
+        # owner invite, account delete) trusts this token's email, and an
         # email Google has not verified proves nothing. Exactly True; a missing
-        # claim, None or a string fails closed. Same 401 as any bad token.
+        # claim, None or a string fails closed. Each caller then answers as it
+        # does for any bad token (401 / 403 / 422).
         if info.get("email_verified") is not True:
             logger.warning("[GOOGLE AUTH] Refused: email not verified by Google")
             return None

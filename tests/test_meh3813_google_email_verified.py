@@ -5,7 +5,9 @@ The check lives in ONE place, `verify_google_token`
 (backend/app/services/oauth_verifiers.py), so every consumer gets it. Before
 this card only `/auth/google/code` (MEH-3690) and the owner invite checked
 `email_verified`; a token sent straight to `/auth/google` skipped it, and the
-route then matched an existing account by that unproven email.
+route created an account stamped `email_verified=True` on an address Google had
+not verified (it then passed every verified-email gate and squatted the
+address, so the real owner got a 409).
 
 What is real here: every route and `verify_google_token`. Only Google is
 faked — google-auth's `verify_oauth2_token` (the signature/aud check) returns
@@ -98,11 +100,11 @@ def test_auth_google_refuses_unverified_and_creates_nobody(client, db, google, o
     assert db.query(User).filter(User.email == EMAIL).first() is None
 
 
-def test_auth_google_does_not_match_an_existing_account_by_unproven_email(
+def test_auth_google_refuses_unverified_token_for_a_linked_account(
     client, db, google
 ):
-    """The takeover shape: an existing account linked to this Google sub
-    (or found by email) must not be signed into by an unverified token."""
+    """An account already linked to this Google sub is not signed into by a
+    token whose email Google has not verified."""
     user = make_user(db, email=EMAIL)
     user.google_id = SUB  # type: ignore[assignment]
     db.commit()

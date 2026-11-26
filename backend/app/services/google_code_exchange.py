@@ -69,7 +69,7 @@ def exchange_google_code(code: str) -> str | ExchangeFailure:
     # it is the same aud/iss/exp check /auth/google runs, and the one place a
     # token minted for another client id would be stopped here (MEH-3690).
     # email_verified is checked inside verify_google_token for every consumer
-    # since MEH-3813 (it used to be checked here only, MEH-3690 review).
+    # since MEH-3813 (before, only here and in the owner invite).
     if not verify_google_token(id_token):
         return ExchangeFailure.REFUSED
     return id_token
