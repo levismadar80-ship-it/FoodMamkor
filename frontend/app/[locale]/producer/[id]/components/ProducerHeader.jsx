@@ -581,7 +581,7 @@ export default function ProducerHeader({
           <div
             ref={alertsPanelRef}
             data-testid="alerts-reentry-panel"
-            className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-alerts-sheet lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-12 lg:end-0 lg:w-80 lg:z-30"
+            className="vv-pin fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-alerts-sheet lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-12 lg:end-0 lg:w-80 lg:z-30"
           >
             <AlertPrefsPanel
               key={panelKey}
