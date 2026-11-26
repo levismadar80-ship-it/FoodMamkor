@@ -19,6 +19,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 
+/** @type {Intl.DateTimeFormatOptions} */
 const DATE_OPTIONS = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
 
 /** @param {{ meetings: { date: string, time?: string | null }[] }} props */
