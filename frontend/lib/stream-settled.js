@@ -27,27 +27,35 @@
  * appeared in the same commit.
  */
 
-/** React's comment markers for a boundary whose content is not in place yet. */
-const PENDING_MARKERS = new Set(["$?", "$~"]);
+/** Queued for a throttled reveal: the content is in the document, hidden. */
+const QUEUED = "$~";
+/** Still streaming: React treats it as a client-render fallback once the
+ *  document has finished loading, so it only counts while it is loading. */
+const STREAMING = "$?";
+/** Poll by timer, not requestAnimationFrame, which never fires in a hidden tab. */
+const POLL_MS = 16;
 /** A safety net, not a timing: React reveals within ~300 ms of the first paint. */
 const MAX_WAIT_MS = 5000;
 
 /**
  * @param {Document} [doc]
- * @returns {boolean} true while a streamed boundary is still pending or queued
+ * @returns {boolean} true while a streamed boundary is queued for its reveal,
+ *          or still streaming while the document is loading
  */
 export function hasPendingBoundary(doc = document) {
+  const loading = doc.readyState === "loading";
   const walker = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_COMMENT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    if (PENDING_MARKERS.has(/** @type {Comment} */ (node).data)) return true;
+    const data = /** @type {Comment} */ (node).data;
+    if (data === QUEUED || (loading && data === STREAMING)) return true;
   }
   return false;
 }
 
 /**
- * Runs `run` now if nothing is pending, else on the first animation frame
- * after the last pending boundary was revealed (or after MAX_WAIT_MS, so a
- * stream that never finishes cannot hold the update forever).
+ * Runs `run` now if nothing is pending, else on the first poll after the last
+ * pending boundary was revealed (or after MAX_WAIT_MS, so a stream that never
+ * finishes cannot hold the update forever). Calls made in order run in order.
  * @param {() => void} run
  */
 export function afterStreamSettled(run) {
@@ -55,10 +63,10 @@ export function afterStreamSettled(run) {
     run();
     return;
   }
-  const started = performance.now();
+  const started = Date.now();
   const check = () => {
-    if (!hasPendingBoundary() || performance.now() - started > MAX_WAIT_MS) run();
-    else requestAnimationFrame(check);
+    if (!hasPendingBoundary() || Date.now() - started > MAX_WAIT_MS) run();
+    else setTimeout(check, POLL_MS);
   };
-  requestAnimationFrame(check);
+  setTimeout(check, POLL_MS);
 }

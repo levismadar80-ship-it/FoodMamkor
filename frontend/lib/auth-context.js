@@ -84,7 +84,8 @@ export function AuthProvider({ children }) {
   // mount the page again: a full-page flash and ≈ 1.0 CLS about 5 s in on a
   // slow phone. A transition lets hydration finish first (react.dev/errors/421).
   // The cost: consumers see `loading` until every boundary under the provider
-  // has hydrated (a chunk that fails rejects to its error boundary, so this
+  // has been revealed (MEH-3718: lib/stream-settled.js, ~300 ms after the first
+  // paint, 5 s at most) and has hydrated (a chunk that fails rejects to its error boundary, so this
   // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
   // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
   // MEH-3718: a transition is not enough while a streamed boundary is still

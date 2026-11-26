@@ -25,18 +25,27 @@ import { test, expect } from "./_cloudinary-stub";
  */
 
 const HOLD_FRAMES = 60;
-const PAGES = ["/", "/login", "/producers", "/events", "/about", "/recommend"];
+/** Each page, and the element that showed up twice while it was queued
+ *  (MEH-3718 login-register-link · MEH-3834 hero-search), or null. */
+const PAGES: Array<[string, string | null]> = [
+  ["/", "hero-search"],
+  ["/login", "login-register-link"],
+  ["/producers", null],
+  ["/events", null],
+  ["/about", null],
+  ["/recommend", null],
+];
 
-type Revealed = { id: string; kept: boolean };
+type Revealed = { id: string; kept: boolean; copies: number };
 
 test.describe("MEH-3718 a streamed page hydrates the server HTML it was sent", () => {
   // The held reveal shows the route loader for a second on purpose: the CLS it
   // causes is the construction, not the product. Console errors still fail.
   test.use({ loadGuard: "errors" });
 
-  for (const path of PAGES) {
+  for (const [path, once] of PAGES) {
     test(`${path}: the streamed content is hydrated, not rendered again`, async ({ page }) => {
-      await page.addInitScript((hold) => {
+      await page.addInitScript(({ hold, once }) => {
         const w = window as unknown as { __meh3718: Revealed[] };
         w.__meh3718 = [];
         let reveal: ((batch: Element[]) => void) | undefined;
@@ -59,7 +68,10 @@ test.describe("MEH-3718 a streamed page hydrates the server HTML it was sent", (
                     return;
                   }
                   for (let i = 0; i < batch.length; i += 2) {
-                    w.__meh3718.push({ id: batch[i].id, kept: batch[i].isConnected });
+                    // Counted the frame before the reveal: the window in which
+                    // the two copies were seen.
+                    const copies = once ? document.querySelectorAll(`[data-testid="${once}"]`).length : 1;
+                    w.__meh3718.push({ id: batch[i].id, kept: batch[i].isConnected, copies });
                   }
                   reveal?.(batch);
                 };
@@ -68,7 +80,7 @@ test.describe("MEH-3718 a streamed page hydrates the server HTML it was sent", (
             );
           },
         });
-      }, HOLD_FRAMES);
+      }, { hold: HOLD_FRAMES, once });
 
       const res = await page.goto(path);
       expect(res?.ok(), `${path} must load 2xx`).toBeTruthy();
@@ -79,7 +91,11 @@ test.describe("MEH-3718 a streamed page hydrates the server HTML it was sent", (
         })
         .toBeGreaterThan(0);
       const revealed = await page.evaluate(() => (window as unknown as { __meh3718: Revealed[] }).__meh3718);
+      expect(revealed.every((b) => b.id.startsWith("B:")), "the reveal batch pairs a B: marker with its S: segment").toBe(true);
       expect(revealed.filter((b) => !b.kept), "boundaries React rendered again in the browser").toEqual([]);
+      if (once) {
+        expect(revealed.map((b) => b.copies), `[data-testid="${once}"] before the reveal`).toEqual(revealed.map(() => 1));
+      }
     });
   }
 });

@@ -162,7 +162,7 @@ describe("auth bootstrap during hydration (MEH-3828)", () => {
 // has no `$~` state, so the hydration itself is held by the E2E guard
 // e2e/flows/52-streamed-page-hydrates.spec.ts; here: the state waits.
 describe("auth bootstrap while a streamed boundary waits for its reveal (MEH-3718)", () => {
-  it("signed out: «checking» while a boundary is queued, «ready» on the frame after the reveal", async () => {
+  it("signed out: «checking» while a boundary is queued, «ready» on the poll after the reveal", async () => {
     const marker = document.createComment("$~");
     document.body.appendChild(marker);
     const container = document.createElement("div");
@@ -193,7 +193,8 @@ describe("auth bootstrap while a streamed boundary waits for its reveal (MEH-371
   });
 });
 
+// lib/stream-settled.js polls by timer (requestAnimationFrame never fires in a hidden tab).
 const frames = (n) =>
   act(async () => {
-    for (let i = 0; i < n; i += 1) await new Promise((r) => requestAnimationFrame(r));
+    for (let i = 0; i < n; i += 1) await new Promise((r) => setTimeout(r, 20));
   });
