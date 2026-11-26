@@ -47,12 +47,32 @@ beforeEach(() => {
   localStorage.clear();
   html.removeAttribute("data-cookie-answered");
   html.removeAttribute("data-has-token");
+  html.removeAttribute("data-from-map");
   auth.user = null;
   auth.loading = true;
 });
 afterEach(cleanup);
 
 describe("the inline flags script", () => {
+  // MEH-3856: the business page's «חזרה למפה» row reads this flag before paint.
+  it("flags ?from=map, and nothing for another referrer or none (control)", () => {
+    const at = (search) => {
+      html.removeAttribute("data-from-map");
+      window.history.replaceState(null, "", `/ruach-hasadeh${search}`);
+      runScript();
+      return html.hasAttribute("data-from-map");
+    };
+    try {
+      expect(at("?from=map")).toBe(true);
+      expect(at("?x=1&from=map")).toBe(true);
+      expect(at("")).toBe(false);
+      expect(at("?from=list")).toBe(false);
+      expect(at("?from=mapx")).toBe(false);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
   it("flags an answered banner (either answer) and a stored token", () => {
     localStorage.setItem("cookieConsent", "essential");
     localStorage.setItem("token", "x");

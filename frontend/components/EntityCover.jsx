@@ -1,4 +1,5 @@
 // @ts-check
+"use client";
 /**
  * Module:   EntityCover
  * Purpose:  The masthead of an entity detail page — the entity's photo, else a
@@ -15,6 +16,7 @@
  */
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import useImageLoads from "@/lib/use-image-loads";
 
 // Tailwind needs literal class names — one row per tone, never a template.
 const TONES = {
@@ -33,6 +35,10 @@ const TONES = {
  */
 export default function EntityCover({ imageUrl, alt, tone = "primary", Icon, actions, testIdPrefix }) {
   const t = TONES[tone] ?? TONES.primary;
+  // MEH-3894: a cover that fails to load shows the band, not an empty frame.
+  const cover = useImageLoads(
+    imageUrl ? optimizeCloudinary(imageUrl, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 }) : null,
+  );
   return (
     <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
       {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
@@ -43,11 +49,11 @@ export default function EntityCover({ imageUrl, alt, tone = "primary", Icon, act
           {actions}
         </div>
       )}
-      {imageUrl ? (
+      {cover ? (
         <div
           data-testid={`${testIdPrefix}-cover`}
           className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
-          style={{ backgroundImage: cssUrl(optimizeCloudinary(imageUrl, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
+          style={{ backgroundImage: cssUrl(cover) }}
           role="img"
           aria-label={alt}
         />

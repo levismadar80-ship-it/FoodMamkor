@@ -23,6 +23,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
@@ -149,7 +150,7 @@ def _search_once(db: Session, q_clean: str, limit: int) -> SearchOut:
             city=p.city,
             avg_rating=float(p.avg_rating or 0),
             reviews_count=int(p.reviews_count or 0),
-            image=(p.images[0] if p.images else None),
+            image=first_image(p.images),  # MEH-3894
         )
         for p in producer_rows
     ]

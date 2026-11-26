@@ -285,6 +285,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/producer_catalog.py` | The small public catalog reads (total count, one random business) and the request checks of GET /producers. |
 | `services/producer_detail.py` | Load one public business page (by slug or by id) and build the ProducerDetailOut it answers with. |
 | `services/producer_duplicates.py` | Tell the admin producers list, per row, whether ANOTHER business in any status shares its name or its phone, so «כפילות?» sees a draft's self-registered twin … |
+| `services/producer_images.py` | The one answer to "which of this business's photos stands for it" on a card, a row or a share preview: the first non-blank entry of 'producers.images', … |
 | `services/producer_insights.py` | The counting rules behind the business dashboard's numbers — page views, search appearances, WhatsApp clicks, other contact clicks and new followers — in ONE … |
 | `services/producer_listing.py` | Producer listing query builder. |
 | `services/producer_me_writes.py` | The owner PUT /producers/me write helpers — delivery areas, the active offer, the second phone, the gallery rules, the per-producer advisory lock, the … |
@@ -588,6 +589,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-google-sign-in.js` | The one place that adds Google's GSI <script>: loadGsiScript() for our own Google button, and preloadGsiWhenIdle() so the library is ready before a sign-in … |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
+| `use-image-loads.js` | For a picture drawn as a CSS 'background-image' (no <img>, so no onError): returns the URL while it loads or has loaded, and null once the browser reports it … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
 | `use-israel-today.js` | Today's date on the Israel clock for anything a component draws from it («היום», «מחר», a list without yesterday's events). … |
 | `use-list-return.js` | Back from a card on an infinite-scroll list returns the reader to the pages she had loaded and to her place in them, the way the big sites do (Etsy, Airbnb, … |
