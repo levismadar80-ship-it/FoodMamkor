@@ -327,7 +327,11 @@ def list_experiences(
 # declaration order, so a later `/count` would be swallowed by the catch-all
 # and arrive as an experience_id of "count", which then fails UUID parsing.
 @router.get("/count", response_model=ExperienceCountOut)
-@limiter.limit("60/minute")
+# 120/minute, the budget of the other nav-gate reads (/events/upcoming,
+# /group-buys). The nav reads this on every page load, and the whole E2E
+# suite runs from one IP: at 60/minute it answered hundreds of 429s in one
+# shard (#5363, shard 3). It returns a number only.
+@limiter.limit("120/minute")
 def count_experiences(
     request: Request, db: Session = Depends(get_db)
 ) -> ExperienceCountOut:
