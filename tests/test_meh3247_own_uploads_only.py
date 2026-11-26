@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
+import re
 import sys
 from pathlib import Path
 
@@ -279,20 +280,33 @@ def _checked_fields(source: str) -> set[str]:
     return checked
 
 
+# MEH-3873: the routers' shared write functions a handler may hand its body
+# to — named one by one (reviewer: a module-wide prefix would admit any
+# sibling whose text happens to carry the check).
+SHARED_WRITERS = frozenset(
+    {"create_event_for", "update_event_row", "submit_experience_for", "update_experience_row"}
+)
+
+
 def _source_with_service_delegates(ep) -> str:
     """The handler's source plus any `app.services.*` function it calls.
 
     MEH-3841 (MEH-3537): a thin handler hands its whole body to one service
     function, so the ownership call now sits one level down. Only a direct
-    call by name from the handler counts, and only into `app.services`.
+    call by name from the handler counts, and only into `app.services`, or
+    (MEH-3873) into a router's shared write function — the owner's and the
+    admin's routes both call `events.create_event_for` and its siblings.
     """
     source = inspect.getsource(ep)
     for name, obj in inspect.unwrap(ep).__globals__.items():
         module = getattr(obj, "__module__", "") or ""
         if (
             inspect.isfunction(obj)
-            and module.startswith("app.services.")
-            and f"{name}(" in source
+            and (
+                module.startswith("app.services.")
+                or (module.startswith("app.routers.") and name in SHARED_WRITERS)
+            )
+            and re.search(rf"\b{re.escape(name)}\(", source)
         ):
             source += inspect.getsource(obj)
     return source

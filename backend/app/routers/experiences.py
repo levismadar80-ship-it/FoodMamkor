@@ -448,7 +448,21 @@ def submit_experience(
     user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ) -> ExperienceDetailOut | dict[str, Any]:
+    return submit_experience_for(db, user, data, actor=user)
+
+
+def submit_experience_for(
+    db: Session, host: User, data: ExperienceCreate, *, actor: User
+) -> dict[str, Any]:
     """
+    MEH-3873: the ONE create path — the owner's POST /experiences and the
+    admin's POST /admin/producers/{id}/experiences (host = the business's
+    owner account, routers/admin_business_content.py) both land here. The
+    caller has already decided that `actor` may write for `host`. An
+    admin-written experience goes through the same moderation and the same
+    approval queue as the owner's (reviewer, MEH-3873: approving it there is
+    what sends the host email and the IndexNow ping).
+
     Submit a new experience. Flow:
       1. Normalize + hand off to Claude via validate_experience
       2. REJECTED → HTTP 400 (blocked, nothing persisted)
@@ -458,11 +472,11 @@ def submit_experience(
     if _min_above_max(data.min_participants, data.max_participants):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     refuse_past_date(data.event_date)  # MEH-3224 (D6)
-    assert_own_new_images(user, data.image_url)  # MEH-3247
+    assert_own_new_images(actor, data.image_url)  # MEH-3247
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
-        phone=_host_phone(db, user.id),  # type: ignore[arg-type]
+        phone=_host_phone(db, host.id),  # type: ignore[arg-type]
         registration_url=data.registration_url,
     )
     if problem:
@@ -470,7 +484,7 @@ def submit_experience(
     # MEH-3180: a priced sign-up through the site's form is a paid tool.
     capabilities.require_paid_signup(
         db,
-        user.producer_id,
+        host.producer_id,
         price=data.price_per_person,
         method=data.registration_method,
     )
@@ -490,7 +504,7 @@ def submit_experience(
     enforce_cap(
         db.query(Experience)
         .filter(
-            Experience.host_user_id == user.id,
+            Experience.host_user_id == host.id,
             Experience.status != "rejected",
             (Experience.event_date >= israel_today())
             | Experience.is_recurring.is_(True),
@@ -503,7 +517,7 @@ def submit_experience(
         description=data.description.strip(),
         image_url=data.image_url,
         category=data.category,
-        host_user_id=user.id,
+        host_user_id=host.id,
         event_date=data.event_date,
         event_time=data.event_time,
         duration_minutes=data.duration_minutes,
@@ -550,7 +564,7 @@ def submit_experience(
     # fails open on missing RESEND_API_KEY / send errors.
     notify_admin_new_submission(
         title=ex.title,  # type: ignore[arg-type]
-        host_name=user.name,  # type: ignore[arg-type]
+        host_name=host.name,  # type: ignore[arg-type]
         city=ex.city,  # type: ignore[arg-type]
         moderation_status=verdict["status"],
         test_cause=host_test_cause(ex.host),  # MEH-2952
@@ -661,6 +675,23 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
         # confirm another host's experience exists. Stays owner-only.
         # REUSES events.py update_event (producer_recipes.py:203-206).
         raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
+    return update_experience_row(
+        db, ex, data, actor=user, background_tasks=background_tasks
+    )
+
+
+def update_experience_row(
+    db: Session,
+    ex: Experience,
+    data: ExperienceUpdate,
+    *,
+    actor: User,
+    background_tasks: BackgroundTasks,
+) -> dict[str, Any]:
+    """MEH-3873: the ONE update path — the owner's PUT /experiences/{id} and
+    the admin's PUT /admin/experiences/{id} both land here. `ex` must have
+    been read with `_experience_for_edit` (the row lock). The caller has
+    already decided that `actor` may edit it."""
 
     # MEH-2852: read BEFORE the edit — a content edit resets an approved
     # experience to pending, which takes its public page down.
@@ -668,7 +699,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     payload = data.model_dump(exclude_unset=True)
     # MEH-3224 (D6): same rule as events.update_event.
     refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
-    assert_own_new_images(user, payload.get("image_url"), ex.image_url)  # MEH-3247
+    assert_own_new_images(actor, payload.get("image_url"), ex.image_url)  # MEH-3247
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
     touches_range = "min_participants" in payload or "max_participants" in payload
@@ -686,7 +717,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
     capabilities.require_paid_signup(
         db,
-        user.producer_id,
+        ex.host.producer_id if ex.host else None,
         price=payload.get("price_per_person", ex.price_per_person),
         method=payload.get("registration_method", ex.registration_method),
         running=capabilities.is_running(

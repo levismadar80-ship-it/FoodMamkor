@@ -52,6 +52,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `rate_limit.py` | Shared rate limiter instance used across all routers. |
 | `router_registry.py` | — אין כותרת — |
 | `routers/admin.py` | — אין כותרת — |
+| `routers/admin_business_content.py` | Admin creates and edits a business's events and experiences on its behalf, with the business's written consent confirmed on every save (the box on the form → … |
 | `routers/admin_checklist.py` | MEH-1399 Phase 2 — the pre-approval review checklist as data. Serves the editable item list and records which items an admin ticked for a given producer, with … |
 | `routers/admin_decisions.py` | The admin review decisions under /admin/producers: the pending queue, approve, reject (with presets), request changes, and the verified badge, plus the two … |
 | `routers/admin_draft_merge.py` | Move a draft the admin prepared to the owner who registered the same business herself: the draft becomes the page in her account, and what she had added moves … |
@@ -131,10 +132,12 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/whatsapp_webhook.py` | Meta WhatsApp Cloud API webhook receiver — GET verification challenge + POST inbound-message persistence + outbound-status reconciliation, all gated by … |
 | `schemas/__init__.py` | Load schemas.py first: its sibling modules import the shared validators from it, and it re-exports them at its bottom (MEH-3270). |
 | `schemas/admin_block.py` | Admin moderation switches on a user or a business. |
+| `schemas/admin_on_behalf.py` | Request bodies for an admin writing a business's events and experiences: the owner's own create/update shapes plus one required field, 'owner_consent', that … |
 | `schemas/admin_passkey.py` | Request and response shapes of the admin passkey routes (MEH-3305). |
 | `schemas/admin_review.py` | Admin review inputs and outputs: kashrut requests and reminders, checklist, review checks, approve / reject / request-changes bodies. |
 | `schemas/billing.py` | Response shapes for the billing summary routes (MEH-3181). |
 | `schemas/catalog.py` | Categories, cities, delivery areas, locations, offers and products as the API reads and writes them. |
+| `schemas/cities_match.py` | Body and answer of POST /cities/match — a pasted list of city names checked against the canonical city list in one request (MEH-3867). |
 | `schemas/community.py` | Users, favourites and reports. |
 | `schemas/delivery_time.py` | One rule for «מגיע תוך 3–5 ימי עסקים» wherever it is stored (the business, a delivery zone — MEH-3511): whole business days within bounds, and the shorter end … |
 | `schemas/events.py` | Events, organisers and the event filters. |
@@ -780,6 +783,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsAppUpdatesPill.jsx` | — אין כותרת — |
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
+| `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
@@ -811,6 +815,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `brand/Seed.jsx` | Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single seed may be rotated, scaled and given any seed colour. … |
 | `brand/SeedBurst.jsx` | The seed layer's success moment (MEH-2833, board 5 v2): the logo bloom and two rings of single seeds pointing outward, left open below the bloom (as on the … |
 | `brand/SeedMark.jsx` | SeedMark — the full bloom (the logo's five seeds, in place), as decoration. MEH-2833: the logo is never rotated, recoloured or rearranged; … |
+| `cities-paste.js` | Paste a whole list of cities into a CitiesAutocomplete field: one request checks every name, the known ones become chips, the rest are reported instead of … |
 | `dashboard/CoverageCtaToggle.jsx` | The owner's on/off for the public «לא מגיעים אליך?» CTA on her page. Saves immediately (one field, no form), like the alert switches in AlertPrefsPanel. |
 | `dashboard/ProductVariantsField.jsx` | The «אפשרויות» block of the owner's product editor: sizes or flavours of one product, each with a name, an optional price, an «במלאי» switch and its place in … |
 | `dashboard/ProductWeekdaysField.jsx` | «ימים שהמוצר זמין» in the owner's product form (MEH-3618): «כל הימים» (the default) or some of the seven days, as chips. Holds the mask in the form; … |

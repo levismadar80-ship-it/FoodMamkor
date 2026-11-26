@@ -61,6 +61,7 @@ graph LR
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
+    App --> AdminBusinessContent[admin_business_content.router<br/>/admin/producers/:producer_id/events + /experiences, /admin/events/:id, /admin/experiences/:id (MEH-3873, owner_consent on every save; writes through events/experiences shared writers)]
     App --> AdminTestBusiness[admin_test_business.router<br/>/admin/test-businesses (MEH-2952 chunk 4: «עסק בדיקה — מוסתר מהאתר», writes producers.is_test)]
     App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner)]
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
@@ -83,6 +84,7 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
+    GCities -.same fold.-> PCitiesMatch[POST /cities/match<br/>🌐 MEH-3867 pasted list → matched / unmatched<br/>read-only, 30/min, ≤300 names]
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]

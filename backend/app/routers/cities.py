@@ -16,7 +16,9 @@ then the alias table only ever ran on the results, so a name that is not a
 prefix of its official form was unreachable.
 """
 
+import re
 from typing import Any
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import ColumnElement, or_
 from sqlalchemy.orm import Session
@@ -24,19 +26,25 @@ from sqlalchemy.orm import Session
 from app.data.cities import (
     ISRAEL_CITIES,
     alias_like_patterns,
+    alias_sources,
     alias_targets,
     canonical_city,
     city_key,
 )
 from app.database import get_db
-from app.services.producer_listing import is_business  # MEH-2459
 from app.models import DeliveryArea, Producer
 from app.models.models import City
 from app.rate_limit import limiter
+from app.schemas.cities_match import CitiesMatchIn, CitiesMatchOut
+from app.services.producer_listing import is_business  # MEH-2459
 
 router = APIRouter(tags=["cities"])
 
 MAX_RESULTS = 20
+
+# Any run of spaces and dashes (hyphen, maqaf, en/em dash) — the separators
+# city_key folds into one space.
+_SEPARATOR_RUN = re.compile(r"[\s\-־–—]+")
 
 
 def _direct_forms(clean: str) -> list[str]:
@@ -66,7 +74,21 @@ def _prefixes(clean: str) -> list[str]:
     appear if a row holds it.
     """
     forms = set(_direct_forms(clean))
+    # MEH-3867: a space or dash in what she typed matches any separator in the
+    # row. «תל-מונד» and «תל  מונד» found nothing while the row is «תל מונד»
+    # (production, 25/11); city_key already treats all of them as one, so the
+    # search does too.
+    for f in list(forms):
+        # Separators at the ends are dropped, not turned into `%`: a leading
+        # `%` is a contains-search, and a query of only "-" would become "%"
+        # and match every row (rule-5a review).
+        core = _SEPARATOR_RUN.sub(" ", f).strip()
+        if core:
+            forms.add(core.replace(" ", "%"))
     forms.update(alias_like_patterns(clean))
+    # MEH-3867: and the stored old name of a city typed by its current one
+    # («נוף הגליל» → the table's «נצרת עילית»).
+    forms.update(_SEPARATOR_RUN.sub("%", a) for a in alias_sources(clean))
     return sorted(f for f in forms if f)
 
 
@@ -135,7 +157,14 @@ def list_cities(
         # branch only runs before the official dataset is seeded.
         static_prefixes = _direct_forms(clean) + alias_targets(clean)
         static_cities = [
-            c for c in ISRAEL_CITIES if any(c.startswith(p) for p in static_prefixes)
+            # MEH-3867: compared on city_key, so a dash or a double space in
+            # the query no longer misses (the same fold as the table path).
+            c
+            for c in ISRAEL_CITIES
+            if any(
+                city_key(p) and city_key(c).startswith(city_key(p))
+                for p in static_prefixes
+            )
         ]
     else:
         static_cities = list(ISRAEL_CITIES)
@@ -171,3 +200,53 @@ def list_cities(
         merged.remove(clean)
         merged.insert(0, clean)
     return merged[:MAX_RESULTS]
+
+
+def _known_cities_by_key(db: Session) -> dict[str, str]:
+    """MEH-3867: every known locality, keyed by city_key → its one spelling.
+
+    The official table when it is seeded, else the static list — the same
+    source rule as `list_cities`. Each row is keyed twice: by its stored name
+    and by its canonical one, so the table's «נצרת עילית» is found by
+    «נוף הגליל» and by «נצרת עילית» alike, and both answer «נוף הגליל».
+    """
+    names = [row[0] for row in db.query(City.name_he).all()] or list(ISRAEL_CITIES)
+    index: dict[str, str] = {}
+    for raw in names:
+        canon = canonical_city(raw) or ""
+        for key in (city_key(raw), city_key(canon)):
+            if key:
+                index.setdefault(key, canon)
+    return index
+
+
+@router.post("/cities/match", response_model=CitiesMatchOut)
+@limiter.limit("30/minute")
+def match_cities(
+    request: Request,
+    body: CitiesMatchIn,
+    db: Session = Depends(get_db),
+) -> CitiesMatchOut:
+    """MEH-3867: which pasted names are known cities, in one request.
+
+    Read-only: nothing is written; the field adds the matched names to its own
+    form. A name is matched on city_key after canonical_city, so aliases,
+    «קרית»/«קריית», dashes and double spaces all reach the city. Order is the
+    pasted order; duplicates collapse; an unknown name comes back as typed
+    (trimmed), never dropped.
+    """
+    index = _known_cities_by_key(db)
+    matched: list[str] = []
+    unmatched: list[str] = []
+    seen: set[str] = set()
+    for raw in body.names:
+        typed = " ".join(raw.split())
+        key = city_key(canonical_city(typed))
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        if key in index:
+            matched.append(index[key])
+        else:
+            unmatched.append(typed)
+    return CitiesMatchOut(matched=matched, unmatched=unmatched)

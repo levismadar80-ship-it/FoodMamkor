@@ -239,6 +239,43 @@ export const GetDashboardAdminDashboardGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * @summary Admin Update Business Event
+ */
+export const adminUpdateBusinessEventAdminEventsEventIdPutResponseOwnerKindDefault = `producer`;
+export const adminUpdateBusinessEventAdminEventsEventIdPutResponseRegisteredCountDefault = 0;
+export const adminUpdateBusinessEventAdminEventsEventIdPutResponseRegistrationMethodDefault = `site_form`;
+
+export const AdminUpdateBusinessEventAdminEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.string(),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "end_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod.boolean(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateBusinessEventAdminEventsEventIdPutResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateBusinessEventAdminEventsEventIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateBusinessEventAdminEventsEventIdPutResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "title": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Admin List Experiences
  */
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
@@ -298,6 +335,67 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "title": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
 export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod.array(AdminListExperiencesAdminExperiencesGetResponseItem)
+
+
+/**
+ * @summary Admin Update Business Experience
+ */
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsActiveDefault = true;
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsRecurringDefault = false;
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseRegisteredCountDefault = 0;
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseRegistrationMethodDefault = `site_form`;
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseSessionsDefault = [];
+
+export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponse = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.string(),
+  "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "host": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsActiveDefault),
+  "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsRecurringDefault),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_type": /*#__PURE__*/ zod.string(),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseSessionsDefault),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
 
 
 /**
@@ -2701,6 +2799,144 @@ export const DetachOwnerAdminProducersProducerIdDetachOwnerPostResponse = /*#__P
 
 
 /**
+ * Every event of the business, past and cancelled included, newest
+ * first — the list the owner sees on her dashboard (events.py list_my_events).
+ * @summary Admin List Business Events
+ */
+export const adminListBusinessEventsAdminProducersProducerIdEventsGetResponseOwnerKindDefault = `producer`;
+export const adminListBusinessEventsAdminProducersProducerIdEventsGetResponseRegisteredCountDefault = 0;
+export const adminListBusinessEventsAdminProducersProducerIdEventsGetResponseRegistrationMethodDefault = `site_form`;
+
+export const AdminListBusinessEventsAdminProducersProducerIdEventsGetResponseItem = /*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.string(),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "end_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod.boolean(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListBusinessEventsAdminProducersProducerIdEventsGetResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListBusinessEventsAdminProducersProducerIdEventsGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListBusinessEventsAdminProducersProducerIdEventsGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "title": /*#__PURE__*/ zod.string()
+})
+export const AdminListBusinessEventsAdminProducersProducerIdEventsGetResponse = /*#__PURE__*/ zod.array(AdminListBusinessEventsAdminProducersProducerIdEventsGetResponseItem)
+
+
+/**
+ * @summary Admin Create Business Event
+ */
+export const adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseOwnerKindDefault = `producer`;
+export const adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseRegisteredCountDefault = 0;
+export const adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseRegistrationMethodDefault = `site_form`;
+
+export const AdminCreateBusinessEventAdminProducersProducerIdEventsPostResponse = /*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.string(),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "end_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod.boolean(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateBusinessEventAdminProducersProducerIdEventsPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "title": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Admin Create Business Experience
+ */
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsActiveDefault = true;
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsRecurringDefault = false;
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault = 0;
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseRegisteredCountDefault = 0;
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseRegistrationMethodDefault = `site_form`;
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseSessionsDefault = [];
+
+export const AdminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponse = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.string(),
+  "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "host": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsActiveDefault),
+  "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsRecurringDefault),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_type": /*#__PURE__*/ zod.string(),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseSessionsDefault),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
+
+
+/**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
  * Builds the query from the producer's own name + city — or from `q` when the
@@ -4340,6 +4576,22 @@ export const ListCitiesCitiesGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3867: which pasted names are known cities, in one request.
+ *
+ * Read-only: nothing is written; the field adds the matched names to its own
+ * form. A name is matched on city_key after canonical_city, so aliases,
+ * «קרית»/«קריית», dashes and double spaces all reach the city. Order is the
+ * pasted order; duplicates collapse; an unknown name comes back as typed
+ * (trimmed), never dropped.
+ * @summary Match Cities
+ */
+export const MatchCitiesCitiesMatchPostResponse = /*#__PURE__*/ zod.object({
+  "matched": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "unmatched": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('Known names in their canonical spelling, and the rest as typed.'))
+
+
+/**
  * @summary Submit Contact
  */
 export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
@@ -4688,11 +4940,6 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 
 
 /**
- * Submit a new experience. Flow:
- *   1. Normalize + hand off to Claude via validate_experience
- *   2. REJECTED → HTTP 400 (blocked, nothing persisted)
- *   3. APPROVED / FLAGGED → persist as status=pending, admin will review
- *   4. moderation_status is stored so admins see Claude's signal
  * @summary Submit Experience
  */
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
