@@ -1,4 +1,7 @@
-"""MEH-3401 — the frontend keys «קפה» by the slug "kph" (CategorySelector
+"""MEH-3911: "kph" is now only the OLD slug that revision b3d5f7a9c1e2 renames
+to "coffee"; this pins that the revision matches the row it was created as.
+
+MEH-3401 — the frontend keys «קפה» by the slug "kph" (CategorySelector
 REST_DESC_SLUGS, map-chips pantry group, rest_descs i18n key). The row is
 created from the admin, so its slug comes from transliteration, never from the
 frozen NAME_TO_SLUG table. If either side changes, the frontend keys go dead

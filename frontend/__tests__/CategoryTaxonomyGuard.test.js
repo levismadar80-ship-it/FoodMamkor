@@ -19,12 +19,13 @@ const SLUG_PY = fs.readFileSync(path.join(ROOT, "backend/app/services/category_s
 const start = SLUG_PY.indexOf("NAME_TO_SLUG = {");
 const block = SLUG_PY.slice(start, SLUG_PY.indexOf("}", start));
 const BACKEND = [...block.matchAll(/"([^"]+)":\s*"([a-z_]+)"/g)].map((m) => ({ name: m[1], slug: m[2] }));
-const COFFEE_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3401_coffee_slug.py"), "utf8");
-const COFFEE_SLUG = COFFEE_PY.match(/slug_for_name\("קפה"\)\s*==\s*"([a-z]+)"/)?.[1];
-const COOKED_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3738_cooked_food_slug.py"), "utf8");
-const COOKED_SLUG = COOKED_PY.match(/slug_for_name\("בישול לפי הזמנה"\)\s*==\s*"([a-z-]+)"/)?.[1];
-const CAKES_PY = fs.readFileSync(path.join(ROOT, "tests/test_meh3911_cakes_slug.py"), "utf8");
-const CAKES_SLUG = CAKES_PY.match(/slug_for_name\("עוגות וקינוחים"\)\s*==\s*"([a-z-]+)"/)?.[1];
+// MEH-3911: the admin-created rows got English slugs in revision b3d5f7a9c1e2;
+// its RENAMES tuple is the backend's list of them (old -> new).
+const VERSIONS = path.join(ROOT, "backend/alembic/versions");
+const RENAMES_FILE = fs.readdirSync(VERSIONS).find((f) => f.includes("b3d5f7a9c1e2"));
+const RENAMES_PY = fs.readFileSync(path.join(VERSIONS, RENAMES_FILE), "utf8");
+const RENAMES_BLOCK = RENAMES_PY.slice(RENAMES_PY.indexOf("RENAMES"), RENAMES_PY.indexOf("\n)\n"));
+const ADMIN_SLUGS = [...RENAMES_BLOCK.matchAll(/\("[a-z-]+",\s*"([a-z-]+)"\)/g)].map((m) => m[1]);
 
 const slugs = CATEGORY_TAXONOMY.map((c) => c.slug);
 const groupKeys = CATEGORY_CHIPS.filter((c) => c.matches).map((c) => c.key);
@@ -33,9 +34,7 @@ describe("category taxonomy = the backend's categories (MEH-3076)", () => {
   it("control: both backend files were parsed", () => {
     expect(BACKEND.length).toBe(block.split("\n").filter((l) => /^\s+"/.test(l)).length);
     expect(BACKEND.length).toBe(18);
-    expect(COFFEE_SLUG).toBe("kph");
-    expect(COOKED_SLUG).toBe("byshvl-lpy-hzmnh");
-    expect(CAKES_SLUG).toBe("avgvt-vkynvchym");
+    expect(ADMIN_SLUGS).toEqual(["coffee", "cooked-to-order", "cakes-desserts"]);
   });
 
   it("every seeded category is in the list with the same name and slug", () => {
@@ -44,15 +43,10 @@ describe("category taxonomy = the backend's categories (MEH-3076)", () => {
     }
   });
 
-  it("the only other entries are the admin-created ones, under the backend's transliterated slugs", () => {
+  it("the only other entries are the admin-created ones, under the English slugs of revision b3d5f7a9c1e2", () => {
     const extra = CATEGORY_TAXONOMY.filter((c) => !BACKEND.some((b) => b.slug === c.slug));
-    expect(extra).toEqual([
-      { slug: COFFEE_SLUG, name: "קפה", group: "pantry" },
-      // MEH-3738
-      { slug: COOKED_SLUG, name: "בישול לפי הזמנה", group: "pantry" },
-      // MEH-3911
-      { slug: CAKES_SLUG, name: "עוגות וקינוחים", group: "bread" },
-    ]);
+    expect(extra.map((c) => c.slug)).toEqual(ADMIN_SLUGS);
+    for (const slug of slugs) expect(slug, "English slug").toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 });

@@ -6,12 +6,12 @@ Lives in a separate file from admin.py to keep things readable.
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from typing import Any
+from typing import Annotated, Any
 import logging
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path, Query
 from sqlalchemy import func, tuple_
 from sqlalchemy.orm import Session
 
@@ -339,9 +339,14 @@ def delete_category(
     return delete_category_row(db, category_id)
 
 
+# MEH-3911: page slugs are English; the GET auto-creates a row, so an
+# unchecked path param would let any string become a page slug.
+PageSlug = Annotated[str, Path(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=50)]
+
+
 @router.get("/pages/{slug}", response_model=StaticPageOut)
 def get_static_page(
-    slug: str,
+    slug: PageSlug,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> StaticPageOut | StaticPage:
@@ -357,7 +362,7 @@ def get_static_page(
 
 @router.put("/pages/{slug}", response_model=StaticPageOut)
 def update_static_page(
-    slug: str,
+    slug: PageSlug,
     data: StaticPageUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),

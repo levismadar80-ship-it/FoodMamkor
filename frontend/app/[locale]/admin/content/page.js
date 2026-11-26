@@ -46,11 +46,17 @@ export default function AdminContentPage() {
   );
 }
 
+// MEH-3911: same shape as the backend CategoryCreate.slug pattern.
+const ENGLISH_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
 function CategoriesEditor() {
   const t = useTranslations("admin");
   const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
+  // MEH-3911: the public slug (/producers/<slug>/<region>), typed in English.
+  const [slug, setSlug] = useState("");
+  const [slugInvalid, setSlugInvalid] = useState(false);
   // MEH-3255 (D10): «דורשת רישיון?» has no default — null until she picks.
   const [requiresLicense, setRequiresLicense] = useState(null);
   const [licenseMissing, setLicenseMissing] = useState(false);
@@ -68,13 +74,18 @@ function CategoriesEditor() {
   const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!ENGLISH_SLUG.test(slug)) {
+      setSlugInvalid(true);
+      return;
+    }
     if (requiresLicense === null) {
       setLicenseMissing(true);
       return;
     }
     run("category-create", async () => {
-      await api.post("/admin/categories", { name, requires_license: requiresLicense });
+      await api.post("/admin/categories", { name, slug, requires_license: requiresLicense });
       setName("");
+      setSlug("");
       setRequiresLicense(null);
       load();
     });
@@ -126,6 +137,17 @@ function CategoriesEditor() {
             onChange={(e) => setName(e.target.value)}
             className="flex-1 min-w-0"
           />
+          <Input inline size="md"
+            dir="ltr"
+            aria-label={t("content.categories.slug_label")}
+            placeholder={t("content.categories.slug_placeholder")}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.target.value.trim().toLowerCase());
+              setSlugInvalid(false);
+            }}
+            className="flex-1 min-w-0"
+          />
           <Button
             type="submit"
             disabled={isBusy("category-create")}
@@ -134,6 +156,9 @@ function CategoriesEditor() {
             {t("content.categories.add")}
           </Button>
         </div>
+        {slugInvalid && (
+          <InlineMessage size="xs">{t("content.categories.slug_invalid")}</InlineMessage>
+        )}
         {/* MEH-3255 (D10): the licence answer is required on create. */}
         <fieldset className="text-sm" data-testid="category-license-choice">
           <legend className="mb-1">{t("content.categories.license_question")}</legend>

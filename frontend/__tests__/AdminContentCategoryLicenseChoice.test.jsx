@@ -27,7 +27,31 @@ async function typeName() {
   fireEvent.change(screen.getByPlaceholderText("admin.content.categories.name_placeholder"), {
     target: { value: "פטריות" },
   });
+  // MEH-3911: the English slug is required before the licence question.
+  fireEvent.change(screen.getByPlaceholderText("admin.content.categories.slug_placeholder"), {
+    target: { value: "mushrooms" },
+  });
 }
+
+describe("category create needs an English slug (MEH-3911)", () => {
+  it.each([["", "empty"], ["פטריות", "Hebrew"], ["mush rooms", "a space"]])(
+    "sends nothing for %j (%s) and says why",
+    async (value) => {
+      render(<AdminContentPage />);
+      await screen.findByDisplayValue("דבש");
+      fireEvent.change(screen.getByPlaceholderText("admin.content.categories.name_placeholder"), {
+        target: { value: "פטריות" },
+      });
+      fireEvent.change(screen.getByPlaceholderText("admin.content.categories.slug_placeholder"), {
+        target: { value },
+      });
+      fireEvent.click(screen.getByLabelText("admin.content.categories.license_no"));
+      fireEvent.click(screen.getByText("admin.content.categories.add"));
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert").textContent).toBe("admin.content.categories.slug_invalid");
+    },
+  );
+});
 
 describe("category create asks «דורשת רישיון?» (MEH-3255)", () => {
   it("sends nothing and says why when no answer was picked", async () => {
@@ -45,7 +69,7 @@ describe("category create asks «דורשת רישיון?» (MEH-3255)", () => {
     fireEvent.click(screen.getByLabelText(`admin.content.categories.${label}`));
     fireEvent.click(screen.getByText("admin.content.categories.add"));
     await waitFor(() =>
-      expect(apiMock.post).toHaveBeenCalledWith("/admin/categories", { name: "פטריות", requires_license: value }),
+      expect(apiMock.post).toHaveBeenCalledWith("/admin/categories", { name: "פטריות", slug: "mushrooms", requires_license: value }),
     );
   });
 

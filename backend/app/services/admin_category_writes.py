@@ -86,10 +86,14 @@ def create_category_row(db: Session, data: CategoryCreate) -> Category:
     # user text — the default cannot query the session to dodge a collision, and
     # a collision would surface as a 500 from the UNIQUE constraint instead of a
     # category that simply got `-2` appended.
+    # MEH-3911: an English slug typed by the admin wins; a taken one is a
+    # clear 400, not a silent `-2` (the admin chose that word on purpose).
+    if data.slug and db.query(Category.id).filter(Category.slug == data.slug).first():
+        raise HTTPException(status_code=400, detail="הכתובת באנגלית כבר בשימוש בקטגוריה אחרת")
     cat = Category(
         name=data.name,
         emoji=data.emoji,
-        slug=resolve_unique_slug(db, data.name),
+        slug=data.slug or resolve_unique_slug(db, data.name),
         requires_license=data.requires_license,  # MEH-3255
     )
     db.add(cat)

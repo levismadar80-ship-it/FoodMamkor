@@ -1,7 +1,7 @@
 // MEH-3738 — «בישול לפי הזמנה» (cooked to order: platters, salads, small
-// catering) is created from the admin, not seeded, so its slug is the
-// transliteration "byshvl-lpy-hzmnh" (pinned on the backend side by
-// tests/test_meh3738_cooked_food_slug.py). Until the row exists every line
+// catering) is created from the admin, not seeded; its slug is the English
+// "cooked-to-order" since MEH-3911 (see
+// revision b3d5f7a9c1e2). Until the row exists every line
 // below is inert; this pins that the frontend is ready the moment it does.
 // Same shape as CoffeeCategoryReady.test.js.
 import { describe, it, expect } from "vitest";
@@ -10,7 +10,7 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 
-const COOKED = { id: 98, name: "בישול לפי הזמנה", slug: "byshvl-lpy-hzmnh" };
+const COOKED = { id: 98, name: "בישול לפי הזמנה", slug: "cooked-to-order" };
 
 describe("MEH-3738 cooked-to-order category", () => {
   it("resolves its own glyph by slug and by name, not the fallback", () => {

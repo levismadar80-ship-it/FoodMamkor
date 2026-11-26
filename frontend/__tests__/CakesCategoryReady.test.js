@@ -1,7 +1,7 @@
 // MEH-3911 — «עוגות וקינוחים» (cakes, cookies, tarts, desserts) is created
-// from the admin, not seeded, so its slug is the transliteration
-// "avgvt-vkynvchym" (pinned on the backend side by
-// tests/test_meh3911_cakes_slug.py). Until the row exists every line below is
+// from the admin, not seeded, with the English slug "cakes-desserts" (the
+// admin types it since MEH-3911; revision b3d5f7a9c1e2 sets it on existing
+// rows). Until the row exists every line below is
 // inert; this pins that the frontend is ready the moment it does. Same shape
 // as CookedFoodCategoryReady.test.js.
 import { describe, it, expect } from "vitest";
@@ -10,7 +10,7 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 
-const CAKES = { id: 97, name: "עוגות וקינוחים", slug: "avgvt-vkynvchym" };
+const CAKES = { id: 97, name: "עוגות וקינוחים", slug: "cakes-desserts" };
 
 describe("MEH-3911 cakes and desserts category", () => {
   it("resolves its own glyph by slug and by name, not the fallback", () => {

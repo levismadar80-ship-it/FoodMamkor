@@ -14,9 +14,8 @@
  *           it gets the fallback glyph and its own chip (map-chips
  *           categoryGroupRow), it just has no group, glyph or English name.
  * Related:  backend/app/services/category_slug.py NAME_TO_SLUG (the 18 seeded
- *           slugs) · tests/test_meh3401_coffee_slug.py (coffee's "kph") ·
- *           tests/test_meh3738_cooked_food_slug.py (cooked to order) ·
- *           tests/test_meh3911_cakes_slug.py (cakes and desserts) ·
+ *           slugs) · the RENAMES of revision b3d5f7a9c1e2 (the English
+ *           slugs of the admin-created rows, MEH-3911) ·
  *           __tests__/CategoryTaxonomyGuard.test.js (holds this list equal to
  *           the backend table and complete in every registry).
  * History:  MEH-3076 (creation, Sapir 21/11: «הכל לתקן ולעשות לפני השקה» —
@@ -51,14 +50,14 @@ export const CATEGORY_TAXONOMY = Object.freeze([
   { slug: "chocolate", name: "שוקולד וממתקים בוטיק", group: "pantry" },
   { slug: "honey", name: "דבש", group: "pantry" },
   { slug: "fish", name: "דגים", group: "meat" },
-  // MEH-3401: created from the admin, so its slug is the transliteration.
-  { slug: "kph", name: "קפה", group: "pantry" },
-  // MEH-3738: cooked to order (platters, salads, small catering). Created from
-  // the admin, so its slug is the transliteration (tests/test_meh3738_cooked_food_slug.py).
-  { slug: "byshvl-lpy-hzmnh", name: "בישול לפי הזמנה", group: "pantry" },
+  // MEH-3401 / MEH-3738 / MEH-3911: created from the admin. Their slugs were
+  // transliterations until MEH-3911 renamed them to English (revision
+  // b3d5f7a9c1e2, which __tests__/CategoryTaxonomyGuard.test.js reads).
+  { slug: "coffee", name: "קפה", group: "pantry" },
+  // MEH-3738: cooked to order (platters, salads, small catering).
+  { slug: "cooked-to-order", name: "בישול לפי הזמנה", group: "pantry" },
   // MEH-3911: cakes, cookies, tarts, desserts. Baked goods, so the bread group.
-  // Created from the admin (tests/test_meh3911_cakes_slug.py).
-  { slug: "avgvt-vkynvchym", name: "עוגות וקינוחים", group: "bread" },
+  { slug: "cakes-desserts", name: "עוגות וקינוחים", group: "bread" },
 ]);
 
 /** @param {CategoryGroup} group @returns {string[]} the slugs in that group. */
