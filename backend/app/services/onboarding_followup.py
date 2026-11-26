@@ -16,7 +16,8 @@ Related:  backend/app/services/email.py:22 (send_email fail-open contract),
           do not modify), backend/alembic/versions/20260516_1036_b504e4be4225_
           meh_539_add_followup_email_tracking.py (the 4 timestamp columns +
           idx_producers_created_at this module relies on).
-History:  MEH-539 (creation, 2026-05-16) — Phase 2C of MEH-615.
+History:  MEH-539 (creation, 2026-05-16) — Phase 2C of MEH-615; MEH-3840
+          (Email 5: no promise of future materials, the last 30 days' numbers).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.models import Producer, User
+from app.services import onboarding_day30_numbers as day30
 from app.services.email import send_email
 
 logger = logging.getLogger(__name__)
@@ -185,7 +187,9 @@ _EMAIL_4_BODY = """\
 צוות מהמקור
 """
 
-_EMAIL_5A_SUBJECT = "חודש איתנו — סיכום קצר + מה הלאה"
+# MEH-3840: «+ מה הלאה» and its paragraph promised materials no email sends;
+# the question «קיבלתם הודעות ראשונות?» is answered by {numbers} instead.
+_EMAIL_5A_SUBJECT = "חודש איתנו — סיכום קצר"
 _EMAIL_5A_BODY = """\
 {greeting}
 
@@ -193,8 +197,8 @@ _EMAIL_5A_BODY = """\
 
 הצטרפתם למהמקור כשעוד היינו פרויקט קטן. בעלי העסק כמוכם הם הסיבה שהפרויקט הזה קיים בכלל.
 
-איך הצד שלכם נראה?
-קיבלתם הודעות ראשונות? הסיפור עובד כמו שציפיתם? ספרו לנו בתשובה למייל הזה — חשוב לנו לשמוע מה עובד ומה לא. כל מייל נקרא.
+{numbers}איך הצד שלכם נראה?
+מה עובד אצלכם ומה פחות? ספרו לנו בתשובה למייל הזה. כל מייל נקרא.
 
 ---
 
@@ -210,9 +214,6 @@ _EMAIL_5A_BODY = """\
 אם יש לקוחות מרוצים, בקשו מהם משפט קצר עם שם פרטי. ביקורת אחת אמיתית עם סיפור > 50 ביקורות "5 כוכבים" אנונימיות. (במהמקור אין דירוגים אנונימיים. כל ביקורת — עם שם וסיפור.)
 
 ---
-
-מה הלאה:
-בחודשים הקרובים נשלח חומרים מעמיקים יותר — איך לתמחר נכון, איך לטפל בעונות שקטות, איך לבנות לקוחות חוזרים. יש נושא שתרצו שנכתוב עליו? כתבו לנו.
 
 תודה שבחרתם להיות מהראשונים. זה אומר לנו הרבה.
 
@@ -231,7 +232,7 @@ _EMAIL_5B_BODY = """\
 
 חודש שהעמוד שלכם חי. תודה.
 
-דבר אחד שעוד לא עשינו: תג "מאומת". הוא מופיע ליד שם העסק ואומר ללקוחות שבדקנו רישיון או פטור, ומתי. התג בחינם.
+{numbers}דבר אחד שעוד לא עשינו: תג "מאומת". הוא מופיע ליד שם העסק ואומר ללקוחות שבדקנו רישיון או פטור, ומתי. התג בחינם.
 
 כדי לקבל אותו:
 ✅ רישיון ייצור, רישיון עסק או אישור פטור (PDF / תמונה ברורה)
@@ -274,10 +275,14 @@ def _is_licensed(producer: Producer) -> bool:
     return bool(pln)
 
 
-def _build_email(step: int, producer: Producer, first_name: str) -> Tuple[str, str]:
-    """Pick (subject, body) for one step. Email 5 branches on _is_licensed."""
+def _build_email(
+    step: int, producer: Producer, first_name: str, numbers: str = ""
+) -> Tuple[str, str]:
+    """Pick (subject, body) for one step. Email 5 branches on _is_licensed;
+    `numbers` is its day-30 block (MEH-3840), "" when every number is 0."""
     fmt = {
         "greeting": _greeting(first_name),
+        "numbers": numbers,
         "frontend_url": settings.frontend_url,
         "site_domain": SITE_DOMAIN,
     }
@@ -292,6 +297,22 @@ def _build_email(step: int, producer: Producer, first_name: str) -> Tuple[str, s
             return _EMAIL_5A_SUBJECT, _EMAIL_5A_BODY.format(**fmt)
         return _EMAIL_5B_SUBJECT, _EMAIL_5B_BODY.format(**fmt)
     raise ValueError(f"unknown follow-up step: {step}")
+
+
+def _day30_block(db: Session, producer: Producer) -> str:
+    """MEH-3840: the numbers block for Email 5. A failure costs the block,
+    never the email — it goes out as it read before, and the error is logged."""
+    try:
+        n = day30.day30_numbers(db, producer.id)  # type: ignore[arg-type]
+    except Exception:  # noqa: BLE001 — the numbers are a lead, not the email
+        db.rollback()
+        logger.warning(
+            "[FOLLOWUP] producer_id=%s day-30 numbers failed",
+            producer.id,
+            exc_info=True,
+        )
+        return ""
+    return day30.block(str(producer.name or ""), n, settings.frontend_url)
 
 
 # ---------- public entry point ----------
@@ -359,7 +380,8 @@ def send_due_followups(db: Session) -> dict[int, int]:
                     continue
                 parts = (user.name or "").strip().split()
                 first_name = parts[0] if parts else ""
-                subject, body = _build_email(step, p, first_name)
+                numbers = _day30_block(db, p) if step == 5 else ""
+                subject, body = _build_email(step, p, first_name, numbers)
                 # MEH-2952: a test business / test owner → dropped and logged.
                 send_email(
                     user.email,  # type: ignore[arg-type]
