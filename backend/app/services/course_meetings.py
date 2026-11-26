@@ -42,9 +42,7 @@ _STARTED_KEPT = "מפגש שכבר התקיים נשאר ברשימה ואי א�
 def _meeting_key(m: dict[str, Any]) -> Key:
     # A UTC offset is dropped: the meetings are Israel wall-clock times, and an
     # aware time beside a naive one cannot be sorted or compared (500).
-    t = time.fromisoformat(str(m["time"])).replace(
-        second=0, microsecond=0, tzinfo=None
-    )
+    t = time.fromisoformat(str(m["time"])).replace(second=0, microsecond=0, tzinfo=None)
     return date.fromisoformat(str(m["date"])), t
 
 

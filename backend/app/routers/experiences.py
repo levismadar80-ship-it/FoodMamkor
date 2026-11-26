@@ -781,7 +781,11 @@ def update_experience_row(
     if not after_item_edit(db, ex, before, background_tasks, is_test_item(ex)):
         # MEH-3898: a later meeting of a course changed → registrants told.
         notify_course_changed(
-            db, ex, old_meetings, background_tasks, is_test_item(ex)  # type: ignore[arg-type]
+            db,
+            ex,
+            old_meetings,
+            background_tasks,
+            is_test_item(ex),  # type: ignore[arg-type]
         )
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above

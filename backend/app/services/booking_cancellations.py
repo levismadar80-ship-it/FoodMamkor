@@ -589,8 +589,7 @@ def notify_course_changed(
     if not (item.is_active and old_meetings and new) or new == old_meetings:
         return 0
     lines = tuple(
-        f"{_date_text(date.fromisoformat(str(m['date'])))}, {m['time']}"
-        for m in new
+        f"{_date_text(date.fromisoformat(str(m['date'])))}, {m['time']}" for m in new
     )
     return notify_item_moved(
         db,

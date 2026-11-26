@@ -281,7 +281,9 @@ def send_registrant_course_changed(
     rows = [f"מפגש {i}: {when}" for i, when in enumerate(meetings, 1)]
     if m.place:
         rows.append(f"איפה: {m.place}")
-    outro = "ההרשמה שלכם לקורס נשארת בתוקף. אם המועדים החדשים לא מתאימים, אפשר לבטל כאן:"
+    outro = (
+        "ההרשמה שלכם לקורס נשארת בתוקף. אם המועדים החדשים לא מתאימים, אפשר לבטל כאן:"
+    )
     body = (
         f"{subject}\n\n{intro}\n"
         + "\n".join(rows)
