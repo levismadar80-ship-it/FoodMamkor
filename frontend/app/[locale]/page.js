@@ -16,6 +16,7 @@
 import HomeClient from "@/app/[locale]/home/HomeClient";
 import { serverFetch } from "@/lib/server-fetch";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
+import { slimCardList } from "@/lib/delivery-fee";
 import { API_URL } from "@/lib/env";
 import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
@@ -75,7 +76,14 @@ async function fetchFirstPaint() {
     get("/producers?in_season=true"),
     get(`/producers?delivery_day=${encodeURIComponent(DELIVERY_DAYS[5])}&page_size=12`),
   ]);
-  return { producers, categories, inSeason, friday };
+  // MEH-3891: the cards need only the distinct delivery fees, not every city
+  // (one business with 191 cities put this page over the byte budget).
+  return {
+    producers: slimCardList(producers),
+    categories,
+    inSeason: slimCardList(inSeason),
+    friday: slimCardList(friday),
+  };
 }
 
 export default async function HomePage({ params }) {
