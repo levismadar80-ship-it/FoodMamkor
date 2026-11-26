@@ -138,17 +138,47 @@ class TestSignupCheck:
         _owned_draft(db)
         assert _check(client, FARMERIM_PHONE) == {"owner_email": "o***@farmerim.com"}
 
-    def test_the_owners_private_phone_counts_only_for_a_signed_in_caller(
-        self, client, db
-    ):
-        """Rule-5a review: an owner's account phone is never published, so an
-        anonymous caller must not turn it into a phone → account lookup."""
+    def test_the_owners_private_phone_never_counts_here(self, client, db):
+        """Rule-5a review + /security-review 26/11: an owner's account phone
+        is never published, and any visitor can sign up for a token, so this
+        route must not turn it into a phone → account lookup at all."""
         biz, owner = _owned_draft(db, phone=None)
         owner.phone = FARMERIM_PHONE
         db.commit()
         assert _check(client, FARMERIM_PHONE) is None
-        staff = make_user(db, email="tamar@example.com")
-        assert _check(client, FARMERIM_PHONE, headers=auth_header(staff)) == {
+        caller = make_user(db, email="tamar@example.com")
+        caller.email_verified = True
+        db.commit()
+        assert _check(client, FARMERIM_PHONE, headers=auth_header(caller)) is None
+
+    def test_an_unverified_own_email_is_not_used(self, client, db):
+        """/security-review 26/11: signing up with someone else's address
+        costs nothing until it is verified."""
+        biz = make_producer(db, name="Farmerim", status="approved")
+        biz.contact_email = "farmerimservice@example.com"
+        db.commit()
+        caller = make_user(db, email="farmerimservice@example.com")
+        caller.email_verified = False
+        db.commit()
+        assert _check(client, None, headers=auth_header(caller)) is None
+
+    def test_an_unverified_own_phone_is_not_used(self, client, db):
+        _owned_draft(db)
+        caller = make_user(db, email="tamar@example.com")
+        caller.phone = FARMERIM_PHONE
+        caller.phone_verified_at = None
+        db.commit()
+        assert _check(client, None, headers=auth_header(caller)) is None
+
+    def test_a_verified_own_phone_is_used(self, client, db):
+        from datetime import datetime, timezone
+
+        _owned_draft(db)
+        caller = make_user(db, email="tamar@example.com")
+        caller.phone = FARMERIM_PHONE
+        caller.phone_verified_at = datetime.now(timezone.utc)
+        db.commit()
+        assert _check(client, None, headers=auth_header(caller)) == {
             "owner_email": "o***@farmerim.com"
         }
 
@@ -174,6 +204,8 @@ class TestSignupCheck:
         )
         db.commit()
         tamar = make_user(db, email="tamar@example.com")
+        tamar.email_verified = True
+        db.commit()
         assert _check(client, None, headers=auth_header(tamar)) == {
             "owner_email": "o***@farmerim.com"
         }
@@ -193,6 +225,8 @@ class TestSignupCheck:
         biz.contact_email = "farmerimservice@example.com"
         db.commit()
         staff = make_user(db, email="farmerimservice@example.com")
+        staff.email_verified = True
+        db.commit()
         assert _check(client, None, headers=auth_header(staff)) == {"owner_email": None}
 
     def test_a_test_business_is_not_shown_to_a_real_signup(self, client, db):

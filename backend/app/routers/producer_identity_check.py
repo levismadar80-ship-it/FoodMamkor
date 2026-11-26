@@ -12,10 +12,16 @@ Does NOT: block registration (the form decides; the server still creates
           DO NOT read an email from the body — MEH-328: an anonymous
           «is this email a business account?» oracle is exactly what the
           register route's anti-enumeration answer exists to prevent. A
-          signed-in user's OWN email is used, which reveals nothing.
+          signed-in user's OWN email and phone are used only once VERIFIED:
+          anyone can sign up unverified, so an unverified address is as
+          good as a body field (security review, 26/11).
+          DO NOT match owners' account phones here, signed in or not — they
+          are never published, and any visitor can get a token. The admin
+          email (queue_identity_alerts) still compares them, server side.
 Related:  routers/producer_name_check.py (same shape: anonymous, rate-limited,
           read-only) · components/RegisterIdentityCheck.jsx (the caller).
-History:  MEH-3884 (creation).
+History:  MEH-3884 (creation; verified-only own email/phone and no account
+          phones after the /security-review, 26/11).
 """
 
 from fastapi import APIRouter, Depends, Request
@@ -49,19 +55,21 @@ def producer_identity_check(
     phones = [body.phone]
     emails: list[str | None] = []
     if current_user is not None:
-        phones.append(current_user.phone)  # type: ignore[arg-type]
-        emails.append(current_user.email)  # type: ignore[arg-type]
+        if current_user.phone_verified:
+            phones.append(current_user.phone)  # type: ignore[arg-type]
+        if current_user.email_verified:
+            emails.append(current_user.email)  # type: ignore[arg-type]
     candidate = identity_of(phones=phones, emails=emails)
     if not candidate.phones and not candidate.emails:
         return IdentityCheckOut(match=None)
-    # Anonymous: the businesses' own phones only. An owner's account phone is
-    # never published, and must not become a phone → account lookup (MEH-328).
+    # The businesses' own phones only. An owner's account phone is never
+    # published, and must not become a phone → account lookup (MEH-328).
     matches = identity_matches(
         db,
         candidate,
         exclude_id=getattr(current_user, "producer_id", None),
         is_test=bool(getattr(current_user, "is_test", False)),
-        account_phones=current_user is not None,
+        account_phones=False,
     )
     if not matches:
         return IdentityCheckOut(match=None)
