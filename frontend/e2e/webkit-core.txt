@@ -1,26 +1,2 @@
-# MEH-3153 — the WebKit (iPhone 13) specs that BLOCK.
-#
-# Read by the `e2e-webkit-core` job in .github/workflows/e2e.yml
-# (docs/ci/meh-3153-webkit-core.patch.md): it runs exactly these files in the
-# `webkit-iphone13` project on every push to staging (public CI mode) and on
-# every PR that carries `run-e2e` (both modes). A red here is a red gate.
-#
-# Chosen 20/11/2026 from the two latest nightly WebKit runs (44437769648,
-# 44654487659): core pages (home, business page, map, producers list, owner
-# dashboard), none of them failed or flaked on either night. Left out on
-# purpose: 37-outreach-prefill (6 reds both nights), manual/map.spec.ts and
-# manual/home.spec.ts (one red test each night).
-#
-# Adding a file: it must have been green in recent nightly WebKit runs.
-# Removing one loosens a blocking gate — say why in the PR (workflow rule 32).
-# One path per line, relative to frontend/. `#` starts a comment.
-# __tests__/WebkitCoreList.test.js fails on a path that does not exist.
-e2e/flows/48-chip-row-all-visible.spec.ts
-e2e/flows/01-home-load.spec.ts
-e2e/flows/03-view-producer-detail.spec.ts
-e2e/flows/04-whatsapp-click.spec.ts
-e2e/flows/05-map-navigation.spec.ts
-e2e/flows/15-map-markers.spec.ts
-e2e/flows/16-producers-browse.spec.ts
+# MEH-3845 probe branch only
 e2e/flows/manual/producer-detail.spec.ts
-e2e/flows/manual/dashboard-shell.spec.ts

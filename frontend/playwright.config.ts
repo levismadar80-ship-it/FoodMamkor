@@ -221,6 +221,7 @@ export default defineConfig({
             // Real iPhone 13 metrics — the device class the Israeli consumer
             // audience actually carries.
             name: "webkit-iphone13",
+            repeatEach: 6, // MEH-3845 PROBE BRANCH ONLY — never merged
             // VRT baselines are stored PER PROJECT, and no webkit baseline set
             // exists. Without this the project would run visual/parity.spec.ts
             // and mint a fresh baseline for every shot — a bot-authored
