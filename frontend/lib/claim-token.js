@@ -16,7 +16,8 @@
  *           sentry.*.config.js · components/SpeedInsightsRedacted.jsx ·
  *           backend producer_claim.py · backend producer_owner_invite.py.
  * History:  MEH-2324 (creation). MEH-2974 (the owner-invite token).
- *           MEH-3526 (the order-staff invite token).
+ *           MEH-3526 (the order-staff invite token). MEH-3896 (the short
+ *           /v/<code> and /c/<code> links).
  *
  * The link is a bearer credential: whoever holds it and is signed in can take
  * the draft. That is why it must not sit in a URL a third party records.
@@ -85,6 +86,18 @@ const STAFF_INVITE_PATH_ENCODED = new RegExp(
 const DRAFT_PREVIEW_PATH = new RegExp(String.raw`(/(?:draft|producer)-preview)/${JWT}`, "g");
 const DRAFT_PREVIEW_PATH_ENCODED = new RegExp(
   String.raw`(%2F(?:[a-z]{2}%2F)?(?:draft|producer)-preview)%2F${JWT}`,
+  "gi",
+);
+
+// MEH-3896: the short forms — /v/<code> (preview), /c/<code> (claim) and the
+// API read /producer-preview/<code>. The code is exactly 12 base62 characters
+// (backend services/share_links.py); the look-ahead stops a longer word from
+// matching, and route files ([code]/page-<hash>.js) have a bracket or a dash,
+// so stack frames keep pointing at their source.
+const SHORT_CODE = String.raw`[A-Za-z0-9]{12}(?![\w-])`;
+const SHORT_LINK_PATH = new RegExp(String.raw`(/(?:v|c|producer-preview))/${SHORT_CODE}`, "g");
+const SHORT_LINK_PATH_ENCODED = new RegExp(
+  String.raw`(%2F(?:[a-z]{2}%2F)?(?:v|c|producer-preview))%2F${SHORT_CODE}`,
   "gi",
 );
 
@@ -237,6 +250,8 @@ export function redactClaimPath(value) {
     .replace(STAFF_INVITE_PATH_ENCODED, "$1%2F[token]")
     .replace(DRAFT_PREVIEW_PATH, "$1/[token]")
     .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]")
+    .replace(SHORT_LINK_PATH, "$1/[token]")
+    .replace(SHORT_LINK_PATH_ENCODED, "$1%2F[token]")
     .replace(ORDER_LINK_TOKEN, "$1[token]")
     .replace(ORDER_LINK_TOKEN_ENCODED, "$1[token]");
 }

@@ -7914,6 +7914,9 @@
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
       },
+      "owner_assistant": {
+        "label": "Dashboard assistant: answers questions, fills in details and adds products from the chat"
+      },
       "product_details": {
         "label": "Products with price, ingredients and allergens",
         "tile_title": "Products",
@@ -8491,5 +8494,42 @@
     "invalid_title": "This link is not valid",
     "invalid_body": "You can ask the business to send a new link.",
     "error": "We couldn't add you. You can try again."
+  },
+  "owner_assistant": {
+    "button": "Assistant",
+    "title": "Mehamakor assistant",
+    "close": "Close the assistant",
+    "log_label": "Conversation with the assistant",
+    "opening": "Hi, I'm the dashboard assistant. Ask me anything about your page and signing up. I'll tell you the next step, and you can do it all here with me: fill in your details, add products and photos, and send your page for review.",
+    "prompts": {
+      "next_step": "What's my next step?",
+      "fill": "Can you help me fill in my business details?",
+      "this_screen": "What do I do on this screen?",
+      "add_products": "How do I add products?"
+    },
+    "typing": "Typing…",
+    "input_label": "Question for the assistant",
+    "input_placeholder": "Ask a question or tell me about your business",
+    "new_chat": "New chat",
+    "fallback": "I couldn't understand the question. Could you rephrase it?",
+    "error_rate_limit": "Too many messages in a row. Try again in a minute.",
+    "error_generic": "The message wasn't sent. Try again in a moment.",
+    "pages": {
+      "edit": "Edit page",
+      "google_profile": "Business on Google",
+      "share": "Share your page",
+      "followers": "Followers",
+      "whats_new": "What's new"
+    },
+    "done": {
+      "fields": "The details were saved to your page.",
+      "products": "The products were added to your page.",
+      "photos": "The photos were saved to your page.",
+      "submitted": "Your page was sent for review."
+    },
+    "nudge": {
+      "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can help with that, right here.",
+      "cta": "Finish with the assistant"
+    }
   }
 }

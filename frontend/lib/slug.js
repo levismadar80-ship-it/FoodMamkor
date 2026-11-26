@@ -54,6 +54,8 @@ const RESERVED = new Set([
   // MEH-3377: the read-only preview of an unpublished draft. Reserved for the
   // same two reasons as the two above.
   "draft-preview",
+  // MEH-3896: the short preview (/v/<code>) and claim (/c/<code>) links.
+  "v", "c",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.

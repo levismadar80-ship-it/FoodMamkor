@@ -1,7 +1,7 @@
 """meh3898_experience_course_meetings
 
 Revision ID: a9c3e5f7b1d2
-Revises: c6e8a0b2d4f5
+Revises: d2f4b6a8c0e1
 Create Date: 2026-11-26 16:00:00.000000+00:00
 
 MEH-3898: a course — one experience that meets several times, with one
@@ -25,7 +25,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision: str = "a9c3e5f7b1d2"
-down_revision: Union[str, None] = "c6e8a0b2d4f5"
+down_revision: Union[str, None] = "d2f4b6a8c0e1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

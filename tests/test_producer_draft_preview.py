@@ -22,6 +22,7 @@ from app.auth import _jwt_key, create_producer_claim_token
 from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.models import Producer
+from app.services.share_links import resolve_share_code
 from app.services.draft_preview import (
     DRAFT_PREVIEW_SCOPE,
     create_draft_preview_token,
@@ -86,8 +87,9 @@ def test_admin_mints_a_link_for_an_ownerless_draft(client, db):
     r = client.post(_link(p.id), headers=auth_header(admin))
     assert r.status_code == 200, r.text
     body = r.json()
-    token = body["url"].rsplit("/draft-preview/", 1)[1]
-    assert decode_draft_preview_token(token) == p.id
+    # MEH-3896: the short /v/<code> link, not the JWT.
+    code = body["url"].rsplit("/v/", 1)[1]
+    assert resolve_share_code(db, code, "draft_preview") == p.id
     assert body["url"].startswith(settings.frontend_url)
 
 

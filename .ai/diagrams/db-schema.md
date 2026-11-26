@@ -22,6 +22,7 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o{ share_links : "short preview / claim links (MEH-3896)"
     producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
@@ -301,6 +302,16 @@ erDiagram
         string resend_email_id
         string detail "bounce type/subType; never server text"
         timestamp created_at "deleted after 30 days"
+    }
+
+    share_links {
+        uuid id PK
+        string code_hash UK "sha256 of the 12-char code, never the code (MEH-3896)"
+        string scope "draft_preview or producer_claim (CHECK)"
+        uuid producer_id FK "CASCADE"
+        timestamp expires_at "14 days; deleted 90 days after"
+        timestamp created_at
+        uuid created_by FK "nullable, SET NULL"
     }
 
     product_order_items {

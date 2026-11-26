@@ -111,6 +111,7 @@ import {
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
 import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
+import { useOwnerPageUpdated } from "@/lib/owner-page-updated"; // MEH-3902
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -337,6 +338,12 @@ function EditPageInner() {
     },
     [group, enterGroup]
   );
+
+  // MEH-3902: the dashboard assistant saved fields — read the business again,
+  // as the «ספרו לנו על העסק» panel's onSaved does below.
+  useOwnerPageUpdated(() => {
+    api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); }, () => {});
+  });
 
   useEffect(() => {
     if (authLoading) return;

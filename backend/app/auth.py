@@ -181,6 +181,8 @@ PRODUCER_CLAIM_SCOPE = "producer_claim"
 PRODUCER_CLAIM_TTL_DAYS = 14
 
 
+# MEH-3896: no app caller since the short links; kept because the tests
+# mint old-style links with it to prove those still open until `exp`.
 def create_producer_claim_token(producer_id: UUID) -> tuple[str, datetime]:
     """Return (token, expires_at). expires_at is returned so the admin UI can
     show it without decoding the token."""

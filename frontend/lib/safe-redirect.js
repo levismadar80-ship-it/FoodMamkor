@@ -55,7 +55,7 @@ export function loginHrefBackHere() {
 // page (the default anyway), the auth screens, and the three token flows —
 // their address can carry a credential, which has no business in a second URL.
 const NO_RETURN =
-  /^\/(?:$|\?|(?:login|register|verify-email|reset-password|forgot-password|registration|owner-invite|staff-invite|claim)(?:[/?]|$))/;
+  /^\/(?:$|\?|(?:login|register|verify-email|reset-password|forgot-password|registration|owner-invite|staff-invite|claim|c)(?:[/?]|$))/;
 
 /**
  * MEH-3026 (F2): the href for a «כניסה» LINK.
@@ -82,7 +82,7 @@ export function loginLinkFor(path, localePrefix = "") {
 // sense once — never stored for 24 h by lib/post-auth-return.js. Kept apart
 // from NO_RETURN so the «כניסה» links of MEH-3026 do not change.
 const TOKEN_PAGES =
-  /^\/(?:draft-preview|delivery-waitlist|newsletter|freshness|unsubscribe|account-deleted|business-gone)(?:[/?]|$)/;
+  /^\/(?:draft-preview|v|delivery-waitlist|newsletter|freshness|unsubscribe|account-deleted|business-gone)(?:[/?]|$)/;
 
 /**
  * MEH-3661: may a signed-in reader be sent back to `path`? Internal, not the

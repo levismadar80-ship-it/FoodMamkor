@@ -209,9 +209,10 @@ REPLACE_TABLES = frozenset(
         "producer_whatsapp_clicks",
     }
 )
-# Die with her row on purpose: a code sent to her old row, and the tombstone
-# admin_delete_producer writes for her never-public slug.
-LEFT_TABLES = frozenset({"phone_otp_tokens", "retired_slugs"})
+# Die with her row on purpose: a code sent to her old row, the tombstone
+# admin_delete_producer writes for her never-public slug, and the short
+# preview/claim links minted for her old row (MEH-3896; CASCADE).
+LEFT_TABLES = frozenset({"phone_otp_tokens", "retired_slugs", "share_links"})
 
 
 def producer_child_tables() -> dict[str, Any]:

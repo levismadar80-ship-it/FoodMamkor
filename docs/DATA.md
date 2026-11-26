@@ -917,6 +917,10 @@ email_events (id uuid PK, svix_id varchar(64) UNIQUE, event_type varchar(40),
                         kind varchar(40), user_id FK→users SET NULL,
                         recipient_domain varchar(255), resend_email_id,
                         detail varchar(80), created_at)               -- MEH-3839
+share_links (id uuid PK, code_hash varchar(64) UNIQUE (sha256 of the code,
+                        never the code), scope draft_preview|producer_claim
+                        (CHECK), producer_id FK→producers CASCADE, expires_at,
+                        created_at, created_by FK→users SET NULL)    -- MEH-3896
 producer_staff (id uuid PK, producer_id FK→producers CASCADE,
                         user_id FK→users CASCADE nullable (set on accept),
                         invited_email varchar(255), role 'orders',
@@ -926,6 +930,8 @@ producer_staff (id uuid PK, producer_id FK→producers CASCADE,
                         accepted_at, revoked_at;
                         UNIQUE (user_id) WHERE status='active')     -- MEH-3526
 ```
+
+> **MEH-3896 — short preview and claim links (26/11/2026):** revision `d2f4b6a8c0e1` on `c6e8a0b2d4f5` (MEH-3526), additive: table `share_links` (**`EXPECTED_TABLES` +1**, 69 → 70). The two admin "create link" routes now return `{frontend_url}/v/<code>` (preview) and `{frontend_url}/c/<code>` (claim), where `<code>` is 12 random base62 characters (~71 bits, `secrets.choice`). Only the SHA-256 of the code is stored. `services/share_links.py` mints and resolves it; every read route accepts the code OR the old JWT (`link_producer_id`), so links sent before this keep working until their own `exp`. Rows go with the draft (CASCADE) and are deleted 90 days after `expires_at` by the retention purge (the «send me a new link» request reads a lapsed claim code for 90 days, like a lapsed JWT).
 
 > **MEH-3839 — what Resend reports back (24/11/2026):** revision `e1a3c5b7d9f2` on `b7d9f1a3c5e8` (MEH-3703), additive: table `email_events` (**`EXPECTED_TABLES` +1**). One row per delivery event Resend reports for an email we sent: `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.suppressed`, `email.failed`, `email.clicked` (`EMAIL_EVENT_TYPES`; `email.sent`, `email.opened` and the rest are acknowledged and dropped — opens are inflated by Apple Mail). Written only by `POST /webhook/resend`. `kind` is the tag `send_email(kind=…)` put on the email (`order_new_order`, `weekly_summary`, `onboarding_2`, …; `other` when untagged or invalid). No address and no text from the receiving server: the recipient's domain, and the user id when the address belongs to an account; `detail` is the bounce `type/subType` or the suppression type. Retried deliveries are one row (`svix_id` unique). Deleted 30 days after `created_at` (`services/retention_purge.py`). We keep no suppression list of our own: Resend skips a hard-bounced or complained address itself and reports `email.suppressed`.
 
@@ -1370,8 +1376,9 @@ The page she lands on (MEH-2324) is `frontend/app/[locale]/claim/`. On first loa
 
 ```
 POST   /admin/producers/{id}/claim-link   admin  — 30/hour. Draft-only (409 otherwise), no owner yet (409 «העמוד הזה כבר שויך לחשבון.»), 404 if missing.
-                                                     → {url: {frontend_url}/claim/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_claim"},
-                                                     14-day TTL, exp essential (auth.py create_producer_claim_token). Stateless — no table, no revocation before exp.
+                                                     → {url: {frontend_url}/c/<code>, expires_at}. MEH-3896: a 12-character random code, a share_links row
+                                                     (scope "producer_claim", 14 days, sha256 stored, services/share_links.py). Before MEH-3896 the link was
+                                                     /claim/<HS256 JWT {producer_id, scope:"producer_claim"}>; every read route below still accepts that JWT until its exp.
 POST   /producer-claim/preview {token}     public — 30/min. Token in the BODY, never a query string (it is a 14-day bearer credential; a URL reaches access logs + Sentry). → {name, city, short_description, image, category_names} ONLY (no phone/email/address/license; category names drive the grower declaration, as in registration).
                                                      Any unusable link (bad signature, expired, wrong scope, deleted draft) → the same 404; claimed or not a draft → 409.
 POST   /producer-claim/new-link-request {token}  public — 5/hour (MEH-3122). For a link that is no longer active: accepts a correctly signed claim token up to 90 days past `exp` (`decode_lapsed_producer_claim_token`), and for a draft that can still be claimed tells the admin (email + WhatsApp, one notice per draft per day) so she can send a new link. Mints nothing, sends nothing to the owner. → always `{ok: true}`, whatever the token (no probing).
@@ -1403,11 +1410,11 @@ The public page is `frontend/app/[locale]/draft-preview/[token]/` (noindex, `ref
 
 ```
 POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless draft only (409 «אפשר רק לטיוטה שעוד אין לה בעלים»), 404 if missing.
-                                                     → {url: {frontend_url}/draft-preview/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_draft_preview"},
-                                                     14-day TTL, exp essential (services/draft_preview.py). Stateless — no table, no revocation before exp;
-                                                     it stops working the moment the draft is claimed, published, rejected or deleted.
-GET    /producer-preview/{token}                   public — 60/min. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
-                                                     Bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
+                                                     → {url: {frontend_url}/v/<code>, expires_at}. MEH-3896: a 12-character random code, a share_links row
+                                                     (scope "draft_preview", 14 days, sha256 stored). The old /draft-preview/<HS256 JWT scope:"producer_draft_preview">
+                                                     links still open until their exp. Either kind stops working the moment the draft is claimed, published, rejected or deleted.
+GET    /producer-preview/{token}                   public — 60/min. {token} = a short code or an old JWT. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
+                                                     Unknown or bad code, bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
 POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}.
                                                      Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
                                                      photo; a missing licence is logged, not blocked, and the business gets no verified badge — MEH-3026), with the
@@ -2388,6 +2395,30 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  button resolves to (chat_business_extras.contact_channel, the
                                  port of lib/contact-method.js getResolvedMethod) — a name, never
                                  the number or link.
+POST /chat/owner                 👤 owner (require_producer) — MEH-3902, the dashboard
+                                 assistant (routers/chat_owner.py). Body {messages, section,
+                                 locale}: section = the dashboard path she is on, kept only
+                                 when it is a screen in app/owner_sections.py (else null);
+                                 locale he|en picks the answer language. The prompt lists every
+                                 dashboard screen and edit card; a fenced <owner_business>
+                                 block carries her status, what still blocks «שליחה לבדיקה»
+                                 and where to fix it, and empty fields. Answer {reply, draft,
+                                 products, action, unanswered}. Tools: fill_page_from_chat →
+                                 draft (services/page_filler.read_page on HER messages only);
+                                 products_from_chat → products (menu_reader.read_menu_text,
+                                 her messages only; none found → action add_products);
+                                 show_in_chat → action add_products | upload_photos |
+                                 send_for_review (the last for a draft only); note_unanswered
+                                 → unanswered = a screen key or "other", never her words.
+                                 Saves nothing: the widget opens the dashboard's own card
+                                 (PUT /producers/me, POST /producers/me/menu-import/publish,
+                                 POST /upload/image, POST /producers/me/submit-for-review).
+                                 Limits 20/min · 120/h per IP, 150/day per business, and
+                                 20/day per business for a fill or a product read (each is a
+                                 second, larger model call; over it → the heavy_limit line).
+                                 ai_budget "fast" (+ "menu" for products) is the global ceiling;
+                                 the public site chat's anonymous cap does not apply. No key →
+                                 offline line.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`

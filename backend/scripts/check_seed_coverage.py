@@ -403,6 +403,7 @@ EXEMPT_TABLES = {
     "product_order_notifications": "MEH-3296 on-site ordering — messages an order owes, written at runtime only",
     "producer_staff": "MEH-3526 order staff — written only when an owner invites by email; a seeded invite would be a live token, and a seeded member would give a demo account access to another business's orders",
     "email_outbox": "MEH-3535 durable email queue — an email the site owes, written at runtime only; a seed row would be sent to a real address by the dispatcher",
+    "share_links": "MEH-3896 short preview / claim links — minted only by an admin button at runtime, and a code is never stored, so a seeded row could not be opened",
     "email_events": "MEH-3839 delivery events — written only by the signed Resend webhook at runtime; nothing for a seed to show",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is

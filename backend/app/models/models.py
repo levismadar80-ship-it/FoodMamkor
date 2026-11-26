@@ -1334,3 +1334,6 @@ import app.models.email_outbox  # noqa: E402,F401
 
 # MEH-3839: Resend delivery events (own module, same reason).
 import app.models.email_events  # noqa: E402,F401
+
+# MEH-3896: short preview / claim links (own module, same reason).
+import app.models.share_links  # noqa: E402,F401

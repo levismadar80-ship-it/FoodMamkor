@@ -192,6 +192,8 @@ files = [
     "app/models/billing.py",
     "app/models/catalog.py",
     "app/models/email_events.py",
+    "app/models/share_links.py",
+    "app/services/share_links.py",
     "app/models/engagement.py",
     "app/models/events.py",
     "app/models/home_products.py",
