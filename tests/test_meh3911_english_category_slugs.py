@@ -77,3 +77,62 @@ def test_admin_create_refuses_a_hebrew_slug(client, db):
         headers=auth_header(_admin(db)),
     )
     assert resp.status_code == 422
+
+
+def test_admin_create_refuses_a_reserved_slug(client, db):
+    # /producers/diet/ is a static route; a category there would be unreachable.
+    resp = client.post(
+        "/admin/categories",
+        json={"name": "תזונה", "slug": "diet", "requires_license": False},
+        headers=auth_header(_admin(db)),
+    )
+    assert resp.status_code == 400
+    assert db.query(Category).filter_by(name="תזונה").count() == 0
+
+
+# ── the revision's _rename, executed against the test database ──────────────
+
+
+def _run(mod, db, monkeypatch, direction):
+    """Run upgrade()/downgrade() on the test session's connection."""
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(mod, "op", SimpleNamespace(get_bind=db.connection))
+    getattr(mod, direction)()
+    db.expire_all()
+
+
+def _slugs(db):
+    return {c.name: c.slug for c in db.query(Category).filter(Category.name.in_(NAMES.values()))}
+
+
+def test_upgrade_renames_and_downgrade_restores(db, monkeypatch):
+    for old, name in NAMES.items():
+        db.add(Category(name=name, slug=old))
+    db.commit()
+    mod = _revision()
+    _run(mod, db, monkeypatch, "upgrade")
+    assert _slugs(db) == {"קפה": "coffee", "בישול לפי הזמנה": "cooked-to-order", "עוגות וקינוחים": "cakes-desserts"}
+    _run(mod, db, monkeypatch, "upgrade")  # a second run is a no-op
+    assert _slugs(db)["עוגות וקינוחים"] == "cakes-desserts"
+    _run(mod, db, monkeypatch, "downgrade")
+    assert _slugs(db) == {name: old for old, name in NAMES.items()}
+
+
+def test_upgrade_with_a_missing_row_renames_the_others(db, monkeypatch):
+    db.add(Category(name="קפה", slug="kph"))  # the other two rows were never created
+    db.commit()
+    _run(_revision(), db, monkeypatch, "upgrade")
+    assert _slugs(db) == {"קפה": "coffee"}
+
+
+def test_upgrade_refuses_when_the_english_slug_is_taken(db, monkeypatch):
+    import pytest
+
+    db.add(Category(name="קפה", slug="kph"))
+    db.add(Category(name="קפה קלוי", slug="coffee"))
+    db.commit()
+    with pytest.raises(RuntimeError, match="already taken"):
+        _run(_revision(), db, monkeypatch, "upgrade")
+    db.rollback()
+    assert _slugs(db) == {"קפה": "kph"}

@@ -77,6 +77,11 @@ CATEGORY_SYSTEM_DELETE_ERROR_HE = (
 )
 
 
+# MEH-3911: static routes under frontend/app/[locale]/producers/ — a category
+# with one of these slugs would never be reachable at /producers/<slug>/<region>.
+RESERVED_CATEGORY_SLUGS = frozenset({"diet"})
+
+
 def create_category_row(db: Session, data: CategoryCreate) -> Category:
     if db.query(Category).filter(Category.name == data.name).first():
         raise HTTPException(status_code=400, detail="קטגוריה בשם זה כבר קיימת")
@@ -88,6 +93,9 @@ def create_category_row(db: Session, data: CategoryCreate) -> Category:
     # category that simply got `-2` appended.
     # MEH-3911: an English slug typed by the admin wins; a taken one is a
     # clear 400, not a silent `-2` (the admin chose that word on purpose).
+    # MEH-3911: a static segment under /producers/ would shadow the category page.
+    if data.slug in RESERVED_CATEGORY_SLUGS:
+        raise HTTPException(status_code=400, detail="הכתובת הזאת שמורה לאתר, בחרו כתובת אחרת")
     if data.slug and db.query(Category.id).filter(Category.slug == data.slug).first():
         raise HTTPException(status_code=400, detail="הכתובת באנגלית כבר בשימוש בקטגוריה אחרת")
     cat = Category(

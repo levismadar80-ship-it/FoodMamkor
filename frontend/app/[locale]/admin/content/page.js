@@ -47,7 +47,8 @@ export default function AdminContentPage() {
 }
 
 // MEH-3911: same shape as the backend CategoryCreate.slug pattern.
-const ENGLISH_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+// Two characters at least, as CategoryCreate.slug (schemas/site.py) demands.
+const ENGLISH_SLUG = /^(?=.{2,50}$)[a-z0-9]+(-[a-z0-9]+)*$/;
 
 function CategoriesEditor() {
   const t = useTranslations("admin");

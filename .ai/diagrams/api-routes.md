@@ -198,8 +198,8 @@ graph TD
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first, with actor_email; keyset cursor before+before_id — the row is scheduled in get_current_user for every change by an admin account]
 
-    Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
-    Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]
+    Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD; POST takes an English slug, 400 if taken or reserved (MEH-3911)]
+    Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor; slug must be English (MEH-3911)]
 
     Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
     Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
