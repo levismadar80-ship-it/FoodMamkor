@@ -234,7 +234,9 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     expect(held).toHaveClass("invisible");
     expect(held).toHaveAttribute("aria-hidden", "true");
     expect(held).toHaveAttribute("inert");
+    // The held copy is the guest login card (its stars), and no star is outside it.
     const stars = screen.queryAllByTestId("reviews-star-1");
+    expect(stars.length).toBeGreaterThan(0);
     expect(stars.every((el) => held.contains(el))).toBe(true);
   });
 

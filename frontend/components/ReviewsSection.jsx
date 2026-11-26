@@ -738,7 +738,9 @@ export default function ReviewsSection({
       {/* MEH-3871: until /auth/me answers (it waits for hydration, MEH-3828,
           so seconds on a slow phone) the guest card holds its place unseen.
           Most readers are guests, so for them it only becomes visible; it
-          used to mount from nothing and push the delivery section down. */}
+          used to mount from nothing and push the delivery section down.
+          Accepted trade: a signed-in reader whose card is shorter (write
+          mode) or absent (the owner on her own page) sees it close once. */}
       {authLoading ? (
         <div className="invisible" aria-hidden="true" inert={INERT_PRESENT} data-testid="reviews-write-hint-placeholder">
           <ReviewInviteCard
