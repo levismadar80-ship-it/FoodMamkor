@@ -60,10 +60,10 @@ export function toEventEntry(row, tab, t) {
  * Rows keep their own photo, and no owner initial is added (the caller clears
  * it: every row here is this owner's).
  *
- * @template {{ image?: string|null, ownerImage?: string|null }} E
- * @param {E[]} entries rows in display order
+ * @template {Record<string, any>} E
+ * @param {E[]} entries rows in display order (each may carry `image`)
  * @param {unknown} images the owner's `images` array from the API
- * @returns {E[]}
+ * @returns {(E & { ownerImage: string | null })[]}
  */
 export function withOwnGallery(entries, images) {
   const all = (Array.isArray(images) ? images : [])

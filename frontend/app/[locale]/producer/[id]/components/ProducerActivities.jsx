@@ -125,7 +125,7 @@ function GroupBuyRow({ gb }) {
 }
 
 /**
- * @param {{ producerId: string, events?: any[], experiences?: any[], groupBuys?: any[], sectionRefs?: any }} props
+ * @param {{ producerId: string, images?: unknown, events?: any[], experiences?: any[], groupBuys?: any[], sectionRefs?: any }} props
  */
 export default function ProducerActivities({ producerId, images, events = [], experiences: givenExperiences, groupBuys: givenGroupBuys, sectionRefs }) {
   const t = useTranslations("producer.detail.sections");
