@@ -9,6 +9,7 @@ import { X } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
+import RegisterIdentityCheck from "@/components/RegisterIdentityCheck";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -68,6 +69,9 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
               <p className="text-xs text-fg-muted mt-1">
                 {t("auth.register.producer.fields.phone_hint")}
               </p>
+              {/* MEH-3884: this business already has a page (phone, or the
+                  signed-in account's own email). A warning; she may go on. */}
+              <RegisterIdentityCheck phone={form.phone} signedIn={!!isUpgrade} />
             </div>
 
             {/* MEH-853: frame-01 city — reuses the MEH-201 CitySearch

@@ -300,6 +300,12 @@
           "body": "If this is your business, we will connect you to the existing page. If it is a different business, carry on as usual.",
           "contact_cta": "Write to us"
         },
+        "identity_check": {
+          "title": "It looks like this business already has a page",
+          "body_owned": "The page is in the account <addr>{email}</addr>. Log in to it instead of opening a new page.",
+          "body_unowned": "We prepared a page for this business. Write to us and we will connect it to your account.",
+          "staff_hint": "Work at the business? Ask the account owner to add you to the team."
+        },
         "fields": {
           "name": "e.g. Ruth Levi",
           "name_label": "Full name",

@@ -11,13 +11,20 @@ Related:  services/auth_notifications.py notify_admin_draft_claimed (the same
           admin email shape) · services/auth_emails.py send_welcome_email
           (the owner greeting).
 History:  MEH-3865 (creation). Copy: approved table on MEH-3865.
+          MEH-3884: notify_admin_identity_matches — a business that looks like
+          ANY existing one (with an owner or without), at signup and at
+          submit-for-review. Copy: table on MEH-3883.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from app.config import settings
 from app.services.auth_notifications import _sanitize_wa_param, _skip_test_cause
 from app.services.email import send_email
+
+if TYPE_CHECKING:  # MEH-3884: business_identity imports this module lazily
+    from app.services.business_identity import IdentityMatch
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +69,52 @@ def notify_admin_draft_twin(
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error("[NOTIFY] Draft-twin email FAILED for '%s': %s", safe_target, e)
+
+
+# MEH-3884: where the new business was noticed.
+IDENTITY_MOMENTS = {
+    "signup": "נרשם עכשיו",
+    "submit": "נשלח עכשיו לבדיקה",
+}
+
+
+# MEH-3884: at most this many businesses are named in one email; the rest
+# are counted (one common phone must not flood the admin's inbox).
+MAX_IDENTITY_MATCHES_LISTED = 5
+
+
+def notify_admin_identity_matches(
+    new_name: str,
+    matches: "list[IdentityMatch]",
+    moment: str,
+    test_cause: bool = False,
+) -> None:
+    """One email: a business that looks like one or more we already have."""
+    if test_cause:
+        _skip_test_cause("notify_admin_identity_matches", None)
+        return
+    # Every name and email was typed outside Mehamakor: flatten each so a
+    # crafted value cannot add a line to the message (as notify_admin_draft_twin).
+    safe_new = _sanitize_wa_param(new_name) or "ללא שם"
+    lines = []
+    for m in matches[:MAX_IDENTITY_MATCHES_LISTED]:
+        existing = _sanitize_wa_param(m.name or "") or "ללא שם"
+        owner = _sanitize_wa_param(m.owner_email or "") or "אין בעלים"
+        lines.append(f"- {existing} (חשבון: {owner}). למה: {reasons_text(m.reasons)}")
+    extra = len(matches) - MAX_IDENTITY_MATCHES_LISTED
+    if extra > 0:
+        lines.append(f"ועוד {extra}.")
+    subject = f"מהמקור - ייתכן שיש כבר עמוד ל{safe_new}"
+    message = (
+        f"{safe_new} {IDENTITY_MOMENTS.get(moment, moment)}, ונראה כמו עסק שכבר יש באתר:\n"
+        + "\n".join(lines)
+        + f"\nכדאי לבדוק באדמין: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_email:
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error("[NOTIFY] Identity-match email FAILED for '%s': %s", safe_new, e)
 
 
 def send_owner_draft_merged(
