@@ -832,6 +832,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/TestBusinessTag.jsx` | — אין כותרת — |
 | `admin/TestBusinessToggle.jsx` | — אין כותרת — |
 | `admin/WhatsappBlockedSection.jsx` | Admin: WhatsApp messages the outbound guard dropped outside production (MEH-3402 follow-up). … |
+| `admin/useGalleryUpload.js` | Uploads the admin's picked gallery photos one by one and keeps every photo that made it, even when a later one fails; … |
 | `auth/AuthSplitLayout.jsx` | — אין כותרת — |
 | `brand/Seed.jsx` | Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single seed may be rotated, scaled and given any seed colour. … |
 | `brand/SeedBurst.jsx` | The seed layer's success moment (MEH-2833, board 5 v2): the logo bloom and two rings of single seeds pointing outward, left open below the bloom (as on the … |

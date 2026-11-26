@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format-date";
@@ -14,7 +14,10 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
-import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPanel";
+import AdminDeliveryPaymentPanel, {
+  SECTION_TITLE_KEYS,
+} from "@/components/admin/AdminDeliveryPaymentPanel";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
@@ -56,7 +59,21 @@ export default function EditProducerPage() {
   // «קבוצה: …» lines re-read the names.
   const [groupsVersion, setGroupsVersion] = useState(0);
   const t = useTranslations("admin");
+  const tOwner = useTranslations("dashboard.producer");
   const locale = useLocale();
+  // MEH-3915: which sections with their own «שמירה» hold unsaved edits. The
+  // form's «שמרו שינויים» saves only its own fields and then leaves the page,
+  // which threw away a delivery fee typed into «משלוחים ואיסוף» unseen.
+  const [dirtySections, setDirtySections] = useState(/** @type {Record<string, boolean>} */ ({}));
+  const reportDirty = useCallback(
+    (/** @type {string} */ key, /** @type {boolean} */ dirty) =>
+      setDirtySections((d) => (!!d[key] === dirty ? d : { ...d, [key]: dirty })),
+    [],
+  );
+  const unsavedSections = Object.keys(SECTION_TITLE_KEYS)
+    .filter((k) => dirtySections[k])
+    .map((k) => tOwner(/** @type {any} */ (SECTION_TITLE_KEYS)[k]));
+  useUnsavedGuard(unsavedSections.length > 0, tOwner("unsaved_guard.confirm"));
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) router.push("/login");
@@ -261,13 +278,19 @@ export default function EditProducerPage() {
       <PageFillPanel profile={producer} owner={false} readUrl={`/admin/producers/${id}/page-fill/read`}
         saveUrl={`/admin/producers/${id}`}
         onSaved={() => api.get(`/admin/producers/${id}`).then((r) => { setProducer(r.data); setFillKey((k) => k + 1); })} />
-      <ProducerForm key={`form-${fillKey}`} initial={producer} producerId={id} />
+      <ProducerForm
+        key={`form-${fillKey}`}
+        initial={producer}
+        producerId={id}
+        unsavedSections={unsavedSections}
+      />
       {/* MEH-3475: delivery day + minimum per city, order window, payment —
           the owner's own editors, saved through the admin PUT. */}
       <AdminDeliveryPaymentPanel
         key={`delivery-${fillKey}`}
         producerId={String(id)}
         producer={producer}
+        reportDirty={reportDirty}
       />
       {/* MEH-3873: the business's events, written on its behalf with consent. */}
       <AdminBusinessEventsPanel producerId={String(id)} />

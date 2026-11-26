@@ -11,7 +11,8 @@
  * Related:  app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx,
  *           OrderWindowEditor.jsx, PaymentInfoEditor.jsx;
  *           backend/app/routers/admin.py admin_update_producer.
- * History:  MEH-3475 (creation)
+ * History:  MEH-3475 (creation); MEH-3915 (each editor reports its unsaved
+ *           edits to the page, which holds «שמרו שינויים» until they are saved)
  */
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -20,12 +21,27 @@ import OrderWindowEditor from "@/app/[locale]/producer/dashboard/edit/OrderWindo
 import PaymentInfoEditor from "@/app/[locale]/producer/dashboard/edit/PaymentInfoEditor";
 
 /**
+ * MEH-3915: the key each editor reports through `reportDirty`, and its
+ * heading — the page names the section in «יש שינויים שלא נשמרו ב…».
+ * (The editors' own keys: DeliveryCard "delivery", OrderWindowEditor
+ * "orderWindow", PaymentInfoEditor "paymentInfo".)
+ */
+export const SECTION_TITLE_KEYS = {
+  delivery: "delivery.heading",
+  orderWindow: "order_window.heading",
+  paymentInfo: "payment_info.heading",
+};
+
+const noop = () => {};
+
+/**
  * @param {{
  *   producerId: string,
  *   producer: object,
+ *   reportDirty?: (key: string, dirty: boolean) => void,
  * }} props
  */
-export default function AdminDeliveryPaymentPanel({ producerId, producer }) {
+export default function AdminDeliveryPaymentPanel({ producerId, producer, reportDirty = noop }) {
   const t = useTranslations("dashboard.producer");
   // The editors re-seed from `profile` after a save, so they need the saved
   // values back. Kept HERE and not in the page's producer: the page passes
@@ -36,9 +52,11 @@ export default function AdminDeliveryPaymentPanel({ producerId, producer }) {
   const onSave = (patch) => setProfile((p) => ({ ...p, ...patch }));
   const saveUrl = `/admin/producers/${producerId}`;
   const sections = [
-    { key: "delivery", title: t("delivery.heading"), Editor: DeliveryCard },
-    { key: "order-window", title: t("order_window.heading"), Editor: OrderWindowEditor },
-    { key: "payment-info", title: t("payment_info.heading"), Editor: PaymentInfoEditor },
+    // DeliveryCard carries no JSDoc, so its `reportDirty = () => {}` default is
+    // read as a zero-argument type; it is called with (key, dirty).
+    { key: "delivery", title: t(SECTION_TITLE_KEYS.delivery), Editor: /** @type {any} */ (DeliveryCard) },
+    { key: "order-window", title: t(SECTION_TITLE_KEYS.orderWindow), Editor: OrderWindowEditor },
+    { key: "payment-info", title: t(SECTION_TITLE_KEYS.paymentInfo), Editor: PaymentInfoEditor },
   ];
   return (
     <div className="mb-6 space-y-4" data-testid="admin-delivery-payment">
@@ -49,7 +67,7 @@ export default function AdminDeliveryPaymentPanel({ producerId, producer }) {
           data-testid={`admin-section-${key}`}
         >
           <h2 className="text-base font-semibold mb-3">{title}</h2>
-          <Editor profile={profile} onSave={onSave} saveUrl={saveUrl} />
+          <Editor profile={profile} onSave={onSave} saveUrl={saveUrl} reportDirty={reportDirty} />
         </section>
       ))}
     </div>
