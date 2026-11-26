@@ -261,7 +261,8 @@ export default function RescueTab() {
   // payment received by hand, as a shop's «manual payment» does — we never
   // see the money. Only on an active or handed reservation; undo is one tap.
   function paidCell(o) {
-    if (!o.prepay || !PAYABLE.includes(o.status)) return null;
+    // A mark outlives a link removed since: «✓ שולם» and its undo stay.
+    if (!(o.prepay || o.paid_at) || !PAYABLE.includes(o.status)) return null;
     const busy = busyId === o.id;
     return (
       <span className="col-span-3 flex items-center justify-end gap-2" data-testid="rescue-order-paid-cell">

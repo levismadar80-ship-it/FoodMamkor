@@ -50,7 +50,11 @@ def payment_link(raw: Any) -> str | None:
         parts.port  # noqa: B018
     except ValueError:
         raise ValueError("הקישור לתשלום לא תקין") from None
-    if parts.scheme.lower() != "https" or not parts.hostname or "." not in parts.hostname:
+    if (
+        parts.scheme.lower() != "https"
+        or not parts.hostname
+        or "." not in parts.hostname
+    ):
         raise ValueError("הקישור לתשלום צריך להתחיל ב-https://")
     if parts.username or parts.password:
         raise ValueError("הקישור לתשלום לא יכול לכלול שם משתמש או סיסמה")
@@ -66,4 +70,3 @@ def prepay_link(info: Any) -> str | None:
     if not isinstance(link, str) or not link:
         return None
     return link if info.get("timing") in PREPAY_TIMINGS else None
-

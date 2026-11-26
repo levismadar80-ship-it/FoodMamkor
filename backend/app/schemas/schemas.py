@@ -183,7 +183,12 @@ def _payment_info_validator(v: Any) -> dict[str, Any] | None:
         # MEH-3895: stored only when set, so every row written before stays
         # byte-equal to what the dashboard reads back.
         out["link"] = link
-    if not out["methods"] and out["timing"] is None and out["note"] is None and link is None:
+    if (
+        not out["methods"]
+        and out["timing"] is None
+        and out["note"] is None
+        and link is None
+    ):
         return None
     return out
 

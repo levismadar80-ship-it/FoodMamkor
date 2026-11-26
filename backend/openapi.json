@@ -39812,7 +39812,7 @@
     },
     "/rescue/offers/{offer_id}/cancel": {
       "post": {
-        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nNo refund, because nothing was paid. MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nMEH-3897: a reservation the business marked paid gets the owners' refund\nemail too (the money went to its own link). MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
         "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
         "parameters": [
           {

@@ -85,8 +85,16 @@ describe("the business's order row", () => {
       order({ id: "n", status: "no_show", pickup_code: "0003" }),
     ]);
     render(<RescueTab />);
-    await screen.findAllByTestId("rescue-order-row");
-    expect(screen.getAllByTestId("rescue-order-mark-paid")).toHaveLength(1);
+    const rows = await screen.findAllByTestId("rescue-order-row");
+    const withMark = rows.filter((r) => r.querySelector('[data-testid="rescue-order-mark-paid"]'));
+    expect(withMark.map((r) => r.querySelector('[data-testid="rescue-order-code"]').textContent)).toEqual(["0001"]);
+  });
+
+  it("a mark made before the link was removed still shows, and can be undone", async () => {
+    serve([order({ prepay: false, paid_at: new Date().toISOString() })]);
+    render(<RescueTab />);
+    expect((await screen.findByTestId("rescue-order-paid")).textContent).toBe("✓ שולם");
+    expect(screen.getByTestId("rescue-order-unpaid")).toBeTruthy();
   });
 
   it("a business that is paid at the counter sees no payment control", async () => {
@@ -111,6 +119,22 @@ describe("the buyer's confirmation", () => {
     expect(screen.getByTestId("rescue-paid-confirmed").textContent).toBe("בית העסק אישר שהתשלום התקבל");
     // The price line keeps saying the bag was paid ahead, never «לשלם בקופה».
     expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("שולם מראש: 15 ₪");
+  });
+
+  it("a handed bag that was marked paid says «שולם מראש», never «לשלם בקופה»", () => {
+    render(<RescueConfirmation order={order({ status: "handed", paid_at: new Date().toISOString() })} prepay={{ link: BIT, timing: "advance" }} />);
+    expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("שולם מראש: 15 ₪");
+  });
+
+  it("the link was removed after the mark: still «שולם מראש»", () => {
+    render(<RescueConfirmation order={order({ paid_at: new Date().toISOString() })} prepay={{ link: null, timing: "pickup" }} />);
+    expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("שולם מראש: 15 ₪");
+    expect(screen.getByTestId("rescue-paid-confirmed")).toBeTruthy();
+  });
+
+  it("no mark, no link: the counter line as before", () => {
+    render(<RescueConfirmation order={order()} prepay={{ link: null, timing: null }} />);
+    expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("לשלם בקופה: 15 ₪");
   });
 
   it("a deposit stays a deposit after the mark: the rest is still paid at the counter", () => {

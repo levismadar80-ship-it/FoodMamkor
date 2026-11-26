@@ -10191,7 +10191,8 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
  * The business pulls the whole bag offer. Every open reservation on it is
  * cancelled with it; a bag already handed over stays handed.
  *
- * No refund, because nothing was paid. MEH-2738: each buyer whose
+ * MEH-3897: a reservation the business marked paid gets the owners' refund
+ * email too (the money went to its own link). MEH-2738: each buyer whose
  * reservation went with it gets one email after the commit (fail-open), and
  * their page says the business cancelled (`list_my_reservations`). A window
  * that already closed is refused: by then every bag is collected or a
