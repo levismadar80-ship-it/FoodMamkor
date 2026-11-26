@@ -161,6 +161,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
 | `schemas/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner's free text in, a draft of the business-page fields out. Nothing is saved by the read. |
 | `schemas/password.py` | MEH-305 — Pydantic password field type. |
+| `schemas/payment_link.py` | The business's own prepay link inside producers.payment_info (MEH-3895, option A of docs/research/rescue-prepay-2026-11.md): one validator for the write, one … |
 | `schemas/producer.py` | The business page, write side: create, admin create, owner update, admin update, plus AVAILABILITY_STATES and normalize_google_place_id, which services import. |
 | `schemas/producer_out.py` | The business page, read side: list card, detail, admin and owner views, kashrut certificate ref, Google place id and rating. |
 | `schemas/producer_staff.py` | Request and response shapes of the order-staff routes (MEH-3526). |
@@ -330,6 +331,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/rescue_emails.py` | One email per reservation with the pickup code, what is paid at the counter, the pickup window and address, and the free-cancel cutoff. … |
 | `services/rescue_no_show.py` | MEH-3226 (D4 of the 14/11 grill retro) — the buyer hears about every no-show the business marks, so a block never arrives as a surprise: the first mail says … |
 | `services/rescue_notify.py` | Queue what the rescue-bags routes tell people after a commit: the follower alert on a bag for today, the buyer's reservation and cancel emails, and one email … |
+| `services/rescue_payment.py` | The business marks a surprise-bag reservation as paid ahead, or undoes the mark (MEH-3897). … |
 | `services/rescue_reads.py` | What the surprise-bag (rescue) screens read: today's public list, the buyer's own reservations, the business's orders and bags of the day, the business's … |
 | `services/rescue_reminders.py` | MEH-3702 — on the morning of the pickup day, remind every buyer who reserved a bag on an EARLIER day: the code, the window, the free cancel. … |
 | `services/rescue_routine_writes.py` | The rules behind the weekly-routine routes under /producers/me/rescue (MEH-3703): find the caller's own pickup point, save or stop its routine, skip or … |
@@ -803,6 +805,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
 | `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
+| `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
@@ -943,6 +946,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/OfferCard.jsx` | — אין כותרת — |
 | `ui/PasswordField.jsx` | — אין כותרת — |
 | `ui/Popover.jsx` | — אין כותרת — |
+| `ui/PrepayButton.jsx` | «לתשלום» — opens the business's own prepay link (Bit / PayBox / its clearing) in a new tab, with the host printed under it so the buyer sees where she is … |
 | `ui/PreviewBanner.jsx` | The one green «you are looking at a preview» strip, with the eye, above a page shown as someone else would see it. |
 | `ui/RatingCompact.jsx` | — אין כותרת — |
 | `ui/SectionHeading.jsx` | A section's h2 takes its size from a named ROLE, never from classes written at the call site. … |

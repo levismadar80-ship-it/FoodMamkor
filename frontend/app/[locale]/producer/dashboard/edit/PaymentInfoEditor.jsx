@@ -12,7 +12,8 @@
  * Related:  lib/payment-info.js (lists + serializer), OrderWindowEditor.jsx
  *           (the save / dirty / revert pattern this follows),
  *           backend/app/routers/producer_me.py (PUT /producers/me).
- * History:  MEH-3035 chunk 2 (design v3 option א, Sapir 13/11).
+ * History:  MEH-3035 chunk 2 (design v3 option א, Sapir 13/11) · MEH-3895
+ *           (the prepay link, shown only while «מראש» or «מקדמה» is picked).
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -34,6 +35,8 @@ import {
   PAYMENT_METHODS,
   PAYMENT_TIMINGS,
   PAYMENT_NOTE_MAX,
+  PAYMENT_LINK_MAX,
+  PREPAY_TIMINGS,
   paymentStateFrom,
   serializePaymentInfo,
 } from "@/lib/payment-info";
@@ -111,6 +114,10 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
     setState(paymentStateFrom(JSON.parse(seedPayload)));
   }, [seedPayload]);
 
+  // MEH-3895: the link field follows the timing (progressive disclosure, as a
+  // deposit amount does on Booking / Wix): on «באיסוף» it is hidden, and
+  // serializePaymentInfo does not send it.
+  const prepay = PREPAY_TIMINGS.includes(state.timing);
   const current = serializePaymentInfo(state);
   const dirty = JSON.stringify(current) !== seedPayload;
   const allOn = PAYMENT_METHODS.every((m) => state.methods.has(m));
@@ -200,6 +207,28 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
           })}
         </div>
       </fieldset>
+
+      {prepay && (
+        <div>
+          <label htmlFor="payment-link" className="block text-sm font-medium mb-1.5">
+            {t("link_label")}
+          </label>
+          <Input inline size="sm"
+            id="payment-link"
+            type="url"
+            dir="ltr"
+            inputMode="url"
+            value={state.link}
+            maxLength={PAYMENT_LINK_MAX}
+            onChange={(e) => update({ link: e.target.value })}
+            placeholder="https://"
+            aria-describedby="payment-link-help"
+            data-testid="payment-link"
+            className="w-full"
+          />
+          <p id="payment-link-help" className="mt-1 text-xs text-fg-muted">{t("link_help")}</p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="payment-note" className="block text-sm font-medium mb-1.5">

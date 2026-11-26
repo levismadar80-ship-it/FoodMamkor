@@ -148,9 +148,19 @@ class RescueOrderOut(BaseModel):
     status: RescueOrderStatus
     handed_at: UtcDatetimeOut | None = None
     cancelled_at: UtcDatetimeOut | None = None
+    # MEH-3897: the business marked the prepay received; the buyer's screen
+    # then says so instead of showing the pay button.
+    paid_at: UtcDatetimeOut | None = None
     created_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
+
+
+class RescuePaidIn(BaseModel):
+    """MEH-3897: the business marks a reservation paid, or undoes a mistaken
+    mark (`paid: false`)."""
+
+    paid: bool
 
 
 class RescueReviewCreate(BaseModel):
@@ -298,6 +308,11 @@ class RescueProducerDetail(RescueProducerSummary):
     reviews_count: int = 0
     # The business's own one-line description, so the page says who it is.
     short_description: str | None = None
+    # MEH-3895: the business's own prepay link (Bit / PayBox / its clearing),
+    # only when it takes payment before pickup; None = pay at the counter.
+    prepay_link: str | None = None
+    # Which of the two: the whole price before pickup, or a deposit.
+    prepay_timing: Literal["advance", "deposit"] | None = None
 
 
 class RescueOfferDetailOut(RescueOfferPublicOut):
@@ -407,9 +422,13 @@ class RescueOwnerOrderOut(BaseModel):
     status: RescueOrderStatus
     handed_at: UtcDatetimeOut | None = None
     cancelled_at: UtcDatetimeOut | None = None
+    paid_at: UtcDatetimeOut | None = None  # MEH-3897
     created_at: UtcDatetimeOut
     pickup_start: UtcDatetimeOut
     pickup_end: UtcDatetimeOut
+    # MEH-3897: the business shows buyers a prepay link (MEH-3895), so the
+    # row offers «סמן כשולם». Same value on every row of the list.
+    prepay: bool = False
 
     model_config = {"from_attributes": True}
 

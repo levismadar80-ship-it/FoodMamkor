@@ -145,6 +145,7 @@ and every transition re-reads the row under a lock.
 
 - Offer: active · cancelled, with `qty_left ≥ 0`.
 - Order: reserved → handed · no_show · cancelled. All three are terminal.
+- Paid mark (MEH-3897): `rescue_orders.paid_at`, a timestamp beside the status, not a status. The business (or an admin) sets or clears it on a `reserved` or `handed` order (`POST /rescue/orders/{id}/paid`, `services/rescue_payment.py`, offer locked and status re-read); setting needs a prepay link today. A marked order that is then cancelled, by the buyer or with the whole offer, sends the owners the refund email.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|

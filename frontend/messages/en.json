@@ -1745,6 +1745,17 @@
     }
   },
   "admin": {
+    "business_experiences": {
+      "title": "The business's experiences",
+      "intro": "Add and update experiences here on the business's behalf, once it has agreed in writing. A new experience, and any change to an experience's content, goes to the approval queue and shows on the business page once approved.",
+      "empty": "This business has no experiences yet. Add the first one.",
+      "no_owner": "This business has no owner account yet, so an experience can't be added. You can add an event.",
+      "add": "Add an experience",
+      "consent_label": "The business agreed in writing to this experience and its details",
+      "updated": "Changes saved. The experience went back to the approval queue",
+      "created": "The experience was sent to the approval queue",
+      "load_error": "We couldn't load the experiences. Try refreshing the page."
+    },
     "business_events": {
       "title": "The business's events",
       "intro": "Add and update events here on the business's behalf, after it agreed in writing. The event shows on the business's page.",
@@ -5980,7 +5991,9 @@
         "save_success": "Saved",
         "save_error": "Save failed. Please try again.",
         "revert_cta": "Discard changes",
-        "summary_empty": "Not set"
+        "summary_empty": "Not set",
+        "link_label": "Prepayment link (optional)",
+        "link_help": "A link from Bit, PayBox or your own clearing. Customers see it after they reserve a surprise bag, and in a group buy only once the group has reached its minimum. The money comes straight to you, and customers write their pickup code in the payment note."
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -7357,6 +7370,7 @@
     },
     "confirm": {
       "title": "Your bag is reserved",
+      "paid_confirmed": "The business confirmed your payment arrived",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
       "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
@@ -7368,7 +7382,10 @@
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
-      "cancel_no": "No, keep it"
+      "cancel_no": "No, keep it",
+      "paid_ahead": "Paid ahead: {price} ₪",
+      "pay_ahead": "Pay in advance: {price} ₪",
+      "pay_deposit": "Bag price: {price} ₪ · the rest is paid at the counter"
     },
     "review": {
       "title": "How was the bag?",
@@ -7418,6 +7435,9 @@
       "code_label": "Pickup code",
       "code_placeholder": "0000",
       "code_not_found": "No active reservation with that code.",
+      "mark_paid": "Mark as paid",
+      "paid": "✓ Paid",
+      "unmark_paid": "Undo mark",
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",
@@ -8507,6 +8527,13 @@
     "invalid_title": "This link is not valid",
     "invalid_body": "You can ask the business to send a new link.",
     "error": "We couldn't add you. You can try again."
+  },
+  "prepay": {
+    "cta": "Pay",
+    "via": "Payment goes straight to the business, via {host}",
+    "note": "In the payment note, write the code {code} so the business knows who paid",
+    "ask_advance": "The business asks you to pay in advance",
+    "ask_deposit": "The business asks for a deposit"
   },
   "owner_assistant": {
     "button": "Assistant",
