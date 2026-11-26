@@ -134,9 +134,11 @@ function CategoriesEditor() {
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="space-y-2">
-        {/* Phone: the English address takes its own row under the name, so
-            its placeholder is never cut (390 px, MEH-3911 screenshots). */}
-        <div className="flex flex-wrap sm:flex-nowrap gap-2">
+        {/* Phone: the English address sits under the name in its own column,
+            so its placeholder is never cut (390 px, MEH-3911 screenshots).
+            DOM order = visual order, no CSS reorder (VisualOrderGuard). */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0">
           <Input inline size="md"
             placeholder={t("content.categories.name_placeholder")}
             value={name}
@@ -152,12 +154,14 @@ function CategoriesEditor() {
               setSlug(e.target.value.trim().toLowerCase());
               setSlugInvalid(false);
             }}
-            className="basis-full order-last sm:order-none sm:basis-0 sm:flex-1 min-w-0"
+            className="flex-1 min-w-0"
           />
+          </div>
           <Button
             type="submit"
             disabled={isBusy("category-create")}
             variant="primary" size="sm"
+            className="self-start"
           >
             {t("content.categories.add")}
           </Button>
