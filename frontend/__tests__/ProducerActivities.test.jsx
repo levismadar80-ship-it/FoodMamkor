@@ -106,8 +106,41 @@ describe("ProducerActivities", () => {
     // on the business page (the event page shows it), by decision.
     expect([...links].map((a) => a.getAttribute("href"))).toEqual(["/events/ev1", "/experiences/ex1"]);
     expect(sections[0].textContent).not.toContain("מכוורת השדה");
-    // The owner photo is the page's own hero, so the row falls back to the category tile.
+    // MEH-3892: no gallery handed in → the category tile (the 0-photo cell).
     expect(screen.getAllByTestId("event-row-image")[0]).toHaveAttribute("data-kind", "category");
+  });
+
+  // MEH-3892: a row with no photo takes one of the business's photos — the
+  // non-cover ones first, in turn by date — never the owner_image_url cover.
+  it("rows without a photo take the business's other photos in turn; the row's own photo wins", async () => {
+    answer({ "/experiences": [] });
+    const rows = [1, 2, 3].map((n) => ({ ...EV, id: `ev${n}`, title: `אירוע ${n}`, event_date: `2099-02-0${n}` }));
+    rows[1] = { ...rows[1], image_url: "https://x/own.jpg" };
+    render(
+      <ProducerActivities
+        producerId="p-1"
+        images={["https://x/cover.jpg", "https://x/b.jpg", " ", "https://x/c.jpg"]}
+        events={rows}
+        experiences={[]}
+        groupBuys={[]}
+      />,
+    );
+    await screen.findByText("אירוע 3");
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs.map((el) => el.getAttribute("data-kind"))).toEqual(["owner", "event", "owner"]);
+    expect(thumbs[0].style.backgroundImage).toContain("b.jpg");
+    expect(thumbs[1].style.backgroundImage).toContain("own.jpg");
+    expect(thumbs[2].style.backgroundImage).toContain("c.jpg");
+    expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
+  });
+
+  it("a business with one photo: every photo-less row shows that one", async () => {
+    render(
+      <ProducerActivities producerId="p-1" images={["https://x/only.jpg"]} events={[EV]} experiences={[]} groupBuys={[]} />,
+    );
+    const thumb = await screen.findByTestId("event-row-image");
+    expect(thumb).toHaveAttribute("data-kind", "owner");
+    expect(thumb.style.backgroundImage).toContain("only.jpg");
   });
 
   // MEH-3009: the owner initial marks rows in mixed lists; here every row is
