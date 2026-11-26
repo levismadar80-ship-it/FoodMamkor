@@ -158,14 +158,10 @@ test.describe("Map", () => {
   });
 
   test.describe("«חזרה למפה»", () => {
-    // MEH-3809: a fresh load with ?from=map (a link opened in a new tab) draws
-    // the link after the page is on screen. On desktop it sits on the
-    // breadcrumb line and moves nothing, and that stays guarded. On a phone it
-    // still takes a line above the gallery; a map tap there is an in-app
-    // navigation, where it is drawn before paint, so the shift is left to
-    // card MEH-3856 and only errors are guarded on the phone here.
-    test.use({ loadGuard: async ({ isMobile }, use) => use(isMobile ? "errors" : "on") });
-
+    // MEH-3809 / MEH-3856: a fresh load with ?from=map (a link opened in a new
+    // tab) is guarded in full on both projects. The row is in the server HTML
+    // and the inline flags script shows it before the first paint, so it no
+    // longer pushes the gallery down on a phone.
     test("MEH-1414: producer page shows «חזרה למפה» only when reached with ?from=map", async ({
       page,
     }) => {

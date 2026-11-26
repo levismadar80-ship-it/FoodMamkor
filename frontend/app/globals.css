@@ -334,6 +334,16 @@ h1, h2, h3 {
   font-style: italic;
 }
 
+/* MEH-3856: the business page renders «חזרה למפה» in its server HTML, marked
+   data-from-map-only, and the inline flags script (lib/prehydration-flags-inline.js)
+   sets html[data-from-map] when the URL says ?from=map. So the row is there
+   from the first paint on such a link, and absent otherwise, instead of being
+   added after hydration above the gallery (it pushed the page down on a phone).
+   Only the hide is written here: the row keeps its own display classes. */
+html:not([data-from-map]) [data-from-map-only] {
+  display: none;
+}
+
 /* MEH-2487: a page whose last band is full colour (marked data-meets-footer)
    runs straight into the footer, without the footer's 64px cream top margin.
    Kept here rather than in Footer.jsx (central component) and keyed on the
