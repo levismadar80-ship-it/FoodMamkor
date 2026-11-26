@@ -109,5 +109,12 @@ describe("the buyer's confirmation", () => {
     render(<RescueConfirmation order={order({ paid_at: new Date().toISOString() })} prepay={{ link: BIT, timing: "advance" }} />);
     expect(screen.queryByTestId("rescue-prepay")).toBeNull();
     expect(screen.getByTestId("rescue-paid-confirmed").textContent).toBe("בית העסק אישר שהתשלום התקבל");
+    // The price line keeps saying the bag was paid ahead, never «לשלם בקופה».
+    expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("שולם מראש: 15 ₪");
+  });
+
+  it("a deposit stays a deposit after the mark: the rest is still paid at the counter", () => {
+    render(<RescueConfirmation order={order({ paid_at: new Date().toISOString() })} prepay={{ link: BIT, timing: "deposit" }} />);
+    expect(screen.getByTestId("rescue-confirmation-price").textContent).toBe("מחיר הסל: 15 ₪ · את היתרה משלמים בקופה");
   });
 });

@@ -58,11 +58,14 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   // MEH-3897: once the business marked the payment received, the pay button
   // gives way to a line saying so — paying twice is the mistake to prevent.
   const paidConfirmed = Boolean(order.paid_at) && order.status !== "cancelled";
-  const showPrepay = Boolean(prepay?.link) && order.status === "reserved" && !paidConfirmed;
+  const hasPrepay = Boolean(prepay?.link) && order.status === "reserved";
+  const showPrepay = hasPrepay && !paidConfirmed;
   // A deposit is part of the price; the rest is still paid at the counter,
   // so the line says the bag's price and where the rest goes.
-  const payAhead = showPrepay && prepay.timing === "advance";
-  const payDeposit = showPrepay && prepay.timing === "deposit";
+  // MEH-3897: the price line follows the link, not the button — a bag paid
+  // ahead must not fall back to «לשלם בקופה» once the button is gone.
+  const payAhead = hasPrepay && prepay.timing === "advance";
+  const payDeposit = hasPrepay && prepay.timing === "deposit";
   const when = from && until
     ? t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })
     : null;
@@ -92,7 +95,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {price !== null && (
         <p className="font-headline-md text-base font-black text-text mt-3" data-testid="rescue-confirmation-price">
-          {t(payAhead ? "confirm.pay_ahead" : payDeposit ? "confirm.pay_deposit" : "confirm.pay", { price })}
+          {t(payAhead ? (paidConfirmed ? "confirm.paid_ahead" : "confirm.pay_ahead") : payDeposit ? "confirm.pay_deposit" : "confirm.pay", { price })}
         </p>
       )}
 

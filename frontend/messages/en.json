@@ -7349,6 +7349,7 @@
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
       "cancel_no": "No, keep it",
+      "paid_ahead": "Paid ahead: {price} ₪",
       "pay_ahead": "Pay in advance: {price} ₪",
       "pay_deposit": "Bag price: {price} ₪ · the rest is paid at the counter"
     },

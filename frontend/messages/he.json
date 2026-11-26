@@ -7346,6 +7346,7 @@
       "cancel_yes": "כן, לבטל",
       "cancel_no": "לא, להשאיר",
       "pay_ahead": "לתשלום מראש: {price} ₪",
+      "paid_ahead": "שולם מראש: {price} ₪",
       "pay_deposit": "מחיר הסל: {price} ₪ · את היתרה משלמים בקופה"
     },
     "review": {
