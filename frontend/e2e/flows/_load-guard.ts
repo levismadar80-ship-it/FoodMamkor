@@ -215,10 +215,23 @@ export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
           hadRecentInput: boolean;
           startTime: number;
           value: number;
-          sources?: Array<{ node?: Node | null }>;
+          sources?: Array<{ node?: Node | null; previousRect?: DOMRectReadOnly; currentRect?: DOMRectReadOnly }>;
         }>) {
           if (e.hadRecentInput) continue;
-          const src = (e.sources || []).map((s) => describe(s.node)).find(Boolean) || "";
+          // MEH-3893: name WHERE each moved element went, not just which one.
+          // "div.vv-pin moved" alone cannot tell a late block above it from the
+          // element itself resizing; its old and new box can. Up to 3 sources,
+          // the first named one stays first, then the viewport and scroll.
+          const rect = (r?: DOMRectReadOnly) =>
+            r ? `y${Math.round(r.y)} h${Math.round(r.height)} w${Math.round(r.width)}` : "?";
+          const named = (e.sources || [])
+            .map((s) => ({ name: describe(s.node), from: rect(s.previousRect), to: rect(s.currentRect) }))
+            .filter((s) => s.name)
+            .slice(0, 3);
+          const src = named.length
+            ? named.map((s) => `${s.name} (${s.from} → ${s.to})`).join("; ") +
+              ` · viewport ${window.innerWidth}x${window.innerHeight} scrollY ${Math.round(window.scrollY)}`
+            : "";
           w.__loadGuardShift?.({ doc, url: location.pathname + location.search, t: e.startTime, v: e.value, src });
         }
       }).observe({ type: "layout-shift", buffered: true });
