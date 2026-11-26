@@ -27,7 +27,7 @@ import { buildAlternates, buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCA
 import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { toEventEntry } from "@/lib/event-entry";
+import { toEventEntry, withOwnGallery } from "@/lib/event-entry";
 import EventEntryRow from "@/components/EventEntryRow";
 import { OrganizerPageSchema } from "@/lib/schemas";
 // MEH-3459: the business page's contact card — primary button + the round
@@ -254,13 +254,17 @@ export default async function OrganizerPage(props) {
             </p>
           ) : (
             // MEH-2547: the same date-rail row as /events and the home preview.
-            // The «who» line and the owner-photo fallback are dropped here —
-            // every row is this organizer's, and its photo is the cover above.
+            // The «who» line is dropped here — every row is this organizer's.
+            // MEH-3892: a row with no photo takes one of the organizer's other
+            // photos (the first is the cover above), not a category icon.
             <ul className="border-t border-border" data-testid="organizer-events">
-              {events.map((ev) => (
-                <li key={ev.id} data-testid="organizer-event">
+              {withOwnGallery(
+                events.map((ev) => toEventEntry({ ...ev, producer_name: null }, "events", tList)),
+                organizer.images,
+              ).map((entry) => (
+                <li key={entry.id} data-testid="organizer-event">
                   <EventEntryRow
-                    entry={toEventEntry({ ...ev, producer_name: null, owner_image_url: null }, "events", tList)}
+                    entry={entry}
                     freeLabel={tList("free")}
                   />
                 </li>

@@ -65,6 +65,7 @@ import {
   ListStaffProducersMeStaffGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
+  ProducerIdentityCheckProducerIdentityCheckPostResponse,
   RandomProducerProducersRandomGetResponse,
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
   GoogleCodeAuthGoogleCodePostResponse,
@@ -206,6 +207,8 @@ export const OrderBusinessSchema = GetProducerProducersProducerIdGetResponse;
 
 // --- sign-up --------------------------------------------------------------
 export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResponse;
+// MEH-3884: «this business already has a page», under the phone field.
+export const IdentityCheckResponseSchema = ProducerIdentityCheckProducerIdentityCheckPostResponse;
 
 // --- sign-in --------------------------------------------------------------
 // MEH-3690: our own Google button reads the ID token the code was swapped for.
