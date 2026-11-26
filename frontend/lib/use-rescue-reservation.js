@@ -101,11 +101,19 @@ export default function useRescueReservation({ producerId, offerId = null, onCan
         // A failed read-back leaves whatever the page already shows.
       }
     }
+    // MEH-3897: also on visibilitychange. A buyer who pays in Bit comes back
+    // from another app, and a phone browser does not reliably fire `focus`
+    // for that; the business's «סמן כשולם» must reach her screen.
+    function onVisible() {
+      if (document.visibilityState === "visible") restore();
+    }
     restore();
     window.addEventListener("focus", restore);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       alive = false;
       window.removeEventListener("focus", restore);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [userId, producerId, offerId]);
 
