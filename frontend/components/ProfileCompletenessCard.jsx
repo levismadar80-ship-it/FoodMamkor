@@ -314,7 +314,12 @@ function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
       {rows.map((r) => {
         const text = labelOf(r);
         const status = <span className="sr-only">{r.done ? t("checklist_done") : t("checklist_todo")}</span>;
-        if (r.key === openKey) {
+        // MEH-3886: the WhatsApp code row is always open while undone. It
+        // depends on no other step, and as a grey line behind «מוצר» it left an
+        // owner with no button to press (Farmerim, 26/11). Google Business
+        // Profile and Airbnb keep their verify action reachable at any point.
+        const alwaysOpen = Boolean(openContent) && r.key === "phone_verified" && !r.done;
+        if (r.key === openKey || alwaysOpen) {
           return (
             <li
               key={r.key}
