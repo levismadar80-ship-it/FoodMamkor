@@ -6,6 +6,7 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
+import { slimCardList } from "@/lib/delivery-fee";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
@@ -47,7 +48,8 @@ async function fetchPage(page) {
   if (!res.ok) throw new Error(`GET /producers ${res.status}`);
   const total = Number(res.headers.get("x-total-count") || 0);
   const items = await res.json();
-  return { items: Array.isArray(items) ? items : [], total };
+  // MEH-3891: the cards need only the distinct delivery fees, not every city.
+  return { items: Array.isArray(items) ? slimCardList(items) : [], total };
 }
 
 /**
