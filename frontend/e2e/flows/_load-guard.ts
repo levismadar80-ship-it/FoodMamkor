@@ -85,6 +85,13 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
     card: "MEH-3809",
   },
   {
+    pattern: /^Refused to load https:\/\/bread\.jpg\/ because it does not appear in the img-src directive of the Content Security Policy\.$/,
+    browser: "webkit",
+    reason:
+      "The same bread.jpg fixture as the entry above, in WebKit's wording of a CSP refusal. Only that fake host, and only on WebKit; a CSP refusal of any other image still fails. Measured: WebKit nightly 26/11, job 139631217906, admin-producers-queue.spec.ts:407.",
+    card: "MEH-3909",
+  },
+  {
     pattern: /due to access control checks\.$/,
     kind: "pageerror",
     browser: "webkit",

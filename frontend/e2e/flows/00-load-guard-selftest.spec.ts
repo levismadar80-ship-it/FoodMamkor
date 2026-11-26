@@ -180,6 +180,14 @@ test.describe("load guard self-test (MEH-3809)", () => {
       "console.error: Loading the image 'https://bread.jpg/' violates the following Content Security Policy directive: \"img-src 'self' https://res.cloudinary.com\".";
     expect(fails(bread)).toBe(0);
     expect(fails(bread.replace("https://bread.jpg/", "https://evil.example.com/x.png"))).toBe(1);
+    // MEH-3909: WebKit's wording of the same refusal, real text from the nightly.
+    const breadWebkit =
+      "console.error: Refused to load https://bread.jpg/ because it does not appear in the img-src directive of the Content Security Policy.";
+    const failsOn = (browserName: string, e: string) =>
+      loadGuardFailures(state(e), { browserName, navigated: false }).length;
+    expect(failsOn("webkit", breadWebkit)).toBe(0);
+    expect(failsOn("chromium", breadWebkit)).toBe(1);
+    expect(failsOn("webkit", breadWebkit.replace("https://bread.jpg/", "https://evil.example.com/x.png"))).toBe(1);
   });
 
   test("on Chromium, a probe that never reported fails instead of reading green", () => {
