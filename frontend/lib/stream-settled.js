@@ -42,7 +42,7 @@ const MAX_WAIT_MS = 5000;
  * @returns {boolean} true while a streamed boundary is queued for its reveal,
  *          or still streaming while the document is loading
  */
-export function hasPendingBoundary(doc = document) {
+function hasPendingBoundary(doc = document) {
   const loading = doc.readyState === "loading";
   const walker = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_COMMENT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
