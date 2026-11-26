@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * iOS drift pin (Linear 2652; the full id trips the MEH-449 build-output scan): re-seat fixed-bottom layers that iOS 26 Safari leaves drifted.
@@ -25,6 +26,16 @@ import { useEffect } from "react";
  * page: shift > 0 → published as `--vv-shift` on <html>. Layers that opt in
  * with the `vv-pin` class (globals.css) apply `translate: 0 var(--vv-shift)`,
  * which composes with any `transform` they already use.
+ *
+ * Where a fixed-bottom layer actually sits is MEASURED, not inferred from
+ * `innerHeight` (MEH-3889): a 0-height `position: fixed; bottom: 0` probe is
+ * read with getBoundingClientRect(). Sapir's 26/11 iPhone screenshot (home
+ * feed, after a fast scroll) had the pill and the chat launcher ~350px above
+ * the screen bottom with the pin already shipped — so Safari placed the fixed
+ * layers against a stale viewport while `innerHeight` itself read healthy, and
+ * the old `vvBottom - innerHeight` came out 0. The probe sits wherever Safari
+ * puts every other `bottom: 0` layer, so the gap is right in both shapes. With
+ * no layout (jsdom, display:none) the probe reads 0 and `innerHeight` is used.
  *
  * Deliberately 0 while:
  *  - the keyboard is actually up (a text field is focused AND the visual
@@ -68,11 +79,20 @@ const MAX_SHIFT_RATIO = 0.6;
 // The on-screen keyboard is never shorter than this.
 const KEYBOARD_MIN_PX = 120;
 
-export function computeViewportShift({ innerHeight, vvHeight, vvOffsetTop, vvScale = 1, editing }) {
+export function computeViewportShift({
+  innerHeight,
+  vvHeight,
+  vvOffsetTop,
+  vvScale = 1,
+  editing,
+  fixedBottom,
+}) {
   if (editing && innerHeight - vvHeight > KEYBOARD_MIN_PX) return 0;
   if (Math.abs(vvScale - 1) > 0.01) return 0;
   if (!(innerHeight > 0) || !(vvHeight > 0)) return 0;
-  const shift = Math.round(vvOffsetTop + vvHeight - innerHeight);
+  // Where Safari really put a `bottom: 0` fixed layer; innerHeight when unknown.
+  const layerBottom = fixedBottom > 0 ? fixedBottom : innerHeight;
+  const shift = Math.round(vvOffsetTop + vvHeight - layerBottom);
   if (shift <= 1) return 0;
   // The drift is at most a keyboard's height (under half the screen). A larger
   // value is a reading we do not understand, and pushing the nav that far could
@@ -91,6 +111,15 @@ export default function IosViewportPin() {
     if (!vv || !isIosWebKit(window.navigator)) return undefined;
 
     const root = document.documentElement;
+    // The probe: where Safari places a `position: fixed; bottom: 0` layer.
+    // Not `vv-pin`, so --vv-shift never moves it and it keeps reading the drift.
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.dataset.vvProbe = "";
+    probe.style.cssText =
+      "position:fixed;bottom:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none";
+    document.body.appendChild(probe);
+    let reported = false;
     let applied = 0;
     let raf = null;
     let pending = null; // { shift, timer } — a non-zero reading waiting to settle
@@ -98,6 +127,19 @@ export default function IosViewportPin() {
 
     const write = (shift) => {
       applied = shift;
+      if (shift && !reported) {
+        // Once per page load: real-device evidence that the drift happened and
+        // what each reading said (no device in CI can produce it).
+        reported = true;
+        trackEvent("ios_viewport_drift", {
+          shift,
+          inner_height: window.innerHeight,
+          vv_height: Math.round(vv.height),
+          vv_offset_top: Math.round(vv.offsetTop),
+          fixed_bottom: Math.round(probe.getBoundingClientRect().top),
+          standalone: window.navigator.standalone === true,
+        });
+      }
       if (shift) root.style.setProperty("--vv-shift", `${shift}px`);
       else root.style.removeProperty("--vv-shift");
     };
@@ -108,6 +150,7 @@ export default function IosViewportPin() {
         vvOffsetTop: vv.offsetTop,
         vvScale: vv.scale,
         editing: isTextEntry(document.activeElement),
+        fixedBottom: probe.getBoundingClientRect().top,
       });
     const clearPending = () => {
       if (pending) clearTimeout(pending.timer);
@@ -148,6 +191,9 @@ export default function IosViewportPin() {
     vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
     window.addEventListener("resize", schedule);
+    // A fast scroll can drift the layers with no visualViewport event at all.
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("scrollend", settle);
     document.addEventListener("focusin", schedule);
     document.addEventListener("focusout", settle);
     window.addEventListener("pageshow", settle);
@@ -157,12 +203,15 @@ export default function IosViewportPin() {
       vv.removeEventListener("resize", schedule);
       vv.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("scrollend", settle);
       document.removeEventListener("focusin", schedule);
       document.removeEventListener("focusout", settle);
       window.removeEventListener("pageshow", settle);
       if (raf != null) window.cancelAnimationFrame(raf);
       for (const id of timers) clearTimeout(id);
       clearPending();
+      probe.remove();
       root.style.removeProperty("--vv-shift");
     };
   }, []);

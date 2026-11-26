@@ -40,6 +40,15 @@ describe("computeViewportShift", () => {
     expect(computeViewportShift({ ...base, vvOffsetTop: 1 })).toBe(0);
     expect(computeViewportShift({ ...base, vvHeight: 400 })).toBe(0);
   });
+  it("innerHeight healthy but fixed layers laid out ~350px up (MEH-3889) → shift by the measured gap", () => {
+    // The 26/11 screenshot shape: every reading but the layers' real position
+    // looks healthy. The innerHeight-only formula returned 0 here.
+    expect(computeViewportShift({ ...base, fixedBottom: 314 })).toBe(350);
+  });
+  it("no layout for the probe (fixedBottom 0) → falls back to innerHeight", () => {
+    expect(computeViewportShift({ ...base, fixedBottom: 0 })).toBe(0);
+    expect(computeViewportShift({ ...base, innerHeight: 364, fixedBottom: 0 })).toBe(300);
+  });
   it("a gap larger than the visible height is not trusted → 0", () => {
     expect(computeViewportShift({ ...base, innerHeight: 10, vvHeight: 664 })).toBe(0);
   });
@@ -126,6 +135,41 @@ describe("IosViewportPin component", () => {
     fire(vv);
     tick(SETTLE_MS * 2);
     expect(shiftVar()).toBe("");
+  });
+
+  it("measures where a fixed-bottom layer really sits (MEH-3889): drift with healthy innerHeight", () => {
+    vi.useFakeTimers();
+    iphone();
+    stubViewport({ offsetTop: 0 });
+    const realRect = Element.prototype.getBoundingClientRect;
+    let probeTop = 664; // healthy: the probe sits at the viewport bottom
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function rect() {
+      if (this.dataset && "vvProbe" in this.dataset) return { top: probeTop, bottom: probeTop };
+      return realRect.call(this);
+    });
+    render(<IosViewportPin />);
+    tick(SETTLE_MS + 20);
+    expect(shiftVar()).toBe("");
+
+    probeTop = 314; // Safari parks the fixed layers 350px up during a fast scroll
+    act(() => window.dispatchEvent(new Event("scroll")));
+    tick(SETTLE_MS + 40);
+    expect(shiftVar()).toBe("350px");
+
+    probeTop = 664; // Safari heals → the pin lets go at once
+    act(() => window.dispatchEvent(new Event("scroll")));
+    tick(20);
+    expect(shiftVar()).toBe("");
+  });
+
+  it("the probe is removed on unmount", () => {
+    vi.useFakeTimers();
+    iphone();
+    stubViewport({});
+    const { unmount } = render(<IosViewportPin />);
+    expect(document.querySelectorAll("[data-vv-probe]").length).toBe(1);
+    unmount();
+    expect(document.querySelectorAll("[data-vv-probe]").length).toBe(0);
   });
 
   it("removes the var on unmount", () => {

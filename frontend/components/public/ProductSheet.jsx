@@ -446,7 +446,7 @@ export default function ProductSheet({
         aria-label={product.name}
         data-testid="product-sheet"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-surface shadow-xl md:max-w-md md:rounded-2xl"
+        className="vv-pin relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-surface shadow-xl md:max-w-md md:rounded-2xl"
       >
         <IconButton
           ref={closeRef}
