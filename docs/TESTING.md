@@ -78,7 +78,7 @@ green. A spec that provokes errors on purpose opts out with
 layout itself (enlarges text, taps with `dispatchEvent`, which is not counted
 as input) uses `"errors"`, which keeps the error checks and drops CLS.
 A spec that measures timing itself under a CPU throttle (`flows/manual/nav-throttled.spec.ts`)
-is `"off"` too: the guard's probe changes the frames it counts (MEH-3809).
+is `"off"` too: the guard's probe adds work to every frame it counts (MEH-3809).
 
 Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
 1.5 × the largest value measured. A listed page passes under its ceiling and
@@ -95,11 +95,14 @@ wrong around it is never seen. This spec throttles Chromium (CDP: 400 ms RTT,
 /group-buys (one test each, mobile project only): scrolls to the last card,
 opens it, and checks in every animation frame that the footer is never in view
 under the loader; then Back must return to the same offset (±100 px, including
-a list too short to scroll, which must come back to the top). Control, per
-list: where the loader appears (home, /producers, /events) it must paint, or
-the throttle did not take effect; where it never appeared when measured
-(/experiences, /group-buys), 0 loader frames is asserted, so a change there
-turns the row red.
+a list too short to scroll, which must come back to the top). The click
+waits until Next has prefetched the card's detail route: the loader can paint
+only if that prefetch finished first, so without the wait it was a race (on
+/experiences 0 frames on a click made at once, 21–26 on one made 8 s later,
+MEH-3877). Control, per list: where the loader appears (home, /producers,
+/events, /experiences) it must paint, or the throttle did not take effect;
+where it never appeared when measured (/group-buys), 0 loader frames is
+asserted, so a change there turns the row red.
 
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
 

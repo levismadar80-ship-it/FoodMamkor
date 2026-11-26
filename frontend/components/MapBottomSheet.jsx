@@ -265,6 +265,7 @@ export default function MapBottomSheet({
     <div
       ref={sheetRef}
       data-testid="map-bottom-sheet"
+      // vv-pin-exempt: the map controls ride this sheet's edge via --map-sheet-h and would split from it (globals.css .vv-pin note)
       className="fixed inset-x-0 bottom-0 z-map-sheet bg-background rounded-t-xl border-t border-border flex flex-col"
       style={{
         height: sheetHeight(heightVh),
