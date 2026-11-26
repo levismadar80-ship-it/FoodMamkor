@@ -146,6 +146,16 @@ test.describe("load guard self-test (MEH-3809)", () => {
     // A page that is not listed fails at the plain limit, a lookalike path too.
     expect(run(shifted("/producers", CLS_LIMIT + 0.05))).toHaveLength(1);
     expect(run(shifted("/producer/dashboard/editx", 0.3))).toHaveLength(1);
+    // MEH-3878: /recommend passes under 0.62, fails above it; a lookalike fails.
+    expect(run(shifted("/recommend", 0.41))).toEqual([]);
+    expect(run(shifted("/recommend", 0.7))).toHaveLength(1);
+    expect(run(shifted("/recommendx", 0.41))).toHaveLength(1);
+    // A row with a query covers that state only (MEH-3887: home with a city).
+    expect(KNOWN_CLS.some((k) => k.card === "MEH-3887" && k.query)).toBe(true);
+    expect(run(shifted("/?city=haifa", 0.105))).toEqual([]);
+    expect(run(shifted("/en?view=list&city=haifa", 0.105))).toEqual([]);
+    expect(run(shifted("/", 0.105))).toHaveLength(1);
+    expect(run(shifted("/?view=list", 0.105))).toHaveLength(1);
     // A listed page never hides an error.
     expect(run(shifted("/producer/dashboard/edit", 0.3, ["pageerror: boom"]))).toEqual(["pageerror: boom"]);
     // "errors" mode (cls: false) drops CLS only.
