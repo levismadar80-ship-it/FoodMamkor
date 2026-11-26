@@ -255,6 +255,8 @@ graph LR
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]
     ChatRouter -->|db_query, 5/min per IP| ChatTools[chat_db_tools<br/>4 bounded SELECTs as mcp_reader<br/>READ ONLY · 5s timeout · fail-open]
+    Owner[OwnerAssistant.jsx in the dashboard tab row] --> ChatOwner[POST /chat/owner<br/>👤 owner · MEH-3902<br/>her status + missing items + screen]
+    ChatOwner -->|fill_page_from_chat| PageFiller[page_filler.read_page<br/>draft only, she ticks what to save<br/>PUT /producers/me]
     ChatQA -->|names one business| ChatBiz[chat_business_context<br/>MEH-3481: whitelisted page facts<br/>no phone/email/address · fail-open]
 ```
 

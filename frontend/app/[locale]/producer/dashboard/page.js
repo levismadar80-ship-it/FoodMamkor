@@ -43,6 +43,8 @@ import { copyOrThrow } from "@/lib/clipboard";
 import { getWhatsAppChatHref } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import IconButton from "@/components/ui/IconButton";
+import { useOwnerPageUpdated } from "@/lib/owner-page-updated"; // MEH-3902
+import OwnerAssistantNudge from "@/components/owner-assistant/OwnerAssistantNudge";
 
 /**
  * Module:   producer/dashboard/page (Overview / סקירה index)
@@ -162,6 +164,14 @@ export default function ProducerDashboardPage() {
       .catch(() => { setAnalytics(null); setAnalyticsError(true); })
       .finally(() => setAnalyticsAnswered(true));
   }, [user, authLoading, analyticsAttempt]);
+
+  // MEH-3902: the assistant saved fields — read the business again.
+  // MEH-3902: the assistant saved something (fields, products, photos, a
+  // submit): re-read both copies of the business, like markSubmitted flips both.
+  useOwnerPageUpdated(() => {
+    setProfileAttempt((n) => n + 1);
+    api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => {});
+  });
 
   useEffect(() => {
     if (authLoading || !user || user.role !== "producer") return;
@@ -630,6 +640,8 @@ export default function ProducerDashboardPage() {
           approved+complete state, so the card renders exactly once). */}
       {/* MEH-2460: an organizer's checklist is the draft banner (photo,
           description, event, phone) — this card counts products / location. */}
+      {/* MEH-3902: the assistant offers to help, above the checklist. */}
+      {completenessFirst && profile && !isOrganizer && <OwnerAssistantNudge producer={profile} />}
       {completenessFirst && profile && !isOrganizer && (
         <ProfileCompletenessCard
           producer={profile}
