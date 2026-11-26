@@ -353,8 +353,8 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
   const [blockedByUnsaved, setBlockedByUnsaved] = useState(false);
-  // Once every section is saved the note goes; a later edit must not bring
-  // it back before the admin presses save again.
+  // Once every section is saved the note goes, and a section edited after
+  // that brings it back only on the next press of save.
   useEffect(() => {
     if (!unsavedSections.length) setBlockedByUnsaved(false);
   }, [unsavedSections.length]);
@@ -1361,7 +1361,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
 
       {blockedByUnsaved && unsavedSections.length > 0 && (
         <InlineMessage data-testid="unsaved-sections-error">
-          {t("producers.form.errors.unsaved_sections", { sections: unsavedSections.join("، ") })}
+          {t("producers.form.errors.unsaved_sections", { sections: unsavedSections.join(", ") })}
         </InlineMessage>
       )}
       <div className="flex gap-3">

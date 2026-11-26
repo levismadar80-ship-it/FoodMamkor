@@ -14,8 +14,9 @@
  * History:  MEH-3475 (creation); MEH-3915 (each editor reports its unsaved
  *           edits to the page, which holds «שמרו שינויים» until they are saved)
  */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { DeliveryCard } from "@/app/[locale]/producer/dashboard/edit/cards/DeliveryCard";
 import OrderWindowEditor from "@/app/[locale]/producer/dashboard/edit/OrderWindowEditor";
 import PaymentInfoEditor from "@/app/[locale]/producer/dashboard/edit/PaymentInfoEditor";
@@ -33,6 +34,28 @@ export const SECTION_TITLE_KEYS = {
 };
 
 const noop = () => {};
+
+/**
+ * MEH-3915: the edit page's record of which of these sections hold unsaved
+ * edits. Pass `reportDirty` to the panel; `unsavedSections` (the headings)
+ * holds ProducerForm's save and PageFillPanel's (whose save remounts the
+ * panel); leaving the page asks first, as on the owner's dashboard.
+ */
+export function useUnsavedSections() {
+  const t = useTranslations("dashboard.producer");
+  const [dirty, setDirty] = useState(/** @type {Record<string, boolean>} */ ({}));
+  // Stable: each editor calls it from an effect and its cleanup.
+  const reportDirty = useCallback(
+    (/** @type {string} */ key, /** @type {boolean} */ isDirty) =>
+      setDirty((d) => (!!d[key] === isDirty ? d : { ...d, [key]: isDirty })),
+    [],
+  );
+  const unsavedSections = Object.entries(SECTION_TITLE_KEYS)
+    .filter(([key]) => dirty[key])
+    .map(([, titleKey]) => t(titleKey));
+  useUnsavedGuard(unsavedSections.length > 0, t("unsaved_guard.confirm"));
+  return { reportDirty, unsavedSections };
+}
 
 /**
  * @param {{

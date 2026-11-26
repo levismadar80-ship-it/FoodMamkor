@@ -15,9 +15,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
-import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPanel";
-import { useState, useCallback } from "react";
-import { SECTION_TITLE_KEYS } from "@/components/admin/AdminDeliveryPaymentPanel";
+import AdminDeliveryPaymentPanel, { useUnsavedSections } from "@/components/admin/AdminDeliveryPaymentPanel";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), useParams: () => ({}) }));
@@ -44,19 +42,13 @@ const PRODUCER = {
   images: [],
 };
 
-// The page's wiring (edit/page.js), without its loading and panels around it.
+// The page's wiring (edit/page.js uses the same hook), without its loading
+// and the other panels around it.
 function Page() {
-  const [dirty, setDirty] = useState({});
-  const reportDirty = useCallback(
-    (k, d) => setDirty((x) => (!!x[k] === d ? x : { ...x, [k]: d })),
-    [],
-  );
-  const unsaved = Object.keys(SECTION_TITLE_KEYS)
-    .filter((k) => dirty[k])
-    .map((k) => P[SECTION_TITLE_KEYS[k].split(".")[0]].heading);
+  const { reportDirty, unsavedSections } = useUnsavedSections();
   return (
     <>
-      <ProducerForm initial={PRODUCER} producerId="p-1" unsavedSections={unsaved} />
+      <ProducerForm initial={PRODUCER} producerId="p-1" unsavedSections={unsavedSections} />
       <AdminDeliveryPaymentPanel producerId="p-1" producer={PRODUCER} reportDirty={reportDirty} />
     </>
   );
@@ -117,22 +109,30 @@ describe("unsaved sections hold «שמרו שינויים» (MEH-3915)", () => {
     await waitFor(() => expect(formPuts()).toHaveLength(1));
   });
 
-  it("many unsaved sections: all are named", async () => {
-    render(
-      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-        <ProducerForm
-          initial={PRODUCER}
-          producerId="p-1"
-          unsavedSections={[P.delivery.heading, P.payment_info.heading]}
-        />
-      </NextIntlClientProvider>,
-    );
+  it("many unsaved sections (delivery fee + a payment method): both are named", async () => {
+    mount(<Page />);
     await screen.findByText(FORM.sections.basic);
+    typeFee("25");
+    fireEvent.click(within(screen.getByTestId("admin-section-payment-info")).getByText(P.payment_info.methods.bit));
     submit();
     const msg = await screen.findByTestId("unsaved-sections-error");
     expect(msg).toHaveTextContent(P.delivery.heading);
     expect(msg).toHaveTextContent(P.payment_info.heading);
+    expect(msg).not.toHaveTextContent(P.order_window.heading);
     expect(formPuts()).toHaveLength(0);
+  });
+
+  it("leaving the page asks first only while a section is unsaved", async () => {
+    mount(<Page />);
+    await screen.findByText(FORM.sections.basic);
+    const leave = () => {
+      const e = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(e);
+      return e.defaultPrevented;
+    };
+    expect(leave()).toBe(false);
+    typeFee("25");
+    await waitFor(() => expect(leave()).toBe(true));
   });
 });
 
