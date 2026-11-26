@@ -18,6 +18,9 @@ describe("replayAllowed (Sentry replay gate)", () => {
     ["/en/claim/abc123", true, false],
     ["/owner-invite/abc123", true, false],
     ["/en/owner-invite/abc123", true, false],
+    // MEH-3896: the short claim link.
+    ["/c/K7m2Qx9aPbR4", true, false],
+    ["/en/c/K7m2Qx9aPbR4", true, false],
     ["/claim", true, true],
     ["", true, true],
   ])("%s with full consent=%s → %s", (path, consent, expected) => {
