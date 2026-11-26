@@ -9,3 +9,4 @@
 > `Whats-new: <tool_id> none — <סיבה>`.
 
 <!-- items below this line -->
+- experiences: חוויה יכולה להיות עכשיו קורס עם כמה מפגשים, ונרשמים אליה פעם אחת לכל המפגשים.

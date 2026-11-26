@@ -50,6 +50,7 @@ from app.services import course_meetings as course_svc  # MEH-3898
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.services.booking_cancellations import (  # MEH-3227
     after_item_edit,
+    notify_course_changed,
     cancel_item_signups,
     cancel_session_signups,
     is_test_item,
@@ -661,6 +662,8 @@ def _course_edit(ex: Experience, payload: dict[str, Any]) -> None:
     a past new meeting, a duplicate, fewer than 2 or more than 20, or a
     course that is also recurring), and keep event_date / event_time on the
     first meeting, so sign-ups close when it starts. Mutates `payload`."""
+    if "course_meetings" in payload and payload["course_meetings"] is None:
+        payload.pop("course_meetings")  # null = unchanged; [] ends the course
     if "course_meetings" in payload:
         payload["course_meetings"] = course_svc.normalise_meetings(
             payload["course_meetings"] or [],
@@ -672,8 +675,9 @@ def _course_edit(ex: Experience, payload: dict[str, Any]) -> None:
     )
     if not meetings:
         return
-    d, t = course_svc.first(meetings)  # type: ignore[arg-type]
-    if (d, t) != (ex.event_date, ex.event_time):
+    d, t = course_svc.first(meetings)
+    stored: tuple[Any, Any] = (ex.event_date, ex.event_time)
+    if (d, t) != stored:
         payload["event_date"], payload["event_time"] = d, t
     else:  # unchanged: a date sent with it is ignored, never a "move"
         payload.pop("event_date", None)
@@ -768,12 +772,17 @@ def update_experience_row(
     )
     gone = _sessions_edit(ex, payload)  # MEH-3441
     before = item_state(ex)
+    old_meetings = ex.course_meetings  # MEH-3898
     for field, value in payload.items():
         setattr(ex, field, value)
     # MEH-3441: a removed date's sign-ups are cancelled and mailed.
     cancel_session_signups(db, ex, gone, background_tasks, is_test_item(ex))
     # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
-    after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
+    if not after_item_edit(db, ex, before, background_tasks, is_test_item(ex)):
+        # MEH-3898: a later meeting of a course changed → registrants told.
+        notify_course_changed(
+            db, ex, old_meetings, background_tasks, is_test_item(ex)  # type: ignore[arg-type]
+        )
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
     # the cap — the dashboard clamps, and a direct PUT is clamped the same way.

@@ -162,6 +162,7 @@ class TestOwnerEditsCourse:
             headers=auth_header(host),
         )
         assert res.status_code == 422, res.text
+        assert res.json()["detail"] == "קורס לא יכול להיות גם חוויה חוזרת."
 
     def test_an_empty_list_makes_it_a_one_off_again(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
@@ -177,6 +178,180 @@ class TestOwnerEditsCourse:
         got = db.get(Experience, ex.id)
         assert got.course_meetings is None
         assert got.event_date == D1
+
+
+class TestRunningCourse:
+    """A course whose first meeting is past and later ones are not."""
+
+    PAST = israel_today() - timedelta(days=7)
+
+    def test_a_started_meeting_cannot_be_removed(self, client, db, monkeypatch):
+        # Dropping it would move the date to meeting 2 and reopen sign-ups.
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(self.PAST), _m(D1), _m(D2)])
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(D1), _m(D2)]},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 422, res.text
+        assert "שכבר התקיים" in res.json()["detail"]
+        db.expire_all()
+        assert db.get(Experience, ex.id).event_date == self.PAST
+
+    def test_a_running_course_cannot_stop_being_a_course(
+        self, client, db, monkeypatch
+    ):
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(self.PAST), _m(D1)])
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": []},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 422, res.text
+
+    def test_a_started_meeting_kept_saves_and_a_later_one_changes(
+        self, client, db, monkeypatch
+    ):
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(self.PAST), _m(D1)])
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(self.PAST), _m(D2)]},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        db.expire_all()
+        got = db.get(Experience, ex.id)
+        assert got.course_meetings == [_m(self.PAST), _m(D2)]
+        assert got.event_date == self.PAST
+
+    def test_a_new_past_meeting_is_refused(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(D1), _m(D2)])
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(self.PAST), _m(D1), _m(D2)]},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 422, res.text
+        assert res.json()["detail"] == "בחרו תאריך עתידי."
+
+
+class TestRegistrantsTold:
+    """A later meeting changing is news to everyone signed up for the course;
+    the first meeting moving is mailed by the existing «moved» email."""
+
+    def _signed_up_course(self, client, db, mail, monkeypatch):
+        import app.services.booking_cancellations as bc
+
+        sent = {"course": [], "moved": []}
+        monkeypatch.setattr(
+            bc,
+            "send_registrant_course_changed",
+            lambda to, m, test_cause=False, meetings=(): sent["course"].append(
+                (to, meetings)
+            ),
+        )
+        monkeypatch.setattr(
+            bc,
+            "send_registrant_moved",
+            lambda to, m, test_cause=False: sent["moved"].append(to),
+        )
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(D1), _m(D2)])
+        res = client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        assert res.status_code == 201, res.text
+        return host, ex, sent
+
+    def test_a_later_meeting_moving_mails_the_new_list(
+        self, client, db, mail, monkeypatch
+    ):
+        host, ex, sent = self._signed_up_course(client, db, mail, monkeypatch)
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(D1), _m(D3, "19:30")]},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        assert sent["course"] == [
+            (
+                "dana@example.com",
+                (f"{D1:%d.%m.%Y}, 18:00", f"{D3:%d.%m.%Y}, 19:30"),
+            )
+        ]
+        assert sent["moved"] == []
+
+    def test_the_first_meeting_moving_sends_one_email_not_two(
+        self, client, db, mail, monkeypatch
+    ):
+        host, ex, sent = self._signed_up_course(client, db, mail, monkeypatch)
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(D2), _m(D3)]},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        assert sent["moved"] == ["dana@example.com"]
+        assert sent["course"] == []
+
+    def test_an_edit_that_keeps_the_meetings_mails_nobody(
+        self, client, db, mail, monkeypatch
+    ):
+        host, ex, sent = self._signed_up_course(client, db, mail, monkeypatch)
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": [_m(D1), _m(D2)], "title": "קורס גבינות"},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        assert sent == {"course": [], "moved": []}
+
+
+class TestOddInput:
+    def test_null_leaves_the_course_as_it_is(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        ex = _course(db, host, [_m(D1), _m(D2)])
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"course_meetings": None, "title": "קורס גבינות למתחילים"},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        db.expire_all()
+        assert db.get(Experience, ex.id).course_meetings == [_m(D1), _m(D2)]
+
+    def test_a_time_with_an_offset_is_read_as_wall_clock(
+        self, client, db, monkeypatch
+    ):
+        # An aware time beside a naive one on the same day used to 500.
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        res = _create(
+            client,
+            host,
+            course_meetings=[_m(D1, "18:00"), _m(D1, "10:00+02:00")],
+        )
+        assert res.status_code == 201, res.text
+        assert res.json()["course_meetings"] == [_m(D1, "10:00"), _m(D1, "18:00")]
+
+    def test_the_same_minute_twice_is_a_duplicate(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        res = _create(
+            client,
+            host,
+            course_meetings=[_m(D1, "18:00"), _m(D1, "18:00:30"), _m(D2)],
+        )
+        assert res.status_code == 422, res.text
+        assert res.json()["detail"] == "המפגש הזה כבר ברשימה."
 
 
 # ---------- a visitor signs up once ----------
@@ -209,9 +384,64 @@ class TestCourseSignup:
         res = client.post(f"/experiences/{ex.id}/registrations", json=_signup())
         assert res.status_code == 409, res.text
 
+    def test_a_course_saved_by_its_owner_takes_one_signup(
+        self, client, db, mail, monkeypatch
+    ):
+        # End to end: the owner's POST sets the date from the meetings, and
+        # the sign-up path reads it (the cases above seed the row directly).
+        _mock_moderation(monkeypatch)
+        host = _owner(db, email="host@example.com")
+        res = _create(
+            client,
+            host,
+            event_date=D3.isoformat(),
+            course_meetings=[_m(D2), _m(D1)],
+            max_participants=1,
+            registration_method="site_form",
+        )
+        assert res.status_code == 201, res.text
+        ex_id = res.json()["id"]
+        db.query(Experience).filter_by(id=ex_id).update({"status": "approved"})
+        db.commit()
+        assert db.get(Experience, ex_id).event_date == D1
+        first = client.post(f"/experiences/{ex_id}/registrations", json=_signup())
+        assert first.status_code == 201, first.text
+        second = client.post(
+            f"/experiences/{ex_id}/registrations",
+            json=_signup(email="other@example.com", phone="052-1112233"),
+        )
+        assert second.status_code == 409, second.text
+
     def test_the_public_page_lists_every_meeting(self, client, db):
         host = _owner(db, email="host@example.com")
         ex = _course(db, host, [_m(D1), _m(D2), _m(D3)])
         res = client.get(f"/experiences/{ex.id}")
         assert res.status_code == 200, res.text
         assert res.json()["course_meetings"] == [_m(D1), _m(D2), _m(D3)]
+
+
+def test_the_course_email_lists_every_meeting_and_the_cancel_link(monkeypatch):
+    import app.services.registration_emails as re_mod
+
+    got = {}
+    monkeypatch.setattr(
+        re_mod,
+        "send_email",
+        lambda to, subject, body, html=None, test_cause=False: got.update(
+            subject=subject, body=body, html=html
+        ),
+    )
+    m = re_mod.RegistrantEmail(
+        title="קורס גבנות",
+        date_text="",
+        time_text="",
+        place="לוטם",
+        host_name="מחלבת לוטם",
+        cancel_url="https://example.com/registration/abc",
+    )
+    re_mod.send_registrant_course_changed(
+        "dana@example.com", m, meetings=("06.12.2026, 18:00", "13.12.2026, 19:30")
+    )
+    assert got["subject"] == 'המפגשים של "קורס גבנות" השתנו'
+    assert "מפגש 1: 06.12.2026, 18:00\nמפגש 2: 13.12.2026, 19:30" in got["body"]
+    assert "https://example.com/registration/abc" in got["html"]

@@ -36,10 +36,15 @@ _TOO_MANY = f"אפשר להוסיף עד {MEETINGS_MAX} מפגשים לקורס.
 _DUPLICATE = "המפגש הזה כבר ברשימה."
 _PAST = "בחרו תאריך עתידי."
 _WITH_RECURRING = "קורס לא יכול להיות גם חוויה חוזרת."
+_STARTED_KEPT = "מפגש שכבר התקיים נשאר ברשימה ואי אפשר להזיז אותו."
 
 
 def _meeting_key(m: dict[str, Any]) -> Key:
-    t = time.fromisoformat(str(m["time"])).replace(second=0, microsecond=0)
+    # A UTC offset is dropped: the meetings are Israel wall-clock times, and an
+    # aware time beside a naive one cannot be sorted or compared (500).
+    t = time.fromisoformat(str(m["time"])).replace(
+        second=0, microsecond=0, tzinfo=None
+    )
     return date.fromisoformat(str(m["date"])), t
 
 
@@ -48,11 +53,18 @@ def normalise_meetings(
 ) -> list[dict[str, Any]] | None:
     """The meetings to store, soonest first, or None for "not a course"
     (an empty list). A NEW meeting must be in the future; a stored one that
-    has passed stays, so a running course keeps its whole list. No meeting
+    has passed stays, and must: removing or moving it is refused (422). A
+    running course keeps its whole list. No meeting
     twice, between MEETINGS_MIN and MEETINGS_MAX."""
+    old = {_meeting_key(m) for m in stored or []}
+    # A meeting that has started stays, unmoved: dropping it would move the
+    # course's date to a later meeting and reopen sign-ups mid-course, and
+    # the «moved» email would announce a course that already began.
+    started = {k for k in old if _started(k)}
+    if started - {_meeting_key(m) for m in new}:
+        raise HTTPException(status_code=422, detail=_STARTED_KEPT)
     if not new:
         return None
-    old = {_meeting_key(m) for m in stored or []}
     seen: set[Key] = set()
     for raw in new:
         k = _meeting_key(raw)

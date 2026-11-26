@@ -264,6 +264,36 @@ def send_registrant_moved(
     send_email(to, subject, body, html=html, test_cause=test_cause)
 
 
+def send_registrant_course_changed(
+    to: str,
+    m: RegistrantEmail,
+    test_cause: bool = False,
+    *,
+    meetings: tuple[str, ...] = (),
+) -> None:
+    """MEH-3898: the business changed a course's meetings (not only the first,
+    which ``send_registrant_moved`` covers); the sign-up for the whole course
+    stays. ``meetings`` is the new list, already formatted."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'המפגשים של "{title}" השתנו'
+    intro = f'{host} עדכן את המפגשים של "{title}". אלה המפגשים עכשיו:'
+    rows = [f"מפגש {i}: {when}" for i, when in enumerate(meetings, 1)]
+    if m.place:
+        rows.append(f"איפה: {m.place}")
+    outro = "ההרשמה שלכם לקורס נשארת בתוקף. אם המועדים החדשים לא מתאימים, אפשר לבטל כאן:"
+    body = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(rows)
+        + f"\n\n{outro}\nביטול ההרשמה: {m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = f"{e(intro)}<br>\n" + "<br>\n".join(e(r) for r in rows)
+    rows_html += f"<br><br>\n{e(outro)}"
+    html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
 def send_registration_reminder(
     to: str, m: RegistrantEmail, test_cause: bool = False
 ) -> None:
