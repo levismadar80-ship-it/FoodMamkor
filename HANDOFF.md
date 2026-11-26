@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-25 — הדבקת רשימת ערים ותיקון חיפוש הערים (PR #5353)
+
+**שורה אחת:** ב-staging. אפשר להדביק רשימת ערים בשדה ערי המשלוח. החיפוש מוצא שם עם מקף או רווח כפול, ומוצא עיר לפי השם הנוכחי שלה. Enter בשדה עיר לא שולח את הטופס.
+
+**מה צריך לדעת לפני עבודה:**
+- **השוואת ערים** עוברת תמיד דרך `city_key` ו-`canonical_city` ב-`backend/app/data/cities.py`. ‏`alias_sources` הוא הכיוון ההפוך של `alias_targets`, ודרכו שם נוכחי מגיע לשורה שנשמרה בשם הישן.
+- **`POST /cities/match`** הוא endpoint ציבורי לקריאה בלבד, מוגבל ל-30 בקשות לדקה ול-300 שמות. הוא מתאים רק יישובים רשמיים, ולא ערים בטקסט חופשי שעסקים ותיקים הקלידו.
+- **`CitySearch`:** כשרשימת ההצעות סגורה, Enter קורא ל-`onSubmit` אם הועבר, ולא שולח את הטופס שמסביב.
+
 ## 2026-11-25 — העברת טיוטה של אדמין לבעלת העסק שנרשמה לבד (PR #5349)
 
 **שורה אחת:** ב-staging. כשטיוטה בלי בעלים ועסק שבעלת העסק רשמה בעצמה נראים כמו אותו עסק, האדמין רואה תג בשתי השורות, מקבלת מייל כשהיא שולחת לבדיקה, ובלחיצה מאושרת מעבירה את הטיוטה לחשבון שלה.
