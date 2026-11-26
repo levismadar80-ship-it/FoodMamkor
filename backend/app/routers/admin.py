@@ -559,7 +559,8 @@ def seed_cities(
         logger.exception("seed-cities: data.gov.il fetch failed")
         raise HTTPException(
             # guard-ok: admin-only seed screen; data.gov.il is the source's name.
-            status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il"
+            status_code=502,
+            detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il",
         )
 
     try:
