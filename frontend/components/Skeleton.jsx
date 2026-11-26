@@ -167,6 +167,34 @@ function SkeletonStatus({ label, className, testId, children }) {
   );
 }
 
+/**
+ * MEH-3871: the business page's review rows while page 1 loads, in the real
+ * row's box (ReviewsSection: py-6 · 40px initial · name 22px + 4px + stars
+ * 14px · 12px · one 26px body line = 126px). The generic list rows were 70px,
+ * so three of them grew by ~170px when the reviews arrived and pushed the
+ * delivery section down under a reader who had already scrolled to it.
+ *
+ * @param {{ count?: number, label?: string, testId?: string }} props
+ */
+export function SkeletonReviewRows({ count = 3, label, testId }) {
+  return (
+    <SkeletonStatus label={label} className="divide-y divide-border" testId={testId}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="py-6" aria-hidden="true">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="skeleton-box w-10 h-10 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+              <div className="h-[22px] flex items-center"><div className="skeleton-box rounded-lg h-[14px] w-[45%]" /></div>
+              <div className="mt-1 skeleton-box rounded-lg h-[14px] w-[84px]" />
+            </div>
+          </div>
+          <div className="h-[26px] flex items-center"><div className="skeleton-box rounded-lg h-[14px] w-[85%]" /></div>
+        </div>
+      ))}
+    </SkeletonStatus>
+  );
+}
+
 /** Rows of thumbnail + title + meta line — recipe / event / follower lists. */
 /** @param {{ count?: number, label?: string, className?: string, testId?: string }} props */
 export function SkeletonList({ count = 4, label, className = "", testId }) {
