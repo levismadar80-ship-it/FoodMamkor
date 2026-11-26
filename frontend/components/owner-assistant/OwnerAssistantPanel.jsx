@@ -60,6 +60,7 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
   const locale = useLocale();
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+  const tContact = useTranslations("contact");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -163,7 +164,7 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
       aria-modal="false"
       aria-label={t("title")}
       data-testid="owner-assistant-panel"
-      className="print:hidden fixed z-chat inset-x-0 bottom-0 md:inset-x-auto md:end-6 md:bottom-6 md:w-[400px] max-h-[85vh] md:max-h-[min(640px,85vh)] flex flex-col bg-background border border-border shadow-lg rounded-t-lg md:rounded-lg overflow-hidden"
+      className="vv-pin print:hidden fixed z-chat inset-x-0 bottom-0 md:inset-x-auto md:end-6 md:bottom-6 md:w-[400px] max-h-[85vh] md:max-h-[min(640px,85vh)] flex flex-col bg-background border border-border shadow-lg rounded-t-lg md:rounded-lg overflow-hidden"
     >
       <div className="bg-primary text-white px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -173,11 +174,11 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
             <IconButton label={t("new_chat")} onClick={() => { generation.current += 1; setError(""); onNewChat(); }}
-              className="p-2 rounded-full hover:bg-white/10 focus-ring" data-testid="owner-assistant-new-chat">
+              className="p-2 rounded-full hover:bg-primary-dark focus-ring" data-testid="owner-assistant-new-chat">
               <ArrowCounterClockwise size={18} weight="bold" aria-hidden="true" />
             </IconButton>
           )}
-          <IconButton label={t("close")} onClick={onClose} className="p-2 rounded-full hover:bg-white/10 focus-ring">
+          <IconButton label={t("close")} onClick={onClose} className="p-2 rounded-full hover:bg-primary-dark focus-ring">
             <X size={18} weight="bold" aria-hidden="true" />
           </IconButton>
         </div>
@@ -230,7 +231,7 @@ export default function OwnerAssistantPanel({ messages, setMessages, section, on
         </div>
         <IconButton
           type="submit"
-          label={t("send")}
+          label={tContact("submit")}
           disabled={sending || !input.trim()}
           className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark disabled:opacity-50 focus-ring"
         >

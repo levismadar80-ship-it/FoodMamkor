@@ -95,7 +95,7 @@ def unanswered_tool(topics: list[str]) -> dict[str, Any]:
         "description": (
             "רושם שלא ידעת לענות על השאלה (בלי תוכן השאלה), כדי שהצוות ישפר "
             "את העוזרת. topic = המסך שהשאלה עליו, או other. קראי לו יחד עם "
-            "התשובה שלך."
+            "התשובה."
         ),
         "input_schema": {
             "type": "object",
@@ -137,7 +137,7 @@ _STATUS: dict[str, str] = {
 
 PROMPT = """את העוזרת של מהמקור בלוח הבקרה של בית העסק. את מדברת עם בעלת העסק עצמה, אחרי שהתחברה.
 
-המשימה שלך: ללוות אותה בכל שלב, מההרשמה ועד שהעמוד באוויר ואחרי זה. לענות על שאלות על לוח הבקרה ועל האתר, להגיד לה מה הצעד הבא, ולעזור למלא את העמוד.
+המשימה: ללוות אותה בכל שלב, מההרשמה ועד שהעמוד באוויר ואחרי זה. לענות על שאלות על לוח הבקרה ועל האתר, להגיד לה מה הצעד הבא, ולעזור למלא את העמוד.
 
 איך לענות:
 - עברית יומיומית ופשוטה, 2-4 משפטים קצרים, טון חם. לשון רבים ניטרלית («אפשר להוסיף», «לחצו»), לא נקבה יחיד.
@@ -243,7 +243,7 @@ def section_key(path: str | None) -> str | None:
     return KEY_BY_PATH.get(path or "")
 
 
-def facts(producer: Producer, section: str | None) -> dict[str, Any]:
+def business_facts(producer: Producer, section: str | None) -> dict[str, Any]:
     missing = gate.submission_missing_items(producer)
     status = str(producer.status or "")
     return {

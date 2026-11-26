@@ -8500,43 +8500,16 @@
     "typing": "Typing…",
     "input_label": "Question for the assistant",
     "input_placeholder": "Ask a question or tell me about your business",
-    "send": "Send",
     "new_chat": "New chat",
     "fallback": "I couldn't understand the question. Could you rephrase it?",
     "error_rate_limit": "Too many messages in a row. Try again in a minute.",
     "error_generic": "The message wasn't sent. Try again in a moment.",
     "pages": {
-      "overview": "Overview",
       "edit": "Edit page",
-      "insights": "Insights",
-      "tools": "Tools",
-      "orders": "Orders",
-      "events": "Events",
-      "experiences": "Experiences",
-      "group_buys": "Group buys",
-      "recipes": "Recipes",
-      "rescue": "Surprise bags",
-      "reviews": "Reviews",
       "google_profile": "Business on Google",
       "share": "Share your page",
-      "offer": "Offer",
       "followers": "Followers",
       "whats_new": "What's new"
-    },
-    "anchors": {
-      "images": "Photos",
-      "bio": "Business description",
-      "categories": "Categories",
-      "locations": "Locations",
-      "products": "Products",
-      "hours": "Hours",
-      "delivery": "Delivery",
-      "contact-channels": "Contact",
-      "tags": "Tags",
-      "license": "Business license",
-      "kashrut": "Kashrut",
-      "owner-story": "Behind the business",
-      "questions": "FAQ"
     },
     "done": {
       "fields": "The details were saved to your page.",
@@ -8545,7 +8518,7 @@
       "submitted": "Your page was sent for review."
     },
     "nudge": {
-      "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can do them with you, right here.",
+      "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can help with that, right here.",
       "cta": "Finish with the assistant"
     }
   }

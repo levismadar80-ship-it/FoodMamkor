@@ -111,7 +111,7 @@ describe("OwnerAssistant", () => {
       section: "/producer/dashboard/events",
       locale: "he",
     });
-    expect(screen.getByTestId("owner-assistant-link").textContent).toBe(A.anchors.images);
+    expect(screen.getByTestId("owner-assistant-link").textContent).toBe(he.dashboard.producer.images.heading);
   });
 
   it("a question she already asked is not offered again", async () => {

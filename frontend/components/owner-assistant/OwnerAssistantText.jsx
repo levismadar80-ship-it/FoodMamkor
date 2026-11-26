@@ -19,12 +19,44 @@ import { openEditCard, splitOwnerLinks } from "@/lib/owner-pages";
  *
  * Does NOT: decide which paths are real (lib/owner-pages.js does; an unknown
  * path stays text). The site chat's twin is components/ChatMessageText.jsx.
- *
- * @param {{ text: string, onNavigate?: () => void }} props
  */
+
+// Labels another surface already owns: read from there, not copied
+// (messages-hygiene-guard, MEH-3657). Dashboard screens with no heading
+// elsewhere live in owner_assistant.pages.
+const SHARED_PAGES = /** @type {Record<string, string>} */ ({
+  overview: "dashboard.producer.nav.overview",
+  insights: "dashboard.producer.nav.insights",
+  tools: "dashboard.producer.nav.tools",
+  orders: "dashboard.producer.nav.orders",
+  reviews: "dashboard.producer.quick_links.reviews.title",
+  recipes: "business_features.items.recipes.tile_title",
+  events: "chat.pages.events",
+  rescue: "chat.pages.rescue",
+  experiences: "chat.pages.experiences",
+  group_buys: "chat.pages.group_buys",
+  offer: "producer.offer.card_title",
+});
+const SHARED_ANCHORS = /** @type {Record<string, string>} */ ({
+  images: "dashboard.producer.images.heading",
+  bio: "dashboard.producer.description_card.heading",
+  tags: "dashboard.producer.tags.heading",
+  "owner-story": "dashboard.producer.owner_story.heading",
+  locations: "settings.locations.section_heading",
+  products: "settings.products.section_heading",
+  license: "admin.producers.verified.doc_license",
+  kashrut: "admin.producers.review.evidence.kashrut",
+  hours: "producer.detail.hours.heading",
+  delivery: "group_buys.delivery.heading",
+  questions: "diet_pages.faq_heading",
+  categories: "admin.producers.table.columns.categories",
+  "contact-channels": "chat.pages.contact",
+});
+
+/** @param {{ text: string, onNavigate?: () => void }} props */
 export default function OwnerAssistantText({ text, onNavigate }) {
+  const t = useTranslations();
   const tOwner = useTranslations("owner_assistant.pages");
-  const tAnchor = useTranslations("owner_assistant.anchors");
   const tSite = useTranslations("chat.pages");
   const pathname = usePathname();
   // A card on the screen she is already on opens through openEditCard.
@@ -37,7 +69,9 @@ export default function OwnerAssistantText({ text, onNavigate }) {
     onNavigate?.();
   };
   const label = (/** @type {{ ns: string, key: string }} */ p) =>
-    p.ns === "owner" ? tOwner(p.key) : p.ns === "anchor" ? tAnchor(p.key) : tSite(p.key);
+    p.ns === "owner" && SHARED_PAGES[p.key] ? t(SHARED_PAGES[p.key])
+      : p.ns === "anchor" ? t(SHARED_ANCHORS[p.key])
+      : p.ns === "owner" ? tOwner(p.key) : tSite(p.key);
   return (
     <>
       {splitOwnerLinks(text).map((part, i) =>

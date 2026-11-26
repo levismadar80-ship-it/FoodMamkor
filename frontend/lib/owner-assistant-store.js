@@ -17,14 +17,14 @@ const KEEP_MS = KEEP_DAYS * DAY_MS;
 const KEEP_MESSAGES = 40; // the server reads at most 40 (OwnerChatRequest)
 
 /** @param {string | number | null | undefined} userId */
-const keyFor = (userId) => (userId ? `${PREFIX}${userId}` : null);
+const chatKeyFor = (userId) => (userId ? `${PREFIX}${userId}` : null);
 
 /**
  * @param {string | number | null | undefined} userId
  * @returns {{ role: "user" | "assistant", content: string }[]}
  */
 export function loadOwnerChat(userId) {
-  const key = keyFor(userId);
+  const key = chatKeyFor(userId);
   if (!key) return [];
   try {
     // eslint-disable-next-line no-restricted-syntax -- read after mount, shown only inside the panel she opens with a tap; nothing on the page moves
@@ -43,7 +43,7 @@ export function loadOwnerChat(userId) {
  * @param {{ role: string, content: string }[]} messages
  */
 export function saveOwnerChat(userId, messages) {
-  const key = keyFor(userId);
+  const key = chatKeyFor(userId);
   if (!key) return;
   try {
     const kept = messages.slice(-KEEP_MESSAGES).map(({ role, content }) => ({ role, content }));
@@ -55,7 +55,7 @@ export function saveOwnerChat(userId, messages) {
 
 /** @param {string | number | null | undefined} userId */
 export function clearOwnerChat(userId) {
-  const key = keyFor(userId);
+  const key = chatKeyFor(userId);
   if (!key) return;
   try {
     globalThis.localStorage?.removeItem(key);

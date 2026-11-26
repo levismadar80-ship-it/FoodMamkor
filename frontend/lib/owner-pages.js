@@ -7,7 +7,8 @@
  * Touches:  nothing — pure data + pure functions.
  * Does NOT: hold the screens' descriptions for the model
  *           (backend/app/owner_sections.py) or the link labels (messages
- *           `owner_assistant.pages.<key>` / `.anchors.<anchor>`).
+ *           `owner_assistant.pages.<key>`, or another screen's own heading:
+ *           OwnerAssistantText SHARED_PAGES / SHARED_ANCHORS).
  * Related:  backend/app/owner_sections.py (the same paths; the pytest
  *           tests/test_owner_assistant.py fails when the two differ) ·
  *           lib/site-pages.js (the site chat's list, also linked here) ·

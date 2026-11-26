@@ -148,12 +148,12 @@ def _heavy_allowed(business: str) -> bool:
         return True
 
 
-def _business_key(request: Request) -> str:
+def _owner_chat_key(request: Request) -> str:
     key = getattr(request.state, "owner_chat_key", None)
     return key or get_real_client_ip(request)
 
 
-def _owner(request: Request, user: User = Depends(require_producer)) -> User:
+def _owner_user(request: Request, user: User = Depends(require_producer)) -> User:
     # One daily bucket per business, whatever IP she writes from.
     request.state.owner_chat_key = f"owner_chat:{user.producer_id or user.id}"
     return user
@@ -186,7 +186,7 @@ def _fill(text: str, categories: list[tuple[int, str]], lines: dict[str, str]) -
     return OwnerChatResponse(reply=lines["draft_ready"], draft=draft)
 
 
-def _products(text: str, lines: dict[str, str]) -> OwnerChatResponse:
+def _read_products(text: str, lines: dict[str, str]) -> OwnerChatResponse:
     """Product rows from her words; nothing found → the menu upload instead."""
     rows = menu_reader.read_menu_text(text) if text else []
     if rows is None:
@@ -205,7 +205,7 @@ def _show(what: object, text: str, lines: dict[str, str], can_submit: bool) -> O
     return OwnerChatResponse(reply=text or lines[action], action=action)
 
 
-def _answer(
+def _owner_answer(
     response: Any, ctx: "_Ctx", api_messages: list[dict[str, Any]], lines: dict[str, str]
 ) -> OwnerChatResponse:
     """The model's text and tool calls → one answer. A fill or a product read
@@ -221,7 +221,7 @@ def _answer(
     elif owner_assistant.FILL_TOOL_NAME in calls:
         out = _fill(owner_words, ctx.categories, lines)
     elif owner_assistant.PRODUCTS_TOOL_NAME in calls:
-        out = _products(owner_words, lines)
+        out = _read_products(owner_words, lines)
     elif owner_assistant.SHOW_TOOL_NAME in calls:
         what = (calls[owner_assistant.SHOW_TOOL_NAME] or {}).get("what")
         out = _show(what, text, lines, ctx.can_submit)
@@ -252,7 +252,7 @@ def _context(db: Session, user: User, section_path: str | None) -> _Ctx:
         producer = owner_assistant.load_owner_business(db, user)
         if producer is None:
             raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
-        data = owner_assistant.facts(producer, owner_assistant.section_key(section_path))
+        data = owner_assistant.business_facts(producer, owner_assistant.section_key(section_path))
         rows = db.query(Category.id, Category.name).order_by(Category.id).all()
         categories = [(int(cid), str(name)) for cid, name in rows]
         # The send-for-review card also verifies the phone, so it is offered
@@ -267,11 +267,11 @@ def _context(db: Session, user: User, section_path: str | None) -> _Ctx:
 @router.post("/owner", response_model=OwnerChatResponse)
 @limiter.limit("20/minute")
 @limiter.limit("120/hour")
-@limiter.limit(DAILY_CAP, key_func=_business_key)
+@limiter.limit(DAILY_CAP, key_func=_owner_chat_key)
 def owner_chat(
     request: Request,
     body: OwnerChatRequest,
-    user: User = Depends(_owner),
+    user: User = Depends(_owner_user),
     db: Session = Depends(get_db),
 ) -> OwnerChatResponse:
     """Answer the owner inside her dashboard, or hand back a page draft."""
@@ -308,4 +308,4 @@ def owner_chat(
         logger.warning("owner chat completion failed: %s", e)
         return OwnerChatResponse(reply=lines["failed"])
     log_cache_usage("chat_owner", response)
-    return _answer(response, ctx, api_messages, lines)
+    return _owner_answer(response, ctx, api_messages, lines)
