@@ -7,7 +7,7 @@
 """
 
 from app.services.producer_images import first_image
-from conftest import make_producer
+from conftest import auth_header, make_producer
 from _test_experiences__common import _make_experience, _make_host
 from _test_group_buys_api__common import _make_group_buy, _producer_user
 
@@ -54,6 +54,16 @@ class TestExperienceOwnerImage:
         db.commit()
         ex = _make_experience(db, host, title="One", status="approved", image_url=None)
         assert client.get(f"/experiences/{ex.id}").json()["owner_image_url"] == A
+
+    def test_pending_host_business_photo_is_not_sent(self, client, db):
+        """Only a public business lends its photo: a pending one stays private,
+        read through the owner path (public lists already hide it, MEH-1749)."""
+        host = _make_host(db, producer_status="pending")
+        host.producer.images = [A]
+        db.commit()
+        _make_experience(db, host, title="Pending", status="approved", image_url=None)
+        rows = client.get("/experiences/mine", headers=auth_header(host)).json()
+        assert [r["owner_image_url"] for r in rows if r["title"] == "Pending"] == [None]
 
 
 class TestGroupBuyBlankFirstPhoto:

@@ -85,6 +85,25 @@ describe("a photo that fails to load", () => {
     expect(thumb.style.backgroundImage).toBe("");
   });
 
+  it("event row: dead event photo → the owner photo, not the tile", () => {
+    const fire = failImages(["dead.jpg"]);
+    render(
+      <EventEntryRow
+        entry={toEventEntry(
+          { ...EXP, image_url: "https://res.cloudinary.com/x/image/upload/dead.jpg", owner_image_url: OWNER },
+          "experiences",
+          t,
+        )}
+        freeLabel=""
+      />,
+    );
+    expect(screen.getAllByTestId("event-row-image")[0]).toHaveAttribute("data-kind", "event");
+    fire();
+    const thumb = screen.getAllByTestId("event-row-image")[0];
+    expect(thumb).toHaveAttribute("data-kind", "owner");
+    expect(thumb.style.backgroundImage).toContain("owner.jpg");
+  });
+
   it("cover: dead URL → the band", () => {
     const fire = failImages(["dead.jpg"]);
     render(<EntityCover imageUrl="https://res.cloudinary.com/x/image/upload/dead.jpg" alt="" testIdPrefix="ex" />);

@@ -1,7 +1,7 @@
 import { heBadgeCopy } from "./helpers/he-badge-copy";
 import heMessages from "../messages/he.json";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
 // MEH-1847: the overflow explanation lines are asserted against the config
 // itself, never against copied literals — a paraphrase in the component would
@@ -264,6 +264,28 @@ describe("ProducerCard — Phase B anatomy", () => {
     const withLogo = screen.getByTestId("card-name-plate").parentElement.className;
     expect(withLogo).toMatch(/\bpt-20\b/);
     expect(withLogo).toMatch(/\bsm:pt-20\b/);
+  });
+
+  it("a logo that fails to load gives the seed back, not a broken image", () => {
+    const made = [];
+    vi.stubGlobal(
+      "Image",
+      class {
+        set src(v) {
+          made.push(this);
+        }
+      },
+    );
+    try {
+      render(<ProducerCard producer={{ ...minimalProducer, logo_url: "https://res.cloudinary.com/x/dead-logo.png" }} />);
+      expect(screen.getByTestId("card-logo")).toBeInTheDocument();
+      act(() => made.forEach((i) => i.onerror?.()));
+      expect(screen.queryByTestId("card-logo")).toBeNull();
+      expect(document.querySelector("[data-seed-color]")).not.toBeNull();
+      expect(screen.getByTestId("card-name-plate").parentElement.className).toMatch(/\bpt-12\b/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("a photo wins over the logo", () => {
