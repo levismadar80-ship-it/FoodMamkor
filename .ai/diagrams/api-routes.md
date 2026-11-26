@@ -144,7 +144,7 @@ graph TD
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
     Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
-    Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
+    Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated<br/>20/hour per IP · admin 200/hour per user MEH-3906]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     AdminEdit[/admin/producers/:id/edit] --> UploadProductImg[POST /upload/product-image/:product_id<br/>🛡️ MEH-3456 admin-only product photo, any business;<br/>same size cap + magic-byte sniff, writes products.image_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending: notification-only, no DB write;<br/>MEH-2210 rejected: cap 3 → 409, completeness gate → 422, else → pending + resubmission_count+1; other statuses 409; 3/hr]
@@ -255,6 +255,8 @@ graph LR
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]
     ChatRouter -->|db_query, 5/min per IP| ChatTools[chat_db_tools<br/>4 bounded SELECTs as mcp_reader<br/>READ ONLY · 5s timeout · fail-open]
+    Owner[OwnerAssistant.jsx in the dashboard tab row] --> ChatOwner[POST /chat/owner<br/>👤 owner · MEH-3902<br/>her status + missing items + screen]
+    ChatOwner -->|fill_page_from_chat| PageFiller[page_filler.read_page<br/>draft only, she ticks what to save<br/>PUT /producers/me]
     ChatQA -->|names one business| ChatBiz[chat_business_context<br/>MEH-3481: whitelisted page facts<br/>no phone/email/address · fail-open]
 ```
 

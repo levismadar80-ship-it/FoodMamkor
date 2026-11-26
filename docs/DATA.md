@@ -1877,7 +1877,7 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419). Each row carries owner_image_url = the host business's first non-blank photo, or null for a host with no public business (MEH-3894; the row/card/page fallback for image_url, as events).
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /group-buys/counts               public  — {"open": N, "funded": N, "fulfilled": N} for ?city= (MEH-3128). Same `_status_tab_query` as GET /group-buys, so a tab's count and its list agree. Declared before /{group_buy_id}. 60/min. /group-buys hides a status tab whose count is 0 (the selected one stays; a failed count shows every tab).
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
@@ -2394,6 +2394,30 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  button resolves to (chat_business_extras.contact_channel, the
                                  port of lib/contact-method.js getResolvedMethod) — a name, never
                                  the number or link.
+POST /chat/owner                 👤 owner (require_producer) — MEH-3902, the dashboard
+                                 assistant (routers/chat_owner.py). Body {messages, section,
+                                 locale}: section = the dashboard path she is on, kept only
+                                 when it is a screen in app/owner_sections.py (else null);
+                                 locale he|en picks the answer language. The prompt lists every
+                                 dashboard screen and edit card; a fenced <owner_business>
+                                 block carries her status, what still blocks «שליחה לבדיקה»
+                                 and where to fix it, and empty fields. Answer {reply, draft,
+                                 products, action, unanswered}. Tools: fill_page_from_chat →
+                                 draft (services/page_filler.read_page on HER messages only);
+                                 products_from_chat → products (menu_reader.read_menu_text,
+                                 her messages only; none found → action add_products);
+                                 show_in_chat → action add_products | upload_photos |
+                                 send_for_review (the last for a draft only); note_unanswered
+                                 → unanswered = a screen key or "other", never her words.
+                                 Saves nothing: the widget opens the dashboard's own card
+                                 (PUT /producers/me, POST /producers/me/menu-import/publish,
+                                 POST /upload/image, POST /producers/me/submit-for-review).
+                                 Limits 20/min · 120/h per IP, 150/day per business, and
+                                 20/day per business for a fill or a product read (each is a
+                                 second, larger model call; over it → the heavy_limit line).
+                                 ai_budget "fast" (+ "menu" for products) is the global ceiling;
+                                 the public site chat's anonymous cap does not apply. No key →
+                                 offline line.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`
@@ -2417,6 +2441,8 @@ fails if phone, email, contact name, address or WhatsApp group reach the prompt.
 POST /upload/image               auth — Cloudinary direct upload with magic-byte validation
                                  (no plan cap: the free-plan 3-photo cap is a GALLERY cap, enforced on
                                  PUT /producers/me `images` → 403, services/gallery_cap.py — MEH-3220)
+                                 20/hour per IP; an admin is exempt from that bucket and has her own,
+                                 200/hour per admin user (MEH-3906: admin threads share one browser IP)
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically

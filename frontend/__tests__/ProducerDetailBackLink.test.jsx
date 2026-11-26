@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, within, cleanup } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 // MEH-3019: on a phone the business page shows «→ חזרה» instead of the
 // breadcrumb; on a desktop nothing changes. jsdom applies no CSS, so the
@@ -126,5 +127,29 @@ describe("business page waits for its activity lists only on the client route (M
     render(<ProducerDetail initialProducer={producer} />);
     expect(screen.queryByText("producer.detail.loading_fresh")).toBeNull();
     expect(screen.getByTestId("producer-breadcrumb-block")).toBeTruthy();
+  });
+});
+
+// MEH-3856: the server cannot read ?from=map, so it paints the «חזרה למפה» row
+// tagged data-from-map-only; the pre-hydration script flags <html> and CSS
+// hides the row when the flag is absent. After hydration React decides.
+describe("«חזרה למפה» is in the server HTML, then React keeps it or drops it (MEH-3856)", () => {
+  it("server render: the row is in the HTML, tagged for the pre-hydration CSS", () => {
+    state.producer = { id: "p1", name: "מאפיית הגבעה", images: [], categories: [] };
+    const html = renderToString(<ProducerDetail />);
+    expect(html).toContain('data-testid="back-to-map"');
+    expect(html).toContain("data-from-map-only");
+  });
+
+  it("after hydration with no ?from=map: no row and no tagged element", () => {
+    arrive({ canGoBack: true });
+    expect(screen.queryByTestId("back-to-map")).toBeNull();
+    expect(document.querySelector("[data-from-map-only]")).toBeNull();
+  });
+
+  it("after hydration with ?from=map: the row stays, untagged", () => {
+    const block = arrive({ canGoBack: true, search: "?from=map" });
+    const toMap = block.getByTestId("back-to-map");
+    expect(toMap.closest("[data-from-map-only]")).toBeNull();
   });
 });

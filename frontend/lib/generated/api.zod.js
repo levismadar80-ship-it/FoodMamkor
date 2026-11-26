@@ -315,6 +315,7 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -377,6 +378,7 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -438,6 +440,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -499,6 +502,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -560,6 +564,7 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2915,6 +2920,7 @@ export const AdminCreateBusinessExperienceAdminProducersProducerIdExperiencesPos
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4565,6 +4571,44 @@ export const ChatChatPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * Answer the owner inside her dashboard, or hand back a page draft.
+ * @summary Owner Chat
+ */
+export const ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax = 20;
+
+export const ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax = 300;
+
+export const ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault = `unit`;
+
+export const OwnerChatChatOwnerPostResponse = /*#__PURE__*/ zod.object({
+  "action": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['add_products', 'upload_photos', 'send_for_review']),/*#__PURE__*/ zod.null()])),
+  "draft": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "category_ids": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.int()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax))),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_cities": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax))),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Every field is optional: what the text does not say stays None.')),/*#__PURE__*/ zod.null()])),
+  "products": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']), ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault),
+  "section": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "uncertain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.enum(['name', 'description', 'price', 'unit'])))
+}).check(/*#__PURE__*/ zod.describe('One product as read from the menu. Nothing is saved yet.'))),/*#__PURE__*/ zod.null()])),
+  "reply": /*#__PURE__*/ zod.string(),
+  "unanswered": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
  * Autocomplete: cities table (canonical) ∪ live business cities,
  * with the static list as the unseeded-env fallback (MEH-1349).
  *
@@ -4920,6 +4964,7 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4980,6 +5025,7 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5060,6 +5106,7 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5141,6 +5188,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5202,6 +5250,7 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6147,6 +6196,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), listProducersProducersGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseOffersPickupDefault),
@@ -10806,6 +10856,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getFavoritesUsersMeFavoritesGetResponseProducerLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerOffersPickupDefault),
@@ -11062,6 +11113,7 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

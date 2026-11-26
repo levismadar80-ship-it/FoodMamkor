@@ -64,6 +64,7 @@ import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 import StruckPrice from "@/components/ui/StruckPrice";
 import { agorotToShekels } from "@/lib/money";
+import useImageLoads from "@/lib/use-image-loads";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -272,7 +273,8 @@ const SOURCES = Object.freeze([
       time: hhmm(row.event_time),
       day: row.event_date,
       category: row.category || null,
-      image: row.image_url || null,
+      // MEH-3894: the host business's photo when the experience has none.
+      image: row.image_url || row.owner_image_url || null,
       who: row.host?.producer_name || row.host?.name || null,
       plate: row.host?.producer_name || row.host?.name || null,
       city: row.city || null,
@@ -404,20 +406,17 @@ const TYPE_LABEL_KEY = Object.freeze({
  * under or against a control).
  */
 function CardPicture({ entry, children }) {
+  // MEH-3894: a photo that fails to load shows the plate, not an empty box.
+  const image = useImageLoads(
+    entry.image ? optimizeCloudinary(entry.image, { aspectRatio: IMAGE_RATIOS.strip, width: 640 }) : null,
+  );
   return (
     <div className="relative aspect-[16/10] overflow-hidden bg-background-alt" aria-hidden="true">
-      {entry.image ? (
+      {image ? (
         <div
           data-testid="whats-on-image"
           className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]"
-          style={{
-            backgroundImage: cssUrl(
-              optimizeCloudinary(entry.image, {
-                aspectRatio: IMAGE_RATIOS.strip,
-                width: 640,
-              }),
-            ),
-          }}
+          style={{ backgroundImage: cssUrl(image) }}
         />
       ) : (
         // The plate names the BUSINESS; an entry with no business to name
