@@ -9,3 +9,4 @@
 > `Whats-new: <tool_id> none — <סיבה>`.
 
 <!-- items below this line -->
+- owner_assistant: בלוח הבקרה יש עכשיו עוזרת שעונה על שאלות, ממלאת את פרטי העמוד ומוסיפה מוצרים מתוך השיחה.

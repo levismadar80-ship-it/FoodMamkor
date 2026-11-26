@@ -68,6 +68,9 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 - threw an uncaught error (`pageerror`) or logged a `console.error` that is not
   in `CONSOLE_ALLOW` (each entry carries a reason and a card);
 - logged a React hydration mismatch (never allowlistable);
+- logged a `ChunkLoadError`, unless that same chunk's request failed with no
+  response or mid-way through a 2xx body: WebKit cancels the chunks of a page
+  the test leaves while it loads (MEH-3907). A chunk that got a 404 still fails;
 - shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
   right after a click or key press excluded; same limit as `lighthouserc.cjs`).
   The failure names each shifted element with its old and new box

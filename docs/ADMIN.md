@@ -383,7 +383,8 @@ npx playwright test             # E2E
   מתחת ל-md כל שורה = כרטיס, כל תא «תווית: ערך» מ-`data-label`, תא הפעולות
   (`data-cell="actions"`) ברוחב מלא. טבלה חדשה בלי זה — `AdminTablesStackGuard.test.js`
   אדום. החריג היחיד: `AdminProducersTable` (מסתירה עמודות, MEH-2070). בנייד ה-strip
-  העליון גולל את הטאב הפעיל לתוך המסך.
+  העליון גולל את הטאב הפעיל לתוך המסך. ה-`nav` עצמו הוא הגולל, והגלילה רצה ב-layout
+  effect, כך שכבר הציור הראשון מראה את הטאב הפעיל והפס לא קופץ הצידה (MEH-3870).
 
 ## Trust Ladder — MEH-51 (April 2026)
 

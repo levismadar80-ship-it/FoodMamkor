@@ -60,6 +60,7 @@
     "lat",
     "lng",
     "locations",
+    "logo_url",
     "name",
     "offers_delivery",
     "offers_pickup",

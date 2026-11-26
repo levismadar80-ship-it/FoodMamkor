@@ -40,6 +40,9 @@ const OrderWindowRange = z.object({
 export const ProducerListSchema = z.object({
   id: z.union([z.string(), z.number()]),
   name: z.string(),
+  // MEH-3611 / MEH-3894: the logo, shown on a card with no photo.
+  // Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
   lat: z.number().finite().nullable().optional(),
   lng: z.number().finite().nullable().optional(),
   // MEH-1269: server-computed great-circle distance (km) attached in geo
@@ -452,8 +455,6 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-2952 chunk 3: true only for a seeded test business — the page then
   // carries robots noindex and no JSON-LD. Declared because z.object strips.
   noindex: z.boolean().optional(),
-  // MEH-3611: the business logo beside its name. Declared because z.object strips.
-  logo_url: z.string().nullable().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),
@@ -631,6 +632,9 @@ export const ExperienceMetadataSchema = z.object({
   title: z.string(),
   description: z.string(),
   image_url: z.string().nullable().optional(),
+  // MEH-3894: the host business's photo — the share image when the
+  // experience has none (generateMetadata, as events).
+  owner_image_url: z.string().nullable().optional(),
 });
 
 // Geo search params sent to GET /producers.
