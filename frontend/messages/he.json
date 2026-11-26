@@ -496,6 +496,8 @@
       "product_price_max_needs_min": "מחיר «עד» צריך גם מחיר «מ-»",
       "rejection_other_needs_reason": "יש לפרט את סיבת הדחייה כשנבחר 'אחר'",
       "rescue_no_show_too_early": "אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר",
+      "rescue_paid_mark_needs_prepay": "אפשר לסמן תשלום רק כשבית העסק מקבל תשלום מראש בקישור",
+      "rescue_paid_mark_wrong_status": "אפשר לסמן תשלום רק על שריון פעיל או על סל שנמסר",
       "role_producer_by_hand_refused": "לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד."
     }
   },

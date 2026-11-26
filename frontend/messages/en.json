@@ -496,6 +496,8 @@
       "product_price_max_needs_min": "«Price to» needs «Price from» too",
       "rejection_other_needs_reason": "Write the rejection reason when «Other» is selected",
       "rescue_no_show_too_early": "You can mark «Didn't come» only once the pickup time is over",
+      "rescue_paid_mark_needs_prepay": "A payment can be marked only when the business takes prepayment by link",
+      "rescue_paid_mark_wrong_status": "A payment can be marked only on an active reservation or a handed-over bag",
       "role_producer_by_hand_refused": "A user can't be made a business owner by hand. A business signs up through the signup form only."
     }
   },
