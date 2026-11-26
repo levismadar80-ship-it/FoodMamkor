@@ -307,3 +307,25 @@ The cost: consumers see the old value until the page has hydrated.
 mount does the same.
 
 **Regression spec:** `frontend/__tests__/AuthHydrationNoFallback.test.jsx`.
+
+---
+
+## A bottom layer without `vv-pin` floats up the screen on iOS 26 (MEH-3889)
+
+**Pattern:** iOS 26 Safari can lay out `position: fixed` layers against a stale
+viewport (after the keyboard closes, or after a fast scroll), so anything with
+`bottom: …` sits hundreds of px above the real bottom. Sapir's 26/11 iPhone
+screenshot: the BottomNav pill and the chat launcher mid-screen over the home
+feed.
+
+**Root cause, two parts:** (1) `IosViewportPin.jsx` inferred the gap from
+`innerHeight`, which read healthy while the layers were drifted; it now measures
+a 0-height `fixed; bottom: 0` probe. (2) Only layers carrying `vv-pin` are
+re-seated, and eight bottom sheets did not (filters, product, city, support,
+popover, both alert sheets, the map sheet).
+
+**Held by:** `scripts/checks/vv-pin-guard.sh` (Repo guards) fails a new
+bottom-anchored fixed layer without `vv-pin` or a `vv-pin-exempt: <reason>`.
+`MapBottomSheet.jsx` is the one exemption: the map controls ride its edge.
+A real-device signal: the `ios_viewport_drift` PostHog event (once per mount).
+
