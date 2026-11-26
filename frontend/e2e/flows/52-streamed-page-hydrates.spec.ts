@@ -93,9 +93,11 @@ test.describe("MEH-3718 a streamed page hydrates the server HTML it was sent", (
       const revealed = await page.evaluate(() => (window as unknown as { __meh3718: Revealed[] }).__meh3718);
       expect(revealed.every((b) => b.id.startsWith("B:")), "the reveal batch pairs a B: marker with its S: segment").toBe(true);
       expect(revealed.filter((b) => !b.kept), "boundaries React rendered again in the browser").toEqual([]);
-      if (once) {
-        expect(revealed.map((b) => b.copies), `[data-testid="${once}"] before the reveal`).toEqual(revealed.map(() => 1));
-      }
+      // A page with no doubled element records copies=1 in the init script, so
+      // this holds there by construction; it bites on the two pages that name one.
+      expect(revealed.map((b) => b.copies), `[data-testid="${once ?? "-"}"] before the reveal`).toEqual(
+        revealed.map(() => 1),
+      );
     });
   }
 });
