@@ -39,7 +39,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
-import ExperienceSessionsField, { isHalfSession } from "@/components/ExperienceSessionsField";
+import ExperienceSessionsField, { isHalfSession, courseMeetingsPayload, COURSE_MIN } from "@/components/ExperienceSessionsField";
 import Checkbox from "@/components/ui/Checkbox";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
@@ -73,10 +73,24 @@ const EMPTY = {
   recurring_schedule: "",
   // MEH-3447: a recurring workshop's dates, each with its own places.
   sessions: [],
+  // MEH-3898: a course — several meetings, ONE sign-up. Its first meeting
+  // is the date the server stores.
+  is_course: false,
+  course_meetings: [],
   // MEH-2766: «איך נרשמים?» — a new workshop defaults to the on-site form.
   registration_method: "site_form",
   registration_url: "",
 };
+
+/** MEH-3898: a course sends its meetings and dates itself by the first one
+ * (the server does the same); anything else sends its own date. */
+function whenPayload(form) {
+  if (!form.is_course) {
+    return { event_date: form.event_date, event_time: form.event_time || null, course_meetings: [] };
+  }
+  const meetings = courseMeetingsPayload(form.course_meetings);
+  return { event_date: meetings[0].date, event_time: meetings[0].time, course_meetings: meetings };
+}
 
 /** MEH-3447: the dates as the server takes them — filled rows only. */
 function sessionsPayload(rows) {
@@ -111,6 +125,8 @@ function seed(initial) {
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
     sessions: Array.isArray(initial.sessions) ? initial.sessions : [],
+    is_course: Array.isArray(initial.course_meetings) && initial.course_meetings.length > 0,
+    course_meetings: Array.isArray(initial.course_meetings) ? initial.course_meetings : [],
     registration_method: initial.registration_method ?? "site_form",
     registration_url: initial.registration_url ?? "",
   };
@@ -128,6 +144,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "description",
   "image_url",
   "event_date",
+  "course_meetings",
   "duration_minutes",
   "location_type",
   "city",
@@ -143,6 +160,8 @@ const EXPERIENCE_FIELD_ID = {
   description: "experience-description",
   image_url: "experience-image",
   event_date: "experience-date",
+  // MEH-3898: the first empty half of a meeting row, or the add button.
+  course_meetings: "experience-course-first",
   duration_minutes: "experience-duration",
   // The pill row has no single control to focus — the first pill is the entry
   // point, matching how a radio group focuses its first option.
@@ -188,7 +207,13 @@ function validateExperienceForm(f, t, tReg) {
   // MEH-2012: no image_url check — see the note above isWholeNumber. The value
   // comes from our own upload endpoint now, and an upload failure sets
   // fieldErrors.image_url directly from handleImageUpload.
-  if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-3898: a course's date is its first meeting; it needs two whole ones.
+  if (f.is_course) {
+    const rows = f.course_meetings ?? [];
+    if (rows.some(isHalfSession) || courseMeetingsPayload(rows).length < COURSE_MIN) {
+      errors.course_meetings = t("course_error");
+    }
+  } else if (!f.event_date) errors.event_date = t("error_date_required");
   // MEH-3447: a date row with only its date or only its time would be dropped
   // on save; the field shows «בחרו מועד.» on it instead.
   if (f.is_recurring && (f.sessions ?? []).some(isHalfSession)) errors.sessions = "incomplete";
@@ -390,8 +415,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       description: form.description.trim(),
       image_url: form.image_url.trim() || null,
       category: form.category || null,
-      event_date: form.event_date,
-      event_time: form.event_time || null,
+      ...whenPayload(form),
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       // MEH-2013: `|| null` is defence in depth, not a live path.
       // validateExperienceForm has already rejected an empty location_type
@@ -610,17 +634,47 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          id="experience-date"
-          label={t("field_date")}
-          type="date"
-          value={form.event_date}
-          onChange={setField("event_date")}
-          required
-          error={fieldErrors.event_date}
-        />
-        <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
+      {!form.is_course && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            id="experience-date"
+            label={t("field_date")}
+            type="date"
+            value={form.event_date}
+            onChange={setField("event_date")}
+            required
+            error={fieldErrors.event_date}
+          />
+          <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
+        </div>
+      )}
+      {/* MEH-3898: a course swaps the one date for its list of meetings, in
+          the same place. A course is never recurring: ticking one unticks
+          the other (the server refuses both). */}
+      <div>
+        <Checkbox
+          className="flex items-center gap-2"
+          checked={form.is_course}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setForm((f) => ({ ...f, is_course: on, ...(on ? { is_recurring: false } : {}) }));
+            setFieldErrors((errs) => ({ ...errs, course_meetings: undefined, event_date: undefined }));
+          }}
+          data-testid="experience-is-course"
+        >
+          <span className="text-sm">{t("is_course")}</span>
+        </Checkbox>
+        {form.is_course && (
+          <ExperienceSessionsField
+            kind="course"
+            sessions={form.course_meetings}
+            error={fieldErrors.course_meetings}
+            onChange={(course_meetings) => {
+              setForm((f) => ({ ...f, course_meetings }));
+              setFieldErrors((errs) => (errs.course_meetings ? { ...errs, course_meetings: undefined } : errs));
+            }}
+          />
+        )}
       </div>
 
       <Input
@@ -778,7 +832,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         <Checkbox
           className="flex items-center gap-2"
           checked={form.is_recurring}
-          onChange={setField("is_recurring")}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setForm((f) => ({ ...f, is_recurring: on, ...(on ? { is_course: false } : {}) }));
+          }}
         >
           <span className="text-sm">{t("is_recurring")}</span>
         </Checkbox>
