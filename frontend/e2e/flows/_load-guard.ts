@@ -165,6 +165,24 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Register: the page grows at ~2 s and pushes the footer (largest 0.130, mobile, staging 2b777a0).",
     card: "MEH-3863",
   },
+  {
+    // MEH-3878: /recommend, the footer moves at load. Release PR run
+    // 45826156160 (staging c8ea4a4), share.spec.ts:115, flaky.
+    path: /^\/recommend$/,
+    ceiling: 0.62,
+    reason: "Recommend: the page grows at load and pushes the footer (largest 0.410, staging c8ea4a4).",
+    card: "MEH-3878",
+  },
+  {
+    // MEH-3887: home with ?city= (the query is stripped, so the row is "/").
+    // A fixed vv-pin element moves once; run 45826156160 (staging c8ea4a4),
+    // 27-delivery-day-discoverability.spec.ts:150, mobile, flaky. The ceiling
+    // is held close to the limit because this row covers every home load.
+    path: /^\/$/,
+    ceiling: 0.16,
+    reason: "Home with a city, mobile: a fixed vv-pin element moves once (largest 0.105, staging c8ea4a4).",
+    card: "MEH-3887",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
