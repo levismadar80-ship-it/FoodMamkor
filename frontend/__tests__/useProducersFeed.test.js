@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 
 import api from "@/lib/api";
@@ -293,5 +293,84 @@ describe("useProducersFeed — MEH-3198 area search (loadArea)", () => {
     await act(async () => pending[3].resolve({ data: areaRows }));
     await waitFor(() => expect(result.current.allProducers.map((p) => p.id)).toEqual([9]));
     expect(result.current.loadError).toBe(false);
+  });
+});
+
+// MEH-3908: leaving /map cancels the /producers request in flight, and WebKit
+// reports that as axios "Network Error" (WebKit nightly 26/11, auth.spec.ts:129).
+// It is not a failed load: no console.error, no toast, no error state. A real
+// network failure, an HTTP error and a malformed payload still are.
+describe("useProducersFeed — MEH-3908 request cancelled by leaving the page", () => {
+  const networkError = () => Object.assign(new Error("Network Error"), { isAxiosError: true, response: undefined });
+  let consoleError;
+  beforeEach(() => {
+    api.get.mockReset();
+    showToast.error.mockClear();
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => consoleError.mockRestore());
+
+  function heldProducers() {
+    let reject;
+    routeProducers(() => new Promise((_, r) => { reject = r; }));
+    return () => reject;
+  }
+
+  it("a network error after beforeunload is not reported", async () => {
+    const rejecter = heldProducers();
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    act(() => { window.dispatchEvent(new Event("beforeunload")); });
+    await act(async () => { rejecter()(networkError()); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(showToast.error).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(result.current.loadError).toBe(false);
+  });
+
+  it("the same network error with no beforeunload is reported", async () => {
+    const rejecter = heldProducers();
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    await act(async () => { rejecter()(networkError()); });
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    expect(showToast.error).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalledTimes(1);
+  });
+
+  it("an HTTP error after beforeunload is still reported (it got an answer)", async () => {
+    const rejecter = heldProducers();
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    act(() => { window.dispatchEvent(new Event("beforeunload")); });
+    await act(async () => {
+      rejecter()(Object.assign(new Error("Request failed with status code 500"), { isAxiosError: true, response: { status: 500 } }));
+    });
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    expect(showToast.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("pageshow after a cancelled navigation brings reporting back", async () => {
+    const rejecter = heldProducers();
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(rejecter()).toBeTypeOf("function"));
+    act(() => {
+      window.dispatchEvent(new Event("beforeunload"));
+      window.dispatchEvent(new Event("pageshow"));
+    });
+    await act(async () => { rejecter()(networkError()); });
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    expect(showToast.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("the next request after beforeunload brings reporting back", async () => {
+    routeProducers(() => Promise.resolve({ data: [] }));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => { window.dispatchEvent(new Event("beforeunload")); });
+    routeProducers(() => Promise.reject(networkError()));
+    await act(async () => { result.current.loadArea({ lat: 32, lng: 35 }); });
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    expect(showToast.error).toHaveBeenCalledTimes(1);
   });
 });

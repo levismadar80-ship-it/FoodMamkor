@@ -22,6 +22,12 @@ import { cityParams } from "@/lib/map-city-params";
  * the same schema check and the same failure path (MEH-3198). The
  * degenerate-bounds guard (toast.info, no fetch) stays in useMapSync.
  */
+/** An axios failure with no HTTP answer (network down, or a request the
+ *  browser cancelled). A malformed payload or an HTTP error is never one. */
+function isNetworkError(reason) {
+  return Boolean(reason && typeof reason === "object" && reason.isAxiosError && !reason.response);
+}
+
 export function useProducersFeed({ readInitialParams = null } = {}) {
   const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
@@ -51,9 +57,18 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // repeats exactly it.
   const lastLoad = useRef(() => loadProducers({}));
 
+  // MEH-3908: true from `beforeunload` until the page is live again. While
+  // the browser leaves the page it cancels the request in flight; WebKit
+  // reports that as axios "Network Error". That is not a failed load: the
+  // user is already gone, so no log, no toast, no error state. Cleared by
+  // `pageshow` and by the next request, so a cancelled navigation (a
+  // download link, a declined prompt) leaves real failures reported.
+  const leavingPage = useRef(false);
+
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
   const handleLoadFailure = (reason) => {
+    if (leavingPage.current && isNetworkError(reason)) return;
     console.error("[חפשי באזור זה] GET /producers failed:", reason);
     setAllProducers([]);
     setLoadError(true);
@@ -69,6 +84,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
     const requestId = ++latestRequest.current;
+    leavingPage.current = false;
     if (!then) lastLoad.current = () => loadProducers(params);
     const isLatest = () => requestId === latestRequest.current;
     setLoading(true);
@@ -130,6 +146,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // it superseded would leave the skeleton on.
   const loadArea = (params) => {
     const requestId = ++latestRequest.current;
+    leavingPage.current = false;
     lastLoad.current = () => loadArea(params);
     const isLatest = () => requestId === latestRequest.current;
     api
@@ -151,6 +168,21 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         if (isLatest()) setLoading(false);
       });
   };
+
+  useEffect(() => {
+    const leave = () => {
+      leavingPage.current = true;
+    };
+    const back = () => {
+      leavingPage.current = false;
+    };
+    window.addEventListener("beforeunload", leave);
+    window.addEventListener("pageshow", back);
+    return () => {
+      window.removeEventListener("beforeunload", leave);
+      window.removeEventListener("pageshow", back);
+    };
+  }, []);
 
   useEffect(() => {
     // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
