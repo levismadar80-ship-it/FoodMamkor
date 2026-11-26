@@ -2351,11 +2351,7 @@
       "slug_confirm": {
         "title": "English address for the page",
         "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
-        "label": "Page address in English",
-        "hint": "English letters, numbers and hyphens, up to 40 characters",
-        "invalid": "Use an English address: lowercase letters, numbers and hyphens",
-        "confirm": "Approve and publish",
-        "cancel": "Cancel"
+        "confirm": "Approve and publish"
       }
     },
     "users": {

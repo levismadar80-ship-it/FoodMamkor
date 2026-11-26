@@ -140,9 +140,11 @@ function useProducerActions(loadAllProducers, deps) {
     run(
       `approve:${producer.id}`,
       async () => {
-        const url = `/admin/producers/${producer.id}/approve`;
         // A one-argument call without a slug, as before (AdminApproveWithoutLicense).
-        await (slug ? api.post(url, undefined, { params: { slug } }) : api.post(url));
+        // The path is written out in both calls so unwired-route-guard sees the caller.
+        await (slug
+          ? api.post(`/admin/producers/${producer.id}/approve`, undefined, { params: { slug } })
+          : api.post(`/admin/producers/${producer.id}/approve`));
         setSlugPrompt(null);
         loadAllProducers();
         showToast.success(t("producers.toast_approved")); // MEH-1446

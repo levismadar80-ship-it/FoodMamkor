@@ -79,13 +79,17 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
     setBusy(true);
     setError(null);
     try {
-      const url = `/admin/producers/${producerId}/publish-with-consent`;
       const body = {
         consent_confirmed: true,
         consent_note: note.trim(),
         ...(shotUrl ? { consent_screenshot_url: shotUrl } : {}),
       };
-      await (typed ? api.post(url, body, { params: { slug: typed } }) : api.post(url, body));
+      // The path is written out once, literally, so unwired-route-guard sees the caller.
+      await api.post(
+        `/admin/producers/${producerId}/publish-with-consent`,
+        body,
+        ...(typed ? [{ params: { slug: typed } }] : []),
+      );
       onPublished?.();
     } catch (err) {
       const detail = err?.response?.data?.detail;

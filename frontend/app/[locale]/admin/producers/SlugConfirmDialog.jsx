@@ -40,6 +40,9 @@ export default function SlugConfirmDialog({ slugPrompt, busy, onConfirm, onCance
 /** @param {Parameters<typeof SlugConfirmDialog>[0] & { slugPrompt: NonNullable<Parameters<typeof SlugConfirmDialog>[0]["slugPrompt"]> }} props */
 function SlugConfirmForm({ slugPrompt, busy, onConfirm, onCancel }) {
   const t = useTranslations("admin.producers.slug_confirm");
+  // The field copy is the consent-publish panel's: one string, one key.
+  const tf = useTranslations("admin.producers.consent_publish");
+  const tc = useTranslations("admin.common");
   const [value, setValue] = useState(slugPrompt.suggested);
   const [invalid, setInvalid] = useState(false);
   const submit = (/** @type {any} */ e) => {
@@ -65,7 +68,7 @@ function SlugConfirmForm({ slugPrompt, busy, onConfirm, onCancel }) {
       <p id="slug-confirm-title" className="font-medium text-base">{t("title")}</p>
       <p className="text-sm text-muted">{t("intro")}</p>
       <Input
-        label={t("label")}
+        label={tf("slug_label")}
         dir="ltr"
         value={value}
         maxLength={60}
@@ -73,8 +76,8 @@ function SlugConfirmForm({ slugPrompt, busy, onConfirm, onCancel }) {
           setValue(e.target.value);
           setInvalid(false);
         }}
-        helperText={t("hint")}
-        error={invalid ? t("invalid") : undefined}
+        helperText={tf("slug_hint")}
+        error={invalid ? tf("slug_invalid") : undefined}
         data-testid="slug-confirm-input"
       />
       <div className="flex gap-3 justify-start">
@@ -82,7 +85,7 @@ function SlugConfirmForm({ slugPrompt, busy, onConfirm, onCancel }) {
           {t("confirm")}
         </Button>
         <Button type="button" data-autofocus disabled={busy} onClick={onCancel} variant="secondary" size="sm">
-          {t("cancel")}
+          {tc("cancel")}
         </Button>
       </div>
     </Dialog>

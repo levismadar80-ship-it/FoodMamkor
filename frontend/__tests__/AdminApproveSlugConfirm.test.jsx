@@ -82,14 +82,14 @@ describe("approve asks for the English address (MEH-3914)", () => {
     const input = await screen.findByTestId("slug-confirm-input");
     fireEvent.change(input, { target: { value: "סנדרה" } });
     fireEvent.click(screen.getByText("admin.producers.slug_confirm.confirm"));
-    expect(await screen.findByText("admin.producers.slug_confirm.invalid")).toBeInTheDocument();
+    expect(await screen.findByText("admin.producers.consent_publish.slug_invalid")).toBeInTheDocument();
     expect(approveCalls()).toHaveLength(1);
   });
 
   it("cancel closes the dialog and approves nothing", async () => {
     await clickApprove();
     await screen.findByTestId("slug-confirm-input");
-    fireEvent.click(screen.getByText("admin.producers.slug_confirm.cancel"));
+    fireEvent.click(screen.getByText("admin.common.cancel"));
     await waitFor(() => expect(screen.queryByTestId("slug-confirm-dialog")).not.toBeInTheDocument());
     expect(approveCalls()).toHaveLength(1);
   });
