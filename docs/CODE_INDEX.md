@@ -574,6 +574,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `special-hours.js` | Convert between the backend 'producers.special_hours' JSONB shape ({"YYYY-MM-DD": {ranges: [{open, close}], note?}}) and the date-row editor model the … |
 | `ssr-entity-fetch.js` | The server-side fetch at the top of the four detail pages (producer, event, experience, group-buy): one request, one three-way answer, one way of reporting it. |
 | `staff.js` | The order-staff calls (MEH-3526): the owner lists, invites and removes; the invited person accepts. |
+| `stream-settled.js` | Run a mount-time state update only once no streamed part of the page is still waiting to be revealed, so the update cannot make React throw the server HTML … |
 | `submission-gate.js` | Answer "may this business be sent for review, and if not, what is missing?" on the CLIENT, so the dashboard can disable the "שליחה לבדיקה" CTA and name the … |
 | `time-format.js` | The single owner of how a time-of-day is SHOWN to a reader — "09:00" becomes "9:00". … |
 | `time-range.js` | One owner for how an event's time reads: «09:30», or «09:30–15:00» when it has an end time (MEH-2469). |
