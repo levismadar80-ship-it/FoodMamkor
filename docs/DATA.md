@@ -2410,6 +2410,8 @@ fails if phone, email, contact name, address or WhatsApp group reach the prompt.
 POST /upload/image               auth — Cloudinary direct upload with magic-byte validation
                                  (no plan cap: the free-plan 3-photo cap is a GALLERY cap, enforced on
                                  PUT /producers/me `images` → 403, services/gallery_cap.py — MEH-3220)
+                                 20/hour per IP; an admin is exempt from that bucket and has her own,
+                                 200/hour per admin user (MEH-3906: admin threads share one browser IP)
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
