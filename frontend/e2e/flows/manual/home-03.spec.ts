@@ -53,8 +53,13 @@ import {
   heroSearch,
   box,
   strangersBetweenGridAndMap,
+  pinWeekdayNoon,
+  WEEKDAY_NOON,
 } from "./_home-shared";
 
+
+// MEH-3905: not Friday mode unless a test forces it (_home-shared.ts).
+test.beforeEach(({ page }) => pinWeekdayNoon(page));
 
 test.beforeAll(() => {
   // A schema change reds the spec HERE, loudly, instead of letting the fixture
@@ -532,7 +537,7 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › recently viewed (task 13)", () => {
   const stamped = (ids: string[]) =>
-    JSON.stringify(ids.map((id) => ({ id, viewedAt: Date.now() }))); // lib/recently-viewed.js readRaw shape
+    JSON.stringify(ids.map((id) => ({ id, viewedAt: WEEKDAY_NOON.getTime() }))); // lib/recently-viewed.js readRaw shape; the browser clock is pinned to WEEKDAY_NOON (MEH-3905)
 
   // MT:T13:5 + MT:T13:6 + MT:T13:9 — the band renders from storage as a
   //   horizontal row of image+name+city cards, and a card navigates.

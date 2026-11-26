@@ -56,8 +56,12 @@ import {
   geoCalls,
   GPS,
   grantGps,
+  pinWeekdayNoon,
 } from "./_home-shared";
 
+
+// MEH-3905: not Friday mode unless a test forces it (_home-shared.ts).
+test.beforeEach(({ page }) => pinWeekdayNoon(page));
 
 test.beforeAll(() => {
   // A schema change reds the spec HERE, loudly, instead of letting the fixture

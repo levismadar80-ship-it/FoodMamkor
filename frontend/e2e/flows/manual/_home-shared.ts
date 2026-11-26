@@ -511,6 +511,25 @@ export async function seedStorage(page: Page, key: string, value: string): Promi
 /** A manual tester has consented already — otherwise the CookieBanner reserves footprint (MEH-945) and moves every floating-element measurement below. */
 export const consent = (page: Page) => seedStorage(page, "cookieConsent", "essential"); // CookieBanner.jsx:30
 
+/**
+ * MEH-3905: a weekday noon for every home test. Thu 18:00 → Fri 14:00 Israel
+ * the page is in Friday mode (lib/friday-mode.js) and the Friday strip (219px)
+ * mounts between the hero and the trust band. The server asked the real
+ * backend and drew no slot; `mockApi` then answers the strip's own query with
+ * the test's list, so the strip arrives late and the load guard (MEH-3809)
+ * reds every home test in that window: CLS 0.135, 26/11 16:00 UTC on. A real
+ * visitor's server and browser ask the same backend. MEH-2979 pinned the same
+ * noon in four places; each home spec file now pins it in a file-level
+ * `beforeEach`. The strip's own tests force Friday mode with
+ * `friday_mode_override`, which wins over the clock, and a test that pins its
+ * own time runs after this and wins.
+ */
+export const WEEKDAY_NOON = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
+
+export async function pinWeekdayNoon(page: Page): Promise<void> {
+  await page.clock.setFixedTime(WEEKDAY_NOON);
+}
+
 /** Navigate to home and gate on the transition being over BEFORE any strict locator runs. */
 export async function gotoHome(page: Page, path = "/"): Promise<void> {
   await page.goto(path);
