@@ -125,7 +125,9 @@ def _sessions_out(ex: Experience, *, owner: bool = False) -> list[dict[str, Any]
 
 def _host_image(host: User | None) -> str | None:
     producer = host.producer if host is not None else None
-    return first_image(producer.images) if is_business_row(producer) else None
+    if producer is None or not is_business_row(producer):
+        return None
+    return first_image(producer.images)
 
 
 def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
