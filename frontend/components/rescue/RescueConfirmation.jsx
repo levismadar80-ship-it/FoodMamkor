@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
 import ShareCodeButton, { shareCodeText } from "@/components/rescue/ShareCodeButton";
+import PrepayButton from "@/components/ui/PrepayButton";
 
 import { bagDay, rescueCancelText, israelTime, shekels } from "@/lib/rescue";
 import useIsraelToday from "@/lib/use-israel-today";
@@ -25,9 +26,14 @@ import useIsraelToday from "@/lib/use-israel-today";
  * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
  *           cutoff the terms say it can no longer be cancelled) · MEH-3704
  *           (send the code to a friend; `place` = the business and the
- *           pickup address, which the order itself does not carry)
+ *           pickup address, which the order itself does not carry) · MEH-3895
+ *           (`prepay` = the business's own prepay link and its timing)
  */
-export default function RescueConfirmation({ order, onCancel, cancelling = false, place = null }) {
+/**
+ * @param {{ order: any, onCancel?: any, cancelling?: boolean, place?: any,
+ *   prepay?: { link: string | null, timing: string | null } | null }} props
+ */
+export default function RescueConfirmation({ order, onCancel, cancelling = false, place = null, prepay = null }) {
   const day = useIsraelToday(); // MEH-3805: «מחר» turns into «היום» at midnight
   const t = useTranslations("rescue");
   // MEH-2737: the cancel link asks before it acts — one stray tap used to
@@ -49,6 +55,11 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   const cancellable =
     order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
+  const showPrepay = Boolean(prepay?.link) && order.status === "reserved";
+  // A deposit is part of the price; the rest is still paid at the counter,
+  // so the line says the bag's price and where the rest goes.
+  const payAhead = showPrepay && prepay.timing === "advance";
+  const payDeposit = showPrepay && prepay.timing === "deposit";
   const when = from && until
     ? t(bagDay(order.date, day) === "tomorrow" ? "row.pickup_tomorrow" : "row.pickup", { from, until })
     : null;
@@ -78,7 +89,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {price !== null && (
         <p className="font-headline-md text-base font-black text-text mt-3" data-testid="rescue-confirmation-price">
-          {t("confirm.pay", { price })}
+          {t(payAhead ? "confirm.pay_ahead" : payDeposit ? "confirm.pay_deposit" : "confirm.pay", { price })}
         </p>
       )}
 
@@ -96,6 +107,14 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
             ? t("confirm.terms_no_cancel")
             : t("confirm.terms", { cancel_until: cancelUntil })}
         </p>
+      )}
+
+      {/* MEH-3895: only while the bag waits — once handed or cancelled there is
+          nothing left to pay for. */}
+      {showPrepay && (
+        <div className="mt-4">
+          <PrepayButton link={prepay.link} timing={prepay.timing} code={order.pickup_code} testId="rescue-prepay" />
+        </div>
       )}
 
       {/* Three steps, and the last is disabled until the window opens: before

@@ -476,6 +476,9 @@ class ProducerDetailOut(ProducerListOut):
     # MEH-3035: how the business takes payment ({methods, timing, note}) or
     # None. Detail only (the business page's «איך משלמים?» chip and JSON-LD
     # paymentAccepted); inherited onto ProducerOwnerOut for the editor.
+    # MEH-3895: may also carry "link", the business's own prepay link — public
+    # on purpose: it is the link the business hands its customers, and the
+    # group-buy page reads it from here (shown only on advance / deposit).
     payment_info: dict[str, Any] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None

@@ -161,6 +161,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
 | `schemas/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner's free text in, a draft of the business-page fields out. Nothing is saved by the read. |
 | `schemas/password.py` | MEH-305 — Pydantic password field type. |
+| `schemas/payment_link.py` | The business's own prepay link inside producers.payment_info (MEH-3895, option A of docs/research/rescue-prepay-2026-11.md): one validator for the write, one … |
 | `schemas/producer.py` | The business page, write side: create, admin create, owner update, admin update, plus AVAILABILITY_STATES and normalize_google_place_id, which services import. |
 | `schemas/producer_out.py` | The business page, read side: list card, detail, admin and owner views, kashrut certificate ref, Google place id and rating. |
 | `schemas/producer_staff.py` | Request and response shapes of the order-staff routes (MEH-3526). |
@@ -944,6 +945,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/OfferCard.jsx` | — אין כותרת — |
 | `ui/PasswordField.jsx` | — אין כותרת — |
 | `ui/Popover.jsx` | — אין כותרת — |
+| `ui/PrepayButton.jsx` | «לתשלום» — opens the business's own prepay link (Bit / PayBox / its clearing) in a new tab, with the host printed under it so the buyer sees where she is … |
 | `ui/PreviewBanner.jsx` | The one green «you are looking at a preview» strip, with the eye, above a page shown as someone else would see it. |
 | `ui/RatingCompact.jsx` | — אין כותרת — |
 | `ui/SectionHeading.jsx` | A section's h2 takes its size from a named ROLE, never from classes written at the call site. … |

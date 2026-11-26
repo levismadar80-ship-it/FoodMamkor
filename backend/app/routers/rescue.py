@@ -101,7 +101,10 @@ from app.schemas.rescue_schedule import (  # MEH-3703
     RescueScheduleRow,
 )
 from app.sentry import capture_background_exception
-from app.services.rescue_business_emails import queue_business_reservation_email
+from app.services.rescue_business_emails import (
+    queue_business_refund_email,
+    queue_business_reservation_email,
+)
 from app.services.rescue_notify import (  # MEH-3537
     RescueClock,
     queue_business_cancel_emails,
@@ -536,6 +539,12 @@ def cancel_order(
     except Exception as exc:  # noqa: BLE001 — fail-open, as the reservation email
         capture_background_exception(exc, task="rescue_cancel_email")
         logger.error("rescue cancel email not queued: %s", type(exc).__name__)
+    # MEH-3895: a prepaid bag — the business is told what to return.
+    try:
+        queue_business_refund_email(background_tasks, db, offer, order)
+    except Exception as exc:  # noqa: BLE001 — fail-open, same reason as above
+        capture_background_exception(exc, task="rescue_refund_email")
+        logger.error("rescue refund email not queued: %s", type(exc).__name__)
     return order
 
 
