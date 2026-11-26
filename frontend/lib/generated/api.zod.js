@@ -9189,6 +9189,8 @@ export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__P
  * No buyer identity is returned; see RescueOwnerOrderOut for why.
  * @summary List My Orders
  */
+export const listMyOrdersProducersMeRescueOrdersGetResponsePrepayDefault = false;
+
 export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -9196,9 +9198,11 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ 
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string(),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "prepay": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyOrdersProducersMeRescueOrdersGetResponsePrepayDefault),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
 }).check(/*#__PURE__*/ zod.describe('One of today\'s reservations, as the business\'s own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer\'s `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer\'s name, email or phone: handing over a bag\nneeds four digits, and a list of today\'s customers on a dashboard screen\nis more personal data than the job requires.'))
@@ -10389,7 +10393,8 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
  * The business pulls the whole bag offer. Every open reservation on it is
  * cancelled with it; a bag already handed over stays handed.
  *
- * No refund, because nothing was paid. MEH-2738: each buyer whose
+ * MEH-3897: a reservation the business marked paid gets the owners' refund
+ * email too (the money went to its own link). MEH-2738: each buyer whose
  * reservation went with it gets one email after the commit (fail-open), and
  * their page says the business cancelled (`list_my_reservations`). A window
  * that already closed is refused: by then every bag is collected or a
@@ -10432,6 +10437,7 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(createOrderRescueOrdersPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(createOrderRescueOrdersPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(createOrderRescueOrdersPostResponsePickupCodeRegExp)),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10496,6 +10502,7 @@ export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ z
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp)),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10526,6 +10533,7 @@ export const CancelOrderRescueOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zo
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
@@ -10554,6 +10562,7 @@ export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
@@ -10580,7 +10589,34 @@ export const MarkNoShowRescueOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * MEH-3897: the business marks the prepay received (its own Bit / PayBox,
+ * MEH-3895), or undoes a mistaken mark with `paid: false`.
+ * @summary Mark Paid
+ */
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMin = 4;
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMax = 4;
+
+
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkPaidRescueOrdersOrderIdPaidPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
   "user_id": /*#__PURE__*/ zod.uuid()
