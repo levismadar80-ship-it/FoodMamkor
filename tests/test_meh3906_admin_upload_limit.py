@@ -53,3 +53,12 @@ def test_admin_uploads_do_not_spend_the_owners_ip_bucket(client, db):
     for _ in range(PER_IP):
         assert _upload(client, admin) == 200
     assert _upload(client, owner) == 200
+
+
+def test_each_admin_has_her_own_bucket(client, db):
+    first = make_user(db, role="admin", email="up-admin4@example.com")
+    second = make_user(db, role="admin", email="up-admin5@example.com")
+    for _ in range(PER_ADMIN):
+        assert _upload(client, first) == 200
+    assert _upload(client, first) == 429
+    assert _upload(client, second) == 200
