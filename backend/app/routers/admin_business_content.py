@@ -18,7 +18,8 @@ Related:  routers/admin_producer_locations.py (the same on-behalf shape for
           locations), services/admin_audit.py note(), schemas/admin_on_behalf.py.
 History:  MEH-3873 (creation — 25/11, משק פורר: a business built in the admin,
           with no owner account yet, could not get its pick-your-own day or
-          its Thursday market on the page).
+          its Thursday market on the page); MEH-3876 (GET of the business's
+          experiences, for the admin edit page's experiences panel).
 """
 
 from typing import Any
@@ -29,11 +30,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.database import get_db
-from app.models import Event, Producer, User
+from app.models import Event, Experience, Producer, User
 from app.rate_limit import limiter
 from app.routers.events import _serialize_many, create_event_for, update_event_row
 from app.routers.experiences import (
     _experience_for_edit,
+    _serialize_detail,
     submit_experience_for,
     update_experience_row,
 )
@@ -53,6 +55,7 @@ from app.schemas.schemas import (
     ExperienceUpdate,
 )
 from app.services import admin_audit
+from app.services.registrations import registered_counts
 
 router = APIRouter(tags=["admin-business-content"])
 
@@ -164,6 +167,32 @@ def admin_update_business_event(  # noqa: PLR0913 — all args are FastAPI-injec
 
 
 # ---------- Experiences ----------
+
+
+@router.get(
+    "/admin/producers/{producer_id}/experiences",
+    response_model=list[ExperienceDetailOut],
+)
+def admin_list_business_experiences(
+    producer_id: UUID,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[dict[str, Any]]:
+    """MEH-3876: every experience hosted by an account of the business, in
+    every status (pending, approved, rejected, cancelled), newest first — the
+    list the owner sees (experiences.py list_my_experiences), widened from one
+    host to the business's accounts. A business with no account has none."""
+    _business(db, producer_id)
+    hosts = db.query(User.id).filter(User.producer_id == producer_id)
+    rows = (
+        db.query(Experience)
+        .options(joinedload(Experience.host).joinedload(User.producer))
+        .filter(Experience.host_user_id.in_(hosts))
+        .order_by(Experience.created_at.desc())
+        .all()
+    )
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])  # type: ignore[misc]
+    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]  # type: ignore[call-overload]
 
 
 @router.post(
