@@ -39,7 +39,7 @@ export default function SupportContactSheet({ onClose }) {
       data-testid="support-contact-sheet"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
+      <div className="vv-pin bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
