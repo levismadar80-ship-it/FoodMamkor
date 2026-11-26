@@ -2119,6 +2119,15 @@
           "owner_photo_remove": "Remove photo",
           "secondary_phone": "Second phone (optional)",
           "secondary_phone_label": "What is this number for? (e.g. orders)"
+        },
+        "duplicate": {
+          "title": "This business may already have a page",
+          "intro": "The new page was not created. Open the existing page and complete it there.",
+          "no_owner": "No owner",
+          "open": "Open the existing page",
+          "create_anyway": "It's a different business, create anyway",
+          "owner_prefix": "Account",
+          "more": "And {count} more similar businesses in the businesses list."
         }
       },
       "toast_approved": "Business approved",

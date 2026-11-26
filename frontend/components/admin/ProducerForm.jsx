@@ -32,6 +32,7 @@ import {
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
+import AdminDuplicateMatches, { duplicateMatchesOf } from "@/components/admin/AdminDuplicateMatches";
 import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
@@ -346,6 +347,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
+  // MEH-3883: create-only. The 409 list of businesses we already have, with
+  // the compared values it was checked against; a second, explicit click
+  // resends the form with allow_duplicate. Edit a compared field and the list
+  // (and its «create anyway») goes away: the new values were never checked.
+  const [dup, setDup] = useState(/** @type {{ matches: any[], total: number, key: string } | null} */ (null));
+  const allowDuplicateRef = useRef(false);
+  const formRef = useRef(/** @type {HTMLFormElement | null} */ (null));
+  const dupKey = [form.phone, form.secondary_phone, form.contact_email, form.instagram, form.website, form.facebook].join("|");
   // MEH-3818: through the shared read cache. The edit and new pages read the
   // same key before they draw the form, so the list is here on the form's
   // first paint instead of being inserted into it a moment later and pushing
@@ -538,6 +547,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // MEH-3883: read-and-clear, so only the «create anyway» send carries it.
+    const allowDuplicate = allowDuplicateRef.current;
+    allowDuplicateRef.current = false;
     // Explicit field list (no {...form} spread): the legacy delivery_cities
     // column is never sent — delivery_area_cities is the sole cities channel
     // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
@@ -647,21 +659,25 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         } else if (asDraft) {
           // MEH-2325: land on the draft's edit page, where the claim-link
           // panel lives — the next thing the admin does is mint the link.
-          const r = await api.post("/admin/producers", { ...payload, as_draft: true });
+          const r = await api.post("/admin/producers", { ...payload, as_draft: true, allow_duplicate: allowDuplicate });
           const created = ProducerAdminCreatedSchema.safeParse(r.data);
           // The draft exists either way; without an id the list is where she finds it.
           router.push(created.success ? `/admin/producers/${created.data.id}/edit` : "/admin?tab=producers");
           return;
         } else {
-          await api.post("/admin/producers", payload);
+          await api.post("/admin/producers", { ...payload, allow_duplicate: allowDuplicate });
         }
         router.push("/admin?tab=producers");
       },
-      (err) =>
+      (err) => {
+        const found = duplicateMatchesOf(err);
+        setDup(found && { ...found, key: dupKey });
+        if (found) return;
         showToast.error(
           detailToMessage(err.response?.data?.detail, makeDeliveryCodeResolver(tDelivery)) ||
             t("producers.form.errors.save"),
-        ),
+        );
+      },
     );
   };
 
@@ -673,7 +689,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
@@ -1352,6 +1368,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </Section>
       )}
 
+      {!producerId && dup && dup.key === dupKey && (
+        <AdminDuplicateMatches
+          matches={dup.matches}
+          total={dup.total}
+          busy={isBusy("producer-save")}
+          onCreateAnyway={() => {
+            allowDuplicateRef.current = true;
+            // Through the form, so native validation still runs.
+            formRef.current?.requestSubmit();
+          }}
+        />
+      )}
       <div className="flex gap-3">
         <Button
           type="submit"

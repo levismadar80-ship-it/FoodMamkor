@@ -183,6 +183,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/account_guards.py` | MEH-3248 — who may be deleted, and through which door. |
 | `services/admin_audit.py` | One append-only row for every successful change an admin makes: who, what (method + route template), on what, when, from where. |
 | `services/admin_category_writes.py` | The admin's create, rename and delete of a category, with the guards that keep the taxonomy safe: a duplicate name, a seeded (system) row, a licensed row, and … |
+| `services/admin_create_duplicates.py` | Stop the admin «new business» form from opening a second page for a business we already have. … |
 | `services/admin_dashboard.py` | The numbers behind the admin home ('GET /admin/dashboard') and the admin analytics page ('GET /admin/analytics'). |
 | `services/admin_draft_missing.py` | For a draft its owner has claimed («נקלט, בהשלמה»), say what is still missing before she can send it for review, so the admin's follow-up call is about one … |
 | `services/admin_passkey.py` | The second factor of an admin account: a passkey (WebAuthn) checked after the password or Google / Apple sign-in, and ten one-time recovery codes for a lost … |
@@ -806,6 +807,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
+| `admin/AdminDuplicateMatches.jsx` | On the admin «new business» form, after the server answered 409 DUPLICATE_BUSINESS, list the businesses we already have that share a phone, email, Instagram, … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
 | `admin/AdminLinkPanel.jsx` | — אין כותרת — |
