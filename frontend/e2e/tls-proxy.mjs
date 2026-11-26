@@ -47,11 +47,19 @@ function rewriteLocation(location) {
   return location;
 }
 
-function forward(req, res) {
+// MEH-3845: no pooled upstream sockets. Since Node 19 the default agent keeps
+// connections alive, so a request could go out on an idle socket that `next
+// start` was closing at that instant: ECONNRESET, a plain-text 502 instead of
+// the page, and no `#main-content` for the whole wait. One fresh connection per
+// request costs a TCP handshake on loopback and closes that race.
+const UPSTREAM_AGENT = new http.Agent({ keepAlive: false });
+
+export function forward(req, res, targetPort = TARGET_PORT) {
   const upstream = http.request(
     {
+      agent: UPSTREAM_AGENT,
       host: "127.0.0.1",
-      port: TARGET_PORT,
+      port: targetPort,
       method: req.method,
       path: req.url,
       headers: {
@@ -64,6 +72,9 @@ function forward(req, res) {
       const headers = { ...up.headers };
       if (headers.location) headers.location = rewriteLocation(headers.location);
       res.writeHead(up.statusCode || 502, headers);
+      // An upstream that dies mid-body must end the browser's response too;
+      // without this it stays open until the page's own timeout.
+      up.on("error", (err) => res.destroy(err));
       up.pipe(res);
     },
   );
@@ -79,6 +90,6 @@ function forward(req, res) {
 
 if (process.argv[1] && process.argv[1].endsWith("tls-proxy.mjs")) {
   https
-    .createServer(makeCert(), forward)
+    .createServer(makeCert(), (req, res) => forward(req, res))
     .listen(LISTEN, () => console.log(`[tls-proxy] ${PUBLIC_ORIGIN} -> http://localhost:${TARGET_PORT}`));
 }
