@@ -168,6 +168,7 @@ plugins = ["pydantic.mypy"]
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
 files = [
     "app/schemas/payment_link.py",
+    "app/services/producer_images.py",  # MEH-3894
     "app/utils/money.py",
     "app/services/email_layout.py",
     "app/site_pages.py",
@@ -192,6 +193,8 @@ files = [
     "app/models/billing.py",
     "app/models/catalog.py",
     "app/models/email_events.py",
+    "app/models/share_links.py",
+    "app/services/share_links.py",
     "app/models/engagement.py",
     "app/models/events.py",
     "app/models/home_products.py",

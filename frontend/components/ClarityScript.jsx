@@ -10,7 +10,8 @@ import { usePathname } from "next/navigation";
 // session recorder keeps the page URL. The claim page swaps the address to
 // /claim on mount; Clarity waits for that. MEH-2974: /owner-invite/<token>
 // is the same shape and the same risk, so it waits the same way.
-const CLAIM_TOKEN_PATH = /\/(claim|owner-invite|staff-invite)\/[^/]/;
+// MEH-3896: /c/<code>, the short claim link, is the same credential.
+const CLAIM_TOKEN_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]/;
 
 export default function ClarityScript({ projectId }) {
   const [consented, setConsented] = useState(false);

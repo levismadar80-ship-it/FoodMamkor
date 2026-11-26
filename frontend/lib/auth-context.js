@@ -3,6 +3,7 @@
 
 import { createContext, startTransition, useContext, useEffect, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
+import { afterStreamSettled } from "@/lib/stream-settled";
 import { useTranslations } from "next-intl";
 import api from "./api";
 import {
@@ -61,6 +62,9 @@ async function replayPostLoginAction(t) {
   }
 }
 
+/** MEH-3718: the bootstrap state waits for the streamed reveal, then lands in a transition. */
+const publish = (/** @type {() => void} */ update) => afterStreamSettled(() => startTransition(update));
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,9 +87,15 @@ export function AuthProvider({ children }) {
   // mount the page again: a full-page flash and ≈ 1.0 CLS about 5 s in on a
   // slow phone. A transition lets hydration finish first (react.dev/errors/421).
   // The cost: consumers see `loading` until every boundary under the provider
-  // has hydrated (a chunk that fails rejects to its error boundary, so this
+  // has been revealed (MEH-3718: lib/stream-settled.js, ~300 ms after the first
+  // paint, 5 s at most) and has hydrated (a chunk that fails rejects to its error boundary, so this
   // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
   // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
+  // MEH-3718: a transition is not enough while a streamed boundary is still
+  // queued for its reveal (`$~`, up to ~300 ms after the first paint): React
+  // then renders it again in the browser beside the hidden server copy. So the
+  // bootstrap state also waits for the reveal (lib/stream-settled.js).
+  // (`publish`, at module scope so loadSession depends on nothing that changes.)
   const loadSession = () => {
     // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
@@ -93,7 +103,7 @@ export function AuthProvider({ children }) {
       api
         .get("/auth/me")
         .then((res) => {
-          startTransition(() => {
+          publish(() => {
             setUser(res.data);
             setAuthUnreachable(false);
           });
@@ -116,12 +126,12 @@ export function AuthProvider({ children }) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
           } else {
-            startTransition(() => setAuthUnreachable(true));
+            publish(() => setAuthUnreachable(true));
           }
         })
-        .finally(() => startTransition(() => setLoading(false)));
+        .finally(() => publish(() => setLoading(false)));
     } else {
-      startTransition(() => setLoading(false));
+      publish(() => setLoading(false));
     }
   };
 

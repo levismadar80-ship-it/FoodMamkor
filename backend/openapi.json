@@ -4624,6 +4624,17 @@
             ],
             "title": "Moderation Suggestion"
           },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -4916,6 +4927,17 @@
               }
             ],
             "title": "Min Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,
@@ -9890,6 +9912,109 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerChatRequest": {
+        "properties": {
+          "locale": {
+            "default": "he",
+            "enum": [
+              "he",
+              "en"
+            ],
+            "title": "Locale",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "title": "OwnerChatRequest",
+        "type": "object"
+      },
+      "OwnerChatResponse": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "enum": [
+                  "add_products",
+                  "upload_photos",
+                  "send_for_review"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "products": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MenuRow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Products"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "unanswered": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unanswered"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "OwnerChatResponse",
+        "type": "object"
+      },
       "OwnerDetachIn": {
         "properties": {
           "confirm_name": {
@@ -14548,6 +14673,17 @@
             },
             "title": "Locations",
             "type": "array"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "title": "Name",
@@ -23131,6 +23267,17 @@
             ],
             "title": "Min Participants"
           },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -27668,7 +27815,7 @@
     },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
-        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "description": "Mint a 14-day read-only link to the draft's full page. MEH-3896: a\nshort /v/<code> link backed by a share_links row (the only write here); a\nnew link does not cancel an earlier one. Every link dies when the draft\nis published, claimed or deleted (the read checks the row).",
         "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
         "parameters": [
           {
@@ -31613,6 +31760,53 @@
           }
         },
         "summary": "Chat",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/chat/owner": {
+      "post": {
+        "description": "Answer the owner inside her dashboard, or hand back a page draft.",
+        "operationId": "owner_chat_chat_owner_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerChatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Owner Chat",
         "tags": [
           "chat"
         ]

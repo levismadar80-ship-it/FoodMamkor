@@ -17,7 +17,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { Suspense, lazy } from "react";
 import { act } from "react";
 import { renderToString } from "react-dom/server";
-import { hydrateRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { AuthProvider, useAuth } from "../lib/auth-context.js";
 
 vi.mock("next-intl", () => ({
@@ -153,3 +153,48 @@ describe("auth bootstrap during hydration (MEH-3828)", () => {
     expect(q("user-line")).toBe("דנה");
   });
 });
+
+
+// MEH-3718 — the bootstrap waits while a streamed boundary is queued for its
+// reveal. In the browser (React 19, in Next) a context update that reaches a
+// boundary marked `$~` is not deferred, even in a transition: React renders it
+// again beside the hidden server copy. This repo's vitest runs React 18, which
+// has no `$~` state, so the hydration itself is held by the E2E guard
+// e2e/flows/52-streamed-page-hydrates.spec.ts; here: the state waits.
+describe("auth bootstrap while a streamed boundary waits for its reveal (MEH-3718)", () => {
+  it("signed out: «checking» while a boundary is queued, «ready» on the poll after the reveal", async () => {
+    const marker = document.createComment("$~");
+    document.body.appendChild(marker);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<AuthProvider><AuthLine /></AuthProvider>);
+    });
+    const line = () => container.querySelector('[data-testid="auth-line"]')?.textContent;
+    await frames(5);
+    expect(line()).toBe("checking");
+    marker.data = "$";
+    await frames(3);
+    expect(line()).toBe("ready");
+  });
+
+  it("signed out, nothing queued (control): «ready» at once", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<AuthProvider><AuthLine /></AuthProvider>);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(container.querySelector('[data-testid="auth-line"]')?.textContent).toBe("ready");
+  });
+});
+
+// lib/stream-settled.js polls by timer (requestAnimationFrame never fires in a hidden tab).
+const frames = (n) =>
+  act(async () => {
+    for (let i = 0; i < n; i += 1) await new Promise((r) => setTimeout(r, 20));
+  });
