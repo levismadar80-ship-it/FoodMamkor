@@ -219,9 +219,23 @@ async function openAt(page: Page, anchor: string): Promise<void> {
 /** The back link of whichever group is currently showing (each group has one). */
 const backLink = (page: Page) => page.locator('[data-testid="hub-back"]:visible');
 
+/** MEH-3910: back from a group to the hub. The group has just replaced the hub
+ *  (the page height shrinks, the cards fill in), so the back button is gated on
+ *  `layoutSettled` before the click: a shift between mousedown and mouseup sends
+ *  the click to an ancestor, the handler never runs, and the hub stays hidden
+ *  (dashboard-edit.spec.ts:463, PR #5378, job 140123783534). */
+async function backToHub(page: Page): Promise<void> {
+  await layoutSettled(backLink(page));
+  await backLink(page).click();
+  await expect(hub(page)).toBeVisible();
+}
+
 /** Enters a group from the hub. The hub TILE is `hub-card-<g>`; `group-<g>` is
  *  the panel it reveals, and clicking that never works — it is `hidden`. */
 async function enterGroup(page: Page, group: string): Promise<void> {
+  // MEH-3910: the hub moves while it settles; a click into a moving tile can be
+  // lost with no error (MEH-3449, testing.md «E2E flake prevention»).
+  await layoutSettled(page.getByTestId(`hub-card-${group}`));
   await page.getByTestId(`hub-card-${group}`).click();
   await expect(
     page.getByTestId(`group-${group}`),
@@ -452,8 +466,7 @@ test.describe("edit tab — required/optional chip", () => {
         expect(["חובה", "רשות", "מומלץ"], `${group}: unexpected chip text «${label}»`).toContain(label.trim());
       }
       seen += n;
-      await backLink(page).click();
-      await expect(hub(page)).toBeVisible();
+      await backToHub(page);
     }
     expect(seen, "no cards were visited at all — every chip assertion above was free").toBeGreaterThan(0);
   });
@@ -477,8 +490,7 @@ test.describe("edit tab — required/optional chip", () => {
         const anchor = (await el.getAttribute("data-testid"))!.replace("section-chip-", "");
         ((await el.innerText()).trim() === "חובה" ? required : optional).push(anchor);
       }
-      await backLink(page).click();
-      await expect(hub(page)).toBeVisible();
+      await backToHub(page);
     }
 
     expect(required.sort()).toEqual(
