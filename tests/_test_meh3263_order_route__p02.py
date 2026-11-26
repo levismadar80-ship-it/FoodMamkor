@@ -122,7 +122,7 @@ def test_a_no_show_can_only_be_reported_after_the_slot(client, db, flag_on):
     url = f"/producers/me/product-orders/{order.id}/no-show"
     early = client.post(url, headers=shop.headers)
     assert early.status_code == 409
-    assert actions.TOO_EARLY_NO_SHOW_DETAIL in early.text
+    assert early.json()["detail"] == actions.TOO_EARLY_NO_SHOW_DETAIL  # MEH-1943: {code, message, params}
     past = utc_now() - timedelta(hours=3)
     db.query(ProductOrder).update(
         {"slot_start": past, "slot_end": past + timedelta(hours=1)}

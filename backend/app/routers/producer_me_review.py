@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from app.api_errors import api_error_detail
 from app.auth import require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
@@ -324,7 +325,13 @@ def request_kashrut_badge(
         .first()
     )
     if existing:
-        raise HTTPException(status_code=409, detail="בקשה לbadge זה כבר ממתינה לאישור")
+        # MEH-1943: was «בקשה לbadge זה…» — an English word at a business owner.
+        raise HTTPException(
+            status_code=409,
+            detail=api_error_detail(
+                "badge_request_pending", "בקשה לתג הזה כבר ממתינה לאישור"
+            ),
+        )
 
     from app.services.image_ownership import assert_own_new_images  # MEH-3247
 

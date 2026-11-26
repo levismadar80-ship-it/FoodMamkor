@@ -273,7 +273,9 @@ class TestSortDistance:
         assert missing_lng.status_code == 422
         # Hebrew detail (routers/CLAUDE.md) that names the axis, not a generic
         # pydantic error — the router's manual-422 pattern.
-        assert "מרחק" in missing_both.json()["detail"]
+        # MEH-1943: {code, message, params}; the copy is he.json error.api.<code>.
+        assert missing_both.json()["detail"]["code"] == "distance_sort_needs_location"
+        assert "מרחק" in missing_both.json()["detail"]["message"]
 
     def test_coords_without_sort_keep_the_default_order(self, client, db):
         # lat/lng alone (no radius_km, no sort) is NOT geo mode and NOT a

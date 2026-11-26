@@ -43,7 +43,14 @@ new router:
 - **Schemas**: pure-Pydantic models in `backend/app/schemas/` (one module per area; shared validators in `schemas.py`, which re-exports every name)
   per ADR-006 R1. Do not declare request/response models inline in router
   files — relocate via the same package.
-- **Hebrew errors**: `raise HTTPException(status_code=…, detail="<עברית>")`.
+- **Error copy (MEH-1943)**: a new error a person reads is
+  `detail=api_error_detail("<code>", "<עברית>", **params)` (`backend/app/api_errors.py`)
+  plus `error.api.<code>` in `frontend/messages/he.json` (same words) and `en.json`;
+  `errorMessage` renders the key, every other consumer the `message`.
+  `scripts/checks/backend-error-copy-guard.sh` fails a raw Hebrew detail that quotes a
+  UI label, carries an English word or lists internal values, and a file whose count of
+  raw Hebrew details rises above its baseline.
+- **Hebrew errors (existing)**: `raise HTTPException(status_code=…, detail="<עברית>")`.
   Use feminine grammar unless the surface is a functional UI string
   (gerund) — see brand voice in `.claude/rules/workflow.md` § brand voice.
   A non-Hebrew literal `detail=` here fails `scripts/checks/prose-rules-guard.sh` (R1); a machine-facing

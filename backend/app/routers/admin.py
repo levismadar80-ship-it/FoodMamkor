@@ -558,6 +558,7 @@ def seed_cities(
         # MEH-2375: the transport error stays in the log, never in the response.
         logger.exception("seed-cities: data.gov.il fetch failed")
         raise HTTPException(
+            # guard-ok: admin-only seed screen; data.gov.il is the source's name.
             status_code=502, detail="לא הצלחנו להביא את רשימת היישובים מ-data.gov.il"
         )
 
@@ -570,6 +571,7 @@ def seed_cities(
         # purpose: the text is ours (scripts/seed_cities.py), not a library's.
         raise HTTPException(
             status_code=502,
+            # guard-ok: admin-only; {exc} is our own seed_cities message naming the keys found.
             detail=f"הרשומות התקבלו אך לא נמצאה בהן עמודת שם יישוב: {exc}",
         )
 

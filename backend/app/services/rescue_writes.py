@@ -31,6 +31,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.api_errors import api_error_detail
 from app.models.models import (
     RESCUE_MAX_QTY_PER_ORDER,
     Producer,
@@ -475,7 +476,10 @@ def record_no_show(
     if order.offer.pickup_end > utc_now():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר",
+            detail=api_error_detail(  # MEH-1943: names the «לא הגיע» button label
+                "rescue_no_show_too_early",
+                "אפשר לסמן «לא הגיע» רק אחרי שזמן האיסוף נגמר",
+            ),
         )
     if order.status != "reserved":
         raise HTTPException(

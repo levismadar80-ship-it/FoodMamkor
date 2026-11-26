@@ -19,6 +19,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.api_errors import api_error_detail
 from app.allergens import DETAIL_COLUMNS, detail_if_declared, drop_contained
 from app.models import Product
 
@@ -49,10 +50,21 @@ def apply_product_update(product: Product, payload: dict[str, Any]) -> None:
     new_min = payload.get("price_min", product.price_min)
     new_max = payload.get("price_max", product.price_max)
     if new_min is None and new_max is not None:
-        raise HTTPException(status_code=422, detail="מחיר «עד» צריך גם מחיר «מ-»")
+        # MEH-1943: the copy lives in messages/*.json error.api.<code>, next to the
+        # «עד» / «מ-» labels it names.
+        raise HTTPException(
+            status_code=422,
+            detail=api_error_detail(
+                "product_price_max_needs_min", "מחיר «עד» צריך גם מחיר «מ-»"
+            ),
+        )
     if new_min is not None and new_max is not None and new_max < new_min:
         raise HTTPException(
-            status_code=422, detail="מחיר «עד» צריך להיות גדול או שווה למחיר «מ-»"
+            status_code=422,
+            detail=api_error_detail(
+                "product_price_max_below_min",
+                "מחיר «עד» צריך להיות גדול או שווה למחיר «מ-»",
+            ),
         )
     for field, value in payload.items():
         setattr(product, field, value)

@@ -20,6 +20,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from limits import parse as parse_limit
 
+from app.api_errors import api_error_detail
 from app.auth import verify_password
 from app.rate_limit import limiter
 
@@ -33,9 +34,11 @@ NAMESPACE = "email_change_wrong_password"
 
 WRONG_PASSWORD_DETAIL = "הסיסמה הנוכחית שגויה"
 TOO_MANY_DETAIL = "היו יותר מדי ניסיונות עם סיסמה שגויה. אפשר לנסות שוב בעוד שעה."
-NO_PASSWORD_DETAIL = (
+# MEH-1943: names the «שכחתי סיסמה» link, so the copy lives in he.json.
+NO_PASSWORD_DETAIL = api_error_detail(
+    "email_change_needs_password",
     "לחשבון הזה אין עדיין סיסמה. כדי לשנות את המייל, קודם הגדירו סיסמה "
-    "דרך «שכחתי סיסמה» בדף ההתחברות."
+    "דרך «שכחתי סיסמה» בדף ההתחברות.",
 )
 
 

@@ -126,7 +126,7 @@ describe("Edit-tab KashrutCard (isolation)", () => {
   });
 
   it("surfaces the backend 409 Hebrew detail inline, not a vanishing toast", async () => {
-    const detail = "בקשה לbadge זה כבר ממתינה לאישור";
+    const detail = "בקשה לתג הזה כבר ממתינה לאישור";
     api.post.mockRejectedValueOnce({ response: { data: { detail } } });
     renderCard();
     await waitFor(() => expect(api.get).toHaveBeenCalled());
