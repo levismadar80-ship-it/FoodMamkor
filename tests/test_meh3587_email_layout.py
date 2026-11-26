@@ -22,7 +22,7 @@ from app.services.email_layout import (
 )
 
 # The host is MEH-3583's (tests/test_email_logo.py); here: the logo is there.
-LOGO = '/email-logo.png" width="120"'
+LOGO = '/email-logo.png" width="168"'
 TAG = re.compile(r"<[^>]+>")
 
 

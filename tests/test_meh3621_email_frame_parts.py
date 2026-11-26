@@ -34,3 +34,13 @@ def test_the_body_declares_rtl() -> None:
     html = frame("כותרת", "גוף", button("https://x.example", "לחצו"))
     body_tag = html[html.index("<body"): html.index(">", html.index("<body"))]
     assert "direction:rtl" in body_tag
+
+
+def test_frame_asks_mail_apps_to_keep_it_light():
+    """MEH-3916: Apple Mail and the Outlook apps honour color-scheme and leave
+    a «light only» email in its own colours instead of darkening it. Gmail
+    ignores the tag and recolours anyway; the logo badge covers that case."""
+    html = frame("x", "y")
+    head = html[: html.index("</head>")]
+    assert '<meta name="color-scheme" content="light only">' in head
+    assert '<meta name="supported-color-schemes" content="light only">' in head
