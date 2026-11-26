@@ -7362,6 +7362,7 @@
     },
     "confirm": {
       "title": "Your bag is reserved",
+      "paid_confirmed": "The business confirmed your payment arrived",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
       "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
@@ -7374,6 +7375,7 @@
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
       "cancel_no": "No, keep it",
+      "paid_ahead": "Paid ahead: {price} ₪",
       "pay_ahead": "Pay in advance: {price} ₪",
       "pay_deposit": "Bag price: {price} ₪ · the rest is paid at the counter"
     },
@@ -7425,6 +7427,9 @@
       "code_label": "Pickup code",
       "code_placeholder": "0000",
       "code_not_found": "No active reservation with that code.",
+      "mark_paid": "Mark as paid",
+      "paid": "✓ Paid",
+      "unmark_paid": "Undo mark",
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",

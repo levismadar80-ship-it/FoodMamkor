@@ -343,6 +343,20 @@ describe("the bag page — a reload keeps the order (MEH-2680)", () => {
   });
 });
 
+describe("the bag page — the business marks the bag paid (MEH-3897)", () => {
+  it("coming back from another app re-reads, so the pay button gives way to the confirmation", async () => {
+    fetchMyOrders.mockResolvedValueOnce([order()]);
+    await renderPage();
+    await screen.findByTestId("rescue-confirmation");
+    expect(screen.queryByTestId("rescue-paid-confirmed")).toBeNull();
+    fetchMyOrders.mockResolvedValueOnce([order({ paid_at: new Date().toISOString() })]);
+    // A phone returning from Bit fires visibilitychange, not window focus.
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(await screen.findByTestId("rescue-paid-confirmed")).toBeTruthy();
+  });
+});
+
 describe("the bag page — the business cancelled the bag (MEH-2738)", () => {
   const byBusiness = (over = {}) => order({ status: "cancelled", cancelled_by_business: true, ...over });
   const TEXT = "בית העסק ביטל את הסל של היום, ולכן השריון שלכם בוטל. אין צורך להגיע.";
