@@ -305,7 +305,8 @@ const SHARED_GATE_LABELS = new Set(["phone_verified", "email_verified"]);
  * One list for both modes. Done rows: ✓ + label (still a link, so she can
  * edit). The FIRST row not done is the open one — tinted, with one button
  * (or, for the WhatsApp row, the OTP card itself). Every other row not done is
- * a plain label link. One open row at a time is the Shopify setup-guide shape.
+ * a plain label link. One open row at a time is the Shopify setup-guide shape; the
+ * WhatsApp code row is the exception and stays open while undone (MEH-3886).
  */
 function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
   const openKey = rows.find((r) => !r.done)?.key;
