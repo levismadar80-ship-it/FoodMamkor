@@ -1028,7 +1028,7 @@
         "alcohol": "מעל גיל 18 בלבד. באיסוף תתבקשו להציג תעודה מזהה.",
         "bar": "להזמנה · {count, plural, one {פריט אחד} two {שני פריטים} other {# פריטים}} · {total} ₪",
         "sold_out_days": "אזל לימים הקרובים",
-        "left": "{count, plural, one {נשאר אחד} other {נשארו #}}"
+        "left": "{count, plural, one {נשאר אחד} two {נשארו #} other {נשארו #}}"
       },
       "order_sheet": {
         "title": "ההזמנה שלכם",
@@ -1067,7 +1067,7 @@
         "preview_send": "שליחה לא זמינה בתצוגה מקדימה",
         "seller_line_no_number": "המוכר: {name} · מס׳ עוסק / ת״ז: עוד לא הוזן{city, select, none {} other { · {city}}}. מהמקור לא המוכרת ולא צד לעסקה.",
         "stock_sold_out": "«{name}» אזל לימים הקרובים. אפשר להסיר אותו מההזמנה ולהזמין את השאר.",
-        "stock_short": "אין יום פנוי עם מספיק «{name}». אפשר להזמין עד {count, plural, one {אחד} other {#}} ליום."
+        "stock_short": "אין יום פנוי עם מספיק «{name}». אפשר להזמין עד {count, plural, one {אחד} two {#} other {#}} ליום."
       }
     },
     "card": {
@@ -6379,7 +6379,7 @@
           "line": "{count} × {name}",
           "days": "ימים",
           "tomorrow": "מחר",
-          "waiting": "{count, plural, one {אחד מחכה לאישור} other {# מחכים לאישור}}",
+          "waiting": "{count, plural, one {אחד מחכה לאישור} two {# מחכים לאישור} other {# מחכים לאישור}}",
           "of_limit": "מתוך {limit} ליום",
           "load_error": "לא הצלחנו לטעון את «מה להכין».",
           "all_kinds": "מכל הסוגים יחד"

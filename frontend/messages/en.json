@@ -1067,7 +1067,7 @@
         "preview_send": "Sending is off in the preview",
         "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
         "stock_sold_out": "“{name}” is sold out for the coming days. You can remove it and order the rest.",
-        "stock_short": "No open day has enough “{name}”. You can order up to {count} for one day."
+        "stock_short": "No open day has enough “{name}”. You can order up to {count, plural, one {#} other {#}} for one day."
       }
     },
     "card": {
@@ -6383,7 +6383,7 @@
           "line": "{count} × {name}",
           "days": "Days",
           "tomorrow": "Tomorrow",
-          "waiting": "{count} awaiting your answer",
+          "waiting": "{count, plural, one {# awaiting your answer} other {# awaiting your answer}}",
           "of_limit": "of {limit} a day",
           "load_error": "We couldn't load «what to prepare».",
           "all_kinds": "all kinds together"
