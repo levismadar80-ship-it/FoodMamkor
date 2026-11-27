@@ -110,7 +110,8 @@ export function producerCompleteness(p) {
   // per-location fact; a business that filled them in on her primary location
   // HAS hours, and the old check would have kept telling her she did not —
   // while pointing at an editor this change removed.
-  const noHours = !resolveStoreHours(p);
+  // MEH-2447: an owner who answered «בתיאום מראש» is not asked to invent hours.
+  const noHours = !resolveStoreHours(p) && !(p.by_arrangement && p.has_physical_location !== false);
   if (noHours) missing.push(COMPLETENESS_FIELDS.hours);
 
   let priority = "green";

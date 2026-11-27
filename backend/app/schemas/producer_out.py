@@ -217,6 +217,8 @@ class ProducerListOut(BaseModel):
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
+    # MEH-2447: the owner's «בתיאום מראש» answer (read with has_physical_location).
+    by_arrangement: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
     # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
