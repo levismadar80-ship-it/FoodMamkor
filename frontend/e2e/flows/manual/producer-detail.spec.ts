@@ -1,5 +1,6 @@
 import type { Locator, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { stableCatalog } from "../_stable-catalog";
 import he from "../../../messages/he.json";
 
 /**
@@ -204,7 +205,8 @@ async function catalog(page: Page): Promise<Producer[]> {
   expect(res.ok(), `GET /producers must respond 2xx — got ${res.status()}`).toBeTruthy();
   const body = (await res.json()) as unknown;
   expect(Array.isArray(body), "GET /producers must return an array").toBe(true);
-  const list = body as Producer[];
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  const list = stableCatalog(body as Producer[]);
   expect(list.length, "the catalog must hold at least one business").toBeGreaterThan(0);
   return list;
 }
