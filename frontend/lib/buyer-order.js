@@ -97,6 +97,9 @@ export function statusView(order) {
     headline,
     waiting: order.status === "pending",
     when: committed ? (order.fulfilment === "delivery" ? "when_delivery" : "when_pickup") : null,
+    // MEH-3960: while she waits, the time she asked for (not yet agreed, so
+    // no address and no calendar button).
+    requested: order.status === "pending" ? (order.fulfilment === "delivery" ? "requested_delivery" : "requested_pickup") : null,
     code: committed && Boolean(order.pickup_code),
     proposal: order.status === "change_proposed" && Boolean(order.proposal),
     // A proposal shows its own total; a second, older one beside it would
