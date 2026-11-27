@@ -1055,6 +1055,62 @@
         "title": "AdminExperienceUpdate",
         "type": "object"
       },
+      "AdminProductPriceIn": {
+        "description": "MEH-3942: the admin sets or clears a product's price on any business.\nBoth bounds are required keys; null clears (the page then shows «מחיר\nמשתנה לפי עונה», MEH-2924).",
+        "properties": {
+          "price_max": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Max"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box",
+              "pack"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "price_min",
+          "price_max"
+        ],
+        "title": "AdminProductPriceIn",
+        "type": "object"
+      },
       "AdminReviewOut": {
         "properties": {
           "ai_moderation_status": {
@@ -29339,6 +29395,74 @@
           }
         ],
         "summary": "Admin Set Product Group",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/products/{product_id}/price": {
+      "put": {
+        "operationId": "admin_set_product_price_admin_producers__producer_id__products__product_id__price_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminProductPriceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Set Product Price",
         "tags": [
           "admin-product-organize"
         ]

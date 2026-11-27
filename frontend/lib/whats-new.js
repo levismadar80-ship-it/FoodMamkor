@@ -38,6 +38,10 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.20 (27/11): hotfix to main, #5436 cherry-picked (MEH-3942) — admin
+  // route to set or clear a product's price on any business. Admin-only, so
+  // nothing new for businesses: items: 0. Sapir chose the hotfix 27/11 14:16Z.
+  { version: "1.5.20", key: "v1_5_20", date: "2026-11-27", items: 0 },
   // 1.5.19 (27/11): hotfix to main, #5429 — /map list failed when a category
   // has no emoji. Nothing new for businesses, so items: 0 (docs/release/
   // whats-new.md: a hotfix adds a patch entry with items: 0).
