@@ -456,14 +456,24 @@ export function producerEventRefs(activities) {
   if (!activities) return [];
   const pick = (items, base) =>
     (Array.isArray(items) ? items : [])
+      // MEH-3953: same condition as the event / workshop page (date + city),
+      // so every @id here resolves to an Event node, never a dangling one.
       .filter((it) => it && it.id && it.title && it.is_active !== false)
+      .filter((it) => typeof it.event_date === "string" && ISO_DATE.test(it.event_date))
+      .filter((it) => typeof it.city === "string" && it.city.trim())
       .map((it) => {
         const url = `${SITE_URL}/${base}/${it.id}`;
-        const ref = { "@type": "Event", "@id": `${url}#event`, name: it.title, url };
-        if (typeof it.event_date === "string" && ISO_DATE.test(it.event_date)) {
-          ref.startDate = it.event_date.slice(0, 10);
-        }
-        return ref;
+        return {
+          "@type": "Event",
+          "@id": `${url}#event`,
+          name: it.title,
+          url,
+          startDate: it.event_date.slice(0, 10),
+          location: {
+            "@type": "Place",
+            address: { "@type": "PostalAddress", addressLocality: it.city.trim(), addressCountry: "IL" },
+          },
+        };
       });
   return [...pick(activities.events, "events"), ...pick(activities.experiences, "experiences")];
 }
