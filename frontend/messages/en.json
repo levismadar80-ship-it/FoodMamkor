@@ -642,8 +642,9 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee",
-    "byshvl-lpy-hzmnh": "Cooked to order"
+    "coffee": "Coffee",
+    "cooked-to-order": "Cooked to order",
+    "cakes-desserts": "Cakes & desserts"
   },
   "seo": {
     "home": {
@@ -2002,6 +2003,8 @@
       "form": {
         "errors": {
           "image_upload": "Image upload error",
+          "images_failed": "{failed, plural, one {1 of {total} photos was not uploaded} other {# of {total} photos were not uploaded}}: {reason}",
+          "unsaved_sections": "Unsaved changes: {sections}. Save each section with its own Save button, then save here.",
           "save": "Save error"
         },
         "submit_create": "Create business",
@@ -2119,6 +2122,15 @@
           "owner_photo_remove": "Remove photo",
           "secondary_phone": "Second phone (optional)",
           "secondary_phone_label": "What is this number for? (e.g. orders)"
+        },
+        "duplicate": {
+          "title": "This business may already have a page",
+          "intro": "The new page was not created. Open the existing page and complete it there.",
+          "no_owner": "No owner",
+          "open": "Open the existing page",
+          "create_anyway": "It's a different business, create anyway",
+          "owner_prefix": "Account",
+          "more": "And {count} more similar businesses in the businesses list."
         }
       },
       "toast_approved": "Business approved",
@@ -2182,7 +2194,11 @@
         "screenshot_attached": "Screenshot attached. View",
         "screenshot_remove": "Remove",
         "screenshot_error": "Could not upload the screenshot",
-        "screenshot_view": "Screenshot of the approval"
+        "screenshot_view": "Screenshot of the approval",
+        "slug_needed": "This business has no English address yet. Check the suggestion below, edit it if needed, and publish again.",
+        "slug_label": "Page address in English",
+        "slug_hint": "English letters, numbers and hyphens, up to 40 characters",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -2343,6 +2359,11 @@
         "saved": "Saved.",
         "error": "We couldn't save. Please try again.",
         "load_error": "We couldn't load the mark. Refresh the page."
+      },
+      "slug_confirm": {
+        "title": "English address for the page",
+        "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
+        "confirm": "Approve and publish"
       }
     },
     "users": {
@@ -2847,6 +2868,9 @@
       },
       "categories": {
         "name_placeholder": "Category name",
+        "slug_label": "English address",
+        "slug_placeholder": "English address, e.g. cakes-desserts",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens",
         "add": "+ Add",
         "empty": "No data yet",
         "save": "Save",
@@ -3937,8 +3961,9 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans",
-        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
+        "coffee": "Coffee beans",
+        "cooked-to-order": "Platters, salads, Shabbat meals",
+        "cakes-desserts": "Celebration cakes, cookies, tarts"
       },
       "section_results": "Results",
       "section_popular": "Popular",
