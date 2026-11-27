@@ -69,6 +69,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
 | «שאלות נפוצות» under a hub list, with FAQPage JSON-LD | `HubFaq.jsx` (questions per list: `lib/hub-faq.js`) | `HubFaq` |
+| A link to that «שאלות נפוצות», above the list or on an offer page | `HubFaqLink.jsx` | `HubFaqLink` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |

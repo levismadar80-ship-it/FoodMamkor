@@ -44,5 +44,6 @@
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
 * `tests/test_meh3735_group_buy_no_show.py` — קוד האיסוף, רשימת הקודים בלי שמות, IDOR, סימון רק אחרי האיסוף ופעם אחת, מיילים, חסימה אחרי שתיים, שחרור באדמין (MEH-3735).
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית הרשימה (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
+* `frontend/__tests__/HubFaqLink.test.jsx` — קישור ל«שאלות נפוצות» מעל הרשימה ובדף הקבוצה (`frontend/components/HubFaqLink.jsx`), כי הרשימה בלי עמודים ומי שלא גוללת עד הסוף לא מגיעה לשאלות (MEH-3949).
 
 **מזהי רישום שזה מכסה.** `group_buys`.

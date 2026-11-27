@@ -56,5 +56,6 @@
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
 * `tests/test_meh3824_rescue_today_on_map.py` · `frontend/__tests__/MapRescueOnMap.test.jsx` — הסל של היום בכרטיס של בית העסק במפה (`rescue_today`, `attach_rescue_today` ב-`backend/app/services/producer_queries.py`).
 * `frontend/__tests__/HubFaq.test.jsx` — «שאלות נפוצות» בתחתית רשימת הסלים (`frontend/components/HubFaq.jsx`): שורה סגורה לכל שאלה, ואותן שאלות ב-JSON-LD של FAQPage (MEH-3737).
+* `frontend/__tests__/HubFaqLink.test.jsx` — קישור ל«שאלות נפוצות» מעל הרשימה ובדף הסל (`frontend/components/HubFaqLink.jsx`), כי הרשימה בלי עמודים ומי שלא גוללת עד הסוף לא מגיעה לשאלות (MEH-3949).
 
 **מזהי רישום שזה מכסה.** `rescue_bags`.
