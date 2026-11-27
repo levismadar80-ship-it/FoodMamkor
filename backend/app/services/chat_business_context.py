@@ -335,6 +335,8 @@ def _product(row: Any, groups: dict[str, str] | None = None) -> dict[str, Any]:
             if p.available_weekdays is not None
             else []
         ),
+        # MEH-3932: «צריך להזמין יומיים מראש» — only when the product has one.
+        "order_days_ahead": p.lead_days,
         "allergens_on_page": list(p.allergens or []),
         "may_contain_on_page": list(p.may_contain or []),
         # MEH-3442: a detail counts only while its code is declared.

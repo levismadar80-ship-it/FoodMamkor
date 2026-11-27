@@ -148,6 +148,10 @@ class Product(Base):
     # ordered for one pickup day, counted across all its variants. NULL = no
     # limit. Counting and refusal: services/product_daily_stock.py.
     daily_limit = Column(SmallInteger, nullable=True)
+    # MEH-3932: how many days ahead it must be ordered — the pickup's Israel
+    # day is at least today + lead_days. NULL = no product rule (the
+    # business's lead_time_hours still applies). services/product_lead_days.py.
+    lead_days = Column(SmallInteger, nullable=True)
     # MEH-2312: an imported product lands as a draft. A draft is invisible to
     # every public read (producer page, search, sitemap, counts) until an
     # admin approves it. Owner-created products never set it.
@@ -205,6 +209,10 @@ class Product(Base):
         CheckConstraint(
             "daily_limit >= 1 AND daily_limit <= 999",
             name="products_daily_limit_check",
+        ),
+        CheckConstraint(
+            "lead_days >= 1 AND lead_days <= 7",
+            name="products_lead_days_check",
         ),
         Index(
             "idx_products_dietary",
