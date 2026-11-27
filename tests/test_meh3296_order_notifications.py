@@ -570,6 +570,7 @@ def test_a_landline_shop_with_no_linked_account_gets_no_whatsapp(db, monkeypatch
     row = owe_now(db, due_order(db, shop), "new_order", "whatsapp")
     outbox.dispatch_due(db)
     assert outcome_of(db, row) == ("skipped", "no_address", 0)
+    assert wire.wa == []
 
 
 def test_a_business_mobile_wins_over_the_owners(db, monkeypatch):
