@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-100 send sites · 97 on a single channel.
+101 send sites · 98 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -21,6 +21,7 @@
 | `routers/marketing.py` | `_send_contact_email` | מייל | בלי שורת עסק |
 | `routers/marketing.py` | `_send_newsletter_confirm` | מייל | בלי שורת עסק |
 | `routers/marketing.py` | `_send_newsletter_welcome` | מייל | בלי שורת עסק |
+| `routers/producer_claim.py` | `claim_producer` | מייל | בעלת העסק |
 | `routers/producer_owner_invite.py` | `accept_owner_invite` | מייל | בעלת העסק |
 | `routers/producer_owner_invite_existing.py` | `accept_owner_invite_existing` | מייל | בעלת העסק |
 | `routers/report_info.py` | `report_producer_info` | מייל | בית עסק / מנהלת |

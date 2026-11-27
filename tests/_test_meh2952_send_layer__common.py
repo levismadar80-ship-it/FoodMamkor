@@ -659,6 +659,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
     ),
+    # MEH-3945: a /c/ claim of a page published with consent sends that same
+    # approved mail (not the draft welcome), flag `p_test` as above.
+    (
+        "routers/producer_claim.py",
+        "claim_producer",
+        "add_task(send_email)",
+    ): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
     # MEH-3256: the same acceptance for a signed-in existing account — same
     # mail, same flag (producer.is_test or the locked user's is_test).
     (
