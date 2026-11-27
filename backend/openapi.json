@@ -2329,6 +2329,17 @@
       },
       "BuyerOrderOut": {
         "properties": {
+          "business_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Note"
+          },
           "can_cancel": {
             "title": "Can Cancel",
             "type": "boolean"
@@ -8777,6 +8788,17 @@
       },
       "OrderCreatedOut": {
         "properties": {
+          "business_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Note"
+          },
           "can_cancel": {
             "title": "Can Cancel",
             "type": "boolean"
