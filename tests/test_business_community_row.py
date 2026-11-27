@@ -54,3 +54,9 @@ def test_unset_or_blank_setting_gives_none(client, db, monkeypatch, value):
     monkeypatch.setattr(settings, "whatsapp_community_invite_url", value)
     owner = _owner(db, email="community-unset@example.com")
     assert _invite(client, owner) is None
+
+
+def test_padded_setting_is_returned_stripped(client, db, monkeypatch):
+    monkeypatch.setattr(settings, "whatsapp_community_invite_url", f"  {FAKE_INVITE_URL}\n")
+    owner = _owner(db, email="community-padded@example.com")
+    assert _invite(client, owner) == FAKE_INVITE_URL

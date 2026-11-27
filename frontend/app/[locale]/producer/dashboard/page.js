@@ -880,7 +880,7 @@ export default function ProducerDashboardPage() {
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
       {/* Sapir 27/11 (placement א׳): the business community invite, above «מה חדש». */}
-      {!isOrganizer && <CommunityRow inviteUrl={data?.community_invite_url} />}
+      {!isOrganizer && (profile || profileError) && <CommunityRow inviteUrl={data?.community_invite_url} />}
       {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
       {/* MEH-3767: one quiet line, not a card — it is a way out, not a task. */}
       <div
