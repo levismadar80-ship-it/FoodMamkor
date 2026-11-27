@@ -603,6 +603,18 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "a row caused by a test row is never queued (enqueue_email, MEH-2952)",
     ),
+    # --- MEH-3933: weekly repeat orders, a skipped or stopped week ---
+    # Each mails the business and the buyer; both read producer.is_test.
+    ("services/product_order_repeat.py", "_mail_skipped", "enqueue_email"): (
+        2,
+        BUS,
+        "_is_test(db, producer)",
+    ),
+    ("services/product_order_repeat.py", "_mail_stopped", "enqueue_email"): (
+        4,
+        BUS,
+        "_is_test(db, producer)",
+    ),
     # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
     ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
         1,
@@ -641,6 +653,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     (
         "routers/producer_owner_invite.py",
         "accept_owner_invite",
+        "add_task(send_email)",
+    ): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
+    # MEH-3945: a /c/ claim of a page published with consent sends that same
+    # approved mail (not the draft welcome), flag `p_test` as above.
+    (
+        "routers/producer_claim.py",
+        "claim_producer",
         "add_task(send_email)",
     ): (
         1,

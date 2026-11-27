@@ -45,7 +45,7 @@ There is no soft-delete: deletion removes the row.
 | Transition | Who | Where | Guard |
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
-| consumer → producer (with a draft business) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
+| consumer → producer (with a draft business, or a page published with her consent, MEH-3945) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
 | role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` → `services/admin_user_writes.py` `change_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` → `services/admin_user_writes.py` `toggle_user_block` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
@@ -193,6 +193,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
 | Queued email (`email_outbox.outcome`, MEH-3535) | pending → sent / skipped (a final non-send answer, or `stale` after 2 days) / failed (5 tries, a provider error or a crash on the row each spending one); a try that fails keeps it pending with a later `send_after` | the outbox dispatcher only (`services/email_outbox.py:dispatch_due`), run by the worker or the web scheduler |
 | Order staff (`producer_staff.status`, MEH-3526) | pending → active (the invited person accepts: one conditional UPDATE, `routers/producer_staff.py` `accept_staff_invite`; the token is cleared) · active → revoked (the owner removes, `remove_staff`; the staff member leaves, `leave_staff`; the account becomes a business owner through a claim, an owner invite or a business registration, `services/staff_membership.py` `end_staff_membership`) · a pending invite the owner withdraws is deleted, not revoked (`remove_staff`), so withdrawn invites leave no rows. A pending row past `expires_at` (7 days) stays pending, stops counting toward the cap of 5 and is minted again by a new invite to the same address. An active row grants order access only while the business still has an owner (`services/order_access.py`) | owner, invited person |
+| Weekly repeat of an order (`product_order_repeats.state`, MEH-3933) | active → stopped, one way. Stopped by the buyer (`POST /product-orders/status/repeat/stop`), by the business or its staff (`POST /producers/me/product-orders/{id}/repeat/stop`), or by the job after 3 weeks in a row it could not make (`stopped_by` = customer · business · system). Born active only from an order sent with `repeat_weekly`. While active, the hourly job (09:00–20:00 Israel) makes next week's order once this week's slot has begun, through `create_order`; a week the business cannot take, or last week's order declined or expired, adds one to `skipped_in_row`, a made one resets it, Shabbat for an observant business waits, weeks missed while the job did not run are passed over uncounted. Born only from a logged-in buyer's order without alcohol. Deleted, not stopped, when the buyer deletes her account | buyer, business, `services/product_order_repeat.py` |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
 ## Every status column
@@ -221,11 +222,12 @@ section above when it has transitions worth drawing.
 | `business_billing.state` | "What does not exist" (no writer) |
 | `product_orders.status` | "What does not exist" (no route yet) |
 | `product_orders.payment_status` | "What does not exist" (no route yet) |
+| `product_order_repeats.state` | 6 |
 | `product_order_events.from_status` | log of `product_orders.status` |
 | `product_order_events.to_status` | log of `product_orders.status` |
 | `home_products.moderation_status` | router not mounted (audit §8) |
 | `category_requests.status` | pending → approved / rejected, admin only (`routers/category_requests.py`) |
-| `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`) |
+| `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`); MEH-3081: an admin may also create a row already approved (`POST /admin/producers/{id}/kashrut`, a certificate for a business with no account) |
 | `producer_name_change_requests.status` | pending → approved / rejected, admin only (`routers/producer_name_requests.py`) |
 | `reports.status` | open → resolved / dismissed, admin only (`routers/reports.py`). The reports page resolves a business's open reports after «השהה עסק», only when toggle-status answered `inactive` (MEH-3524) |
 | `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`); → `registered` automatically when the owner signs up through the lead's prefill link (`services/outreach_lead_registration.py`, MEH-3026) |

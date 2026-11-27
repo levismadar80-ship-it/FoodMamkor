@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.limits import enforce_cap
 from app.auth import require_producer
+from app.config import settings
 from app.database import get_db
 from app.rate_limit import limiter
 from app.routers.product_describe import _business_key as _ai_business_key  # MEH-3497
@@ -282,7 +283,26 @@ def dashboard(
         "favorites_count": int(favorites_count),
         "whatsapp_clicks_week": int(whatsapp_clicks_week),
         "attention": owner_attention(db, producer.id, user.id),  # type: ignore[arg-type]  # MEH-3108
+        "community_invite_url": _community_invite_url(producer),
     }
+
+
+def _community_invite_url(producer: Producer) -> str | None:
+    """The «מהמקור · עדכונים לבתי עסק» WhatsApp community invite, for the
+    dashboard row (Sapir 27/11, placement א׳ above «מה חדש»).
+
+    Only an approved business gets it — the same audience as the approval
+    email (MEH-2134), which until now was the link's only door, and which
+    never reaches an owner who claimed a page we built. An organizer is not a
+    business (ADR-036). An unset WHATSAPP_COMMUNITY_INVITE_URL → None, and the
+    row does not render.
+    # DO NOT hardcode the invite URL — the repo is public (config.py:93).
+    # REUSES: backend/app/services/admin_producer_emails.py:137 — strip, then falsy guard.
+    """
+    invite_url = settings.whatsapp_community_invite_url.strip()
+    if not invite_url or producer.status != "approved" or producer.kind == "organizer":
+        return None
+    return invite_url
 
 
 # ---------------------------------------------------------------------------

@@ -170,6 +170,7 @@ files = [
     "app/schemas/payment_link.py",
     "app/services/rescue_payment.py",
     "app/services/producer_images.py",  # MEH-3894
+    "app/services/kashrut_grant.py",  # MEH-3081
     "app/utils/money.py",
     "app/services/email_layout.py",
     "app/site_pages.py",
@@ -431,6 +432,10 @@ files = [
     "app/services/product_variants.py",
     "app/services/product_weekdays.py",
     "app/services/product_daily_stock.py",
+    "app/services/product_lead_days.py",
+    "app/models/product_order_repeats.py",
+    "app/services/product_order_repeat.py",
+    "app/services/product_order_repeat_job.py",
     "app/services/push.py",
     "app/services/registration_emails.py",
     "app/services/registration_waitlist.py",

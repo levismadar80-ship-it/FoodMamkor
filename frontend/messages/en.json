@@ -2360,6 +2360,16 @@
         "done_revoked": "Badge removed.",
         "error": "We couldn't save. Please try again."
       },
+      "kashrut_grant": {
+        "intro": "For a business without an account: upload the certificate photo the business sent, pick the kashrut level and the expiry printed on it. The badge and certificate show on the business page at once.",
+        "none": "This business has no kashrut badge.",
+        "badge_label": "Kashrut level on the certificate",
+        "cert_label": "The certificate photo the business sent",
+        "expires_label": "The date printed on the certificate",
+        "submit": "Add the badge",
+        "done": "Badge and certificate added to the page",
+        "error": "Could not add the badge. Please try again."
+      },
       "alcohol": {
         "title": "Alcohol sales",
         "intro": "Without this mark, customers can't order products that contain alcohol from this business. Turn it on only after you've checked that the business holds a licence to sell alcohol.",
@@ -5317,6 +5327,11 @@
         "title": "Need help?",
         "cta": "Contact the team"
       },
+      "community_row": {
+        "title": "Updates group for businesses",
+        "body": "Markets and events before everyone else, and what's new on the site. Once or twice a month.",
+        "cta": "Join"
+      },
       "whats_new": {
         "card_title": "New on Mehamakor",
         "card_all": "All updates",
@@ -5330,6 +5345,11 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_21": {
+            "i0": "«This week's menu»: the orders tab now has a ready message with what can be ordered this week and an order link, to send on WhatsApp to customers, a group or your status.",
+            "i1": "How far ahead: for each product you can set how many days ahead it must be ordered, and customers can only pick a time far enough away.",
+            "i2": "Customers can tick «Order this again every week», and the same order reaches you every week to approve. You can stop it from the order card."
+          },
           "v1_5_18": {
             "i0": "Daily stock: set how many of each product can be ordered per day, and customers see «2 left» as it runs out. Above your orders there is now «What to prepare» for each day of the coming week."
           },
@@ -6379,7 +6399,10 @@
           "limit_by_variant": "You can also limit each kind on its own:",
           "limit_none": "No limit",
           "limit_unit_100g": "× 100 g",
-          "limit_invalid": "A whole number from 1 to 999, or empty for no limit"
+          "limit_invalid": "A whole number from 1 to 999, or empty for no limit",
+          "lead": "How far ahead to order",
+          "lead_none": "No need to order ahead",
+          "lead_option": "{n, plural, one {# day ahead} other {# days ahead}}"
         },
         "prep": {
           "title": "What to prepare",
@@ -6440,7 +6463,23 @@
         "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
         "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
         "preview_fix_link": "Go to the orders tab",
-        "staff_note": "Handling the orders of {name}."
+        "staff_note": "Handling the orders of {name}.",
+        "share": {
+          "title": "Share what's on this week",
+          "intro": "A ready message with what can be ordered this week, the open days and the order link. Send it to customers, a group or your WhatsApp status.",
+          "send": "Send on WhatsApp",
+          "copy": "Copy the message",
+          "copied": "Message copied. Paste it into any chat.",
+          "copy_failed": "Couldn't copy. Select the text above and copy it.",
+          "empty": "Nothing in stock or no open days this week, so there is nothing to share yet.",
+          "load_error": "Couldn't load this week's menu.",
+          "message": {
+            "title": "What's on this week at {name}:",
+            "days": "Order for: {days}",
+            "order": "Order here: {url}",
+            "only": "only for {days}"
+          }
+        }
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
@@ -7916,7 +7955,7 @@
     "meat": "Meat & fish",
     "produce": "Fruit & vegetables",
     "dairy": "Dairy & eggs",
-    "bread": "Bread & baking",
+    "bread": "Bakery & desserts",
     "pantry": "Pantry",
     "care": "Care & home"
   },
@@ -8423,7 +8462,8 @@
     "days_long": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
     "none_picked": "Pick at least one day, or «Every day»",
     "line_one": "Available on {day}s",
-    "line_many": "Available on {days}"
+    "line_many": "Available on {days}",
+    "lead_line": "Order at least {n, plural, one {# day} other {# days}} ahead"
   },
   "price_unit": {
     "unit": "per unit",
@@ -8614,5 +8654,19 @@
       "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can help with that, right here.",
       "cta": "Finish with the assistant"
     }
+  },
+  "order_repeat": {
+    "sheet_label": "Order this again every week",
+    "sheet_hint": "Every {day} at {time} we'll send the business the same order, and the business confirms it like any order. You can stop it any time from the order page.",
+    "sheet_hint_no_slot": "Once you pick a time, the same order is sent again every week on the same day and time.",
+    "status_active": "Weekly order: every {day} at {time}. Next week's order is sent to the business after this week's time.",
+    "status_stopped": "The weekly order was stopped. No new order will be sent from it.",
+    "stop": "Stop the weekly order",
+    "stop_confirm": "Stop the weekly order? Orders already sent stay as they are.",
+    "stop_yes": "Yes, stop it",
+    "badge": "Weekly order",
+    "badge_stopped": "Stopped weekly order",
+    "business_line": "Repeats every {day} at {time}. Next week's order is made after this week's time.",
+    "failed": "We couldn't stop it. Please try again."
   }
 }

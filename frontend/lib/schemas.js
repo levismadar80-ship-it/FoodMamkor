@@ -524,6 +524,41 @@ export const ProducerSchema = ProducerDetailSchema;
 // (empty list + toast) rather than crashing the map — see useProducersFeed.
 export const ProducersResponseSchema = z.array(ProducerSchema);
 
+// MEH-3198 (27/11 prod incident): the RUNTIME feed schema. One business whose
+// row fails ProducerSchema (a category with emoji null emptied /map and the
+// home grid in production) is dropped and reported; the rest still render.
+// /favorites already parses per row (FavoritesClient.jsx). Still a failure:
+// a payload that is not an array, or a non-empty array where NO row parses
+// (that is a contract break, not one bad record, and must show the error
+// state rather than "no businesses"). ProducersResponseSchema above stays
+// strict: e2e fixtures and tests validate against it, and a tolerant schema
+// there would silently drop a broken fixture row.
+export const ProducersFeedSchema = z.array(z.unknown()).transform((rows, ctx) => {
+  /** @type {z.infer<typeof ProducerSchema>[]} */
+  const kept = [];
+  /** @type {{ id: unknown, issues: unknown }[]} */
+  const dropped = [];
+  for (const row of rows) {
+    const parsed = ProducerSchema.safeParse(row);
+    if (parsed.success) {
+      kept.push(parsed.data);
+    } else {
+      const id = row && typeof row === "object" ? /** @type {any} */ (row).id : undefined;
+      dropped.push({ id, issues: parsed.error.issues });
+    }
+  }
+  // One line per payload, not per row, so a persistent bad record does not
+  // flood the console on every filter change.
+  if (dropped.length > 0) {
+    console.error(`[producers feed] dropped ${dropped.length} of ${rows.length} businesses that failed the schema:`, dropped);
+  }
+  if (rows.length > 0 && kept.length === 0) {
+    ctx.addIssue({ code: "custom", message: "no row of the producers payload matches ProducerSchema" });
+    return z.NEVER;
+  }
+  return kept;
+});
+
 // MEH-1885: minimal SSR-metadata schemas for the three non-producer detail
 // routes. These exist ONLY so the four server-side `getX()` helpers can tell
 // the operator when a payload stopped matching its contract — they are never

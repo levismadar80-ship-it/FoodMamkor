@@ -457,6 +457,8 @@ def hide_business(
     would otherwise put the page back up) and runs ``delist_business``.
     The caller commits."""
     producer.status = "inactive"  # type: ignore[assignment]
+    # MEH-3945: an unclaimed /c/ link must not come back when it is re-approved.
+    producer.claim_link_sent_at = None  # type: ignore[assignment]
     if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
         producer.owner_invite_token_hash = None  # type: ignore[assignment]
         producer.owner_invite_code_hash = None  # type: ignore[assignment]

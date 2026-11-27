@@ -14,7 +14,9 @@ Touches:  producers (declared_at, declaration_version — read status, locked
 Does NOT: create accounts (the owner signs up via /auth/* first), publish
           anything (the draft stays "draft" until she presses «שליחה לבדיקה»
           — producer_me.submit_for_review — and the admin approves it), or
-          claim a live / imported listing (v1: drafts only), or let the admin
+          claim a live / imported listing — the one exception is a page the
+          admin published with the owner's consent while its /c/ link was out
+          (MEH-3945, `_claim_link_usable`; it stays live) — or let the admin
           set a draft product's diet flags (those are the owner's to declare).
 Related:  backend/app/auth.py create/decode_producer_claim_token ·
           backend/app/routers/auth.py register_producer upgrade_path (the same
@@ -25,6 +27,8 @@ History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
           stamps producers.claim_link_sent_at (its only DB write). MEH-3122:
           POST /producer-claim/new-link-request — the owner of a lapsed link
           asks; the admin is told; nothing is minted or sent to the owner.
+          MEH-3945: the link survives publish-with-consent and dies at the
+          claim, at hide and at reject (`claim_link_sent_at` cleared).
 """
 
 import threading
@@ -58,7 +62,12 @@ from app.schemas.schemas import (
     ProductCreate,
     ProductOut,
 )
+from app.services.admin_producer_emails import (
+    _producer_approved_body,
+    _producer_approved_html,
+)
 from app.services.auth_emails import send_welcome_email
+from app.services.email import send_email
 from app.services.auth_notifications import (
     notify_admin_claim_link_requested,
     notify_admin_draft_claimed,  # MEH-3410
@@ -84,8 +93,10 @@ _ALREADY_CLAIMED = "העמוד הזה כבר שויך לחשבון."
 # MEH-2322 residual risks, accepted and written down rather than discovered:
 # - The link is a bearer credential: ANY signed-in account that holds it and
 #   ticks the two boxes claims the draft, first one wins. What bounds that is
-#   draft-only claiming, publication needing the owner's own submit AND a
-#   manual admin approval, the real owner seeing a 409 (so a hijack is loud),
+#   draft-only claiming (or, MEH-3945, a page the admin published after the
+#   owner's recorded consent; the link dies at the claim, hide and reject),
+#   publication needing the owner's own submit AND a manual admin approval
+#   (or that consent), the real owner seeing a 409 (so a hijack is loud),
 #   the 14-day expiry, and the link dying once the draft has an owner.
 # - The link travels in one URL: the frontend /claim/<token> path. The page
 #   must keep that path out of analytics (MEH-2324). The API never takes it in
@@ -112,8 +123,66 @@ def _has_owner(db: Session, producer_id: UUID) -> bool:
 def _claimable(db: Session, producer: Producer) -> bool:
     # DO NOT widen to approved / imported listings without a decision — a
     # claim there would hand a stranger holding a leaked link control of a
-    # page that is already live (MEH-2321 D2).
+    # page that is already live (MEH-2321 D2). The one decided exception, a
+    # page published with the owner's consent, is `_claim_link_usable`
+    # (MEH-3945); this function stays draft-only for _editable_draft.
     return producer.status == "draft" and not _has_owner(db, producer.id)  # type: ignore[arg-type,return-value]
+
+
+def _claim_link_usable(db: Session, producer: Producer) -> bool:
+    """Whether a /c/ link (preview + claim) may still hand this page over.
+
+    MEH-3945: an ownerless draft, as before, OR the same page after the admin
+    published it with the owner's recorded consent («פרסום בהסכמה»). Every
+    claim token was minted while the page was a draft (create_claim_link
+    refuses anything else). `owner_invite_consent_note` is also written by
+    create_owner_invite, which records the same kind of consent; what keeps
+    the link from coming back on a page that went live and changed hands is
+    `claim_link_sent_at`, cleared at the claim (_spend_hand_over_links), at
+    hide (hide_business) and at reject. Everything else keeps the 409 of
+    MEH-2321 D2. Before this, the
+    consented publish killed the link the business had just been sent, and
+    she saw «כבר שויך» on a page nobody owned (27/11/2026, three businesses).
+    DO NOT use this for _editable_draft: once live, products are the owner's.
+    """
+    if _claimable(db, producer):
+        return True
+    return bool(
+        producer.status == "approved"
+        and producer.owner_invite_consent_note
+        and producer.claim_link_sent_at is not None
+        and not _has_owner(db, producer.id)  # type: ignore[arg-type]
+    )
+
+
+def _spend_hand_over_links(producer: Producer, now: datetime, *, live: bool) -> None:
+    """MEH-3945: the page has its owner now, so every hand-over link for it
+    dies in the claim's commit.
+
+    - `claim_link_sent_at` is cleared: `_claim_link_usable` requires it on a
+      live page, so a later detach-owner (or anything else that makes the page
+      ownerless again) cannot bring this /c/ link back. Share codes are not
+      single-use; this is what makes them so on a live page.
+    - The owner invite: same columns as producer_owner_invite.cancel_owner_invite.
+    - On a live page, `owner_invite_accepted_at` is stamped as an accepted
+      invite stamps it: it starts the onboarding clock (onboarding_followup)
+      and makes the row read «already handed over». detach_owner clears it.
+    """
+    # REUSES: backend/app/routers/producer_owner_invite.py cancel_owner_invite
+    producer.claim_link_sent_at = None  # type: ignore[assignment]
+    for col in (
+        "owner_invite_token_hash",
+        "owner_invite_expires_at",
+        "owner_invite_sent_at",
+        "owner_invite_email",
+        "owner_invite_name",
+        "owner_invite_code_hash",
+        "owner_invite_code_expires_at",
+        "owner_invite_code_attempts",
+    ):
+        setattr(producer, col, None)
+    if live:
+        producer.owner_invite_accepted_at = now  # type: ignore[assignment]
 
 
 @router.post(
@@ -191,7 +260,7 @@ def preview_claim(
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
-    if not _claimable(db, producer):
+    if not _claim_link_usable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     return ProducerClaimPreviewOut(
         name=producer.name,
@@ -335,7 +404,7 @@ def claim_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
-    if not _claimable(db, producer):
+    if not _claim_link_usable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     # MEH-3137: the grower line is recorded apart, like registration (MEH-2923).
     # Raised before any write, so a 422 leaves the link claimable.
@@ -358,6 +427,8 @@ def claim_producer(
     end_staff_membership(db, user.id)
     user.terms_accepted_at = now  # type: ignore[assignment]
     user.terms_version = TERMS_VERSION  # type: ignore[assignment]
+    live = bool(producer.status == "approved")
+    _spend_hand_over_links(producer, now, live=live)
     db.commit()
     # MEH-3258: reviews she wrote (on this business, or on a competitor) leave
     # the rating now that she owns one.
@@ -368,8 +439,8 @@ def claim_producer(
     # MEH-2952: a test business or a test account claiming it → no sends.
     p_test = bool(producer.is_test or user.is_test)
     logger.info("producer_claim.claimed", producer_id=str(p_id), user_id=str(user.id))
-    # Same three side effects as a self-registered draft (register_producer
-    # upgrade_path), plus MEH-3410: the admin hears about the claim now, not
+    # A draft: same three side effects as a self-registered draft
+    # (register_producer upgrade_path), plus MEH-3410: the admin hears about the claim now, not
     # only at submit — this is a draft SHE prepared and is waiting on.
     background_tasks.add_task(
         notify_admin_draft_claimed,
@@ -379,13 +450,27 @@ def claim_producer(
         producer.city,  # type: ignore[arg-type]
         test_cause=p_test,
     )
+    background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
+    if live:
+        # MEH-3945: the page is already on the site, so the welcome mail and
+        # WhatsApp («ממתין לאישור», «שליחה לבדיקה») would be false. She gets
+        # the approved email instead, as an accepted owner invite does
+        # (producer_owner_invite.accept_owner_invite).
+        background_tasks.add_task(
+            send_email,
+            user.email,  # type: ignore[arg-type]
+            "ברוכים הבאים למהמקור",
+            _producer_approved_body(p_name, producer.slug),  # type: ignore[arg-type]
+            html=_producer_approved_html(p_name, producer.slug),  # type: ignore[arg-type]
+            test_cause=p_test,
+        )
+        return ProducerClaimOut(producer_id=p_id, status=producer.status)
     background_tasks.add_task(
         notify_producer_registered,
         p_name,  # type: ignore[arg-type]
         p_phone,  # type: ignore[arg-type]
         test_cause=p_test,
     )
-    background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
     background_tasks.add_task(
         send_welcome_email,
         user.email,  # type: ignore[arg-type]

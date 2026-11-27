@@ -452,7 +452,10 @@ def test_booked_leaves_out_the_order_being_moved(db):
 def _two_days(client, shop):
     """Two pickup slots on different Israel days, and one more on the first."""
     starts = [s["start"] for s in _menu(client, shop)["slots"] if s["fulfilment"] == "pickup"]
-    first = starts[0]
+    # MEH-3930: late in the Israel day today keeps one slot only, so "first" is
+    # the earliest slot whose day still has a second one (was red ~18:00 Israel).
+    days = [_day_of(s) for s in starts]
+    first = next((s for s, d in zip(starts, days) if days.count(d) > 1), starts[0])
     other = next(s for s in starts if _day_of(s) != _day_of(first))
     same = next((s for s in starts if s != first and _day_of(s) == _day_of(first)), None)
     return first, other, same
@@ -504,7 +507,7 @@ def test_moving_within_the_same_day_does_not_count_the_order_twice(
     shop.bread.daily_limit = 2
     db.commit()
     first, _, same = _two_days(client, shop)
-    assert same is not None, "the shop's window offers one slot a day"
+    assert same is not None, "no day offers two pickup slots"
     created = _order(client, shop, sent, first, [_line(shop.bread, 2)]).json()
     assert _propose(client, shop, created["id"], same).status_code == 200
     ref = {"token": created["status_token"]}

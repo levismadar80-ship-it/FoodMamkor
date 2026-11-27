@@ -14,7 +14,8 @@ Does NOT: take a business id from the request: every route works on the
 Related:  app/services/product_order_actions.py (the moves),
           app/services/product_order_views.py (business_view),
           app/routers/product_orders.py (the flag gate)
-History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3561 (GET /customers)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3561 (GET /customers);
+          MEH-3933 (POST /{id}/repeat/stop)
 """
 
 from typing import Any, Literal
@@ -43,6 +44,7 @@ from app.schemas.product_order_buy import (
 )
 from app.services import product_order_actions as actions
 from app.services.product_order_customers import list_customers
+from app.services.product_order_repeat import stop_repeat  # MEH-3933
 from app.services.product_order_state import Actor
 from app.services.order_access import OrderAccess, require_order_access, visible_orders
 from app.services.product_order_views import business_view
@@ -251,3 +253,21 @@ def cancel_order(  # noqa: PLR0913
     db: Session = Depends(get_db),
 ) -> Any:
     return _simple_move(response, order_id, body, access, db, "cancelled")
+
+
+@router.post("/{order_id}/repeat/stop", response_model=BusinessOrderOut)
+@limiter.limit(_ACTION_LIMIT)
+def stop_order_repeat(
+    request: Request,
+    response: Response,
+    order_id: UUID,
+    access: OrderAccess = Depends(require_order_access),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3933: no new order from this order's weekly repeat. The orders
+    already made from it stay as they are."""
+    own = _own_order_id(db, order_id, access)
+    order = db.get(ProductOrder, own)
+    assert order is not None  # _own_order_id found it
+    stop_repeat(db, order, "business")
+    return _done(db, response, order)

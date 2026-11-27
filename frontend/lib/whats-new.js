@@ -38,6 +38,13 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.21 (27/11): three lines for businesses, moved from
+  // docs/release/whats-new-pending.md: «מה יש השבוע» (#5423), how far ahead
+  // each product must be ordered (#5424, MEH-3932), repeat weekly orders
+  // (#5427, MEH-3933). The pending line for daily stock shipped in 1.5.18
+  // already. Copy checked by the release thread under Sapir's standing
+  // approval (26/11 23:15) and her go for this version (27/11 16:38Z).
+  { version: "1.5.21", key: "v1_5_21", date: "2026-11-27", items: 3 },
   // 1.5.20 (27/11): hotfix to main, #5436 cherry-picked (MEH-3942) — admin
   // route to set or clear a product's price on any business. Admin-only, so
   // nothing new for businesses: items: 0. Sapir chose the hotfix 27/11 14:16Z.

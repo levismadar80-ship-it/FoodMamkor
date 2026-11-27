@@ -17,12 +17,14 @@
  * @typedef {{ key: string, Icon: any, label?: string, text: string, testId?: string }} WhereRow
  */
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 
 // REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
 // leaflet touches window at module eval.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 
 /**
  * @param {{

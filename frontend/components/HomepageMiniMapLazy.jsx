@@ -17,12 +17,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import { useEffect, useRef, useState } from "react";
 import HomepageMiniMapSkeleton from "@/components/HomepageMiniMapSkeleton";
 
 // MEH-538 + MEH-604: SSR-disabled (Leaflet touches `window`); the skeleton is
 // the `loading` state too, so the swap from placeholder to map is one box.
-const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
+const HomepageMiniMap = dynamic(optionalChunk(() => import("@/components/HomepageMiniMap"), "HomepageMiniMap"), {
   ssr: false,
   loading: () => <HomepageMiniMapSkeleton />,
 });

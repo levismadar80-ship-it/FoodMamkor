@@ -181,6 +181,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         "feed + upcoming; both add not_test_producer()",
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
+    "backend/app/routers/producer_claim.py": (
+        2,
+        "MEH-3945: whether a /c/ link may hand over a consent-published page, "
+        "and which mail the claim sends; not a public read",
+    ),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
     "backend/app/services/rescue_writes.py": (
         1,
@@ -212,6 +217,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         "the owner's own dashboard (moved from routers/producer_me.py, MEH-3841)",
     ),
     "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
+    "backend/app/routers/producer_me.py": (
+        1,
+        "the owner's own dashboard: the business-community invite row "
+        "(_community_invite_url), shown to the owner only, test row or not",
+    ),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
     "backend/app/services/product_order_outbox.py": (
         1,

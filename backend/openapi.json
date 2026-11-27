@@ -1055,6 +1055,33 @@
         "title": "AdminExperienceUpdate",
         "type": "object"
       },
+      "AdminKashrutGrantIn": {
+        "description": "MEH-3081: the admin attaches a certificate the business sent her and\nturns the badge on in one step (a business with no account cannot file\nthe request herself). Same printed-expiry rules as approve.",
+        "properties": {
+          "badge_code": {
+            "maxLength": 50,
+            "title": "Badge Code",
+            "type": "string"
+          },
+          "cert_url": {
+            "maxLength": 500,
+            "title": "Cert Url",
+            "type": "string"
+          },
+          "expires_on": {
+            "format": "date",
+            "title": "Expires On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expires_on",
+          "badge_code",
+          "cert_url"
+        ],
+        "title": "AdminKashrutGrantIn",
+        "type": "object"
+      },
       "AdminProductPriceIn": {
         "description": "MEH-3942: the admin sets or clears a product's price on any business.\nBoth bounds are required keys; null clears (the page then shows «מחיר\nמשתנה לפי עונה», MEH-2924).",
         "properties": {
@@ -2091,6 +2118,21 @@
               }
             ]
           },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
+          },
           "slot_end": {
             "format": "date-time",
             "title": "Slot End",
@@ -2403,6 +2445,21 @@
                 "type": "null"
               }
             ]
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
           },
           "review_url": {
             "anyOf": [
@@ -8404,6 +8461,17 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -8674,6 +8742,11 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "repeat_weekly": {
+            "default": false,
+            "title": "Repeat Weekly",
+            "type": "boolean"
+          },
           "slot_start": {
             "format": "date-time",
             "title": "Slot Start",
@@ -8820,6 +8893,21 @@
                 "type": "null"
               }
             ]
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
           },
           "review_url": {
             "anyOf": [
@@ -9085,6 +9173,17 @@
           "in_stock": {
             "title": "In Stock",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "name": {
             "title": "Name",
@@ -19910,6 +20009,19 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "price_unit": {
             "anyOf": [
               {
@@ -19982,6 +20094,17 @@
           "is_orderable": {
             "title": "Is Orderable",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "price_unit": {
             "enum": [
@@ -20130,6 +20253,17 @@
             "default": false,
             "title": "Is Vegetarian",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "may_contain": {
             "anyOf": [
@@ -27957,6 +28091,65 @@
         "summary": "Grant Verified",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/kashrut": {
+      "post": {
+        "description": "MEH-3081: the admin attaches a certificate the business sent her and\nturns the badge on at once. Most admin-built pages have no owner account,\nso `POST /producers/me/kashrut-request` is out of their reach. The row is\nstored as an approved request reviewed by this admin, so the public cert\nproxy and the «אושרו» queue see it like any other.",
+        "operationId": "grant_kashrut_badge_admin_producers__producer_id__kashrut_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminKashrutGrantIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KashrutRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Grant Kashrut Badge",
+        "tags": [
+          "admin-kashrut"
         ]
       }
     },
@@ -37893,6 +38086,55 @@
         ]
       }
     },
+    "/producers/me/product-orders/{order_id}/repeat/stop": {
+      "post": {
+        "description": "MEH-3933: no new order from this order's weekly repeat. The orders\nalready made from it stay as they are.",
+        "operationId": "stop_order_repeat_producers_me_product_orders__order_id__repeat_stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Stop Order Repeat",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/me/products": {
       "get": {
         "operationId": "list_my_products_producers_me_products_get",
@@ -40219,6 +40461,53 @@
           }
         ],
         "summary": "Cancel Own Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/status/repeat/stop": {
+      "post": {
+        "description": "MEH-3933: stop the weekly repeat this order belongs to.",
+        "operationId": "stop_own_repeat_product_orders_status_repeat_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerRefIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Stop Own Repeat",
         "tags": [
           "product-orders"
         ]

@@ -90,6 +90,8 @@ def _common(order: ProductOrder) -> dict[str, Any]:
         "proposal": proposal,
         "created_at": _aware(order.created_at),  # type: ignore[arg-type]
         "expires_at": _aware(order.expires_at),  # type: ignore[arg-type]
+        # MEH-3933: "active" / "stopped" for an order of a weekly repeat.
+        "repeat": order.repeat.state if order.repeat is not None else None,
     }
 
 

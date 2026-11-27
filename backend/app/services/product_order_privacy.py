@@ -2,8 +2,9 @@
 Module:   product_order_privacy
 Purpose:  What happens to a buyer's orders when she deletes her account: the
           open ones are cancelled, and every one of them loses her name,
-          phone, address, note and status link.
-Touches:  DB table product_orders (the personal columns) and, through
+          phone, address, note and status link; her weekly repeats are deleted.
+Touches:  DB tables product_orders (the personal columns),
+          product_order_repeats (deleted) and, through
           product_order_state, the status and the event log of open orders.
           Does not commit — the account deletion owns the transaction.
 Does NOT: delete an order row: the business's record that it handed
@@ -13,13 +14,15 @@ Does NOT: delete an order row: the business's record that it handed
           the timed purge of closed orders is stage 3 of MEH-3216.
 Related:  app/services/user_deletion.py (the caller),
           app/services/product_order_guards.py (the business side of delete)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3933 (her weekly
+          repeats are deleted)
 """
 
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.models.product_order_repeats import ProductOrderRepeat
 from app.models.product_orders import PRODUCT_ORDER_OPEN_STATUSES, ProductOrder
 from app.services.product_order_actions import clear_proposal
 from app.services.product_order_outbox import ACCOUNT_DELETED_NOTE as outbox_note
@@ -53,4 +56,9 @@ def release_buyer_orders(db: Session, user_id: Any) -> int:
         order.idempotency_key = None  # type: ignore[assignment]
         order.pickup_code = None  # type: ignore[assignment]
         clear_proposal(order)
+    # MEH-3933: her weekly repeats go with her: they are a promise of future
+    # orders, not a record, and they hold her name, phone and address.
+    db.query(ProductOrderRepeat).filter(ProductOrderRepeat.user_id == user_id).delete(
+        synchronize_session=False
+    )
     return len(orders)
