@@ -30,6 +30,7 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
+import HubFaqLink from "@/components/HubFaqLink"; // MEH-3949
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -658,6 +659,9 @@ export default function GroupBuyDetailClient({ id }) {
                   <p className="text-base text-text">{t(funded ? "cancel_body_funded" : "cancel_body_open", { date: cancelUntil || "" })}</p>
                 </section>
               )}
+
+              {/* MEH-3949: the rest of the questions live on the hub page. */}
+              <HubFaqLink hub="groupBuys" variant="detail" className="px-5 py-4" />
             </div>
 
             {/* MEH-2472: the business, as a tappable row (MEH-2538 OwnerRow);

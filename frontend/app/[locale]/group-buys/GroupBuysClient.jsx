@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import HubFaqLink from "@/components/HubFaqLink"; // MEH-3949
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck, CalendarBlank } from "@phosphor-icons/react";
@@ -310,9 +311,17 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
             holds — copy approved by Sapir 30/10. MEH-3289: a funded group
             takes joiners until it is full or the deadline passes, and the
             funded line says so. */}
-        <p className="text-sm text-fg-muted mb-6" aria-live="polite" data-testid="group-buys-status-hint">
-          {t(`status_hint_${statusFilter}`)}
-        </p>
+        <div className="mb-6 text-sm">
+          <p className="text-fg-muted" aria-live="polite" data-testid="group-buys-status-hint">
+            {t(`status_hint_${statusFilter}`)}
+          </p>
+          {/* MEH-3949: the questions sit under the list; with many groups
+              nobody scrolls that far, so the way there is up here — outside
+              the live region, so a chip change does not read it again. */}
+          <p className="mt-1">
+            <HubFaqLink hub="groupBuys" variant="list" />
+          </p>
+        </div>
 
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -322,7 +331,7 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
           </div>
         ) : error ? (
           // MEH-863 F12: distinct error state with retry (not the empty state).
-          <div className="text-center py-20">
+          <div className="text-center py-20" data-testid="group-buys-error">
             <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
             <Button
               onClick={() => load()}
