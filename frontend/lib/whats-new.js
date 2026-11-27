@@ -38,6 +38,10 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.19 (27/11): hotfix to main, #5429 — /map list failed when a category
+  // has no emoji. Nothing new for businesses, so items: 0 (docs/release/
+  // whats-new.md: a hotfix adds a patch entry with items: 0).
+  { version: "1.5.19", key: "v1_5_19", date: "2026-11-27", items: 0 },
   // 1.5.18 (27/11): one line for businesses, moved from
   // docs/release/whats-new-pending.md: daily stock per product with «נשארו N»
   // and «מה להכין» (#5420, MEH-3930). The rest of 1.5.18 is layout fixes,
