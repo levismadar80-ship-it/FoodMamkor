@@ -31,7 +31,7 @@
 1. **רק מה שבאמת קרה.** אפס מספרים מומצאים או "מעוגלים" (לא "עשרות פניות" אם הדובר/ת לא אמרה מספר). אם זה לא בהודעה — זה לא נכנס לטיוטה.
 2. **הציטוט נשאר VERBATIM.** המילים של הדובר/ת לא משתכתבות כדי "להתאים" לכללי הקול. מותר *רק* לקצר לאורך — וכל קיצוץ מסומן ב-`[…]`. אסור לתקן דקדוק, להחליף מילה, או "לייפות".
 3. **אישור לפני פרסום.** עדות לא עולה בלי אישור מפורש של הדובר/ת על הניסוח הסופי + על השימוש בשם/עסק/עיר. אין אישור → הטיוטה מסומנת `DRAFT — לא לפרסום`.
-4. **עסקים מורשים בלבד.** ה-framing לא רומז על "אוכל ביתי" / שכנות מבשלות. תמיד בעלת עסק מורשה.
+4. **עסקים מורשים בלבד.** ה-framing לא רומז על שכנות מבשלות. תמיד בעלת עסק מורשה.
 
 ---
 
@@ -44,7 +44,7 @@
 | **UI chrome** (כפתור/לינק סביב הסקשן) | מהמקור | **gerund/רבים** ("קראו עוד") — לא feminine. |
 | **attribution** (שם · עסק · עיר) | מהמקור | עובדתי, ניטרלי (ADR-024): "בית העסק" (ישות) · "בעלת עסק" (אישה) · "בעל עסק" (גבר) — לא "יצרן"/"יצרנית". |
 
-**אסור בכל משטח באתר:** "יצרן"/"יצרנית" · "אוכל ביתי"/"שכנות מבשלות"/"מהמטבח של השכן" · "marketplace" · "מגזין" (פנימי בלבד). **אפס emoji בעדות עצמה** — editorial surface, Emoji LOCK v2. (אם בהודעה המקורית היה emoji דקורטיבי בסוף — הוא מילה? לא. מורידים אותו; המילים נשארות verbatim.)
+**אסור בכל משטח באתר:** "יצרן"/"יצרנית" · "שכנות מבשלות"/"מהמטבח של השכן" · "marketplace" · "מגזין" (פנימי בלבד). **אפס emoji בעדות עצמה** — editorial surface, Emoji LOCK v2. (אם בהודעה המקורית היה emoji דקורטיבי בסוף — הוא מילה? לא. מורידים אותו; המילים נשארות verbatim.)
 
 ---
 
@@ -77,7 +77,7 @@ Take the raw message below and produce a testimonial draft: a verbatim quote + a
 - Editorial framing (intro/context line): ADR-024 (refines ADR-014) -> feminine allowed when addressing the reader; brand-we plural.
 - Any UI chrome (button/link): gerund/plural, never feminine.
 - Attribution (ADR-024): "בית העסק" (entity) · "בעלת עסק" (woman) · "בעל עסק" (man) — never "יצרן"/"יצרנית".
-- Forbidden anywhere on site: "יצרן"/"יצרנית", "אוכל ביתי"/"שכנות מבשלות"/"מהמטבח של השכן", "marketplace", "מגזין".
+- Forbidden anywhere on site: "יצרן"/"יצרנית", "שכנות מבשלות"/"מהמטבח של השכן", "marketplace", "מגזין".
 - Zero emoji in the testimonial copy (Emoji LOCK v2). Strip decorative emoji from the source; keep the words.
 </voice>
 
@@ -96,7 +96,7 @@ When the message is too thin to make a real testimonial -> say so, don't inflate
 <verification_step>
 1. Re-read source: every word in the quote appears in the source (verbatim check).
 2. No number/stat in the draft that isn't in the source.
-3. grep the draft: no "יצרן", no "אוכל ביתי", no "marketplace", no emoji.
+3. grep the draft: no "יצרן", no "שכנות מבשלות", no "marketplace", no emoji.
 4. Consent state correctly reflected (DRAFT flag if not confirmed).
 </verification_step>
 ```
@@ -141,7 +141,7 @@ Consent: not yet
 ❌ **לשכתב את הדובר/ת.** "תיקנתי לה דקדוק" = כבר לא verbatim, כבר לא עדות.
 ❌ **לפרסם בלי אישור.** גם אם ההודעה חיובית — אין אישור, אין פרסום.
 ❌ **framing שמרגיש סלוגן.** אם המשפט נשמע כמו פרסומת — להוריד אותו. עדיף ציטוט עירום.
-❌ **"יצרנית" / רמז ל"אוכל ביתי".** הפרה של brand LOCK.
+❌ **"יצרנית" / רמז ל"שכנות מבשלות".** הפרה של brand LOCK.
 ❌ **emoji בעדות.** editorial surface = 0 emoji.
 
 ---
