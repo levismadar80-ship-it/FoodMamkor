@@ -69,6 +69,7 @@ from app.services import registration_waitlist as waitlist  # MEH-3314
 from app.services.registrations import registered_counts
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.utils.clock import israel_now, israel_today, utc_now
+from app.services.address_line import address_line  # MEH-3959
 
 _log = logging.getLogger(__name__)
 router = APIRouter(tags=["registrations"])
@@ -344,7 +345,7 @@ def register_for_event(
         billing_ledger.record_event_registration(db, reg, event)
 
     producer = db.get(Producer, event.producer_id)
-    place = ", ".join(p for p in (event.location, event.city) if p)  # type: ignore[misc]
+    place = address_line(event.location, event.city)  # type: ignore[arg-type]
     item_url = f"{settings.frontend_url}/events/{event.id}"
     # MEH-3535: the emails are queued in the sign-up's own transaction and
     # sent by the outbox dispatcher — committed together or not at all.
@@ -443,7 +444,7 @@ def register_for_experience(
     # A home address is private (MEH-1417) — the city only. A public venue's
     # address is already on the page.
     if ex.location_type == "public" and ex.address:
-        place = ", ".join(p for p in (ex.address, ex.city) if p)  # type: ignore[misc]
+        place = address_line(ex.address, ex.city)  # type: ignore[arg-type]
     # MEH-3535: queued in the sign-up's transaction, as in register_for_event.
     _queue_mail(
         db,
