@@ -3103,6 +3103,26 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
 
 
 /**
+ * MEH-3081: the admin attaches a certificate the business sent her and
+ * turns the badge on at once. Most admin-built pages have no owner account,
+ * so `POST /producers/me/kashrut-request` is out of their reach. The row is
+ * stored as an approved request reviewed by this admin, so the public cert
+ * proxy and the «אושרו» queue see it like any other.
+ * @summary Grant Kashrut Badge
+ */
+export const GrantKashrutBadgeAdminProducersProducerIdKashrutPostResponse = /*#__PURE__*/ zod.object({
+  "badge_code": /*#__PURE__*/ zod.string(),
+  "cert_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "notes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Admin List Locations
  */
 export const adminListLocationsAdminProducersProducerIdLocationsGetResponseIsPrimaryDefault = false;
