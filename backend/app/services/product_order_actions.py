@@ -34,7 +34,7 @@ from app.models.product_orders import (
     ProductOrder,
 )
 from app.services import product_daily_stock
-from app.services.product_order_clock import active_deadline
+from app.services.product_order_clock import answer_deadline
 from app.services.product_order_menu import offered_slots
 from app.services.product_order_state import (
     Actor,
@@ -312,8 +312,11 @@ def business_propose_change(  # noqa: PLR0913 — one argument per proposal fiel
     _move(db, order, "change_proposed", actor, note)
     order.proposed_total_agorot = total_agorot  # type: ignore[assignment]
     order.proposal_note = note  # type: ignore[assignment]
-    order.expires_at = active_deadline(  # type: ignore[assignment]
-        now, PROPOSAL_ANSWER_WINDOW.total_seconds() / 3600
+    # MEH-3956: the buyer's answer is due before the slot she would agree to.
+    # Legacy untyped model: read the column as a plain value.
+    agreed_slot: datetime = order.proposed_slot_start or order.slot_start  # type: ignore[assignment]
+    order.expires_at = answer_deadline(  # type: ignore[assignment]
+        now, PROPOSAL_ANSWER_WINDOW.total_seconds() / 3600, agreed_slot
     )
     return order
 
