@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import OrderStepper from "@/components/public/OrderStepper";
 import { lineKey, needsChoice, variantsOf } from "@/lib/product-variants";
 import { formatPrice } from "@/lib/utils";
+import { variantCap } from "@/lib/daily-stock";
 import { agorotToShekels } from "@/lib/money";
 
 /**
@@ -34,6 +35,12 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
   const tCart = useTranslations("producer.detail.order_cart");
   if (!needsChoice(product)) return null;
   const menuVariants = new Map(variantsOf(orderable ?? {}).map((v) => [v.id, v]));
+  // Daily stock: a variant's own room, and the product's room less the
+  // other variants already in the cart.
+  const capOf = (/** @type {string} */ id) => {
+    const others = variantsOf(product).reduce((sum, o) => (o.id === id ? sum : sum + (picks[lineKey(product.id, o.id)] ?? 0)), 0);
+    return variantCap(/** @type {any} */ (menuVariants.get(id))?.left ?? null, /** @type {any} */ (orderable)?.left ?? null, others);
+  };
   return (
     <section aria-labelledby="product-variants-title" data-testid="product-variants">
       <h3 id="product-variants-title" className="text-sm font-medium text-text">
@@ -54,7 +61,7 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
               </span>
               {orderable && menu && onChange ? (
                 <OrderStepper
-                  product={{ id: lineKey(product.id, v.id), name: `${product.name} · ${v.name}`, in_stock: menu.in_stock && orderable.in_stock }}
+                  product={{ id: lineKey(product.id, v.id), name: `${product.name} · ${v.name}`, in_stock: menu.in_stock && orderable.in_stock, left: capOf(v.id) }}
                   qty={picks[lineKey(product.id, v.id)] ?? 0}
                   onChange={onChange}
                 />
