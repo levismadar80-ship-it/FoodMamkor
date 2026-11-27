@@ -518,6 +518,7 @@ def test_a_landline_business_gets_the_whatsapp_on_the_owners_verified_mobile(
     shop.producer.phone = "046123456"
     shop.owner.phone = "052-765-4321"
     shop.owner.phone_verified_at = utc_now()
+    shop.owner.whatsapp_consent_at = utc_now()
     db.commit()
     owe_now(db, due_order(db, shop), "new_order", "whatsapp")
     outbox.dispatch_due(db)
@@ -537,12 +538,47 @@ def test_an_owners_unverified_mobile_is_not_used(db, monkeypatch):
     assert wire.wa == []
 
 
+@pytest.mark.parametrize(
+    "phone, verified, consent",
+    [
+        ("0527654321", True, False),  # verified, but she sent «הסר»
+        ("046123456", True, True),  # her own number is a landline too
+    ],
+)
+def test_no_owner_mobile_to_fall_back_to_means_no_whatsapp(
+    db, monkeypatch, phone, verified, consent
+):
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.producer.phone = "046123456"
+    shop.owner.phone = phone
+    shop.owner.phone_verified_at = utc_now() if verified else None
+    shop.owner.whatsapp_consent_at = utc_now() if consent else None
+    db.commit()
+    row = owe_now(db, due_order(db, shop), "new_order", "whatsapp")
+    outbox.dispatch_due(db)
+    assert outcome_of(db, row) == ("skipped", "no_address", 0)
+    assert wire.wa == []
+
+
+def test_a_landline_shop_with_no_linked_account_gets_no_whatsapp(db, monkeypatch):
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.producer.phone = "046123456"
+    shop.owner.producer_id = None
+    db.commit()
+    row = owe_now(db, due_order(db, shop), "new_order", "whatsapp")
+    outbox.dispatch_due(db)
+    assert outcome_of(db, row) == ("skipped", "no_address", 0)
+
+
 def test_a_business_mobile_wins_over_the_owners(db, monkeypatch):
     wire = Wire(monkeypatch)
     shop = Shop(db)
     shop.producer.phone = "0501234567"
     shop.owner.phone = "0527654321"
     shop.owner.phone_verified_at = utc_now()
+    shop.owner.whatsapp_consent_at = utc_now()
     db.commit()
     owe_now(db, due_order(db, shop), "new_order", "whatsapp")
     outbox.dispatch_due(db)

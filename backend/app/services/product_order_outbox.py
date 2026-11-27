@@ -389,8 +389,10 @@ def _review_request(
 
 def _owner_mobile(owner: User | None) -> str | None:
     """MEH-3965: a shop whose public number is a landline still gets its
-    WhatsApp, on the owner's own mobile — only one she verified with a code."""
-    if owner is None or not owner.phone_verified:
+    WhatsApp, on the owner's own mobile — only one she verified with a code
+    and still consents to (whatsapp_ready: «הסר» clears it). The opt-out list
+    is checked again at send time (whatsapp._recipient_opted_out)."""
+    if owner is None or not owner.whatsapp_ready:
         return None
     return canonical_il_msisdn(str(owner.phone or ""))
 
@@ -403,7 +405,13 @@ def _compose(
     now: datetime,
 ) -> _Message | str:
     """The message to send, or the skip code that says why there is none."""
-    owner = db.query(User).filter(User.producer_id == producer.id).first()
+    # MEH-3965: the earliest linked account, so the recipient is not arbitrary.
+    owner = (
+        db.query(User)
+        .filter(User.producer_id == producer.id)
+        .order_by(User.created_at, User.id)
+        .first()
+    )
     buyer = (
         db.query(User).filter(User.id == order.user_id).first()
         if order.user_id
