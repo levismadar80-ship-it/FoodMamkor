@@ -90,9 +90,8 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     now = utc_now()
-    apply_badge(
-        producer, req.badge_code, body.expires_on, now
-    )  # MEH-3081: shared with grant
+    # MEH-3081: shared with grant
+    apply_badge(producer, str(req.badge_code), body.expires_on, now)
 
     req.status = "approved"  # type: ignore[assignment]
     req.reviewed_by = user.id
