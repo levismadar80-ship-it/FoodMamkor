@@ -103,3 +103,30 @@ def test_max_without_min_is_refused(client, db):
     assert r.status_code == 422
     db.refresh(product)
     assert float(product.price_min) == 20
+
+
+def test_max_below_min_is_refused(client, db):
+    producer = make_producer(db, status="approved")
+    product = _product(db, producer)
+    r = client.put(
+        _url(producer.id, product.id),
+        json={"price_min": 30, "price_max": 20},
+        headers=auth_header(_admin(db)),
+    )
+    assert r.status_code == 422
+    db.refresh(product)
+    assert float(product.price_min) == 20
+
+
+def test_null_unit_is_refused_and_omitted_unit_is_kept(client, db):
+    producer = make_producer(db, status="approved")
+    product = _product(db, producer)
+    admin = _admin(db)
+    r = client.put(
+        _url(producer.id, product.id),
+        json={**CLEAR, "price_unit": None},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 422
+    db.refresh(product)
+    assert float(product.price_min) == 20 and product.price_unit == "kg"

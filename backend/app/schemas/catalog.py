@@ -1013,11 +1013,13 @@ class ProductUpdate(BaseModel):
 class AdminProductPriceIn(BaseModel):
     """MEH-3942: the admin sets or clears a product's price on any business.
     Both bounds are required keys; null clears (the page then shows «מחיר
-    משתנה לפי עונה», MEH-2924). price_unit omitted = unchanged."""
+    משתנה לפי עונה», MEH-2924)."""
 
     price_min: Decimal | None = Field(..., ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(..., ge=Decimal("1"), le=Decimal("10000"))
-    price_unit: PriceUnit | None = None
+    # Omitted = unchanged (exclude_unset); an explicit null is a 422, as on
+    # the owner's ProductUpdate — the column is NOT NULL.
+    price_unit: PriceUnit = "unit"
 
 
 class ProductOut(BaseModel):

@@ -1056,7 +1056,7 @@
         "type": "object"
       },
       "AdminProductPriceIn": {
-        "description": "MEH-3942: the admin sets or clears a product's price on any business.\nBoth bounds are required keys; null clears (the page then shows «מחיר\nמשתנה לפי עונה», MEH-2924). price_unit omitted = unchanged.",
+        "description": "MEH-3942: the admin sets or clears a product's price on any business.\nBoth bounds are required keys; null clears (the page then shows «מחיר\nמשתנה לפי עונה», MEH-2924).",
         "properties": {
           "price_max": {
             "anyOf": [
@@ -1091,23 +1091,17 @@
             "title": "Price Min"
           },
           "price_unit": {
-            "anyOf": [
-              {
-                "enum": [
-                  "unit",
-                  "kg",
-                  "100g",
-                  "bottle",
-                  "box",
-                  "pack"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box",
+              "pack"
             ],
-            "title": "Price Unit"
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "required": [
