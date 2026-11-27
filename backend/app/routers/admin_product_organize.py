@@ -129,7 +129,7 @@ def admin_suggest_product_groups(
     return svc.suggestion_for(db, _producer(db, producer_id), include_drafts=True)
 
 
-# MEH-3942: the admin sets or clears a published product's price, also on an
+# MEH-3942: the admin sets or clears any product's price (drafts included), also on an
 # approved business with no owner account. Same rules as the owner's PUT
 # (services/owner_products.apply_product_update); nothing but the price moves.
 @router.put("/{producer_id}/products/{product_id}/price", response_model=ProductOut)
@@ -152,8 +152,6 @@ def admin_set_product_price(  # noqa: PLR0913 — FastAPI-injected parameters
     if product is None:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
     payload = body.model_dump(exclude_unset=True)
-    if payload.get("price_unit") is None:
-        payload.pop("price_unit", None)  # NOT NULL column: omitted/null = unchanged
     apply_product_update(product, payload)
     db.commit()
     db.refresh(product)
