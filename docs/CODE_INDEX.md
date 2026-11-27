@@ -389,6 +389,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 
 | קובץ | מה הוא עושה (מהכותרת) |
 |---|---|
+| `about-field-hints.js` | Find facts a business wrote only in its «אודות» text (or that contradict a field), so the admin can move each one into the field the page, the filters and the … |
 | `admin-billing-export.js` | MEH-3189 — the monthly billing CSV for the bookkeeper: one row per business with a counted booking in the month, built from the SAME answer the /admin/billing … |
 | `admin-producers-export.js` | CSV export for the admin producers table. |
 | `admin-review-checklist.js` | The one copy helper of the pre-approval review checklist: which approve-confirm message to show (MEH-2175). |
@@ -822,6 +823,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsAppShareButton.jsx` | — אין כותרת — |
 | `WhatsAppUpdatesPill.jsx` | — אין כותרת — |
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
+| `admin/AdminAboutFieldHints.jsx` | On the admin business edit page, list the facts the «אודות» text holds that a field should hold (payment, pickup, cutoffs, fees, workshops…), so the admin … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
 | `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
