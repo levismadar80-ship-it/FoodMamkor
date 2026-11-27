@@ -859,3 +859,4 @@ product_order_repeats.stopped_at	orders	when the weekly repeat was stopped
 product_order_repeats.stopped_by	orders	who stopped the weekly repeat (buyer, business or system)
 product_order_repeats.user_id	orders	the buyer's account, when she was logged in
 product_orders.repeat_id	orders	an order from a business
+product_orders.paid_at	orders	an order from a business

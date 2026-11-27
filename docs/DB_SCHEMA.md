@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-71 tables, 853 columns.
+71 tables, 854 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -73,7 +73,7 @@
 | `product_order_notifications` | 10 | product_orders |
 | `product_order_phone_codes` | 7 | — |
 | `product_order_repeats` | 16 | producers, users |
-| `product_orders` | 31 | producers, product_order_repeats, users |
+| `product_orders` | 32 | producers, product_order_repeats, users |
 | `product_variants` | 7 | products |
 | `products` | 32 | producers |
 | `registrations` | 16 | events, experiences |
@@ -1390,6 +1390,7 @@
 | `proposed_total_agorot` | `INTEGER` | yes |  |  | orders |
 | `proposal_note` | `TEXT` | yes |  |  | orders |
 | `repeat_id` | `UUID` | yes |  | FK → `product_order_repeats.id` ON DELETE SET NULL | orders |
+| `paid_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
 | `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | orders |
 | `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |

@@ -155,4 +155,6 @@ def business_view(order: ProductOrder) -> dict[str, Any]:
         "delivery_address": order.delivery_address,
         "age_declared": order.age_declared,
         "has_estimate": any(line.price_is_estimate for line in order.items),
+        # MEH-3962; the buyer's view omits it
+        "paid_at": _aware(order.paid_at),  # type: ignore[arg-type]
     }

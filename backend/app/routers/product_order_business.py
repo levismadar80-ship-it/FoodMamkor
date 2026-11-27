@@ -2,7 +2,7 @@
 Module:   product_order_business
 Purpose:  The business's side of on-site ordering: list the orders sent to
           it, and act on one — confirm, decline, propose a change, mark
-          ready, hand over, report a no-show, cancel.
+          ready, hand over, report a no-show, cancel, mark paid (MEH-3962).
 Touches:  DB through services/product_order_actions.py. No outbound message.
 Does NOT: take a business id from the request: every route works on the
           caller's own business, and another business's order is a 404.
@@ -15,7 +15,8 @@ Related:  app/services/product_order_actions.py (the moves),
           app/services/product_order_views.py (business_view),
           app/routers/product_orders.py (the flag gate)
 History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3561 (GET /customers);
-          MEH-3933 (POST /{id}/repeat/stop)
+          MEH-3933 (POST /{id}/repeat/stop); MEH-3962 (POST /{id}/paid,
+          GET ?payment=unpaid)
 """
 
 from typing import Any, Literal
@@ -40,10 +41,12 @@ from app.schemas.product_order_buy import (
     ConfirmIn,
     HandedIn,
     NoteIn,
+    PaidIn,
     ProposeChangeIn,
 )
 from app.services import product_order_actions as actions
 from app.services.product_order_customers import list_customers
+from app.services.product_order_paid import only_unpaid, set_paid  # MEH-3962
 from app.services.product_order_repeat import stop_repeat  # MEH-3933
 from app.services.product_order_state import Actor
 from app.services.order_access import OrderAccess, require_order_access, visible_orders
@@ -98,6 +101,7 @@ def list_business_orders(  # noqa: PLR0913 — FastAPI dependencies, not argumen
     request: Request,
     response: Response,
     status_filter: StatusFilter | None = Query(default=None, alias="status"),
+    payment: Literal["unpaid"] | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=MAX_PAGE),
     offset: int = Query(default=0, ge=0, le=100_000),
     access: OrderAccess = Depends(require_order_access),
@@ -107,6 +111,8 @@ def list_business_orders(  # noqa: PLR0913 — FastAPI dependencies, not argumen
     query = visible_orders(db.query(ProductOrder), access)
     if status_filter is not None:
         query = query.filter(ProductOrder.status == status_filter)
+    if payment == "unpaid":
+        query = only_unpaid(query)
     total = query.count()
     orders = (
         query.order_by(ProductOrder.slot_start.asc(), ProductOrder.created_at.asc())
@@ -271,3 +277,19 @@ def stop_order_repeat(
     assert order is not None  # _own_order_id found it
     stop_repeat(db, order, "business")
     return _done(db, response, order)
+
+
+@router.post("/{order_id}/paid", response_model=BusinessOrderOut)
+@limiter.limit(_ACTION_LIMIT)
+def mark_order_paid(  # noqa: PLR0913
+    request: Request,
+    response: Response,
+    order_id: UUID,
+    body: PaidIn,
+    access: OrderAccess = Depends(require_order_access),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3962: the business got the money (or takes the mark back). Its own
+    record; the site moves no money."""
+    own = _own_order_id(db, order_id, access)
+    return _done(db, response, set_paid(db, own, body.paid))

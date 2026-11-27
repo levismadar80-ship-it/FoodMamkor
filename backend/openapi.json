@@ -2103,6 +2103,18 @@
             ],
             "title": "Note"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "producer_id": {
             "format": "uuid",
             "title": "Producer Id",
@@ -10830,6 +10842,21 @@
           "confirmed_at"
         ],
         "title": "PageFreshnessConfirmOut",
+        "type": "object"
+      },
+      "PaidIn": {
+        "additionalProperties": false,
+        "description": "MEH-3962: true marks the order paid, false takes the mark back.",
+        "properties": {
+          "paid": {
+            "title": "Paid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paid"
+        ],
+        "title": "PaidIn",
         "type": "object"
       },
       "PasskeyList": {
@@ -37607,6 +37634,23 @@
           },
           {
             "in": "query",
+            "name": "payment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "unpaid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payment"
+            }
+          },
+          {
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
@@ -37965,6 +38009,65 @@
           }
         ],
         "summary": "Report No Show",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/paid": {
+      "post": {
+        "description": "MEH-3962: the business got the money (or takes the mark back). Its own\nrecord; the site moves no money.",
+        "operationId": "mark_order_paid_producers_me_product_orders__order_id__paid_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Order Paid",
         "tags": [
           "product-orders"
         ]
