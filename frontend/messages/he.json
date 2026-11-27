@@ -3408,6 +3408,12 @@
       "empty_experiences_title": "חוויות חדשות בדרך",
       "empty_experiences_body": "עדיין אוספות בתי עסק שמארחים סדנאות בסביבה",
       "empty_experiences_cta": "מארחים חוויה? הוסיפו",
+      "host_gate": {
+        "title_experiences": "הוספת חוויה פתוחה לבתי עסק",
+        "title_events": "הוספת אירוע פתוחה לבתי עסק",
+        "body": "רושמים את בית העסק במהמקור, ואחרי האישור מוסיפים חוויות ואירועים מלוח הבקרה.",
+        "login": "כבר רשומים? התחברו"
+      },
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
