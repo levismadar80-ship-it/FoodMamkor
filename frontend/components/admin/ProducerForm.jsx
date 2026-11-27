@@ -1201,7 +1201,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
                       not an error — an Instagram-only business says «יש משלוח»
                       without saying where. */}
                   {form.delivery_cities.length === 0 && (
-                    <p className="text-xs text-muted mt-1">{t("producers.form.fields.delivery_cities_optional_hint")}</p>
+                    <p className="text-xs text-muted mt-1">{tDelivery("delivery_cities_optional_hint")}</p>
                   )}
                 </div>
               )}

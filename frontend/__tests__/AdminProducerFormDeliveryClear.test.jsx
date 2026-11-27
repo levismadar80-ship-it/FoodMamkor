@@ -117,7 +117,7 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
 
     await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
     fireEvent.click(checkbox(F.offers_delivery));
-    await waitFor(() => expect(screen.getByText(F.delivery_cities_optional_hint)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(he.dashboard.producer.delivery.delivery_cities_optional_hint)).toBeInTheDocument());
 
     const submit = screen.getByRole("button", { name: he.admin.producers.form.submit_create });
     expect(submit).not.toBeDisabled();

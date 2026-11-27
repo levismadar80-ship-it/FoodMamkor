@@ -2105,7 +2105,6 @@
           "delivery_cities_label": "Cities delivered to",
           "delivery_excluded_label": "Except:",
           "delivery_excluded_hint": "Optional — cities you don't deliver to",
-          "delivery_cities_optional_hint": "You can save without cities. The business page will say «Delivery by arrangement».",
           "pickup_points": "Pickup points across the country",
           "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",

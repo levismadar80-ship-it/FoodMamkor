@@ -155,7 +155,6 @@ duplicate	2	יין, בירה ומשקאות
 duplicate	2	יישוב
 duplicate	2	ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסו שוב מהמייל, או פנו אלינו.
 duplicate	2	יציאה מרשימת ההמתנה
-duplicate	2	יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ
 duplicate	2	יש להזין מספר שלם
 duplicate	2	יש למלא הערה
 duplicate	2	כדי לשמור עסקים אוהבים — היכנסו
@@ -494,7 +493,6 @@ duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
 duplicate	6	עריכה
 duplicate	6	תאריך
-duplicate	7	איסוף עצמי
 duplicate	7	אירועים
 duplicate	7	הועתק
 duplicate	7	וואטסאפ
@@ -503,6 +501,7 @@ duplicate	7	מוצרים
 duplicate	7	סגרו
 duplicate	7	סיסמה
 duplicate	7	שם מלא
+duplicate	8	איסוף עצמי
 duplicate	8	בתי עסק
 duplicate	8	מחיקה
 duplicate	8	סלי הפתעה
