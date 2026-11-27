@@ -106,11 +106,12 @@ export default function OrdersPage() {
     setAttempt((n) => n + 1);
   };
 
-  // MEH-3964: an open tab picks up a new order, and its title counts them.
-  const fresh = useCallback(
-    (/** @type {any[]} */ orders) => setData((/** @type {any} */ old) => (old ? { ...old, orders } : old)),
-    [],
-  );
+  // MEH-3964: an open tab picks up a new order; the layout's badge and
+  // «(N) » title prefix follow through ORDERS_CHANGED_EVENT, as replace() does.
+  const fresh = useCallback((/** @type {any[]} */ orders) => {
+    setData((/** @type {any} */ old) => (old ? { ...old, orders } : old));
+    window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT));
+  }, []);
   useOrdersLive(data?.orders ?? null, fresh);
 
   if (data && data.settings === null) notFound();

@@ -197,7 +197,7 @@ export default function ProducerDashboardLayout({ children }) {
     staff,
   });
   const titleTab = tabsFor(user, orders.visible).find((tab) => tabIsActive(tab, pathname));
-  useDashboardTitle(titleTab ? t(titleTab.key) : null, locale, pathname);
+  useDashboardTitle(titleTab ? t(titleTab.key) : null, locale, pathname, orders.pending);
 
   // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
   //   - unauthenticated (401) → /login, now carrying ?redirect= so she lands

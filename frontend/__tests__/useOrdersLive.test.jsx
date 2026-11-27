@@ -12,7 +12,8 @@ vi.mock("@/lib/product-orders", () => ({
   loadOrders: (...args) => loadOrders(...args),
 }));
 
-import useOrdersLive, { pendingTitle } from "@/hooks/useOrdersLive";
+import useOrdersLive from "@/hooks/useOrdersLive";
+import { dashboardTitle } from "@/lib/use-dashboard-title";
 
 /** @param {string} [status] @param {number} [id] */
 const order = (id = 1, status = "pending") => ({ id, status });
@@ -36,32 +37,17 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("pendingTitle", () => {
+describe("dashboardTitle counts the orders waiting (MEH-3964)", () => {
   it.each([
     [0, "הזמנות | מהמקור"],
     [1, "(1) הזמנות | מהמקור"],
     [7, "(7) הזמנות | מהמקור"],
   ])("%i waiting → %s", (count, title) => {
-    expect(pendingTitle("הזמנות | מהמקור", count)).toBe(title);
-  });
-
-  it("replaces an older count instead of stacking a second one", () => {
-    expect(pendingTitle("(3) הזמנות | מהמקור", 1)).toBe("(1) הזמנות | מהמקור");
-    expect(pendingTitle("(3) הזמנות | מהמקור", 0)).toBe("הזמנות | מהמקור");
+    expect(dashboardTitle("הזמנות", "he", count)).toBe(title);
   });
 });
 
 describe("useOrdersLive", () => {
-  it("puts the pending count in the tab title, and takes it off on leaving", () => {
-    const { rerender, unmount } = render(<Probe orders={[order(1), order(2), order(3, "confirmed")]} onFresh={vi.fn()} />);
-    expect(document.title).toBe("(2) הזמנות | מהמקור");
-    rerender(<Probe orders={[order(3, "confirmed")]} onFresh={vi.fn()} />);
-    expect(document.title).toBe("הזמנות | מהמקור");
-    rerender(<Probe orders={[order(1)]} onFresh={vi.fn()} />);
-    unmount();
-    expect(document.title).toBe("הזמנות | מהמקור");
-  });
-
   it("a new pending order seen on the minute check reloads the board", async () => {
     const onFresh = vi.fn();
     const fresh = [order(1), order(9)];
@@ -124,6 +110,49 @@ describe("useOrdersLive", () => {
     });
     expect(pendingPage).toHaveBeenCalledTimes(1);
     expect(loadOrders).not.toHaveBeenCalled();
+  });
+
+  it("same count, one expired and one arrived: still a reload", async () => {
+    pendingPage.mockResolvedValue({ total: 1, orders: [order(2)] });
+    loadOrders.mockResolvedValue([order(1, "expired"), order(2)]);
+    render(<Probe orders={[order(1)]} onFresh={vi.fn()} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(loadOrders).toHaveBeenCalledTimes(1);
+  });
+
+  it("an open dialog defers the check, so her typed note stays", async () => {
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    document.body.appendChild(dialog);
+    pendingPage.mockResolvedValue({ total: 2, orders: [order(1), order(9)] });
+    render(<Probe orders={[order(1)]} onFresh={vi.fn()} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(pendingPage).not.toHaveBeenCalled();
+    dialog.remove();
+  });
+
+  it("her own change during a reload wins over the older reload", async () => {
+    const onFresh = vi.fn();
+    pendingPage.mockResolvedValue({ total: 2, orders: [order(1), order(9)] });
+    /** @type {(v: any) => void} */
+    let finish = () => {};
+    loadOrders.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const { rerender } = render(<Probe orders={[order(1)]} onFresh={onFresh} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(loadOrders).toHaveBeenCalledTimes(1);
+    // She confirms order 1 while the reload is in flight.
+    rerender(<Probe orders={[order(1, "confirmed")]} onFresh={onFresh} />);
+    await act(async () => {
+      finish([order(1), order(9)]);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(onFresh).not.toHaveBeenCalled();
   });
 
   it("a failed check keeps the board as it is", async () => {
