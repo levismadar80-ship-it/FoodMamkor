@@ -5326,6 +5326,12 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_17": {
+            "i0": "Courses: an experience can now be several meetings, with one sign-up for all of them.",
+            "i1": "Your dashboard now has an assistant that answers questions, fills in your page details and adds products from the chat.",
+            "i2": "If customers can come only by arrangement, tick «Pickup or visit, by arrangement». Customers see it on your card and your page.",
+            "i3": "Surprise bags and group buys can carry your own payment link, and you tap «Mark as paid» once the payment comes in."
+          },
           "v1_5_15": {
             "i0": "Order staff: add up to 5 people to handle your orders. They see only the orders tab. Add them from the «Tools» tab."
           },
