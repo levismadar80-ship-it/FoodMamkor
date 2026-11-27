@@ -1760,7 +1760,7 @@ PUT    /admin/test-businesses/{producer_id}       admin       («עסק בדיק
                                                               so turning it off restores the page as it was. IndexNow: hiding pings
                                                               the URL read BEFORE the flip, showing pings it after; a non-public row
                                                               (draft, pending) is never pinged; a no-op flip pings nothing. Unknown → 404.
-GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316), products (MEH-3430; -1 when the count failed), products_no_allergens (published products with neither allergens nor may_contain, MEH-3445), live_rescue_offers (MEH-3767: active rescue offers whose pickup has not ended)} (MEH-3108)
+GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316), products (MEH-3430; -1 when the count failed), products_no_allergens (published products with neither allergens nor may_contain, MEH-3445), live_rescue_offers (MEH-3767: active rescue offers whose pickup has not ended)} (MEH-3108) + community_invite_url (27/11: the business WhatsApp community invite, only for an approved non-organizer business and only when WHATSAPP_COMMUNITY_INVITE_URL is set, else null — the dashboard «קבוצת העדכונים לבתי עסק» row)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
@@ -2026,6 +2026,16 @@ POST   /admin/kashrut/{id}/revoke              admin — MEH-2518: body {notes?}
                                                request for that badge code "revoked", drops the code from kashrut_badges[];
                                                no badge left → kashrut_verified_at/expires_at cleared.
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
+POST   /admin/producers/{producer_id}/kashrut  admin — MEH-3081: body {badge_code, cert_url, expires_on}. The admin
+                                               attaches a certificate the business sent her (a business with no
+                                               account cannot file /producers/me/kashrut-request). Stores an APPROVED
+                                               kashrut_badge_requests row (reviewed_by = the admin, notes «צורף על ידי
+                                               אדמין») and applies the approve rule (services/kashrut_grant.py).
+                                               cert_url must be https://res.cloudinary.com/ (the proxy's only host) →
+                                               422; expiry not after today → 422; unknown badge code → 400; unknown
+                                               business → 404; organizer → 409 (the proxy never serves its cert,
+                                               ADR-036). 201 + the row.
+                                               POST /upload/kashrut-cert accepts an admin with no business (her folder).
 GET    /admin/producers/rejection-presets      admin — MEH-226: the 5 canonical rejection reasons as [{key,label}].
                                                Backend is the single owner of the Hebrew labels; the admin reject
                                                modal renders this list rather than carrying its own copy, so the
@@ -2151,6 +2161,8 @@ PUT    /admin/producers/{producer_id}/product-groups          admin — MEH-3472
 PUT    /admin/producers/{producer_id}/product-groups/assign   admin — MEH-3477: same body and rules as PUT /producers/me/product-groups/assign, drafts included
 POST   /admin/producers/{producer_id}/product-groups/suggest  admin — MEH-3478: same as POST /producers/me/product-groups/suggest, drafts included; 30/hour
 GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
+PUT    /admin/producers/{producer_id}/products/{product_id}/price  admin — MEH-3942: {price_min, price_max, price_unit?}; null clears the price
+                                                               («מחיר משתנה לפי עונה»), any business incl. approved with no owner; 120/hour
 PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
                                                                draft, each once (else 409). The owner's route stays published-only.
                                                                One `products.position` column serves both: an owner reorder numbers

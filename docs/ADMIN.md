@@ -401,6 +401,7 @@ npx playwright test             # E2E
 
 **Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
 בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
+**MEH-3081:** לבית עסק בלי חשבון, אדמין מצרפת את צילום התעודה שבית העסק שלח בפאנל «תעודת כשרות» בעמוד העריכה (`POST /admin/producers/{producer_id}/kashrut`): סוג, צילום ותאריך תוקף מודפס. נשמרת בקשה מאושרת, והתג והתעודה עולים לדף מיד.
 
 **Ambassador (Tier 5) — הוסר מהממשק ב-MEH-2509.** כפילות של «בחירת העורכות» (`is_recommended`), שהיא התג העריכתי היחיד שאודות מתאר. העמודה `producers.ambassador` עדיין קיימת, בלי כפתור ובלי השפעה על `trust_tier`; ה-endpoint `set-ambassador` נמחק ב-MEH-3527. מחיקת העמודה — אחרי ההשקה (Expand-Contract).
 

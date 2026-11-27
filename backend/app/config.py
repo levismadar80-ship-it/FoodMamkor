@@ -91,7 +91,9 @@ class Settings(BaseSettings):
     whatsapp_verify_token: str = ""
 
     # MEH-2134 — invite link to the "מהמקור · עדכונים לבתי עסק" WhatsApp
-    # community, offered in the producer-approval email only.
+    # community, offered in the producer-approval email and, since 27/11, in
+    # the dashboard home row «קבוצת העדכונים לבתי עסק» (`community_invite_url`
+    # on `GET /producers/me/dashboard`, approved non-organizer businesses only).
     #
     # DO NOT hardcode the real URL here or anywhere else in the tree — the
     # repo is public since June 2026, and an invite link in a tracked file is

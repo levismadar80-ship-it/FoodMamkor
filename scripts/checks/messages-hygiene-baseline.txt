@@ -384,6 +384,7 @@ duplicate	3	כניסה למהמקור
 duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
 duplicate	3	להשלמת העמוד
+duplicate	3	לחמים ואפייה
 duplicate	3	לכל הנתונים
 duplicate	3	לנסות שוב
 duplicate	3	מאושר
@@ -449,7 +450,6 @@ duplicate	4	כניסה
 duplicate	4	כניסה חופשית
 duplicate	4	כתבו לנו
 duplicate	4	לא הצלחנו לשמור. נסו שוב.
-duplicate	4	לחמים ואפייה
 duplicate	4	ללא גלוטן
 duplicate	4	ללא לקטוז
 duplicate	4	ללא סוכר מוסף

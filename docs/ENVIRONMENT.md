@@ -63,7 +63,7 @@
 | `WHATSAPP_API_VERSION` | `str` | יש | — |
 | `WHATSAPP_APP_SECRET` | `str` | ריק | MEH-509 PR2c — inbound webhook receiver (GET challenge + POST receive). |
 | `WHATSAPP_BUSINESS_ID` | `str` | ריק | — |
-| `WHATSAPP_COMMUNITY_INVITE_URL` | `str` | ריק | MEH-2134 — invite link to the "מהמקור · עדכונים לבתי עסק" WhatsApp community, offered in the producer-approval email only. |
+| `WHATSAPP_COMMUNITY_INVITE_URL` | `str` | ריק | MEH-2134 — invite link to the "מהמקור · עדכונים לבתי עסק" WhatsApp community, offered in the producer-approval email and, since 27/11, in the dashboard home... |
 | `WHATSAPP_PHONE_NUMBER_ID` | `str` | ריק | WhatsApp Cloud API (MEH-508 — direct Meta Graph, replaces Twilio). |
 | `WHATSAPP_VERIFY_TOKEN` | `str` | ריק | — |
 

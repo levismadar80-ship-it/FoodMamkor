@@ -23,6 +23,7 @@ import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
 import { loadSettings } from "@/lib/product-orders";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
+import CommunityRow from "@/components/producer/CommunityRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import SupportContactSheet from "@/components/SupportContactSheet";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
@@ -878,6 +879,8 @@ export default function ProducerDashboardPage() {
           business that got stuck had no way in (Shopify «Help», Wolt support
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
+      {/* Sapir 27/11 (placement א׳): the business community invite, above «מה חדש». */}
+      {!isOrganizer && (profile || profileError) && <CommunityRow inviteUrl={data?.community_invite_url} />}
       {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
       {/* MEH-3767: one quiet line, not a card — it is a way out, not a task. */}
       <div

@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 
 import api from "@/lib/api";
-import { ProducersResponseSchema } from "@/lib/schemas";
+import { ProducersFeedSchema } from "@/lib/schemas";
 
 /**
  * Module:   use-catalog-snapshot
@@ -38,7 +38,7 @@ function fetchSnapshot() {
     const request = api
       .get("/producers")
       .then((response) => {
-        const parsed = ProducersResponseSchema.safeParse(response.data);
+        const parsed = ProducersFeedSchema.safeParse(response.data);
         if (!parsed.success) throw new Error("malformed /producers payload");
         const total = Number(response.headers?.["x-total-count"]);
         const complete = Number.isFinite(total) ? parsed.data.length >= total : undefined;

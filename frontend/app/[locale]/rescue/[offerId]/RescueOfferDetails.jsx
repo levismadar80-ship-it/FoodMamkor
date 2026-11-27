@@ -2,6 +2,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import { useTranslations } from "next-intl";
 import { Bread, Info, MapPin } from "@phosphor-icons/react";
 
@@ -14,7 +16,7 @@ import { israelTime } from "@/lib/rescue";
 
 // REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
 // leaflet touches window at module eval.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 
 const HOW_STEPS = ["how_1", "how_2", "how_3"];
 

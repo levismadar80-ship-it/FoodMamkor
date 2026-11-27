@@ -89,10 +89,15 @@ covers only one of them.
 
 **Response side — validate the payload before consuming it.** Not map-only:
 producer feeds reach three surfaces and all three parse — the home grid
-(`lib/use-home-page.js:326`, `:360`, `:430`), `/map`
-(`app/[locale]/map/state/useProducersFeed.js:49`), and `/favorites`
+(`lib/use-home-page.js:463`, `:477`, `:634`), `/map`
+(`app/[locale]/map/state/useProducersFeed.js:101`, `:164`), and `/favorites`
 (`app/[locale]/favorites/FavoritesClient.jsx:140`). The grid and `/map` import
-`lib/schemas.js` (canonical `ProducerSchema` / `ProducersResponseSchema`);
+`lib/schemas.js`: the runtime feeds parse with `ProducersFeedSchema`, which
+drops and logs one broken business instead of emptying the list (MEH-3198,
+27/11 prod incident); the strict `ProducersResponseSchema` is for e2e
+fixtures and tests. `__tests__/HandwrittenSchemaNullParity.test.js` fails when
+a hand-written schema rejects a null or absent value the generated contract
+allows;
 every other response schema comes from `lib/api-responses.js`, which takes
 them from the GENERATED `lib/generated/api.zod.js` (MEH-1748). That file
 declares no field of its own — only generated schemas, a `pick` of one, or a
