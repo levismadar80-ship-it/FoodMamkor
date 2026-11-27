@@ -129,22 +129,27 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
       await held;
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ match: { owner_email: null } }) });
     });
-    await reachDetails(page);
-    await page.getByTestId("register-details-next").click();
-    await expect(page.getByTestId("register-fulfilment-error")).toBeVisible();
-    const before = {
-      question: await page.getByTestId("register-fulfilment").boundingBox(),
-      next: await page.getByTestId("register-details-next").boundingBox(),
-    };
-    release();
+    let before;
+    try {
+      await reachDetails(page);
+      await page.getByTestId("register-details-next").click();
+      await expect(page.getByTestId("register-fulfilment-error")).toBeVisible();
+      before = {
+        question: await page.getByTestId("register-fulfilment").boundingBox(),
+        next: await page.getByTestId("register-details-next").boundingBox(),
+      };
+    } finally {
+      release(); // never leave the held route pending past a failed step
+    }
     await expect(page.getByTestId("register-identity-check")).toBeVisible();
     const after = {
       question: await page.getByTestId("register-fulfilment").boundingBox(),
       next: await page.getByTestId("register-details-next").boundingBox(),
     };
     expect(before.question && after.question, "the question renders").toBeTruthy();
-    expect(after.question!.y, "the notice must not push the question down").toBe(before.question!.y);
-    expect(after.next!.y, "the notice must not push «הבא» down").toBe(before.next!.y);
+    // 0.5px: sub-pixel rounding only; the bug moved them by the notice's height.
+    expect(after.question!.y, "the notice must not push the question down").toBeCloseTo(before.question!.y, 0);
+    expect(after.next!.y, "the notice must not push «הבא» down").toBeCloseTo(before.next!.y, 0);
   });
 
   for (const c of CASES) {
