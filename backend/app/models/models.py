@@ -552,6 +552,15 @@ class Producer(Base):
         default=[],
         server_default=text("'{}'::text[]"),
     )
+    # MEH-3977: names of other stores that sell this business's products
+    # («נמכר גם דרך: פארמרים, הענתיות»). Empty = none. Up to 10 (CHECK
+    # producer_partner_stores_cap); satisfies producer_location_mode alone.
+    partner_stores: Column[list[str]] = Column(
+        ARRAY(Text),
+        nullable=False,
+        default=[],
+        server_default=text("'{}'::text[]"),
+    )
     # MEH-1577: structured delivery cost, producer-level (NOT per delivery_area
     # — delivery_areas.min_order below already owns the per-city dimension).
     # NULL = not stated → the public DeliveryBlock renders no line at all;
@@ -902,9 +911,15 @@ class Producer(Base):
         # Pydantic `model_validator` guards the API layer; these protect the
         # direct-SQL paths (seeds, imports, psql). Migration f9a2c7d41b83 adds
         # them idempotently (IF NOT EXISTS) so it's a no-op where they exist.
+        # MEH-3977: widened — a business sold only through other stores
+        # (partner_stores) is reachable too. Migration b2d4f6a8c0e3.
         CheckConstraint(
-            "has_physical_location OR offers_delivery",
+            "has_physical_location OR offers_delivery OR cardinality(partner_stores) > 0",
             name="producer_location_mode",
+        ),
+        CheckConstraint(
+            "cardinality(partner_stores) <= 10",
+            name="producer_partner_stores_cap",
         ),
         # MEH-2459: the only two kinds. Mirrors migration f1a2b3c4d5e6 so a
         # bootstrapped DB (`create_all`, CI) carries the same guard as staging.
