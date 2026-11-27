@@ -26,6 +26,7 @@
 **טסטים**
 * `frontend/__tests__/OgUrlPerLocale.test.js`
 * `frontend/__tests__/GoogleSeoRulesMeh3638.test.js` · `frontend/__tests__/sitemap.test.js` (`MEH-3638`) — noindex ל-/en, כתובת וטלפון ‎+972 ב-JSON-LD, קידוד ה-sitemap.
+* `frontend/__tests__/ProducerEventRefsJsonLd.test.js` (`MEH-3953`) — דף בית העסק מצביע ב-JSON-LD על האירועים והחוויות שלו (`event`), באותו `@id` שדף האירוע עצמו פולט.
 * `frontend/__tests__/OgSiteImage.test.js` · `scripts/checks/og-site-image-guard.sh` — כל openGraph עם תמונה, ואין PNG כבד (MEH-3590).
 * `frontend/e2e/flows/39-en-locale-direction.spec.ts` · `frontend/e2e/flows/41-not-found-chrome.spec.ts`
 * `frontend/e2e/flows/manual/link-crawl.spec.ts`
