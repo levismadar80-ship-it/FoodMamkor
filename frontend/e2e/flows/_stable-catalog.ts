@@ -19,7 +19,7 @@
  */
 
 /** The tags the self-cleaning specs write into the business name. */
-export const RUN_FIXTURE_NAME = /\bE2E-MEH\d+-\d+\b|\be2e-[0-9a-z]{6,}-[0-9a-z]{3,}\b/;
+const RUN_FIXTURE_NAME = /\bE2E-MEH\d+-\d+\b|\be2e-[0-9a-z]{6,}-[0-9a-z]{3,}\b/;
 
 /** The catalog without other runs' temporary businesses. */
 export function stableCatalog<T extends object>(list: T[]): T[] {
