@@ -102,6 +102,9 @@ class OrderCreateIn(BaseModel):
     # Chosen by the client once per attempt (a UUID): a double tap or a retry
     # after a lost answer creates one order, not two.
     idempotency_key: UUID
+    # MEH-3933: «להזמין את זה שוב כל שבוע» — the same order on the same
+    # weekday and time, made by the hourly job (services/product_order_repeat).
+    repeat_weekly: bool = False
 
     @field_validator("items", mode="before")
     @classmethod
@@ -222,6 +225,8 @@ class _OrderOut(BaseModel):
     proposal: ProposalOut | None
     created_at: datetime
     expires_at: datetime | None
+    # MEH-3933: set when the order belongs to a weekly repeat.
+    repeat: Literal["active", "stopped"] | None = None
 
 
 class BuyerOrderOut(_OrderOut):

@@ -13,6 +13,7 @@ import pytest
 
 from app import startup
 from app.services import job_heartbeat
+from app.services import product_order_repeat_job
 
 
 class _NoopSession:
@@ -90,6 +91,10 @@ def _stub_services(monkeypatch):
 
     monkeypatch.setattr(product_order_sweeper, "expire_due", lambda db: 0)
     monkeypatch.setattr(product_order_outbox, "dispatch_due", lambda db: 0)
+    # MEH-3933: the weekly repeat orders.
+    from app.services import product_order_repeat
+
+    monkeypatch.setattr(product_order_repeat, "run_due", lambda db: {})
 
 
 JOBS = [
@@ -189,14 +194,28 @@ JOBS = [
         "interval",
         job_heartbeat.EMAIL_OUTBOX_INTERVAL_MINUTES,
     ),
+    # MEH-3933: lives in its own module, not in startup (see _job below).
+    (
+        "run_order_repeats",
+        "order-repeats-hourly",
+        "crontab",
+        product_order_repeat_job.REPEAT_CRON,
+    ),
 ]
+
+
+def _job(func_name: str):
+    """A job is a startup function, or (MEH-3933) its own module's."""
+    return getattr(startup, func_name, None) or getattr(
+        product_order_repeat_job, func_name
+    )
 
 
 @pytest.mark.parametrize("job", JOBS, ids=[j[0] for j in JOBS])
 def test_job_sends_checkins(monkeypatch, checkins, job):
     func_name, slug, kind, value = job
     _stub_services(monkeypatch)
-    getattr(startup, func_name)()
+    _job(func_name)()
 
     # Daily jobs open with in_progress (hung-run detection); 5-minute jobs
     # send only the closing check-in.
@@ -296,7 +315,7 @@ def test_registered_triggers_match_monitor_configs(monkeypatch, checkins):
     assert set(triggers) - {"_run_job_staleness_check"} == {j[0] for j in JOBS}
     for func_name, _slug, kind, _value in JOBS:
         checkins.clear()
-        getattr(startup, func_name)()
+        _job(func_name)()
         schedule = checkins[-1]["monitor_config"]["schedule"]
         trig = triggers[func_name]
         if kind == "crontab":
@@ -318,6 +337,7 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     assert "_run_rescue_schedule_job" not in triggers  # MEH-3703
     assert "_run_weekly_owner_summary_job" not in triggers
     assert "_run_product_order_jobs" not in triggers  # MEH-3296
+    assert "run_order_repeats" not in triggers  # MEH-3933
     flagged = {
         "_run_watchdog_job",
         "_run_rescue_digest_job",
@@ -326,5 +346,6 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
         "_run_rescue_schedule_job",
         "_run_weekly_owner_summary_job",
         "_run_product_order_jobs",
+        "run_order_repeats",
     }
     assert set(triggers) == {j[0] for j in JOBS} - flagged

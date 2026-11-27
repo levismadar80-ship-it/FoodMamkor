@@ -8307,6 +8307,7 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8365,6 +8366,7 @@ export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#_
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8407,6 +8409,7 @@ export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8449,6 +8452,7 @@ export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8491,6 +8495,7 @@ export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8533,6 +8538,7 @@ export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8575,6 +8581,7 @@ export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostR
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8617,6 +8624,52 @@ export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__P
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * MEH-3933: no new order from this order's weekly repeat. The orders
+ * already made from it stay as they are.
+ * @summary Stop Order Repeat
+ */
+export const StopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -10107,6 +10160,7 @@ export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10177,6 +10231,7 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10221,6 +10276,7 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10265,6 +10321,53 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * MEH-3933: stop the weekly repeat this order belongs to.
+ * @summary Stop Own Repeat
+ */
+export const StopOwnRepeatProductOrdersStatusRepeatStopPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -11333,6 +11436,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),

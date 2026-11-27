@@ -201,6 +201,7 @@ REPLACE_TABLES = frozenset(
         "business_billing",
         "producer_review_checks",
         "product_orders",
+        "product_order_repeats",
         "producer_reviews",
         "favorites",
         "favorite_alerts",
