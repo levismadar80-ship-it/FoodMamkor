@@ -1128,7 +1128,7 @@ export default function ProductsSection({
                 data-autofocus
                 disabled={deletingId != null}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-background transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
               </button>
@@ -1172,7 +1172,7 @@ export default function ProductsSection({
                 data-autofocus
                 disabled={saving}
                 onClick={() => setConfirmDuplicate(false)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-background transition disabled:opacity-50"
               >
                 {t("duplicate_name_confirm.cancel")}
               </button>

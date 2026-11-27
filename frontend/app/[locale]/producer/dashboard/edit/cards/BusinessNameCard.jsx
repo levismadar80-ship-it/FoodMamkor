@@ -131,7 +131,7 @@ export function BusinessNameCard({ profile }) {
 
       {pending ? (
         <div
-          className="bg-yellow-50 border border-yellow-300 rounded-md p-4 space-y-1"
+          className="bg-warning-50 border border-warning-300 rounded-md p-4 space-y-1"
           role="status"
           data-testid="name-change-pending"
         >

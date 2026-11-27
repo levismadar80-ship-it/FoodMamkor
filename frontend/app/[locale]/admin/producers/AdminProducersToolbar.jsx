@@ -49,8 +49,8 @@ function StatusSelect({ value, onChange }) {
 function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
-    ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-surface border-border text-muted hover:border-yellow-400";
+    ? "bg-warning-100 border-warning-400 text-warning-800"
+    : "bg-surface border-border text-muted hover:border-warning-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
@@ -59,7 +59,7 @@ function IncompleteToggle({ active, count, onToggle }) {
     >
       <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? t("producers.toolbar.show_all") : t("producers.toolbar.incomplete_label")}
       {count > 0 && (
-        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-text text-xs font-bold">
+        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-warning-500 text-text text-xs font-bold">
           {count}
         </span>
       )}

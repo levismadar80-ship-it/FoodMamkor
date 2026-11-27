@@ -242,7 +242,7 @@ export default function AdminOutreachPage() {
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
                 <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.name")}</th>
                 <th className="text-start px-3 py-3 font-medium text-muted">{t("outreach.columns.city")}</th>

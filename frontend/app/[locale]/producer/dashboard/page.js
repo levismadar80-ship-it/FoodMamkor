@@ -548,15 +548,15 @@ export default function ProducerDashboardPage() {
         // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
         // Opportunistic conversion, per that file's migration policy.
         <div
-          className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm"
+          className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6 text-sm"
           role="status"
           data-testid="status-pending-banner"
         >
-          <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
+          <p className="font-semibold text-warning-800 mb-1">{t("status.pending.title")}</p>
           {/* MEH-1347: informational only — the completeness card below owns
               the single "להשלמת העמוד" CTA (audit found two clashing CTAs
               with opposite arrows on one screen). */}
-          <p className="text-yellow-700">
+          <p className="text-warning-700">
             {t("status.pending.body")}
           </p>
           {/* MEH-3073: where she stands, not only that she waits. An ordered

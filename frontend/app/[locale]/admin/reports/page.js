@@ -119,7 +119,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => suspendProducer(r)}
                         disabled={isBusy(`suspend:${r.producer_id}`)}
-                        className="bg-yellow-500 text-text px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-warning-500 text-text px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t("reports.actions.suspend")}
                       </button>
@@ -136,7 +136,7 @@ export default function AdminReportsPage() {
                     {r.reports.map((rep) => (
                       <li
                         key={rep.id}
-                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-danger-50" : "bg-gray-50"}`}
+                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-danger-50" : "bg-background"}`}
                       >
                         <p>{rep.reason}</p>
                         <p className="text-fg-muted mt-1">
@@ -176,7 +176,7 @@ export default function AdminReportsPage() {
               <button data-autofocus
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

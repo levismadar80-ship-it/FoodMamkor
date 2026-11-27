@@ -77,7 +77,7 @@ export default function AdminHome() {
       <section
         data-testid="admin-home-pending"
         className={`bg-surface border rounded-md p-5 ${
-          pendingCount > 0 ? "border-yellow-300" : "border-border"
+          pendingCount > 0 ? "border-warning-300" : "border-border"
         }`}
       >
         <div className="flex items-center justify-between mb-3 gap-3">
@@ -85,11 +85,11 @@ export default function AdminHome() {
             <HourglassSimple
               size={20}
               aria-hidden="true"
-              className={pendingCount > 0 ? "text-yellow-600" : "text-muted"}
+              className={pendingCount > 0 ? "text-warning-600" : "text-muted"}
             />
             {t("dashboard.pending_panel.heading")}
             {pendingCount > 0 && (
-              <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+              <span className="bg-warning-400 text-warning-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
                 {pendingCount}
               </span>
             )}
@@ -149,7 +149,7 @@ export default function AdminHome() {
                     <q.Icon size={18} aria-hidden="true" className="text-primary" />
                     {t(`layout.nav.${q.key}`)}
                   </span>
-                  <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+                  <span className="bg-warning-400 text-warning-900 text-xs font-bold px-2 py-0.5 rounded-full leading-none">
                     {q.count}
                   </span>
                 </Link>
