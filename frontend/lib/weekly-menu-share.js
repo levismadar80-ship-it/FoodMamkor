@@ -18,6 +18,7 @@ import { israelToday } from "@/lib/israel-date";
 import { agorotToShekels } from "@/lib/money";
 import { formatPriceRange } from "@/lib/utils";
 import { isOpen, israelWeekday } from "@/lib/product-weekdays";
+import { isolate } from "@/lib/bidi";  // MEH-3978
 
 const WEEK_DAYS = 7;
 
@@ -81,13 +82,13 @@ export function weekMenuText({ menu, name, url, locale, t, tUnit, now = new Date
     const own = days.filter((d) => isOpen(product.available_weekdays, israelWeekday(`${d}T12:00:00Z`)));
     if (own.length === 0) continue;
     const price = priceText(product, tUnit);
-    const line = price ? `• ${product.name} · ${price}` : `• ${product.name}`;
+    const line = price ? `• ${isolate(product.name)} · ${price}` : `• ${isolate(product.name)}`;
     lines.push(own.length < days.length ? `${line} · ${t("message.only", { days: words(own) })}` : line);
   }
   if (lines.length === 0) return null;
   const dayWords = words(days);
   return [
-    t("message.title", { name }),
+    t("message.title", { name: isolate(name) }),
     "",
     ...lines,
     "",

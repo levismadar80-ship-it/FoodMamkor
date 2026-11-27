@@ -23,6 +23,7 @@ import ShowMore from "@/components/ui/ShowMore";
 import { formatDate } from "@/lib/format-date";
 import { israelToday } from "@/lib/israel-date";
 import { REPEAT_FROM, customersCsv, downloadCsv, loadCustomers } from "@/lib/order-customers";
+import { isolate } from "@/lib/bidi";  // MEH-3978
 
 export const FIRST_ROWS = 10;
 
@@ -79,7 +80,7 @@ export default function OrderCustomersCard() {
           <ul id="orders-customers-list" className="divide-y divide-border">
             {shown.map((c) => (
               <li key={c.phone} className="py-2 text-sm text-text flex flex-wrap items-center gap-2" data-testid="orders-customers-row">
-                <span>{t("row", { name: c.name, count: c.order_count, date: date(c.last_order_at) })}</span>
+                <span>{t("row", { name: isolate(c.name), count: c.order_count, date: date(c.last_order_at) })}</span>
                 {c.order_count >= REPEAT_FROM && (
                   <span className="rounded-full bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5" data-testid="orders-customers-repeat">
                     {t("repeat")}

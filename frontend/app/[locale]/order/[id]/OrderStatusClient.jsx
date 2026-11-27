@@ -35,6 +35,7 @@ import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import { isolate } from "@/lib/bidi";  // MEH-3978
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 import OrderRepeatBlock from "./OrderRepeatBlock";  // MEH-3933
 
@@ -58,7 +59,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: isolate(orderLineName(line)) })}</li>
       ))}
     </ul>
   );

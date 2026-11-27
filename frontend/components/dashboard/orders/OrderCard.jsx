@@ -21,6 +21,7 @@ import { getWhatsAppHref } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
 import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import { isolate } from "@/lib/bidi";  // MEH-3978
 import OrderActions from "./OrderActions";
 import OrderRepeatControl from "./OrderRepeatControl";  // MEH-3933
 
@@ -30,7 +31,7 @@ function OrderLines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5" data-testid="order-lines">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: isolate(orderLineName(line)) })}</li>
       ))}
     </ul>
   );
@@ -47,8 +48,8 @@ function OrderFacts({ order }) {
       </p>
       {fee > 0 && <p>{t("delivery_fee", { fee: shekelsText(fee) })}</p>}
       {order.has_estimate && (order.final_total_agorot ?? null) === null && <p>{t("estimate")}</p>}
-      {order.delivery_address && <p>{t("address", { address: order.delivery_address })}</p>}
-      {order.note && <p>{t("note", { note: order.note })}</p>}
+      {order.delivery_address && <p>{t("address", { address: isolate(order.delivery_address) })}</p>}
+      {order.note && <p>{t("note", { note: isolate(order.note) })}</p>}
       {order.age_declared && <p>{t("age")}</p>}
     </div>
   );
