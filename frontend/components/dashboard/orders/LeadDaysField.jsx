@@ -14,7 +14,7 @@
  *           refuse an order — the server does
  *           (backend/app/services/product_lead_days.py).
  * Related:  lib/product-weekdays.js `takesSlot` (the same rule in the sheet)
- * History:  MEH-3932 (creation, 27/11/2026)
+ * History:  MEH-3932 (creation, 27/11/2026) · MEH-3957 (no fixed width)
  */
 
 import { useTranslations } from "next-intl";
@@ -35,13 +35,16 @@ export default function LeadDaysField({ id, value, busy, onSave }) {
   const t = useTranslations("dashboard.producer.orders.products");
   const current = typeof value === "number" ? String(value) : "";
   return (
-    <div className="flex items-center justify-between gap-3 py-1">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1">
       <label htmlFor={id} className="text-sm text-fg-muted">{t("lead")}</label>
       <Select
         id={id}
         inline
         size="xs"
-        className="w-36 min-h-touch"
+        // Sized to its longest option, not a fixed w-36: «אין צורך להזמין
+        // מראש» was cut to «…להזמין מר» at 390 (MEH-3957). The row wraps
+        // the select under its label when both don't fit.
+        className="max-w-full min-h-touch"
         value={current}
         disabled={busy}
         onChange={(/** @type {any} */ e) => {
