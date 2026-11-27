@@ -224,6 +224,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
               // MEH-2598: the server's answer, like the other two — it is
               // the ?on_site predicate's own result, so tag and filter agree.
               storeWithHours: !!p.sells_on_site,
+              // MEH-2447: the owner's «בתיאום מראש» answer, only with a place.
+              byArrangement: !!p.by_arrangement && p.has_physical_location !== false,
             },
             t,
           ).map((tag) => (

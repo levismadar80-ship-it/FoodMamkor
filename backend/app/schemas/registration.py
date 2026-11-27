@@ -240,6 +240,8 @@ class ProducerRegister(BaseModel):
     # omits these fields is unaffected.
     has_physical_location: bool = True
     offers_delivery: bool = False
+    # MEH-2447: the third answer to «איך הלקוחות מקבלים את ההזמנה?».
+    by_arrangement: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = Field(
         default_factory=list, max_length=MAX_DELIVERY_CITIES
@@ -424,6 +426,7 @@ class ProducerRegister(BaseModel):
         if self.kind == "organizer":
             self.has_physical_location = True
             self.offers_delivery = False
+            self.by_arrangement = False
             self.delivery_nationwide = False
             self.delivery_cities = []
             self.delivery_areas = []
@@ -437,7 +440,9 @@ class ProducerRegister(BaseModel):
             self.lng = None
             return self
         if not self.has_physical_location and not self.offers_delivery:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
+        if self.by_arrangement and not self.has_physical_location:
+            raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         if self.delivery_nationwide and len(self.delivery_cities) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         if self.delivery_nationwide and not self.offers_delivery:

@@ -35,6 +35,7 @@
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
 * `frontend/__tests__/LoginPromptModalGoogle.test.jsx` · `frontend/__tests__/VerifyEmailReturnsToOrigin.test.jsx` · `frontend/__tests__/PostAuthReturn.test.js` — Google בחלונית, החזרה לדף אחרי אימות, ואירועי המדידה (MEH-3661). `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` — הצטרפות לקבוצת רכישה אחרי Google בחלונית (MEH-3679).
+* `tests/test_meh3813_google_email_verified.py` — חשבון Google שהמייל שלו לא מאומת נדחה בכל ארבעת הנתיבים (‏`/auth/google`, הרשמת עסק, הזמנת בעלים, מחיקת חשבון), והבדיקה יושבת ב-`verify_google_token` (MEH-3813).
 * `tests/test_meh3690_google_code_exchange.py` — החלפת הקוד: טוקן של אפליקציה אחרת נדחה, מייל לא מאומת נדחה, בלי הסוד 503 (MEH-3690).
 * `frontend/e2e/flows/_google-code-stub.ts` — תחליף ל-Google בבדיקות הדפדפן: החלון מחזיר קוד שהבדיקה בוחרת (MEH-3690).
 * `frontend/__tests__/use-google-sign-in.test.jsx` — טעינת הסקריפט של Google פעם אחת, וטעינה חוזרת אחרי כישלון (MEH-3690).
