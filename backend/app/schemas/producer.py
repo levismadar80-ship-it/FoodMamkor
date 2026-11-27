@@ -190,6 +190,8 @@ class ProducerAdminCreate(BaseModel):
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
+    # MEH-2447: «איסוף או ביקור בתיאום מראש» — meaningful only with a place.
+    by_arrangement: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = Field(
         default_factory=list, max_length=MAX_DELIVERY_CITIES
@@ -288,7 +290,9 @@ class ProducerAdminCreate(BaseModel):
     @model_validator(mode="after")
     def _validate_location_mode(self) -> Self:
         if not self.has_physical_location and not self.offers_delivery:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
+        if self.by_arrangement and not self.has_physical_location:
+            raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
         # instead of the legacy delivery_cities column — same nationwide-XOR-cities
         # semantic, only the field source changed.
@@ -517,6 +521,9 @@ class ProducerUpdate(BaseModel):
     # MEH-213 — location mode
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
+    # MEH-2447: read AND has_physical_location, so a partial update that turns
+    # the place off leaves a stale True harmless (no CHECK, migration b8ee10dc69a9).
+    by_arrangement: bool | None = None
     delivery_nationwide: bool | None = None
     delivery_cities: list[str] | None = Field(None, max_length=MAX_DELIVERY_CITIES)
     # MEH-1255: nationwide exclusion list. Schema validator catches the
@@ -796,7 +803,16 @@ class ProducerUpdate(BaseModel):
         od = self.offers_delivery
         # Only validate when both are explicitly set (partial updates allowed)
         if hp is not None and od is not None and not hp and not od:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
+        if self.by_arrangement and hp is False:
+            raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
+        # MEH-2447: explicit null would hit the NOT NULL column as a 500.
+        if "by_arrangement" in self.model_fields_set and self.by_arrangement is None:
+            raise ValueError("ערך לא תקין ל«בתיאום מראש»")
+        # MEH-2447: no place left → no arrangement left either, so a stale True
+        # never outlives the place it described.
+        if hp is False and "by_arrangement" not in self.model_fields_set:
+            self.by_arrangement = False
         dn = self.delivery_nationwide
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
         # instead of the legacy delivery_cities column — same nationwide-XOR-cities
