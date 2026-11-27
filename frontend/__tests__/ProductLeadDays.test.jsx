@@ -138,7 +138,7 @@ describe("the owner's field", () => {
     const select = screen.getByTestId("lead-days-x");
     // A fixed width (w-36 = 144px) cut the option at 390; jsdom has no
     // layout, so the class is what this can see. The 390 screenshot is in the PR.
-    expect(select.className.split(/\s+/).filter((c) => /^w-\d/.test(c))).toEqual([]);
+    expect(select.className.split(/\s+/).filter((c) => /^(w|max-w|min-w|basis)-(\d|\[)/.test(c))).toEqual([]);
     expect(select.parentElement?.className).toContain("flex-wrap");
   });
 
