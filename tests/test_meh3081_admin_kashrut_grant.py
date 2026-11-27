@@ -12,7 +12,10 @@ Clock: dates relative to `israel_today()` (testing.md, MEH-2290).
 
 from datetime import timedelta
 
+import uuid
+
 from app.models.models import KashrutBadgeRequest
+from app.services.kashrut_grant import certificate_expiry
 from app.utils.clock import israel_today
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -43,6 +46,9 @@ def test_admin_grant_turns_the_badge_on_with_the_printed_date(client, db):
     db.refresh(producer)
     assert producer.kashrut_badges == ["rabanut"]
     assert producer.kashrut_verified_at is not None
+    assert producer.kashrut_expires_at == certificate_expiry(
+        israel_today() + timedelta(days=60)
+    )
     req = db.query(KashrutBadgeRequest).filter_by(producer_id=producer.id).one()
     assert (req.status, req.cert_url, req.reviewed_by) == ("approved", CERT, admin.id)
 
@@ -61,6 +67,26 @@ def test_non_admin_is_refused(client, db):
     owner = make_user(db, role="producer")
     r = _grant(client, owner, producer)
     assert r.status_code == 403
+    db.refresh(producer)
+    assert not producer.kashrut_badges
+
+
+def test_unknown_business_is_404(client, db):
+    admin = make_user(db, role="admin")
+    r = client.post(
+        f"/admin/producers/{uuid.uuid4()}/kashrut",
+        json=_body(),
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 404
+
+
+def test_organizer_is_refused(client, db):
+    producer = make_producer(db, name="שוק האיכרים")
+    producer.kind = "organizer"
+    db.commit()
+    admin = make_user(db, role="admin")
+    assert _grant(client, admin, producer).status_code == 409
     db.refresh(producer)
     assert not producer.kashrut_badges
 

@@ -1059,10 +1059,12 @@
         "description": "MEH-3081: the admin attaches a certificate the business sent her and\nturns the badge on in one step (a business with no account cannot file\nthe request herself). Same printed-expiry rules as approve.",
         "properties": {
           "badge_code": {
+            "maxLength": 50,
             "title": "Badge Code",
             "type": "string"
           },
           "cert_url": {
+            "maxLength": 500,
             "title": "Cert Url",
             "type": "string"
           },

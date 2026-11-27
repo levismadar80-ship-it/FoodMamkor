@@ -10,6 +10,7 @@ import AdminKashrutPanel from "@/components/admin/AdminKashrutPanel";
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 
 const copy = he.admin.producers.kashrut_grant;
+const rabanut = he.kashrut.badges.rabanut.label;
 const CERT = "https://res.cloudinary.com/demo/image/upload/cert.jpg";
 const mount = (props) =>
   render(
@@ -70,11 +71,49 @@ describe("AdminKashrutPanel", () => {
       expires_on: "2027-01-29",
     });
     expect(screen.queryByTestId("kashrut-grant-none")).toBeNull();
+    expect(screen.getByTestId("kashrut-grant-panel")).toHaveTextContent(rabanut);
+  });
+
+  it("a failed re-read after a successful grant still reads as added", async () => {
+    api.post
+      .mockResolvedValueOnce({ data: { url: CERT } })
+      .mockResolvedValueOnce({
+        data: {
+          id: "11111111-1111-4111-8111-111111111111",
+          producer_id: "22222222-2222-4222-8222-222222222222",
+          badge_code: "rabanut",
+          cert_url: CERT,
+          status: "approved",
+          notes: null,
+          created_at: "2026-11-27T10:00:00",
+          producer_name: null,
+        },
+      });
+    api.get.mockRejectedValueOnce(new Error("network"));
+    mount({ badges: [] });
+    await fill();
+    fireEvent.click(screen.getByTestId("kashrut-grant-submit"));
+    await waitFor(() => expect(screen.getByTestId("kashrut-grant-done")).toBeInTheDocument());
+    expect(screen.queryByTestId("kashrut-grant-error")).toBeNull();
+    expect(screen.getByTestId("kashrut-grant-panel")).toHaveTextContent(rabanut);
+  });
+
+  it("an expired badge reads as none (it is gone from the page too)", () => {
+    mount({ badges: ["rabanut"], verifiedAt: "2026-01-01T10:00:00", expiresAt: "2026-02-01T00:00:00" });
+    expect(screen.getByTestId("kashrut-grant-none")).toBeInTheDocument();
+  });
+
+  it("an organizer gets no panel", () => {
+    mount({ kind: "organizer" });
+    expect(screen.queryByTestId("kashrut-grant-panel")).toBeNull();
   });
 
   it("with badges already on: shows them instead of the none line", () => {
     mount({ badges: ["rabanut", "mehadrin"], verifiedAt: "2026-11-01T10:00:00", expiresAt: "2099-01-01T00:00:00" });
     expect(screen.queryByTestId("kashrut-grant-none")).toBeNull();
+    const panel = screen.getByTestId("kashrut-grant-panel");
+    expect(panel).toHaveTextContent(rabanut);
+    expect(panel).toHaveTextContent(he.kashrut.badges.mehadrin.label);
   });
 
   it("shows the server's Hebrew detail when the grant is refused", async () => {

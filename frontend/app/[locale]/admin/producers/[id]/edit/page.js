@@ -244,6 +244,7 @@ export default function EditProducerPage() {
       <AdminKashrutPanel
         key={`kashrut-${id}`}
         producerId={String(id)}
+        kind={producer.kind}
         badges={producer.kashrut_badges}
         verifiedAt={producer.kashrut_verified_at}
         expiresAt={producer.kashrut_expires_at}

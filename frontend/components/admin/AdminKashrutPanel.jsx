@@ -27,6 +27,7 @@ import Select from "@/components/ui/Select";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 import KashrutBadgeStrip, { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
+import { isKashrutCurrent } from "@/lib/badges";
 
 
 const CODES = Object.keys(CODE_TO_KEY);
@@ -34,18 +35,27 @@ const CODES = Object.keys(CODE_TO_KEY);
 /**
  * @param {{
  *   producerId: string,
+ *   kind?: string,
  *   badges?: string[] | null,
  *   verifiedAt?: string | null,
  *   expiresAt?: string | null,
  * }} props
  */
-export default function AdminKashrutPanel({ producerId, badges = [], verifiedAt = null, expiresAt = null }) {
+export default function AdminKashrutPanel({ producerId, kind = "producer", badges = [], verifiedAt = null, expiresAt = null }) {
   const t = useTranslations("admin.producers.kashrut_grant");
   const tBadges = useTranslations("kashrut.badges");
   // The owner card's strings, where the words are the same (messages-hygiene).
   const tOwner = useTranslations("dashboard.producer.kashrut");
   const [state, setState] = useState({ badges: badges || [], verifiedAt, expiresAt });
   const form = useGrantForm(producerId, t, tOwner, setState);
+  // ADR-036: an organizer's certificate is never served publicly; the server
+  // answers 409, so the panel is not offered at all.
+  if (kind === "organizer") return null;
+  // An expired badge is not shown on the page either, so it reads as «none»
+  // here — renewal is the likeliest reason to open this panel.
+  const current =
+    state.badges.length > 0 &&
+    isKashrutCurrent({ kashrut_verified_at: state.verifiedAt, kashrut_expires_at: state.expiresAt });
 
   return (
     <section data-testid="kashrut-grant-panel" className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl">
@@ -53,7 +63,7 @@ export default function AdminKashrutPanel({ producerId, badges = [], verifiedAt 
         <SealCheck size={20} aria-hidden="true" /> {tOwner("heading")}
       </h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
-      {state.badges.length > 0 ? (
+      {current ? (
         <KashrutBadgeStrip badges={state.badges} verified_at={state.verifiedAt} expires_at={state.expiresAt} />
       ) : (
         <p className="text-sm mb-4" data-testid="kashrut-grant-none">{t("none")}</p>
@@ -107,9 +117,7 @@ function useGrantForm(producerId, t, tOwner, setState) {
       });
       const granted = KashrutGrantSchema.safeParse(r.data); // rule 19
       if (!granted.success) throw new Error("unexpected grant response");
-      // The server's state, re-read: the expiry may be an earlier live badge's.
-      const p = (await api.get(`/admin/producers/${producerId}`)).data || {};
-      setState(() => ({ badges: p.kashrut_badges || [granted.data.badge_code], verifiedAt: p.kashrut_verified_at, expiresAt: p.kashrut_expires_at }));
+      setState(await readBack(producerId, granted.data.badge_code));
       setCode("");
       setCertUrl("");
       setExpiresOn("");
@@ -161,6 +169,23 @@ function GrantForm({ form, t, tOwner, tBadges }) {
       {form.error && <InlineMessage data-testid="kashrut-grant-error">{form.error}</InlineMessage>}
     </div>
   );
+}
+
+/**
+ * The server's state after a grant: the expiry may be an earlier live badge's.
+ * Its own try — a failed re-read after a 201 must not read as a failed grant
+ * (a retry would write a second approved row).
+ * @param {string} producerId
+ * @param {string} code
+ */
+async function readBack(producerId, code) {
+  try {
+    const res = await api.get(`/admin/producers/${producerId}`);
+    const p = res.data || {};
+    return () => ({ badges: p.kashrut_badges || [code], verifiedAt: p.kashrut_verified_at, expiresAt: p.kashrut_expires_at });
+  } catch {
+    return (/** @type {any} */ s) => ({ ...s, badges: [...new Set([...s.badges, code])], verifiedAt: new Date().toISOString() });
+  }
 }
 
 /** @param {{ form: ReturnType<typeof useGrantForm>, t: (k: string) => string, tOwner: (k: string) => string }} props */

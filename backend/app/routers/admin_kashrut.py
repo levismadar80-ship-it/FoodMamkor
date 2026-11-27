@@ -134,6 +134,10 @@ def grant_kashrut_badge(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # ADR-036: the public cert proxy never serves an organizer's certificate,
+    # so a badge here would be one with no certificate behind it.
+    if producer.kind == "organizer":
+        raise HTTPException(status_code=409, detail="מארגן שווקים ואירועים לא מקבל תג כשרות")
 
     # MEH-3247: the same ownership call every image-storing route makes (an
     # admin passes it; kept so the route walk needs no exemption).

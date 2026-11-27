@@ -238,8 +238,8 @@ class AdminKashrutGrantIn(KashrutApproveIn):
     turns the badge on in one step (a business with no account cannot file
     the request herself). Same printed-expiry rules as approve."""
 
-    badge_code: str
-    cert_url: str
+    badge_code: str = Field(max_length=50)
+    cert_url: str = Field(max_length=500)
 
     @field_validator("cert_url")
     @classmethod
