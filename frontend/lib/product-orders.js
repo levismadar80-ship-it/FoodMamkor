@@ -187,9 +187,11 @@ export async function saveSettings(body) {
   return GetMyOrderSettingsProducersMeOrderSettingsGetResponse.parse(data);
 }
 
+/** The week, and whether a delivery can be priced at all (MEH-3970). */
 export async function loadWindows() {
   const { data } = await api.get("/producers/me/order-windows");
-  return GetMyOrderWindowsProducersMeOrderWindowsGetResponse.parse(data).windows;
+  const week = GetMyOrderWindowsProducersMeOrderWindowsGetResponse.parse(data);
+  return { windows: week.windows, deliveryPriced: week.delivery_priced };
 }
 
 /** @param {any[]} windows the whole week */

@@ -8102,7 +8102,10 @@ export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__
 /**
  * @summary Get My Order Windows
  */
+export const getMyOrderWindowsProducersMeOrderWindowsGetResponseDeliveryPricedDefault = true;
+
 export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/ zod.object({
+  "delivery_priced": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyOrderWindowsProducersMeOrderWindowsGetResponseDeliveryPricedDefault),
   "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "end_time": /*#__PURE__*/ zod.iso.time({}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
@@ -8117,7 +8120,10 @@ export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/
  * so the table cannot grow past 28 rows a business (MEH-3022).
  * @summary Put My Order Windows
  */
+export const putMyOrderWindowsProducersMeOrderWindowsPutResponseDeliveryPricedDefault = true;
+
 export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/ zod.object({
+  "delivery_priced": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), putMyOrderWindowsProducersMeOrderWindowsPutResponseDeliveryPricedDefault),
   "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "end_time": /*#__PURE__*/ zod.iso.time({}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),

@@ -12,7 +12,8 @@ Does NOT: own any delivery fact. The columns stay owned by the dashboard's
           before she sends the request.
 Related:  app/models/models.py (Producer.delivery_*, DeliveryArea),
           app/services/product_order_create.py (the caller)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3970 (the fee
+          before the minimum; can_price_some_city for the menu)
 """
 
 from dataclasses import dataclass
@@ -73,20 +74,39 @@ def quote(facts: DeliveryFacts, city: str, subtotal_agorot: int) -> int:
     )
     if not served:
         raise DeliveryRefused(CITY_NOT_SERVED_DETAIL)
+    # MEH-3970: the hard «no» before the soft «add more» — a buyer who adds
+    # items to pass the minimum must not then learn there is no fee at all.
+    fee = facts.area_fee if facts.area_fee is not None else facts.fee
+    if fee is None:
+        raise DeliveryRefused(FEE_NOT_PUBLISHED_DETAIL)
     if (
         facts.area_min_order is not None
         and subtotal_agorot < facts.area_min_order * AGOROT_PER_SHEKEL
     ):
         raise DeliveryRefused(AREA_MINIMUM_DETAIL)
-    fee = facts.area_fee if facts.area_fee is not None else facts.fee
-    if fee is None:
-        raise DeliveryRefused(FEE_NOT_PUBLISHED_DETAIL)
     if (
         facts.free_above is not None
         and subtotal_agorot >= facts.free_above * AGOROT_PER_SHEKEL
     ):
         return 0
     return fee * AGOROT_PER_SHEKEL
+
+
+def can_price_some_city(db: Session, producer: Producer) -> bool:
+    """MEH-3970: whether `quote` can succeed for at least one city.
+
+    False when she switched delivery off, serves no city, or published no fee
+    — none for the business and none on any city. The order menu offers no
+    delivery slot then, so the buyer never picks «משלוח» to be refused after
+    typing her city."""
+    if not producer.offers_delivery:
+        return False
+    areas = db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).all()
+    if any(area.delivery_fee is not None for area in areas):
+        return True
+    if producer.delivery_fee is None:
+        return False
+    return bool(areas or producer.delivery_nationwide or producer.delivery_cities)
 
 
 def _canonical_set(values: Any) -> frozenset[str]:
