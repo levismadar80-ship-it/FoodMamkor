@@ -283,7 +283,12 @@ function useBadgesThatFit(lineRef, earned) {
 /** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode, imagePriority?: "high" | "eager" }} props */
 export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false, imagePriority = undefined }) {
   const t = useTranslations();
-  const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
+  // MEH-3968: a nationwide business's rows are zones on other terms; the
+  // page's top line leaves them out (MEH-3511), so the card does too.
+  const cardFee = resolveDeliveryFee(
+    producer.delivery_fee,
+    producer.delivery_nationwide ? [] : producer.delivery_areas,
+  );
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
   // row instead of a chip. MEH-2744: that row then shows only the threshold.
   // MEH-3861: the same Israel day OfferBadge reads, so card and chip agree.
