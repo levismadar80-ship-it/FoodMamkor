@@ -43,6 +43,7 @@ import {
   visibleBusinessFeatures,
 } from "@/lib/business-features";
 import { rescueBagsEnabled } from "@/lib/rescue";
+import { Link } from "@/i18n/navigation";
 import FeatureTip from "./FeatureTip";
 import SectionHeading from "@/components/ui/SectionHeading";
 
@@ -307,6 +308,7 @@ function GroupCard({ group, selected, active, index, onSelect, copy, media }) {
 }
 
 function Panel({ group, features, t, tw }) {
+  const tg = useTranslations("orders_guide");
   const tiles = features.filter((f) => f.tile);
   const rest = features.filter((f) => !f.tile);
   return (
@@ -342,6 +344,12 @@ function Panel({ group, features, t, tw }) {
               <Check size={18} className="mt-1 shrink-0 text-primary" aria-hidden="true" />
               <span className="min-w-0">
                 <span id={`join-item-${feature.id}`}>{t(`items.${feature.id}.label`)}</span>
+                {/* MEH-3981: a tool with its own explainer page links to it. */}
+                {feature.guide ? (
+                  <Link href={feature.guide} data-testid="join-feature-guide" className="ms-2 whitespace-nowrap text-sm font-medium text-action-primary underline underline-offset-4 hover:no-underline focus-ring rounded-sm">
+                    {tg("link")}
+                  </Link>
+                ) : null}
                 {feature.tip ? (
                   <FeatureTip
                     label={tw("trigger")}

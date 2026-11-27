@@ -117,6 +117,17 @@ beforeEach(() => {
   mockReads();
 });
 
+describe("the orders tab header (MEH-3981)", () => {
+  it("links to /join/orders beside «איך זה נראה ללקוחות»", async () => {
+    mockReads();
+    await renderPage();
+    const link = screen.getByTestId("orders-guide-link");
+    expect(link.getAttribute("href")).toBe("/join/orders");
+    expect(link.textContent).toBe(he.orders_guide.link);
+    expect(link.parentElement).toBe(screen.getByTestId("orders-preview-link").parentElement);
+  });
+});
+
 describe("the «?» on the seven order-setup fields (MEH-3752)", () => {
   it("has help text in he and en for exactly the map's keys", () => {
     expect(Object.keys(O.help).sort()).toEqual([...KEYS].sort());

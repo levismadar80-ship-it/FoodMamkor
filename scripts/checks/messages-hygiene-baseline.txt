@@ -177,7 +177,6 @@ duplicate	2	לא, להשאיר
 duplicate	2	לאשר
 duplicate	2	לבטל את ההזמנה
 duplicate	2	לבתי העסק
-duplicate	2	לבתי עסק
 duplicate	2	לדוגמה: תוכן לא רלוונטי לפלטפורמה
 duplicate	2	להזמנה באתר של העסק
 duplicate	2	להרשמה ←
@@ -384,6 +383,7 @@ duplicate	3	כניסה לחשבון
 duplicate	3	כניסה למהמקור
 duplicate	3	כשרות מאומתת
 duplicate	3	כתבו ביקורת
+duplicate	3	לבתי עסק
 duplicate	3	להשלמת העמוד
 duplicate	3	לחמים ואפייה
 duplicate	3	לכל הנתונים
@@ -428,7 +428,6 @@ duplicate	3	שתפו בוואטסאפ
 duplicate	3	תג מאומת
 duplicate	3	תיאור קצר
 duplicate	4	7 הימים האחרונים
-duplicate	4	איך זה עובד
 duplicate	4	אלרגנים
 duplicate	4	בהעלאה…
 duplicate	4	בהפסקה
@@ -470,6 +469,7 @@ duplicate	4	תהליך הקבלה
 duplicate	4	תוכן
 duplicate	4	תנאי שימוש
 duplicate	5	אודות
+duplicate	5	איך זה עובד
 duplicate	5	אישור
 duplicate	5	גראס פד
 duplicate	5	חזרה לדף הבית

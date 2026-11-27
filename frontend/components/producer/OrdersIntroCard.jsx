@@ -12,7 +12,7 @@
  * Does NOT: decide the home slot's order — page.js does: welcome → first
  *           moment → this → «חדש במהמקור». Renders `fallback` whenever it
  *           has nothing to say, so the slot never goes empty because of it.
- * History:  MEH-3216 (creation)
+ * History:  MEH-3216 (creation) · MEH-3981 (link to /join/orders)
  */
 
 import { useEffect, useState } from "react";
@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { Basket } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 import { loadSettings } from "@/lib/product-orders";
+import { ORDERS_GUIDE_PATH } from "@/lib/orders-guide";
 
 export const ORDERS_INTRO_KEY = "mehamakor.orders_intro_closed";
 const ORDERS_HREF = "/producer/dashboard/orders";
@@ -51,6 +52,7 @@ function close() {
  */
 export default function OrdersIntroCard({ fallback = null, settings }) {
   const t = useTranslations("dashboard.producer.orders.intro");
+  const tGuide = useTranslations("orders_guide");
   const [show, setShow] = useState(
     /** @type {boolean | null} */ (
       settings === undefined ? null : !wasClosed() && settings.ok && Boolean(settings.value) && !settings.value?.enabled
@@ -91,6 +93,10 @@ export default function OrdersIntroCard({ fallback = null, settings }) {
           className="min-h-touch inline-flex items-center rounded-full px-4 bg-primary text-background text-sm font-medium hover:bg-primary-dark transition focus-ring"
         >
           {t("cta")}
+        </Link>
+        {/* MEH-3981: the explainer page, for a business that wants to read first. */}
+        <Link href={ORDERS_GUIDE_PATH} data-testid="orders-intro-guide" className="min-h-touch inline-flex items-center px-2 rounded text-sm font-medium text-action-primary underline underline-offset-4 hover:no-underline focus-ring">
+          {tGuide("link")}
         </Link>
         <button type="button" onClick={dismiss} data-testid="orders-intro-later" className="min-h-touch inline-flex items-center px-2 rounded text-sm text-fg-muted hover:text-text focus-ring">
           {t("later")}

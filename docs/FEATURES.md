@@ -86,6 +86,7 @@ left in v1" vs "what's planned for v2".
 |---|---|
 | `/join` | Recruitment landing for business owners: what you get, tools, how it works |
 | `/join/pricing` | Pricing for business owners (ADR-042) |
+| `/join/orders` | How a business takes orders through the site (MEH-3981) |
 | `/register/producer` | Business sign-up wizard (manual admin approval after) |
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
