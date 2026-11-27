@@ -66,14 +66,17 @@ const CHIP_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
 // picked chip partly past the end edge (measured 27/11 at 393px: «מאפים
 // וקינוחים» 1px out). Aligning the chip's own start is its own snap position,
 // so no neighbour can win; at the far end the browser clamps to max scroll,
-// where the end spacer clears the last chip.
+// where the end spacer clears the last chip. "Past the end" counts the
+// scroll-pe-12 zone too: a chip under the end fade would also be moved by
+// "nearest" and re-snapped the same way.
 function chipPastEndEdge(chip) {
   const row = chip.closest('[role="toolbar"]');
   if (!row) return false;
   const c = chip.getBoundingClientRect();
   const r = row.getBoundingClientRect();
-  const rtl = getComputedStyle(row).direction === "rtl";
-  return rtl ? c.left < r.left : c.right > r.right;
+  const style = getComputedStyle(row);
+  const pad = Number.parseFloat(style.scrollPaddingInlineEnd) || 0;
+  return style.direction === "rtl" ? c.left < r.left + pad : c.right > r.right - pad;
 }
 
 /**
@@ -118,7 +121,9 @@ function chipPastEndEdge(chip) {
  * scroll extent. It now renders ONLY when the row actually overflows —
  * a non-overflowing row carries zero trailing dead space (and cannot grow
  * phantom scroll extent out of its own filler). `scroll-pe-12` stays as the
- * scrollIntoView clearance mechanism either way.
+ * scrollIntoView clearance mechanism either way (for a chip past the end
+ * edge the row's snapping can undo it, so that case scrolls to "start" —
+ * MEH-3911, `chipPastEndEdge`).
  *
  * MEH-1383: desktop-pointer (hover:hover + pointer:fine) devices also get
  * round edge scroll-arrow buttons above the fades. Touch devices render
@@ -402,6 +407,8 @@ export default function ChipScrollRow({
         // omitted so the value is greppable and deliberate.
         // MEH-1340: scroll-pe-12 matches the end fade width so scrollIntoView
         // on an active chip stops clear of the fade zone (no JS offset math).
+        // MEH-3911: snap-proximity can re-snap a chip past the END edge back
+        // under the fade, so that case scrolls to "start" (chipPastEndEdge).
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-0 snap-x snap-proximity scroll-ps-0 scroll-pe-12 chip-scroll-fade-mask"
         // MEH-1572: the two mask stop depths (the gradient is in globals.css).
         style={fadeVars}
