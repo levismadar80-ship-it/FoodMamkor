@@ -2,7 +2,7 @@
 "use client";
 
 /**
- * Module:   hooks/useOrdersLive
+ * Module:   lib/use-orders-live
  * Purpose:  Keep an open «הזמנות» tab current (MEH-3964): once a minute while
  *           the tab is visible, and once when it comes back into view, read
  *           the pending orders (one request); reload the board only when that

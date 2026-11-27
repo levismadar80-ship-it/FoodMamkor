@@ -42,7 +42,7 @@ import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
-import useOrdersLive from "@/hooks/useOrdersLive";
+import useOrdersLive from "@/lib/use-orders-live";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";

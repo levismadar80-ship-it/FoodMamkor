@@ -12,7 +12,7 @@ vi.mock("@/lib/product-orders", () => ({
   loadOrders: (...args) => loadOrders(...args),
 }));
 
-import useOrdersLive from "@/hooks/useOrdersLive";
+import useOrdersLive from "@/lib/use-orders-live";
 import { dashboardTitle } from "@/lib/use-dashboard-title";
 
 /** @param {string} [status] @param {number} [id] */
