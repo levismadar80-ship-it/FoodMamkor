@@ -31,6 +31,8 @@
 
 import { forwardRef, useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import { useTranslations } from "next-intl";
 // MEH-2805: opening hours are picked from day rows, not typed.
 import LocationHoursField from "./LocationHoursField";
@@ -66,7 +68,7 @@ import IconButton from "@/components/ui/IconButton";
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
 // for the same component in the same confirmation role.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 
 // Street-level framing for an "is this the right spot?" check, matching the
 // register confirmation. MiniMap's own default (neighbourhood) is for reading a
