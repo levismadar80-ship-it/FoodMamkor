@@ -31,6 +31,7 @@
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 * `frontend/__tests__/CategoryPinGroupColours.test.jsx` · `frontend/__tests__/useMapFilters.legendGroups.test.js` — צבע לקבוצה, אייקון לקטגוריה, מקרא של 6 קבוצות (MEH-3076).
 * `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והכתובת `cooked-to-order` (MEH-3738, אנגלית מ-MEH-3911).
+* `frontend/__tests__/ChipScrollRowEndEdgeScroll.test.jsx` · `frontend/e2e/flows/manual/map-01.spec.ts` (צ'יפ בקצה) — צ'יפ שנבחר כשהוא חתוך בקצה השורה (או מתחת לדהייה) נגלל לתחילת השורה ונשאר גלוי כולו; ה-snap של השורה כבר לא מחזיר אותו חצי מוסתר (MEH-3911).
 * `frontend/__tests__/CakesCategoryReady.test.js` · `tests/test_meh3911_english_category_slugs.py` — הקטגוריה «עוגות וקינוחים» (נוצרת מהאדמין): אייקון משלה, קבוצת המאפים במפה (הצ'יפ של הקבוצה נקרא «מאפים וקינוחים» מ-27/11, כדי שמי שמחפשת קינוחים תמצא אותם; `map_category_chips.bread` ב-`frontend/messages/he.json`), שם ושורת דוגמה בשתי השפות. כתובות הקטגוריות באנגלית: האדמין מקליד כתובת באנגלית ביצירה, והמיגרציה `b3d5f7a9c1e2` מתקנת את `coffee` / `cooked-to-order` / `cakes-desserts` (MEH-3911).
 
 **מזהי רישום שזה מכסה.** `map_precision`, `multi_locations` (הצד הציבורי).
