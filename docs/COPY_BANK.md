@@ -754,7 +754,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 | UI chrome (button/link) | gerund/plural, never feminine |
 | Attribution noun (ADR-024) | `בית העסק` (entity) · `בעלת עסק` (woman) · `בעל עסק` (man) — never `יצרן`/`יצרנית` |
 
-**Forbidden in any testimonial surface:** `יצרן`/`יצרנית` · `אוכל ביתי`/`שכנות מבשלות`/`מהמטבח של השכן` · `marketplace` · `מגזין`. **Zero emoji** in testimonial copy (Emoji LOCK v2).
+**Forbidden in any testimonial surface:** `יצרן`/`יצרנית` · `שכנות מבשלות`/`מהמטבח של השכן` · `marketplace` · `מגזין`. **Zero emoji** in testimonial copy (Emoji LOCK v2).
 
 ### Status
 

@@ -89,7 +89,7 @@ These are the rules that prevent "AI slop." None are importable.
 
 - "מגזין, לא marketplace" · no transaction fees ever · manual approval per
   business · licensed businesses only.
-- Forbidden marketing premises: `שכנות מבשלות מהבית` / `אוכל ביתי` /
+- Forbidden marketing premises: `שכנות מבשלות מהבית` /
   `מהמטבח של השכן`.
 
 ---
