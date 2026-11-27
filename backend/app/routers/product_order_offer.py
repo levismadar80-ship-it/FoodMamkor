@@ -151,6 +151,7 @@ def get_my_products_ordering(
                 "price_unit": p.price_unit,
                 "contains_alcohol": p.contains_alcohol,
                 "daily_limit": p.daily_limit,
+                "lead_days": p.lead_days,
                 "variants": p.variants,
             }
             for p in rows
@@ -234,6 +235,7 @@ def _menu_product(product: Product) -> dict[str, Any]:
         "in_stock": product_variants.has_stock(product),
         "contains_alcohol": product.contains_alcohol,
         "available_weekdays": product.available_weekdays,  # MEH-3618
+        "lead_days": product.lead_days,  # MEH-3932
         "variants": product_variants.menu_variants(product, low, high, weighed),
     }
 
