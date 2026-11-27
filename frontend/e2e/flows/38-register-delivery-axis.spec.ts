@@ -118,6 +118,35 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
     await expect(page.getByTestId("register-fulfilment-error")).toHaveCount(0);
   });
 
+  // MEH-3918: the «כבר יש עמוד לעסק הזה» answer lands late (600 ms debounce,
+  // then the backend). Held here until after «הבא», as on a slow staging
+  // backend, it must push nothing on the form: the question and «הבא» stay put.
+  test("a late «already has a page» notice moves neither the question nor «הבא»", async ({ page }) => {
+    await mockBackend(page, { body: null });
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route("**/producer-identity-check", async (route: Route) => {
+      await held;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ match: { owner_email: null } }) });
+    });
+    await reachDetails(page);
+    await page.getByTestId("register-details-next").click();
+    await expect(page.getByTestId("register-fulfilment-error")).toBeVisible();
+    const before = {
+      question: await page.getByTestId("register-fulfilment").boundingBox(),
+      next: await page.getByTestId("register-details-next").boundingBox(),
+    };
+    release();
+    await expect(page.getByTestId("register-identity-check")).toBeVisible();
+    const after = {
+      question: await page.getByTestId("register-fulfilment").boundingBox(),
+      next: await page.getByTestId("register-details-next").boundingBox(),
+    };
+    expect(before.question && after.question, "the question renders").toBeTruthy();
+    expect(after.question!.y, "the notice must not push the question down").toBe(before.question!.y);
+    expect(after.next!.y, "the notice must not push «הבא» down").toBe(before.next!.y);
+  });
+
   for (const c of CASES) {
     test(`«${c.name}» reaches the POST body as its own pair of flags`, async ({ page }) => {
       const capture = { body: null as unknown };
