@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-70 tables, 833 columns.
+70 tables, 835 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -40,7 +40,7 @@
 | `experiences` | 34 | users |
 | `favorite_alerts` | 13 | producers, users |
 | `favorites` | 3 | producers, users |
-| `group_buy_commits` | 9 | group_buys, users |
+| `group_buy_commits` | 10 | group_buys, users |
 | `group_buy_waitlist` | 6 | group_buys, users |
 | `group_buys` | 27 | producer_locations, producers |
 | `home_product_ratings` | 7 | home_product_whatsapp_clicks, home_products, users |
@@ -79,7 +79,7 @@
 | `reports` | 8 | producers, users |
 | `rescue_no_show_tombstones` | 4 | — |
 | `rescue_offers` | 15 | producer_locations |
-| `rescue_orders` | 11 | rescue_offers, users |
+| `rescue_orders` | 12 | rescue_offers, users |
 | `rescue_reviews` | 8 | rescue_orders |
 | `rescue_typical_items` | 6 | producers |
 | `retired_slugs` | 4 | producers |
@@ -499,11 +499,13 @@
 | `pickup_code` | `VARCHAR(4)` | yes |  |  | orders |
 | `handed_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `no_show_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
+| `prepay_timing` | `VARCHAR(10)` | yes |  |  | orders |
 
 **CHECK**
 
 - `group_buy_commits_one_outcome_check`: `handed_at IS NULL OR no_show_at IS NULL`
 - `group_buy_commits_pickup_code_check`: `pickup_code IS NULL OR pickup_code ~ '^[0-9]{4}$'`
+- `group_buy_commits_prepay_timing_check`: `prepay_timing IS NULL OR prepay_timing IN ('advance', 'deposit', 'counter')`
 
 **UNIQUE**
 
@@ -1567,11 +1569,13 @@
 | `handed_by` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
 | `cancelled_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `paid_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
+| `prepay_timing` | `VARCHAR(10)` | yes |  |  | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
 
 **CHECK**
 
 - `rescue_orders_pickup_code_check`: `pickup_code ~ '^[0-9]{4}$'`
+- `rescue_orders_prepay_timing_check`: `prepay_timing IS NULL OR prepay_timing IN ('advance', 'deposit', 'counter')`
 - `rescue_orders_qty_check`: `qty >= 1 AND qty <= 2`
 - `rescue_orders_status_check`: `status IN ('reserved', 'handed', 'no_show', 'cancelled')`
 

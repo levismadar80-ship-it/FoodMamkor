@@ -6,11 +6,12 @@ Touches:  group_buys (status), group_buy_commits + users (read, recipients),
           Resend via group_buy_notifications.notify_participant_expired.
 Does NOT: touch funded groups (they reached the goal; the business closes them
           with fulfilled/cancelled, group_buys.update_group_buy_status), or
-          email the business (new copy, not in this card).
+          email the business, except the MEH-3897 refund note for a group that
+          had been funded (services/prepay_refunds.py).
 Related:  startup._run_group_buy_expiry_job (the daily trigger, 06:00 UTC) ·
           group_buys._public_group_buys (MEH-2540 already hides these) ·
           group_buy_delist.cancel_live_group_buys (same lock + recipients shape).
-History:  MEH-3287 (creation).
+History:  MEH-3287 (creation) · MEH-3897 (refund note to the business).
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.services.group_buy_notifications import notify_participant_expired
+from app.services.prepay_refunds import Mail, group_buy_cancel_mails, send_mails
 from app.utils.clock import utc_now
 
 logger = logging.getLogger(__name__)
@@ -44,7 +46,10 @@ def expire_unfunded_group_buys(db: Session, now: datetime | None = None) -> int:
         .all()
     )
     outbox: list[tuple[str, str, str, bool]] = []
+    refunds: list[Mail] = []
     for gb in due:
+        # MEH-3897: a group that was funded and fell back may hold payments.
+        refunds += group_buy_cancel_mails(db, gb, "expired")
         producer = db.get(Producer, gb.producer_id)
         name = producer.name if producer else ""
         test_cause = bool(producer and producer.is_test)  # MEH-2952
@@ -63,6 +68,7 @@ def expire_unfunded_group_buys(db: Session, now: datetime | None = None) -> int:
             notify_participant_expired(email, title, name, test_cause=test_cause)
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception("[group-buy] expiry email to a participant failed")
+    send_mails(refunds)
     if due:
         logger.info("[group-buy] expired %d unfunded group buy(s)", len(due))
     return len(due)
