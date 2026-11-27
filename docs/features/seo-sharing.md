@@ -26,6 +26,7 @@
 **טסטים**
 * `frontend/__tests__/OgUrlPerLocale.test.js`
 * `frontend/__tests__/GoogleSeoRulesMeh3638.test.js` · `frontend/__tests__/sitemap.test.js` (`MEH-3638`) — noindex ל-/en, כתובת וטלפון ‎+972 ב-JSON-LD, קידוד ה-sitemap.
+* `frontend/app/llms.txt/route.js` · `frontend/lib/llms-txt.js` · `frontend/__tests__/LlmsTxtBusinesses.test.js` (`MEH-3953`) — ‏`/llms.txt` נבנה מהקטלוג החי: העמודים הראשיים ושורה לכל בית עסק מאושר (שם, תיאור קצר, עיר, קישור). ההליכה על הקטלוג משותפת עם ה-sitemap ב-`frontend/lib/all-producers.js`.
 * `frontend/__tests__/OgSiteImage.test.js` · `scripts/checks/og-site-image-guard.sh` — כל openGraph עם תמונה, ואין PNG כבד (MEH-3590).
 * `frontend/e2e/flows/39-en-locale-direction.spec.ts` · `frontend/e2e/flows/41-not-found-chrome.spec.ts`
 * `frontend/e2e/flows/manual/link-crawl.spec.ts`

@@ -652,7 +652,7 @@ export function buildJsonLd(producer, locale = "he") {
  * producers each have their own FoodEstablishment node (see buildJsonLd).
  *
  * `description` is SITE_DESCRIPTION (lib/constants.js) — the same sentence
- * public/llms.txt and every meta description carry, so every surface that
+ * /llms.txt (lib/llms-txt.js) and every meta description carry, so every surface that
  * describes the site says one thing (MEH-3424 / ADR-043). CANONICAL_SENTENCE,
  * which held this field from MEH-2192 until then, is the `slogan`.
  */
