@@ -21,11 +21,24 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SkeletonProducerPage } from "@/components/Skeleton";
 import { cameFromInsideSite } from "@/components/HistoryBackLink";
+import { MAP_REFERRER } from "@/lib/map-view-state";
 import { useScrollTopOnArrival } from "@/lib/route-memory";
 
 // Before paint on the client; a plain effect on the server (no layout there).
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
+/**
+ * Which row the business page will show above its cover on a phone.
+ * @param {Window & typeof globalThis} win
+ * @returns {"back" | "map" | null}
+ */
+function pickBackRow(win) {
+  if (new URLSearchParams(win.location.search).get("from") === MAP_REFERRER) return "map";
+  return cameFromInsideSite(win) ? "back" : null;
+}
+
+// (Not exported: a non-default export in a Next special file breaks its type
+// contract under `next build --webpack`, MEH-1119.)
 // DO NOT make this an async server component that calls getTranslations()
 // without a locale — loading.js gets no params, so next-intl would fall back to
 // headers() and every business page would render per request (MEH-2878).
@@ -33,11 +46,13 @@ export default function ProducerPageLoading() {
   const t = useTranslations("a11y");
   // The frame is drawn at the top of the page, so open it there (lib/route-memory.js).
   useScrollTopOnArrival();
-  // The page shows «→ חזרה» above the cover on a phone when a page of the site
-  // is behind it; the frame holds the same row, read the same way, before paint.
-  const [backRow, setBackRow] = useState(false);
+  // The page shows a row above the cover on a phone: «חזרה למפה» on ?from=map,
+  // else «→ חזרה» when a page of the site is behind it (ProducerDetail.jsx,
+  // breadcrumb block). The frame holds the same row, read the same way, before
+  // paint, so the cover does not move when the page replaces the frame.
+  const [backRow, setBackRow] = useState(/** @type {"back" | "map" | null} */ (null));
   useIsomorphicLayoutEffect(() => {
-    setBackRow(cameFromInsideSite());
+    setBackRow(pickBackRow(window));
   }, []);
   // data-route-loader: the footer stays hidden while this is on screen (MEH-3878, globals.css).
   return (

@@ -377,17 +377,24 @@ export function SkeletonEventDetail({ label, testId }) {
  * h-[min(78vw,340px)] edge to edge on a phone, 380px rounded from md; then
  * mt-8 a two-column grid (1fr + 320px aside from lg): name row 40px, two
  * 24px meta lines (mt-3, mt-2.5), and the aside's first card on desktop.
- * `backRow`: the phone's «→ חזרה» row (44px + mb-2) that the page shows when
- * a page of the site is behind it (HistoryBackLink) — without it the cover
- * would sit 52px higher than the page's and jump when the page arrives.
+ * `backRow`: the row the page shows above the cover on a phone, so the cover
+ * does not jump when the page arrives (ProducerDetail's breadcrumb block):
+ *   "back" — «→ חזרה» (HistoryBackLink, 44px + mb-2) when a page of the site
+ *            is behind it;
+ *   "map"  — «חזרה למפה» (BackLink, 25px measured + mb-2) on ?from=map,
+ *            which replaces «→ חזרה»; on desktop it sits on the breadcrumb line.
  *
- * @param {{ label?: string, testId?: string, backRow?: boolean }} props
+ * @param {{ label?: string, testId?: string, backRow?: "back" | "map" | null }} props
  */
-export function SkeletonProducerPage({ label, testId, backRow = false }) {
+export function SkeletonProducerPage({ label, testId, backRow = null }) {
   return (
     <SkeletonStatus label={label} className="max-w-6xl mx-auto px-4 pt-6 pb-6" testId={testId}>
       {backRow && (
-        <div className="lg:hidden h-11 mb-2 flex items-center" aria-hidden="true" data-skeleton="back-row">
+        <div
+          className={`lg:hidden ${backRow === "map" ? "h-[25px]" : "h-11"} mb-2 flex items-center`}
+          aria-hidden="true"
+          data-skeleton={`${backRow}-row`}
+        >
           <div className="skeleton-box rounded-lg h-4 w-14" />
         </div>
       )}

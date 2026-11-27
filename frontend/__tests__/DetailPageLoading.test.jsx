@@ -12,16 +12,12 @@
  * phone, is e2e/flows/manual/nav-throttled.spec.ts (0 blank frames).
  */
 import path from "node:path";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 
 import he from "../messages/he.json";
 import { rootClientMessages } from "@/lib/client-messages";
-
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>,
-}));
 
 const APP = path.resolve(__dirname, "..", "app", "[locale]");
 
@@ -57,5 +53,37 @@ describe("MEH-3983: detail pages wait on their own frame", () => {
     await renderLoading("[slug]/recipes/loading.js");
     expect(screen.getByTestId("route-loading")).toBeTruthy();
     expect(screen.queryByTestId("producer-page-loading")).toBeNull();
+  });
+});
+
+// The business page shows a row above its cover on a phone (ProducerDetail.jsx,
+// breadcrumb block): «חזרה למפה» on ?from=map, else «→ חזרה» when a page of the
+// site is behind it. The frame must hold the same row, or the cover jumps by
+// that row's height when the page replaces the frame (measured 28/11: 52px).
+describe("MEH-3983: the business frame holds the row the page will show above its cover", () => {
+  afterEach(() => {
+    delete window.navigation;
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("a page of the site behind it → the «→ חזרה» row", async () => {
+    window.navigation = { canGoBack: true };
+    const { container } = await renderLoading("[slug]/loading.js");
+    expect(container.querySelector('[data-skeleton="back-row"]')).not.toBeNull();
+    expect(container.querySelector('[data-skeleton="map-row"]')).toBeNull();
+  });
+
+  it("?from=map → the «חזרה למפה» row, even with a page behind it", async () => {
+    window.navigation = { canGoBack: true };
+    window.history.replaceState(null, "", "/biz?from=map");
+    const { container } = await renderLoading("[slug]/loading.js");
+    expect(container.querySelector('[data-skeleton="map-row"]')).not.toBeNull();
+    expect(container.querySelector('[data-skeleton="back-row"]')).toBeNull();
+  });
+
+  it("a direct landing (nothing of ours behind it) → no row", async () => {
+    window.navigation = { canGoBack: false };
+    const { container } = await renderLoading("[slug]/loading.js");
+    expect(container.querySelector('[data-skeleton$="-row"]')).toBeNull();
   });
 });
