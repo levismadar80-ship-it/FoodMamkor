@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+// MEH-3969: the add CTA (components/HostAddCta.jsx) reads the session.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 
 // MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));

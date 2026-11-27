@@ -38,6 +38,7 @@ import { presentCategories, visibleCategoryChips } from "@/lib/event-category-ga
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import HubShell from "@/components/HubShell";
+import HostAddCta from "@/components/HostAddCta";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonBlock } from "@/components/Skeleton";
@@ -472,14 +473,21 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
         subtitle={isExp ? t("subtitle_experiences") : t("subtitle")}
         onSelect={switchTab}
         action={
-          <Link
+          // MEH-3969: owner → the dashboard form; anyone else → a short
+          // dialog to business sign-up (was a straight link that sent a
+          // visitor to /login, then «אין גישה»).
+          <HostAddCta
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="min-w-0 min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
+            kind={isExp ? "experiences" : "events"}
+            variant="text"
+            size="sm"
+            testId="events-add-cta"
+            className="min-w-0 hover:underline"
+            /* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */
+            trailingIcon={<ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />}
           >
             {isExp ? t("submit_experience") : t("add_event")}
-            {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
-            <ArrowRight size={16} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
-          </Link>
+          </HostAddCta>
         }
       />
 
@@ -628,13 +636,15 @@ function EmptyState({ tab, t }) {
       </p>
       <div className="mt-6 flex flex-col items-center gap-4 w-full">
         {isExp && (
-          <Link
+          <HostAddCta
             href="/producer/dashboard/experiences/new"
-            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+            kind="experiences"
+            testId="events-empty-add-cta"
+            className="w-full max-w-[260px]"
+            leadingIcon={<Plus size={18} weight="bold" aria-hidden="true" />}
           >
-            <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
-          </Link>
+          </HostAddCta>
         )}
         <Link
           href="/producers"
