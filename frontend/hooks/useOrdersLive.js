@@ -33,7 +33,7 @@ function pendingIds(orders) {
 
 /** Changed = a different count, or an id on the first page the board lacks.
  * A count over one page (50) still compares right, without reading it all.
- * @param {{ total: number, orders: any[] }} page @param {Set<number>} known */
+ * @param {{ total: number, orders: any[] }} page @param {Set<string | number>} known */
 function changed(page, known) {
   return page.total !== known.size || page.orders.some((o) => !known.has(o.id));
 }
@@ -43,7 +43,7 @@ function changed(page, known) {
  * @param {(orders: any[]) => void} onFresh gets the whole reloaded list
  */
 export default function useOrdersLive(orders, onFresh) {
-  const known = useRef(/** @type {Set<number>} */ (new Set()));
+  const known = useRef(/** @type {Set<string | number>} */ (new Set()));
   const fresh = useRef(onFresh);
   fresh.current = onFresh;
   const loaded = orders !== null;
