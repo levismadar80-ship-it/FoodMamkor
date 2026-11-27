@@ -10,7 +10,7 @@ Does NOT: decide what a timer is for (the 24-hour answer window, the 4-hour
           product_order_outbox pass the hours. Does NOT know the calendar:
           hebrew_calendar does.
 Related:  app/services/hebrew_calendar.py (rest_windows)
-History:  MEH-3296 (creation; stage 3 of MEH-3216)
+History:  MEH-3296 (creation; stage 3 of MEH-3216) · MEH-3956 (answer_deadline)
 """
 
 from datetime import UTC, datetime, timedelta
@@ -67,3 +67,17 @@ def active_deadline(start_utc: datetime, hours: float) -> datetime:
             remaining -= gap
         cursor = max(cursor, closes)
     return cursor + remaining
+
+
+def answer_deadline(
+    start_utc: datetime, hours: float, slot_start: datetime
+) -> datetime:
+    """When a request lapses: `hours` of active time, but never after the
+    slot it is for begins.
+
+    MEH-3956: a Friday-evening order for Sunday 08:00 got «until Sunday 21:00»,
+    since Shabbat does not count, though a confirm after the slot starts is
+    refused (product_order_actions._check_confirmable). The same holds for the
+    buyer's answer to a proposal: its slot is the proposed one.
+    """
+    return min(active_deadline(start_utc, hours), slot_start)
