@@ -1,5 +1,4 @@
 // @ts-check
-import "server-only";
 /**
  * Module:   all-producers
  * Purpose:  Every approved business, walked page by page over GET /producers.
@@ -10,6 +9,7 @@ import "server-only";
  * History:  MEH-2787 (walk written in sitemap.js); MEH-3953 (moved here so
  *           /llms.txt reuses it instead of a second copy).
  */
+import "server-only";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 
@@ -44,8 +44,9 @@ export async function fetchAllProducers() {
       `${API_URL}/producers?limit=${PRODUCERS_PAGE_SIZE}&offset=${offset}`,
     );
     if (!res.ok) {
-      // A mid-walk failure must not silently truncate the sitemap: the pages
-      // already collected would look like the whole catalog.
+      // A mid-walk failure returns what was collected (the sitemap and llms.txt
+      // then miss the rest until the next rebuild); a first-page failure
+      // returns null so neither claims the catalog is empty.
       return page === 0 ? null : all;
     }
     const batch = await res.json();
@@ -56,7 +57,7 @@ export async function fetchAllProducers() {
   console.warn(
     `[all-producers] producer walk hit the ${PRODUCERS_MAX_PAGES}-page cap ` +
       `(${PRODUCERS_MAX_PAGES * PRODUCERS_PAGE_SIZE} businesses). Businesses past ` +
-      `that are NOT in the sitemap — raise PRODUCERS_MAX_PAGES or split the file.`,
+      `that are NOT in /sitemap.xml or /llms.txt — raise PRODUCERS_MAX_PAGES.`,
   );
   return all;
 }
