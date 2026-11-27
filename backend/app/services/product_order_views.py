@@ -144,7 +144,7 @@ _NOTE_TO_BUYER_STATUSES = ("declined", "cancelled")
 def business_note(db: Session, order: ProductOrder) -> str | None:
     """The note the business wrote with its decline or cancel. The decline
     dialog asks for «הסיבה, כפי שהלקוח יראה אותה»; a system or buyer close
-    shows none (a system note is internal wording)."""
+    shows none."""
     if order.status not in _NOTE_TO_BUYER_STATUSES:
         return None
     event = (
@@ -156,7 +156,9 @@ def business_note(db: Session, order: ProductOrder) -> str | None:
         .order_by(ProductOrderEvent.created_at.desc())
         .first()
     )
-    if event is None or event.actor != "business":
+    # The business's words, or an admin's acting for it through the same
+    # dialog. A system note is internal wording, not a message to the buyer.
+    if event is None or event.actor not in ("business", "admin"):
         return None
     note = str(event.note or "").strip()
     return note or None
