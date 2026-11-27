@@ -1936,7 +1936,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 ```
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
-POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner; MEH-3026: no licence guard on either path — for the owner-claim link
+POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner; MEH-3026: no licence guard on either path — for the owner-claim link; MEH-3883: a business that shares a phone (either), email, Instagram, website or Facebook with ANY existing business (any status, owned or not; owners' account phones and emails count; test businesses excluded) → 409 `{code: "DUPLICATE_BUSINESS", message, total, matches: [{id, name, status, owner_email, reasons}]}`; a transaction advisory lock serialises admin creates so two parallel ones cannot both pass (≤ 5, strongest first), nothing written; `allow_duplicate: true` creates anyway (not stored)
 PUT    /admin/producers/{id}                   admin — MEH-3245: a changed `phone` resets phone_verified=false and burns open codes (services/phone_reverify.py)
                                                MEH-3475: also takes `delivery_areas` rows (city · delivery_day · min_order · delivery_fee,
                                                the owner DeliveryCard's shape, same whitelist → 422) plus order_window / payment_info.
