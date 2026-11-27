@@ -2103,6 +2103,11 @@
             ],
             "title": "Note"
           },
+          "owed": {
+            "default": false,
+            "title": "Owed",
+            "type": "boolean"
+          },
           "paid_at": {
             "anyOf": [
               {

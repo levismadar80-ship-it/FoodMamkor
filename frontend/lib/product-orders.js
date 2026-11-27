@@ -26,6 +26,7 @@ import {
   ListBusinessOrdersProducersMeProductOrdersGetResponse,
 } from "@/lib/generated/api.zod";
 import { agorotToShekels, shekelsToAgorot } from "@/lib/money";
+import { loadOwedOrders, withOwed } from "@/lib/order-paid";  // MEH-3962
 
 const TZ = "Asia/Jerusalem";
 // The server's page cap (product_order_business.py MAX_PAGE). A bigger limit
@@ -230,8 +231,12 @@ async function latestOf(/** @type {string} */ status) {
  * per status keeps a busy business's open orders from falling off the page.
  */
 export async function loadOrders() {
-  const lists = await Promise.all([...OPEN_STATUSES.map(allOf), ...DONE_STATUSES.map(latestOf)]);
-  return lists.flat();
+  const [owed, ...lists] = await Promise.all([
+    loadOwedOrders(), // MEH-3962: an owed handed order older than the latest page
+    ...OPEN_STATUSES.map(allOf),
+    ...DONE_STATUSES.map(latestOf),
+  ]);
+  return withOwed(lists.flat(), owed);
 }
 
 /** MEH-3770: every order the business already accepted (confirmed, ready). */

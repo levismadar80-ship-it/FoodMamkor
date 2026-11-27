@@ -522,6 +522,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-again.js` | «להזמין שוב»: carry a finished order's lines from its status page to the business page, where they fill the cart again — the items still on the menu are … |
 | `order-cart.js` | What a buyer has picked on a business page before she sends an order request: the menu read, and the pure sums over her picks. |
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
+| `order-paid.js` | MEH-3962 — the business's «שולם» mark on an on-site order: which orders can carry it, which are still owed for, and the call that sets or clears it. |
 | `order-repeat.js` | A buyer's weekly repeat of an order (MEH-3933): the weekday and time it repeats on, on the Israel clock, and the two ways to stop it — the buyer from her … |
 | `order-setup-draft.js` | Put a «ספרו לנו איך אתם מקבלים הזמנות» draft (MEH-3752) into the three order-setup cards: the settings numbers, the weekly hand-over windows and the products … |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
@@ -880,6 +881,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderCard.jsx` | One on-site order as the business sees it: who, what, when, how much, and the actions its status allows. |
 | `dashboard/orders/OrderCustomersCard.jsx` | «הלקוחות שלכם» in the «הזמנות» tab: who ordered through the site, how many times and when last, «לקוח חוזר» from two orders, and a CSV download so the … |
 | `dashboard/orders/OrderDialogs.jsx` | The four forms an order action may need: a final price after weighing, a decline reason, a proposed change, a hand-over code, and a cancel note. … |
+| `dashboard/orders/OrderPaidControl.jsx` | On the business's order card (MEH-3962): «סמנו כשולם», or, once marked, «✓ שולם» with an undo; … |
 | `dashboard/orders/OrderPrepList.jsx` | «מה להכין» above the order lists: for each pickup day from today for a week, how many of each product and size to prepare — confirmed, and apart from it what … |
 | `dashboard/orders/OrderProductsCard.jsx` | The business's products with the two switches on-site ordering needs every day: «פתוח להזמנה באתר» and «אזל כרגע». |
 | `dashboard/orders/OrderRepeatControl.jsx` | On the business's order card, for an order of a weekly repeat (MEH-3933): the day and time it repeats on, and the stop button. |

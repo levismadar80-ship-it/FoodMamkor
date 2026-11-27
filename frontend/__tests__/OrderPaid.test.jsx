@@ -58,6 +58,9 @@ function order(over = {}) {
   };
 }
 
+/** What the server says: owed = taken on, not paid (handed from the cutoff). */
+const owed = (over = {}) => order({ owed: true, ...over });
+
 beforeEach(() => vi.clearAllMocks());
 
 describe("the order card", () => {
@@ -68,7 +71,7 @@ describe("the order card", () => {
   });
 
   it("an owed order: «לא שולם», the mark, and a reminder with name and total", () => {
-    wrap(<ul><OrderCard order={order()} onChanged={vi.fn()} /></ul>);
+    wrap(<ul><OrderCard order={owed()} onChanged={vi.fn()} /></ul>);
     expect(screen.getByTestId("order-unpaid-badge").textContent).toBe(T.unpaid);
     expect(screen.getByTestId("order-paid-mark").textContent).toContain(T.mark);
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
@@ -82,8 +85,8 @@ describe("the order card", () => {
 
   it("marking sends paid: true and shows the server's order", async () => {
     const onChanged = vi.fn();
-    const o = order();
-    api.post.mockResolvedValue({ data: { ...o, paid_at: PAID_AT } });
+    const o = owed();
+    api.post.mockResolvedValue({ data: { ...o, paid_at: PAID_AT, owed: false } });
     wrap(<ul><OrderCard order={o} onChanged={onChanged} /></ul>);
     fireEvent.click(screen.getByTestId("order-paid-mark"));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
@@ -114,9 +117,32 @@ describe("the order card", () => {
     expect(screen.queryByTestId("order-paid-remind")).toBeNull();
   });
 
+  it("a weighed order with no final total: the reminder names no sum", () => {
+    wrap(<ul><OrderCard order={owed({ has_estimate: true, final_total_agorot: null })} onChanged={vi.fn()} /></ul>);
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(screen.getByTestId("order-paid-remind"));
+    const text = decodeURIComponent(open.mock.calls[0][0]);
+    open.mockRestore();
+    expect(text).toContain("שלום דנה לוי");
+    expect(text).not.toContain("₪");
+  });
+
+  it("a handed order the server does not count as owed shows no badge or reminder", () => {
+    wrap(<ul><OrderCard order={order({ status: "handed", owed: false })} onChanged={vi.fn()} /></ul>);
+    expect(screen.getByTestId("order-paid-mark")).toBeTruthy();
+    expect(screen.queryByTestId("order-unpaid-badge")).toBeNull();
+    expect(screen.queryByTestId("order-paid-remind")).toBeNull();
+  });
+
+  it("an erased buyer (no phone) gets no reminder button", () => {
+    wrap(<ul><OrderCard order={owed({ status: "handed", customer_phone: "" })} onChanged={vi.fn()} /></ul>);
+    expect(screen.getByTestId("order-unpaid-badge")).toBeTruthy();
+    expect(screen.queryByTestId("order-paid-remind")).toBeNull();
+  });
+
   it("a refused mark shows the server's Hebrew", async () => {
     api.post.mockRejectedValue({ response: { data: { detail: "אפשר לסמן «שולם» רק בהזמנה שאישרתם" } } });
-    wrap(<ul><OrderCard order={order()} onChanged={vi.fn()} /></ul>);
+    wrap(<ul><OrderCard order={owed()} onChanged={vi.fn()} /></ul>);
     fireEvent.click(screen.getByTestId("order-paid-mark"));
     expect(await screen.findByText("אפשר לסמן «שולם» רק בהזמנה שאישרתם")).toBeTruthy();
   });
@@ -130,8 +156,8 @@ describe("the «לא שולמו» filter", () => {
   });
 
   it("one owed: counts 1, on shows that order only, off brings the tabs back", () => {
-    const owed = order({ customer_name: "חייבת אחת" });
-    wrap(<OrdersBoard orders={[owed, order({ status: "pending" })]} onChanged={vi.fn()} />);
+    const one = owed({ customer_name: "חייבת אחת" });
+    wrap(<OrdersBoard orders={[one, order({ status: "pending" }), order({ paid_at: PAID_AT })]} onChanged={vi.fn()} />);
     const button = screen.getByTestId("orders-owed-filter");
     expect(button.textContent).toBe(T.filter.replace("{count}", "1"));
     expect(button.getAttribute("aria-pressed")).toBe("false");
@@ -140,16 +166,19 @@ describe("the «לא שולמו» filter", () => {
     expect(within(list).getAllByTestId("order-card")).toHaveLength(1);
     expect(within(list).getByText("חייבת אחת")).toBeTruthy();
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(screen.getByTestId("orders-owed-filter").getAttribute("aria-pressed")).toBe("true");
+    const pressed = screen.getByTestId("orders-owed-filter");
+    expect(pressed.getAttribute("aria-pressed")).toBe("true");
+    expect(pressed.textContent).toBe(T.filter.replace("{count}", "1"));
     fireEvent.click(screen.getByTestId("orders-owed-filter"));
     expect(screen.getByRole("tablist")).toBeTruthy();
   });
 
   it("many owed across lists, none of the paid or open ones", () => {
     const orders = [
-      order({ status: "confirmed" }),
-      order({ status: "ready" }),
-      order({ status: "handed" }),
+      owed({ status: "confirmed" }),
+      owed({ status: "ready" }),
+      owed({ status: "handed" }),
+      order({ status: "handed", owed: false }),
       order({ status: "confirmed", paid_at: PAID_AT }),
       order({ status: "pending" }),
       order({ status: "cancelled" }),
@@ -161,17 +190,27 @@ describe("the «לא שולמו» filter", () => {
   });
 
   it("the last owed order marked paid ends the filter", () => {
-    const owed = order();
-    const { rerender } = wrap(<OrdersBoard orders={[owed]} onChanged={vi.fn()} />);
+    const last = owed();
+    const { rerender } = wrap(<OrdersBoard orders={[last]} onChanged={vi.fn()} />);
     fireEvent.click(screen.getByTestId("orders-owed-filter"));
     expect(screen.getByTestId("orders-owed-list")).toBeTruthy();
     rerender(
       <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
-        <OrdersBoard orders={[{ ...owed, paid_at: PAID_AT }]} onChanged={vi.fn()} />
+        <OrdersBoard orders={[{ ...last, paid_at: PAID_AT, owed: false }]} onChanged={vi.fn()} />
       </NextIntlClientProvider>,
     );
     expect(screen.queryByTestId("orders-owed-list")).toBeNull();
     expect(screen.queryByTestId("orders-owed-filter")).toBeNull();
     expect(screen.getByRole("tablist")).toBeTruthy();
+  });
+});
+
+describe("loading the owed orders", () => {
+  it("adds an owed order the latest handed page missed, once", async () => {
+    const { withOwed } = await import("@/lib/order-paid");
+    const seen = owed({ status: "handed" });
+    const older = owed({ status: "handed" });
+    const merged = withOwed([seen, order({ status: "pending" })], [seen, older]);
+    expect(merged.map((o) => o.id)).toEqual([seen.id, merged[1].id, older.id]);
   });
 });

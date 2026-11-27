@@ -258,6 +258,8 @@ class BusinessOrderOut(_OrderOut):
     has_estimate: bool
     # MEH-3962: when the business marked the order paid; None = not marked.
     paid_at: datetime | None = None
+    # MEH-3962: taken on and not marked paid (services/product_order_paid.is_owed).
+    owed: bool = False
 
 
 class BusinessOrdersOut(BaseModel):

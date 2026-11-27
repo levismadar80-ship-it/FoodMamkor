@@ -13,7 +13,8 @@
  *           list (OrdersBoard does).
  * Related:  components/dashboard/RescueTab.jsx (the same mark for a rescue
  *           bag, MEH-3897), lib/order-paid.js
- * History:  MEH-3962 (creation, 27/11/2026)
+ * History:  MEH-3962 (creation, 27/11/2026; review round 1: no sum for an
+ *           estimate, no reminder without a phone)
  */
 
 import { useState } from "react";
@@ -30,7 +31,11 @@ import { getWhatsAppHref } from "@/lib/utils";
 /** @param {{ order: any }} props */
 function ReminderButton({ order }) {
   const t = useTranslations("dashboard.producer.orders.paid");
-  const text = t("reminder_text", { name: order.customer_name, total: shekelsText(toPayAgorot(order)) });
+  // A weighed order with no final total yet: an estimate is not a sum to ask for.
+  const exact = !order.has_estimate || (order.final_total_agorot ?? null) !== null;
+  const text = exact
+    ? t("reminder_text", { name: order.customer_name, total: shekelsText(toPayAgorot(order)) })
+    : t("reminder_text_no_total", { name: order.customer_name });
   // REUSES: components/dashboard/orders/OrderWeekShareCard.jsx:42 — a WhatsApp
   // button that opens wa.me in a new tab (no raw <a>, MEH-3829).
   const send = () => window.open(getWhatsAppHref(order.customer_phone, text), "_blank", "noopener,noreferrer");
@@ -83,7 +88,8 @@ export default function OrderPaidControl({ order, onChanged }) {
             {t("mark")}
           </Button>
         )}
-        {isOwed(order) && <ReminderButton order={order} />}
+        {/* An erased buyer (deleted account) has no phone to remind. */}
+        {isOwed(order) && order.customer_phone && <ReminderButton order={order} />}
       </div>
       {error && <InlineMessage tone="error">{error}</InlineMessage>}
     </div>

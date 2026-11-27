@@ -13,19 +13,48 @@
  */
 
 import api from "@/lib/api";
-import { MarkOrderPaidProducersMeProductOrdersOrderIdPaidPostResponse } from "@/lib/generated/api.zod";
+import {
+  ListBusinessOrdersProducersMeProductOrdersGetResponse,
+  MarkOrderPaidProducersMeProductOrdersOrderIdPaidPostResponse,
+} from "@/lib/generated/api.zod";
 
-const PAYABLE = ["confirmed", "ready", "handed", "no_show"];
-const OWED = ["confirmed", "ready", "handed"];
+const PAYABLE = new Set(["confirmed", "ready", "handed", "no_show"]);
+const PAGE = 50;
+const MAX_PAGES = 10;
 
 /** The business took the order on, so «סמנו כשולם» makes sense. */
-export const canMarkPaid = (/** @type {any} */ order) => PAYABLE.includes(order?.status);
+export const canMarkPaid = (/** @type {any} */ order) => PAYABLE.has(order?.status);
 
-/** Taken on, not marked: the business is still owed for it. */
-export const isOwed = (/** @type {any} */ order) => OWED.includes(order?.status) && !order?.paid_at;
+/** Still owed for. The server decides (`owed`, product_order_paid.is_owed):
+ * a handed order counts only from the day the mark existed. */
+export const isOwed = (/** @type {any} */ order) => order?.owed === true;
 
 /** @param {any[]} orders */
-export const owedOrders = (orders) => orders.filter(isOwed);
+export const owedOrders = (orders) => orders.filter((order) => isOwed(order));
+
+/**
+ * Every owed order, paged (GET ?payment=unpaid). The board loads only the
+ * latest page of handed orders, so an owed one further back comes from here.
+ */
+export async function loadOwedOrders() {
+  const orders = [];
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const { data } = await api.get("/producers/me/product-orders", {
+      params: { payment: "unpaid", limit: PAGE, offset: page * PAGE },
+    });
+    const got = ListBusinessOrdersProducersMeProductOrdersGetResponse.parse(data);
+    orders.push(...got.orders);
+    if (orders.length >= got.total || got.orders.length === 0) break;
+  }
+  return orders;
+}
+
+/** Add the owed orders the lists did not load; an order already there wins.
+ * @param {any[]} orders @param {any[]} owed */
+export function withOwed(orders, owed) {
+  const seen = new Set(orders.map((order) => order.id));
+  return [...orders, ...owed.filter((order) => !seen.has(order.id))];
+}
 
 /**
  * @param {string} orderId

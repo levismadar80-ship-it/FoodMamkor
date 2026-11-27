@@ -46,7 +46,7 @@ from app.schemas.product_order_buy import (
 )
 from app.services import product_order_actions as actions
 from app.services.product_order_customers import list_customers
-from app.services.product_order_paid import only_unpaid, set_paid  # MEH-3962
+from app.services.product_order_paid import only_unpaid, set_order_paid  # MEH-3962
 from app.services.product_order_repeat import stop_repeat  # MEH-3933
 from app.services.product_order_state import Actor
 from app.services.order_access import OrderAccess, require_order_access, visible_orders
@@ -292,4 +292,4 @@ def mark_order_paid(  # noqa: PLR0913
     """MEH-3962: the business got the money (or takes the mark back). Its own
     record; the site moves no money."""
     own = _own_order_id(db, order_id, access)
-    return _done(db, response, set_paid(db, own, body.paid))
+    return _done(db, response, set_order_paid(db, own, body.paid))

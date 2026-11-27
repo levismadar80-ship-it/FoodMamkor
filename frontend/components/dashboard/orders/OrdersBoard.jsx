@@ -80,14 +80,15 @@ function OrderList({ orders, onChanged }) {
   );
 }
 
-/** MEH-3962: «לא שולמו (N)» — on: only the orders still owed for. Hidden at 0.
+/** MEH-3962: «לא שולמו (N)», a toggle (aria-pressed) — on: only the orders
+ * still owed for. One label in both states, so a screen reader hears one signal. Hidden at 0.
  * @param {{ count: number, on: boolean, onToggle: () => void }} props */
 function OwedFilter({ count, on, onToggle }) {
   const t = useTranslations("dashboard.producer.orders.paid");
   if (count === 0) return null;
   return (
     <Button variant={on ? "secondary" : "outlined"} size="sm" aria-pressed={on} onClick={onToggle} data-testid="orders-owed-filter">
-      {on ? t("filter_off") : t("filter", { count })}
+      {t("filter", { count })}
     </Button>
   );
 }

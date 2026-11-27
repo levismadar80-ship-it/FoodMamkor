@@ -269,6 +269,8 @@ describe("loading the orders (server cap 50 a page)", () => {
   it("pages every open status in full, takes the latest page of each closed one, never asks above the cap", async () => {
     const totals = { pending: 120, change_proposed: 0, confirmed: 3, ready: 0, handed: 70, declined: 0, cancelled: 0, expired: 0, no_show: 0 };
     api.get.mockImplementation((_url, { params }) => {
+      // MEH-3962: the owed orders come in their own query; none here.
+      if (params.payment === "unpaid") return Promise.resolve({ data: { orders: [], total: 0 } });
       const total = totals[params.status];
       const count = Math.max(0, Math.min(params.limit, total - (params.offset ?? 0)));
       const orders = Array.from({ length: count }, (_, i) =>
@@ -286,6 +288,7 @@ describe("loading the orders (server cap 50 a page)", () => {
     expect(count("handed")).toBe(50);
     const handedOffsets = api.get.mock.calls.filter(([, { params }]) => params.status === "handed" && params.limit > 1);
     expect(handedOffsets.map(([, { params }]) => params.offset)).toEqual([20]);
+    expect(api.get.mock.calls.filter(([, { params }]) => params.payment === "unpaid")).toHaveLength(1);
   });
 });
 
