@@ -14,7 +14,12 @@ import { test, expect, type Page, type Route } from "./_cloudinary-stub";
  * row and the gallery, then lets React in and reads them again.
  *
  * Shown failing (PR body): with components/HistoryBackLink.jsx at its staging
- * version the «page behind» case is red at the first `toBeVisible`.
+ * version the «page behind» case and the control are red at their first
+ * `toHaveCount(1)` (no row in the server HTML); without the ?from=map selector
+ * in globals.css the third case is red at its `toBeHidden`.
+ * Chromium only (the mobile project): a browser without the Navigation API
+ * answers false in both the script and the component on a hard load, so it
+ * shows no row and has nothing to shift.
  */
 
 const SLUG = "/kaveret-or-habosmat";
@@ -84,13 +89,34 @@ test.describe("MEH-3944 «→ חזרה» is in the first paint, not added by hyd
     // In the server HTML, and hidden by the pre-paint rule: this is the cell
     // that proves the CSS hides it, not just that nothing rendered.
     await expect(back).toHaveCount(1);
-    await expect(back).toBeHidden();
     await expect(page.locator("#section-images")).toBeVisible();
+    await expect(back).toBeHidden();
     const before = await galleryY(page);
 
     await release();
     await hydrated(page);
     await expect(back).toHaveCount(0);
+    expect(await galleryY(page)).toBe(before);
+  });
+
+  test("?from=map with a page behind: only «חזרה למפה» before React, and the gallery stays put", async ({ page }) => {
+    await page.goto("/producers", { waitUntil: "domcontentloaded" });
+    const release = await holdChunks(page);
+    await page.goto(`${SLUG}?from=map`, { waitUntil: "commit" });
+
+    const back = page.getByTestId("history-back");
+    const toMap = page.getByTestId("back-to-map").filter({ visible: true });
+    await expect(page.locator("#section-images")).toBeVisible();
+    // Both are in the server HTML; the map link takes the row (MEH-3019).
+    await expect(back).toHaveCount(1);
+    await expect(back, "pre-hydration: «→ חזרה» is hidden beside «חזרה למפה»").toBeHidden();
+    await expect(toMap).toHaveCount(1);
+    const before = await galleryY(page);
+
+    await release();
+    await hydrated(page);
+    await expect(back).toHaveCount(0);
+    await expect(toMap).toHaveCount(1);
     expect(await galleryY(page)).toBe(before);
   });
 });

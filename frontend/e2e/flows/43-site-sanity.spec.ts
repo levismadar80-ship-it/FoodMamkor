@@ -194,7 +194,7 @@ async function layout(page: Page, withCovered: boolean): Promise<Layout> {
   }, withCovered);
 }
 
-// MEH-3944 (flaky 27/11, #5427 run 45991001696): the controls below plant
+// MEH-3880 (flaky 27/11, #5427 run 45991001696): the controls below plant
 // nodes into <main>. Planted as soon as the h1 is visible, they can land on a
 // server copy React has not yet taken over; when React commits, the planted
 // button is gone and `layout` honestly reports nothing. Plant only once the
@@ -219,7 +219,7 @@ async function stillPlanted(page: Page, texts: string[]): Promise<void> {
     (texts) => texts.filter((t) => ![...document.querySelectorAll("button")].some((b) => b.textContent === t)),
     texts,
   );
-  expect(gone, "planted control removed from the page before the probe ran (MEH-3944)").toEqual([]);
+  expect(gone, "planted control removed from the page before the probe ran (MEH-3880)").toEqual([]);
 }
 
 async function strayFaces(page: Page, probes: Sweep["fontProbes"]): Promise<string[]> {

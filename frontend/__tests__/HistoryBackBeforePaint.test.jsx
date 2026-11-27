@@ -23,9 +23,10 @@ import HistoryBackLink, { cameFromInsideSite } from "@/components/HistoryBackLin
 
 const ORIGIN = "https://mehamakor.co.il";
 
-function fakeWin({ first, path = "/kaveret-or-habosmat", canGoBack }) {
+function fakeWin({ first, path = "/kaveret-or-habosmat", canGoBack, navigation }) {
   return {
     ...(canGoBack === undefined ? {} : { navigation: { canGoBack } }),
+    ...(navigation === undefined ? {} : { navigation }),
     performance: { getEntriesByType: () => (first ? [{ name: first }] : []) },
     location: { origin: ORIGIN, pathname: path, search: "" },
     localStorage: { getItem: () => null },
@@ -55,6 +56,8 @@ const CELLS = [
   ["fallback: a path that only starts with en (/enav)", { first: `${ORIGIN}/enav`, path: "/nav" }],
   ["fallback: no navigation entry", {}],
   ["fallback: unparsable entry", { first: "::not a url::" }],
+  ["navigation without a boolean canGoBack → fallback (page behind)", { navigation: {}, first: `${ORIGIN}/producers` }],
+  ["navigation without a boolean canGoBack → fallback (direct)", { navigation: {}, first: `${ORIGIN}/kaveret-or-habosmat` }],
 ];
 
 describe("the inline flags script decides what cameFromInsideSite decides (MEH-3944)", () => {
