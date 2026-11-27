@@ -103,9 +103,40 @@ describe.each(["he", "en"])("/join/orders in %s", (locale) => {
   });
 
   it("names the three buttons as the dashboard does", async () => {
-    const { text } = await page(locale);
+    const { doc } = await page(locale);
     const actions = MESSAGES[locale].dashboard.producer.orders.actions;
-    for (const key of ["confirm", "propose", "decline"]) expect(text).toContain(actions[key]);
+    const names = [...doc.querySelectorAll("dt")].map((dt) => dt.textContent);
+    expect(names).toEqual([actions.confirm, actions.propose, actions.decline]);
+  });
+});
+
+// Every label the copy quotes («…» in he, “…” in en) is a label the business
+// will actually see: a value in the dashboard or the business page, or the
+// start of one («להזמנה» is the start of «להזמנה · 2 פריטים · 64 ₪»). A rename
+// there, with this page left behind, goes red here.
+const QUOTE = { he: /«([^»]+)»/g, en: /“([^”]+)”/g };
+// Quoted, but not a label on a screen: the signature of our own messages.
+const NOT_A_LABEL = { he: ["צוות מהמקור"], en: ["the Mehamakor team"] };
+
+/** @param {any} node @param {string[]} out */
+function strings(node, out = []) {
+  if (typeof node === "string") out.push(node);
+  else if (node && typeof node === "object") for (const v of Object.values(node)) strings(v, out);
+  return out;
+}
+
+describe.each(["he", "en"])("quoted labels in %s", (locale) => {
+  const screens = strings([MESSAGES[locale].dashboard, MESSAGES[locale].producer]);
+  const quoted = Object.values(MESSAGES[locale].orders_guide)
+    .flatMap((value) => [...String(value).matchAll(QUOTE[/** @type {"he"|"en"} */ (locale)])].map((m) => m[1]))
+    .filter((label) => !NOT_A_LABEL[/** @type {"he"|"en"} */ (locale)].includes(label));
+
+  it("finds the quotes it checks", () => {
+    expect(quoted.length).toBeGreaterThan(15);
+  });
+
+  it.each([...new Set(quoted)])("«%s» is on a screen", (label) => {
+    expect(screens.some((value) => value === label || value.startsWith(label))).toBe(true);
   });
 });
 

@@ -7,11 +7,9 @@ import { Link } from "@/i18n/navigation";
 import BackLink from "@/components/ui/BackLink";
 import Heading from "@/components/ui/Heading";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { ORDERS_GUIDE_NUMBERS, ORDERS_GUIDE_PATH } from "@/lib/orders-guide";
 import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
-import { siteOgImageUrl } from "@/lib/og-site-image";
+import { buildSeoPageMetadata } from "@/lib/seo-page-metadata";
 
 /**
  * Module:   join/orders/page
@@ -36,20 +34,7 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "seo.orders_guide" });
-  return {
-    title: t("title"),
-    description: t("description"),
-    openGraph: {
-      title: buildEntityTitle(t("og_title"), locale),
-      description: t("og_description"),
-      type: "website",
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-      images: [siteOgImageUrl(locale)],
-    },
-    alternates: buildAlternates(ORDERS_GUIDE_PATH, locale),
-  };
+  return buildSeoPageMetadata(locale, { namespace: "seo.orders_guide", path: ORDERS_GUIDE_PATH });
 }
 
 const CARD = "rounded-lg border border-border bg-surface-card p-4 sm:p-5";
@@ -77,7 +62,7 @@ const ACTIONS = ["confirm", "propose", "decline"];
 function Shot({ id, alt }) {
   const shot = SHOTS[id];
   return (
-    <div className="max-h-[22rem] overflow-hidden rounded-md border border-border bg-white">
+    <div className="max-h-[22rem] overflow-hidden rounded-md border border-border bg-surface-card">
       <Image src={shot.src} width={shot.width} height={shot.height} alt={alt} sizes="(max-width: 640px) 100vw, 600px" className="block h-auto w-full" />
     </div>
   );
@@ -118,6 +103,7 @@ export default async function OrdersGuidePage({ params }) {
   // reads in the dashboard and on /join, so they cannot drift apart.
   const tActions = await getTranslations({ locale, namespace: "dashboard.producer.orders.actions" });
   const tFaq = await getTranslations({ locale, namespace: "join.faq" });
+  const tBusiness = await getTranslations({ locale, namespace: "about_business" });
   const v = { ...pricingCopyValues(), ...ORDERS_GUIDE_NUMBERS };
   /** @param {string} href @param {string} testId */
   const linkTo = (href, testId) =>
@@ -140,7 +126,7 @@ export default async function OrdersGuidePage({ params }) {
       <div className="mx-auto max-w-2xl px-4 pb-16 pt-12 sm:px-6 sm:pt-16">
         <header className="mb-8 text-center">
           <SeedMark size={48} className="mx-auto mb-4" />
-          <p className="mb-3 text-sm font-medium text-accent">{t("eyebrow")}</p>
+          <p className="mb-3 text-sm font-medium text-accent">{tBusiness("eyebrow")}</p>
           <Heading level={1} variant="hero" className="mb-4 text-balance">
             {t("h1")}
           </Heading>
@@ -258,7 +244,7 @@ export default async function OrdersGuidePage({ params }) {
 
         <div className="mb-10 flex flex-col items-center gap-3">
           <Link href={DASHBOARD_ORDERS} className={CTA} data-testid="orders-guide-cta-bottom">{t("cta")}</Link>
-          <Link href="/contact" className={LINK} data-testid="orders-guide-contact">{t("contact_cta")}</Link>
+          <p className="text-text/85">{t.rich("contact_line", { link: linkTo("/contact", "orders-guide-contact") })}</p>
         </div>
 
         <p className="text-center">

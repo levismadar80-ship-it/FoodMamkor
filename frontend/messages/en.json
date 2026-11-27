@@ -4644,7 +4644,8 @@
       "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free to join · about 3 minutes · live within 3 business days"
+    "meta_line": "Free to join · about 3 minutes · live within 3 business days",
+    "guide_link": "How orders work"
   },
   "about_business": {
     "meta_title": "FAQ for businesses",
@@ -8383,8 +8384,6 @@
     }
   },
   "orders_guide": {
-    "link": "How it works",
-    "eyebrow": "For businesses",
     "h1": "How orders through Mehamakor work",
     "lead": "Customers pick products and when to get them, and send you a request. You approve it, and the customer pays you directly.",
     "chip_pay": "The customer pays you directly",
@@ -8418,7 +8417,7 @@
     "action_confirm_body": "The customer gets a confirmation on WhatsApp",
     "action_propose_body": "Another time or another price",
     "action_decline_body": "If you can't make it",
-    "owner_estimate": "Products sold by weight show an “estimated price”. You write the final price after weighing.",
+    "owner_estimate": "Products sold by weight show “Estimated price”. You write the final price after weighing.",
     "after_title": "After you approve",
     "after_body": "When the order is ready, tap <b>“Ready for pickup”</b>. When the customer has it, tap <b>“Handed over”</b>. If they didn't come, tap <b>“The customer did not come”</b> and confirm. We send the messages to the customer, and a reminder the day before.",
     "after_wa_label": "What the customer gets when you approve",
@@ -8454,14 +8453,14 @@
     "faq_delivery_q": "Can I deliver too?",
     "faq_delivery_a": "Yes. In your hand-over hours choose “Delivery”. Customers can order a delivery only to the cities in your page's delivery areas, and pay the delivery fee and minimum you set there.",
     "faq_shabbat_q": "I keep Shabbat",
-    "faq_shabbat_a": "In the settings, turn on “No orders or messages on Shabbat and holidays”. Shabbat and holiday hours also don't count toward your time to answer.",
+    "faq_shabbat_a": "In the settings, turn on “No orders or messages on Shabbat and holidays”, and no orders or messages reach you on Shabbat and holidays. Even without it, Shabbat and holiday hours don't count toward your time to answer.",
     "faq_friday_q": "Selling only on Fridays?",
     "faq_friday_a": "In your hand-over hours choose only Friday. Next to each product you can choose how far ahead it must be ordered, for example two days.",
     "faq_receipts_q": "Receipts and invoices?",
     "faq_receipts_a": "Issue them as for any other sale. The site doesn't issue them for you.",
     "faq_staff_q": "Can someone on my team answer?",
     "faq_staff_a": "Yes, up to {maxStaff} people. Invite them by email, and they see only the orders.",
-    "contact_cta": "Want us to set it up together? Write to us",
+    "contact_line": "Want us to set it up together? <link>Write to us</link>",
     "back_link": "Back to the business page"
   },
   "account_deleted": {

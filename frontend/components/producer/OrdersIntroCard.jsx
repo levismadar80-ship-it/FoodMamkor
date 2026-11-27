@@ -52,7 +52,7 @@ function close() {
  */
 export default function OrdersIntroCard({ fallback = null, settings }) {
   const t = useTranslations("dashboard.producer.orders.intro");
-  const tGuide = useTranslations("orders_guide");
+  const tGuide = useTranslations("join");
   const [show, setShow] = useState(
     /** @type {boolean | null} */ (
       settings === undefined ? null : !wasClosed() && settings.ok && Boolean(settings.value) && !settings.value?.enabled
@@ -96,7 +96,7 @@ export default function OrdersIntroCard({ fallback = null, settings }) {
         </Link>
         {/* MEH-3981: the explainer page, for a business that wants to read first. */}
         <Link href={ORDERS_GUIDE_PATH} data-testid="orders-intro-guide" className="min-h-touch inline-flex items-center px-2 rounded text-sm font-medium text-action-primary underline underline-offset-4 hover:no-underline focus-ring">
-          {tGuide("link")}
+          {tGuide("guide_link")}
         </Link>
         <button type="button" onClick={dismiss} data-testid="orders-intro-later" className="min-h-touch inline-flex items-center px-2 rounded text-sm text-fg-muted hover:text-text focus-ring">
           {t("later")}

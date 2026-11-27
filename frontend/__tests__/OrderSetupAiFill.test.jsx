@@ -123,7 +123,7 @@ describe("the orders tab header (MEH-3981)", () => {
     await renderPage();
     const link = screen.getByTestId("orders-guide-link");
     expect(link.getAttribute("href")).toBe("/join/orders");
-    expect(link.textContent).toBe(he.orders_guide.link);
+    expect(link.textContent).toBe(he.join.guide_link);
     expect(link.parentElement).toBe(screen.getByTestId("orders-preview-link").parentElement);
   });
 });

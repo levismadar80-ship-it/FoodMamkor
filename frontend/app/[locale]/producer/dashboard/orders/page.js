@@ -71,7 +71,7 @@ async function loadAll() {
 
 export default function OrdersPage() {
   const t = useTranslations("dashboard.producer.orders");
-  const tGuide = useTranslations("orders_guide");
+  const tGuide = useTranslations("join");
   // MEH-3526: the layout already sends staff here and nowhere else.
   const { user } = useAuth();
   const staffOf = user?.role !== "producer" ? user?.staff_of ?? null : null;
@@ -142,7 +142,7 @@ export default function OrdersPage() {
           className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
         >
           <Question size={16} aria-hidden="true" />
-          {tGuide("link")}
+          {tGuide("guide_link")}
         </Link>
         </div>}
       </div>

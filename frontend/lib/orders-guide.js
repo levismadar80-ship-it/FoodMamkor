@@ -5,7 +5,7 @@
  *           numbers its copy states, so the page and its entry points share
  *           one place.
  * Does NOT: decide any of these numbers. Each is the backend's, named below;
- *           OrdersGuideNumbers.test.js fails when one drifts.
+ *           OrdersGuidePage.test.jsx fails when one drifts.
  * History:  MEH-3981 (creation, 2026-11-27).
  */
 

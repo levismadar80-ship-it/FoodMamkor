@@ -308,7 +308,7 @@ function GroupCard({ group, selected, active, index, onSelect, copy, media }) {
 }
 
 function Panel({ group, features, t, tw }) {
-  const tg = useTranslations("orders_guide");
+  const tg = useTranslations("join");
   const tiles = features.filter((f) => f.tile);
   const rest = features.filter((f) => !f.tile);
   return (
@@ -347,7 +347,7 @@ function Panel({ group, features, t, tw }) {
                 {/* MEH-3981: a tool with its own explainer page links to it. */}
                 {feature.guide ? (
                   <Link href={feature.guide} data-testid="join-feature-guide" className="ms-2 whitespace-nowrap text-sm font-medium text-action-primary underline underline-offset-4 hover:no-underline focus-ring rounded-sm">
-                    {tg("link")}
+                    {tg("guide_link")}
                   </Link>
                 ) : null}
                 {feature.tip ? (

@@ -139,7 +139,7 @@ describe("OrdersIntroCard", () => {
     expect(screen.getByTestId("orders-intro-cta").getAttribute("href")).toBe("/producer/dashboard/orders");
     // MEH-3981: the explainer page, beside the CTA.
     expect(screen.getByTestId("orders-intro-guide").getAttribute("href")).toBe("/join/orders");
-    expect(screen.getByTestId("orders-intro-guide").textContent).toBe(he.orders_guide.link);
+    expect(screen.getByTestId("orders-intro-guide").textContent).toBe(he.join.guide_link);
     expect(screen.queryByTestId("fallback")).toBeNull();
   });
 
