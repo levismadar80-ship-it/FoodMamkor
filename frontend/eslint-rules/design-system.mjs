@@ -163,7 +163,7 @@ const HEADINGS = new Set(["h1", "h2", "h3"]);
 // attribute can make it 24-hour. Counts <input> and ui/Input alike, since
 // ui/Input passes `type` straight through.
 const CLOCK_TYPES = new Set(["time", "datetime-local"]);
-const isClockField = (node) => ["input", "Input"].includes(tagName(node) || "") && CLOCK_TYPES.has(literal(attr(node, "type")) || "");
+const isClockField = (node) => ["input", "Input"].includes(tagName(node) || "") && CLOCK_TYPES.has((literal(attr(node, "type")) || "").toLowerCase());
 
 const plugin = {
   meta: { name: "design-system" },

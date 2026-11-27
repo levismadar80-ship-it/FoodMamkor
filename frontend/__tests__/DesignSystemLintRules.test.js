@@ -60,7 +60,7 @@ tester.run("no-html-heading", rule("no-html-heading"), {
 // MEH-3955: a native time field shows AM/PM on a phone set to English.
 tester.run("no-html-time", rule("no-html-time"), {
   valid: ["<Input type='date' />", "<input type='text' />", "<TimeOfDaySelect value='09:00' />"],
-  invalid: [bad("<input type='time' />"), bad("<Input type=\"time\" />"), bad("<Input type={'datetime-local'} />")],
+  invalid: [bad("<input type='time' />"), bad("<Input type=\"time\" />"), bad("<Input type={'datetime-local'} />"), bad('<input type={"time"} />'), bad("<input type='TIME' />")],
 });
 
 tester.run("no-html-anchor", rule("no-html-anchor"), {

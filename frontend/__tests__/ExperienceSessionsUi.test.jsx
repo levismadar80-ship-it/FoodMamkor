@@ -109,7 +109,9 @@ describe("ExperienceSessionsField — the owner's dates", () => {
     const [held, free] = rows();
     expect(within(held).getByLabelText(`${N.field_date} 1`)).toBeDisabled();
     // MEH-3955: the time is an hour and a minute select; both are locked.
-    for (const el of within(held).getByLabelText(`${N.field_time} 1`).querySelectorAll("select")) expect(el).toBeDisabled();
+    const heldSelects = within(held).getByLabelText(`${N.field_time} 1`).querySelectorAll("select");
+    expect(heldSelects).toHaveLength(2);
+    for (const el of heldSelects) expect(el).toBeDisabled();
     expect(within(free).getByLabelText(`${N.field_date} 2`)).not.toBeDisabled();
   });
 

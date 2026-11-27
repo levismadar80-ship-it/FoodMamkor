@@ -25,7 +25,7 @@
  *   testId?: string,
  * }} props
  */
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import Input from "./Input";
 import TimeOfDaySelect from "./TimeOfDaySelect";
@@ -56,11 +56,14 @@ const compose = (parts) => (parts.date && parts.time ? `${parts.date}T${parts.ti
 export default function DateTimeField({ label, ariaLabel, value, onChange, required = false, helperText, testId }) {
   const id = useId();
   const [parts, setParts] = useState(() => split(value));
-  // A value set from outside (an edit form loading, a reset to "") wins; a
-  // half-picked field, whose value is still "", is left as it is.
-  useEffect(() => {
-    setParts((now) => (compose(now) === (value || "") ? now : split(value)));
-  }, [value]);
+  // A value set from outside (an edit form loading, a reset) wins; a
+  // half-picked field, whose value is still "", is left as it is. Derived
+  // while rendering, not in an effect (react-hooks/set-state-in-effect).
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    if (compose(parts) !== (value || "")) setParts(split(value));
+  }
   const emit = (/** @type {{ date: string, time: string }} */ next) => {
     setParts(next);
     onChange(compose(next));
@@ -75,11 +78,22 @@ export default function DateTimeField({ label, ariaLabel, value, onChange, requi
           type="date"
           dir="ltr"
           required={required}
+          aria-describedby={helperText ? `${id}-desc` : undefined}
           value={parts.date}
           onChange={(/** @type {any} */ e) => emit({ ...parts, date: e.target.value })}
           className="flex-1 min-w-0"
         />
-        <TimeOfDaySelect optional ariaLabel={ariaLabel} value={parts.time} onChange={(time) => emit({ ...parts, time })} className="w-36" />
+        <TimeOfDaySelect
+          optional
+          // A required field needs its time too: the empty «--» hour then
+          // fails the browser's own check, as datetime-local did (MEH-3955 review).
+          required={required}
+          describedBy={helperText ? `${id}-desc` : undefined}
+          ariaLabel={ariaLabel}
+          value={parts.time}
+          onChange={(time) => emit({ ...parts, time })}
+          className="w-36"
+        />
       </div>
     </FieldShell>
   );

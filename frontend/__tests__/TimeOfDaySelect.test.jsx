@@ -82,7 +82,7 @@ describe("TimeOfDaySelect", () => {
 });
 
 describe("DateTimeField", () => {
-  function Form({ onValue }) {
+  function Form({ onValue, required = false }) {
     const [value, setValue] = useState("");
     return (
       <DateTimeField
@@ -94,6 +94,7 @@ describe("DateTimeField", () => {
           onValue(v);
         }}
         testId="dt"
+        required={required}
       />
     );
   }
@@ -122,5 +123,37 @@ describe("DateTimeField", () => {
     const box = screen.getByTestId("dt");
     expect(box.querySelector('input[type="date"]').value).toBe("");
     expect(timeValue(box.querySelector("[data-time-value]"))).toBe("");
+  });
+
+  it("a required field with a date and no time fails the browser's check, as datetime-local did", () => {
+    render(withIntl(<Form onValue={() => {}} required />));
+    const box = screen.getByTestId("dt");
+    fireEvent.change(box.querySelector('input[type="date"]'), { target: { value: "2099-01-01" } });
+    const hour = box.querySelector("[data-time-value] select");
+    expect(hour.required).toBe(true);
+    expect(hour.checkValidity()).toBe(false);
+    setTime(box.querySelector("[data-time-value]"), "12:00");
+    expect(box.querySelector("[data-time-value] select").checkValidity()).toBe(true);
+  });
+
+  it("the helper text describes both halves", () => {
+    render(withIntl(<DateTimeField label="עד מתי" ariaLabel="עד מתי" helperText="לפי שעון ישראל" value="" onChange={() => {}} testId="dt" />));
+    const box = screen.getByTestId("dt");
+    for (const el of [box.querySelector('input[type="date"]'), ...box.querySelectorAll("select")]) {
+      expect(document.getElementById(el.getAttribute("aria-describedby"))).toHaveTextContent("לפי שעון ישראל");
+    }
+  });
+});
+
+describe("TimeOfDaySelect, names and stored values", () => {
+  it("with only a text label, the selects are named from it", () => {
+    render(withIntl(<TimeOfDaySelect label="עד שעה" value="09:00" onChange={() => {}} />));
+    expect(screen.getByRole("combobox", { name: "עד שעה · שעה" })).toBeTruthy();
+  });
+
+  it("a stored «HH:MM:SS» shows as HH:MM", () => {
+    render(withIntl(<TimeOfDaySelect ariaLabel="משעה" value="18:30:00" onChange={() => {}} />));
+    expect(screen.getByRole("combobox", { name: "משעה · שעה" }).value).toBe("18");
+    expect(screen.getByRole("combobox", { name: "משעה · דקות" }).value).toBe("30");
   });
 });

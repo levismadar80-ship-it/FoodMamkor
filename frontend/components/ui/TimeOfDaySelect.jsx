@@ -10,11 +10,11 @@
  *           which is how the rescue screenshots of MEH-3702 / MEH-3703 read.
  * Does NOT: own state, or know about days or time zones — the value is a
  *           wall-clock «HH:MM» string, as an <input type="time"> gives.
- * Related:  ui/Select.jsx (look). Used by dashboard/RescueTab.jsx and
- *           dashboard/RescueScheduleForm.jsx.
+ * Related:  ui/Select.jsx (look), ui/DateTimeField.jsx. Every clock-time
+ *           field of the site (frontend/components/CLAUDE.md catalog).
  * History:  MEH-3823 (creation). MEH-3955: every clock-time field on the
  *           site uses it (optional fields, a visible label, an error, aria
- *           labels from one field name); eslint `design-system/no-native-time`
+ *           labels from one field name); eslint `design-system/no-html-time`
  *           refuses a new <input type="time"> or "datetime-local".
  *
  * `ariaLabel` names the field once («יום ראשון, משעה»); the two selects are
@@ -38,6 +38,8 @@
  *   error?: import("react").ReactNode,
  *   optional?: boolean,
  *   invalid?: boolean,
+ *   required?: boolean,
+ *   describedBy?: string,
  *   disabled?: boolean,
  *   id?: string,
  *   step?: number,
@@ -59,8 +61,10 @@ const twoDigits = (num) => String(num).padStart(2, "0");
 
 /** @param {string} value @param {number} step */
 function choices(value, step) {
-  const set = /^\d{2}:\d{2}$/.test(value || "");
-  const [hh, mm] = set ? value.split(":") : [EMPTY, "00"];
+  // «18:30:00» (a column read as is) shows as 18:30, as a native input did.
+  const hhmm = (value || "").slice(0, 5);
+  const set = /^\d{2}:\d{2}$/.test(hhmm);
+  const [hh, mm] = set ? hhmm.split(":") : [EMPTY, "00"];
   const hours = Array.from({ length: HOURS_PER_DAY }, (_, i) => twoDigits(i));
   const minutes = Array.from({ length: Math.ceil(MINUTES_PER_HOUR / step) }, (_, i) => twoDigits(i * step));
   if (!minutes.includes(mm)) minutes.push(mm);
@@ -70,7 +74,9 @@ function choices(value, step) {
 
 /** @param {any} props */
 export default function TimeOfDaySelect(props) {
-  const { value, onChange, step = DEFAULT_STEP, testId, className = "", ariaLabel, label, error, optional = false, disabled = false, id } = props;
+  const { value, onChange, step = DEFAULT_STEP, testId, className = "", label, error, optional = false, disabled = false, id, required = false, describedBy } = props;
+  // The field's name: ariaLabel, else a plain-text label.
+  const ariaLabel = props.ariaLabel || (typeof label === "string" ? label : "");
   const t = useTranslations("time_of_day");
   const autoId = useId();
   const hourId = id || autoId;
@@ -81,13 +87,14 @@ export default function TimeOfDaySelect(props) {
   const minuteLabel = props.minuteLabel || `${ariaLabel} · ${t("minute")}`;
   const invalid = !!error || !!props.invalid;
   const describedById = `${hourId}-desc`;
-  const selectProps = { inline: true, size: "xs", disabled, "aria-invalid": invalid || undefined, "aria-describedby": error ? describedById : undefined };
+  const described = [error ? describedById : null, describedBy].filter(Boolean).join(" ") || undefined;
+  const selectProps = { inline: true, size: "xs", disabled, "aria-invalid": invalid || undefined, "aria-describedby": described };
 
   const row = (
     <div
       dir="ltr"
       role="group"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel || undefined}
       className={`flex items-center gap-1 min-w-0 ${className}`.trim()}
       data-testid={testId}
       data-time-value={value || ""}
@@ -95,6 +102,7 @@ export default function TimeOfDaySelect(props) {
       <Select
         {...selectProps}
         id={hourId}
+        required={required && optional ? true : undefined}
         aria-label={hourLabel}
         value={hh}
         onChange={(event) => onChange(event.target.value === EMPTY ? EMPTY : `${event.target.value}:${mm}`)}
