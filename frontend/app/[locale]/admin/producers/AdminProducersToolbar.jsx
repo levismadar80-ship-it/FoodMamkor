@@ -18,7 +18,7 @@ function SearchInput({ value, onChange, onSearch }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
-      className="flex-1"
+      className="flex-1 md:min-w-64"
     />
   );
 }
@@ -143,7 +143,10 @@ export default function AdminProducersToolbar({
 }) {
   const t = useTranslations("admin");
   return (
-    <div className="flex flex-col md:flex-row gap-3">
+    // MEH-3917: md:flex-wrap — with the admin sidebar open, the one-line row
+    // was 1437 px wide at 1280 and pushed «ייצוא» and «+ בית עסק חדש» off the
+    // page; now the chips and actions drop to a second line instead.
+    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
       <Button onClick={() => onSearch()} variant="primary" size="sm">

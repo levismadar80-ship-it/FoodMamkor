@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
+import useGalleryUpload from "@/components/admin/useGalleryUpload";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
@@ -315,7 +316,14 @@ function Field({ label, children, full = false }) {
   );
 }
 
-export default function ProducerForm({ initial = null, producerId = null }) {
+/**
+ * @param {{ initial?: any, producerId?: any, unsavedSections?: string[],
+ *   reportDirty?: (key: string, dirty: boolean) => void }} props
+ *   unsavedSections — MEH-3915: titles of the edit page's sections that have
+ *   their own save and hold unsaved edits; while any does, the save waits.
+ *   reportDirty — handed to the locations editor below, which is one of them.
+ */
+export default function ProducerForm({ initial = null, producerId = null, unsavedSections = [], reportDirty = undefined }) {
   // MEH-3861: the first date a picker allows, the same in both renders.
   const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
@@ -346,6 +354,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
+  const [blockedByUnsaved, setBlockedByUnsaved] = useState(false);
+  // Once every section is saved the note goes, and a section edited after
+  // that brings it back only on the next press of save.
+  useEffect(() => {
+    if (!unsavedSections.length) setBlockedByUnsaved(false);
+  }, [unsavedSections.length]);
   // MEH-3818: through the shared read cache. The edit and new pages read the
   // same key before they draw the form, so the list is here on the form's
   // first paint instead of being inserted into it a moment later and pushing
@@ -505,31 +519,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     });
   };
 
+  // MEH-3915: one photo at a time, each kept as soon as it is up; a failure
+  // stays under the picker (useGalleryUpload) instead of a passing toast.
+  const gallery = useGalleryUpload((url) =>
+    setForm((f) => ({ ...f, images: [...(f.images || []), url] })),
+  );
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    // MEH-228 pattern: image upload routes through useAdminAction — per-key
-    // in-flight lock + central error toast (no more swallowed failures).
-    run(
-      "producer-images",
-      async () => {
-        const uploaded = [];
-        for (const file of files) {
-          const fd = new FormData();
-          fd.append("file", file);
-          const r = await api.post("/upload/image", fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          uploaded.push(r.data.url);
-        }
-        setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
-      },
-      (err) =>
-        showToast.error(
-          detailToMessage(err.response?.data?.detail) ||
-            t("producers.form.errors.image_upload"),
-        ),
-    );
+    e.target.value = ""; // the same file can be picked again after a failure
+    gallery.upload(files);
   };
 
   const removeImage = (url) => {
@@ -538,6 +536,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // MEH-3915: a save leaves the page, so edits waiting in a section with
+    // its own «שמירה» (delivery, order window, payment) would be lost unseen.
+    if (unsavedSections.length) {
+      setBlockedByUnsaved(true);
+      return;
+    }
     // Explicit field list (no {...form} spread): the legacy delivery_cities
     // column is never sent — delivery_area_cities is the sole cities channel
     // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
@@ -1269,10 +1273,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           multiple
           aria-label={t("producers.form.sections.images")}
           onChange={handleImageUpload}
-          disabled={isBusy("producer-images")}
+          disabled={gallery.busy}
           className="text-sm w-full max-w-full"
         />
-        {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {gallery.busy && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {gallery.failure && (
+          <InlineMessage className="mt-2" data-testid="gallery-upload-error">
+            {gallery.failure}
+          </InlineMessage>
+        )}
         {/* MEH-3320: main-photo marker + «make main» live in AdminPhotoGrid. */}
         <AdminPhotoGrid
           images={form.images ?? []}
@@ -1352,11 +1361,19 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </Section>
       )}
 
+      {blockedByUnsaved && unsavedSections.length > 0 && (
+        <InlineMessage data-testid="unsaved-sections-error">
+          {t("producers.form.errors.unsaved_sections", { sections: unsavedSections.join(", ") })}
+        </InlineMessage>
+      )}
       <div className="flex gap-3">
         <Button
           type="submit"
           disabled={
             isBusy("producer-save") ||
+            // MEH-3915: a save mid-upload wrote the gallery without the photos
+            // still on their way and left the page.
+            gallery.busy ||
             (!producerId && !form.has_physical_location && !form.offers_delivery) ||
             (!producerId && form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
@@ -1380,7 +1397,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     {producerId && (
       <div className="mt-6 max-w-4xl" data-testid="admin-locations-editor">
         <Section title={t("producers.form.sections.delivery_pickup")}>
-          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} />
+          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} reportDirty={reportDirty} />
         </Section>
       </div>
     )}
