@@ -332,26 +332,32 @@ def _px(rows: list[bytes], x: int, y: int) -> tuple[int, int, int, int]:
     return tuple(rows[y][x * 4 : x * 4 + 4])
 
 
-def test_email_logo_is_a_cream_badge_with_transparent_corners():
-    """MEH-3916: Gmail's dark mode keeps images as they are, so an opaque white
-    PNG is a hard white rectangle on the dark page. The logo is a rounded badge
-    in the page cream with transparent corners: the four corners are clear,
-    and the badge edge (beside the lockup, mid-height) is opaque #F5F0E8."""
+def test_email_logo_has_no_background_and_a_light_enough_wordmark():
+    """MEH-3916: Gmail's dark mode keeps images as they are, so any opaque
+    background (white, or a cream badge) is a box on the dark page. The logo
+    is the lockup alone on transparent pixels: the four corners and the band
+    above and below the lockup are clear, and most of the image is clear.
+    The wordmark is not near-black (that vanished on the dark page): its ink
+    is the brand mid green, and it is there at all (a blank PNG would pass
+    the transparency lines)."""
     w, h, rows = _png_rgba(EMAIL_LOGO_PNG)
     for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
         assert _px(rows, x, y)[3] == 0, f"corner ({x},{y}) is not transparent"
-    for x, y in ((12, h // 2), (w - 12, h // 2), (w // 2, 4), (w // 2, h - 5)):
-        assert _px(rows, x, y) == (0xF5, 0xF0, 0xE8, 0xFF), (
-            f"badge pixel ({x},{y}) is {_px(rows, x, y)}, want opaque #F5F0E8"
-        )
-    # And the lockup is on it: a blank cream badge would pass the lines above.
-    dark = sum(
-        1
-        for y in range(h // 4, 3 * h // 4)
-        for x in range(w // 4, 3 * w // 4)
-        if sum(_px(rows, x, y)[:3]) < 200
-    )
-    assert dark > 100, f"only {dark} dark wordmark pixels in the badge centre"
+    for x in range(w):
+        assert _px(rows, x, 1)[3] == 0, f"top band pixel ({x},1) is not clear"
+    clear = sum(1 for y in range(h) for x in range(w) if _px(rows, x, y)[3] == 0)
+    assert clear > w * h // 2, f"only {clear}/{w * h} pixels are transparent"
+    # The wordmark: the left 60% (RTL: the text sits left of the flower).
+    ink = [
+        _px(rows, x, y)
+        for y in range(h)
+        for x in range(int(w * 0.6))
+        if _px(rows, x, y)[3] == 255
+    ]
+    assert len(ink) > 300, f"only {len(ink)} opaque wordmark pixels"
+    near_black = sum(1 for r, g, b, _ in ink if r + g + b < 150)
+    assert near_black == 0, f"{near_black} near-black wordmark pixels (vanish on dark)"
+    assert (0x5A, 0x8F, 0x73, 0xFF) in ink, "wordmark ink is not #5A8F73"
 
 
 def _logo_calls(src: str) -> int:

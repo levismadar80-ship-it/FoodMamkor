@@ -39,7 +39,7 @@ def test_the_body_declares_rtl() -> None:
 def test_frame_asks_mail_apps_to_keep_it_light():
     """MEH-3916: Apple Mail (and some Outlook versions) honour color-scheme and
     leave a «light only» email in its own colours instead of darkening it. Gmail
-    ignores the tag and recolours anyway; the logo badge covers that case."""
+    ignores the tag and recolours anyway; the transparent logo covers that case."""
     html = frame("x", "y")
     head = html[: html.index("</head>")]
     assert '<meta name="color-scheme" content="light only">' in head
