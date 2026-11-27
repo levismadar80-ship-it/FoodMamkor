@@ -998,6 +998,7 @@
         "heading": "Hours",
         "label_orders": "Taking orders",
         "label_visit": "Open to visitors",
+        "label_visit_arranged": "Visits by arrangement",
         "label_both": "Orders and visits"
       },
       "order_window": {
@@ -5682,6 +5683,7 @@
         "location_missing": "No location set yet",
         "pricing_summary_empty": "Optional — price and signature product appear on your page once set",
         "delivery_mode_store": "Physical store",
+        "delivery_mode_arranged": "By arrangement",
         "delivery_mode_delivery": "Delivery",
         "delivery_none": "Not set yet",
         "hours_empty": "No hours set yet",

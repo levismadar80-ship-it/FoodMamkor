@@ -401,8 +401,10 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
   test("defaults: «בשעות קבועות» checked, «משלוחים» unchecked, «צור עסק» enabled", async ({ page }) => {
     await stubAdmin(page);
     await openNewProducer(page);
-    await expect(typeSection(page).getByRole("checkbox")).toHaveCount(2);
+    // MEH-2447: three boxes — «בשעות קבועות», «בתיאום מראש», «משלוחים».
+    await expect(typeSection(page).getByRole("checkbox")).toHaveCount(3);
     await expect(physical(page)).toBeChecked();
+    await expect(page.getByTestId("admin-place-arranged")).not.toBeChecked();
     await expect(delivery(page)).not.toBeChecked();
     await expect(saveBtn(page)).toBeEnabled();
     await expect(nationwide(page)).toHaveCount(0);

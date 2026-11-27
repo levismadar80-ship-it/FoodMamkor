@@ -440,7 +440,7 @@ class ProducerRegister(BaseModel):
             self.lng = None
             return self
         if not self.has_physical_location and not self.offers_delivery:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
         if self.by_arrangement and not self.has_physical_location:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         if self.delivery_nationwide and len(self.delivery_cities) > 0:

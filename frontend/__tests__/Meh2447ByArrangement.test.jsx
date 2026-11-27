@@ -85,3 +85,4 @@ describe("registration wizard — three answers", () => {
     expect(toggleFulfilmentAxis("arranged", "arranged")).toBe("");
   });
 });
+

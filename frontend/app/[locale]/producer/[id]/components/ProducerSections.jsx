@@ -904,7 +904,7 @@ export default function ProducerSections({
               its kind's icon (clock) — the city had a pin and this had none. */}
           {/* MEH-2447: the owner's own «בתיאום מראש» answer wins over the
               hours guess — said even when hours are listed. */}
-          {producer.by_arrangement ? (
+          {producer.by_arrangement && producer.has_physical_location !== false ? (
             <FactLine icon={Clock} data-testid="location-by-arrangement" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_by_arrangement")}
             </FactLine>

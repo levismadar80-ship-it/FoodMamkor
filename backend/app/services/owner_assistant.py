@@ -212,7 +212,8 @@ def _empty_fields(producer: Producer) -> list[str]:
             "תיאור העסק",
             description and description not in gate.DEFAULT_PRODUCER_DESCRIPTIONS,
         ),
-        ("שעות פתיחה", _has_hours(producer)),
+        # MEH-2447: an owner who answered «בתיאום מראש» owes no hours.
+        ("שעות פתיחה", _has_hours(producer) or bool(producer.by_arrangement and producer.has_physical_location)),
         (
             "אינסטגרם / פייסבוק / אתר",
             producer.instagram or producer.facebook or producer.website,

@@ -1,7 +1,7 @@
 """MEH-2447 — the owner answers «איסוף או ביקור בתיאום מראש» herself.
 
 `producers.by_arrangement` is written by registration, the owner PUT and the
-admin create, and is read only together with has_physical_location. The
+admin create / update, and is read only together with has_physical_location. The
 filter side (no «קנייה במקום» for it) is in test_meh2598_on_site_filter.py.
 
 DISCRIMINATION: before MEH-2447 none of the three write paths knew the field —
@@ -80,6 +80,43 @@ def test_turning_the_place_off_alone_does_not_500(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 200, resp.text
+    # And the stale answer is cleared with the place it described.
+    assert _stored(db, producer.id) is False
+
+
+def test_owner_put_rejects_explicit_null(client, db):
+    producer, user = _owner(db)
+    resp = client.put("/producers/me", json={"by_arrangement": None}, headers=auth_header(user))
+    assert resp.status_code == 422, resp.text
+
+
+def _admin_body(**extra):
+    return {
+        "name": "משק של אדמין",
+        "description": "משק קטן בעמק",
+        "city": "חיפה",
+        "has_physical_location": True,
+        "offers_delivery": False,
+        **extra,
+    }
+
+
+def test_admin_create_and_update_store_by_arrangement(client, db):
+    admin = make_user(db, role="admin", email=f"a{uuid.uuid4().hex[:8]}@example.com")
+    resp = client.post("/admin/producers", json=_admin_body(by_arrangement=True), headers=auth_header(admin))
+    assert resp.status_code in (200, 201), resp.text
+    pid = resp.json()["id"]
+    assert _stored(db, pid) is True
+    resp = client.put(f"/admin/producers/{pid}", json={"by_arrangement": False}, headers=auth_header(admin))
+    assert resp.status_code == 200, resp.text
+    assert _stored(db, pid) is False
+
+
+def test_admin_create_rejects_arrangement_without_a_place(client, db):
+    admin = make_user(db, role="admin", email=f"a{uuid.uuid4().hex[:8]}@example.com")
+    body = _admin_body(by_arrangement=True, has_physical_location=False, offers_delivery=True, delivery_nationwide=True)
+    resp = client.post("/admin/producers", json=body, headers=auth_header(admin))
+    assert resp.status_code == 422, resp.text
 
 
 def test_registration_stores_by_arrangement(client, db):

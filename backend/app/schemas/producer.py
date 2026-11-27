@@ -287,7 +287,7 @@ class ProducerAdminCreate(BaseModel):
     @model_validator(mode="after")
     def _validate_location_mode(self) -> Self:
         if not self.has_physical_location and not self.offers_delivery:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
         if self.by_arrangement and not self.has_physical_location:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
@@ -800,9 +800,16 @@ class ProducerUpdate(BaseModel):
         od = self.offers_delivery
         # Only validate when both are explicitly set (partial updates allowed)
         if hp is not None and od is not None and not hp and not od:
-            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
         if self.by_arrangement and hp is False:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
+        # MEH-2447: explicit null would hit the NOT NULL column as a 500.
+        if "by_arrangement" in self.model_fields_set and self.by_arrangement is None:
+            raise ValueError("ערך לא תקין ל«בתיאום מראש»")
+        # MEH-2447: no place left → no arrangement left either, so a stale True
+        # never outlives the place it described.
+        if hp is False and "by_arrangement" not in self.model_fields_set:
+            self.by_arrangement = False
         dn = self.delivery_nationwide
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
         # instead of the legacy delivery_cities column — same nationwide-XOR-cities
