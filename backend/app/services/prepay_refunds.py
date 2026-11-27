@@ -3,8 +3,9 @@ Module:   prepay_refunds
 Purpose:  When money may have been paid ahead through the business's own link
           (MEH-3895) and the thing it paid for is gone, the business is told
           what to return: a group-buy member left, a group buy was cancelled
-          (by the business, the admin, or the daily close of a group that had
-          been funded and fell back), or the business cancelled a bag.
+          (by the business, the admin, the delist of the business, or the
+          daily close of a group that had been funded and fell back), or the
+          business cancelled a bag.
 Touches:  Resend via send_email (background tasks / after the commit) — read
           only on users, group_buy_commits and rescue_orders.
 Does NOT: move money or know whether anyone paid: the link does not tell us,
@@ -149,6 +150,7 @@ GB_CANCEL_INTRO = {
     "owner": 'ביטלתם את הקבוצה "{title}".',
     "admin": 'הקבוצה "{title}" בוטלה.',
     "expired": 'הקבוצה "{title}" נסגרה בלי להגיע למינימום.',
+    "delisted": 'בית העסק כבר לא מופיע במהמקור, ולכן הקבוצה "{title}" בוטלה.',
 }
 
 

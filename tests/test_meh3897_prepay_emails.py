@@ -350,3 +350,38 @@ def test_a_reservation_marked_paid_is_not_listed_twice(client, db, shop, rescue_
     assert marked["pickup_code"] not in body
     certain = [b for _to, s, b in outbox if s.startswith("בוטל שריון")]
     assert len(certain) == 1 and marked["pickup_code"] in certain[0]
+
+
+# --- follow-up (Sapir 27/11: «כל מה שחסר») -----------------------------------------
+
+
+def test_suspending_a_business_tells_it_what_to_return_on_a_funded_group(client, db, notes):
+    gb, _owner, _users = _group(db)
+    admin = make_user(db, role="admin", email="admin3897@example.com")
+    r = client.post(f"/admin/producers/{gb.producer_id}/toggle-status", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    db.refresh(gb)
+    assert gb.status == "cancelled"
+    ((to, _s, body),) = notes
+    assert to == "gbowner3897@example.com"
+    assert 'בית העסק כבר לא מופיע במהמקור, ולכן הקבוצה "רכש קמח מלא" בוטלה.' in body
+    assert "• קוד 1000: 90 ₪\n• קוד 1001: 180 ₪" in body
+
+
+def test_a_reminder_for_a_reservation_marked_paid_stops_asking(client, db, shop, rescue_on, outbox):
+    from app.models.models import RescueOrder
+    from app.services.rescue_reminders import _reminder_card
+
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    _buyer, out = _reserve(client, db, offer, "paidrem3897@example.com")
+    r = client.post(
+        f"/rescue/orders/{out['id']}/paid", json={"paid": True}, headers=auth_header(shop["owner"])
+    )
+    assert r.status_code == 200, r.text
+    order = db.get(RescueOrder, out["id"])
+    db.refresh(order)
+    _s, body, html = render_reservation_email(_reminder_card(order, utc_now()), subject="תזכורת")
+    assert "בית העסק אישר שהתשלום התקבל, ובקופה רק אומרים את הקוד." in body
+    assert "לתשלום" not in body and "לתשלום" not in html
+    assert "ומשלמים" not in body

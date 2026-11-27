@@ -77,6 +77,9 @@ class ReservationEmail:
     # MEH-3897: the business takes the money ahead through its own link; the
     # email carries the link instead of «ומשלמים X ₪» at the counter.
     prepay: Prepay | None = None
+    # MEH-3897: the business marked it paid («סמן כשולם»): the reminder stops
+    # asking for the money.
+    paid: bool = False
 
 
 def send_reservation_email(
@@ -112,7 +115,9 @@ def render_reservation_email(
     )
     note_text = f"הוראות איסוף: {m.pickup_note}\n" if m.pickup_note else ""
     pay_text = (
-        f"הקוד שלכם: {m.pickup_code}.\n"
+        f"הקוד שלכם: {m.pickup_code}. {PAID_LINE}\n"
+        if m.paid
+        else f"הקוד שלכם: {m.pickup_code}.\n"
         + _prepay_text(m.prepay, m.pickup_code, price)
         + "\n"
         if m.prepay
@@ -148,7 +153,10 @@ def render_reservation_email(
 """
     )
     pay_html = (
-        _prepay_html(m.prepay, m.pickup_code, price)
+        f"""\
+            <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">{e(PAID_LINE)}</div>"""
+        if m.paid
+        else _prepay_html(m.prepay, m.pickup_code, price)
         if m.prepay
         else f"""\
             <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">אומרים אותו בקופה ומשלמים <b style="color:#2e6853;">{e(price)}&nbsp;₪</b>.</div>"""
@@ -173,6 +181,10 @@ def render_reservation_email(
 """,
     )
     return subject, body, html_body
+
+
+# The bag page's «paid_confirmed» (messages/he.json), then the counter step.
+PAID_LINE = "בית העסק אישר שהתשלום התקבל, ובקופה רק אומרים את הקוד."
 
 
 def _prepay_text(p: Prepay, code: str, price: str) -> str:

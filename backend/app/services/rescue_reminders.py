@@ -127,6 +127,7 @@ def _reminder_card(order: RescueOrder, now: datetime) -> ReservationEmail:
         ),
         pickup_note=location.pickup_note,
         prepay=prepay_from_info(location.producer.payment_info),  # MEH-3897
+        paid=order.paid_at is not None,  # MEH-3897 «סמן כשולם»
     )
 
 

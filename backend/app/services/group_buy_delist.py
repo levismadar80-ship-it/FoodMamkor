@@ -73,8 +73,14 @@ def cancel_live_group_buys(
     gets plain strings. The business's own users are not mailed — the owner may
     have joined her own group, and she is told about the decision separately.
     """
+    # Imported here: prepay_refunds -> booking_cancellations -> this module.
+    from app.services.prepay_refunds import group_buy_cancel_mails, queue_mails
+
     live: list[GroupBuy] = _live_query(db, producer).with_for_update().all()
     for gb in live:
+        # MEH-3897: a funded group may hold payments made to the business's
+        # own link; its owners are told what to return (read before the write).
+        queue_mails(background_tasks, group_buy_cancel_mails(db, gb, "delisted"))
         emails = [
             email
             for (email,) in db.query(User.email)
