@@ -975,6 +975,7 @@ from app.schemas.catalog import (  # noqa: E402
     ProducerOfferCreate as ProducerOfferCreate,
     ProducerOfferOut as ProducerOfferOut,
     ProducerRandomOut as ProducerRandomOut,
+    AdminProductPriceIn as AdminProductPriceIn,
     ProductCreate as ProductCreate,
     ProductGroupOut as ProductGroupOut,
     ProductOut as ProductOut,

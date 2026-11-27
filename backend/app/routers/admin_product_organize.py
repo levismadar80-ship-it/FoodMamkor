@@ -11,7 +11,9 @@ Does NOT: hold the rules — services/product_organize.py does, shared with the
           drafts (routers/admin_product_import.py approves them).
 Related:  routers/admin_producer_locations.py:52 (same admin route shape);
           routers/admin_product_import.py:38 (_require_producer_row).
-History:  MEH-3472 (creation).
+History:  MEH-3472 (creation). MEH-3942: the admin sets or clears a
+          product's price on any business (an approved page with no owner
+          account had no way to drop its prices).
 """
 
 from uuid import UUID
@@ -30,7 +32,8 @@ from app.schemas.product_organize import (
     ProductGroupsIn,
     ProductOrderIn,
 )
-from app.schemas.schemas import ProductGroupOut, ProductOut
+from app.schemas.schemas import AdminProductPriceIn, ProductGroupOut, ProductOut
+from app.services.owner_products import apply_product_update
 from app.services import product_organize as svc
 
 router = APIRouter(prefix="/admin/producers", tags=["admin-product-organize"])
@@ -124,3 +127,32 @@ def admin_suggest_product_groups(
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
     return svc.suggestion_for(db, _producer(db, producer_id), include_drafts=True)
+
+
+# MEH-3942: the admin sets or clears any product's price (drafts included), also on an
+# approved business with no owner account. Same rules as the owner's PUT
+# (services/owner_products.apply_product_update); nothing but the price moves.
+@router.put("/{producer_id}/products/{product_id}/price", response_model=ProductOut)
+@limiter.limit("120/hour")  # MEH-3022
+def admin_set_product_price(  # noqa: PLR0913 — FastAPI-injected parameters
+    request: Request,  # required by slowapi
+    producer_id: UUID,
+    product_id: UUID,
+    body: AdminProductPriceIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> Product:
+    _producer(db, producer_id)
+    # IDOR: scoped to the business in the PATH — another business's product is a 404.
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id, Product.producer_id == producer_id)
+        .first()
+    )
+    if product is None:
+        raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+    payload = body.model_dump(exclude_unset=True)
+    apply_product_update(product, payload)
+    db.commit()
+    db.refresh(product)
+    return product
