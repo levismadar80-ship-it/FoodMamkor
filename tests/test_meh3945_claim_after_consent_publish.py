@@ -18,14 +18,21 @@ CONSENT = {"consent_confirmed": True, "consent_note": "אישרה בוואטסא
 
 
 @pytest.fixture(autouse=True)
-def _quiet_side_effects(monkeypatch):
+def sends(monkeypatch):
+    """Record the claim's background sends instead of running them."""
+    calls = []
     for name in (
         "notify_producer_registered",
         "score_producer",
         "notify_admin_draft_claimed",
         "send_welcome_email",
+        "send_email",
     ):
-        monkeypatch.setattr(f"app.routers.producer_claim.{name}", lambda *a, **k: None)
+        monkeypatch.setattr(
+            f"app.routers.producer_claim.{name}",
+            lambda *a, _n=name, **k: calls.append((_n, a)),
+        )
+    return calls
 
 
 def _body(token):
@@ -117,3 +124,79 @@ def test_consent_published_page_with_an_owner_stays_409(client, db):
         client.post(CLAIM, json=_body(code), headers=auth_header(second)).status_code
         == 409
     )
+
+
+def _claim(client, db, code, email):
+    owner = make_user(db, email=email)
+    return owner, client.post(CLAIM, json=_body(code), headers=auth_header(owner))
+
+
+def test_claim_of_a_live_page_sends_the_approved_email_not_the_welcome(
+    client, db, sends
+):
+    # The welcome mail says «ממתין לאישור» and the WhatsApp says «שליחה
+    # לבדיקה»: both false for a page already on the site.
+    admin, p, code = _draft_with_link(client, db)
+    _publish(client, admin, p)
+    owner, r = _claim(client, db, code, "owner3945f@example.com")
+    assert r.status_code == 200, r.text
+    names = [n for n, _ in sends]
+    assert "send_welcome_email" not in names
+    assert "notify_producer_registered" not in names
+    approved = [a for n, a in sends if n == "send_email"]
+    assert len(approved) == 1 and approved[0][0] == "owner3945f@example.com"
+    db.expire_all()
+    assert db.get(Producer, p.id).owner_invite_accepted_at is not None
+
+
+def test_claim_of_a_draft_keeps_the_welcome_sends(client, db, sends):
+    _, p, code = _draft_with_link(client, db)
+    _, r = _claim(client, db, code, "owner3945g@example.com")
+    assert r.status_code == 200, r.text
+    names = [n for n, _ in sends]
+    assert "send_welcome_email" in names and "notify_producer_registered" in names
+    assert "send_email" not in names
+
+
+def test_link_stays_dead_after_the_owner_is_detached(client, db):
+    # Detach is the remedy for a wrong hand-over; the old link must not let
+    # anyone take the live page back.
+    admin, p, code = _draft_with_link(client, db)
+    _publish(client, admin, p)
+    owner, r = _claim(client, db, code, "owner3945h@example.com")
+    assert r.status_code == 200, r.text
+    r = client.post(
+        f"/admin/producers/{p.id}/detach-owner",
+        json={"confirm_name": p.name, "expected_owner_user_id": str(owner.id)},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 200, r.text
+    assert client.post(PREVIEW, json={"token": code}).status_code == 409
+    _, r = _claim(client, db, code, "owner3945i@example.com")
+    assert r.status_code == 409
+
+
+def test_link_stays_dead_after_hide_then_live_again(client, db):
+    admin, p, code = _draft_with_link(client, db)
+    _publish(client, admin, p)
+    toggle = f"/admin/producers/{p.id}/toggle-status"
+    assert client.post(toggle, headers=auth_header(admin)).status_code == 200
+    # Back on the site by whichever admin path; the toggle itself gates an
+    # ownerless page, so the end state is set directly.
+    db.expire_all()
+    row = db.get(Producer, p.id)
+    assert row.status == "inactive"
+    row.status = "approved"
+    db.commit()
+    assert client.post(PREVIEW, json={"token": code}).status_code == 409
+
+
+def test_admin_still_cannot_edit_products_on_a_consent_published_page(client, db):
+    admin, p, code = _draft_with_link(client, db)
+    _publish(client, admin, p)
+    r = client.post(
+        f"/admin/producers/{p.id}/products",
+        json={"name": "לחם", "price_min": "32"},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 409
