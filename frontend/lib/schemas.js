@@ -536,14 +536,21 @@ export const ProducersResponseSchema = z.array(ProducerSchema);
 export const ProducersFeedSchema = z.array(z.unknown()).transform((rows, ctx) => {
   /** @type {z.infer<typeof ProducerSchema>[]} */
   const kept = [];
+  /** @type {{ id: unknown, issues: unknown }[]} */
+  const dropped = [];
   for (const row of rows) {
     const parsed = ProducerSchema.safeParse(row);
     if (parsed.success) {
       kept.push(parsed.data);
     } else {
       const id = row && typeof row === "object" ? /** @type {any} */ (row).id : undefined;
-      console.error("[producers feed] dropped a business that failed the schema:", id, parsed.error.issues);
+      dropped.push({ id, issues: parsed.error.issues });
     }
+  }
+  // One line per payload, not per row, so a persistent bad record does not
+  // flood the console on every filter change.
+  if (dropped.length > 0) {
+    console.error(`[producers feed] dropped ${dropped.length} of ${rows.length} businesses that failed the schema:`, dropped);
   }
   if (rows.length > 0 && kept.length === 0) {
     ctx.addIssue({ code: "custom", message: "no row of the producers payload matches ProducerSchema" });
