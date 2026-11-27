@@ -194,6 +194,34 @@ async function layout(page: Page, withCovered: boolean): Promise<Layout> {
   }, withCovered);
 }
 
+// MEH-3880 (flaky 27/11, #5427 run 45991001696): the controls below plant
+// nodes into <main>. Planted as soon as the h1 is visible, they can land on a
+// server copy React has not yet taken over; when React commits, the planted
+// button is gone and `layout` honestly reports nothing. Plant only once the
+// h1 is React-owned (the `__reactFiber$` expando, as `_settled-field.ts` reads
+// it, MEH-2323). Explicit bound: `waitForFunction` is not an action.
+async function aboutHydrated(page: Page): Promise<void> {
+  await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
+  await page.waitForFunction(
+    () => {
+      const h1 = document.querySelector("main h1");
+      return !!h1 && Object.keys(h1).some((k) => k.startsWith("__reactFiber"));
+    },
+    undefined,
+    { timeout: 15_000 },
+  );
+}
+
+// If a planted node is gone when the probe runs, say so by name instead of
+// letting the control fail as if the probe had stopped seeing.
+async function stillPlanted(page: Page, texts: string[]): Promise<void> {
+  const gone = await page.evaluate(
+    (texts) => texts.filter((t) => ![...document.querySelectorAll("button")].some((b) => b.textContent === t)),
+    texts,
+  );
+  expect(gone, "planted control removed from the page before the probe ran (MEH-3880)").toEqual([]);
+}
+
 async function strayFaces(page: Page, probes: Sweep["fontProbes"]): Promise<string[]> {
   const cdp = await page.context().newCDPSession(page);
   const stray: string[] = [];
@@ -223,7 +251,7 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
   test("control: the layout probe catches an off-screen and a covered control", async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "same engine as the sweep");
     await page.goto("/about");
-    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
+    await aboutHydrated(page);
     await page.evaluate(() => {
       const main = document.querySelector("main")!;
       const off = document.createElement("button");
@@ -241,6 +269,7 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
       wrap.append(covered, lid);
       main.prepend(off, wrap);
     });
+    await stillPlanted(page, ["planted-offscreen", "planted-covered"]);
     const l = await layout(page, true);
     expect(l.offscreen.join(" | ")).toContain("planted-offscreen");
     expect(l.covered.join(" | ")).toContain("planted-covered");
@@ -250,7 +279,7 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
   test("control: a full-screen fixed layer over a control is still reported", async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "same engine as the sweep");
     await page.goto("/about");
-    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
+    await aboutHydrated(page);
     await page.evaluate(() => {
       const btn = document.createElement("button");
       btn.textContent = "planted-under-fixed";
@@ -259,6 +288,7 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
       veil.style.cssText = "position:fixed;inset:0;z-index:99999;background:transparent";
       document.body.append(veil);
     });
+    await stillPlanted(page, ["planted-under-fixed"]);
     const l = await layout(page, true);
     expect(l.covered.join(" | ")).toContain("planted-under-fixed");
   });
