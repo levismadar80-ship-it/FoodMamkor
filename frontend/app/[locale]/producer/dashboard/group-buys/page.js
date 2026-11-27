@@ -462,7 +462,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             data-autofocus
             disabled={busy}
             onClick={onClose}
-            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-background-alt transition disabled:opacity-50"
           >
             {t("back")}
           </button>

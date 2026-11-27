@@ -372,7 +372,7 @@ npx playwright test             # E2E
   `recipes_awaiting_review`. שני האחרונים סופרים רק `status == "pending"`
   (תור האדמין); `pending_experiences` / `pending_recipes` סופרים גם את תור
   בעלת העסק (`changes_requested` / `needs_revision`) ונשארו לסכום בלבד.
-- pill צהוב (`bg-yellow-400 text-yellow-900`) רק כשהספירה > 0; כשה-fetch
+- pill צהוב (`bg-warning-400 text-warning-900`, MEH-3928) רק כשהספירה > 0; כשה-fetch
   נכשל — «!» על שני פריטי האישורים וכל התורים מוצגים בלי מונה (MEH-2096).
   בדף הבית: «אין פריטים ממתינים בשאר התורים» מוצג רק כשכל המונים ידועים;
   payload בלי מפתחות התור (frontend שעלה לפני ה-backend) מציג «שגיאה בטעינת

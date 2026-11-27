@@ -147,7 +147,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
 
   const STATUS_BANNER = {
     pending: {
-      className: "bg-yellow-50 border-yellow-300 text-yellow-900",
+      className: "bg-warning-50 border-warning-300 text-warning-900",
       label: t("status_pending"),
     },
     changes_requested: {

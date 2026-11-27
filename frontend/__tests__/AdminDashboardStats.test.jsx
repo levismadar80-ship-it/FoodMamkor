@@ -114,7 +114,7 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     expect(await screen.findByText("admin.dashboard.pending_panel.empty")).toBeInTheDocument();
     expect(screen.getByText("admin.dashboard.queues.all_clear")).toBeInTheDocument();
     expect(screen.getByTestId("admin-home-queues").querySelectorAll("a")).toHaveLength(0);
-    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-warning-400")).toBeNull();
     expect(screen.getByTestId("admin-home-pending").className).not.toMatch(/border-yellow/);
   });
 
@@ -141,7 +141,7 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
     render(<AdminHome />);
     expect(await screen.findByTestId("admin-home-pending-unknown")).toHaveTextContent("admin.common.error_loading");
     expect(screen.queryByText("admin.dashboard.pending_panel.empty")).not.toBeInTheDocument();
-    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-yellow-400")).toBeNull();
+    expect(screen.getByTestId("admin-home-pending").querySelector(".bg-warning-400")).toBeNull();
   });
 
   it("a busy queue next to a missing key shows the rows AND the unknown line (R4-2)", async () => {

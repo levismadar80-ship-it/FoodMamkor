@@ -294,7 +294,7 @@ export default function AdminRowMenu({ items = [], ariaLabel, touch = false }) {
             it.onSelect();
           }}
           className={`block w-full text-start px-3 py-2 text-sm transition ${
-            it.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
+            it.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-background-alt"
           } ${
             it.tone === "danger"
               ? `text-danger-600 ${it.disabled ? "" : "hover:bg-danger-50"}`

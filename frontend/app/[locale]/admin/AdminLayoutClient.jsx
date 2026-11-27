@@ -261,7 +261,7 @@ function AdminShell({ children }) {
         <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
         {badgeCount !== null && (
           <span
-            className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-2 py-0.5 rounded-full leading-none"
+            className="bg-warning-400 text-warning-900 text-2xs font-bold px-2 py-0.5 rounded-full leading-none"
             {...badgeProps(badgeCount)}
           >
             {badgeCount}
@@ -361,7 +361,7 @@ function AdminShell({ children }) {
                 {t(`layout.nav.${n.key}`)}
                 {badgeCount !== null && (
                   <span
-                    className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    className="bg-warning-400 text-warning-900 text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none"
                     {...badgeProps(badgeCount)}
                   >
                     {badgeCount}
