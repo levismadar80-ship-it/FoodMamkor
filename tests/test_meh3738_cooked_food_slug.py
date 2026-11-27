@@ -1,4 +1,8 @@
-"""MEH-3738 — «בישול לפי הזמנה» (cooked to order) is created from the admin,
+"""MEH-3911: "byshvl-lpy-hzmnh" is now only the OLD slug that revision
+b3d5f7a9c1e2 renames to "cooked-to-order"; this pins that the revision matches
+the row it was created as.
+
+MEH-3738 — «בישול לפי הזמנה» (cooked to order) is created from the admin,
 so its slug comes from transliteration, never from the frozen NAME_TO_SLUG
 table. The frontend keys it by that slug (category-taxonomy, CategoryIcons,
 CategorySelector REST_DESC_SLUGS, category_names / rest_descs i18n keys); if
