@@ -162,3 +162,47 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
     });
   }
 });
+
+// MEH-3986: a control can stay inside the viewport and still be lost — the
+// city banner's «בחרו עיר» stayed beside its text at 200%, squeezed the text to
+// one word a line and was painted over it. Nothing went off-screen, so the
+// checks above passed. This one asserts the buttons and the text do not overlap.
+// The banner shows only with cookie consent, no saved city, no holiday and not
+// in Friday mode, 8 s after load, so the clock is a plain Wednesday noon.
+const PLAIN_WEDNESDAY = new Date("2026-11-11T12:00:00+02:00");
+
+test.describe("text scale: the city banner keeps its text readable (MEH-3986)", () => {
+  // Same reason as above (MEH-3809): the root font changes after load by design.
+  test.use({ loadGuard: "errors" });
+  test("/ city banner: at 200% text the buttons do not cover the text", async ({ page }, info) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gates on the Playwright project (phone vs desktop), which the product cannot move
+    test.skip(!info.project.use.isMobile, "the 375px pass is the phone project's");
+    await page.addInitScript(() => window.localStorage.setItem("cookieConsent", "essential"));
+    await page.clock.setFixedTime(PLAIN_WEDNESDAY);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/");
+    const banner = page.getByTestId("location-banner");
+    await expect(banner).toBeVisible({ timeout: 20_000 });
+    await scale(page, "200%");
+    await expect(async () => {
+      const r = await banner.evaluate((el) => {
+        const box = (n: Element | null) => n?.getBoundingClientRect() ?? null;
+        return {
+          rootPx: parseFloat(getComputedStyle(document.documentElement).fontSize),
+          text: box(el.querySelector("p")),
+          buttons: [...el.querySelectorAll("button")].map((b) => b.getBoundingClientRect()),
+        };
+      });
+      expect(r.rootPx, "control: the root font size scaled").toBe(32);
+      expect(r.text, "control: the banner's text was measured").not.toBeNull();
+      expect(r.buttons.length, "control: the banner's two buttons were measured").toBe(2);
+      for (const b of r.buttons) {
+        const t = r.text!;
+        const overlap =
+          Math.min(b.right, t.right) - Math.max(b.left, t.left) > 0.5 &&
+          Math.min(b.bottom, t.bottom) - Math.max(b.top, t.top) > 0.5;
+        expect(overlap, `button at [${Math.round(b.left)}, ${Math.round(b.top)}] covers the text`).toBe(false);
+      }
+    }).toPass({ timeout: SETTLE_MS });
+  });
+});

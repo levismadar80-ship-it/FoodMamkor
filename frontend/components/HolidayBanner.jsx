@@ -11,6 +11,26 @@ import api from "@/lib/api";
 
 const DISMISS_KEY = "holiday_banner_dismissed";
 
+// MEH-3986: a closed holiday banner stays closed for that holiday, across
+// visits (localStorage), the way GitLab UI and most announcement bars persist a
+// dismissal; it was sessionStorage, so it came back on every new visit for the
+// whole two-week window. The key carries the holiday's start date, so next
+// year's Hanukkah shows again. A date-less override (admin) keys on the name.
+/** @param {{ key: string, start?: string }} h */
+function dismissKey(h) {
+  return `${DISMISS_KEY}_${h.key}${h.start ? `_${h.start}` : ""}`;
+}
+
+/** @param {string} key */
+function readDismissed(key) {
+  try {
+    // eslint-disable-next-line no-restricted-syntax -- the banner is revealed on purpose after a delay (MEH-41 / MEH-55); a probe measured CLS 0-0.03 with it shown, under 0.1 (MEH-3858, 25/11; spec 50 seeds no holiday)
+    return !!localStorage.getItem(key);
+  } catch {
+    return false;
+  }
+}
+
 export default function HolidayBanner({ suppressed = false, onVisibilityChange }) {
   // MEH-996: strings live under group_buys.holiday_banner in both locale
   // files — the producer.holiday_banner namespace never existed (same trap
@@ -28,9 +48,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
     // past its 3s timer).
     const apply = (h) => {
       if (!h) return;
-      const dismissedKey = `${DISMISS_KEY}_${h.key}`;
-      // eslint-disable-next-line no-restricted-syntax -- the banner is revealed on purpose after a delay (MEH-41 / MEH-55); a probe measured CLS 0-0.03 with it shown, under 0.1 (MEH-3858, 25/11; spec 50 seeds no holiday)
-      if (sessionStorage.getItem(dismissedKey)) return;
+      const dismissedKey = dismissKey(h);
+      if (readDismissed(dismissedKey)) return;
       setHoliday(h);
       setDismissed(false);
     };
@@ -60,8 +79,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
 
   const dismiss = () => {
     setDismissed(true);
-    const dismissedKey = `${DISMISS_KEY}_${holiday.key}`;
-    try { sessionStorage.setItem(dismissedKey, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(dismissKey(holiday), "1"); } catch { /* ignore */ }
   };
 
   const searchHref = `/producers?q=${encodeURIComponent(holiday.searchParams.q)}`;
