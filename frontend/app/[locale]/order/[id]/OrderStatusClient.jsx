@@ -48,7 +48,7 @@ function WhenLine({ start, end, kind, address }) {
   const values = { day: dayLabel(start, locale), ...rangeEnds(start, end) };
   // MEH-3960: a pending order shows the time she asked for, with no address.
   if (kind.startsWith("requested_")) return <p data-testid="order-requested">{t(kind, values)}</p>;
-  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address })}</p>;
+  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address: isolate(address) })}</p>;
   if (kind === "when_pickup") return <p data-testid="order-when">{t("when_pickup_no_address", values)}</p>;
   return <p data-testid="order-when">{t("when_delivery", values)}</p>;
 }
@@ -142,7 +142,7 @@ export function OrderStatusView({ order, onChange, refOf }) {
   return (
     <div className="space-y-4" data-testid="order-status" data-status={order.status}>
       <SectionHeading size="content" data-testid="order-headline">
-        {t(view.headline, { business_name: order.producer_name })}
+        {t(view.headline, { business_name: isolate(order.producer_name) })}
       </SectionHeading>
       {view.requested && order.slot_start && order.slot_end && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.requested} />

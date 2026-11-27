@@ -81,6 +81,16 @@ describe("the buyer's page", () => {
     wrap("he", he, <OrderStatusView order={order({ items, fulfilment: "pickup" })} onChange={() => {}} refOf={() => ({ token: "t" })} />);
     expect(document.body.textContent).toContain(`${FSI}Sourdough 800g${PDI}`);
   });
+
+  it("isolates the business name in the headline", () => {
+    wrap("en", en, <OrderStatusView order={order({ fulfilment: "pickup" })} onChange={() => {}} refOf={() => ({ token: "t" })} />);
+    expect(screen.getByTestId("order-headline").textContent).toContain(`${FSI}המאפייה${PDI}`);
+  });
+
+  it("isolates the pickup address", () => {
+    wrap("en", en, <OrderStatusView order={order({ status: "confirmed", fulfilment: "pickup", pickup_address: "הרצל 12" })} onChange={() => {}} refOf={() => ({ token: "t" })} />);
+    expect(screen.getByTestId("order-when").textContent).toContain(`${FSI}הרצל 12${PDI}`);
+  });
 });
 
 describe("the customers card in English", () => {
