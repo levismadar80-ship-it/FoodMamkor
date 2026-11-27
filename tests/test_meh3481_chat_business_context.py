@@ -183,6 +183,13 @@ def test_no_delivery_when_the_business_stopped_delivering(db):
     assert ctx.facts(p, "משלוח לחיפה?")["delivers_to_asked_city"] is False
 
 
+def test_delivery_with_no_cities_is_no_answer_not_a_no(db):
+    # MEH-3972: «משלוחים» saved with no cities = «בתיאום מראש» on the page.
+    p = _business(db)
+    p.delivery_areas = []
+    assert ctx.facts(p, "משלוח לחיפה?")["delivers_to_asked_city"] is None
+
+
 def test_a_city_inside_a_word_or_two_cities_is_no_asked_city():
     assert ctx.asked_city("יש לכם מלודיה של עוגות?") is None  # «לוד» inside a word
     assert ctx.asked_city("משלוח ללוד?") == "לוד"

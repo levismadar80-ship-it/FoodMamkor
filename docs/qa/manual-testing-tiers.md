@@ -1250,7 +1250,7 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 2735 | Admin ProducerForm — "סוג העסק" section | Uncheck both checkboxes → inline error "חייב לסמן לפחות אחד מהשניים" appears; save button becomes disabled |
 | 2736 | Admin ProducerForm — "סוג העסק" section | Check "משלוחים" only → cascading section appears with "משלוחים לכל הארץ" checkbox + CitiesAutocomplete below i… |
 | 2737 | Admin ProducerForm — "סוג העסק" section | Check "משלוחים לכל הארץ" → CitiesAutocomplete disappears; save is enabled |
-| 2738 | Admin ProducerForm — "סוג העסק" section | Uncheck "משלוחים לכל הארץ" with no cities selected → inline error "יש לבחור לפחות עיר אחת"; save disabled |
+| 2738 | Admin ProducerForm — "סוג העסק" section | Uncheck "משלוחים לכל הארץ" with no cities selected → muted hint «אפשר לשמור בלי ערים…», save enabled (MEH-3972) |
 | 2739 | Admin ProducerForm — "סוג העסק" section | Type "תל" in CitiesAutocomplete → dropdown shows cities starting with "תל" (requires seeded cities table); cli… |
 | 2740 | Admin ProducerForm — "סוג העסק" section | Click × on a city chip → chip is removed |
 | 2741 | Admin ProducerForm — "סוג העסק" section | Keyboard: ArrowDown/Up navigates dropdown; Enter adds selected city; Backspace removes last chip when input is… |
