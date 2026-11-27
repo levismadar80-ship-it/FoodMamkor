@@ -524,14 +524,16 @@ export default function DeliveryBlock({
   //
   // `??` and not `||` throughout: an area fee of 0 is a real override
   // ("משלוח חינם" for that city) and `||` would fall through to the producer
-  // rate, silently charging for a free area. Areas with no effective fee at
-  // all (no override, no producer-level rate) drop out rather than counting
-  // as 0 — "not stated" is not "free".
+  // rate, silently charging for a free area. An area with no effective fee at
+  // all (no override, no producer-level rate) is its OWN value here, never 0 —
+  // "not stated" is not "free". MEH-3968: it used to be dropped, so one free
+  // area among unstated ones read as "uniform 0" and no row carried the fee
+  // while the top line said «משלוח חינם» for everyone. Now a stated fee beside
+  // an unstated one is variance: rows show their own fee (or none).
   const producerFee = producer?.delivery_fee ?? null;
-  const effectiveFees = areas
-    .map((da) => da.delivery_fee ?? producerFee)
-    .filter((f) => f != null);
-  const feeVaries = new Set(effectiveFees).size > 1;
+  const resolvedFees = areas.map((da) => da.delivery_fee ?? producerFee);
+  const feeVaries =
+    resolvedFees.some((f) => f != null) && new Set(resolvedFees).size > 1;
   // Resolved from the ORIGINAL `areas`, keyed the same way the rows are keyed
   // — NOT from the row object handed back by groupDeliveryAreas.
   //

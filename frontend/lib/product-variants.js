@@ -73,6 +73,8 @@ export function variantFor(product, variantId) {
  * with one variant, that variant's price; with two or more, the lowest of the
  * ones in stock (all of them when none is), and `from` when they differ, so
  * the page reads «מ-X ₪». A variant without a price counts at the product's.
+ * A variant with no number at all (no price, none on the product) forces
+ * `from`, so one priced size never reads as the price of all (MEH-3968).
  * Null without variants, or when none has a price of its own (the product's
  * own price is shown as before), or when there is no number at all (MEH-3617).
  * @param {any} product
@@ -92,7 +94,11 @@ export function variantPrice(product) {
     .filter((p) => typeof p === "number" && Number.isFinite(p)));
   if (!prices.length) return null;
   const low = Math.min(...prices);
-  return { shekels: low, from: low !== Math.max(...prices) };
+  // MEH-3968: a size left with no number (no price of its own, none on the
+  // product) is unknown, not absent. Dropping it made the one priced size the
+  // flat price of every size; «מ-» says only what is known.
+  const unpriced = prices.length < variants.length;
+  return { shekels: low, from: unpriced || low !== Math.max(...prices) };
 }
 
 /**
