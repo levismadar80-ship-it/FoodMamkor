@@ -197,6 +197,25 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("חלה")).toBeInTheDocument();
   });
 
+  it("MEH-3973: a signature product with no price and no business label says «מחיר בפנייה»", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "כוורת",
+          top_product_name: "דבש פרחי בר",
+          products: [
+            { id: 31, name: "דבש פרחי בר", price_min: null, price_max: null },
+            { id: 32, name: "דבש אבוקדו", price_min: null, price_max: null },
+          ],
+        }}
+      />,
+    );
+    // the mock echoes the key: once on the signature card, once on the grid row
+    expect(screen.getAllByText("product_price.varies")).toHaveLength(2);
+  });
+
   // ── MEH-2137 chunk 3: the public matcher votes by id ───────────────────────
   // The chunk changed this file and shipped no test for it; these close that,
   // and the third one is the reviewer finding from PR #3048.

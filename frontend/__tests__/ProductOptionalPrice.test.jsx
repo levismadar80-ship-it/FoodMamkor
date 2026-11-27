@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import he from "../messages/he.json";
 
 /**
- * MEH-2924 — a product with no price reads «מחיר משתנה לפי עונה» on the
+ * MEH-2924 / MEH-3973 — a product with no price reads «מחיר בפנייה» on the
  * public sheet, never «₪» or «0». The JSON-LD side (no priceSpecification for
  * a null price) is pinned in seo.test.js, the «יוגורט כבשים» case.
  * REUSES: __tests__/ProductSheetAllergens.test.jsx (mocks + real he.json).

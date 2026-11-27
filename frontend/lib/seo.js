@@ -353,7 +353,9 @@ function buildOfferCatalog(producer, locale = "he") {
     // MEH-3973: an Offer with no price is an incomplete Offer to a parser
     // («מחיר בפנייה» products). List the Product itself instead — schema.org
     // allows a Product in an OfferCatalog — so no price is ever implied.
-    .map((offer) => (offer.priceSpecification ? offer : offer.itemOffered))
+    // An Offer that says something besides a price (a variant's OutOfStock)
+    // stays an Offer.
+    .map((offer) => (offer.priceSpecification || offer.availability ? offer : offer.itemOffered))
     .slice(0, OFFER_CATALOG_MAX);
 
   if (itemListElement.length === 0) return null;
