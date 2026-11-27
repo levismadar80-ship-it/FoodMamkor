@@ -41,7 +41,7 @@ def _read(token):
 
 
 def _publish(pid):
-    return f"/admin/producers/{pid}/publish-with-consent"
+    return f"/admin/producers/{pid}/publish-with-consent?slug=test-farm"
 
 
 def _draft(db, **kw):
@@ -296,7 +296,7 @@ def test_plain_approve_still_refuses_a_draft(client, db):
     """This card adds a route; it does not loosen approve_producer (MEH-2121)."""
     admin = make_user(db, role="admin")
     p = _draft(db)
-    r = client.post(f"/admin/producers/{p.id}/approve", headers=auth_header(admin))
+    r = client.post(f"/admin/producers/{p.id}/approve?slug=test-farm", headers=auth_header(admin))
     assert r.status_code == 409
 
 

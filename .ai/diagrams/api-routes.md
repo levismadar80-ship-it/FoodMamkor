@@ -172,7 +172,7 @@ graph TD
     Dashboard[/admin «מה מחכה לטיפול» page + admin layout] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + pending_producers preview +<br/>monthly_producers + daily_active_users +<br/>top_cities + server_health + pending_moderation_count;<br/>MEH-2359 per-queue keys: pending_category_requests,<br/>pending_name_change_requests, undelivered_whatsapp_7d,<br/>experiences_awaiting_review, recipes_awaiting_review —<br/>the page reads stats + pending_producers only;<br/>the layout reads stats for the sidebar pills + queue filter]
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
-    Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
+    Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️ ?slug= — 422 slug_required when no English address exists yet (MEH-3914)]
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email;<br/>MEH-3227 + live rescue bags and upcoming event/experience sign-ups cancelled, holders mailed]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]

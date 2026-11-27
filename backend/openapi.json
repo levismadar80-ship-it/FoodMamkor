@@ -26977,6 +26977,23 @@
               "title": "Allow Unverified Phone",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
+            }
           }
         ],
         "responses": {
@@ -28857,6 +28874,23 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
             }
           }
         ],

@@ -1417,7 +1417,7 @@ POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless
                                                      links still open until their exp. Either kind stops working the moment the draft is claimed, published, rejected or deleted.
 GET    /producer-preview/{token}                   public — 60/min. {token} = a short code or an old JWT. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
                                                      Unknown or bad code, bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
-POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}.
+POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}. Optional ?slug= and the 422 slug_required gate, as on approve (MEH-3914).
                                                      Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
                                                      photo; a missing licence is logged, not blocked, and the business gets no verified badge — MEH-3026), with the
                                                      phone-verified gate overridden — there is no owner to verify it yet. Sets status "approved", stores the
@@ -1944,7 +1944,7 @@ PUT    /admin/producers/{id}                   admin — MEH-3245: a changed `ph
 POST   /admin/producers/{id}/toggle-status     admin — MEH-2945: inactive→approved runs the approval gates (photo, licence, verified WhatsApp) → 422; approved→inactive is never gated
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
-POST   /admin/producers/{id}/approve           admin — emails + WhatsApp. A license-required category with no producer_license_number is approved and logged, without the verified badge (MEH-3026, replacing the MEH-971 422 and its ?allow_without_license override; the param is ignored if sent)
+POST   /admin/producers/{id}/approve           admin — emails + WhatsApp. A license-required category with no producer_license_number is approved and logged, without the verified badge (MEH-3026, replacing the MEH-971 422 and its ?allow_without_license override; the param is ignored if sent). MEH-3914: a business with no slug, no Instagram handle and no Latin letter in its name answers 422 {code: "slug_required", message, suggested}; the admin confirms or edits the suggestion and sends ?slug= (Latin, normalised; a reserved or non-Latin one is 400 / 422 slug_not_latin; one another business holds is 409 {code: "slug_taken", message, suggested: the free variant}, never suffixed silently). Same gate and param on publish-with-consent
 POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
 POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
 GET    /admin/license-expiry-reminders         admin — MEH-2072: approved producers whose producers.license_expires_at falls in

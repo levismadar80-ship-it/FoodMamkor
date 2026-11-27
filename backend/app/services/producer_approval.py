@@ -25,10 +25,12 @@ from app.slug_utils import (
     LATIN_SLUG_MAX,
     cap_slug,
     is_latin_slug,
+    handle_from_instagram,
     is_reserved,
     latin_city_suffix,
     latin_slug,
     rejected_characters,
+    slugify,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,6 +77,30 @@ def _guard_supplied_slug(raw: str) -> None:
         )
 
 
+def _slug_is_free(db: Session, candidate: str, exclude_id: UUID | None = None) -> bool:
+    """Not reserved, not retired (MEH-2528) and held by no other business."""
+    if is_reserved(candidate) or retired_slugs.is_retired(
+        db, candidate, owner_id=exclude_id
+    ):
+        return False
+    q = db.query(Producer).filter(Producer.slug == candidate)
+    if exclude_id:
+        q = q.filter(Producer.id != exclude_id)
+    return q.first() is None
+
+
+def _free_variant(db: Session, producer: Producer, base: str) -> str:
+    """`base` when it is free, else the variant `_ensure_unique_slug` would mint.
+
+    Asked first so the common case (a free address) never calls
+    `_ensure_unique_slug`, whose call count the MEH-1817 / MEH-2017 race
+    harnesses rely on.
+    """
+    if not base or _slug_is_free(db, base, producer.id):  # type: ignore[arg-type]
+        return base
+    return _ensure_unique_slug(db, base, exclude_id=producer.id, city=producer.city)  # type: ignore[arg-type]
+
+
 def _ensure_unique_slug(
     db: Session,
     base_slug: str,
@@ -97,14 +123,7 @@ def _ensure_unique_slug(
         return base_slug
 
     def _free(candidate: str) -> bool:
-        if is_reserved(candidate) or retired_slugs.is_retired(
-            db, candidate, owner_id=exclude_id
-        ):
-            return False
-        q = db.query(Producer).filter(Producer.slug == candidate)
-        if exclude_id:
-            q = q.filter(Producer.id != exclude_id)
-        return q.first() is None
+        return _slug_is_free(db, candidate, exclude_id)
 
     if _free(base_slug):
         return base_slug
@@ -129,7 +148,63 @@ def _ensure_unique_slug(
     return _numbered(counter)
 
 
-def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
+_HAS_LATIN_LETTER = re.compile(r"[A-Za-z]")
+
+
+def assert_slug_decided(
+    db: Session, producer: Producer, typed_slug: str | None
+) -> str | None:
+    """MEH-3914: a business's public address is seen by a person before it goes live.
+
+    Returns the normalised slug the admin typed (or None). When the admin typed
+    none, the row has no slug, there is no Instagram handle and the name has
+    no Latin letter, the address would be a machine transliteration nobody
+    looked at — so this answers 422 `slug_required` with that transliteration
+    as the suggestion, and the admin approves again with `?slug=`.
+
+    The Instagram handle and a Latin name are a slug the business already
+    wrote in Latin letters, so they pass as before (Shopify / Etsy derive the
+    handle and let the admin edit it; here we only stop where no human wrote
+    any Latin at all).
+
+    Called by the two handlers that publish (approve, publish-with-consent),
+    not by `_assert_approvable`: the un-pause path (toggle-status) reuses those
+    gates and has no way to take a slug.
+    """
+    if typed_slug:
+        _guard_supplied_slug(typed_slug)
+        chosen = slugify(typed_slug) or None
+        if chosen:
+            # A typed address that is taken is not silently suffixed: the admin
+            # chose it, so she sees the free variant and confirms that instead.
+            free = _free_variant(db, producer, chosen)
+            if free != chosen:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "slug_taken",
+                        "message": "הכתובת הזאת כבר תפוסה. בדקי את ההצעה ואשרי אותה.",
+                        "suggested": free,
+                    },
+                )
+        return chosen
+    if producer.slug or handle_from_instagram(producer.instagram):  # type: ignore[arg-type]
+        return None
+    if _HAS_LATIN_LETTER.search(producer.name or ""):  # type: ignore[arg-type]
+        return None
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "code": "slug_required",
+            "message": "לבית העסק אין עדיין כתובת באנגלית. בדקי את ההצעה ואשרי אותה.",
+            "suggested": _free_variant(db, producer, latin_slug(producer.name)),  # type: ignore[arg-type]
+        },
+    )
+
+
+def _mint_slug_if_absent(
+    db: Session, producer: Producer, typed_slug: str | None = None
+) -> None:
     """MEH-1817 — publish-time canonicalization of the producer's URL.
 
     Self-registration (`auth.py`, both branches) builds `Producer(...)` with no
@@ -155,7 +230,8 @@ def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
         # MEH-3336: a Latin slug, from the Instagram handle or the name.
         minted = _ensure_unique_slug(
             db,
-            latin_slug(producer.name, instagram=producer.instagram),  # type: ignore[arg-type]
+            # MEH-3914: the slug the admin confirmed wins over the suggestion.
+            typed_slug or latin_slug(producer.name, instagram=producer.instagram),  # type: ignore[arg-type]
             city=producer.city,  # type: ignore[arg-type]
         )
         producer.slug = minted or None  # type: ignore[assignment]
@@ -205,6 +281,9 @@ class ApprovalOverrides(NamedTuple):
     """
 
     unverified_phone: bool = False
+    # MEH-3914: the English address the admin confirmed (normalised by
+    # assert_slug_decided). Only used when the row has no slug yet.
+    slug: str | None = None
 
 
 def _assert_approvable(
@@ -375,7 +454,7 @@ def _persist_approval(  # noqa: PLR0913 — +before_commit (MEH-3535)
 
     Only a `producers_slug_key` violation is retried — see `_is_slug_collision`.
     """
-    _mint_slug_if_absent(db, producer)
+    _mint_slug_if_absent(db, producer, overrides.slug)
     if before_commit:
         before_commit(producer)
     try:
@@ -395,7 +474,7 @@ def _persist_approval(  # noqa: PLR0913 — +before_commit (MEH-3535)
     # exactly as the main path would have. One owner, called twice.
     _assert_approvable(db, producer, overrides, admin_id)
     _apply_approval_state(producer)
-    _mint_slug_if_absent(db, producer)
+    _mint_slug_if_absent(db, producer, overrides.slug)
     if before_commit:
         before_commit(producer)
     db.commit()
