@@ -11,9 +11,12 @@
  * Related:  backend/app/utils/weekdays.py (the same bits),
  *           components/dashboard/ProductWeekdaysField.jsx (the editor),
  *           components/public/OrderSheet.jsx (the slots)
- * History:  MEH-3618 (creation)
+ * History:  MEH-3618 (creation) · MEH-3932 (`lead_days`: a product ordered
+ *           some days ahead takes only slots that far off, on the same
+ *           Israel clock as services/product_lead_days.py)
  */
 
+import { israelToday } from "@/lib/israel-date";
 import { splitKey } from "@/lib/product-variants";
 
 export const DAYS_IN_WEEK = 7;
@@ -40,7 +43,37 @@ export function isOpen(mask, weekday) {
 
 /** @param {any} product */
 function isLimited(product) {
-  return typeof product?.available_weekdays === "number";
+  return typeof product?.available_weekdays === "number" || typeof product?.lead_days === "number";
+}
+
+const DAY_MS = 86400000;
+
+/** Whole Israel days from `today` to the slot's day. @param {string} today YYYY-MM-DD @param {string} iso */
+export function daysAhead(today, iso) {
+  return Math.round((Date.parse(`${israelToday(new Date(iso))}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
+}
+
+/**
+ * The product takes a slot: made on its day (MEH-3618) and at least
+ * `lead_days` Israel days off (MEH-3932).
+ * @param {any} product @param {string} iso @param {string} today YYYY-MM-DD
+ */
+export function takesSlot(product, iso, today) {
+  if (!isOpen(product?.available_weekdays, israelWeekday(iso))) return false;
+  return typeof product?.lead_days !== "number" || daysAhead(today, iso) >= product.lead_days;
+}
+
+/**
+ * «זמין בימי שישי», «צריך להזמין יומיים מראש», or both, for the line under a
+ * product and the order sheet's conflict. Null when neither applies.
+ * @param {any} product
+ * @param {(key: string, values?: any) => string} t  product_weekdays translator
+ */
+export function availabilityLine(product, t) {
+  const parts = [weekdaysLine(product?.available_weekdays, t)];
+  if (typeof product?.lead_days === "number") parts.push(t("lead_line", { n: product.lead_days }));
+  const text = parts.filter(Boolean).join(" · ");
+  return text || null;
 }
 
 /** The Israel-clock day of an instant, 0 = Sunday. @param {string} iso */
@@ -83,19 +116,18 @@ export function weekdaysLine(mask, t) {
 }
 
 /**
- * The slots on days every product in `products` is made.
+ * The slots every product in `products` takes (its days, its lead).
  * @template {{ start: string }} S
  * @param {S[]} slots
  * @param {any[]} products
+ * @param {Date} [now]
  * @returns {S[]}
  */
-export function slotsForProducts(slots, products) {
-  const masks = products.filter(isLimited).map((p) => p.available_weekdays);
-  if (masks.length === 0) return slots;
-  return slots.filter((s) => {
-    const day = israelWeekday(s.start);
-    return masks.every((m) => isOpen(m, day));
-  });
+export function slotsForProducts(slots, products, now = new Date()) {
+  const limited = products.filter(isLimited);
+  if (limited.length === 0) return slots;
+  const today = israelToday(now);
+  return slots.filter((s) => limited.every((p) => takesSlot(p, s.start, today)));
 }
 
 /**
@@ -104,11 +136,12 @@ export function slotsForProducts(slots, products) {
  * while a slot is left, or when no limited product is to blame.
  * @param {{ start: string }[]} slots
  * @param {any[]} products
+ * @param {Date} [now]
  */
-export function limitingProduct(slots, products) {
-  if (slots.length === 0 || slotsForProducts(slots, products).length > 0) return null;
-  const limited = products.filter(isLimited).sort((a, b) => daysOf(a.available_weekdays).length - daysOf(b.available_weekdays).length);
-  const freeing = limited.find((p) => slotsForProducts(slots, products.filter((q) => q !== p)).length > 0);
+export function limitingProduct(slots, products, now = new Date()) {
+  if (slots.length === 0 || slotsForProducts(slots, products, now).length > 0) return null;
+  const limited = products.filter(isLimited).sort((a, b) => slotsForProducts(slots, [a], now).length - slotsForProducts(slots, [b], now).length);
+  const freeing = limited.find((p) => slotsForProducts(slots, products.filter((q) => q !== p), now).length > 0);
   return freeing ?? limited[0] ?? null;
 }
 
@@ -123,11 +156,12 @@ function keysOf(picks, productId) {
  * @param {S[]} offered  the business's slots for this fulfilment
  * @param {Record<string, number>} picks
  * @param {Map<string, any>} byId
+ * @param {Date} [now]
  */
-export function cartSlots(offered, picks, byId) {
+export function cartSlots(offered, picks, byId, now = new Date()) {
   const ids = [...new Set(Object.keys(picks).map((k) => splitKey(k).productId))];
   const products = ids.map((id) => byId.get(id)).filter(Boolean);
-  return { slots: slotsForProducts(offered, products), limiting: limitingProduct(offered, products) };
+  return { slots: slotsForProducts(offered, products, now), limiting: limitingProduct(offered, products, now) };
 }
 
 /**

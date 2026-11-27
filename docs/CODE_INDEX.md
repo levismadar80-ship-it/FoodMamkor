@@ -306,6 +306,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/producer_risk.py` | Anthropic-Haiku-backed signup risk score (0-100) + one-sentence Hebrew reasoning, written to producers.risk_score / producers.risk_reasoning asynchronously … |
 | `services/product_daily_stock.py` | Daily stock: how many units of a product (all its variants) or of one variant were already ordered for a pickup day, how many are left, the refusal of an … |
 | `services/product_import.py` | Turn a list of rows from a business's existing store (first source: mypips) into DRAFT products for that business. … |
+| `services/product_lead_days.py` | Refuses an order whose pickup day, on the Israel clock, is sooner than a product's 'products.lead_days' allows: the pickup's day must be at least today + … |
 | `services/product_order_actions.py` | Everything that happens to an order after it was sent: the buyer cancels or accepts a proposed change; … |
 | `services/product_order_clock.py` | The clock an order's timers run on: hours that are counted only outside Shabbat and the festivals (Sapir, 14/11: «שעון 24 השעות נעצר אז לכולם»), and the … |
 | `services/product_order_create.py` | Write one buyer's order request: check that the business takes orders, that the slot, the products and the delivery are still real, price everything from the … |
@@ -625,6 +626,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `validators.js` | Shared validators for form inputs across the site. Used in /register, /register/producer, and anywhere phone/password need client-side validation. |
 | `watch-favorited.js` | MEH-3465: one business's saved state, now and on every change. FavoriteButton, ProducerUpdatesButton, ProducerHeader and ProducerCard each carried this … |
 | `webauthn.js` | The browser half of an admin passkey (MEH-3305): turn the server's JSON options into what 'navigator.credentials' takes, and the credential it returns back … |
+| `weekly-menu-share.js` | «מה יש השבוע»: the ready WhatsApp message a business sends to her customers, a group or her status. … |
 | `whats-new.js` | The «מה חדש» release list for business owners (MEH-3200): which versions have news for businesses, how many lines each has, and whether the owner has already … |
 | `wizard-step-numbers.js` | Turn a wizard's STEP enum into the numbers a user actually SEES. A step that is conditionally absent makes the enum value and the visible position diverge, … |
 | `zod-csp.js` | Turn off Zod's eval probe in the browser, so the CSP stops reporting «Blocked unsafe eval()» on every page that parses an API response. |
@@ -859,6 +861,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/google-profile/GoogleProfileLink.jsx` | Find the business's own Google profile and link it, or unlink it (MEH-3641). The server accepts a link only when the Google name or phone matches the … |
 | `dashboard/google-profile/GoogleProfileTool.jsx` | The body of /producer/dashboard/google-profile (MEH-3641): reads whether the business is linked and whether Google can be asked, then shows the link half, the … |
 | `dashboard/orders/DailyLimitField.jsx` | «כמה ביום» in a product row of the orders tab: how many units of a product (or of one of its sizes or flavours) can be ordered for one pickup day. … |
+| `dashboard/orders/LeadDaysField.jsx` | «כמה זמן מראש צריך להזמין» in a product row of the orders tab (MEH-3932): the product is offered only for pickup days at least that many days off, on the … |
 | `dashboard/orders/OrderActions.jsx` | The buttons an order's status offers the business, and the one dialog a button opens. … |
 | `dashboard/orders/OrderCard.jsx` | One on-site order as the business sees it: who, what, when, how much, and the actions its status allows. |
 | `dashboard/orders/OrderCustomersCard.jsx` | «הלקוחות שלכם» in the «הזמנות» tab: who ordered through the site, how many times and when last, «לקוח חוזר» from two orders, and a CSV download so the … |
@@ -867,6 +870,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderProductsCard.jsx` | The business's products with the two switches on-site ordering needs every day: «פתוח להזמנה באתר» and «אזל כרגע». |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
+| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בווטסאפ» (she picks the … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
 | `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |

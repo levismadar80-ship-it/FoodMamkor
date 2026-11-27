@@ -7,17 +7,17 @@
  *           Nothing for a product made every day.
  * Does NOT: stop adding to the cart — the order sheet offers only matching
  *           days (lib/product-weekdays.js).
- * History:  MEH-3618 (creation)
+ * History:  MEH-3618 (creation) · MEH-3932 (also «צריך להזמין N ימים מראש»)
  */
 
 import { useTranslations } from "next-intl";
 
-import { weekdaysLine } from "@/lib/product-weekdays";
+import { availabilityLine } from "@/lib/product-weekdays";
 
 /** @param {{ product: any, className?: string }} props */
 export default function ProductWeekdaysLine({ product, className = "text-xs text-fg-muted mt-0.5" }) {
   const t = useTranslations("product_weekdays");
-  const line = weekdaysLine(product?.available_weekdays, t);
+  const line = availabilityLine(product, t);
   if (!line) return null;
   return <p className={className} data-testid="product-weekdays-line">{line}</p>;
 }
