@@ -508,6 +508,47 @@ def test_a_business_with_a_landline_only_gets_no_whatsapp(db, monkeypatch):
     assert wire.wa == []
 
 
+def test_a_landline_business_gets_the_whatsapp_on_the_owners_verified_mobile(
+    db, monkeypatch
+):
+    # MEH-3965: a shop's public number is often its landline. The owner's
+    # verified mobile carries the «new order» message instead of email alone.
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.producer.phone = "046123456"
+    shop.owner.phone = "052-765-4321"
+    shop.owner.phone_verified_at = utc_now()
+    db.commit()
+    owe_now(db, due_order(db, shop), "new_order", "whatsapp")
+    outbox.dispatch_due(db)
+    assert [to for to, *_ in wire.wa] == ["+972527654321"]
+
+
+def test_an_owners_unverified_mobile_is_not_used(db, monkeypatch):
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.producer.phone = "046123456"
+    shop.owner.phone = "0527654321"
+    shop.owner.phone_verified_at = None
+    db.commit()
+    row = owe_now(db, due_order(db, shop), "new_order", "whatsapp")
+    outbox.dispatch_due(db)
+    assert outcome_of(db, row) == ("skipped", "no_address", 0)
+    assert wire.wa == []
+
+
+def test_a_business_mobile_wins_over_the_owners(db, monkeypatch):
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.producer.phone = "0501234567"
+    shop.owner.phone = "0527654321"
+    shop.owner.phone_verified_at = utc_now()
+    db.commit()
+    owe_now(db, due_order(db, shop), "new_order", "whatsapp")
+    outbox.dispatch_due(db)
+    assert wire.wa[0][0] == "+972501234567"
+
+
 def test_an_auto_confirmed_order_is_not_announced_as_waiting(db, monkeypatch):
     wire = Wire(monkeypatch)
     shop = Shop(db)

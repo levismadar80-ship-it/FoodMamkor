@@ -387,6 +387,14 @@ def _review_request(
     return _Message(_mail(str(buyer.email), subject, body, test, "review_request"))
 
 
+def _owner_mobile(owner: User | None) -> str | None:
+    """MEH-3965: a shop whose public number is a landline still gets its
+    WhatsApp, on the owner's own mobile — only one she verified with a code."""
+    if owner is None or not owner.phone_verified:
+        return None
+    return canonical_il_msisdn(str(owner.phone or ""))
+
+
 def _compose(
     db: Session,
     row: ProductOrderNotification,
@@ -423,7 +431,7 @@ def _compose(
             return "auto_confirmed"
         # The business's phone is stored as typed (0501234567); WhatsApp
         # needs the international form, and a landline has none.
-        msisdn = canonical_il_msisdn(str(producer.phone or ""))
+        msisdn = canonical_il_msisdn(str(producer.phone or "")) or _owner_mobile(owner)
         return _Message(_wa(f"+{msisdn}", template, test)) if msisdn else "no_address"
     link = buyer_link(order)
     if not order.customer_phone or link is None:
