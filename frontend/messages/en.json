@@ -5345,6 +5345,11 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_21": {
+            "i0": "«This week's menu»: the orders tab now has a ready message with what can be ordered this week and an order link, to send on WhatsApp to customers, a group or your status.",
+            "i1": "How far ahead: for each product you can set how many days ahead it must be ordered, and customers can only pick a time far enough away.",
+            "i2": "Customers can tick «Order this again every week», and the same order reaches you every week to approve. You can stop it from the order card."
+          },
           "v1_5_18": {
             "i0": "Daily stock: set how many of each product can be ordered per day, and customers see «2 left» as it runs out. Above your orders there is now «What to prepare» for each day of the coming week."
           },
