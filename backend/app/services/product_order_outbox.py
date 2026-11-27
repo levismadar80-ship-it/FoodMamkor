@@ -41,6 +41,7 @@ from app.models.product_orders import (
     ProductOrder,
     ProductOrderNotification,
 )
+from app.services import product_daily_stock  # daily stock (27/11)
 from app.services import email as email_service
 from app.services import whatsapp
 from app.services import whatsapp_templates as wt
@@ -239,6 +240,17 @@ def _mail(to: str, subject: str, body: str, test: bool, kind: str) -> Callable[[
     return send
 
 
+def sold_out_line(db: Session, order: ProductOrder) -> str:
+    """Daily stock (27/11): the new-order email's last line when the order's
+    day has no units left of a limited product or variant. Email only, by the
+    channel table (.claude/rules/notifications.md): a heads-up, not urgent."""
+    names = product_daily_stock.filled_by(db, order)
+    if not names:
+        return ""
+    listed = ", ".join(f"«{name}»" for name in names)
+    return f"\n\nליום {_day(order.slot_start)} כבר אזל: {listed}. לקוחות לא יוכלו להזמין אותם לאותו יום."
+
+
 def _business_text(
     kind: str, order: ProductOrder, now: datetime
 ) -> tuple[wt.WhatsAppTemplate, str, str]:
@@ -400,6 +412,8 @@ def _compose(
         template, subject, body = _business_text(str(row.kind), order, now)
         if row.channel == "email":
             address = owner.email if owner is not None else None
+            if row.kind == "new_order":
+                body += sold_out_line(db, order)  # daily stock (27/11)
             return (
                 _Message(_mail(str(address), subject, body, test, f"order_{row.kind}"))
                 if address

@@ -1026,7 +1026,9 @@
         "sold_out": "Sold out today",
         "estimate": "About {price} ₪ · the final price is set on weighing",
         "alcohol": "18+ only. You will be asked to show ID at pickup.",
-        "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪"
+        "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪",
+        "sold_out_days": "Sold out for the coming days",
+        "left": "{count, plural, one {# left} other {# left}}"
       },
       "order_sheet": {
         "title": "Your order",
@@ -1063,7 +1065,9 @@
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
         "day_conflict_remove": "Remove «{name}» from the order",
         "preview_send": "Sending is off in the preview",
-        "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale."
+        "seller_line_no_number": "Seller: {name} · Business / ID no.: not entered yet{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
+        "stock_sold_out": "“{name}” is sold out for the coming days. You can remove it and order the rest.",
+        "stock_short": "No open day has enough “{name}”. You can order up to {count, plural, one {#} other {#}} for one day."
       }
     },
     "card": {
@@ -6366,11 +6370,23 @@
         "products": {
           "title": "Products",
           "orderable": "Open for ordering on the site",
-          "sold_out": "Sold out for now"
+          "sold_out": "Sold out for now",
+          "limit": "How many can be ordered per day",
+          "limit_total": "Per day, all kinds together",
+          "limit_by_variant": "You can also limit each kind on its own:",
+          "limit_none": "No limit",
+          "limit_unit_100g": "× 100 g",
+          "limit_invalid": "A whole number from 1 to 999, or empty for no limit"
         },
         "prep": {
           "title": "What to prepare",
-          "line": "{count} × {name}"
+          "line": "{count} × {name}",
+          "days": "Days",
+          "tomorrow": "Tomorrow",
+          "waiting": "{count, plural, one {# awaiting your answer} other {# awaiting your answer}}",
+          "of_limit": "of {limit} a day",
+          "load_error": "We couldn't load «what to prepare».",
+          "all_kinds": "all kinds together"
         },
         "intro": {
           "title": "New: pre-orders from your page",
