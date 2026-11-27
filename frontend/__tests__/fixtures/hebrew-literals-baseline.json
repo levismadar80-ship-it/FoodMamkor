@@ -10,7 +10,7 @@
   "components/LocationModal.jsx": 4,
   "components/ui/Button.jsx": 1,
   "lib/admin-producers-export.js": 16,
-  "lib/category-taxonomy.js": 20,
+  "lib/category-taxonomy.js": 21,
   "lib/constants.js": 5,
   "lib/delivery-days.js": 7,
   "lib/distance.js": 2,

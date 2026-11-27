@@ -642,8 +642,9 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee",
-    "byshvl-lpy-hzmnh": "Cooked to order"
+    "coffee": "Coffee",
+    "cooked-to-order": "Cooked to order",
+    "cakes-desserts": "Cakes & desserts"
   },
   "seo": {
     "home": {
@@ -2858,6 +2859,9 @@
       },
       "categories": {
         "name_placeholder": "Category name",
+        "slug_label": "English address",
+        "slug_placeholder": "English address, e.g. cakes-desserts",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens",
         "add": "+ Add",
         "empty": "No data yet",
         "save": "Save",
@@ -3948,8 +3952,9 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans",
-        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
+        "coffee": "Coffee beans",
+        "cooked-to-order": "Platters, salads, Shabbat meals",
+        "cakes-desserts": "Celebration cakes, cookies, tarts"
       },
       "section_results": "Results",
       "section_popular": "Popular",
