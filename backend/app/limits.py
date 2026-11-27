@@ -38,6 +38,8 @@ MAX_OPEN_GROUP_BUYS = 30
 MAX_STAFF = 5
 # MEH-3617: sizes or flavours of ONE product (product_variants).
 MAX_VARIANTS_PER_PRODUCT = 10
+# MEH-3933: active weekly repeats of an order, per business.
+MAX_ACTIVE_ORDER_REPEATS = 300
 # MEH-3055: product groups live in producers.product_groups (JSONB), so this
 # is a request-list cap, not a table cap.
 MAX_PRODUCT_GROUPS = 20
@@ -70,6 +72,8 @@ _CAP_DETAIL = {
     "group_buys": f"אפשר להוסיף עד {MAX_OPEN_GROUP_BUYS} קבוצות רכישה פתוחות. כדי להוסיף קבוצה חדשה, צריך קודם לסגור אחת קיימת.",
     "staff": f"אפשר להזמין עד {MAX_STAFF} עובדים. כדי להזמין עובד חדש, צריך קודם להסיר אחד מהצוות.",
     "variants": f"אפשר להוסיף עד {MAX_VARIANTS_PER_PRODUCT} אפשרויות למוצר אחד. כדי להוסיף אפשרות חדשה, צריך קודם למחוק אחת קיימת.",
+    # MEH-3933: the buyer reads this one, not the business.
+    "order_repeats": "בית העסק הזה לא מקבל כרגע הזמנות קבועות חדשות. אפשר לשלוח את ההזמנה בלי לחזור עליה כל שבוע.",
 }
 
 GALLERY_IMAGES_DETAIL = f"אפשר להוסיף עד {MAX_GALLERY_IMAGES} תמונות. כדי להוסיף תמונה חדשה, צריך קודם למחוק אחת קיימת."
@@ -99,6 +103,7 @@ CAPS = {
     "group_buys": MAX_OPEN_GROUP_BUYS,
     "staff": MAX_STAFF,
     "variants": MAX_VARIANTS_PER_PRODUCT,
+    "order_repeats": MAX_ACTIVE_ORDER_REPEATS,
 }
 
 
@@ -121,6 +126,8 @@ OWNED_TABLE_CAPS = {
     "events": "events",
     "group_buys": "group_buys",
     "producer_staff": "staff",
+    # MEH-3933: active ones; a stopped repeat is history, like a closed order.
+    "product_order_repeats": "order_repeats",
 }
 
 OWNED_TABLE_EXEMPT = {

@@ -2035,6 +2035,21 @@
               }
             ]
           },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
+          },
           "slot_end": {
             "format": "date-time",
             "title": "Slot End",
@@ -2347,6 +2362,21 @@
                 "type": "null"
               }
             ]
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
           },
           "review_url": {
             "anyOf": [
@@ -8348,6 +8378,17 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -8618,6 +8659,11 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "repeat_weekly": {
+            "default": false,
+            "title": "Repeat Weekly",
+            "type": "boolean"
+          },
           "slot_start": {
             "format": "date-time",
             "title": "Slot Start",
@@ -8764,6 +8810,21 @@
                 "type": "null"
               }
             ]
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "stopped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
           },
           "review_url": {
             "anyOf": [
@@ -9029,6 +9090,17 @@
           "in_stock": {
             "title": "In Stock",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "name": {
             "title": "Name",
@@ -19854,6 +19926,19 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "price_unit": {
             "anyOf": [
               {
@@ -19926,6 +20011,17 @@
           "is_orderable": {
             "title": "Is Orderable",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "price_unit": {
             "enum": [
@@ -20074,6 +20170,17 @@
             "default": false,
             "title": "Is Vegetarian",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "may_contain": {
             "anyOf": [
@@ -37769,6 +37876,55 @@
         ]
       }
     },
+    "/producers/me/product-orders/{order_id}/repeat/stop": {
+      "post": {
+        "description": "MEH-3933: no new order from this order's weekly repeat. The orders\nalready made from it stay as they are.",
+        "operationId": "stop_order_repeat_producers_me_product_orders__order_id__repeat_stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Stop Order Repeat",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/me/products": {
       "get": {
         "operationId": "list_my_products_producers_me_products_get",
@@ -40095,6 +40251,53 @@
           }
         ],
         "summary": "Cancel Own Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/status/repeat/stop": {
+      "post": {
+        "description": "MEH-3933: stop the weekly repeat this order belongs to.",
+        "operationId": "stop_own_repeat_product_orders_status_repeat_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerRefIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Stop Own Repeat",
         "tags": [
           "product-orders"
         ]

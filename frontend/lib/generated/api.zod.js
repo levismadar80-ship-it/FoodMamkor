@@ -1340,6 +1340,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemNoAllergensDefault),
@@ -1678,6 +1679,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemNoAllergensDefault),
@@ -2013,6 +2015,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemNoAllergensDefault),
@@ -2421,6 +2424,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemNoAllergensDefault),
@@ -2756,6 +2760,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemNoAllergensDefault),
@@ -3401,6 +3406,7 @@ export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroups
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault),
@@ -3480,6 +3486,7 @@ export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponse
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault),
@@ -3528,6 +3535,7 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseNoAllergensDefault),
@@ -3581,6 +3589,7 @@ export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupP
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault),
@@ -6134,6 +6143,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemNoAllergensDefault),
@@ -6613,6 +6623,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemNoAllergensDefault),
@@ -6881,6 +6892,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemNoAllergensDefault),
@@ -7185,6 +7197,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemNoAllergensDefault),
@@ -7482,6 +7495,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemNoAllergensDefault),
@@ -7949,6 +7963,7 @@ export const GetMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponse = /*#__
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "in_stock": /*#__PURE__*/ zod.boolean(),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_max_agorot": /*#__PURE__*/ zod.int(),
@@ -8150,6 +8165,7 @@ export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseI
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault),
@@ -8212,6 +8228,7 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseNoAllergensDefault),
@@ -8270,6 +8287,7 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8328,6 +8346,7 @@ export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#_
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8370,6 +8389,7 @@ export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8412,6 +8432,7 @@ export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8454,6 +8475,7 @@ export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8496,6 +8518,7 @@ export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8538,6 +8561,7 @@ export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostR
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8580,6 +8604,52 @@ export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__P
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * MEH-3933: no new order from this order's weekly repeat. The orders
+ * already made from it stay as they are.
+ * @summary Stop Order Repeat
+ */
+export const StopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "status": /*#__PURE__*/ zod.string()
@@ -8614,6 +8684,7 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseNoAllergensDefault),
@@ -8662,6 +8733,7 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseNoAllergensDefault),
@@ -8696,6 +8768,7 @@ export const GetMyProductsOrderingProducersMeProductsOrderingGetResponse = /*#__
   "id": /*#__PURE__*/ zod.uuid(),
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
   "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -8741,6 +8814,7 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseNoAllergensDefault),
@@ -8788,6 +8862,7 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseNoAllergensDefault),
@@ -8820,6 +8895,7 @@ export const PutProductOrderingProducersMeProductsProductIdOrderingPutResponse =
   "id": /*#__PURE__*/ zod.uuid(),
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
   "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "daily_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -9707,6 +9783,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault),
   "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault),
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemNoAllergensDefault),
@@ -9858,6 +9935,7 @@ export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "in_stock": /*#__PURE__*/ zod.boolean(),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_max_agorot": /*#__PURE__*/ zod.int(),
@@ -10062,6 +10140,7 @@ export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10132,6 +10211,7 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10176,6 +10256,7 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10220,6 +10301,53 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
+  "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * MEH-3933: stop the weekly repeat this order belongs to.
+ * @summary Stop Own Repeat
+ */
+export const StopOwnRepeatProductOrdersStatusRepeatStopPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -11288,6 +11416,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
   "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
   "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
 }),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
   "review_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),

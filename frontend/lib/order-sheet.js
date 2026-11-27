@@ -102,7 +102,7 @@ export function quoteBody({ producerId, picks, fulfilment, city }) {
  *   producerId: string, picks: Record<string, number>, fulfilment: Fulfilment,
  *   slotStart: string, name: string, phone: string, code: string,
  *   city: string, address: string, note: string, ageDeclared: boolean,
- *   key: string,
+ *   repeatWeekly?: boolean, key: string,
  * }} f
  */
 export function orderBody(f) {
@@ -119,6 +119,8 @@ export function orderBody(f) {
     ...(delivery ? { delivery_city: f.city.trim(), delivery_address: f.address.trim() } : {}),
     ...(f.note.trim() ? { note: f.note.trim() } : {}),
     age_declared: f.ageDeclared,
+    // MEH-3933: «להזמין את זה שוב כל שבוע».
+    ...(f.repeatWeekly ? { repeat_weekly: true } : {}),
     idempotency_key: f.key,
   };
 }

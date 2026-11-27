@@ -75,6 +75,7 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         client.post("/product-orders/status", json=ref),
         client.post("/product-orders/status/cancel", json=ref),
         client.post("/product-orders/status/accept-change", json=ref),
+        client.post("/product-orders/status/repeat/stop", json=ref),  # MEH-3933
         client.get("/users/me/product-orders", headers=shop.headers),
         client.get("/producers/me/product-orders", headers=shop.headers),
         # MEH-3561
@@ -85,6 +86,7 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         client.post(f"{act}/cancel", json={}, headers=shop.headers),
         client.post(f"{act}/handed", json={}, headers=shop.headers),
         client.post(f"{act}/no-show", headers=shop.headers),
+        client.post(f"{act}/repeat/stop", headers=shop.headers),  # MEH-3933
         client.post(
             f"{act}/propose-change",
             json={"total_agorot": 100, "note": "חסר במלאי"},

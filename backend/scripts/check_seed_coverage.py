@@ -401,6 +401,7 @@ EXEMPT_TABLES = {
     "product_order_phone_codes": "MEH-3263 on-site ordering — one-time phone codes, ten minutes each, runtime only",
     "product_variants": "MEH-3617 sizes or flavours — optional per product, set by an owner at runtime; a demo product with none reads as before",
     "product_order_notifications": "MEH-3296 on-site ordering — messages an order owes, written at runtime only",
+    "product_order_repeats": "MEH-3933 weekly repeat orders — written only when a signed-in buyer asks for a repeat; a seeded row would make the hourly job place real orders",
     "producer_staff": "MEH-3526 order staff — written only when an owner invites by email; a seeded invite would be a live token, and a seeded member would give a demo account access to another business's orders",
     "email_outbox": "MEH-3535 durable email queue — an email the site owes, written at runtime only; a seed row would be sent to a real address by the dispatcher",
     "share_links": "MEH-3896 short preview / claim links — minted only by an admin button at runtime, and a code is never stored, so a seeded row could not be opened",

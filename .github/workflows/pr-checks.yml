@@ -505,7 +505,8 @@ jobs:
           # MEH-3839: email_events (what Resend reports for each email) — 67 -> 68.
           # MEH-3526: producer_staff (who handles a business's orders) — 68 -> 69.
           # MEH-3896: share_links (short preview / claim links) — 69 -> 70.
-          EXPECTED_TABLES=70
+          # MEH-3933: product_order_repeats (a buyer's weekly repeat) — 70 -> 71.
+          EXPECTED_TABLES=71
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
