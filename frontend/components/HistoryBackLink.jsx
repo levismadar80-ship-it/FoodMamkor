@@ -13,7 +13,12 @@
  *           the answer is read from the browser on mount.
  * Related:  components/Breadcrumb.jsx; messages producer.detail.back_label /
  *           producer.detail.aria.back (existing copy).
- * History:  MEH-2857 (creation); MEH-3057 (always its own row).
+ * History:  MEH-2857 (creation); MEH-3057 (always its own row); MEH-3944 (in
+ *           the server HTML, shown before paint by html[data-came-from-site]).
+ *
+ * The same test runs before the first paint in lib/prehydration-flags-inline.js
+ * (an inline script cannot import); HistoryBackBeforePaint.test.jsx holds the
+ * two equal.
  */
 
 import { useEffect, useLayoutEffect, useState } from "react";
@@ -55,15 +60,23 @@ export function cameFromInsideSite(win = typeof window === "undefined" ? undefin
 
 export default function HistoryBackLink({ className = "" }) {
   const t = useTranslations("producer.detail");
-  const [show, setShow] = useState(false);
+  // MEH-3944: null until the read below. The server HTML and the first client
+  // render then carry the button marked data-history-back-only, which
+  // globals.css shows only when the inline flags script found a page of the
+  // site behind this one. Before, the server HTML had no button and hydration
+  // added it above the gallery: a hard load with a page of ours behind (a
+  // reload, the E2E's page.goto chain) pushed the page down 52px on a phone.
+  const [show, setShow] = useState(/** @type {boolean | null} */ (null));
 
   // A browser-only fact: deciding it during render would mismatch the server
-  // HTML, so it is read once after mount (before paint on the client).
+  // HTML, so it is read once after mount (before paint on the client). After
+  // it the answer is a plain true / false, so a later in-app visit never
+  // relies on the flag the first document set.
   useIsomorphicLayoutEffect(() => {
     setShow(cameFromInsideSite());
   }, []);
 
-  if (!show) return null;
+  if (show === false) return null;
   return (
     <button
       type="button"
@@ -76,6 +89,7 @@ export default function HistoryBackLink({ className = "" }) {
       onClick={() => window.history.back()}
       aria-label={t("aria.back")}
       data-testid="history-back"
+      data-history-back-only={show === null ? "" : undefined}
       className={`flex w-fit items-center min-h-touch text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded ${className}`}
     >
       {t("back_label")}
