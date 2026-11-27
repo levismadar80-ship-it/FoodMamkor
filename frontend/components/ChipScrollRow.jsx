@@ -60,6 +60,22 @@ const END_FADE_PX = 48;
 // arrow-mirroring exception in .claude/rules/rtl.md, not an oversight.
 const CHIP_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
 
+// MEH-3911: the row snaps (snap-proximity, snap-start on every chip). A
+// "nearest" landing for a chip cut off at the END edge is then re-snapped to
+// the closest chip START — often the chip before it — which can leave the
+// picked chip partly past the end edge (measured 27/11 at 393px: «מאפים
+// וקינוחים» 1px out). Aligning the chip's own start is its own snap position,
+// so no neighbour can win; at the far end the browser clamps to max scroll,
+// where the end spacer clears the last chip.
+function chipPastEndEdge(chip) {
+  const row = chip.closest('[role="toolbar"]');
+  if (!row) return false;
+  const c = chip.getBoundingClientRect();
+  const r = row.getBoundingClientRect();
+  const rtl = getComputedStyle(row).direction === "rtl";
+  return rtl ? c.left < r.left : c.right > r.right;
+}
+
 /**
  * Scrollable chip row for filter bars.
  *
@@ -246,9 +262,10 @@ export default function ChipScrollRow({
   }
 
   function scrollChipIntoView(key) {
-    chipRefs.current
-      .get(key)
-      ?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+    const chip = chipRefs.current.get(key);
+    if (!chip) return;
+    const inline = chipPastEndEdge(chip) ? "start" : "nearest"; // MEH-3911
+    chip.scrollIntoView({ behavior: "smooth", inline, block: "nearest" });
   }
 
   // On mount — if no chip is actively filtering, pin the scroll
