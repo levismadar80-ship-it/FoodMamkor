@@ -944,6 +944,7 @@ from app.schemas.admin_review import (  # noqa: E402
     AdminChecklistItemsIn as AdminChecklistItemsIn,
     GrantVerifiedIn as GrantVerifiedIn,
     KASHRUT_EXPIRY_MAX_DAYS as KASHRUT_EXPIRY_MAX_DAYS,
+    AdminKashrutGrantIn as AdminKashrutGrantIn,
     KashrutApproveIn as KashrutApproveIn,
     KashrutExpiryReminderOut as KashrutExpiryReminderOut,
     KashrutExpiryReminderRow as KashrutExpiryReminderRow,

@@ -2360,6 +2360,16 @@
         "done_revoked": "Badge removed.",
         "error": "We couldn't save. Please try again."
       },
+      "kashrut_grant": {
+        "intro": "For a business without an account: upload the certificate photo the business sent, pick the kashrut level and the expiry printed on it. The badge and certificate show on the business page at once.",
+        "none": "This business has no kashrut badge.",
+        "badge_label": "Kashrut level on the certificate",
+        "cert_label": "The certificate photo the business sent",
+        "expires_label": "The date printed on the certificate",
+        "submit": "Add the badge",
+        "done": "Badge and certificate added to the page",
+        "error": "Could not add the badge. Please try again."
+      },
       "alcohol": {
         "title": "Alcohol sales",
         "intro": "Without this mark, customers can't order products that contain alcohol from this business. Turn it on only after you've checked that the business holds a licence to sell alcohol.",

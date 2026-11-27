@@ -185,6 +185,7 @@ graph TD
     Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type;<br/>MEH-2459: 409 for kind=organizer;<br/>MEH-3524: called from AdminVerifiedPanel on the edit page]
+    Producers --> GrantKashrut[POST /admin/producers/{id}/kashrut<br/>🛡️ MEH-3081: attach a certificate + badge for a business with no account;<br/>called from AdminKashrutPanel on the edit page]
     Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
     Producers --> LicenseExpiry[GET /admin/license-expiry-reminders<br/>🛡️ MEH-2072 approved producers whose licence expires within 30d; read-only, no send, no auto-hide; excludes NULL and already-lapsed]
     Producers --> AdminGetOne[GET /admin/producers/{producer_id}<br/>🛡️ MEH-2072 the FULL ProducerAdminOut for one producer — the edit page was loading the PUBLIC serializer and writing admin-only fields back as blanks. Declared AFTER /pending and /rejection-presets, or the param route swallows both literals]

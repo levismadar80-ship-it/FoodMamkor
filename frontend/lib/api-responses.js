@@ -70,6 +70,7 @@ import {
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
   GoogleCodeAuthGoogleCodePostResponse,
   MatchCitiesCitiesMatchPostResponse,
+  GrantKashrutBadgeAdminProducersProducerIdKashrutPostResponse,
 } from "@/lib/generated/api.zod";
 
 /** @param {unknown} value */
@@ -150,6 +151,8 @@ export const ProducerAdminCreatedSchema = /* @__PURE__ */ zod.pick(AdminCreatePr
 });
 // MEH-3865: the admin's «העברת הטיוטה לבעלים» answer.
 export const DraftMergeSchema = MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse;
+// MEH-3081: the admin attaches a kashrut certificate (AdminKashrutPanel).
+export const KashrutGrantSchema = GrantKashrutBadgeAdminProducersProducerIdKashrutPostResponse;
 
 export const ProducerClaimLinkSchema = /* @__PURE__ */ CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse.check(
   zod.refine((body) => isUrl(body.url), { message: "claim link is not a URL" }),

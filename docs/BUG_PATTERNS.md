@@ -329,3 +329,19 @@ bottom-anchored fixed layer without `vv-pin` or a `vv-pin-exempt: <reason>`.
 `MapBottomSheet.jsx` is the one exemption: the map controls ride its edge.
 A real-device signal: the `ios_viewport_drift` PostHog event (once per mount).
 
+
+## A lazy add-on whose download fails takes the whole page to the error screen (MEH-3946)
+
+**Symptom:** «משהו השתבש» instead of the page, after a navigation or on a weak
+network; in WebKit E2E a `ChunkLoadError` for the chat chunk.
+
+**Root cause:** `next/dynamic` rethrows a failed `import()` during render, so the
+nearest error boundary (`frontend/app/[locale]/error.js`) replaces the page for
+a widget the visitor never opened.
+
+**Held by:** an optional add-on loads through `optionalChunk()`
+(`frontend/lib/optional-chunk.js`), which renders nothing on a failed download
+and rethrows any other error. `scripts/checks/optional-chunk-guard.sh` (Repo
+guards) fails a plain `dynamic(() => import(…))` outside its list of chunks the
+page needs (the /map map, the order sheet). Browser test:
+`frontend/e2e/flows/55-optional-chunk-failure.spec.ts`.
