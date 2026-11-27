@@ -111,4 +111,22 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
     expect(payload.offers_delivery).toBe(true);
     expect(payload.delivery_nationwide).toBe(true);
   });
+
+  it("MEH-3972: משלוחים with no cities is savable — a hint, not a block", async () => {
+    renderForm({});
+
+    await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
+    fireEvent.click(checkbox(F.offers_delivery));
+    await waitFor(() => expect(screen.getByText(F.delivery_cities_optional_hint)).toBeInTheDocument());
+
+    const submit = screen.getByRole("button", { name: he.admin.producers.form.submit_create });
+    expect(submit).not.toBeDisabled();
+    fireEvent.submit(submit.closest("form"));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    const payload = api.post.mock.calls[0][1];
+    expect(payload.offers_delivery).toBe(true);
+    expect(payload.delivery_nationwide).toBe(false);
+    expect(payload.delivery_area_cities).toEqual([]);
+  });
 });
