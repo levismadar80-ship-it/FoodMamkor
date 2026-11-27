@@ -35,9 +35,11 @@ export default function RowOrderControl({ orderable, picks, onChange, onChoose }
     const only = variants[0];
     const key = lineKey(orderable.id, only?.id);
     const inStock = orderable.in_stock && (only ? only.in_stock : true);
+    // Daily stock: the variant's `left` already counts the product's limit.
+    const left = /** @type {any} */ (only ?? orderable).left ?? null;
     return (
       <OrderStepper
-        product={{ id: key, name: orderable.name, in_stock: inStock }}
+        product={{ id: key, name: orderable.name, in_stock: inStock, left }}
         qty={picks[key] ?? 0}
         onChange={onChange}
       />

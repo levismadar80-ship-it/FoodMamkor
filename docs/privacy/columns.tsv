@@ -668,6 +668,7 @@ product_orders.status	orders	an order from a business
 product_orders.status_token_hash	orders	an order from a business
 product_orders.updated_at	orders	an order from a business
 product_orders.user_id	orders	an order from a business
+product_variants.daily_limit	business	a product a business lists
 product_variants.id	business	a product a business lists
 product_variants.in_stock	business	a product a business lists
 product_variants.name	business	a product a business lists
@@ -676,6 +677,7 @@ product_variants.price_agorot	business	a product a business lists
 product_variants.product_id	business	a product a business lists
 products.allergens	business	a product a business lists
 products.available_weekdays	business	a product a business lists
+products.daily_limit	business	a product a business lists
 products.contains_alcohol	business	a product a business lists
 products.description	business	a product a business lists
 products.gluten_detail	business	a product a business lists
@@ -837,3 +839,5 @@ share_links.expires_at	not-personal	a short preview or claim link an admin made 
 share_links.id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
 share_links.producer_id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
 share_links.scope	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+rescue_orders.prepay_timing	orders	a surprise-bag reservation (the payment terms the business showed when it was made, MEH-3897)
+group_buy_commits.prepay_timing	orders	a user joining a group buy (the payment terms the business showed when she joined, MEH-3897)

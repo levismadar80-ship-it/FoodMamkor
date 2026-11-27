@@ -40,6 +40,22 @@ describe("AdminAlcoholPanel", () => {
     expect(screen.getByTestId("alcohol-saved")).toHaveTextContent(copy.saved);
   });
 
+  // MEH-3872: the switch row's place is held, unseen, until the GET answers,
+  // and gives way to the real switch in the same place.
+  it("while loading: the switch row is held invisible and inert, then the real switch replaces it", async () => {
+    let answer;
+    api.get.mockReturnValueOnce(new Promise((r) => { answer = r; }));
+    mount();
+    const held = screen.getByTestId("alcohol-switch-pending");
+    expect(held).toHaveClass("invisible");
+    expect(held).toHaveAttribute("aria-hidden", "true");
+    expect(held).toHaveAttribute("inert");
+    expect(screen.queryByTestId("alcohol-switch")).toBeNull();
+    answer({ data: settings(false) });
+    expect(await screen.findByTestId("alcohol-switch")).toBeInTheDocument();
+    expect(screen.queryByTestId("alcohol-switch-pending")).toBeNull();
+  });
+
   it("renders nothing while on-site ordering is off (404)", async () => {
     api.get.mockRejectedValueOnce({ response: { status: 404 } });
     const { container } = mount();

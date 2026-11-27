@@ -44,7 +44,7 @@ export default function AdminNameChangeRequestsPage() {
   };
 
   const STATUS_COLORS = {
-    pending: "bg-yellow-100 text-yellow-800",
+    pending: "bg-warning-100 text-warning-800",
     approved: "bg-green-100 text-green-700",
     rejected: "bg-danger-100 text-danger-800",
   };

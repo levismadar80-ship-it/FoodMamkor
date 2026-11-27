@@ -31,6 +31,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.schemas.payment_link import reservation_timing  # MEH-3897
 from app.models.models import (
     RESCUE_MAX_QTY_PER_ORDER,
     Producer,
@@ -118,6 +119,10 @@ def issue_order(
     The UNIQUE (offer_id, pickup_code) is the authority for uniqueness; this
     loop only avoids handing the buyer a 500 on the rare collision.
     """
+    location = offer.location
+    # MEH-3897: the reservation keeps how it is paid as of now.
+    producer = location.producer if location is not None else None
+    timing = reservation_timing(producer.payment_info if producer is not None else None)
     for _ in range(_CODE_ATTEMPTS):
         candidate = RescueOrder(
             offer_id=offer.id,
@@ -125,6 +130,7 @@ def issue_order(
             qty=qty,
             pickup_code=new_pickup_code(),
             status="reserved",
+            prepay_timing=timing,
         )
         db.add(candidate)
         try:

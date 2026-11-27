@@ -69,9 +69,6 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
               <p className="text-xs text-fg-muted mt-1">
                 {t("auth.register.producer.fields.phone_hint")}
               </p>
-              {/* MEH-3884: this business already has a page (phone, or the
-                  signed-in account's own email). A warning; she may go on. */}
-              <RegisterIdentityCheck phone={form.phone} signedIn={!!isUpgrade} />
             </div>
 
             {/* MEH-853: frame-01 city — reuses the MEH-201 CitySearch
@@ -211,6 +208,14 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 {t("auth.register.producer.actions.next")}
               </Button>
             </div>
+            {/* MEH-3884: this business already has a page (phone, or the
+                signed-in account's own email). A warning; she may go on.
+                MEH-3918: under «הבא», not under the phone field. The answer
+                lands 600 ms after the last keystroke or later, so a notice
+                inserted above the fields pushed every field below it, and
+                «הבא» itself, while she was using them. Here it pushes
+                nothing on the form. */}
+            <RegisterIdentityCheck phone={form.phone} signedIn={!!isUpgrade} />
           </div>
   );
 }

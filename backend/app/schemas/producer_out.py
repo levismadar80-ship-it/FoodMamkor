@@ -721,6 +721,12 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # due now (admin_producer_reads.py::recommended_review_due_clause).
     recommended_at: datetime | None = None
     recommended_note: str | None = None
+    # MEH-3912: «הערות פנימיות» — same ADR-006 R2 gap as recommended_note
+    # above. ProducerAdminCreate/Update wrote it and nothing returned it, so the
+    # edit form reopened empty and its next save sent "" over the note.
+    # DO NOT add to ProducerListOut / ProducerDetailOut / ProducerOwnerOut —
+    # internal, asserted by name in tests/test_meh3912_admin_notes_readback.py.
+    admin_notes: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent

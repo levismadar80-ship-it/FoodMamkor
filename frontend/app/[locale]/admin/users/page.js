@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
                 <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.name")}</th>
                 <th className="text-start px-4 py-3 font-medium text-muted">{t("users.columns.email")}</th>
@@ -391,7 +391,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-alt transition"
             >
               {t("users.pagination.prev")}
             </button>
@@ -401,7 +401,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-alt transition"
             >
               {t("users.pagination.next")}
             </button>
@@ -468,7 +468,7 @@ export default function AdminUsersPage() {
                   ambiguous dismissal (Escape), not on the deliberate one. */}
               <button data-autofocus
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition"
               >
                 {t("common.cancel")}
               </button>

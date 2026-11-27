@@ -33,6 +33,7 @@ from app.models.product_orders import (
     ProducerOrderSettings,
     ProductOrder,
 )
+from app.services import product_daily_stock
 from app.services.product_order_clock import active_deadline
 from app.services.product_order_menu import offered_slots
 from app.services.product_order_state import (
@@ -194,6 +195,14 @@ def buyer_accept_change(db: Session, order: ProductOrder, actor: Actor) -> Produ
     # MEH-3296: the agreed slot is copied BEFORE the move, so the «מחר»
     # reminder the move writes is timed off the slot the buyer accepted.
     if order.proposed_slot_start is not None:
+        # Daily stock: the new day may have sold out since the proposal.
+        product_daily_stock.refuse_over_limit(
+            db,
+            order.producer_id,
+            list(order.items),
+            order.proposed_slot_start,  # type: ignore[arg-type]
+            exclude_order=order.id,
+        )
         order.slot_start = order.proposed_slot_start
         order.slot_end = order.proposed_slot_end
     _move(db, order, "confirmed", actor, None)
@@ -264,6 +273,12 @@ def business_propose_change(  # noqa: PLR0913 — one argument per proposal fiel
     total_agorot: int | None,
     note: str,
 ) -> ProductOrder:
+    producer_id = (
+        db.query(ProductOrder.producer_id).filter(ProductOrder.id == order_id).scalar()
+    )
+    # The business lock first, as everywhere: a new slot is checked against
+    # the day's stock, and two moves onto one day must not both pass.
+    lock_business(db, producer_id)
     order = lock_order(db, order_id)
     now = utc_now()
     if slot_start is not None:
@@ -289,6 +304,9 @@ def business_propose_change(  # noqa: PLR0913 — one argument per proposal fiel
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail=PROPOSED_SLOT_DETAIL
             )
+        product_daily_stock.refuse_over_limit(
+            db, order.producer_id, list(order.items), slot.start, exclude_order=order.id
+        )
         order.proposed_slot_start = slot.start  # type: ignore[assignment]
         order.proposed_slot_end = slot.end  # type: ignore[assignment]
     _move(db, order, "change_proposed", actor, note)

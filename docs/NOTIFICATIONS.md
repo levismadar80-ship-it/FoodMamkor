@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-99 send sites · 96 on a single channel.
+100 send sites · 97 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -89,6 +89,7 @@
 | `services/page_freshness.py` | `send_freshness_emails` | מייל | בעלת העסק |
 | `services/page_freshness_digest.py` | `send_stale_digest` | מייל | בלי שורת עסק |
 | `services/pending_nudge.py` | `send_pending_nudges` | מייל | בעלת העסק |
+| `services/prepay_refunds.py` | `send_mails` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_mail.send` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_wa.send` | וואטסאפ | בית עסק / מנהלת |
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |

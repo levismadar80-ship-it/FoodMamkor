@@ -3,7 +3,7 @@
 
 /**
  * Module:   RegisterIdentityCheck
- * Purpose:  Under the phone field of the sign-up form: when this business
+ * Purpose:  Under «הבא» on the sign-up form's details step: when this business
  *           already has a page (any status, with an account or without), say
  *           so before a second one is created, and name the account it sits
  *           in, masked (MEH-3884, Farmerim 26/11).
@@ -16,7 +16,8 @@
  *           answer renders nothing.
  * Related:  components/RegisterNameCheck.jsx (same shape, for the name) ·
  *           app/[locale]/register/producer/steps/DetailsStep.jsx (caller).
- * History:  MEH-3884 (creation).
+ * History:  MEH-3884 (creation) · MEH-3918 (moved from under the phone
+ *           field to under «הבא»: its late answer pushed the fields below).
  */
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";

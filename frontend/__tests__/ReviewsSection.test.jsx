@@ -227,7 +227,17 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
-    expect(screen.queryByTestId("reviews-star-1")).toBeNull();
+    // MEH-3871: the card's height is held by an invisible, inert, hidden copy
+    // so the sections under it do not jump when auth answers. Nothing in it
+    // can be seen, focused or read; no star exists outside it.
+    const held = screen.getByTestId("reviews-write-hint-placeholder");
+    expect(held).toHaveClass("invisible");
+    expect(held).toHaveAttribute("aria-hidden", "true");
+    expect(held).toHaveAttribute("inert");
+    // The held copy is the guest login card (its stars), and no star is outside it.
+    const stars = screen.queryAllByTestId("reviews-star-1");
+    expect(stars.length).toBeGreaterThan(0);
+    expect(stars.every((el) => held.contains(el))).toBe(true);
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
@@ -687,6 +697,19 @@ describe("ReviewsSection — loading state (MEH-2606)", () => {
     render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
     // Zero reviews: no loading rows that would shrink to the one quiet line.
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  // MEH-3871: the «הצג עוד» row is held while the list loads only when more
+  // reviews are coming than the list opens with — so its arrival moves nothing.
+  it("show-more slot while loading: held for 4+ reviews, absent for 3 or fewer", async () => {
+    apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
+    const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={4} />);
+    await screen.findByRole("status");
+    expect(screen.getByTestId("reviews-show-more-slot")).toHaveAttribute("aria-hidden", "true");
+    unmount();
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={3} />);
+    await screen.findByRole("status");
+    expect(screen.queryByTestId("reviews-show-more-slot")).toBeNull();
   });
 });
 

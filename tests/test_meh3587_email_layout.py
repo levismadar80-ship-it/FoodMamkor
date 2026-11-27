@@ -14,6 +14,7 @@ import pytest
 from app.config import settings
 from app.services import email as email_service
 from app.services import group_buy_notifications
+from app.services.email_branding import EMAIL_LOGO_WIDTH
 from app.services.email_layout import (
     BARE_URL_LABEL,
     INLINE_URL_LABEL,
@@ -22,7 +23,7 @@ from app.services.email_layout import (
 )
 
 # The host is MEH-3583's (tests/test_email_logo.py); here: the logo is there.
-LOGO = '/email-logo.png" width="120"'
+LOGO = f'/email-logo.png" width="{EMAIL_LOGO_WIDTH}"'
 TAG = re.compile(r"<[^>]+>")
 
 

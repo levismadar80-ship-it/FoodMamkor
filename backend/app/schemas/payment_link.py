@@ -9,7 +9,7 @@ Does NOT: move money or check that the link pays anything. The money goes from
           schemas._payment_info_validator.
 Related:  backend/app/schemas/schemas.py _payment_info_validator ·
           frontend/lib/payment-info.js (prepayLink, the same rule client-side)
-History:  MEH-3895 (creation)
+History:  MEH-3895 (creation) · MEH-3897 (the timing stored on a reservation)
 """
 
 from typing import Any
@@ -19,6 +19,9 @@ PAYMENT_LINK_MAX = 300
 # The two timings in which money moves before pickup. On «באיסוף» a link would
 # tell the buyer to pay for something she pays for at the counter.
 PREPAY_TIMINGS = ("advance", "deposit")
+# MEH-3897: a reservation stores how it is paid when it is made (the way an
+# order keeps its own payment terms, not the shop's current ones):
+# app.models.rescue.RESERVATION_TIMINGS. NULL = made before the column.
 
 
 def payment_link(raw: Any) -> str | None:
@@ -70,3 +73,23 @@ def prepay_link(info: Any) -> str | None:
     if not isinstance(link, str) or not link:
         return None
     return link if info.get("timing") in PREPAY_TIMINGS else None
+
+
+def reservation_timing(info: Any) -> str:
+    """The value stored on a new reservation: the business's timing when it
+    shows a prepay link right now, else "counter"."""
+    if prepay_link(info) is None:
+        return "counter"
+    return str(info["timing"])
+
+
+def refund_timing(stored: str | None, info: Any) -> str | None:
+    """How a cancelled reservation may have been paid ahead: "advance",
+    "deposit", or None (paid at the counter, nothing to return). The stored
+    terms stored when it was made count, and so do today's: the buyer's page
+    and reminders read the business's live link, so a reservation made at the
+    counter may still have been paid through a link added later. Missing a
+    refund costs a buyer money; an extra note only says «אם … התקבל»."""
+    if stored in PREPAY_TIMINGS:
+        return stored
+    return str(info["timing"]) if prepay_link(info) is not None else None

@@ -144,6 +144,10 @@ class Product(Base):
     # Saturday = 64. NULL = every day, as before. Conversions and the order
     # check: services/product_weekdays.py.
     available_weekdays = Column(SmallInteger, nullable=True)
+    # Daily stock: how many units (in the product's own order unit) can be
+    # ordered for one pickup day, counted across all its variants. NULL = no
+    # limit. Counting and refusal: services/product_daily_stock.py.
+    daily_limit = Column(SmallInteger, nullable=True)
     # MEH-2312: an imported product lands as a draft. A draft is invisible to
     # every public read (producer page, search, sitemap, counts) until an
     # admin approves it. Owner-created products never set it.
@@ -198,6 +202,10 @@ class Product(Base):
             "available_weekdays >= 1 AND available_weekdays <= 127",
             name="products_available_weekdays_check",
         ),
+        CheckConstraint(
+            "daily_limit >= 1 AND daily_limit <= 999",
+            name="products_daily_limit_check",
+        ),
         Index(
             "idx_products_dietary",
             "producer_id",
@@ -228,6 +236,10 @@ class ProductVariant(Base):
             "price_agorot IS NULL OR price_agorot >= 0",
             name="product_variants_price_check",
         ),
+        CheckConstraint(
+            "daily_limit >= 1 AND daily_limit <= 999",
+            name="product_variants_daily_limit_check",
+        ),
         Index("ix_product_variants_product_id", "product_id"),
     )
 
@@ -243,6 +255,9 @@ class ProductVariant(Base):
         Boolean, default=True, nullable=False, server_default=text("true")
     )
     position = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    # Daily stock of this size or flavour alone; NULL = only the product's
+    # own limit (if any) applies. services/product_daily_stock.py.
+    daily_limit = Column(SmallInteger, nullable=True)
 
     product = relationship("Product", back_populates="variants")
 

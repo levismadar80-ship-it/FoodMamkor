@@ -296,7 +296,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           type="button"
           onClick={(e) => openLightbox(0, e.currentTarget)}
           aria-label={t("open_aria", { current: 1 })}
-          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
+          className={`relative overflow-hidden bg-background-alt focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
             images.length >= 3 ? "row-span-2" : ""
           }`}
           data-testid="gallery-grid-hero"
@@ -330,7 +330,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   ? t("view_all", { n: images.length })
                   : t("open_aria", { current: idx + 1 })
               }
-              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              className="relative overflow-hidden bg-background-alt focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               data-testid={isPillCell ? "gallery-grid-pill-cell" : "gallery-grid-cell"}
             >
               <ImageWithFallback
@@ -357,7 +357,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     <div
       // MEH-2593: ~4:3 on phones (was a 208px band), square corners at the
       // screen edge; a single image on md+ stands 380px instead of a strip.
-      className={`relative h-[min(78vw,340px)] md:h-[380px] md:rounded-xl overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
+      className={`relative h-[min(78vw,340px)] md:h-[380px] md:rounded-xl overflow-hidden bg-background-alt${single ? "" : " md:hidden"}`}
       data-testid="gallery-carousel"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

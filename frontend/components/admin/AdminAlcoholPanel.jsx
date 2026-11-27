@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Switch from "@/components/ui/Switch";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 import { GetOrderSettingsAsAdminAdminProducersProducerIdOrderSettingsGetResponse as SettingsSchema } from "@/lib/generated/api.zod";
 
 /**
@@ -21,7 +22,8 @@ import { GetOrderSettingsAsAdminAdminProducersProducerIdOrderSettingsGetResponse
  *           (OrderSettingsCard.jsx); or show anything while on-site ordering
  *           is off (both routes answer 404 then, and the panel renders nothing).
  * History:  MEH-3524 (creation). The PUT had no caller since MEH-3218 — found
- *           by the unwired-route guard (MEH-3523).
+ *           by the unwired-route guard (MEH-3523). MEH-3872: the switch row's
+ *           place is held while the settings load.
  */
 
 /** @param {{ producerId: string }} props */
@@ -76,6 +78,14 @@ export default function AdminAlcoholPanel({ producerId }) {
         <Wine size={20} aria-hidden="true" /> {t("title")}
       </h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
+      {/* MEH-3872: until the settings answer, the switch row's place is held
+          unseen, so its arrival does not push the panels below it down. */}
+      {on === null && !error && (
+        <div className="flex items-center gap-3 invisible" aria-hidden="true" inert={INERT_PRESENT} data-testid="alcohol-switch-pending">
+          <Switch checked={false} disabled onClick={() => {}} aria-label={t("label")} />
+          <span className="text-sm">{t("label")}</span>
+        </div>
+      )}
       {on !== null && (
         <div className="flex items-center gap-3">
           <Switch

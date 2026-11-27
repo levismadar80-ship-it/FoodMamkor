@@ -232,7 +232,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
   const tHost = useTranslations("dashboard.producer.manage_experiences");
   const modBadge =
     ex.moderation_status === "FLAGGED"
-      ? "bg-yellow-100 text-yellow-800"
+      ? "bg-warning-100 text-warning-800"
       : ex.moderation_status === "APPROVED"
       ? "bg-green-50 text-primary"
       : "bg-gray-100 text-gray-600";

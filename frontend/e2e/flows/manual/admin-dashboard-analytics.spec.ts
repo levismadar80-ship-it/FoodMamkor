@@ -274,7 +274,7 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     await openDashboard(page);
     const panel = pendingPanel(page);
     await expect(panel.getByRole("heading", { name: /^בקשות ממתינות/ })).toContainText("1");
-    await expect(panel.locator("span.bg-yellow-400"), "the count pill in the heading").toHaveText("1");
+    await expect(panel.locator("span.bg-warning-400"), "the count pill in the heading").toHaveText("1");
     await expect(panel.getByRole("listitem")).toHaveCount(1);
     await expect(panel.getByRole("listitem").first()).toContainText("עסק ממתין");
     await expect(panel.getByRole("listitem").first()).toContainText("חיפה");
@@ -297,9 +297,9 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toHaveAttribute("href", /\/admin\/kashrut$/);
     await expect(rows.nth(0)).toContainText("כשרות");
-    await expect(rows.nth(0).locator("span.bg-yellow-400")).toHaveText("2");
+    await expect(rows.nth(0).locator("span.bg-warning-400")).toHaveText("2");
     await expect(rows.nth(1)).toHaveAttribute("href", /\/admin\/whatsapp-failures$/);
-    await expect(rows.nth(1).locator("span.bg-yellow-400")).toHaveText("5");
+    await expect(rows.nth(1).locator("span.bg-warning-400")).toHaveText("5");
     await expect(queuesPanel(page).getByText("אין פריטים ממתינים בשאר התורים")).toHaveCount(0);
   });
 
@@ -310,7 +310,7 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     await expect(pendingPanel(page).getByText("אין בקשות ממתינות")).toBeVisible();
     await expect(queuesPanel(page).getByText("אין פריטים ממתינים בשאר התורים")).toBeVisible();
     await expect(queuesPanel(page).getByRole("link")).toHaveCount(0);
-    await expect(page.locator(".bg-yellow-400"), "no yellow count on the page or in either nav").toHaveCount(0);
+    await expect(page.locator(".bg-warning-400"), "no yellow count on the page or in either nav").toHaveCount(0);
   });
 
   // The preview is capped by the endpoint; the remainder is said, not hidden.
@@ -318,7 +318,7 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     await stubAdmin(page, { dashboard: dashboard({ stats: { pending_producers: 7 } }) });
     await openDashboard(page);
     await expect(pendingPanel(page).getByText("ועוד 6 בתור")).toBeVisible();
-    await expect(pendingPanel(page).locator("span.bg-yellow-400")).toHaveText("7");
+    await expect(pendingPanel(page).locator("span.bg-warning-400")).toHaveText("7");
   });
 });
 
@@ -419,7 +419,7 @@ test.describe("/admin/producers — the risk badge", () => {
     await expect(badge(page, "עסק ירוק")).toHaveText("סיכון נמוך (20)");
     await expect(badge(page, "עסק ירוק")).toHaveClass(/bg-primary\/20/);
     await expect(badge(page, "עסק צהוב")).toHaveText("סיכון בינוני (50)");
-    await expect(badge(page, "עסק צהוב")).toHaveClass(/bg-yellow-100/);
+    await expect(badge(page, "עסק צהוב")).toHaveClass(/bg-warning-100/);
     await expect(badge(page, "עסק אדום")).toHaveText("סיכון גבוה (90)");
     await expect(badge(page, "עסק אדום")).toHaveClass(/bg-danger-100/);
   });
@@ -446,7 +446,7 @@ test.describe("admin nav — the pending-businesses pill, the queue filter, «ע
     await expect(pills).toHaveCount(2);
     for (const [i, href] of [[0, /\/admin$/], [1, /\/admin\/producers$/]] as const) {
       await expect(pills.nth(i)).toHaveText("3");
-      await expect(pills.nth(i)).toHaveClass(/bg-yellow-400/);
+      await expect(pills.nth(i)).toHaveClass(/bg-warning-400/);
       await expect(pills.nth(i)).toHaveAttribute("title", "3 פריטים ממתינים לאישור");
       await expect(pills.nth(i).locator("xpath=ancestor::a[1]")).toHaveAttribute("href", href);
     }

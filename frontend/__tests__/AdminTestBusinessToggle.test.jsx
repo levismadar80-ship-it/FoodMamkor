@@ -39,6 +39,18 @@ async function load() {
 beforeEach(() => vi.clearAllMocks());
 
 describe("TestBusinessToggle", () => {
+  // MEH-3872: while the ids load, the row's place is held (no switch yet), so
+  // the panels under the header do not drop when the switch arrives.
+  it("while the ids load: an empty row of the switch row's height, no switch", async () => {
+    api.get.mockReturnValue(new Promise(() => {})); // never resolves
+    const { Toggle } = await load();
+    wrap(<Toggle producerId={P1} />);
+    const held = screen.getByTestId("admin-test-business-toggle-pending");
+    expect(held).toHaveClass("mt-3", "h-6");
+    expect(held).toHaveAttribute("aria-hidden", "true");
+    expect(screen.queryByRole("switch")).toBeNull();
+  });
+
   it("is the approved label, unchecked for a real business", async () => {
     api.get.mockResolvedValue({ data: { producer_ids: [OTHER] } });
     const { Toggle } = await load();

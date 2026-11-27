@@ -15,7 +15,8 @@
  * History:  MEH-3216 gaps (creation) · MEH-3752 (an order-setup draft marks
  *           products to open; they wait, switched on, for «שמירה», which
  *           saves each through the same per-row route; a «?» on the first
- *           «פתוח להזמנה באתר»)
+ *           «פתוח להזמנה באתר»); daily stock (27/11: «כמה ביום» per product
+ *           and per size or flavour, DailyLimitField.jsx)
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +27,7 @@ import FieldHelpLabel from "@/components/FieldHelpLabel";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Switch from "@/components/ui/Switch";
+import DailyLimitField from "@/components/dashboard/orders/DailyLimitField";
 import { detailToMessage } from "@/lib/errors";
 import { loadProductsOrdering, saveProductOrdering } from "@/lib/orderable-products";
 import { draftProductIds } from "@/lib/order-setup-draft";
@@ -55,7 +57,7 @@ function SwitchLine({ id, label, checked, busy, onChange, help = undefined }) {
 function ProductRow({ product, onSaved, help = undefined, pending = false, onPending = undefined, error = null }) {
   const t = useTranslations("dashboard.producer.orders");
   const [state, setState] = useState(/** @type {{ busy?: boolean, error?: string|null }} */ ({}));
-  const save = async (/** @type {{ is_orderable?: boolean, in_stock?: boolean }} */ change) => {
+  const save = async (/** @type {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} */ change) => {
     setState({ busy: true });
     try {
       onSaved(await saveProductOrdering(product, change));
@@ -83,8 +85,62 @@ function ProductRow({ product, onSaved, help = undefined, pending = false, onPen
         busy={Boolean(state.busy)}
         onChange={(soldOut) => save({ in_stock: !soldOut })}
       />
+      <DailyLimits product={product} busy={Boolean(state.busy)} save={save} />
       {(state.error || error) && <InlineMessage tone="error">{state.error || error}</InlineMessage>}
     </li>
+  );
+}
+
+/**
+ * The unit beside «כמה ליום»: the price units' own words, «× 100 גרם» apart.
+ * @param {string} priceUnit
+ * @param {{ t: (key: string) => string, tUnits: (key: string) => string }} tr
+ *   t: this card's translator; tUnits: producer.offer.units
+ */
+function unitLabel(priceUnit, { t, tUnits }) {
+  if (priceUnit === "100g") return t("limit_unit_100g");
+  return tUnits(priceUnit === "kg" ? "kg" : "units");
+}
+
+/**
+ * Daily stock: «כמה ביום» for the product, and — with two sizes or flavours
+ * or more — one more field for each of them on its own.
+ * @param {{ product: any, busy: boolean, save: (change: any) => Promise<void> }} props
+ */
+function DailyLimits({ product, busy, save }) {
+  const t = useTranslations("dashboard.producer.orders.products");
+  const key = String(product.id);
+  const variants = /** @type {any[]} */ (product.variants ?? []);
+  const many = variants.length >= 2;
+  const tUnits = useTranslations("producer.offer.units");
+  const unit = unitLabel(product.price_unit, { t, tUnits });
+  return (
+    <div data-testid="daily-limits">
+      <DailyLimitField
+        id={`limit-${key}`}
+        label={many ? t("limit_total") : t("limit")}
+        value={product.daily_limit}
+        unit={unit}
+        busy={busy}
+        onSave={(limit) => save({ daily_limit: limit })}
+      />
+      {many && (
+        <>
+          <p className="text-xs text-fg-muted pt-1">{t("limit_by_variant")}</p>
+          {variants.map((v) => (
+            <DailyLimitField
+              key={v.id}
+              id={`limit-${key}-${v.id}`}
+              label={v.name}
+              value={v.daily_limit}
+              unit={unit}
+              busy={busy}
+              onSave={(limit) => save({ variant_limits: [{ id: v.id, daily_limit: limit }] })}
+            />
+          ))}
+        </>
+      )}
+    </div>
   );
 }
 

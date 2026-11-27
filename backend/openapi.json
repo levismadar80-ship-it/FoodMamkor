@@ -8320,6 +8320,17 @@
             "title": "Contains Alcohol",
             "type": "boolean"
           },
+          "daily_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
           "has_price": {
             "title": "Has Price",
             "type": "boolean"
@@ -8352,6 +8363,14 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "variants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VariantLimitOut"
+            },
+            "title": "Variants",
+            "type": "array"
           }
         },
         "required": [
@@ -8952,6 +8971,14 @@
             },
             "title": "Slots",
             "type": "array"
+          },
+          "stock": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuStockOut"
+            },
+            "title": "Stock",
+            "type": "array"
           }
         },
         "required": [
@@ -9086,6 +9113,44 @@
           "alcohol_ok"
         ],
         "title": "OrderMenuSlotOut",
+        "type": "object"
+      },
+      "OrderMenuStockOut": {
+        "description": "Daily stock: units left of a product (variant_id null, counted across\nits variants) or of one variant, on one offered Israel day. Only limited\nproducts and variants have rows; no row = no limit.",
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "integer"
+          },
+          "product_id": {
+            "format": "uuid",
+            "title": "Product Id",
+            "type": "string"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          }
+        },
+        "required": [
+          "day",
+          "product_id",
+          "left"
+        ],
+        "title": "OrderMenuStockOut",
         "type": "object"
       },
       "OrderMenuVariantOut": {
@@ -10763,6 +10828,125 @@
         "title": "PhoneCodeIn",
         "type": "object"
       },
+      "PrepDayOut": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PrepLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "day",
+          "lines"
+        ],
+        "title": "PrepDayOut",
+        "type": "object"
+      },
+      "PrepLineOut": {
+        "properties": {
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "integer"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "product_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Limit"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "variant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Name"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "confirmed",
+          "waiting"
+        ],
+        "title": "PrepLineOut",
+        "type": "object"
+      },
+      "PrepListOut": {
+        "description": "The owner's «מה להכין»: today and the next six Israel days.",
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/PrepDayOut"
+            },
+            "title": "Days",
+            "type": "array"
+          }
+        },
+        "required": [
+          "days"
+        ],
+        "title": "PrepListOut",
+        "type": "object"
+      },
       "ProducerAdminCreate": {
         "description": "Used by admin form — pre-approved, supports all extended fields.",
         "properties": {
@@ -11146,6 +11330,17 @@
               }
             ],
             "title": "Address"
+          },
+          "admin_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Notes"
           },
           "ambassador": {
             "default": false,
@@ -19638,6 +19833,19 @@
             "title": "Contains Alcohol",
             "type": "boolean"
           },
+          "daily_limit": {
+            "anyOf": [
+              {
+                "maximum": 999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
           "in_stock": {
             "title": "In Stock",
             "type": "boolean"
@@ -19664,6 +19872,21 @@
               }
             ],
             "title": "Price Unit"
+          },
+          "variant_limits": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VariantLimitIn"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Limits"
           }
         },
         "required": [
@@ -19679,6 +19902,17 @@
           "contains_alcohol": {
             "title": "Contains Alcohol",
             "type": "boolean"
+          },
+          "daily_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
           },
           "id": {
             "format": "uuid",
@@ -19704,6 +19938,14 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "variants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VariantLimitOut"
+            },
+            "title": "Variants",
+            "type": "array"
           }
         },
         "required": [
@@ -24583,6 +24825,64 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VariantLimitIn": {
+        "additionalProperties": false,
+        "properties": {
+          "daily_limit": {
+            "anyOf": [
+              {
+                "maximum": 999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "VariantLimitIn",
+        "type": "object"
+      },
+      "VariantLimitOut": {
+        "properties": {
+          "daily_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "VariantLimitOut",
         "type": "object"
       },
       "WeeklySummarySettingIn": {
@@ -36626,6 +36926,33 @@
           }
         ],
         "summary": "Put My Order Windows",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/orders/prep": {
+      "get": {
+        "description": "Daily stock: «מה להכין» — per Israel day from today for a week, how\nmany of each product and variant are ordered (confirmed / still waiting),\nwith the limit. Counts only, no customer: staff read it too.",
+        "operationId": "get_my_prep_list_producers_me_orders_prep_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrepListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Prep List",
         "tags": [
           "product-orders"
         ]

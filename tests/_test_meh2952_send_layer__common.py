@@ -1051,6 +1051,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_email",
     ): (1, OWN, "wrapper param ← producer.is_test (MEH-3895)"),
     (
+        "services/prepay_refunds.py",
+        "send_mails",
+        "send_email",
+    ): (1, OWN, "Mail tuple ← producer.is_test (MEH-3897)"),
+    (
         "services/group_buy_goal_flap.py",
         "send_below_goal_emails",
         "send_email",

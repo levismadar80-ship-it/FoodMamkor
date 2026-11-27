@@ -168,7 +168,11 @@ test.describe("Map", () => {
       test.setTimeout(90_000);
       // ruach-hasadeh is the flagship demo business (seed_demo_business.py).
       await page.goto("/ruach-hasadeh?from=map");
-      const back = page.getByTestId("back-to-map");
+      // MEH-3919: the row is in the server HTML (MEH-3856), so while the page
+      // streams React can hold a hidden server copy next to its own for a
+      // moment (the MEH-2323 shape). Read the one visible copy.
+      const back = page.getByTestId("back-to-map").filter({ visible: true });
+      await expect(back).toHaveCount(1);
       await expect(back).toBeVisible();
       await expect(back).toHaveAttribute("href", /\/map$/);
       await expect(back).toHaveText(/חזרה למפה|Back to map/);
