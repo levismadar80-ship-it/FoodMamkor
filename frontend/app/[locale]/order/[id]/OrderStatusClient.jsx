@@ -50,6 +50,15 @@ function WhenLine({ start, end, kind, address }) {
   return <p data-testid="order-when">{t("when_delivery", values)}</p>;
 }
 
+/** MEH-3960: the time a pending request asked for. @param {{ start: string, end: string, kind: string }} props */
+function RequestedLine({ start, end, kind }) {
+  const t = useTranslations("order_status");
+  const locale = useLocale();
+  return (
+    <p data-testid="order-requested">{t(kind, { day: dayLabel(start, locale), ...rangeEnds(start, end) })}</p>
+  );
+}
+
 /** @param {{ order: any }} props */
 function Lines({ order }) {
   const t = useTranslations("order_status");
@@ -141,6 +150,9 @@ export function OrderStatusView({ order, onChange, refOf }) {
       <SectionHeading size="content" data-testid="order-headline">
         {t(view.headline, { business_name: order.producer_name })}
       </SectionHeading>
+      {view.requested && order.slot_start && order.slot_end && (
+        <RequestedLine start={order.slot_start} end={order.slot_end} kind={view.requested} />
+      )}
       {view.waiting && deadline && <p className="text-fg-muted">{t("waiting", { deadline })}</p>}
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />
