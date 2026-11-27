@@ -261,6 +261,11 @@ genuinely fixed colour (a third-party brand colour, an SVG fill) is
 `--update-baseline` plus a reason in the PR body. Why it matters: a future theme
 switch (dark mode) can only re-colour what goes through the tokens.
 
+The site has no dark mode today, and says so: `:root { color-scheme: only light; }`
+in `frontend/app/globals.css` (MEH-3927) stops Chrome's Auto Dark Theme from
+inverting the cream page on a phone in dark mode. A real dark theme, when it
+comes, replaces that line. Guard: `frontend/e2e/flows/44-light-only-color-scheme.spec.ts`.
+
 ### Address/city fields must use the canonical component
 
 A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /

@@ -1,5 +1,10 @@
 # מהמקור — DB schema
 
+> **Columns, types and constraints: read [docs/DB_SCHEMA.md](../../docs/DB_SCHEMA.md)** —
+> generated from the models and held by `tests/test_db_schema_doc.py` (MEH-3929).
+> This diagram is kept by hand, is known to lag (e.g. `rescue_orders.paid_at`),
+> and is for the relationship picture only. Where the two differ, DB_SCHEMA.md is right.
+
 > Mermaid ER diagram for the main tables + relationships. **Source of
 > truth is `backend/app/models/` (`models.py` for users, businesses and
 > categories; one sibling file per area since MEH-3269)** — if this drifts, update

@@ -2,9 +2,20 @@
 The brand header shared by every HTML email (MEH-2834 PR 2).
 
 One function, one image: the horizontal Hebrew lockup served from the
-frontend's public folder (frontend/public/email-logo.png, 240px wide for a
-120px display). Since MEH-2875 (Sapir, option ב) it is mark + «מהמקור» with no
+frontend's public folder (frontend/public/email-logo.png, 272×68 for a
+136×34 display). Since MEH-2875 (Sapir, option ב) it is mark + «מהמקור» with no
 tagline, rendered from frontend/public/logo-horizontal-he-no-tagline.svg.
+
+Dark mode (MEH-3916, Sapir 27/11): the PNG has NO background at all — only the
+flower and the wordmark on transparent pixels. Gmail's dark mode recolours the
+email's backgrounds but never an image, so the old opaque white PNG was a hard
+white rectangle on the dark page (and a cream badge around it still read as a
+box). The wordmark is the brand's mid green #5A8F73 (a petal colour), which
+reads on the cream page and on Gmail's dark page; the old near-black #1C1A17
+vanished on dark. Gmail ignores prefers-color-scheme, so one image must work
+on both. The wordmark sits on the flower's vertical centre (Sapir asked for
+it; text y=83 in the SVG). The image is 4:1, the lockup's own ratio, so emails
+already sent with the old 120×30 box show it undistorted.
 Every HTML template calls email_logo_html() at the top of its content;
 tests/test_email_logo.py renders each template and also scans backend/app
 for any `<html` template that does not call it, so a new HTML email without
@@ -29,9 +40,10 @@ from html import escape as html_escape
 EMAIL_ASSET_ORIGIN = "https://mehamakor.co.il"
 EMAIL_LOGO_PATH = "/email-logo.png"
 EMAIL_LOGO_ALT = "מהמקור"
-# frontend/public/email-logo.png is 240×60 → 120×30 on screen (MEH-2875: was
-# 240×70 with the tagline line).
-EMAIL_LOGO_HEIGHT = 30
+# frontend/public/email-logo.png is 272×68 → 136×34 on screen (MEH-3916: was
+# 240×60 on opaque white; MEH-2875: 240×70 with the tagline line).
+EMAIL_LOGO_WIDTH = 136
+EMAIL_LOGO_HEIGHT = 34
 
 
 def email_logo_url() -> str:
@@ -44,7 +56,7 @@ def email_logo_html() -> str:
     # color/font on the img style the alt text when images are blocked, so the
     # fallback reads like the text wordmark it replaced in some templates.
     return (
-        f'<img src="{html_escape(email_logo_url())}" width="120" height="{EMAIL_LOGO_HEIGHT}" '
+        f'<img src="{html_escape(email_logo_url())}" width="{EMAIL_LOGO_WIDTH}" height="{EMAIL_LOGO_HEIGHT}" '
         f'alt="{EMAIL_LOGO_ALT}" style="display:block;border:0;margin:0 0 24px auto;'
         'color:#2e6853;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">'
     )

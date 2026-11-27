@@ -204,6 +204,10 @@ in `backend/init_db.sql` is for cold-start Railway deploys only.
 
 ## DB Schema
 
+> The exact columns, types, defaults, FKs, CHECKs and indexes of every table are in
+> [DB_SCHEMA.md](./DB_SCHEMA.md), generated from the models (MEH-3929). The DDL below
+> is hand-kept prose; where it differs, DB_SCHEMA.md is right.
+
 ### Core
 
 ```sql
