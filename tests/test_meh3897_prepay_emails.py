@@ -593,3 +593,44 @@ def test_the_column_refuses_an_unknown_terms_value(db, shop):
     with pytest.raises(IntegrityError):
         db.commit()
     db.rollback()
+
+
+def test_a_business_taken_off_the_site_lists_the_unmarked_reservations(
+    client, db, shop, rescue_on, outbox
+):
+    from fastapi import BackgroundTasks
+
+    from app.services.booking_cancellations import delist_business
+
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    _u, unmarked = _reserve(client, db, offer, "d-unmarked@example.com")
+    _u, marked = _reserve(client, db, offer, "d-marked@example.com")
+    _order(db, marked["id"]).paid_at = utc_now()
+    db.commit()
+    tasks = BackgroundTasks()
+    delist_business(db, db.get(Producer, shop["producer"].id), tasks, "hidden")
+    db.commit()
+    lists = [t for t in tasks.tasks if t.func is refunds.send_mails]
+    assert len(lists) == 1
+    ((to, subject, body, _test),) = lists[0].args[0]
+    assert to == "owner@example.com"
+    assert subject == "בוטל סל הפתעה במאפיית ההצלה: מה להחזיר"
+    assert "בית העסק כבר לא מופיע במהמקור, ולכן סל ההפתעה בוטל" in body
+    assert f"• קוד {unmarked['pickup_code']}: 15 ₪" in body
+    assert marked["pickup_code"] not in body  # it gets the certain email instead
+
+
+def test_a_business_taken_off_the_site_without_a_link_gets_no_list(
+    client, db, shop, rescue_on, outbox
+):
+    from fastapi import BackgroundTasks
+
+    from app.services.booking_cancellations import delist_business
+
+    offer = _seed_offer(db, shop["location"])
+    _reserve(client, db, offer, "d-counter@example.com")
+    tasks = BackgroundTasks()
+    delist_business(db, db.get(Producer, shop["producer"].id), tasks, "hidden")
+    db.commit()
+    assert not [t for t in tasks.tasks if t.func is refunds.send_mails]
