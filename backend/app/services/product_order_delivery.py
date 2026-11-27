@@ -39,8 +39,9 @@ def minimum_detail(min_shekels: int, subtotal_agorot: int) -> str:
     הזאת» (MEH-3511): the minimum may be the business-wide one."""
     missing = min_shekels * AGOROT_PER_SHEKEL - subtotal_agorot
     return (
-        f"המינימום להזמנה במשלוח הוא {min_shekels} ₪. "
-        f"חסרים עוד {shekels_text(missing)} ₪."
+        # A no-break space keeps «₪» with its number (it wrapped alone at 390).
+        f"המינימום להזמנה במשלוח הוא {min_shekels}\u00a0₪. "
+        f"חסרים עוד {shekels_text(missing)}\u00a0₪."
     )
 
 

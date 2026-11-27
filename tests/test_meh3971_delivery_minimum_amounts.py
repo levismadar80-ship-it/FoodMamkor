@@ -36,7 +36,7 @@ def test_the_refusal_names_the_minimum_and_what_is_missing(subtotal, missing):
     with pytest.raises(delivery.DeliveryRefused) as refused:
         delivery.quote(_facts(area_min_order=100), "חדרה", subtotal)
     assert refused.value.detail == (
-        f"המינימום להזמנה במשלוח הוא 100 ₪. חסרים עוד {missing} ₪."
+        f"המינימום להזמנה במשלוח הוא 100\u00a0₪. חסרים עוד {missing}\u00a0₪."
     )
 
 
@@ -60,4 +60,7 @@ def test_the_quote_route_carries_the_amounts(client, db, flag_on):
         },
     )
     assert res.status_code == 409, res.text
-    assert res.json()["detail"] == "המינימום להזמנה במשלוח הוא 100 ₪. חסרים עוד 72 ₪."
+    assert (
+        res.json()["detail"]
+        == "המינימום להזמנה במשלוח הוא 100\u00a0₪. חסרים עוד 72\u00a0₪."
+    )
