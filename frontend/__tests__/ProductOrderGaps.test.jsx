@@ -15,12 +15,9 @@ import he from "../messages/he.json";
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 
 import OrderCard from "@/components/dashboard/orders/OrderCard";
-import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
-import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import OrderSettingsCard, { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
 import api from "@/lib/api";
-import { prepList } from "@/lib/orderable-products";
 
 const P1 = "11111111-1111-4111-8111-111111111111";
 const P2 = "22222222-2222-4222-8222-222222222222";
@@ -77,57 +74,6 @@ function order(over = {}) {
 }
 
 beforeEach(() => vi.clearAllMocks());
-
-describe("«מה להכין» (prepList)", () => {
-  it("0 orders, or only requests not yet confirmed: nothing to prepare", () => {
-    expect(prepList([])).toEqual([]);
-    expect(prepList([order({ status: "pending" }), order({ status: "change_proposed" })])).toEqual([]);
-  });
-
-  it("1 order: its own lines", () => {
-    expect(prepList([order({ items: [line("חלה", 2), line("עוגה", 1)] })])).toEqual([
-      { name: "חלה", count: 2 },
-      { name: "עוגה", count: 1 },
-    ]);
-  });
-
-  it("many orders: summed by product, confirmed and ready both count, the biggest first", () => {
-    const todays = [
-      order({ items: [line("עוגה", 1)] }),
-      order({ status: "ready", items: [line("חלה", 2), line("עוגה", 3)] }),
-      order({ status: "pending", items: [line("חלה", 9)] }),
-    ];
-    expect(prepList(todays)).toEqual([
-      { name: "עוגה", count: 4 },
-      { name: "חלה", count: 2 },
-    ]);
-  });
-
-  it("renders nothing with nothing to prepare, and the approved title and lines otherwise", () => {
-    const { container, rerender } = render(wrap(<OrderPrepList todays={[order({ status: "pending" })]} />));
-    expect(container.querySelector('[data-testid="orders-prep"]')).toBeNull();
-    rerender(wrap(<OrderPrepList todays={[order({ items: [line("חלה", 3)] })]} />));
-    const box = screen.getByTestId("orders-prep");
-    expect(within(box).getByRole("heading", { name: "מה להכין" })).toBeTruthy();
-    expect(within(box).getByText("3 × חלה")).toBeTruthy();
-  });
-
-  it("shows on the «היום» tab only", () => {
-    // «היום» is the Israel day of the clock: pin the clock (10:00 in Israel),
-    // or this goes red when the suite runs after 21:00 UTC.
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-19T08:00:00Z"));
-    try {
-      const slot = "2026-11-19T10:00:00Z";
-      render(wrap(<OrdersBoard orders={[order({ slot_start: slot, slot_end: slot })]} onChanged={() => {}} />));
-      expect(screen.queryByTestId("orders-prep")).toBeNull(); // opens on «מאושרות»
-      fireEvent.click(screen.getByTestId("orders-tab-today"));
-      expect(screen.getByTestId("orders-prep")).toBeTruthy();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-});
 
 describe("«וואטסאפ ללקוח» on the card", () => {
   it("opens a chat with the buyer's number, next to the phone link", () => {

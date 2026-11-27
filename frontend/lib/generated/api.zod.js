@@ -7930,6 +7930,7 @@ export const RequestNameChangeProducersMeNameChangeRequestsPostResponse = /*#__P
  * @summary Get My Order Menu Preview
  */
 export const getMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponseProductsItemVariantsDefault = [];
+export const getMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponseStockDefault = [];
 
 export const GetMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponse = /*#__PURE__*/ zod.object({
   "business_id_number": /*#__PURE__*/ zod.string(),
@@ -7961,7 +7962,13 @@ export const GetMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponse = /*#__
   "end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
   "start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true})
-}))
+})),
+  "stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "day": /*#__PURE__*/ zod.iso.date(),
+  "left": /*#__PURE__*/ zod.int(),
+  "product_id": /*#__PURE__*/ zod.uuid(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Daily stock: units left of a product (variant_id null, counted across\nits variants) or of one variant, on one offered Israel day. Only limited\nproducts and variants have rows; no row = no limit.'))), getMyOrderMenuPreviewProducersMeOrderMenuPreviewGetResponseStockDefault)
 })
 
 
@@ -8030,6 +8037,29 @@ export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/
   "weekday": /*#__PURE__*/ zod.int()
 }))
 })
+
+
+/**
+ * Daily stock: «מה להכין» — per Israel day from today for a week, how
+ * many of each product and variant are ordered (confirmed / still waiting),
+ * with the limit. Counts only, no customer: staff read it too.
+ * @summary Get My Prep List
+ */
+export const GetMyPrepListProducersMeOrdersPrepGetResponse = /*#__PURE__*/ zod.object({
+  "days": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "day": /*#__PURE__*/ zod.iso.date(),
+  "lines": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "confirmed": /*#__PURE__*/ zod.int(),
+  "limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "product_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "waiting": /*#__PURE__*/ zod.int()
+}))
+}))
+}).check(/*#__PURE__*/ zod.describe('The owner\'s «מה להכין»: today and the next six Israel days.'))
 
 
 /**
@@ -8651,15 +8681,23 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
  * business page shows them. Bounded by the products cap (limits.py).
  * @summary Get My Products Ordering
  */
+export const getMyProductsOrderingProducersMeProductsOrderingGetResponseProductsItemVariantsDefault = [];
+
 export const GetMyProductsOrderingProducersMeProductsOrderingGetResponse = /*#__PURE__*/ zod.object({
   "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "daily_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "has_price": /*#__PURE__*/ zod.boolean(),
   "id": /*#__PURE__*/ zod.uuid(),
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
   "name": /*#__PURE__*/ zod.string(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "daily_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string()
+})), getMyProductsOrderingProducersMeProductsOrderingGetResponseProductsItemVariantsDefault)
 }).check(/*#__PURE__*/ zod.describe('One of the owner\'s own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.')))
 })
 
@@ -8769,12 +8807,20 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
  * own business, so another business's product is a 404, not a 403.
  * @summary Put Product Ordering
  */
+export const putProductOrderingProducersMeProductsProductIdOrderingPutResponseVariantsDefault = [];
+
 export const PutProductOrderingProducersMeProductsProductIdOrderingPutResponse = /*#__PURE__*/ zod.object({
   "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "daily_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "daily_limit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string()
+})), putProductOrderingProducersMeProductsProductIdOrderingPutResponseVariantsDefault)
 })
 
 
@@ -9793,6 +9839,7 @@ export const GetKashrutCertProducersProducerIdKashrutCertBadgeCodeGetResponse = 
  * @summary Get Order Menu
  */
 export const getOrderMenuProducersProducerIdOrderMenuGetResponseProductsItemVariantsDefault = [];
+export const getOrderMenuProducersProducerIdOrderMenuGetResponseStockDefault = [];
 
 export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/ zod.object({
   "business_id_number": /*#__PURE__*/ zod.string(),
@@ -9824,7 +9871,13 @@ export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/
   "end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
   "start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true})
-}))
+})),
+  "stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "day": /*#__PURE__*/ zod.iso.date(),
+  "left": /*#__PURE__*/ zod.int(),
+  "product_id": /*#__PURE__*/ zod.uuid(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Daily stock: units left of a product (variant_id null, counted across\nits variants) or of one variant, on one offered Israel day. Only limited\nproducts and variants have rows; no row = no limit.'))), getOrderMenuProducersProducerIdOrderMenuGetResponseStockDefault)
 })
 
 

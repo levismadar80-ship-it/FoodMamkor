@@ -54,7 +54,7 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
               </span>
               {orderable && menu && onChange ? (
                 <OrderStepper
-                  product={{ id: lineKey(product.id, v.id), name: `${product.name} · ${v.name}`, in_stock: menu.in_stock && orderable.in_stock }}
+                  product={{ id: lineKey(product.id, v.id), name: `${product.name} · ${v.name}`, in_stock: menu.in_stock && orderable.in_stock, left: /** @type {any} */ (menu).left ?? null }}
                   qty={picks[lineKey(product.id, v.id)] ?? 0}
                   onChange={onChange}
                 />

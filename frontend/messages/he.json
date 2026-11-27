@@ -1026,7 +1026,9 @@
         "sold_out": "אזל להיום",
         "estimate": "בערך {price} ₪ · המחיר הסופי נקבע בשקילה",
         "alcohol": "מעל גיל 18 בלבד. באיסוף תתבקשו להציג תעודה מזהה.",
-        "bar": "להזמנה · {count, plural, one {פריט אחד} two {שני פריטים} other {# פריטים}} · {total} ₪"
+        "bar": "להזמנה · {count, plural, one {פריט אחד} two {שני פריטים} other {# פריטים}} · {total} ₪",
+        "sold_out_days": "אזל לימים הקרובים",
+        "left": "{count, plural, one {נשאר אחד} other {נשארו #}}"
       },
       "order_sheet": {
         "title": "ההזמנה שלכם",
@@ -1063,7 +1065,9 @@
         "day_conflict": "אין מועד שמתאים לכל המוצרים בהזמנה: «{name}» {when}.",
         "day_conflict_remove": "הסרת «{name}» מההזמנה",
         "preview_send": "שליחה לא זמינה בתצוגה מקדימה",
-        "seller_line_no_number": "המוכר: {name} · מס׳ עוסק / ת״ז: עוד לא הוזן{city, select, none {} other { · {city}}}. מהמקור לא המוכרת ולא צד לעסקה."
+        "seller_line_no_number": "המוכר: {name} · מס׳ עוסק / ת״ז: עוד לא הוזן{city, select, none {} other { · {city}}}. מהמקור לא המוכרת ולא צד לעסקה.",
+        "stock_sold_out": "«{name}» אזל לימים הקרובים. אפשר להסיר אותו מההזמנה ולהזמין את השאר.",
+        "stock_short": "אין יום פנוי עם מספיק «{name}». אפשר להזמין עד {count, plural, one {אחד} other {#}} ליום."
       }
     },
     "card": {
@@ -6362,11 +6366,20 @@
         "products": {
           "title": "מוצרים",
           "orderable": "פתוח להזמנה באתר",
-          "sold_out": "אזל כרגע"
+          "sold_out": "אזל כרגע",
+          "limit": "כמה אפשר להזמין ליום",
+          "limit_total": "כמה ליום מכל הסוגים יחד",
+          "limit_by_variant": "אפשר גם להגביל כל סוג בנפרד:",
+          "limit_none": "בלי הגבלה",
+          "limit_unit_100g": "× 100 גרם"
         },
         "prep": {
           "title": "מה להכין",
-          "line": "{count} × {name}"
+          "line": "{count} × {name}",
+          "days": "ימים",
+          "tomorrow": "מחר",
+          "waiting": "{count, plural, one {אחד מחכה לאישור} other {# מחכים לאישור}}",
+          "of_limit": "מתוך {limit} ליום"
         },
         "intro": {
           "title": "חדש: הזמנות מראש מהעמוד שלכם",
