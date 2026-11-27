@@ -6,6 +6,8 @@ import { CaretLeft, Clock, Info, MapPin } from "@phosphor-icons/react";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import { useTranslations, useLocale } from "next-intl";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
@@ -73,7 +75,7 @@ import { allergensDeclared } from "@/lib/allergens"; // MEH-3585
 // a shift rather than replace one. That is a hypothesis, not a finding —
 // entries stayed at 4 on desktop before and after, which does not obviously
 // fit it. See MEH-1853.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 
 // MEH-1334 chunk 3: single owner of "does this producer have a mappable
 // location" — gates both the merged location section and the MiniMap mount.

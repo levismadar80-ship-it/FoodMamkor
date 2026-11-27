@@ -2026,6 +2026,16 @@ POST   /admin/kashrut/{id}/revoke              admin — MEH-2518: body {notes?}
                                                request for that badge code "revoked", drops the code from kashrut_badges[];
                                                no badge left → kashrut_verified_at/expires_at cleared.
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
+POST   /admin/producers/{producer_id}/kashrut  admin — MEH-3081: body {badge_code, cert_url, expires_on}. The admin
+                                               attaches a certificate the business sent her (a business with no
+                                               account cannot file /producers/me/kashrut-request). Stores an APPROVED
+                                               kashrut_badge_requests row (reviewed_by = the admin, notes «צורף על ידי
+                                               אדמין») and applies the approve rule (services/kashrut_grant.py).
+                                               cert_url must be https://res.cloudinary.com/ (the proxy's only host) →
+                                               422; expiry not after today → 422; unknown badge code → 400; unknown
+                                               business → 404; organizer → 409 (the proxy never serves its cert,
+                                               ADR-036). 201 + the row.
+                                               POST /upload/kashrut-cert accepts an admin with no business (her folder).
 GET    /admin/producers/rejection-presets      admin — MEH-226: the 5 canonical rejection reasons as [{key,label}].
                                                Backend is the single owner of the Hebrew labels; the admin reject
                                                modal renders this list rather than carrying its own copy, so the
@@ -2151,6 +2161,8 @@ PUT    /admin/producers/{producer_id}/product-groups          admin — MEH-3472
 PUT    /admin/producers/{producer_id}/product-groups/assign   admin — MEH-3477: same body and rules as PUT /producers/me/product-groups/assign, drafts included
 POST   /admin/producers/{producer_id}/product-groups/suggest  admin — MEH-3478: same as POST /producers/me/product-groups/suggest, drafts included; 30/hour
 GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
+PUT    /admin/producers/{producer_id}/products/{product_id}/price  admin — MEH-3942: {price_min, price_max, price_unit?}; null clears the price
+                                                               («מחיר משתנה לפי עונה»), any business incl. approved with no owner; 120/hour
 PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
                                                                draft, each once (else 409). The owner's route stays published-only.
                                                                One `products.position` column serves both: an owner reorder numbers

@@ -2,6 +2,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 // Locale-stripping usePathname — returns "/map" for /he/map AND /en/map
 // (same import BottomNav.jsx:7 uses for its route-awareness).
 import { usePathname } from "@/i18n/navigation";
@@ -13,7 +15,7 @@ import { isProducerDetail } from "@/lib/producer-route";
 // Component (it exports generateMetadata), where next/dynamic ssr:false is
 // disallowed. Defers the interaction-gated widget to a post-hydration chunk
 // (it renders nothing until opened, so no SSR content is lost).
-const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
+const ChatWidget = dynamic(optionalChunk(() => import("@/components/ChatWidget"), "ChatWidget"), {
   ssr: false,
 });
 

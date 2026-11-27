@@ -5,6 +5,8 @@ import SeedMark from "@/components/brand/SeedMark";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 // next-intl's Link keeps the /en prefix (next/link drops it under
 // localePrefix: as-needed — MEH-2403 review).
 import { Link } from "@/i18n/navigation";
@@ -43,7 +45,7 @@ import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
 /** @type {Intl.DateTimeFormatOptions} */

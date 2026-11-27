@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+// MEH-3946: an add-on whose chunk fails to load renders nothing, not the error page.
+import { optionalChunk } from "@/lib/optional-chunk";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle, Leaf } from "@phosphor-icons/react";
@@ -27,7 +29,7 @@ import {
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
 // (ExperienceDetailClient.jsx:17, EventDetailClient.jsx).
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+const MiniMap = dynamic(optionalChunk(() => import("@/components/MiniMap"), "MiniMap"), { ssr: false });
 // Street-level framing for a "is this the right spot?" check. MiniMap's own
 // default (14) is neighbourhood context for a business page — a different job.
 const ADDRESS_CONFIRM_ZOOM = 16;

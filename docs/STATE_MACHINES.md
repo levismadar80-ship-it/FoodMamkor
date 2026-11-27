@@ -227,7 +227,7 @@ section above when it has transitions worth drawing.
 | `product_order_events.to_status` | log of `product_orders.status` |
 | `home_products.moderation_status` | router not mounted (audit §8) |
 | `category_requests.status` | pending → approved / rejected, admin only (`routers/category_requests.py`) |
-| `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`) |
+| `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`); MEH-3081: an admin may also create a row already approved (`POST /admin/producers/{id}/kashrut`, a certificate for a business with no account) |
 | `producer_name_change_requests.status` | pending → approved / rejected, admin only (`routers/producer_name_requests.py`) |
 | `reports.status` | open → resolved / dismissed, admin only (`routers/reports.py`). The reports page resolves a business's open reports after «השהה עסק», only when toggle-status answered `inactive` (MEH-3524) |
 | `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`); → `registered` automatically when the owner signs up through the lead's prefill link (`services/outreach_lead_registration.py`, MEH-3026) |

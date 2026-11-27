@@ -374,7 +374,9 @@ async def upload_kashrut_cert(
     rejects non-images.
     # REUSES: backend/app/routers/upload.py:220 (/owner-photo sniff + cap)
     """
-    if not user.producer_id:
+    # MEH-3081: an admin uploads the photo a business without an account sent
+    # her (POST /admin/producers/{id}/kashrut). Folder = her own owner key.
+    if not user.producer_id and user.role != "admin":
         raise HTTPException(status_code=403, detail="אין בית עסק משויך לחשבון")
 
     contents = await read_validated_image(file)  # MEH-3456: one size cap, one sniff

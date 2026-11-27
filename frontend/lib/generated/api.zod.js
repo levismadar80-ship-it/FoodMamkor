@@ -3103,6 +3103,26 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
 
 
 /**
+ * MEH-3081: the admin attaches a certificate the business sent her and
+ * turns the badge on at once. Most admin-built pages have no owner account,
+ * so `POST /producers/me/kashrut-request` is out of their reach. The row is
+ * stored as an approved request reviewed by this admin, so the public cert
+ * proxy and the «אושרו» queue see it like any other.
+ * @summary Grant Kashrut Badge
+ */
+export const GrantKashrutBadgeAdminProducersProducerIdKashrutPostResponse = /*#__PURE__*/ zod.object({
+  "badge_code": /*#__PURE__*/ zod.string(),
+  "cert_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "notes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Admin List Locations
  */
 export const adminListLocationsAdminProducersProducerIdLocationsGetResponseIsPrimaryDefault = false;
@@ -3606,6 +3626,54 @@ export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupP
   "name": /*#__PURE__*/ zod.string(),
   "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseVariantsDefault)
+})
+
+
+/**
+ * @summary Admin Set Product Price
+ */
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsGlutenFreeDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsLactoseFreeDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsLowCarbDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsNoAddedSugarDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsVeganDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsVegetarianDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseNoAllergensDefault = false;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseVariantsItemInStockDefault = true;
+export const adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseVariantsDefault = [];
+
+export const AdminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "available_weekdays": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseIsVegetarianDefault),
+  "lead_days": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "variants": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseVariantsItemInStockDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+})), adminSetProductPriceAdminProducersProducerIdProductsProductIdPricePutResponseVariantsDefault)
 })
 
 
