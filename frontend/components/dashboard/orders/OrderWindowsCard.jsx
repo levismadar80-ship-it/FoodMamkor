@@ -144,7 +144,7 @@ export default function OrderWindowsCard({ windows, orderWindow, collapsed = fal
       {!deliveryPriced && rows.some((row) => row.fulfilment === "delivery") && (
         <InlineMessage tone="info">
           <span data-testid="order-windows-no-delivery-price">{t("no_delivery_price")}</span>{" "}
-          <Link href="/producer/dashboard/edit#delivery" className="font-semibold underline">{t("no_delivery_price_link")}</Link>
+          <Link href="/producer/dashboard/edit#delivery" className="font-semibold underline whitespace-nowrap">{t("no_delivery_price_link")}</Link>
         </InlineMessage>
       )}
       <div className="flex flex-wrap gap-2">
