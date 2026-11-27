@@ -90,7 +90,9 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     now = utc_now()
-    apply_badge(producer, req.badge_code, body.expires_on, now)  # MEH-3081: shared with grant
+    apply_badge(
+        producer, req.badge_code, body.expires_on, now
+    )  # MEH-3081: shared with grant
 
     req.status = "approved"  # type: ignore[assignment]
     req.reviewed_by = user.id
@@ -115,7 +117,11 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     return {"detail": "badge אושר"}
 
 
-@router.post("/producers/{producer_id}/kashrut", response_model=KashrutRequestOut, status_code=201)
+@router.post(
+    "/producers/{producer_id}/kashrut",
+    response_model=KashrutRequestOut,
+    status_code=201,
+)
 @limiter.limit("60/minute")
 def grant_kashrut_badge(
     request: Request,
@@ -137,7 +143,9 @@ def grant_kashrut_badge(
     # ADR-036: the public cert proxy never serves an organizer's certificate,
     # so a badge here would be one with no certificate behind it.
     if producer.kind == "organizer":
-        raise HTTPException(status_code=409, detail="מארגן שווקים ואירועים לא מקבל תג כשרות")
+        raise HTTPException(
+            status_code=409, detail="מארגן שווקים ואירועים לא מקבל תג כשרות"
+        )
 
     # MEH-3247: the same ownership call every image-storing route makes (an
     # admin passes it; kept so the route walk needs no exemption).

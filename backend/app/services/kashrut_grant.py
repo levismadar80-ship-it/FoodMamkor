@@ -28,13 +28,14 @@ def certificate_expiry(expires_on: date) -> datetime:
     return end_of_day.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def apply_badge(producer: Producer, badge_code: str, expires_on: date, now: datetime) -> None:
+def apply_badge(
+    producer: Producer, badge_code: str, expires_on: date, now: datetime
+) -> None:
     """Add `badge_code` and set the business's one expiry. Caller commits."""
     new_expiry = certificate_expiry(expires_on)
     live = producer.kashrut_expires_at is None or producer.kashrut_expires_at >= now
     other_live_badges = live and any(
-        code != badge_code
-        for code in (producer.kashrut_badges or [])
+        code != badge_code for code in (producer.kashrut_badges or [])
     )
 
     badges = list(producer.kashrut_badges or [])
