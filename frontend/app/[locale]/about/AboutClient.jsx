@@ -295,6 +295,8 @@ export default function AboutPage() {
             <p>{t("story.p3")}</p>
             <p>{t("story.p4")}</p>
             <p>{t("story.p5")}</p>
+            {/* MEH-3988: the invitation that closes the story (Sapir 28/11). */}
+            <p className="font-headline-md font-bold text-primary">{t("story.p6")}</p>
             {/* SIGNATURE — the personal anchor that replaces the face.
                 Accent-gold rule on the inline-start edge, square corners.
 
@@ -491,6 +493,42 @@ export default function AboutPage() {
           <ExitLink href="/map" testId="about-exit-benefits">
             {tAbout("exit.benefits")}
           </ExitLink>
+        </div>
+      </FadeInSection>
+
+      {/* ======== MEH-3988 — About the logo (Sapir 28/11) ========
+          The five-seed mark (MEH-637) with its meaning. Sits on the same
+          background-alt run as Benefits and Values; the mark sits on a
+          background-tone panel so it reads as a mounted object. Static, no
+          chapter number: it is an aside to chapter 03, not a chapter. */}
+      <FadeInSection as="section" data-testid="about-logo" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-5xl mx-auto px-4 md:px-12 flex flex-col md:flex-row md:items-center gap-8 md:gap-16">
+          <figure className="m-0 md:flex-1 flex flex-col items-center gap-3 rounded-2xl bg-background px-4 py-7 md:py-12">
+            <Image
+              src="/logo.svg"
+              alt={t("logo.image_alt")}
+              width={220}
+              height={220}
+              unoptimized
+              className="w-[140px] h-[140px] md:w-[220px] md:h-[220px]"
+            />
+            <figcaption className="font-headline-display font-black text-primary text-3xl md:text-4xl leading-none">
+              {t("logo.wordmark")}
+            </figcaption>
+          </figure>
+          <div className="md:flex-[1.3] min-w-0">
+            <Chapter label={t("logo.eyebrow")} />
+            <SectionHeading className="leading-tight !mb-5">
+              {t("logo.heading")}
+            </SectionHeading>
+            <div className="font-body-md text-lg text-text/90 leading-[1.75] space-y-4">
+              <p>{t("logo.body1")}</p>
+              <p>{t("logo.body2")}</p>
+            </div>
+            <p className="mt-5 pt-5 border-t border-accent/35 font-headline-md font-bold text-primary text-xl md:text-2xl leading-snug">
+              {t("logo.closing")}
+            </p>
+          </div>
         </div>
       </FadeInSection>
 

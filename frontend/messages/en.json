@@ -3713,11 +3713,12 @@
         "image_aria": "Photo of Sapir, co-founder of Mehamakor",
         "image_alt": "Sapir, co-founder of Mehamakor",
         "greeting": "Why we started Mehamakor",
-        "p1": "It was always important to us to know where our food comes from. We wanted to buy better — healthier, more local.",
+        "p1": "We love good food, and even more the people behind it. It always mattered to us to know where our food comes from, and we wanted to eat better — healthier, more local.",
         "p2": "But we quickly discovered that it isn't accessible. To find truly good food, we had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
         "p3": "And then it hit us: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
-        "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
+        "p4": "A few minutes from home, a farmer picks vegetables in the morning. In the next neighborhood, a small bakery bakes sourdough. Each of them has a story, and most people have never heard it. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
+        "p5": "That's where Mehamakor was born. Our goal is simple: to give these stories a place. One place to meet the people behind them and find local food close to home. Without searching for hours.",
+        "p6": "We invite you to get to know them with us.",
         "caption1": "Co-founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
         "caption3": "The criteria — we write them from what we ourselves look for in food."
       },
@@ -3735,9 +3736,18 @@
           "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Local community",
-          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
+          "title": "A choice that supports",
+          "body": "Every choice you make goes straight to the businesses — not to a big chain, but to someone nearby."
         }
+      },
+      "logo": {
+        "eyebrow": "The story behind the mark",
+        "heading": "About the logo",
+        "image_alt": "The Mehamakor logo: five pomegranate seeds",
+        "wordmark": "Mehamakor",
+        "body1": "Five pomegranate seeds, each in its own colour, touching to form one flower. The pomegranate is one of the Seven Species, a fruit of this land. Each seed stands on its own, and together they are whole.",
+        "body2": "So are the businesses here: each with its own story.",
+        "closing": "And every time you choose one of them, you help this flower grow."
       },
       "testimonials": {
         "heading": "The stories yet to be written here",
@@ -3747,7 +3757,7 @@
       "values": {
         "eyebrow": "Our criteria",
         "heading": "How we choose",
-        "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
+        "intro": "Behind every product there's a person, a family, a small business and a story. Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
         "transparency": {
           "title": "Transparency",
           "body": "You should know who's behind the product you're buying. We'll always tell you who runs the business, where they're located, and how they work."
@@ -3758,7 +3768,7 @@
         },
         "quality": {
           "title": "Quality",
-          "body": "Real ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
+          "body": "Ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
         },
         "safety": {
           "title": "Safety",
@@ -3794,7 +3804,7 @@
       "messages_link": "How does contacting businesses work?",
       "contact": {
         "heading": "Talk to us",
-        "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
+        "subtitle": "Know a business you love? Have a question or an idea? We'd love to hear from you.",
         "name_label": "Full name",
         "name_placeholder": "Your full name",
         "email_label": "Email",
