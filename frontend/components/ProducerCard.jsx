@@ -280,8 +280,8 @@ function useBadgesThatFit(lineRef, earned) {
   return Math.min(shown, cap);
 }
 
-/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode, imagePriority?: "high" | "eager" }} props */
-export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false, imagePriority = undefined }) {
+/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode, imagePriority?: "high" | "eager", imageDecoding?: "sync" }} props */
+export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false, imagePriority = undefined, imageDecoding = undefined }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
@@ -468,6 +468,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 // docs rule it out when several images could be the LCP.
                 {...(imagePriority ? { loading: "eager" } : {})}
                 {...(imagePriority === "high" ? { fetchPriority: "high" } : {})}
+                // MEH-3983: a grid the reader is coming BACK to passes "sync".
+                // next/image decodes async by default, so a remounted card
+                // painted its empty tile first and the cached photo a frame
+                // later: every photo on screen blinked on Back (iOS Safari).
+                {...(imageDecoding ? { decoding: imageDecoding } : {})}
                 onError={() => setImgError(true)}
               />
             ) : (
