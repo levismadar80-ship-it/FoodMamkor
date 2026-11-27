@@ -121,6 +121,7 @@ def test_the_keys_are_the_whitelist(db):
         "about",
         "now_in_israel",
         "opening_hours",
+        "visits_by_arrangement",  # MEH-2447: her public «בתיאום מראש» answer
         "open_now",
         "next_opening",  # MEH-3504: derived from the public hours
         "special_hours",

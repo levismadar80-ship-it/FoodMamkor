@@ -139,3 +139,25 @@ export function isSlugShaped(slug) {
   if (SCANNER_PREFIXES.some((p) => s.startsWith(p))) return false;
   return SLUG_SHAPE.test(s);
 }
+
+// MEH-3914: the address an admin types for a business, in the shape the
+// backend stores (slug_utils.is_latin_slug, LATIN_SLUG_MAX 40) after the same
+// normalising as _guard_supplied_slug (lower-case, spaces → hyphens).
+// Checked per hyphen-separated part, so no nested-quantifier regex
+// (security/detect-unsafe-regex): non-empty parts = single inner hyphens.
+const LATIN_SLUG_MAX = 40;
+const LATIN_PART = /^[a-z0-9]+$/;
+
+/** @param {string} raw */
+export function normaliseLatinSlug(raw) {
+  return raw.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+/** @param {string} slug an already-normalised slug */
+export function isLatinSlug(slug) {
+  return (
+    slug.length > 0 &&
+    slug.length <= LATIN_SLUG_MAX &&
+    slug.split("-").every((part) => LATIN_PART.test(part))
+  );
+}

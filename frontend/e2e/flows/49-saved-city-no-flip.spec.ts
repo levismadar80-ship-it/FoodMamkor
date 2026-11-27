@@ -1,5 +1,6 @@
 import { test, expect } from "./_cloudinary-stub";
 import { settledField } from "./_settled-field";
+import { stableCatalog } from "./_stable-catalog";
 
 /**
  * MEH-3857 — a city the visitor saved on the site (localStorage `user_city`)
@@ -74,12 +75,14 @@ test.describe("MEH-3857 the saved city is offered, never filled in", () => {
   test("business page: the delivery checker stays empty, with no verdict, after the load", async ({ page }) => {
     const list = await page.request.get("/api/producers");
     expect(list.ok(), "GET /producers must respond 2xx").toBeTruthy();
-    const producers = (await list.json()) as Array<{
+    // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+    const producers = stableCatalog((await list.json()) as Array<{
       id: string | number;
+      name?: string;
       offers_delivery?: boolean;
       delivery_nationwide?: boolean;
       delivery_areas?: Array<{ city?: string }>;
-    }>;
+    }>);
     const producer = producers.find(
       (p) => p.offers_delivery && !p.delivery_nationwide && (p.delivery_areas || []).some((a) => a?.city),
     );

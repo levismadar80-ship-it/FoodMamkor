@@ -56,24 +56,55 @@ export const FULFILLMENT_ICON_PX = 13;
  * Keys: with ONE service the delivery / pickup keys keep their `_only` names
  * (MEH-2046 test ids); with two or more each tag uses its bare key.
  * «בתיאום מראש» remains the only neutral tag — the one cell no filter returns.
+ *
+ * MEH-2447: `byArrangement` is the owner's own answer («איסוף או ביקור בתיאום
+ * מראש», producers.by_arrangement AND has_physical_location). It is a fourth
+ * service: it counts toward `solo`, so «משלוח בלבד» never sits beside it, and
+ * it shows the same neutral tag the "nothing declared" cell falls back to.
  */
-export function fulfillmentTags({ delivers, offersPickup, storeWithHours }, t) {
-  const count = [delivers, offersPickup, storeWithHours].filter(Boolean).length;
+export function fulfillmentTags({ delivers, offersPickup, storeWithHours, byArrangement }, t) {
+  const arranged = { key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true };
+  const count = [delivers, offersPickup, storeWithHours, byArrangement].filter(Boolean).length;
   if (count === 0) {
-    return [{ key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true }];
+    return [arranged];
   }
   const solo = count === 1;
   const tags = [];
   if (delivers) {
     const key = solo ? "delivery_only" : "delivery";
-    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Truck });
+    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Truck, neutral: false });
   }
   if (offersPickup) {
     const key = solo ? "pickup_only" : "pickup";
-    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Package });
+    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Package, neutral: false });
   }
   if (storeWithHours) {
-    tags.push({ key: "on_site", label: t("fulfillment.on_site"), Icon: Storefront });
+    tags.push({ key: "on_site", label: t("fulfillment.on_site"), Icon: Storefront, neutral: false });
+  }
+  if (byArrangement) {
+    tags.push(arranged);
   }
   return tags;
+}
+
+/**
+ * MEH-2447: «where the customer comes to you» as two exclusive checkboxes
+ * over the pair (has_physical_location, by_arrangement): «בשעות קבועות»
+ * (place, walk-in) and «בתיאום מראש» (place, arranged). Shared by the owner's
+ * DeliveryCard and the admin ProducerForm so both write the same shape.
+ * @param {boolean} hasPhysical @param {boolean} byArrangement
+ */
+export function placeChecks(hasPhysical, byArrangement) {
+  return { onsite: !!hasPhysical && !byArrangement, arranged: !!hasPhysical && !!byArrangement };
+}
+
+/**
+ * The pair after one of the two checkboxes changes. Ticking one unticks the
+ * other; unticking either leaves no place at all.
+ * @param {"onsite"|"arranged"} axis @param {boolean} checked
+ */
+export function togglePlace(axis, checked) {
+  return checked
+    ? { hasPhysical: true, byArrangement: axis === "arranged" }
+    : { hasPhysical: false, byArrangement: false };
 }

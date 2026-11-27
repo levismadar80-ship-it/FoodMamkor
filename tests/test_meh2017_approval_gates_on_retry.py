@@ -37,7 +37,7 @@ def _admin(db):
 
 def _approve(client, db, producer):
     return client.post(
-        f"/admin/producers/{producer.id}/approve",
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
         headers=auth_header(_admin(db)),
     )
 

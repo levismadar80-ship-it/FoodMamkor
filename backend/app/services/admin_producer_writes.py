@@ -32,6 +32,7 @@ from app.schemas.schemas import (
 from app.services import delivery_zones  # MEH-3484
 from app.services import indexnow  # MEH-2852
 from app.services import retired_slugs  # MEH-2528
+from app.services.admin_create_duplicates import refuse_duplicate_create  # MEH-3883
 from app.services.admin_producer_reads import attach_has_owner as _attach_has_owner
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
@@ -230,6 +231,9 @@ def admin_create_producer_row(
     # transliterated); a typed slug must be Latin too (_guard_supplied_slug).
     if data.slug:
         _guard_supplied_slug(data.slug)
+    # MEH-3883: a business we already have (phone, email, IG, website,
+    # Facebook) answers 409 with the list, before anything is written.
+    refuse_duplicate_create(db, data)
     slug = (
         _slugify(data.slug)
         if data.slug
@@ -283,6 +287,7 @@ def admin_create_producer_row(
         # MEH-213 — location mode
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
+        by_arrangement=data.by_arrangement,  # MEH-2447
         delivery_nationwide=data.delivery_nationwide,
         # MEH-1255: nationwide exclusion list — schema validator already
         # rejected excluded-without-nationwide on create.

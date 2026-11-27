@@ -119,6 +119,20 @@ test.describe("MEH-217 chunk 2 — admin producers tab", () => {
     await expect(headers).toHaveCount(7);
   });
 
+  test("MEH-3917 — the toolbar fits a 1280 screen with the admin sidebar open", async ({ page }) => {
+    // The toolbar was one non-wrapping row: 1437 px at 1280, so «ייצוא» and
+    // «+ בית עסק חדש» sat past the page's left edge and a dialog scrolled
+    // the page sideways. Measured on the page, not on the toolbar alone: any
+    // overflow anywhere on this screen is the regression.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      )
+      .toBeLessThanOrEqual(0);
+    await expect(page.locator('a[href$="/admin/producers/new"]').first()).toBeInViewport();
+  });
+
   test("§2A — completeness indicator renders with a hover explanation", async ({ page }) => {
     // Every row's first cell carries exactly one completeness dot
     // (CompletenessBadge — red/yellow/green Circle, always exactly one of

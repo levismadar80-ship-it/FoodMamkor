@@ -1,5 +1,6 @@
 import { test, expect } from "./_cloudinary-stub";
 import { settledField } from "./_settled-field";
+import { stableCatalog } from "./_stable-catalog";
 
 /**
  * MEH-1536 — "מגיעים אלייך?" delivery checker on the producer detail page.
@@ -32,7 +33,8 @@ async function fetchProducers(page: import("@playwright/test").Page): Promise<Pr
   expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
   const body = await res.json();
   expect(Array.isArray(body), "GET /producers must return an array").toBe(true);
-  return body as Producer[];
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  return stableCatalog(body as Producer[]);
 }
 
 const namedAreas = (p: Producer) => (p.delivery_areas || []).filter((a) => !!a?.city);

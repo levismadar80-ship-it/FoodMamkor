@@ -38,6 +38,13 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.17 (27/11): four lines for businesses. Two moved here from
+  // docs/release/whats-new-pending.md (experiences course #5383, owner
+  // assistant #5387); «בתיאום מראש» as the owner's own answer (#5412,
+  // MEH-2447); the business's own prepay link and «סמן כשולם» on surprise
+  // bags and group buys (#5379, #5385). Copy checked by the release thread
+  // under Sapir's standing approval of 26/11 23:15 («מאשרת מה שתחליט»).
+  { version: "1.5.17", key: "v1_5_17", date: "2026-11-27", items: 4 },
   // 1.5.16 (26/11): pasting a list of delivery cities (#5353) improves an
   // existing field; the admin events panel (#5356) is for the team, not for
   // businesses; the rest is tests and docs. Nothing new for businesses, so

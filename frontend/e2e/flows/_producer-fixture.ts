@@ -38,6 +38,7 @@
  */
 import { expect } from "@playwright/test";
 import type { APIRequestContext, Page } from "@playwright/test";
+import { stableCatalog } from "./_stable-catalog";
 
 export type FeedProducer = {
   id: string;
@@ -112,7 +113,8 @@ export async function pickProducer(
   // Lexicographic BY DESIGN — the goal is determinism, not numeric order. Two
   // runs against the same feed must choose the same producer; whether "9" sorts
   // after "10" is irrelevant to that, and these ids are UUIDs in any case.
-  const matching = feed
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  const matching = stableCatalog(feed)
     .filter((p) => p && p.id && requirement.matches(p))
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
 

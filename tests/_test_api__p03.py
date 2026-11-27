@@ -188,7 +188,7 @@ class TestAdminFlows:
             phone_verified=True,
         )
         resp = client.post(
-            f"/admin/producers/{p.id}/approve", headers=auth_header(admin)
+            f"/admin/producers/{p.id}/approve?slug=test-farm", headers=auth_header(admin)
         )
         assert resp.status_code == 200
         db.refresh(p)
