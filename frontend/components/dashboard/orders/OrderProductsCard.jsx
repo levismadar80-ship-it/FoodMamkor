@@ -94,8 +94,8 @@ function ProductRow({ product, onSaved, help = undefined, pending = false, onPen
 /**
  * The unit beside «כמה ליום»: the price units' own words, «× 100 גרם» apart.
  * @param {string} priceUnit
- * @param {(key: string) => string} t this card's translator
- * @param {(key: string) => string} tUnits producer.offer.units
+ * @param {{ t: (key: string) => string, tUnits: (key: string) => string }} tr
+ *   t: this card's translator; tUnits: producer.offer.units
  */
 function unitLabel(priceUnit, { t, tUnits }) {
   if (priceUnit === "100g") return t("limit_unit_100g");
