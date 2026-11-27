@@ -71,6 +71,9 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 - logged a `ChunkLoadError`, unless that same chunk's request failed with no
   response or mid-way through a 2xx body: WebKit cancels the chunks of a page
   the test leaves while it loads (MEH-3907). A chunk that got a 404 still fails;
+  optional add-ons (the chat, the mini maps) no longer throw it at all: they
+  load through `frontend/lib/optional-chunk.js` and render nothing (MEH-3946),
+  so a `ChunkLoadError` now points at a chunk the page needs;
 - shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
   right after a click or key press excluded; same limit as `lighthouserc.cjs`).
   The failure names each shifted element with its old and new box

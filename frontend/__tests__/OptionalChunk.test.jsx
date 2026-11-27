@@ -23,4 +23,17 @@ describe("optionalChunk (MEH-3946)", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     expect(String(warn.mock.calls[0][0])).toContain("Chat");
   });
+
+  it("webpack's message form counts as a failed download too", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mod = await optionalChunk(() => Promise.reject(new Error("Loading chunk 42 failed.")), "Map")();
+    expect(typeof mod.default).toBe("function");
+  });
+
+  it("a module that loaded and then threw still rejects (a real bug reaches the error page)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const bug = new TypeError("L.map is not a function");
+    await expect(optionalChunk(() => Promise.reject(bug), "MiniMap")()).rejects.toBe(bug);
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

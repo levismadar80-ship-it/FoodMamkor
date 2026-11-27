@@ -12,6 +12,13 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * manual/producer-detail:418, 27/11). lib/optional-chunk.js now turns a
  * failed add-on download into "render nothing".
  *
+ * page.route here is fault injection of the subject (the chat chunk's own
+ * download), not an API mock: no backend answer is replaced (e2e/CLAUDE.md).
+ *
+ * The load guard stays on: its CONSOLE_ALLOW already admits the browser's
+ * "Failed to load resource" line for the aborted file, so it still reds a
+ * hydration error, a pageerror or a regression back to console.error.
+ *
  * The chunk is found by its content (the launcher's test id), not by its
  * hashed file name, which changes with every build.
  *
@@ -39,10 +46,6 @@ async function blockChatChunk(page: Page) {
 }
 
 test.describe("MEH-3946 a chat chunk that fails to load does not take the page down", () => {
-  // The aborted chunk is a failed resource load by design; the guard would
-  // count the browser's own "Failed to load resource" line for it.
-  test.use({ loadGuard: "off" });
-
   test("chat chunk blocked: the page stays, with no launcher", async ({ page }) => {
     const blocked = await blockChatChunk(page);
     await page.goto("/producers", { waitUntil: "load" });
@@ -56,7 +59,7 @@ test.describe("MEH-3946 a chat chunk that fails to load does not take the page d
       .then(() => true)
       .catch(() => false);
     expect(crashed, "the error screen replaced the page after the chat chunk failed").toBe(false);
-    await expect(page.locator("main h1").first()).toBeVisible();
+    await expect(page.getByTestId("producers-search-form")).toBeVisible();
     await expect(page.getByTestId("chat-launcher")).toHaveCount(0);
   });
 
