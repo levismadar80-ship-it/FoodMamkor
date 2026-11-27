@@ -4,6 +4,9 @@
  * name `items.<key>` in the messages namespace of each list. Kept here, not in
  * the page files, so the test reads the same lists the pages render.
  */
+/** MEH-3949: the id of the FAQ section, the target of every HubFaqLink. */
+export const HUB_FAQ_ANCHOR = "faq";
+
 export const HUB_FAQ = Object.freeze({
   groupBuys: { namespace: "group_buys.faq", keys: ["what", "pay", "miss", "cancel", "pickup", "no_show", "mine"], path: "/group-buys" },
   rescue: { namespace: "rescue.faq", keys: ["contents", "allergens", "pay", "cancel", "no_show", "mine"], path: "/rescue" },

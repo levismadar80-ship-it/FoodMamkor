@@ -8684,5 +8684,10 @@
     "badge_stopped": "Stopped weekly order",
     "business_line": "Repeats every {day} at {time}. Next week's order is made after this week's time.",
     "failed": "We couldn't stop it. Please try again."
+  },
+  "hub_faq": {
+    "list_link": "Frequently asked questions",
+    "detail_groupBuys": "More questions: cancelling, pickup, payment",
+    "detail_rescue": "More questions: what's inside, cancelling, pickup"
   }
 }
