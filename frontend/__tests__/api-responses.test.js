@@ -129,6 +129,12 @@ describe("re-exported producer schemas", () => {
   describe("ProducersFeedSchema (runtime feed, per row)", () => {
     const good = { id: 1, name: "טוב" };
     const bad = { id: 2 }; // name missing
+    // MEH-3968: ProducerCard reads it; an undeclared key is stripped.
+    it("keeps delivery_nationwide, which the card's fee reads", () => {
+      const r = ProducersFeedSchema.safeParse([{ ...good, delivery_nationwide: true }]);
+      expect(r.data?.[0]?.delivery_nationwide).toBe(true);
+    });
+
     it("keeps the valid rows and drops the broken one", () => {
       const r = ProducersFeedSchema.safeParse([good, bad, { id: 3, name: "גם טוב" }]);
       expect(r.success).toBe(true);
