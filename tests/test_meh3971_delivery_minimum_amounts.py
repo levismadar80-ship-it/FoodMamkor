@@ -64,3 +64,26 @@ def test_the_quote_route_carries_the_amounts(client, db, flag_on):
         res.json()["detail"]
         == "המינימום להזמנה במשלוח הוא 100\u00a0₪. חסרים עוד 72\u00a0₪."
     )
+
+
+def test_a_business_wide_minimum_names_its_amount_too(client, db, flag_on):
+    # No zone row: the minimum is the business's own (MEH-3511).
+    shop = Shop(db)
+    shop.producer.offers_delivery = True
+    shop.producer.delivery_fee = 15
+    shop.producer.delivery_cities = ["חדרה"]
+    shop.producer.delivery_min_order = 150
+    db.commit()
+    res = client.post(
+        "/product-orders/quote",
+        json={
+            "producer_id": str(shop.producer.id),
+            "items": [{"product_id": str(shop.bread.id), "qty": 1}],
+            "fulfilment": "delivery",
+            "delivery_city": "חדרה",
+        },
+    )
+    assert res.status_code == 409, res.text
+    assert res.json()["detail"] == (
+        "המינימום להזמנה במשלוח הוא 150 ₪. חסרים עוד 122 ₪."
+    )
