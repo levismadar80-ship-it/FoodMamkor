@@ -12,9 +12,16 @@
  * History:  MEH-3959 (creation).
  */
 
-/** @param {string | null | undefined} s */
-function squash(s) {
-  return (s || "").split(/\s+/).filter(Boolean).join(" ");
+/** @param {string | null | undefined} text */
+function squash(text) {
+  return (text || "").split(/\s+/).filter(Boolean).join(" ");
+}
+
+/** Drops trailing spaces, commas and full stops, without a regex (linear). @param {string} text */
+function trimEnd(text) {
+  let end = text.length;
+  while (end > 0 && " ,.".includes(text[end - 1])) end -= 1;
+  return text.slice(0, end);
 }
 
 /**
@@ -25,7 +32,7 @@ function squash(s) {
  * @returns {string}
  */
 export function addressLine(address, city) {
-  const street = squash(address).replace(/[\s,.]+$/, "");
+  const street = trimEnd(squash(address));
   const town = squash(city);
   if (street && town) {
     const last = street.split(",").pop()?.trim();
