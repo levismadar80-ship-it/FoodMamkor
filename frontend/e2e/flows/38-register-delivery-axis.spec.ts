@@ -118,6 +118,40 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
     await expect(page.getByTestId("register-fulfilment-error")).toHaveCount(0);
   });
 
+  // MEH-3918: the «כבר יש עמוד לעסק הזה» answer lands late (600 ms debounce,
+  // then the backend). Held here until after «הבא», as on a slow staging
+  // backend, it must push nothing on the form: the question and «הבא» stay put.
+  test("a late «already has a page» notice moves neither the question nor «הבא»", async ({ page }) => {
+    await mockBackend(page, { body: null });
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route("**/producer-identity-check", async (route: Route) => {
+      await held;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ match: { owner_email: null } }) });
+    });
+    let before;
+    try {
+      await reachDetails(page);
+      await page.getByTestId("register-details-next").click();
+      await expect(page.getByTestId("register-fulfilment-error")).toBeVisible();
+      before = {
+        question: await page.getByTestId("register-fulfilment").boundingBox(),
+        next: await page.getByTestId("register-details-next").boundingBox(),
+      };
+    } finally {
+      release(); // never leave the held route pending past a failed step
+    }
+    await expect(page.getByTestId("register-identity-check")).toBeVisible();
+    const after = {
+      question: await page.getByTestId("register-fulfilment").boundingBox(),
+      next: await page.getByTestId("register-details-next").boundingBox(),
+    };
+    expect(before.question && after.question, "the question renders").toBeTruthy();
+    // 0.5px: sub-pixel rounding only; the bug moved them by the notice's height.
+    expect(after.question!.y, "the notice must not push the question down").toBeCloseTo(before.question!.y, 0);
+    expect(after.next!.y, "the notice must not push «הבא» down").toBeCloseTo(before.next!.y, 0);
+  });
+
   for (const c of CASES) {
     test(`«${c.name}» reaches the POST body as its own pair of flags`, async ({ page }) => {
       const capture = { body: null as unknown };
