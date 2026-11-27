@@ -130,6 +130,13 @@ def _has_location(producer: Producer) -> bool:
     registration path, so reading it here would evaluate empty for every
     business and silently block every delivery-only submission.
     """
+    # MEH-3977: sold only through other stores (no place, no delivery) — the
+    # store names are its location signal; it has no coordinates to give.
+    if (
+        producer.has_physical_location is False  # type: ignore[comparison-overlap]
+        and not producer.offers_delivery
+    ):
+        return any((name or "").strip() for name in (producer.partner_stores or []))
     delivery_only = producer.has_physical_location is False and bool(  # type: ignore[comparison-overlap]
         producer.offers_delivery
     )

@@ -40,6 +40,7 @@ from app.services.availability_validation import (  # MEH-2758
 )
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
+    ensure_location_mode,
     ensure_nationwide_requires_delivery,
 )
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -292,6 +293,7 @@ def admin_create_producer_row(
         # MEH-1255: nationwide exclusion list — schema validator already
         # rejected excluded-without-nationwide on create.
         delivery_excluded_cities=data.delivery_excluded_cities,
+        partner_stores=data.partner_stores,  # MEH-3977
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
@@ -389,6 +391,7 @@ def admin_update_producer_row(
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
+    ensure_location_mode(producer, payload)  # MEH-3977
 
     # MEH-3026: the MEH-2707 / MEH-999 licence gate on update is gone — adding
     # a licensed category without a licence number no longer 422s.

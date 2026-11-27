@@ -115,6 +115,10 @@ export function isDeliveryOnly(producer) {
  * reading it here would evaluate empty for every one of them.
  */
 function hasLocation(producer) {
+  // MEH-3977: sold only through other stores — the names are the signal.
+  if (producer?.has_physical_location === false && !producer?.offers_delivery) {
+    return (producer?.partner_stores || []).some((name) => (name || "").trim());
+  }
   if (isDeliveryOnly(producer)) {
     if (producer?.delivery_nationwide) return true;
     return (producer?.delivery_areas || []).some((area) =>

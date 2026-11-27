@@ -33,6 +33,7 @@ from app.services.auth_notifications import (
 )
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
+    ensure_location_mode,
     ensure_nationwide_requires_delivery,
 )
 from app.services.farmer_declaration import apply_farmer_declaration_on_update
@@ -400,6 +401,9 @@ def update_owner_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
+        # MEH-3977: «נמכר דרך חנויות אחרות» — names normalised in
+        # schemas/partner_stores.py, effective state in ensure_location_mode.
+        "partner_stores",
         # MEH-2142 (MEH-1938 batch B3): `opening_hours` was REMOVED from this
         # set. Same disposition and the same standing rule as the two blocks
         # below — the column stays, `admin.py` / `producer_import.py` / the
@@ -511,6 +515,7 @@ def update_owner_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
+    ensure_location_mode(producer, payload)  # MEH-3977
 
     # MEH-2137 switch: resolve + authorize the featured-product vote.
     _resolve_top_product(db, producer, payload)

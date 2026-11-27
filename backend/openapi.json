@@ -11334,6 +11334,14 @@
             ],
             "title": "Owner Bio"
           },
+          "partner_stores": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Partner Stores",
+            "type": "array"
+          },
           "phone": {
             "anyOf": [
               {
@@ -12283,6 +12291,14 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "partner_stores": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Partner Stores",
+            "type": "array"
           },
           "payment_info": {
             "anyOf": [
@@ -13309,6 +13325,21 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "partner_stores": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partner Stores"
           },
           "payment_info": {
             "anyOf": [
@@ -14398,6 +14429,14 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "partner_stores": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Partner Stores",
+            "type": "array"
           },
           "payment_info": {
             "anyOf": [
@@ -17224,6 +17263,14 @@
             ],
             "title": "Owner Photo Url"
           },
+          "partner_stores": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Partner Stores",
+            "type": "array"
+          },
           "payment_info": {
             "anyOf": [
               {
@@ -18992,6 +19039,21 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "partner_stores": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partner Stores"
           },
           "payment_info": {
             "anyOf": [

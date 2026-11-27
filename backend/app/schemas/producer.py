@@ -20,6 +20,11 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from app.schemas.partner_stores import (
+    LOCATION_MODE_MESSAGE,
+    MAX_PARTNER_STORES,
+    normalize_partner_stores,
+)
 from app.limits import (
     DELIVERY_CITIES_DETAIL,
     DELIVERY_ZONES_DETAIL,
@@ -202,6 +207,15 @@ class ProducerAdminCreate(BaseModel):
     delivery_excluded_cities: list[str] = Field(
         default_factory=list, max_length=MAX_DELIVERY_CITIES
     )
+    # MEH-3977: «נמכר דרך חנויות אחרות» — store names, normalised below.
+    partner_stores: list[str] = Field(
+        default_factory=list, max_length=MAX_PARTNER_STORES
+    )
+
+    @field_validator("partner_stores", mode="before")
+    @classmethod
+    def _partner_stores_meh3977(cls, v: Any) -> Any:
+        return normalize_partner_stores(v)
 
     # MEH-1297: cap categories (admin create); 5 since MEH-2925.
     @field_validator("category_ids")
@@ -289,8 +303,13 @@ class ProducerAdminCreate(BaseModel):
 
     @model_validator(mode="after")
     def _validate_location_mode(self) -> Self:
-        if not self.has_physical_location and not self.offers_delivery:
-            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
+        # MEH-3977: partner stores alone are a valid way to reach customers.
+        if (
+            not self.has_physical_location
+            and not self.offers_delivery
+            and not self.partner_stores
+        ):
+            raise ValueError(LOCATION_MODE_MESSAGE)
         if self.by_arrangement and not self.has_physical_location:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
@@ -533,6 +552,9 @@ class ProducerUpdate(BaseModel):
     delivery_excluded_cities: list[str] | None = Field(
         None, max_length=MAX_DELIVERY_CITIES
     )
+    # MEH-3977: «נמכר דרך חנויות אחרות». [] clears; explicit null is refused
+    # (NOT NULL column) by the validator below.
+    partner_stores: list[str] | None = Field(None, max_length=MAX_PARTNER_STORES)
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = Field(None, max_length=MAX_SMALL_LIST)
     # MEH-291 — the 4-value availability enum; since MEH-2272 the only
@@ -797,13 +819,22 @@ class ProducerUpdate(BaseModel):
         delivery_time.check_range(self.delivery_days_min, self.delivery_days_max)
         return self
 
+    @field_validator("partner_stores", mode="before")
+    @classmethod
+    def _partner_stores_meh3977(cls, v: Any) -> Any:
+        if v is None:
+            raise ValueError("ערך לא תקין לרשימת החנויות")
+        return normalize_partner_stores(v)
+
     @model_validator(mode="after")
     def _validate_location_mode(self) -> Self:
         hp = self.has_physical_location
         od = self.offers_delivery
         # Only validate when both are explicitly set (partial updates allowed)
-        if hp is not None and od is not None and not hp and not od:
-            raise ValueError("חייב לפחות אחד: מקום שהלקוחות מגיעים אליו, או משלוחים")
+        # MEH-3977: partner stores sent in the same body count; the stored
+        # value is read by delivery_validation.ensure_location_mode.
+        if hp is not None and od is not None and not hp and not od and not self.partner_stores:
+            raise ValueError(LOCATION_MODE_MESSAGE)
         if self.by_arrangement and hp is False:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")
         # MEH-2447: explicit null would hit the NOT NULL column as a 500.
