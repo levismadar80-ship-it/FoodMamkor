@@ -240,6 +240,8 @@ class BuyerOrderOut(_OrderOut):
     can_cancel: bool
     # MEH-3620: the verified-review link, only once the order was handed.
     review_url: str | None = None
+    # MEH-3976: what the business wrote when it declined or cancelled.
+    business_note: str | None = None
 
 
 class OrderCreatedOut(BuyerOrderOut):

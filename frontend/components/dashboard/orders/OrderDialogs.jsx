@@ -50,8 +50,8 @@ function useAction({ order, onDone }) {
   return /** @type {const} */ ([busy, error, run]);
 }
 
-/** @param {{ id: string, title: string, busy: boolean, error: string|null, onClose: () => void, onSubmit: (e: any) => void, children: any }} props */
-function FormDialog({ id, title, busy, error, onClose, onSubmit, children }) {
+/** @param {{ id: string, title: string, busy: boolean, error: string|null, onClose: () => void, onSubmit: (e: any) => void, children: any, submitLabel?: string }} props */
+function FormDialog({ id, title, busy, error, onClose, onSubmit, children, submitLabel }) {
   const t = useTranslations("dashboard.producer.orders.actions");
   const submit = (/** @type {any} */ e) => {
     e.preventDefault();
@@ -65,7 +65,7 @@ function FormDialog({ id, title, busy, error, onClose, onSubmit, children }) {
         {error && <InlineMessage tone="error">{error}</InlineMessage>}
         <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="ghost" type="button" onClick={onClose} data-autofocus>{t("back")}</Button>
-          <Button type="submit" loading={busy}>{t("send")}</Button>
+          <Button type="submit" loading={busy}>{submitLabel ?? t("send")}</Button>
         </div>
       </div>
     </Dialog>
@@ -183,6 +183,29 @@ export function CancelDialog({ order, onClose, onDone }) {
     <FormDialog id="order-cancel-dialog" title={t("cancel_title")} busy={busy} error={error} onClose={onClose} onSubmit={submit}>
       <p className="text-sm text-fg-muted">{t("cancel_lead")}</p>
       <Textarea label={t("cancel_note")} value={note} maxLength={500} onChange={(/** @type {any} */ e) => setNote(e.target.value)} />
+    </FormDialog>
+  );
+}
+
+/**
+ * MEH-3976: «הלקוח לא הגיע» closes the order for good, and two in 90 days
+ * stop that phone from ordering on the site, so it asks first.
+ * @param {{ order: any, onClose: () => void, onDone: (order: any) => void }} props
+ */
+export function NoShowDialog({ order, onClose, onDone }) {
+  const t = useTranslations("dashboard.producer.orders.actions");
+  const [busy, error, run] = useAction({ order, onDone });
+  return (
+    <FormDialog
+      id="order-no-show-dialog"
+      title={t("no_show_title")}
+      submitLabel={t("no_show_confirm")}
+      busy={busy}
+      error={error}
+      onClose={onClose}
+      onSubmit={() => run({ action: "no-show" })}
+    >
+      <p className="text-sm text-fg-muted">{t("no_show_lead")}</p>
     </FormDialog>
   );
 }
