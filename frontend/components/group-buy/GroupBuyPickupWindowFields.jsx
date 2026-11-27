@@ -8,7 +8,8 @@
  * a group buy now can too («איסוף: שישי 5.12, 09:00–13:00»).
  */
 import { useTranslations } from "next-intl";
-import Input from "@/components/ui/Input";
+import DateTimeField from "@/components/ui/DateTimeField";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { israelWallClockToIso } from "@/lib/dates";
 
@@ -33,8 +34,11 @@ export default function GroupBuyPickupWindowFields({ start, endTime, onStart, on
   return (
     <fieldset className="sm:col-span-2 grid grid-cols-2 gap-3" data-testid="gb-pickup-window">
       <legend className="text-sm font-medium text-text mb-1">{t("pickup_window_legend")}</legend>
-      <Input label={t("pickup_window_start")} type="datetime-local" value={start} onChange={onStart} dir="ltr" />
-      <Input label={t("pickup_window_end")} type="time" value={endTime} onChange={onEnd} dir="ltr" />
+      {/* MEH-3955: a date and 24-hour selects, not datetime-local (AM/PM on an English phone). */}
+      <div className="col-span-2 min-w-0">
+        <DateTimeField label={t("pickup_window_start")} ariaLabel={t("pickup_window_start")} value={start} onChange={(v) => onStart({ target: { value: v } })} />
+      </div>
+      <TimeOfDaySelect label={t("pickup_window_end")} ariaLabel={t("pickup_window_end")} optional value={endTime} onChange={(v) => onEnd({ target: { value: v } })} />
       <p className="col-span-2 text-xs text-fg-muted">{t("pickup_window_helper")}</p>
       {error && (
         <InlineMessage size="xs" className="col-span-2" data-testid="gb-pickup-window-error">

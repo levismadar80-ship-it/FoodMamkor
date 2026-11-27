@@ -15,6 +15,7 @@ import he from "../messages/he.json";
 import en from "../messages/en.json";
 import EventForm from "@/components/EventForm";
 import { applyEventDraft } from "@/lib/event-draft";
+import { timeValue } from "./helpers/time-of-day";
 
 // Config shape, not behaviour: the field map is the backend's and nothing in
 // the frontend runs it, so its keys are read as data (testing.md MEH-3531).
@@ -158,7 +159,7 @@ describe("«יש לכם מודעה על האירוע?» (MEH-3751)", () => {
     expect(field("description").value).toBe(FULL.description);
     expect(field("category").value).toBe("שוק");
     expect(field("event_date").value).toBe("2026-11-27");
-    expect([field("event_time").value, field("end_time").value]).toEqual(["09:00", "13:00"]);
+    expect([timeValue(field("event_time").closest("[data-time-value]")), timeValue(field("end_time").closest("[data-time-value]"))]).toEqual(["09:00", "13:00"]);
     expect(field("location").value).toBe("כיכר המושבה");
     expect(field("city").value).toBe("זכרון יעקב");
     expect([field("price").value, field("max_participants").value]).toEqual(["0", "40"]);
@@ -168,7 +169,7 @@ describe("«יש לכם מודעה על האירוע?» (MEH-3751)", () => {
     renderForm();
     fireEvent.change(field("title"), { target: { value: "השם שלי" } });
     await fillFrom({ ...EMPTY, event_time: "10:30" });
-    await waitFor(() => expect(field("event_time").value).toBe("10:30"));
+    await waitFor(() => expect(timeValue(field("event_time").closest("[data-time-value]"))).toBe("10:30"));
     expect(field("title").value).toBe("השם שלי");
   });
 

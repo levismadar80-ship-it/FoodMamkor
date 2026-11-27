@@ -69,6 +69,7 @@ duplicate	2	גררו לכאן או לחצו להעלאה · JPG / PNG / WebP
 duplicate	2	דברו איתנו
 duplicate	2	דברו איתנו ←
 duplicate	2	דיווח על עסק
+duplicate	2	דקות
 duplicate	2	דרוש תיקון
 duplicate	2	האירועים שלי
 duplicate	2	האירועים שלכם

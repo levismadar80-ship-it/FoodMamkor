@@ -30,6 +30,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { X, Plus } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -105,17 +106,17 @@ export default function ExperienceSessionsField({ sessions, onChange, invalid = 
             disabled={held(s)}
             className="flex-1 min-w-0"
           />
-          <Input
+          {/* MEH-3955: 24-hour selects; optional, since a half-filled row is
+              what the form flags. */}
+          <TimeOfDaySelect
             id={i === firstHalf && s.date ? incompleteId : undefined}
-            type="time"
-            size="sm"
-            inline
-            aria-label={label("field_time", i)}
-            aria-invalid={invalid && isHalfSession(s) && !s.time ? true : undefined}
+            optional
+            ariaLabel={label("field_time", i)}
+            invalid={invalid && isHalfSession(s) && !s.time}
             value={s.time}
-            onChange={edit(i, "time")}
+            onChange={(v) => edit(i, "time")({ target: { value: v } })}
             disabled={held(s)}
-            className="w-28"
+            className="w-36"
           />
           <button
             type="button"

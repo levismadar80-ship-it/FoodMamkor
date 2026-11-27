@@ -8691,5 +8691,9 @@
     "list_link": "Frequently asked questions",
     "detail_groupBuys": "More questions: cancelling, pickup, payment",
     "detail_rescue": "More questions: what's inside, cancelling, pickup"
+  },
+  "time_of_day": {
+    "hour": "hour",
+    "minute": "minutes"
   }
 }
