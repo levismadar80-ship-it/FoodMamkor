@@ -1713,6 +1713,16 @@
             "title": "Price List Version",
             "type": "integer"
           },
+          "product_orders": {
+            "default": 0,
+            "title": "Product Orders",
+            "type": "integer"
+          },
+          "product_orders_value_agorot": {
+            "default": 0,
+            "title": "Product Orders Value Agorot",
+            "type": "integer"
+          },
           "threshold_agorot": {
             "title": "Threshold Agorot",
             "type": "integer"

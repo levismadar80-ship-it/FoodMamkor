@@ -36,6 +36,10 @@ class BillingSummaryOut(BaseModel):
     fee_with_subscription_agorot: int
     charged_agorot: int
     price_list_version: int
+    # MEH-3980: product orders handed this month and their value. Not in the
+    # ledger and not in any fee or the threshold above (price not set yet).
+    product_orders: int = 0
+    product_orders_value_agorot: int = 0
 
 
 class BillingOverviewRowOut(BaseModel):

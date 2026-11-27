@@ -53,6 +53,19 @@ describe("MonthValueLine", () => {
     expect((await line()).textContent).toBe("החודש הגיעה דרך האתר הזמנה אחת");
   });
 
+  // MEH-3980: product orders are not in the ledger; the line adds them.
+  it("product orders only: counted with their value", async () => {
+    api.get.mockResolvedValueOnce({ data: { ...summary(0, 0), product_orders: 4, product_orders_value_agorot: 21600 } });
+    mount();
+    expect((await line()).textContent).toBe("החודש הגיעו דרך האתר 4 הזמנות, בשווי 216₪");
+  });
+
+  it("product orders and ledger bookings add up", async () => {
+    api.get.mockResolvedValueOnce({ data: { ...summary(1, 8600), product_orders: 1, product_orders_value_agorot: 4200 } });
+    mount();
+    expect((await line()).textContent).toBe("החודש הגיעו דרך האתר 2 הזמנות, בשווי 128₪");
+  });
+
   it("holds its height while the read is in flight", () => {
     api.get.mockReturnValueOnce(new Promise(() => {}));
     mount();

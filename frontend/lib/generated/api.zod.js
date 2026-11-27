@@ -7670,6 +7670,9 @@ export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#_
  * The caller's own business only — the id comes from the session, never the URL.
  * @summary My Billing Summary
  */
+export const myBillingSummaryProducersMeBillingSummaryGetResponseProductOrdersDefault = 0;
+export const myBillingSummaryProducersMeBillingSummaryGetResponseProductOrdersValueAgorotDefault = 0;
+
 export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*/ zod.object({
   "bookings": /*#__PURE__*/ zod.int(),
   "by_kind": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -7684,6 +7687,8 @@ export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*
   "over_threshold": /*#__PURE__*/ zod.boolean(),
   "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
   "price_list_version": /*#__PURE__*/ zod.int(),
+  "product_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), myBillingSummaryProducersMeBillingSummaryGetResponseProductOrdersDefault),
+  "product_orders_value_agorot": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), myBillingSummaryProducersMeBillingSummaryGetResponseProductOrdersValueAgorotDefault),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
   "value_agorot": /*#__PURE__*/ zod.int()
 })
