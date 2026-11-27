@@ -1334,12 +1334,6 @@
 
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
-| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
-| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
-| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
-| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
-| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
-| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
 | `delivery_city` | `VARCHAR(100)` | yes |  |  | orders |
 | `delivery_address` | `TEXT` | yes |  |  | orders |
 | `note` | `TEXT` | yes |  |  | orders |
@@ -1350,6 +1344,12 @@
 | `stopped_by` | `VARCHAR(10)` | yes |  |  | orders |
 | `stopped_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
+| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
+| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
+| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
+| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
+| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
+| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
 
 **CHECK**
 
@@ -1367,12 +1367,6 @@
 
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
-| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
-| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
-| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
-| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
-| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
-| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
 | `delivery_address` | `TEXT` | yes |  |  | orders |
 | `slot_start` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL |  |  | orders |
 | `slot_end` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL |  |  | orders |
@@ -1398,6 +1392,12 @@
 | `repeat_id` | `UUID` | yes |  | FK → `product_order_repeats.id` ON DELETE SET NULL | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
 | `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | orders |
+| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
+| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
+| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
+| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
+| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
+| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
 
 **CHECK**
 
