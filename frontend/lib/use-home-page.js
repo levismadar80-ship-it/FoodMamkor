@@ -40,7 +40,7 @@ import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
 import { consumeHistoryReturn } from "@/lib/route-memory";
 import { findRegionForCity } from "@/data/regions";
-import { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
+import { ProducerSchema, ProducersFeedSchema } from "@/lib/schemas";
 import { CategoriesResponseSchema, StatsSchema, RandomProducerSchema } from "@/lib/api-responses";
 import { producerPath } from "@/lib/producer-path";
 
@@ -460,7 +460,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     return api
       .get("/producers", { params: { delivery_cities: region.cities } })
       .then((r) => {
-        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const parsed = ProducersFeedSchema.safeParse(r.data);
         return { city, regionName: region.name, producers: parsed.success ? parsed.data : [] };
       })
       .catch(() => ({ city, regionName: region.name, producers: [] }));
@@ -474,7 +474,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
         // Rule-19: validate the home grid feed (NOT the map feed — that's
         // MEH-779). On parse failure show an empty grid rather than
         // crashing on a malformed row.
-        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const parsed = ProducersFeedSchema.safeParse(r.data);
         const rows = parsed.success ? parsed.data : [];
         // MEH-3821: an empty city result waits for its region fallback and
         // lands with it. Committing the empty grid first showed the one-line
@@ -631,7 +631,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
           params: { lat, lng, radius_km: radius, ...catParam, ...chipParams },
         })
         .then((r) => {
-          const parsed = ProducersResponseSchema.safeParse(r.data);
+          const parsed = ProducersFeedSchema.safeParse(r.data);
           return parsed.success ? parsed.data : [];
         });
     fetchAtRadius(GEO_RADIUS_KM)

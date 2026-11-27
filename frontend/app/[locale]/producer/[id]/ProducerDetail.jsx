@@ -208,7 +208,10 @@ export default function ProducerDetail({ initialProducer = null, initialActiviti
           Desktop is unchanged. The BreadcrumbList JSON-LD (lib/seo.js) does not
           read this render. Margins sit on the children, so a direct arrival on
           a phone leaves no empty gap above the gallery. */}
-      <div className="lg:mb-4 lg:relative" data-testid="producer-breadcrumb-block">
+      {/* MEH-3944: data-map-replaces-back — before paint, globals.css hides
+          the server copy of «→ חזרה» here when the URL says ?from=map, as the
+          line below does after the read. */}
+      <div className="lg:mb-4 lg:relative" data-testid="producer-breadcrumb-block" data-map-replaces-back="">
         {fromMap !== true && !hideHistoryBack && <HistoryBackLink className="lg:hidden mb-2" />}
         <Breadcrumb
           // MEH-3836: room at the line's end for «חזרה למפה», always, so a

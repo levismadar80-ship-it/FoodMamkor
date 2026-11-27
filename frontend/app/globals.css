@@ -356,6 +356,20 @@ html:not([data-from-map]) [data-from-map-only] {
   display: none;
 }
 
+/* MEH-3944: the same for the phone's «→ חזרה» (components/HistoryBackLink.jsx).
+   It is in the server HTML marked data-history-back-only, and the inline flags
+   script sets html[data-came-from-site] when a page of the site is behind this
+   one. A hard load with such a page behind (a reload, a plain link) so paints
+   the row at once, instead of adding it after hydration above the gallery
+   (52px down, CLS 0.154 on a phone). React drops the mark after its own read. */
+html:not([data-came-from-site]) [data-history-back-only],
+html[data-from-map] [data-map-replaces-back] [data-history-back-only] {
+  display: none;
+}
+/* The second selector: on the business page «חזרה למפה» takes the row's place
+   (MEH-3019, ProducerDetail.jsx renders one or the other), so a ?from=map load
+   with a page behind shows only the map link before paint too. */
+
 /* MEH-3878: while the route loader is on screen the site footer waits. On a
    first load the page itself arrives after the loader (React sends a large
    page as a later chunk and swaps it in at least 300ms after the first paint),
