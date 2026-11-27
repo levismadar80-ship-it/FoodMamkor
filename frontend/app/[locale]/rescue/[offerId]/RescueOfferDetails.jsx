@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { Bread, Info, MapPin } from "@phosphor-icons/react";
 
 import SectionHeading from "@/components/ui/SectionHeading";
+import HubFaqLink from "@/components/HubFaqLink"; // MEH-3949
 import AllergenSection from "@/components/offer-detail/AllergenSection"; // MEH-3610
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { addressNavLinks } from "@/lib/nav-links";
@@ -114,6 +115,9 @@ export default function RescueOfferDetails({ offer }) {
         </p>
         <p className="text-sm text-fg-muted mt-1">{t("offer_page.no_show")}</p>
       </section>
+
+      {/* MEH-3949: the rest of the questions live on the hub page. */}
+      <HubFaqLink hub="rescue" variant="detail" className="px-5 py-4" />
     </div>
   );
 }
