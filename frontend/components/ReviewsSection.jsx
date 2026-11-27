@@ -16,11 +16,12 @@ import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard"
 import { readFirstReviewsPage } from "@/lib/reviews-page";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 import ReviewReportMenu from "@/components/ReviewReportMenu";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
-import { SkeletonList } from "@/components/Skeleton";
+import { SkeletonReviewRows } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
@@ -618,7 +619,13 @@ export default function ReviewsSection({
           (up to the 3 the list opens with), and none for a business with no
           reviews — its empty state is drawn at once, and the read confirms it. */}
       {loading && total > 0 ? (
-        <SkeletonList count={Math.min(total, INITIAL_VISIBLE)} label={t("loading")} />
+        <>
+          {/* MEH-3871: rows in the real row's box, and the «הצג עוד» slot held
+              when more reviews than the list opens with are coming, so the
+              list arriving moves nothing below it. */}
+          <SkeletonReviewRows count={Math.min(total, INITIAL_VISIBLE)} label={t("loading")} />
+          {total > INITIAL_VISIBLE && <div className="mt-4 min-h-touch" aria-hidden="true" data-testid="reviews-show-more-slot" />}
+        </>
       ) : reviews.length === 0 ? (
         isOwner ? (
           <>
@@ -725,10 +732,27 @@ export default function ReviewsSection({
       {/* MEH-2999: who may write a review, as a card UNDER the reviews (was a
           quiet grey line, MEH-2592). Same gates: «login» for a visitor; «contact»
           for a logged-in, non-owner reader who has not contacted the business
-          and holds no invite link — at zero reviews too. Nothing until
-          /auth/me answers, or a signed-in reader sees the guest card for a
-          second before it swaps (30/10). */}
-      {authLoading ? null : !user ? (
+          and holds no invite link — at zero reviews too. Nothing visible
+          until /auth/me answers, or a signed-in reader sees the guest card for
+          a second before it swaps (30/10). */}
+      {/* MEH-3871: until /auth/me answers (it waits for hydration, MEH-3828,
+          so seconds on a slow phone) the guest card holds its place unseen.
+          Most readers are guests, so for them it only becomes visible; it
+          used to mount from nothing and push the delivery section down.
+          Accepted trade: a signed-in reader whose card is shorter (write
+          mode) or absent (the owner on her own page) sees it close once. */}
+      {authLoading ? (
+        <div className="invisible" aria-hidden="true" inert={INERT_PRESENT} data-testid="reviews-write-hint-placeholder">
+          <ReviewInviteCard
+            mode="login"
+            first={inviteFirst}
+            loginNext={loginNext}
+            producerId={producerId}
+            producerName={producerName}
+            testId="reviews-write-hint-held"
+          />
+        </div>
+      ) : !user ? (
         <ReviewInviteCard
           mode="login"
           first={inviteFirst}
