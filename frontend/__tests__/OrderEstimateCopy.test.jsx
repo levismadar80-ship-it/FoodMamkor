@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
 import OrderCard from "@/components/dashboard/orders/OrderCard";
 import { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
 import { estimateKind } from "@/lib/product-orders";
+import { rowEstimateKey } from "@/lib/order-cart";
 
 const HOUR_MS = 60 * 60 * 1000; // eslint-disable-line no-magic-numbers -- an hour from now
 
@@ -81,6 +82,16 @@ describe("estimateKind", () => {
   });
 });
 
+describe("the product row on the business page", () => {
+  it.each([
+    { unit: "kg", key: "producer.detail.order_cart.estimate" },
+    { unit: "100g", key: "producer.detail.order_cart.estimate" },
+    { unit: "unit", key: "producer.detail.order_cart.estimate_range" },
+  ])("$unit → $key", ({ unit, key }) => {
+    expect(rowEstimateKey(/** @type {any} */ ({ price_unit: unit }))).toBe(key);
+  });
+});
+
 describe("the owner's card (MEH-3974)", () => {
   it("a weighed line says the price is set after weighing", () => {
     card({ items: [WEIGHED], has_estimate: true });
@@ -93,9 +104,9 @@ describe("the owner's card (MEH-3974)", () => {
     expect(document.body.textContent).not.toContain("שקילה");
   });
 
-  it("an exact order has no estimate line", () => {
-    card({ items: [EXACT] });
-    expect(document.body.textContent).not.toContain("מחיר משוער");
+  it("a range and a weighed line together: the weighing wording", () => {
+    card({ items: [RANGE, WEIGHED], has_estimate: true });
+    expect(screen.getByText("מחיר משוער, נקבע אחרי שקילה")).toBeInTheDocument();
   });
 
   it("the confirm dialog of a range order is titled «מחיר סופי»", () => {
@@ -118,6 +129,11 @@ describe("the buyer's status page (MEH-3974)", () => {
     expect(screen.getByText(/^לתשלום לבית העסק/).textContent).toBe(
       "לתשלום לבית העסק: עד 216 ₪. המחיר הסופי ייקבע כשבית העסק יאשר.",
     );
+  });
+
+  it("waiting with a weighed and an exact line: «עד»", () => {
+    status({ items: [WEIGHED, EXACT] });
+    expect(screen.getByText(/^לתשלום לבית העסק/).textContent).toContain("עד\u00a0216");
   });
 
   it("waiting with an exact price: the amount as is", () => {
