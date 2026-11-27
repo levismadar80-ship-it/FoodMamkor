@@ -19,6 +19,9 @@ const D = he.dashboard.producer.dietaryScope;
 const HONEY = { id: 1, slug: "honey", name: "דבש" };
 const VEG = { id: 2, slug: "veg", name: "ירקות" };
 const FISH = { id: 3, slug: "fish", name: "דגים" };
+const BREAD = { id: 4, slug: "bread", name: "לחמים ואפייה" };
+const MEAT = { id: 5, slug: "meat", name: "בשר" };
+const G = he.dashboard.producer.grassFed;
 
 function renderCard(profile) {
   render(
@@ -79,5 +82,33 @@ describe("conflict warning (MEH-3982)", () => {
     const w = screen.getByTestId("diet-conflict-vegetarian");
     expect(w.textContent).toContain("דגים");
     expect(w.textContent).not.toContain("דבש");
+  });
+});
+
+describe("gluten facility (MEH-3982)", () => {
+  it.each([
+    ["bread category, dedicated", { categories: [BREAD], gluten_free_facility: "dedicated" }, "לחמים ואפייה"],
+    ["grains in the description, dedicated", { categories: [VEG], gluten_free_facility: "dedicated", description: "פירות, דגנים וקטניות" }, "דגנים"],
+    ["«מאפים ללא גלוטן», dedicated", { categories: [VEG], gluten_free_facility: "dedicated", description: "מאפים ללא גלוטן" }, null],
+    ["bread category, shared", { categories: [BREAD], gluten_free_facility: "shared" }, null],
+    ["no categories, dedicated", { categories: [], gluten_free_facility: "dedicated" }, null],
+  ])("%s", (_label, profile, quoted) => {
+    renderCard(profile);
+    const warning = screen.queryByTestId("diet-conflict-gluten");
+    expect(!!warning).toBe(quoted !== null);
+    if (quoted) expect(warning.textContent).toContain(quoted);
+    expect(screen.getByTestId("diet-definition-gluten").textContent).toBe(D.definition_gluten);
+  });
+});
+
+describe("grass-fed only where animals graze (MEH-3982)", () => {
+  it.each([
+    ["no categories yet", { categories: [] }, true],
+    ["meat", { categories: [MEAT] }, true],
+    ["honey only", { categories: [HONEY] }, false],
+    ["honey only, already ticked", { categories: [HONEY], grass_fed: true }, true],
+  ])("%s", (_label, profile, shown) => {
+    renderCard(profile);
+    expect(!!screen.queryByRole("checkbox", { name: G.label })).toBe(shown);
   });
 });

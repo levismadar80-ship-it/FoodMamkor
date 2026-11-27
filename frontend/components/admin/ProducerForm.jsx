@@ -1124,6 +1124,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
           </Field>
+          <DietaryScopeNotes
+            axis="gluten"
+            scope={form.gluten_free_facility}
+            categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+            text={`${form.short_description ?? ""} ${form.description ?? ""}`}
+          />
         </div>
 
         {/* MEH-530: producer-license field — required when any selected

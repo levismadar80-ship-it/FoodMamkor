@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Checkbox from "@/components/ui/Checkbox";
 import DietaryScopeNotes from "@/components/DietaryScopeNotes";
+import { showsGrassFed } from "@/lib/dietary-scope-conflict";
 
 /**
  * Module:   TagsCard
@@ -176,8 +177,16 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           ]}
           onChange={edit(setGluten)}
         />
+        <DietaryScopeNotes
+          axis="gluten"
+          scope={gluten}
+          categories={profile?.categories}
+          text={`${profile?.short_description ?? ""} ${profile?.description ?? ""}`}
+        />
       </section>
 
+      {/* MEH-3982: grass-fed only for a business that grazes animals (or already ticked). */}
+      {showsGrassFed({ categories: profile?.categories, checked: seed.grass_fed }) && (
       <section
         className="space-y-3 border-t border-border pt-4"
         data-testid="tags-section-grass-fed"
@@ -199,6 +208,7 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           {tGrass("label")}
         </Checkbox>
       </section>
+      )}
 
       {errorMsg && (
         <InlineMessage size="xs" className="flex items-center gap-1.5">

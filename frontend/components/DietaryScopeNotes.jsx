@@ -16,20 +16,14 @@ import { useTranslations } from "next-intl";
 import { Warning } from "@phosphor-icons/react";
 
 import InlineMessage from "@/components/ui/InlineMessage";
-import {
-  NON_VEGAN_CATEGORY_SLUGS,
-  NON_VEGETARIAN_CATEGORY_SLUGS,
-  conflictingCategoryNames,
-} from "@/lib/dietary-scope-conflict";
-
-const SLUGS = { vegan: NON_VEGAN_CATEGORY_SLUGS, vegetarian: NON_VEGETARIAN_CATEGORY_SLUGS };
+import { conflictingCategoryNames } from "@/lib/dietary-scope-conflict";
 
 /**
- * @param {{ axis: "vegan" | "vegetarian", scope?: string | null, categories?: Array<{ slug?: string | null, name?: string }> | null }} props
+ * @param {{ axis: "vegan" | "vegetarian" | "gluten", scope?: string | null, categories?: Array<{ slug?: string | null, name?: string }> | null, text?: string | null }} props
  */
-export default function DietaryScopeNotes({ axis, scope, categories }) {
+export default function DietaryScopeNotes({ axis, scope, categories, text }) {
   const t = useTranslations("dashboard.producer.dietaryScope");
-  const names = conflictingCategoryNames(scope, { categories, slugs: SLUGS[axis] });
+  const names = conflictingCategoryNames(axis, { scope, categories, text });
   return (
     <>
       <p className="text-xs text-fg-muted" data-testid={`diet-definition-${axis}`}>

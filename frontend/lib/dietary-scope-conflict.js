@@ -18,17 +18,51 @@ export const NON_VEGAN_CATEGORY_SLUGS = ["meat", "fish", "dairy", "eggs", "honey
 /** Category slugs whose products are never vegetarian. */
 export const NON_VEGETARIAN_CATEGORY_SLUGS = ["meat", "fish"];
 
+/** Category slugs whose products almost always contain gluten. */
+export const GLUTEN_CATEGORY_SLUGS = ["bread"];
+
+/** Grass-fed only means something for an animal that grazes. */
+export const GRASS_FED_CATEGORY_SLUGS = ["meat", "dairy", "eggs"];
+
+// MEH-3982: grains with gluten, or flour, named in the business's own text.
+// «ללא גלוטן» right after the word does not count («מאפים ללא גלוטן»).
+const GLUTEN_WORDS = /(קמח|דגנים|חיטה|שעורה|שיפון|כוסמין|לחם|מאפים|מאפה)(?!\s+ללא\s+גלוטן)/;
+
+/** Per axis: the answer that makes a claim, and what contradicts it. */
+const AXES = {
+  vegan: { claim: "all", slugs: NON_VEGAN_CATEGORY_SLUGS },
+  vegetarian: { claim: "all", slugs: NON_VEGETARIAN_CATEGORY_SLUGS },
+  gluten: { claim: "dedicated", slugs: GLUTEN_CATEGORY_SLUGS, words: GLUTEN_WORDS },
+};
+
 /**
- * The names of the categories that contradict a «כן» answer, in the order the
- * business holds them. Empty when the answer is not «כן» or nothing conflicts.
+ * What contradicts the owner's claim on one axis, in the order the business
+ * holds its categories: category names, then a word quoted from its own text.
+ * Empty when the answer makes no claim or nothing contradicts it.
  *
- * @param {string | null | undefined} scope  vegan_scope / vegetarian_scope
- * @param {{ categories?: Array<{ slug?: string | null, name?: string }> | null, slugs: string[] }} opts
+ * @param {"vegan" | "vegetarian" | "gluten"} axis
+ * @param {{ scope?: string | null, categories?: Array<{ slug?: string | null, name?: string }> | null, text?: string | null }} producer
  * @returns {string[]}
  */
-export function conflictingCategoryNames(scope, { categories, slugs }) {
-  if (scope !== "all") return [];
-  return (categories || [])
-    .filter((cat) => !!cat?.slug && slugs.includes(cat.slug))
+export function conflictingCategoryNames(axis, { scope, categories, text }) {
+  const rule = AXES[axis];
+  if (!rule || scope !== rule.claim) return [];
+  const names = (categories || [])
+    .filter((cat) => !!cat?.slug && rule.slugs.includes(cat.slug))
     .map((cat) => cat.name || "");
+  const word = rule.words && text ? text.match(rule.words)?.[1] : null;
+  return word && names.length === 0 ? [word] : names;
+}
+
+/**
+ * Show the «גידול במרעה» checkbox? Yes when the business grazes animals, when
+ * its categories are not known yet, and always when it is already ticked (so
+ * the owner can untick it).
+ *
+ * @param {{ categories?: Array<{ slug?: string | null }> | null, checked?: boolean }} producer
+ * @returns {boolean}
+ */
+export function showsGrassFed({ categories, checked }) {
+  if (checked || !categories || categories.length === 0) return true;
+  return categories.some((cat) => !!cat?.slug && GRASS_FED_CATEGORY_SLUGS.includes(cat.slug));
 }

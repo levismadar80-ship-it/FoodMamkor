@@ -228,7 +228,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/delivery_waitlist_requests.py` | What the three public delivery-waitlist routes do with a request: join a business's per-city waitlist (with the «אשמח לארח» host confirmation), confirm … |
 | `services/delivery_zones.py` | Write a business's named delivery zones and copy each zone's days, minimum, fee and free-delivery threshold onto the delivery_areas rows of its cities. |
 | `services/description_writer.py` | Suggest a short Hebrew description for one product from what the owner already typed (name, group, price, current description). … |
-| `services/dietary_scope_conflict.py` | MEH-3982 — name the categories that contradict a business's «טבעוני / צמחוני: כן» answer (honey, dairy, eggs, meat, fish are animal products), so the admin … |
+| `services/dietary_scope_conflict.py` | MEH-3982 — name the categories that contradict a business's «טבעוני / צמחוני: כן» answer (honey, dairy, eggs, meat, fish are animal products) or «אין גלוטן … |
 | `services/draft_merge_emails.py` | The two emails of the draft-twin flow (MEH-3865): the admin hears that a business sent for review looks like a draft she prepared, and the owner hears that … |
 | `services/draft_merge_policy.py` | What survives when an admin-prepared draft is moved to the owner who registered the same business herself (MEH-3865): column by column of 'producers', and … |
 | `services/draft_preview.py` | The signed token behind a draft business's read-only preview link (MEH-3377): mint and decode, nothing else. |

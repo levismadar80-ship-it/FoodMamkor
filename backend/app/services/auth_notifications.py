@@ -502,6 +502,7 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     # be vegan / vegetarian (services/dietary_scope_conflict.py).
     "vegan_scope_animal_category": "הצהרת טבעוני על קטגוריה מן החי (דבש, חלב, ביצים, בשר או דגים) — לבדוק",
     "vegetarian_scope_animal_category": "הצהרת צמחוני על קטגוריה של בשר או דגים — לבדוק",
+    "gluten_free_facility_bread_category": "הצהרת «אין גלוטן במקום הייצור» על קטגוריית לחמים ואפייה — לבדוק",
 }
 
 

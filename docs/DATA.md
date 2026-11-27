@@ -1660,6 +1660,7 @@ PUT    /producers/me                              producer — MEH-3026: no lice
                                                   MEH-3982: when vegan_scope / vegetarian_scope changes to 'all' on a business holding a
                                                   category that cannot be that (vegan: meat/fish/dairy/eggs/honey; vegetarian: meat/fish),
                                                   the same ping also lists `vegan_scope_animal_category` / `vegetarian_scope_animal_category`
+                                                  (and `gluten_free_facility_bread_category` for 'dedicated' on the bread category)
                                                   (services/dietary_scope_conflict.py). Signal only — the save and the badge stand.
                                                   MEH-3261 (D11): for an APPROVED business, a changed description / short_description /
                                                   owner_bio (compared after strip) goes through the AI check first
