@@ -181,6 +181,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         "feed + upcoming; both add not_test_producer()",
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
+    "backend/app/routers/producer_claim.py": (
+        2,
+        "MEH-3945: whether a /c/ link may hand over a consent-published page, "
+        "and which mail the claim sends; not a public read",
+    ),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
     "backend/app/services/rescue_writes.py": (
         1,

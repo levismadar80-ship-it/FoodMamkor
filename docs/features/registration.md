@@ -34,6 +34,7 @@
 * `frontend/e2e/flows/manual/register-producer.spec.ts` · `frontend/e2e/flows/manual/join.spec.ts`
 * `frontend/e2e/flows/46-owner-invite.spec.ts` · `tests/test_producer_owner_invite.py` · `tests/test_producer_claim.py` · `tests/test_meh3246_invite_gates.py` · `tests/test_meh3268_accept_keeps_incomplete_page_hidden.py` · `tests/test_meh3675_owner_invite_google_fresh.py` · `frontend/__tests__/OwnerInviteExistingGoogle.test.jsx`
 * `tests/test_producer_draft_preview.py` · `frontend/__tests__/DraftPreviewConsentPublish.test.jsx`
+* קישור claim שנשלח לטיוטה ממשיך לעבוד אחרי «פרסום בהסכמה», והעמוד עובר לבעלת העסק בלי לרדת מהאתר (MEH-3945): `tests/test_meh3945_claim_after_consent_publish.py`
 * `frontend/__tests__/ClaimLinkPreviewMetadata.test.js`
 * `frontend/__tests__/OwnerInviteAcceptSignsIn.test.jsx` · `frontend/__tests__/OwnerInviteExistingAccount.test.jsx` · `frontend/__tests__/ClaimPage.test.jsx`
 * `tests/test_meh3409_admin_draft_missing.py` · `frontend/__tests__/AdminDraftMissing.test.jsx`

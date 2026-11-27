@@ -280,6 +280,8 @@ def reject_producer(
     was_live = producer.status == "approved"
     if was_live:  # MEH-3227: + bags and sign-ups; the rejection email tells her
         delist_business(db, producer, background_tasks)
+        # MEH-3945: an unclaimed /c/ link must not come back on re-approval.
+        producer.claim_link_sent_at = None  # type: ignore[assignment]
     # MEH-2974: a rejection revokes an outstanding owner invite, for the same
     # reason a suspension does — a page rejected for cause and re-approved
     # within the link's week must not come back with the old link still live.
