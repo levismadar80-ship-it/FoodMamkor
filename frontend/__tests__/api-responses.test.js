@@ -124,6 +124,16 @@ describe("re-exported producer schemas", () => {
     expect(parsed.data?.primary_contact_method).toBe("whatsapp");
   });
 
+  // MEH-3198 hotfix (27/11 prod): a category with emoji null (an admin-created
+  // category) must not fail the whole list — it emptied /map in production.
+  it("ProducersResponseSchema accepts a category whose emoji is null", () => {
+    const parsed = ProducersResponseSchema.safeParse([
+      { id: 1, name: "פתפותים", categories: [{ id: 1523, name: "עוגות וקינוחים", slug: "cakes-desserts", emoji: null }] },
+    ]);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.[0]?.categories?.[0]?.emoji).toBeNull();
+  });
+
   // MEH-902 regression: the rich delivery relation reaches MapProducerCard.
   // Mirrors the MEH-901 strip pattern — Zod would silently drop the array
   // before the "delivers to your city" pill could read `city` / `delivery_day`.
