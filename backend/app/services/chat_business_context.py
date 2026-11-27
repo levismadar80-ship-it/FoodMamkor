@@ -458,7 +458,9 @@ def facts(
         "opening_hours": hours,
         # MEH-2447: the owner said «בתיאום מראש» — visits are arranged first,
         # whatever the hours say.
-        "visits_by_arrangement": bool(producer.by_arrangement and producer.has_physical_location),
+        "visits_by_arrangement": bool(
+            producer.by_arrangement and producer.has_physical_location
+        ),
         "open_now": is_open,
         # MEH-3504: None while open, on vacation or paused (no promise to make).
         "next_opening": None

@@ -125,7 +125,11 @@ DELIVERY_COLUMNS = (
     "free_delivery_above",
 )
 # Pickup settings go with the pickup points (producer_locations).
-PICKUP_COLUMNS = ("has_physical_location", "by_arrangement", "pickup_points")  # MEH-2447: goes with the place
+PICKUP_COLUMNS = (
+    "has_physical_location",
+    "by_arrangement",
+    "pickup_points",
+)  # MEH-2447: goes with the place
 # Cloudinary URLs: hers wins, the losing one is parked on her row and destroyed
 # with it (admin_delete_producer reads logo_url, owner_photo_url and images).
 IMAGE_OWNER_WINS = ("logo_url", "owner_photo_url")
