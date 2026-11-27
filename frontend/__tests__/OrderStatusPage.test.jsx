@@ -104,9 +104,8 @@ describe("what each status shows", () => {
   it("pending pickup: the time she asked for, with no address and no calendar button", () => {
     show(order({ pickup_address: "הרצל 12, רחובות" }));
     const asked = screen.getByTestId("order-requested").textContent;
-    expect(asked.startsWith("ביקשתם איסוף ב")).toBe(true);
-    expect(asked).toContain("09:00");
-    expect(asked).toContain("10:00");
+    // The whole line, isolates included, so a dropped placeholder goes red.
+    expect(asked).toMatch(/^ביקשתם איסוף ביום \S+ \d{1,2}\.\d{1,2}, \u206609:00–10:00\u2069$/);
     expect(asked).not.toContain("הרצל");
     expect(screen.queryByTestId("order-add-to-calendar")).toBeNull();
   });
