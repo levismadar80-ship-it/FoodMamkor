@@ -620,6 +620,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `validators.js` | Shared validators for form inputs across the site. Used in /register, /register/producer, and anywhere phone/password need client-side validation. |
 | `watch-favorited.js` | MEH-3465: one business's saved state, now and on every change. FavoriteButton, ProducerUpdatesButton, ProducerHeader and ProducerCard each carried this … |
 | `webauthn.js` | The browser half of an admin passkey (MEH-3305): turn the server's JSON options into what 'navigator.credentials' takes, and the credential it returns back … |
+| `weekly-menu-share.js` | «מה יש השבוע»: the ready WhatsApp message a business sends to her customers, a group or her status. … |
 | `whats-new.js` | The «מה חדש» release list for business owners (MEH-3200): which versions have news for businesses, how many lines each has, and whether the owner has already … |
 | `wizard-step-numbers.js` | Turn a wizard's STEP enum into the numbers a user actually SEES. A step that is conditionally absent makes the enum value and the visible position diverge, … |
 | `zod-csp.js` | Turn off Zod's eval probe in the browser, so the CSP stops reporting «Blocked unsafe eval()» on every page that parses an API response. |
@@ -861,6 +862,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderProductsCard.jsx` | The business's products with the two switches on-site ordering needs every day: «פתוח להזמנה באתר» and «אזל כרגע». |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
+| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בווטסאפ» (she picks the … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
 | `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |

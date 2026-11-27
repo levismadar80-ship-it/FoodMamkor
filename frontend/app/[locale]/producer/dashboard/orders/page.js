@@ -39,6 +39,7 @@ import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
+import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
@@ -61,7 +62,9 @@ async function loadAll() {
     api.get("/producers/me").then((res) => res.data).catch(() => null),
   ]);
   const setUp = isSetUp(settings, windows);
-  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp };
+  // MEH-3931: the name and page link for «מה יש השבוע».
+  const business = me ? { name: me.name, slug: me.slug, id: me.id } : null;
+  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp, business };
 }
 
 export default function OrdersPage() {
@@ -76,10 +79,12 @@ export default function OrdersPage() {
   // MEH-3216: what the «מה חסר» checklist needs beyond the settings.
   const [products, setProducts] = useState(/** @type {{ orderable: number, total: number } | null} */ (null));
   const [windowsCount, setWindowsCount] = useState(/** @type {number | null} */ (null));
-  const countProducts = useCallback(
-    (/** @type {any[]} */ rows) => setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length }),
-    [],
-  );
+  // MEH-3931: a product switched on, off or sold out re-reads «מה יש השבוע».
+  const [productsSeen, setProductsSeen] = useState(0);
+  const countProducts = useCallback((/** @type {any[]} */ rows) => {
+    setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length });
+    setProductsSeen((n) => n + 1);
+  }, []);
   // A failed products read counts as none, so the step points to «עריכה».
   const noProducts = useCallback(() => setProducts({ orderable: 0, total: 0 }), []);
   // MEH-3752: the last order-setup draft; each card fills from it and opens.
@@ -148,6 +153,9 @@ export default function OrdersPage() {
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
           <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} draft={draft} />
+          {/* MEH-3931: «מה יש השבוע», once ordering is set up; a link to an
+              off ordering would open a page that takes no orders. */}
+          {setUp && <OrderWeekShareCard business={data.business} refresh={productsSeen} />}
           {/* MEH-3561: who ordered and who came back, with a CSV download. */}
           <OrderCustomersCard />
           {/* MEH-3752: beside the one-time setup it fills, not above the
