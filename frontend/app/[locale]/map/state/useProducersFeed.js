@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { ProducersResponseSchema } from "@/lib/schemas";
+import { ProducersFeedSchema } from "@/lib/schemas";
 import { mapFiltersFromQuery } from "@/lib/filter-url";
 import { cityParams } from "@/lib/map-city-params";
 
@@ -98,7 +98,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
       .then((r) => {
         // Rule-19 belt-and-braces on the response side: validate the shape
         // before it reaches marker creation / the feed list.
-        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const parsed = ProducersFeedSchema.safeParse(r.data);
         if (snapshot) setSnapshotPending(false);
         if (!parsed.success) {
           if (!isLatest()) return;
@@ -161,7 +161,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
       .get("/producers", { params })
       .then((r) => {
         if (!isLatest()) return;
-        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const parsed = ProducersFeedSchema.safeParse(r.data);
         if (!parsed.success) {
           handleLoadFailure(parsed.error.issues);
           return;
