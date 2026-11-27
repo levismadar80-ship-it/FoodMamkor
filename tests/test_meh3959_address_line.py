@@ -70,3 +70,12 @@ def test_a_group_buy_email_place_line_names_the_city_once():
         location_precision="exact",
     )
     assert place_line(loc) == "מקום איסוף: המאפייה — רחוב המייסדים 12, זכרון יעקב\n"
+
+
+def test_a_city_that_ends_another_city_name_is_still_added():
+    # «יהוד» is the end of «אור יהודה» only as letters, not as a word.
+    assert address_line("הרצל 5, אור יהודה", "יהוד") == "הרצל 5, אור יהודה, יהוד"
+
+
+def test_a_trailing_full_stop_does_not_hide_the_city():
+    assert address_line("הרצל 5, חיפה.", "חיפה") == "הרצל 5, חיפה"

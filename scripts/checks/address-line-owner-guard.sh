@@ -8,8 +8,10 @@
 #           (MEH-3959: eight hand-made joins, four in the backend emails and
 #           order page, four on screens).
 # Touches:  nothing — reads backend/app and frontend/ and prints file:line.
-# Does NOT: catch a join split over several lines, a template literal
-#           `${address}, ${city}`, or string concatenation with "+".
+# Does NOT: catch a join split over several lines, an f-string, or string
+#           concatenation with "+". It does catch a one-line template literal
+#           (`${address}, ${city}`) and the conditional suffix
+#           ({city ? `, ${city}` : ""}) that RescueSection.jsx used.
 # History:  MEH-3959 (creation).
 #
 # THE RULE
@@ -28,7 +30,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 OWNERS="backend/app/services/address_line.py frontend/lib/address-line.js"
-PATTERN='join\(.*(address|location|street).*city|(address|location|street).*city.*\]\.filter\(Boolean\)\.join'
+PATTERN='join\(.*(address|location|street).*city|(address|location|street).*city.*\]\.filter\(Boolean\)\.join|(address|location|street)[^`]*\}, \$\{[^`]*city|city \? `, \$\{'
 
 scan() {
   grep -rnE "$PATTERN" "$@" \
@@ -47,7 +49,7 @@ scan() {
 }
 
 self_test() {
-  local tmp got want=3
+  local tmp got want=5
   tmp="$(mktemp -d)" || return 1
   mkdir -p "$tmp/c"
   printf '%s\n' \
@@ -58,6 +60,8 @@ self_test() {
     'c = address_line(loc.address, loc.city)' \
     'd = ", ".join((a, city))  # guard-ok: not an address' \
     'e = ", ".join(cities)' \
+    'const g = `${p.location_address}, ${p.location_city}`;' \
+    '{offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}' \
     'f = [place.label, addressLine(place.address, place.city)].filter(Boolean).join(" — ")' > "$tmp/c/x.py"
   got=$(cd "$tmp" && scan c | wc -l | tr -d ' ')
   rm -rf "$tmp"

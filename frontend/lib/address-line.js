@@ -25,7 +25,7 @@ function squash(s) {
  * @returns {string}
  */
 export function addressLine(address, city) {
-  const street = squash(address).replace(/[\s,]+$/, "");
+  const street = squash(address).replace(/[\s,.]+$/, "");
   const town = squash(city);
   if (street && town) {
     const last = street.split(",").pop()?.trim();

@@ -20,6 +20,12 @@ describe("addressLine", () => {
     expect(addressLine("הרצל 5", undefined)).toBe("הרצל 5");
     expect(addressLine(null, null)).toBe("");
   });
+  it("adds a city that only ends another city's name as letters", () => {
+    expect(addressLine("הרצל 5, אור יהודה", "יהוד")).toBe("הרצל 5, אור יהודה, יהוד");
+  });
+  it("does not let a trailing full stop hide the city", () => {
+    expect(addressLine("הרצל 5, חיפה.", "חיפה")).toBe("הרצל 5, חיפה");
+  });
   it("cleans a trailing comma and extra spaces", () => {
     expect(addressLine("הרצל 5,  ", " חיפה ")).toBe("הרצל 5, חיפה");
   });

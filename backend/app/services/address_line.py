@@ -24,7 +24,7 @@ def _ends_with_city(address: str, city: str) -> bool:
 def address_line(address: str | None, city: str | None) -> str:
     """«<address>, <city>», without repeating a city the address already
     carries. Either part may be missing; both missing gives ""."""
-    street = " ".join((address or "").split()).rstrip(" ,")
+    street = " ".join((address or "").split()).rstrip(" ,.")
     town = " ".join((city or "").split())
     if street and town and _ends_with_city(street, town):
         return street
