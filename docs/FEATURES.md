@@ -90,7 +90,7 @@ left in v1" vs "what's planned for v2".
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
 | `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
-| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The business name links to its page, with its contact button, and a confirmed pickup gets Waze / Google Maps to the address (MEH-3755). «להזמין שוב» once finished (MEH-3764: the items still on the menu go back in the cart on the business page, the rest are named). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
+| `/order/[id]` | A buyer's on-site order: status, the time she asked for while pending (MEH-3960), hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The business name links to its page, with its contact button, and a confirmed pickup gets Waze / Google Maps to the address (MEH-3755). «להזמין שוב» once finished (MEH-3764: the items still on the menu go back in the cart on the business page, the rest are named). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
 | `/staff-invite` | Accept an invite to handle a business's orders (MEH-3526, after the token step) |

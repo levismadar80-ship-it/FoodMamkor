@@ -19,12 +19,17 @@ from sqlalchemy.orm import Session
 
 from app.models.catalog import ProducerLocation
 from app.models.models import Producer
-from app.models.product_orders import PRODUCT_ORDER_CODE_STATUSES, ProductOrder
+from app.models.product_orders import (
+    PRODUCT_ORDER_CODE_STATUSES,
+    ProductOrder,
+    ProductOrderEvent,
+)
 from app.services.producer_listing import is_business_row
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
 from app.services.product_order_paid import is_owed  # MEH-3962
 from app.services.review_invite import review_invite_url
 from app.utils.clock import utc_now
+from app.services.address_line import address_line  # MEH-3959
 
 # A token never expires on its own, so the page behind it stops answering a
 # while after the order closed: it holds a name and a city.
@@ -121,7 +126,7 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
     city: str | None = loc.city  # type: ignore[assignment]
     if loc.location_precision != "exact" or not address:
         return city or None
-    return ", ".join(part for part in (address, city) if part)
+    return address_line(address, city)
 
 
 def review_url(producer: Producer | None, order: ProductOrder) -> str | None:
@@ -132,6 +137,33 @@ def review_url(producer: Producer | None, order: ProductOrder) -> str | None:
     if order.status != "handed" or producer is None or not is_business_row(producer):
         return None
     return review_invite_url(producer)
+
+
+# MEH-3976: the closes whose note the business writes for the buyer.
+_NOTE_TO_BUYER_STATUSES = ("declined", "cancelled")
+
+
+def business_note(db: Session, order: ProductOrder) -> str | None:
+    """The note the business wrote with its decline or cancel. The decline
+    dialog asks for «הסיבה, כפי שהלקוח יראה אותה»; a system or buyer close
+    shows none."""
+    if order.status not in _NOTE_TO_BUYER_STATUSES:
+        return None
+    event = (
+        db.query(ProductOrderEvent)
+        .filter(
+            ProductOrderEvent.order_id == order.id,
+            ProductOrderEvent.to_status == order.status,
+        )
+        .order_by(ProductOrderEvent.created_at.desc())
+        .first()
+    )
+    # The business's words, or an admin's acting for it through the same
+    # dialog. A system note is internal wording, not a message to the buyer.
+    if event is None or event.actor not in ("business", "admin"):
+        return None
+    note = str(event.note or "").strip()
+    return note or None
 
 
 def buyer_view(db: Session, order: ProductOrder) -> dict[str, Any]:
@@ -146,6 +178,7 @@ def buyer_view(db: Session, order: ProductOrder) -> dict[str, Any]:
         "phone_masked": mask_phone(str(order.customer_phone)),
         "pickup_code": order.pickup_code if usable else None,
         "can_cancel": buyer_can_cancel(order, cutoff_hours(db, order), utc_now()),
+        "business_note": business_note(db, order),
     }
 
 
