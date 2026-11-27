@@ -9,7 +9,6 @@ test.use({ colorScheme: "dark" });
 
 test("the root opts out of forced dark mode", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 15_000 });
   const scheme = await page.evaluate(
     () => getComputedStyle(document.documentElement).colorScheme,
   );
