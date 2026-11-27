@@ -626,6 +626,8 @@ def _on_site_condition() -> ColumnElement[bool]:
 
     return and_(
         Producer.has_physical_location.is_(True),
+        # MEH-2447: the owner said «בתיאום מראש» — no walk-in, even with hours.
+        Producer.by_arrangement.is_(False),
         or_(
             Producer.locations.any(
                 and_(

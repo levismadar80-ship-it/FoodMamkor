@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
+import { stableCatalog } from "./_stable-catalog";
 import AxeBuilder from "@axe-core/playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -102,7 +103,8 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
     // the other gated routes already cover the shared page chrome.
     const res = await page.request.get("/api/producers");
     expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
-    const producers = (await res.json()) as Array<{ id: string }>;
+    // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+    const producers = stableCatalog((await res.json()) as Array<{ id: string; name?: string }>);
     if (producers.length === 0) {
       // test.skip(condition, ...) throws to abort the test — no return needed.
       test.skip(true, "No producers in the feed — staging DB may be empty");

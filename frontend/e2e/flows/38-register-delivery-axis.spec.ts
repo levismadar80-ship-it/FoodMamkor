@@ -81,12 +81,15 @@ async function advanceAndSubmit(page: Page): Promise<void> {
   await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
 }
 
-// MEH-2939: two checkboxes, not three radios. «גם וגם» is both boxes ticked.
-const AXES = ["onsite", "delivery"] as const;
-const CASES: { name: string; tick: (typeof AXES)[number][]; has_physical_location: boolean; offers_delivery: boolean }[] = [
-  { name: "onsite", tick: ["onsite"], has_physical_location: true, offers_delivery: false },
-  { name: "delivery", tick: ["delivery"], has_physical_location: false, offers_delivery: true },
-  { name: "both boxes", tick: ["onsite", "delivery"], has_physical_location: true, offers_delivery: true },
+// MEH-2939: checkboxes, not radios. «גם וגם» is two boxes ticked.
+// MEH-2447: a third box, «בתיאום מראש» (arranged), exclusive with onsite.
+const AXES = ["onsite", "arranged", "delivery"] as const;
+type Case = { name: string; tick: (typeof AXES)[number][]; has_physical_location: boolean; offers_delivery: boolean; by_arrangement: boolean };
+const CASES: Case[] = [
+  { name: "onsite", tick: ["onsite"], has_physical_location: true, offers_delivery: false, by_arrangement: false },
+  { name: "delivery", tick: ["delivery"], has_physical_location: false, offers_delivery: true, by_arrangement: false },
+  { name: "both boxes", tick: ["onsite", "delivery"], has_physical_location: true, offers_delivery: true, by_arrangement: false },
+  { name: "arranged + delivery", tick: ["arranged", "delivery"], has_physical_location: true, offers_delivery: true, by_arrangement: true },
 ];
 
 test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () => {
@@ -126,6 +129,7 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
       expect(body, "the register POST must have been captured").not.toBeNull();
       expect(body.has_physical_location).toBe(c.has_physical_location);
       expect(body.offers_delivery).toBe(c.offers_delivery);
+      expect(body.by_arrangement).toBe(c.by_arrangement);
       // The re-cut must not keep posting what step 2 no longer collects.
       for (const gone of ["delivery_cities", "delivery_nationwide"]) {
         expect(body, `step 2 no longer collects ${gone}`).not.toHaveProperty(gone);

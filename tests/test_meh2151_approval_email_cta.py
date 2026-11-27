@@ -378,7 +378,7 @@ def test_the_approval_endpoint_sends_both_parts_with_the_real_slug(
     db.commit()
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(_admin(db))
     )
     assert resp.status_code == 200, resp.text
 

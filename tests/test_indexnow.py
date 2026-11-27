@@ -232,7 +232,9 @@ class TestProducerWritePoints:
         p = make_producer(
             db, status="pending", images=[TEST_IMAGE], phone_verified=True
         )
-        resp = client.post(f"/admin/producers/{p.id}/approve", headers=_admin(db))
+        resp = client.post(
+            f"/admin/producers/{p.id}/approve?slug=test-farm", headers=_admin(db)
+        )
         assert resp.status_code == 200, resp.text
         db.refresh(p)
         assert _urls(posts) == indexnow.producer_urls(p)

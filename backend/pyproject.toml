@@ -384,6 +384,7 @@ files = [
     "app/routers/auth_google_code.py",  # MEH-3690
     "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
+    "app/services/onboarding_day30_numbers.py",
     "app/services/ops_alert.py",
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
@@ -484,6 +485,7 @@ files = [
     "app/schemas/form_fill.py",
     "app/services/producer_owner_update.py",  # MEH-3841
     "app/services/admin_producer_writes.py",  # MEH-3843
+    "app/services/admin_create_duplicates.py",  # MEH-3883
     "app/services/admin_user_writes.py",  # MEH-3537
     "app/services/admin_category_writes.py",  # MEH-3537
     "app/services/rescue_notify.py",  # MEH-3537

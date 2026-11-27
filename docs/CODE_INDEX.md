@@ -183,6 +183,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/account_guards.py` | MEH-3248 — who may be deleted, and through which door. |
 | `services/admin_audit.py` | One append-only row for every successful change an admin makes: who, what (method + route template), on what, when, from where. |
 | `services/admin_category_writes.py` | The admin's create, rename and delete of a category, with the guards that keep the taxonomy safe: a duplicate name, a seeded (system) row, a licensed row, and … |
+| `services/admin_create_duplicates.py` | Stop the admin «new business» form from opening a second page for a business we already have. … |
 | `services/admin_dashboard.py` | The numbers behind the admin home ('GET /admin/dashboard') and the admin analytics page ('GET /admin/analytics'). |
 | `services/admin_draft_missing.py` | For a draft its owner has claimed («נקלט, בהשלמה»), say what is still missing before she can send it for review, so the admin's follow-up call is about one … |
 | `services/admin_passkey.py` | The second factor of an admin account: a passkey (WebAuthn) checked after the password or Google / Apple sign-in, and ten one-time recovery codes for a lost … |
@@ -271,6 +272,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/newsletter_sync.py` | Mirror newsletter subscribers into Resend Contacts (MEH-2611). |
 | `services/oauth_verifiers.py` | OAuth provider verification + Google avatar re-host. |
 | `services/offer_supply.py` | Which businesses have something on today besides their products: a surprise bag today, an open group buy, an upcoming event, a listed experience (MEH-3824). … |
+| `services/onboarding_day30_numbers.py` | The numbers block of the day-30 onboarding email («חודש איתנו»): the business's last 30 days of page views, WhatsApp clicks, contact clicks and saves, so the … |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
 | `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |
@@ -809,6 +811,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
+| `admin/AdminDuplicateMatches.jsx` | On the admin «new business» form, after the server answered 409 DUPLICATE_BUSINESS, list the businesses we already have that share a phone, email, Instagram, … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
 | `admin/AdminLinkPanel.jsx` | — אין כותרת — |
@@ -835,6 +838,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/TestBusinessTag.jsx` | — אין כותרת — |
 | `admin/TestBusinessToggle.jsx` | — אין כותרת — |
 | `admin/WhatsappBlockedSection.jsx` | Admin: WhatsApp messages the outbound guard dropped outside production (MEH-3402 follow-up). … |
+| `admin/useGalleryUpload.js` | Uploads the admin's picked gallery photos one by one and keeps every photo that made it, even when a later one fails; … |
 | `auth/AuthSplitLayout.jsx` | — אין כותרת — |
 | `brand/Seed.jsx` | Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single seed may be rotated, scaled and given any seed colour. … |
 | `brand/SeedBurst.jsx` | The seed layer's success moment (MEH-2833, board 5 v2): the logo bloom and two rings of single seeds pointing outward, left open below the bloom (as on the … |
@@ -990,6 +994,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/admin/producers/ProducerDecisionModal.jsx` | ONE admin decision composer for a business awaiting review. The chosen REASON decides the outcome, not the button the admin happened to click: a fixable … |
 | `[locale]/admin/producers/QueueSlaSummary.jsx` | One line above the admin producers table — how many businesses are waiting for review, and how long the oldest has waited. … |
 | `[locale]/admin/producers/ReviewEvidence.jsx` | ReviewEvidence — MEH-1399 chunk 4, the «תיק בדיקה»: the links an admin needs while working a business, gathered next to the checklist instead of hunted for in … |
+| `[locale]/admin/producers/SlugConfirmDialog.jsx` | Before a business with no English address goes live, the admin sees the suggested address, edits it if it reads badly, and confirms (MEH-3914). … |
 | `[locale]/admin/producers/sla-statuses.js` | The one answer to "is this row waiting on the admin, and therefore accruing the «עד 3 ימי עסקים» clock". … |
 | `[locale]/admin/producers/use-admin-producers.js` | — אין כותרת — |
 | `[locale]/admin/producers/use-reject-flow.js` | Controller for the admin decision composer — fetches the canonical reason labels, holds the modal's state, and routes the submit to ONE of two existing … |

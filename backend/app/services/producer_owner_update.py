@@ -394,6 +394,8 @@ def update_owner_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339
         # constraints (models.py) — this only opens the write path.
         "has_physical_location",
         "offers_delivery",
+        # MEH-2447: «איסוף או ביקור בתיאום מראש», edited in DeliveryCard.
+        "by_arrangement",
         "delivery_nationwide",
         # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
