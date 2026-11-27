@@ -39,6 +39,7 @@ import { showToast } from "@/lib/toast";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
@@ -396,16 +397,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           </div>
           <div>
             <FieldHelpLabel htmlFor="event_time" label={t("field_time_label")} help={help("event_time")} testId="event-help-event_time" />
-            <Input id="event_time" type="time" value={form.event_time} onChange={update("event_time")} />
+            <TimeOfDaySelect id="event_time" optional ariaLabel={t("field_time_label")} value={form.event_time} onChange={(v) => update("event_time")({ target: { value: v } })} />
           </div>
           {/* MEH-2469: optional end time — shown as «09:30–15:00». */}
           <div>
             <FieldHelpLabel htmlFor="end_time" label={t("field_end_time_label")} help={help("end_time")} testId="event-help-end_time" />
-            <Input
+            <TimeOfDaySelect
               id="end_time"
-              type="time"
+              optional
+              ariaLabel={t("field_end_time_label")}
               value={form.end_time}
-              onChange={update("end_time")}
+              onChange={(v) => update("end_time")({ target: { value: v } })}
               error={fieldErrors.end_time}
             />
           </div>

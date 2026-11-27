@@ -18,6 +18,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import EventForm from "@/components/EventForm";
+import { setTime } from "./helpers/time-of-day";
 
 // MEH-1981: the surface now renders CollectionNotice, whose privacy link is
 // the next-intl Link — stubbed like the register/EventForm suites do, so the
@@ -202,8 +203,8 @@ describe("EventForm — submit validation (MEH-1809)", () => {
     renderForm();
     api.post.mockResolvedValue({ data: { id: 3 } });
     fillValid();
-    fireEvent.change(document.getElementById("event_time"), { target: { value: "09:30" } });
-    fireEvent.change(document.getElementById("end_time"), { target: { value: "15:00" } });
+    setTime(document.getElementById("event_time").closest("[data-time-value]"), "09:30");
+    setTime(document.getElementById("end_time").closest("[data-time-value]"), "15:00");
     fireEvent.click(screen.getByText(T.submit));
     expect(api.post).toHaveBeenCalledWith(
       "/events",
@@ -214,8 +215,8 @@ describe("EventForm — submit validation (MEH-1809)", () => {
   it("MEH-2469: end before start shows the approved error on the end field and blocks", () => {
     renderForm();
     fillValid();
-    fireEvent.change(document.getElementById("event_time"), { target: { value: "15:00" } });
-    fireEvent.change(document.getElementById("end_time"), { target: { value: "09:30" } });
+    setTime(document.getElementById("event_time").closest("[data-time-value]"), "15:00");
+    setTime(document.getElementById("end_time").closest("[data-time-value]"), "09:30");
     fireEvent.click(screen.getByText(T.submit));
     expect(T.error_end_time_after_start).toBe("שעת הסיום צריכה להיות אחרי שעת ההתחלה");
     const end = document.getElementById("end_time");
@@ -229,7 +230,7 @@ describe("EventForm — submit validation (MEH-1809)", () => {
   it("MEH-2469: an end time without a start time is blocked", () => {
     renderForm();
     fillValid();
-    fireEvent.change(document.getElementById("end_time"), { target: { value: "15:00" } });
+    setTime(document.getElementById("end_time").closest("[data-time-value]"), "15:00");
     fireEvent.click(screen.getByText(T.submit));
     expect(screen.getByText(T.error_end_time_after_start)).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();

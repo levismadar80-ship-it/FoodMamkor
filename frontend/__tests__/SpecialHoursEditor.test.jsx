@@ -28,6 +28,7 @@ import {
 } from "@/lib/special-hours";
 import { holidaysOn } from "@/lib/holidays";
 import { warnClosedDayOrders } from "@/lib/closed-day-orders";
+import { setTime, timeFields, getTimeField } from "./helpers/time-of-day";
 
 vi.mock("next-intl", () => {
   const t = (key) => key;
@@ -209,8 +210,8 @@ describe("SpecialHoursEditor — the state matrix", () => {
   it("many rows: past dates are gone, order is by date, an open row shows its range", () => {
     renderEditor(MANY);
     expect(rows().map((r) => r.dataset.date)).toEqual(["2026-09-11", "2026-09-21"]);
-    expect(screen.getByDisplayValue("09:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("13:00")).toBeTruthy();
+    expect(getTimeField("09:00")).toBeTruthy();
+    expect(getTimeField("13:00")).toBeTruthy();
   });
 
   it("tapping a chip ADDS closed rows (never applies anything by itself) and the chip turns taken", async () => {
@@ -241,7 +242,7 @@ describe("SpecialHoursEditor — the state matrix", () => {
     // nextOrderRange: starts where the last one ended, runs two hours.
     expect(screen.getByTestId("special-hours-remove-range-0-0")).toBeTruthy();
     expect(screen.getByTestId("special-hours-remove-range-0-1")).toBeTruthy();
-    expect(screen.getByDisplayValue("15:00")).toBeTruthy();
+    expect(getTimeField("15:00")).toBeTruthy();
     await act(async () => {
       fireEvent.click(screen.getByTestId("special-hours-save"));
     });
@@ -318,9 +319,9 @@ describe("SpecialHoursEditor — the state matrix", () => {
   it("an open row with close before open is refused with the shared range copy", async () => {
     renderEditor(ONE);
     fireEvent.click(screen.getByTestId("special-hours-closed-0")); // open it
-    const [from, to] = screen.getAllByDisplayValue(/^\d\d:\d\d$/);
-    fireEvent.change(from, { target: { value: "14:00" } });
-    fireEvent.change(to, { target: { value: "09:00" } });
+    const [from, to] = timeFields();
+    setTime(from, "14:00");
+    setTime(to, "09:00");
     await act(async () => {
       fireEvent.click(screen.getByTestId("special-hours-save"));
     });

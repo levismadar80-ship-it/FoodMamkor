@@ -13,8 +13,8 @@
  */
 import { useTranslations } from "next-intl";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 
 /**
  * @param {{ day: string, time: string, hint: string, testid: string,
@@ -43,16 +43,12 @@ export default function OrderCutoffPicker({ day, time, hint, testid, onChange })
             </option>
           ))}
         </Select>
-        <Input
-          inline
-          size="xs"
-          type="time"
+        <TimeOfDaySelect
           value={time}
-          onChange={(e) => onChange({ order_cutoff_time: e.target.value })}
-          aria-label={t("pickup_cutoff_time_aria")}
-          className="w-28"
-          dir="ltr"
-          data-testid={`${testid}-time`}
+          onChange={(v) => onChange({ order_cutoff_time: v })}
+          ariaLabel={t("pickup_cutoff_time_aria")}
+          className="w-36"
+          testId={`${testid}-time`}
         />
       </div>
       <span className="mt-1 block text-2xs text-fg-muted">{half ? t("pickup_cutoff_half") : hint}</span>

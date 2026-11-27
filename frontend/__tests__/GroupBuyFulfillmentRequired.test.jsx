@@ -48,6 +48,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 import ProducerGroupBuysPage from "@/app/[locale]/producer/dashboard/group-buys/page";
+import { setTime } from "./helpers/time-of-day";
 
 const F = "group_buys.dashboard.form";
 
@@ -57,9 +58,10 @@ async function openForm() {
   const pickup = screen.getByLabelText(`${F}.pickup_label`);
   const delivery = screen.getByLabelText(`${F}.delivery_label`);
   // The submit handler builds an ISO deadline, so the date must be a real one.
-  fireEvent.change(screen.getByLabelText(new RegExp(`${F}.deadline_label`)), {
-    target: { value: "2099-01-01T12:00" },
-  });
+  // MEH-3955: a date field and 24-hour selects, not one datetime-local.
+  const deadline = screen.getByTestId("gb-deadline");
+  fireEvent.change(deadline.querySelector('input[type="date"]'), { target: { value: "2099-01-01" } });
+  setTime(deadline.querySelector("[data-time-value]"), "12:00");
   return { pickup, delivery, form: pickup.closest("form") };
 }
 

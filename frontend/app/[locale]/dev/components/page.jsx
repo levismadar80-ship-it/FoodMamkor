@@ -8,6 +8,8 @@ import ShowMore from "@/components/ui/ShowMore";
 import PasswordField from "@/components/ui/PasswordField";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 /**
@@ -127,8 +129,7 @@ export default function DevComponentsPage() {
           <Input size="sm" type="text" label="Small field (sm)" placeholder="Product name" />
           <Input size="sm" type="text" label="Small field, invalid" defaultValue="?" error="At least 3 letters" />
           <div className="flex items-center gap-2">
-            <Input inline size="xs" type="time" aria-label="From" className="numeric" defaultValue="08:00" />
-            <Input inline size="xs" type="time" aria-label="Until" className="numeric" defaultValue="14:00" />
+            <DevTimeRange />
             <Input inline size="xs" type="number" aria-label="Quantity" className="w-20" defaultValue="3" />
           </div>
           <Select label="Region" defaultValue="center" helperText="Pick one">
@@ -241,5 +242,17 @@ export default function DevComponentsPage() {
         </div>
       </Section>
     </main>
+  );
+}
+
+/** MEH-3955: the clock-time field, 24-hour (was <Input type="time">). */
+function DevTimeRange() {
+  const [from, setFrom] = useState("08:00");
+  const [until, setUntil] = useState("14:00");
+  return (
+    <>
+      <TimeOfDaySelect ariaLabel="From" value={from} onChange={setFrom} className="w-36" />
+      <TimeOfDaySelect ariaLabel="Until" value={until} onChange={setUntil} className="w-36" />
+    </>
   );
 }

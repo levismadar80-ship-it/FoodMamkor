@@ -735,7 +735,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `HoursText.jsx` | MEH-2604: free-text hours as the owner typed them («א׳–ה׳ 9:00–17:00»), rendered inside the RTL page with every time RANGE isolated left-to-right. |
 | `HubAlertHint.jsx` | MEH-3117 — the way out of an empty hub tab (/rescue, /group-buys): one line saying how to hear about the next one (save a business, turn on its alert) and a … |
 | `HubFaq.jsx` | A short «שאלות נפוצות» block at the bottom of a hub list (/group-buys, /rescue): closed <details> rows and the matching FAQPage JSON-LD, both built from the … |
-| `HubFaqLink.jsx` | One short link to a hub's «שאלות נפוצות» (HubFaq), above the list and on the offer page (MEH-3949). |
+| `HubFaqLink.jsx` | One short link to a hub's «שאלות נפוצות» (HubFaq). The questions sit under the list, and the list has no pages, so with many group buys or bags nobody scrolls … |
 | `HubShell.jsx` | MEH-3013 — the ONE head every «מה קורה» tab renders: the photo hero (eyebrow · H1 · subtitle) and, directly under it, the shared tab row. … |
 | `ImageGallery.jsx` | — אין כותרת — |
 | `ImageWithFallback.jsx` | — אין כותרת — |
@@ -960,6 +960,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/Button.jsx` | — אין כותרת — |
 | `ui/Card.jsx` | — אין כותרת — |
 | `ui/Checkbox.jsx` | A native <input type="checkbox"> inside its own <label>, so the whole row (box + text) is the hit area: at least 44px tall below md and 32px from md up … |
+| `ui/DateTimeField.jsx` | A date and a 24-hour clock time in one field, with the value an <input type="datetime-local"> gives («YYYY-MM-DDTHH:MM»), so the time never reads AM/PM … |
 | `ui/Dialog.jsx` | — אין כותרת — |
 | `ui/EmptyState.jsx` | — אין כותרת — |
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |

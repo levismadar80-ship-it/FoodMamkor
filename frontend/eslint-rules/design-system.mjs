@@ -20,7 +20,7 @@
  *           (`<motion.button>`) is not a raw element.
  * Related:  frontend/components/CLAUDE.md «Shared components» (the owner table
  *           each message points at); eslint.config.mjs (wiring + ui/ exemption).
- * History:  MEH-3829 (creation, parent MEH-3826).
+ * History:  MEH-3829 (creation, parent MEH-3826). MEH-3955: `no-html-time`.
  */
 
 /** Read a JSX attribute by name, or undefined. */
@@ -159,6 +159,12 @@ const noReadonlyOrDisabledInputs = {
 
 const HEADINGS = new Set(["h1", "h2", "h3"]);
 
+// MEH-3955: a native time field shows AM/PM on a phone set to English, and no
+// attribute can make it 24-hour. Counts <input> and ui/Input alike, since
+// ui/Input passes `type` straight through.
+const CLOCK_TYPES = new Set(["time", "datetime-local"]);
+const isClockField = (node) => ["input", "Input"].includes(tagName(node) || "") && CLOCK_TYPES.has(literal(attr(node, "type")) || "");
+
 const plugin = {
   meta: { name: "design-system" },
   rules: {
@@ -169,6 +175,7 @@ const plugin = {
     "no-html-radio": elementRule("A hand-written radio <input>", "a shared radio group (none yet, MEH-3826) — keep the count from growing", inputOfType(new Set(["radio"]))),
     "no-html-heading": elementRule("A hand-written <h1>–<h3>", "ui/Heading or ui/SectionHeading", (n) => HEADINGS.has(tagName(n))),
     "no-html-anchor": elementRule("A hand-written <a>", "ui/Link, or Link from @/i18n/navigation for an internal page", (n) => tagName(n) === "a"),
+    "no-html-time": elementRule("A native time field (type=\"time\" or \"datetime-local\"), which shows AM/PM on an English phone", "ui/TimeOfDaySelect, or ui/DateTimeField for a date and a time", isClockField),
     "no-placeholder-as-label": noPlaceholderAsLabel,
     "no-readonly-or-disabled-inputs": noReadonlyOrDisabledInputs,
   },
