@@ -38,7 +38,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
@@ -63,6 +63,7 @@ from app.services.draft_preview import (
 from app.services.producer_approval import (
     ApprovalOverrides,
     _apply_approval_state,
+    assert_slug_decided,
     _assert_approvable,
     _persist_approval,
 )
@@ -212,6 +213,8 @@ def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parame
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
+    # MEH-3914: the English address the admin confirmed (assert_slug_decided).
+    slug: str | None = Query(default=None, max_length=60),
 ) -> dict[str, Any]:
     # FOR UPDATE: serialises with a claim committing on the same draft
     # (claim_producer locks this row), so "ownerless" is still true when we
@@ -239,6 +242,8 @@ def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parame
     # after the owner invite.
     overrides = ApprovalOverrides(unverified_phone=True)
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
+    # MEH-3914: after the content gates, so a missing photo is reported first.
+    overrides = overrides._replace(slug=assert_slug_decided(db, producer, slug))
     _apply_approval_state(producer)
     # The audit record, in the column the owner invite also writes: one
     # business, one statement of what its owner agreed to and where.

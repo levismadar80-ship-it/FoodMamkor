@@ -188,7 +188,7 @@ def test_approve_clears_requested_changes(client, db, monkeypatch):
     assert producer.requested_changes is not None
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)

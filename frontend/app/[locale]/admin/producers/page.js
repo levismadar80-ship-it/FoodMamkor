@@ -8,6 +8,7 @@ import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import QueueSlaSummary from "./QueueSlaSummary";
 import ProducerDecisionModal from "./ProducerDecisionModal";
+import SlugConfirmDialog from "./SlugConfirmDialog";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
 import { approveConfirmMessage } from "@/lib/admin-review-checklist";
@@ -207,6 +208,14 @@ function ProducersAdminPage() {
         deleting={h.confirmDelete ? h.isBusy(`delete:${h.confirmDelete.id}`) : false}
         onConfirm={h.confirmDeleteProducer}
         onCancel={h.closeDeleteConfirm}
+      />
+
+      {/* MEH-3914: confirm the English address of a business that has none. */}
+      <SlugConfirmDialog
+        slugPrompt={h.slugPrompt}
+        busy={h.slugPrompt ? h.isBusy(`approve:${h.slugPrompt.producer.id}`) : false}
+        onConfirm={(slug) => h.quickApprove(h.slugPrompt.producer, slug)}
+        onCancel={h.closeSlugPrompt}
       />
 
       {/* MEH-1396: soft review-checklist confirm on approve with unticked items. */}
