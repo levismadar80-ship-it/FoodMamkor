@@ -431,6 +431,7 @@ files = [
     "app/services/product_variants.py",
     "app/services/product_weekdays.py",
     "app/services/product_daily_stock.py",
+    "app/services/product_lead_days.py",
     "app/models/product_order_repeats.py",
     "app/services/product_order_repeat.py",
     "app/services/product_order_repeat_job.py",

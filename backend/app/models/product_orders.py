@@ -85,6 +85,10 @@ PRODUCT_ORDER_MAX_LEAD_HOURS = 168
 PRODUCT_ORDER_DEFAULT_LEAD_HOURS = 24
 # Four windows a day, seven days: more than any real week needs, and the
 # bound that keeps the table from growing without limit (MEH-3022).
+# MEH-3932: the most days ahead a product can ask to be ordered
+# (products.lead_days, CHECK 1..7). Slots are offered for 14 days
+# (services/product_order_slots.SLOT_HORIZON_DAYS), so 7 still leaves a week.
+PRODUCT_LEAD_DAYS_MAX = 7
 PRODUCT_ORDER_MAX_WINDOWS = 28
 # MEH-3263: an order someone is still waiting on. The partial unique index on
 # pickup codes (revision f7c1a5e9b3d2) covers the last two.

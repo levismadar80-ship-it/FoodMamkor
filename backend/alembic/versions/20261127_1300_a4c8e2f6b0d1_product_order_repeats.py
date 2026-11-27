@@ -1,7 +1,7 @@
 """product_order_repeats
 
 Revision ID: a4c8e2f6b0d1
-Revises: c5e7a9b1d3f4
+Revises: e3b7d1f5a9c2
 Create Date: 2026-11-27 13:00:00.000000+00:00
 
 MEH-3933 (Fischgrund bakery, 27/11): a buyer can ask for the same order
@@ -15,9 +15,8 @@ Expand-only (ADR-007): a new table, and one nullable column with no default,
 so every existing order reads NULL = a one-off; Postgres adds it without
 rewriting the table. The previous container never reads either.
 
-NOTE for the merge train: MEH-3932 (PR #5424, revision e3b7d1f5a9c2) also
-revises c5e7a9b1d3f4. Whichever of the two merges second moves its
-down_revision onto the other, so there is one head.
+Revises e3b7d1f5a9c2 (MEH-3932, products.lead_days), which merged first;
+both were cut from c5e7a9b1d3f4, so this one moved onto it for one head.
 
 downgrade() drops the column, then the table: recurring orders stop, every
 order made from one stays as an ordinary order.
@@ -30,7 +29,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "a4c8e2f6b0d1"
-down_revision: Union[str, None] = "c5e7a9b1d3f4"
+down_revision: Union[str, None] = "e3b7d1f5a9c2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

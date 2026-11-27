@@ -307,6 +307,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/producer_risk.py` | Anthropic-Haiku-backed signup risk score (0-100) + one-sentence Hebrew reasoning, written to producers.risk_score / producers.risk_reasoning asynchronously … |
 | `services/product_daily_stock.py` | Daily stock: how many units of a product (all its variants) or of one variant were already ordered for a pickup day, how many are left, the refusal of an … |
 | `services/product_import.py` | Turn a list of rows from a business's existing store (first source: mypips) into DRAFT products for that business. … |
+| `services/product_lead_days.py` | Refuses an order whose pickup day, on the Israel clock, is sooner than a product's 'products.lead_days' allows: the pickup's day must be at least today + … |
 | `services/product_order_actions.py` | Everything that happens to an order after it was sent: the buyer cancels or accepts a proposed change; … |
 | `services/product_order_clock.py` | The clock an order's timers run on: hours that are counted only outside Shabbat and the festivals (Sapir, 14/11: «שעון 24 השעות נעצר אז לכולם»), and the … |
 | `services/product_order_create.py` | Write one buyer's order request: check that the business takes orders, that the slot, the products and the delivery are still real, price everything from the … |
@@ -865,6 +866,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/google-profile/GoogleProfileLink.jsx` | Find the business's own Google profile and link it, or unlink it (MEH-3641). The server accepts a link only when the Google name or phone matches the … |
 | `dashboard/google-profile/GoogleProfileTool.jsx` | The body of /producer/dashboard/google-profile (MEH-3641): reads whether the business is linked and whether Google can be asked, then shows the link half, the … |
 | `dashboard/orders/DailyLimitField.jsx` | «כמה ביום» in a product row of the orders tab: how many units of a product (or of one of its sizes or flavours) can be ordered for one pickup day. … |
+| `dashboard/orders/LeadDaysField.jsx` | «כמה זמן מראש צריך להזמין» in a product row of the orders tab (MEH-3932): the product is offered only for pickup days at least that many days off, on the … |
 | `dashboard/orders/OrderActions.jsx` | The buttons an order's status offers the business, and the one dialog a button opens. … |
 | `dashboard/orders/OrderCard.jsx` | One on-site order as the business sees it: who, what, when, how much, and the actions its status allows. |
 | `dashboard/orders/OrderCustomersCard.jsx` | «הלקוחות שלכם» in the «הזמנות» tab: who ordered through the site, how many times and when last, «לקוח חוזר» from two orders, and a CSV download so the … |

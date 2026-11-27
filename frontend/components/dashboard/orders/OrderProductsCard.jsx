@@ -28,6 +28,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Switch from "@/components/ui/Switch";
 import DailyLimitField from "@/components/dashboard/orders/DailyLimitField";
+import LeadDaysField from "@/components/dashboard/orders/LeadDaysField";
 import { detailToMessage } from "@/lib/errors";
 import { loadProductsOrdering, saveProductOrdering } from "@/lib/orderable-products";
 import { draftProductIds } from "@/lib/order-setup-draft";
@@ -57,7 +58,7 @@ function SwitchLine({ id, label, checked, busy, onChange, help = undefined }) {
 function ProductRow({ product, onSaved, help = undefined, pending = false, onPending = undefined, error = null }) {
   const t = useTranslations("dashboard.producer.orders");
   const [state, setState] = useState(/** @type {{ busy?: boolean, error?: string|null }} */ ({}));
-  const save = async (/** @type {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} */ change) => {
+  const save = async (/** @type {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, lead_days?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} */ change) => {
     setState({ busy: true });
     try {
       onSaved(await saveProductOrdering(product, change));
@@ -86,6 +87,8 @@ function ProductRow({ product, onSaved, help = undefined, pending = false, onPen
         onChange={(soldOut) => save({ in_stock: !soldOut })}
       />
       <DailyLimits product={product} busy={Boolean(state.busy)} save={save} />
+      {/* MEH-3932: how many days ahead this product must be ordered. */}
+      <LeadDaysField id={`lead-${key}`} value={product.lead_days} busy={Boolean(state.busy)} onSave={(days) => save({ lead_days: days })} />
       {(state.error || error) && <InlineMessage tone="error">{state.error || error}</InlineMessage>}
     </li>
   );
