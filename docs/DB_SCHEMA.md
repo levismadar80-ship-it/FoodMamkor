@@ -5,6 +5,8 @@
 > `docs/privacy/columns.tsv`. Regenerate:
 > `UPDATE_DB_SCHEMA_DOC=1 pytest tests/test_db_schema_doc.py` (MEH-3929).
 > `tests/test_db_schema_doc.py` fails when this file and the models differ.
+> Limit: a Python-side default or on-update is shown by its function name
+> (`<lambda>()` for an inline lambda) — read the model for what it computes.
 >
 > This is the one home for "what columns, types and constraints exist". The
 > relationship picture is `.ai/diagrams/db-schema.md` and the prose (why a
@@ -115,7 +117,7 @@
 | `label` | `TEXT` | NOT NULL |  |  | not-personal |
 | `hint` | `TEXT` | yes |  |  | not-personal |
 | `active` | `BOOLEAN` | NOT NULL | server: `true`<br>app: `True` |  | not-personal |
-| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | server: `now()` |  | not-personal |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | server: `now()`<br>on update: `now()` |  | not-personal |
 
 **Indexes**
 
@@ -137,6 +139,10 @@
 | `name` | `VARCHAR(60)` | yes |  |  | technical |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | server: `now()` |  | technical |
 | `last_used_at` | `TIMESTAMP WITH TIME ZONE` | yes |  |  | technical |
+
+**UNIQUE**
+
+- (credential_id)
 
 **Indexes**
 
@@ -162,7 +168,7 @@
 |---|---|---|---|---|---|
 | `key` | `VARCHAR(100)` | NOT NULL |  | PK | not-personal |
 | `value` | `TEXT` | yes |  |  | not-personal |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | not-personal |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()`<br>on update: `utc_now()` |  | not-personal |
 
 ### `alembic_lineage`
 
@@ -229,7 +235,7 @@
 | `price_list_version` | `INTEGER` | yes |  |  | business |
 | `subscribed` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | app: `<lambda>()` |  | business |
-| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | app: `<lambda>()` |  | business |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | app: `<lambda>()`<br>on update: `<lambda>()` |  | business |
 
 **CHECK**
 
@@ -241,10 +247,15 @@
 |---|---|---|---|---|---|
 | `id` | `INTEGER` | NOT NULL |  | PK | not-personal |
 | `name` | `VARCHAR(100)` | NOT NULL |  | UNIQUE | not-personal |
-| `slug` | `VARCHAR(50)` | NOT NULL | app: `_column_default()` |  | not-personal |
+| `slug` | `VARCHAR(50)` | NOT NULL | app: `_column_default()` | UNIQUE | not-personal |
 | `emoji` | `VARCHAR(10)` | yes |  |  | not-personal |
 | `is_system` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | not-personal |
 | `requires_license` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | not-personal |
+
+**UNIQUE**
+
+- (name)
+- `uq_categories_slug`: (slug)
 
 ### `category_requests`
 
@@ -273,6 +284,10 @@
 | `lat` | `FLOAT` | yes |  |  | not-personal |
 | `lng` | `FLOAT` | yes |  |  | not-personal |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | not-personal |
+
+**UNIQUE**
+
+- (name_he)
 
 ### `contact_messages`
 
@@ -340,6 +355,10 @@
 | `resend_email_id` | `VARCHAR(64)` | yes |  |  | messages |
 | `detail` | `VARCHAR(80)` | yes |  |  | messages |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | messages |
+
+**UNIQUE**
+
+- (svix_id)
 
 **Indexes**
 
@@ -435,7 +454,7 @@
 | `rejection_reason` | `TEXT` | yes |  |  | business |
 | `is_active` | `BOOLEAN` | NOT NULL | server: `true`<br>app: `True` |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()`<br>on update: `utc_now()` |  | business |
 
 ### `favorite_alerts`
 
@@ -453,7 +472,7 @@
 | `push_subscription` | `JSON` | yes |  |  | technical |
 | `whatsapp_opt_in` | `BOOLEAN` | yes | app: `False` |  | cookies |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | cookies |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | cookies |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()`<br>on update: `utc_now()` |  | cookies |
 
 **UNIQUE**
 
@@ -558,12 +577,16 @@
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
 | `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | ugc |
-| `click_id` | `UUID` | NOT NULL |  | FK → `home_product_whatsapp_clicks.id` ON DELETE CASCADE | ugc |
+| `click_id` | `UUID` | NOT NULL |  | FK → `home_product_whatsapp_clicks.id` ON DELETE CASCADE<br>UNIQUE | ugc |
 | `user_id` | `UUID` | NOT NULL |  | FK → `users.id` ON DELETE CASCADE | ugc |
 | `home_product_id` | `UUID` | NOT NULL |  | FK → `home_products.id` ON DELETE CASCADE | ugc |
 | `stars` | `INTEGER` | NOT NULL |  |  | ugc |
 | `comment` | `VARCHAR(100)` | yes |  |  | ugc |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | ugc |
+
+**UNIQUE**
+
+- `uq_one_rating_per_click`: (click_id)
 
 ### `home_product_whatsapp_clicks`
 
@@ -576,6 +599,10 @@
 | `rating_sent` | `BOOLEAN` | yes | app: `False` |  | cookies |
 | `rated` | `BOOLEAN` | yes | app: `False` |  | cookies |
 | `rating_token` | `VARCHAR(100)` | yes |  | UNIQUE | cookies |
+
+**UNIQUE**
+
+- (rating_token)
 
 ### `home_products`
 
@@ -626,6 +653,10 @@
 | `bot_template_sent` | `VARCHAR(50)` | yes |  |  | messages |
 | `human_replied` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | messages |
 
+**UNIQUE**
+
+- (meta_message_id)
+
 **Indexes**
 
 - `ix_inbound_messages_bot_replied` (bot_replied)
@@ -657,6 +688,10 @@
 | `email` | `VARCHAR(200)` | NOT NULL |  | UNIQUE | identity |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | identity |
 
+**UNIQUE**
+
+- (email)
+
 ### `outbound_messages`
 
 | column | type | null | default | key | privacy |
@@ -670,6 +705,10 @@
 | `error_message` | `TEXT` | yes |  |  | messages |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | messages |
 | `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | messages |
+
+**UNIQUE**
+
+- (meta_message_id)
 
 **Indexes**
 
@@ -698,7 +737,7 @@
 | `suggestion_reason` | `TEXT` | yes |  |  | outreach |
 | `suggester_thanked_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | outreach |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | outreach |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | outreach |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()`<br>on update: `utc_now()` |  | outreach |
 
 **Indexes**
 
@@ -788,7 +827,7 @@
 | `is_primary` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `location_precision` | `VARCHAR(20)` | NOT NULL | server: `'exact'`<br>app: `'exact'` |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()`<br>on update: `utc_now()` |  | business |
 
 **CHECK**
 
@@ -834,7 +873,7 @@
 | `expires_at` | `DATE` | NOT NULL |  |  | business |
 | `is_active` | `BOOLEAN` | NOT NULL | server: `true`<br>app: `True` |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()`<br>on update: `utc_now()` |  | business |
 
 **CHECK**
 
@@ -864,7 +903,7 @@
 | `alcohol_licensed` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `business_id_number` | `VARCHAR(9)` | yes |  |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | business |
 
 **CHECK**
 
@@ -942,7 +981,7 @@
 | `moderation_notes` | `TEXT` | yes |  |  | business |
 | `published` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | server: `now()`<br>app: `utc_now()`<br>on update: `utc_now()` |  | business |
 
 **CHECK**
 
@@ -1140,7 +1179,7 @@
 | `reviews_count` | `INTEGER` | yes | app: `0` |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | business |
 | `last_active_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITH TIME ZONE` | yes |  |  | business |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | yes | on update: `now()` |  | business |
 | `phone_verified` | `BOOLEAN` | yes | app: `False` |  | business |
 | `ambassador` | `BOOLEAN` | yes | app: `False` |  | business |
 | `kashrut_badges` | `TEXT[]` | yes | app: `[]` |  | business |
@@ -1184,11 +1223,15 @@
 - `producer_location_mode`: `has_physical_location OR offers_delivery`
 - `producer_nationwide_requires_delivery`: `NOT (delivery_nationwide AND NOT offers_delivery)`
 
+**UNIQUE**
+
+- (slug)
+
 **Indexes**
 
 - `idx_producers_availability_state` (availability_state) WHERE `(availability_state)::text <> 'accepting_orders'::text`
 - `idx_producers_created_at` (created_at)
-- `idx_producers_name` (to_tsvector('simple', name))
+- `idx_producers_name` USING `gin` (to_tsvector('simple', name))
 - `ix_producers_owner_invite_token_hash` (owner_invite_token_hash)
 
 ### `product_order_events`
@@ -1317,7 +1360,7 @@
 | `proposed_total_agorot` | `INTEGER` | yes |  |  | orders |
 | `proposal_note` | `TEXT` | yes |  |  | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | orders |
 
 **CHECK**
 
@@ -1432,6 +1475,10 @@
 - `ck_registrations_session_time_needs_date`: `session_time IS NULL OR session_date IS NOT NULL`
 - `ck_registrations_status`: `status IN ('registered', 'cancelled', 'waitlisted')`
 
+**UNIQUE**
+
+- (cancel_token)
+
 **Indexes**
 
 - `ix_registrations_event_id` (event_id)
@@ -1537,7 +1584,7 @@
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
 | `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | ugc |
-| `order_id` | `UUID` | NOT NULL |  | FK → `rescue_orders.id` ON DELETE CASCADE | ugc |
+| `order_id` | `UUID` | NOT NULL |  | FK → `rescue_orders.id` ON DELETE CASCADE<br>UNIQUE | ugc |
 | `rating` | `INTEGER` | NOT NULL |  |  | ugc |
 | `contents_tags` | `JSONB` | yes |  |  | ugc |
 | `highlight_tags` | `JSONB` | yes |  |  | ugc |
@@ -1549,16 +1596,24 @@
 
 - `rescue_reviews_rating_check`: `rating >= 1 AND rating <= 5`
 
+**UNIQUE**
+
+- `uq_rescue_reviews_order`: (order_id)
+
 ### `rescue_typical_items`
 
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
 | `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | business |
-| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | business |
+| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE<br>UNIQUE | business |
 | `items` | `JSONB` | NOT NULL | app: `list()` |  | business |
 | `allergens` | `TEXT[]` | yes |  |  | business |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | business |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | business |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | business |
+
+**UNIQUE**
+
+- `uq_rescue_typical_items_producer`: (producer_id)
 
 ### `retired_slugs`
 
@@ -1616,6 +1671,10 @@
 
 - `share_links_scope_check`: `scope IN ('draft_preview', 'producer_claim')`
 
+**UNIQUE**
+
+- (code_hash)
+
 **Indexes**
 
 - `ix_share_links_expires_at` (expires_at)
@@ -1628,7 +1687,7 @@
 | `slug` | `VARCHAR(50)` | NOT NULL |  | PK | not-personal |
 | `title` | `VARCHAR(200)` | NOT NULL |  |  | not-personal |
 | `body` | `TEXT` | NOT NULL | app: `''` |  | not-personal |
-| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()` |  | not-personal |
+| `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes | app: `utc_now()`<br>on update: `utc_now()` |  | not-personal |
 
 ### `user_phone_otp_tokens`
 
@@ -1681,6 +1740,12 @@
 | `rescue_no_show_count` | `INTEGER` | NOT NULL | server: `0`<br>app: `0` |  | orders |
 | `rescue_block_cleared_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `group_buy_block_cleared_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
+
+**UNIQUE**
+
+- (apple_id)
+- (email)
+- (google_id)
 
 **Indexes**
 

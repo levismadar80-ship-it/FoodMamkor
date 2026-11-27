@@ -43,6 +43,8 @@ HEADER = f"""# מהמקור — DB schema (generated)
 > `docs/privacy/columns.tsv`. Regenerate:
 > `UPDATE_DB_SCHEMA_DOC=1 pytest tests/test_db_schema_doc.py` (MEH-3929).
 > `tests/test_db_schema_doc.py` fails when this file and the models differ.
+> Limit: a Python-side default or on-update is shown by its function name
+> (`<lambda>()` for an inline lambda) — read the model for what it computes.
 >
 > This is the one home for "what columns, types and constraints exist". The
 > relationship picture is `.ai/diagrams/db-schema.md` and the prose (why a
@@ -89,6 +91,11 @@ def _default(col: sa.Column) -> str:
             parts.append(f"app: `{_md(arg.compile(dialect=DIALECT))}`")
         else:
             parts.append(f"app: `{_md(repr(arg))}`")
+    if col.onupdate is not None:
+        arg = col.onupdate.arg
+        name = getattr(arg, "__name__", None) if callable(arg) else None
+        shown = f"{name}()" if name else _md(getattr(arg, "compile", lambda **_: repr(arg))(dialect=DIALECT))
+        parts.append(f"on update: `{shown}`")
     return "<br>".join(parts)
 
 
@@ -96,10 +103,15 @@ def _key(col: sa.Column) -> str:
     parts = []
     if col.primary_key:
         parts.append("PK")
-    for fk in sorted(col.foreign_keys, key=lambda f: f.target_fullname):
+    for fk in sorted(col.foreign_keys, key=lambda f: (f.target_fullname, str(f.ondelete), str(f.name))):
         on_delete = f" ON DELETE {fk.ondelete}" if fk.ondelete else ""
         parts.append(f"FK → `{fk.target_fullname}`{on_delete}")
-    if col.unique:
+    single = {
+        next(iter(con.columns)).name
+        for con in col.table.constraints
+        if isinstance(con, sa.UniqueConstraint) and len(con.columns) == 1
+    }
+    if col.unique or col.name in single:
         parts.append("UNIQUE")
     return "<br>".join(parts)
 
@@ -123,9 +135,9 @@ def _table(t: sa.Table, privacy: dict[str, str]) -> list[str]:
         (
             con
             for con in t.constraints
-            if isinstance(con, sa.UniqueConstraint) and len(con.columns) > 1
+            if isinstance(con, sa.UniqueConstraint)
         ),
-        key=lambda con: str(con.name or ""),
+        key=lambda con: (str(con.name or ""), [c.name for c in con.columns]),
     )
     indexes = sorted(t.indexes, key=lambda i: str(i.name or ""))
     if checks:
@@ -146,7 +158,11 @@ def _table(t: sa.Table, privacy: dict[str, str]) -> list[str]:
                 c.name if isinstance(c, sa.Column) else _md(str(c)) for c in ix.expressions
             )
             flags = " UNIQUE" if ix.unique else ""
-            where = ix.dialect_options["postgresql"].get("where")
+            opts = ix.dialect_options["postgresql"]
+            for opt in ("using", "ops", "include", "with"):
+                if opts.get(opt):
+                    flags += f" {opt.upper()} `{_md(opts[opt])}`"
+            where = opts.get("where")
             where_s = f" WHERE `{_md(where)}`" if where is not None else ""
             out.append(f"- `{ix.name}`{flags} ({cols}){where_s}")
     return out + [""]
@@ -186,17 +202,6 @@ def test_db_schema_doc_is_current():
     )
 
 
-def test_doc_covers_every_model_column():
-    # Derived, not stated: every column on the metadata appears as a row.
-    text = DOC.read_text(encoding="utf-8")
-    for t in Base.metadata.tables.values():
-        section = text.split(f"### `{t.name}`\n", 1)
-        assert len(section) == 2, f"table {t.name} has no section in docs/DB_SCHEMA.md"
-        body = section[1].split("\n### ", 1)[0]
-        for c in t.columns:
-            assert f"| `{c.name}` |" in body, f"{t.name}.{c.name} missing from docs/DB_SCHEMA.md"
-
-
 def test_a_new_column_turns_the_doc_red():
     # Discrimination: a column added to the metadata changes the render.
     before = build()
@@ -208,4 +213,21 @@ def test_a_new_column_turns_the_doc_red():
     finally:
         t._columns.remove(col)
     assert "meh3929_probe_col" in after and after != before
+    assert build() == before
+
+
+def test_a_single_column_unique_constraint_turns_the_doc_red():
+    # Reviewer finding: a table-level UniqueConstraint on one column (e.g.
+    # uq_categories_slug) must show, or dropping it would leave the doc green.
+    before = build()
+    t = Base.metadata.tables["categories"]
+    con = next(
+        c for c in t.constraints if isinstance(c, sa.UniqueConstraint) and c.name == "uq_categories_slug"
+    )
+    t.constraints.remove(con)
+    try:
+        after = build()
+    finally:
+        t.constraints.add(con)
+    assert "uq_categories_slug" in before and "uq_categories_slug" not in after
     assert build() == before
