@@ -298,6 +298,7 @@ export const ProducerListSchema = z.object({
   delivers: z.boolean().nullable().optional(),               // → delivery badge + card fulfillment tag
   offers_pickup: z.boolean().nullable().optional(),          // → card fulfillment tag (PR-3)
   sells_on_site: z.boolean().nullable().optional(),          // → card «קנייה במקום» tag (MEH-2598)
+  by_arrangement: z.boolean().nullable().optional(),         // → card «בתיאום מראש» tag (MEH-2447)
   // MEH-3824: gate the map's offer switches (one business with one ⇒ the switch shows).
   has_open_group_buy: z.boolean().nullable().optional(),
   has_upcoming_event: z.boolean().nullable().optional(),

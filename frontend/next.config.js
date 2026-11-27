@@ -209,8 +209,21 @@ const nextConfig = {
     // said «בית העסק הזה לא נמצא». Someone trimming a URL lands on the page
     // that lists the thing instead: organizers → events, freshness → home.
     // permanent: false — either could get an index page of its own.
+    //
+    // MEH-3911: revision b3d5f7a9c1e2 renamed three admin-created category
+    // slugs from a letter-by-letter transliteration to English. A link shared
+    // before it 308s to the new address, region and all.
     const TAB_EXPERIENCES = [{ type: "query", key: "tab", value: "experiences" }];
+    const RENAMED_CATEGORY_SLUGS = [
+      ["kph", "coffee"],
+      ["byshvl-lpy-hzmnh", "cooked-to-order"],
+      ["avgvt-vkynvchym", "cakes-desserts"],
+    ];
     return [
+      ...RENAMED_CATEGORY_SLUGS.flatMap(([from, to]) => [
+        { source: `/:locale(he|en)/producers/${from}/:path*`, destination: `/:locale/producers/${to}/:path*`, permanent: true },
+        { source: `/producers/${from}/:path*`, destination: `/producers/${to}/:path*`, permanent: true },
+      ]),
       { source: "/:locale(he|en)/organizers", destination: "/:locale/events", permanent: false },
       { source: "/organizers", destination: "/events", permanent: false },
       { source: "/:locale(he|en)/freshness", destination: "/:locale", permanent: false },

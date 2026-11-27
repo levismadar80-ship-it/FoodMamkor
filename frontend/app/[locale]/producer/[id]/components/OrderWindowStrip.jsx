@@ -443,6 +443,11 @@ export function ProducerHoursSection({ producer }) {
       : null;
   const hasOrders = getOrderWindowRanges(orderWindow).length > 0 || upcoming.length > 0;
   if (!hasOrders && !storeHours) return null;
+  // MEH-2447: «פתוח למבקרים» would contradict her «בתיאום מראש» answer.
+  const visitLabel =
+    producer.by_arrangement && producer.has_physical_location !== false
+      ? t("label_visit_arranged")
+      : t("label_visit");
   const merged =
     hasOrders &&
     upcoming.length === 0 &&
@@ -467,14 +472,14 @@ export function ProducerHoursSection({ producer }) {
         {storeHours && !merged && storeMap && (
           <OrderWindowScheduleBlock
             orderWindow={hoursMapAsOrderWindow(storeMap)}
-            label={t("label_visit")}
+            label={visitLabel}
             setKey="visit"
           />
         )}
         {storeHours && !merged && !storeMap && (
           <div data-testid="hours-set" data-set="visit">
             <div className="border border-border rounded-md bg-surface overflow-hidden">
-              <SetHeader label={t("label_visit")} setKey="visit" />
+              <SetHeader label={visitLabel} setKey="visit" />
               <p data-testid="hours-raw" className="px-3.5 py-2.5 text-sm text-text">
                 <HoursText text={storeHours.trim()} />
               </p>

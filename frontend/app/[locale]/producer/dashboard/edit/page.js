@@ -1066,7 +1066,10 @@ function EditPageInner() {
           title={t("delivery.heading")}
           summary={
             [
-              profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+              // MEH-2447: her own «בתיאום מראש» answer, not «חנות פיזית».
+              profile.has_physical_location !== false
+                ? tAcc(profile.by_arrangement ? "delivery_mode_arranged" : "delivery_mode_store")
+                : null,
               profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
             ]
               .filter(Boolean)

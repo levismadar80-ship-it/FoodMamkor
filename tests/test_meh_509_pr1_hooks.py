@@ -167,8 +167,11 @@ def _approve(client, db, *, slug: str | None, phone: str | None = "0501112222"):
     producer.slug = slug
     db.commit()
     db.refresh(producer)
+    # MEH-3914: a Hebrew-only name with no slug and no Instagram needs the
+    # English address the admin confirmed; these tests are about the hook.
     resp = client.post(
         f"/admin/producers/{producer.id}/approve",
+        params={} if slug else {"slug": "chvt-haishvr"},
         headers=auth_header(admin),
     )
     return resp, producer
@@ -194,7 +197,8 @@ def test_approve_fires_approval_template(client, db, monkeypatch):
 
 
 def test_approve_with_null_slug_still_fires_with_name_only(client, db, monkeypatch):
-    """Approval must still fire when slug is null. MEH-509 PR1 prod-fix
+    """Approval must still fire when the row had no slug before approval
+    (MEH-3914: the admin confirms one in the same call). MEH-509 PR1 prod-fix
     dropped the slug-vs-id URL branch entirely (URL no longer sent), so
     the slug=null path must behave identically to the slug=set path:
     exactly one Meta call, exactly one body param (the producer name)."""
