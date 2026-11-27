@@ -86,7 +86,7 @@ export function statusView(order) {
     declined: "declined",
     cancelled: "cancelled",
     expired: "expired",
-    no_show: "cancelled",
+    no_show: "no_show", // MEH-3976: not «בוטלה»; she was marked as not coming
     handed: "handed",
   }[/** @type {string} */ (order.status)] ?? "cancelled";
   const open = OPEN.includes(order.status);
