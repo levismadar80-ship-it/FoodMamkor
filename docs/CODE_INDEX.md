@@ -904,6 +904,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `owner-assistant/OwnerAssistantPanel.jsx` | The conversation inside the owner's dashboard assistant: her messages, the answers (with links to the right screen or card), questions to tap for the screen … |
 | `owner-assistant/OwnerAssistantText.jsx` | One owner-assistant answer, with the dashboard screens, edit cards and site pages it names turned into links. |
 | `producer/BusinessQrCard.jsx` | — אין כותרת — |
+| `producer/CommunityRow.jsx` | The fixed «קבוצת העדכונים לבתי עסק» row on the dashboard home, right above «מה חדש במהמקור»: a permanent way into the WhatsApp community for an approved … |
 | `producer/DraftSubmitBanner.jsx` | — אין כותרת — |
 | `producer/FeedPostCanvas.jsx` | MEH-3330 — the «פוסט מוכן לשיתוף» card in the owner's share kit. She picks a moment (this week · a new product · an upcoming holiday), sees the 4:5 post built … |
 | `producer/FirstMomentCard.jsx` | A once-only «רגע ראשון» card at the top of the dashboard home — first review, first WhatsApp click, 100 views, first follower (MEH-3200 part 2; … |

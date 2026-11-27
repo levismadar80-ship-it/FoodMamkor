@@ -5317,6 +5317,11 @@
         "title": "Need help?",
         "cta": "Contact the team"
       },
+      "community_row": {
+        "title": "Updates group for businesses",
+        "body": "Markets and events before everyone else, and what's new on the site. Once or twice a month.",
+        "cta": "Join"
+      },
       "whats_new": {
         "card_title": "New on Mehamakor",
         "card_all": "All updates",
