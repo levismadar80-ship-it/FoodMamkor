@@ -38,6 +38,7 @@ from app.services.rescue_emails import (
     render_reservation_email,
 )
 from app.utils.clock import ISRAEL_TZ
+from app.services.address_line import address_line  # MEH-3959
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ def _reminder_card(order: RescueOrder, now: datetime) -> ReservationEmail:
         total_agorot=offer.price_agorot * order.qty,
         pickup_from=israel_hhmm(offer.pickup_start),
         pickup_until=israel_hhmm(offer.pickup_end),
-        address=", ".join(p for p in (location.address, location.city) if p),
+        address=address_line(location.address, location.city),  # type: ignore[arg-type]
         cancel_until=(
             israel_hhmm(offer.cancel_until) if offer.cancel_until > now else None
         ),

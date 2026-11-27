@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import Producer, RescueOffer, RescueOrder, User
 from app.services.prepay_copy import prepay_from_info
+from app.services.address_line import address_line  # MEH-3959
 from app.services.prepay_refunds import bag_business_cancel_mails, queue_mails
 from app.services.rescue_emails import (
     ReservationEmail,
@@ -155,7 +156,7 @@ def queue_reservation_email(
     producer = location.producer if location else None
     if not user.email or producer is None:
         return
-    address = ", ".join(p for p in (location.address, location.city) if p)
+    address = address_line(location.address, location.city)  # type: ignore[arg-type]
     today = clock.today
     background_tasks.add_task(
         send_reservation_email,
