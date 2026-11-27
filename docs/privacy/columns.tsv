@@ -842,3 +842,20 @@ share_links.producer_id	not-personal	a short preview or claim link an admin made
 share_links.scope	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
 rescue_orders.prepay_timing	orders	a surprise-bag reservation (the payment terms the business showed when it was made, MEH-3897)
 group_buy_commits.prepay_timing	orders	a user joining a group buy (the payment terms the business showed when she joined, MEH-3897)
+product_order_repeats.created_at	orders	when the buyer asked for the order every week
+product_order_repeats.customer_name	orders	the buyer's name, copied to each week's order
+product_order_repeats.customer_phone	orders	the buyer's phone, copied to each week's order
+product_order_repeats.delivery_address	orders	the buyer's delivery address, copied to each week's order
+product_order_repeats.delivery_city	orders	the buyer's delivery city, copied to each week's order
+product_order_repeats.fulfilment	orders	pickup or delivery for each week's order
+product_order_repeats.id	orders	the weekly repeat of a buyer's order
+product_order_repeats.items	orders	what the buyer orders every week
+product_order_repeats.last_slot_start	orders	the latest week the repeat made or skipped
+product_order_repeats.note	orders	the buyer's note, copied to each week's order
+product_order_repeats.producer_id	orders	the business the buyer orders from every week
+product_order_repeats.skipped_in_row	orders	weeks in a row the repeat could not make an order
+product_order_repeats.state	orders	whether the weekly repeat still makes orders
+product_order_repeats.stopped_at	orders	when the weekly repeat was stopped
+product_order_repeats.stopped_by	orders	who stopped the weekly repeat (buyer, business or system)
+product_order_repeats.user_id	orders	the buyer's account, when she was logged in
+product_orders.repeat_id	orders	an order from a business

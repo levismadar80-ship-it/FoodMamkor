@@ -122,6 +122,13 @@ UPDATE product_orders SET
     note = NULL,
     status_token_hash = NULL;
 
+-- MEH-3933: a weekly repeat carries the same buyer fields as its orders.
+UPDATE product_order_repeats SET
+    customer_name = 'לקוח ' || left(id::text, 8),
+    customer_phone = '+97250000' || lpad((('x' || substr(md5(id::text), 1, 4))::bit(16)::int % 10000)::text, 4, '0'),
+    delivery_address = NULL,
+    note = NULL;
+
 UPDATE experiences SET
     address = NULL;
 
