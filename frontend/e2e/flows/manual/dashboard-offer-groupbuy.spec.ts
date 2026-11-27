@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { layoutSettled } from "../_layout-settled";
+import { timeField } from "../_time-select";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -258,7 +259,10 @@ test.describe("group-buy form — clarity", () => {
   // MT:MEH-992:3 — the deadline helper explains the date and names Israel time.
   test("the deadline field explains what the date means, in Israel time", async ({ page }) => {
     await openForm(page);
-    await expect(page.getByRole("textbox", { name: "מועד אחרון" })).toHaveAttribute("type", "datetime-local");
+    // MEH-3955: a date and 24-hour selects, never datetime-local (AM/PM on an English phone).
+    await expect(page.getByTestId("gb-deadline").locator('input[type="date"]')).toBeVisible();
+    await expect(timeField(page, "מועד אחרון")).toBeVisible();
+    await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
     await expect(page.getByText("המועד האחרון להצטרפות, לפי שעון ישראל.")).toBeVisible();
   });
 
