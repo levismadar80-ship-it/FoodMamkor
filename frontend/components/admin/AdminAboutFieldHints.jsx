@@ -28,7 +28,7 @@ export default function AdminAboutFieldHints({ producer }) {
       className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <Heading level={2} className="mb-2 text-primary flex items-center gap-2">
-        <ListChecks size={20} weight="duotone" aria-hidden="true" />
+        <ListChecks size={20} weight="regular" aria-hidden="true" />
         {t("title")}
       </Heading>
       <p className="text-sm text-fg-muted mb-3">{t("intro")}</p>
