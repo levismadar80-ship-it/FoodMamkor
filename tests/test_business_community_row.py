@@ -8,7 +8,8 @@ Touches:  GET /producers/me/dashboard.
 Related:  backend/app/routers/producer_me.py _community_invite_url ·
           frontend/components/producer/CommunityRow.jsx.
 Cells:    set × approved → the link · set × pending → None · set × organizer
-          → None · unset → None · whitespace-only → None.
+          → None · set × seeded test row → the link · unset → None ·
+          whitespace-only → None.
 """
 import pytest
 
@@ -59,4 +60,12 @@ def test_unset_or_blank_setting_gives_none(client, db, monkeypatch, value):
 def test_padded_setting_is_returned_stripped(client, db, monkeypatch):
     monkeypatch.setattr(settings, "whatsapp_community_invite_url", f"  {FAKE_INVITE_URL}\n")
     owner = _owner(db, email="community-padded@example.com")
+    assert _invite(client, owner) == FAKE_INVITE_URL
+
+
+def test_seeded_test_business_still_gets_the_link(client, db, invite_set):
+    """The demo owner on staging is a seeded test row; the row must show there."""
+    owner = _owner(db, email="community-test-row@example.com")
+    db.get(Producer, owner.producer_id).is_test = True
+    db.commit()
     assert _invite(client, owner) == FAKE_INVITE_URL
