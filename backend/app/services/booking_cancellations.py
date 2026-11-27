@@ -290,6 +290,15 @@ def _cancel_live_bags(
         )
         .all()
     )
+    # MEH-3897: who held each bag, read before the cancel; the reservations
+    # not marked paid get the «אם … התקבל» list (the paid ones get theirs below).
+    buyers: dict[Any, set[Any]] = {}
+    for offer_id, user_id in (
+        db.query(RescueOrder.offer_id, RescueOrder.user_id)
+        .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
+        .all()
+    ):
+        buyers.setdefault(offer_id, set()).add(user_id)
     cancelled = (
         db.query(RescueOrder)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
@@ -297,6 +306,15 @@ def _cancel_live_bags(
     )
     for offer in offers:
         offer.status = "cancelled"  # type: ignore[assignment]
+    from app.services.prepay_refunds import bag_business_cancel_mails, queue_mails
+
+    for offer in offers:
+        queue_mails(
+            background_tasks,
+            bag_business_cancel_mails(
+                db, offer, buyers.get(offer.id, set()), "delisted"
+            ),
+        )
     if paid:
         # Imported here: rescue_payment -> rescue_writes, kept off this
         # module's import graph.
