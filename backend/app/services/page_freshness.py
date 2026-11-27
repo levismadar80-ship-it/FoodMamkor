@@ -16,7 +16,8 @@ Related:  backend/app/services/weekly_owner_summary.py (the claim / unclaim /
           backend/app/services/draft_preview.py (token shape).
 History:  Page freshness (creation, 18/11/2026); MEH-3194 (24/11: the one
           monthly owner email — every live business from the 1st, never on
-          Friday/Saturday, led by last month's numbers).
+          Friday/Saturday, led by last month's numbers); MEH-3840 (never
+          within 7 days of the day-30 onboarding email).
 """
 
 from __future__ import annotations
@@ -56,6 +57,13 @@ NO_SEND_WEEKDAYS = (4, 5)
 # missed for a week, the email waits for the next 1st instead of landing on
 # the 27th and again on the 1st.
 LAST_SEND_DAY = 7
+# MEH-3840: the day-30 onboarding email («חודש איתנו», onboarding_followup
+# step 5) and this one both count from the business's first month, so they
+# could land in the same daily tick. This one waits until that one is at
+# least this old. The daily job runs send_due_followups BEFORE
+# send_freshness_emails (app/startup.py), so a step 5 sent in the same tick is
+# already stamped when this reads it.
+AFTER_ONBOARDING_DAY30 = timedelta(days=7)
 # The admin "stale" view: not confirmed for this long.
 STALE_AFTER = timedelta(days=60)
 # The link in the email stays usable for three weeks.
@@ -195,6 +203,15 @@ def _owner(db: Session, producer_id: Any) -> Any:
     return owner
 
 
+def _not_after_day30(now: datetime) -> Any:
+    """SQL: no «חודש איתנו» sent within AFTER_ONBOARDING_DAY30 (MEH-3840).
+    Not stamped when skipped: the business is asked on a later send day."""
+    return or_(
+        Producer.email_followup_5_sent_at.is_(None),
+        Producer.email_followup_5_sent_at < now - AFTER_ONBOARDING_DAY30,
+    )
+
+
 def _due(now: datetime) -> Any:
     """SQL: not emailed yet in the Israel calendar month that `now` is in."""
     month_start = monthly.israel_month(now).start()
@@ -253,7 +270,12 @@ def _candidates(db: Session, now: datetime) -> list[_Candidate]:
             Producer.is_test,
             Producer.freshness_email_sent_at,
         )
-        .filter(_is_business(), Producer.created_at < young, _due(now))
+        .filter(
+            _is_business(),
+            Producer.created_at < young,
+            _due(now),
+            _not_after_day30(now),
+        )
         .order_by(Producer.id)
         .all()
     )

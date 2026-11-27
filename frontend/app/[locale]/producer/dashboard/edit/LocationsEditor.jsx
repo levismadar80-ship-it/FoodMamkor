@@ -168,8 +168,13 @@ function toEditForm(loc) {
 // MEH-3333: the admin edit page mounts this editor against
 // /admin/producers/{id}/locations; the owner dashboard keeps the default.
 const OWNER_BASE = "/producers/me/locations";
+/** @type {(key: string, dirty: boolean) => void} */
+const noopReport = () => {};
 
-/** @param {{ basePath?: string }} props */
+/** @param {{ basePath?: string, onLocationsChange?: any, hoursElsewhere?: boolean, refreshKey?: number, reportDirty?: (key: string, dirty: boolean) => void }} props */
+// MEH-3915: `reportDirty("locations", bool)` while the open add / edit form
+// holds typed values not yet saved — the admin edit page holds its
+// «שמרו שינויים» (which leaves the page) until they are saved or cancelled.
 // MEH-3790: `hoursElsewhere` — the owner's edit page shows opening hours in
 // its one «שעות» card (HoursCard.jsx), so the location form drops its hours
 // field AND stops sending `opening_hours`. The PUT is a partial update
@@ -181,6 +186,7 @@ export default function LocationsEditor({
   onLocationsChange,
   hoursElsewhere = false,
   refreshKey = 0,
+  reportDirty = noopReport,
 } = {}) {
   const t = useTranslations("settings.locations");
   const tKind = useTranslations("settings.locations.kind");
@@ -439,6 +445,7 @@ export default function LocationsEditor({
                 error={saveError}
                 errorCode={saveErrorCode}
                 onDirty={clearSaveError}
+                reportDirty={reportDirty}
                 onSubmit={(form) => handleUpdate(loc.id, form)}
                 onCancel={() => {
                   clearSaveError();
@@ -475,6 +482,7 @@ export default function LocationsEditor({
           error={saveError}
           errorCode={saveErrorCode}
           onDirty={clearSaveError}
+          reportDirty={reportDirty}
           onSubmit={handleCreate}
           onCancel={() => {
             clearSaveError();
@@ -573,11 +581,19 @@ function LocationForm({
   onCancel,
   siblings = [],
   showHours = true,
+  reportDirty = noopReport,
 }) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
   const [form, setForm] = useState(initial);
+  // MEH-3915: unsaved = differs from what the form opened with. A save closes
+  // the form, so the unmount clears it, as does «ביטול».
+  const unsaved = JSON.stringify(form) !== JSON.stringify(initial);
+  useEffect(() => {
+    reportDirty("locations", unsaved);
+    return () => reportDirty("locations", false);
+  }, [unsaved, reportDirty]);
   // MEH-1563: collapsed for a NEW location (the point of the disclosure — the
   // form must not open on two unexplained numbers), but expanded when the row
   // already carries coordinates, so editing never hides a value the owner

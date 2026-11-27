@@ -243,8 +243,12 @@ def attach_badge_fields(producer: Any) -> Any:
             and bool((getattr(loc, "opening_hours", None) or "").strip())
             for loc in (producer.locations or [])
         )
-        producer.sells_on_site = producer.has_physical_location is True and (
-            primary_hours or bool((producer.opening_hours or "").strip())
+        # MEH-2447: an owner who answered «בתיאום מראש» has no walk-in, hours
+        # or not — same conjunct as _on_site_condition.
+        producer.sells_on_site = (
+            producer.has_physical_location is True
+            and not producer.by_arrangement
+            and (primary_hours or bool((producer.opening_hours or "").strip()))
         )
     except Exception:
         logger.debug(

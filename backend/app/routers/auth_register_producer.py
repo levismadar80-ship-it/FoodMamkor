@@ -322,6 +322,7 @@ async def register_producer(
             kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
+            by_arrangement=data.by_arrangement,  # MEH-2447
             delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
@@ -555,6 +556,7 @@ async def register_producer(
             kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
+            by_arrangement=data.by_arrangement,  # MEH-2447
             delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
