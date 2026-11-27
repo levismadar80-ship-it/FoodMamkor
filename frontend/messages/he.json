@@ -3409,6 +3409,12 @@
       "empty_experiences_title": "חוויות חדשות בדרך",
       "empty_experiences_body": "עדיין אוספות בתי עסק שמארחים סדנאות בסביבה",
       "empty_experiences_cta": "מארחים חוויה? הוסיפו",
+      "host_gate": {
+        "title_experiences": "הוספת חוויה פתוחה לבתי עסק",
+        "title_events": "הוספת אירוע פתוחה לבתי עסק",
+        "body": "רושמים את בית העסק במהמקור, ואחרי האישור מוסיפים חוויות ואירועים מלוח הבקרה.",
+        "login": "כבר רשומים? התחברו"
+      },
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
@@ -6402,6 +6408,9 @@
           "cancel_title": "לבטל הזמנה שכבר אושרה?",
           "cancel_lead": "הלקוח יקבל על כך הודעה.",
           "cancel_note": "הסבר ללקוח (לא חובה)",
+          "no_show_title": "הלקוח לא הגיע?",
+          "no_show_lead": "ההזמנה תיסגר. לקוח שלא מגיע פעמיים בתוך 90 יום לא יוכל להזמין באתר מהמספר הזה.",
+          "no_show_confirm": "כן, לא הגיע",
           "failed": "הפעולה לא הצליחה. נסו שוב."
         },
         "products": {
@@ -8418,6 +8427,8 @@
     "when_pickup": "איסוף ב{day}, {from}–{until} · {address}",
     "when_pickup_no_address": "איסוף ב{day}, {from}–{until}",
     "when_delivery": "משלוח ב{day}, {from}–{until}",
+    "requested_pickup": "ביקשתם איסוף ב{day}, {from}–{until}",
+    "requested_delivery": "ביקשתם משלוח ב{day}, {from}–{until}",
     "proposal": "בית העסק מציע שינוי",
     "accept": "מתאים לי",
     "cancel": "לבטל את ההזמנה",
@@ -8428,6 +8439,8 @@
     "cancelled": "ההזמנה מ{business_name} בוטלה.",
     "expired": "בית העסק לא ענה בזמן, ולכן הבקשה בוטלה. לא חויבתם.",
     "handed": "נמסר. בתיאבון.",
+    "no_show": "בית העסק סימן שלא הגעתם לקבל את ההזמנה. אם זו טעות, אפשר לפנות לבית העסק.",
+    "business_note": "מה בית העסק כתב: {note}",
     "cancel_confirm": "לבטל את ההזמנה? בית העסק יקבל על כך הודעה.",
     "too_late": "את ההזמנה הזאת כבר אי אפשר לבטל באתר. אפשר לפנות לבית העסק.",
     "line": "{qty} × {name}",
