@@ -24,7 +24,7 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 // the ADR). Changing it needs a new ADR superseding ADR-011, not a copy edit.
 // MEH-3424 / ADR-043: the ONE sentence that says what the site is, on every
 // surface that describes it in a line: <meta name="description">, og/twitter
-// description, the Organization JSON-LD `description` and public/llms.txt.
+// description, the Organization JSON-LD `description` and /llms.txt (lib/llms-txt.js).
 // Approved verbatim by Sapir on 18/11/2026 (rule 22). It replaced the ADR-011
 // tagline here, which speaks to business owners and was read by ChatGPT as
 // the site's self-description (ADR-041). The tagline stays on the footer.

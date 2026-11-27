@@ -7,6 +7,7 @@
 // inline; complements <head> hreflang from MEH-476 PR 2.
 import { SITE_URL, API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
+import { fetchAllProducers } from "@/lib/all-producers"; // MEH-3953: shared with /llms.txt
 import { routing } from "@/i18n/routing";
 // MEH-1574: single owner for the hreflang map. This file used to keep its own
 // byte-identical copy of the same object — the exact two-owners drift class
@@ -80,56 +81,9 @@ function localizeEntry(path, meta) {
   }));
 }
 
-// MEH-2787 — the listing endpoint caps `limit` at 100
-// (backend/app/routers/producers.py:220), so the whole catalog needs an
-// offset walk. sitemaps.org allows 50,000 URLs per file and we are nowhere
-// near it, so a loop is enough; `generateSitemaps` would be premature.
-const PRODUCERS_PAGE_SIZE = 100;
-const PRODUCERS_MAX_PAGES = 20; // 2,000 businesses
 // The recipes fan-out calls a 120/minute endpoint from one IP. 10 in flight
 // keeps a full 2,000-business walk comfortably under it.
 const RECIPE_FAN_OUT_LIMIT = 10;
-
-/**
- * Every approved business, walked page by page.
- *
- * THE WALK IS ONLY SAFE BECAUSE THE LISTING IS TOTALLY ORDERED. Commit 1 of
- * this PR added `Producer.id.asc()` as a final unique key in
- * backend/app/services/producer_listing.py. Without it, two pages of the same
- * query are two statements over a non-unique order, and a row on the boundary
- * can repeat while another disappears — which in a sitemap means a business
- * silently missing from search. Do not port this loop to an endpoint whose
- * ordering you have not checked.
- *
- * @returns {Promise<Array|null>} the businesses, or null when the API is
- *   unreachable — null is distinct from [] so the caller keeps today's
- *   fail-closed behaviour (emit no producer URLs) rather than publishing a
- *   sitemap that claims the catalog is empty.
- */
-async function fetchAllProducers() {
-  const all = [];
-  for (let page = 0; page < PRODUCERS_MAX_PAGES; page++) {
-    const offset = page * PRODUCERS_PAGE_SIZE;
-    const res = await serverFetch(
-      `${API_URL}/producers?limit=${PRODUCERS_PAGE_SIZE}&offset=${offset}`,
-    );
-    if (!res.ok) {
-      // A mid-walk failure must not silently truncate the sitemap: the pages
-      // already collected would look like the whole catalog.
-      return page === 0 ? null : all;
-    }
-    const batch = await res.json();
-    if (!Array.isArray(batch)) return page === 0 ? null : all;
-    all.push(...batch);
-    if (batch.length < PRODUCERS_PAGE_SIZE) return all;
-  }
-  console.warn(
-    `[sitemap] producer walk hit the ${PRODUCERS_MAX_PAGES}-page cap ` +
-      `(${PRODUCERS_MAX_PAGES * PRODUCERS_PAGE_SIZE} businesses). Businesses past ` +
-      `that are NOT in the sitemap — raise PRODUCERS_MAX_PAGES or split the file.`,
-  );
-  return all;
-}
 
 /**
  * Run `task` over `items` with at most `limit` promises in flight, preserving
