@@ -31,6 +31,7 @@ from app.schemas.schemas import (
     GroupBuyStatusUpdate,
 )
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
+from app.schemas.payment_link import reservation_timing  # MEH-3897
 from app.services.prepay_refunds import (  # MEH-3897
     Mail,
     group_buy_cancel_mails,
@@ -463,6 +464,8 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         quantity=data.quantity,
         # MEH-3735: unique within the group (UNIQUE + the row lock above).
         pickup_code=no_show.new_code(no_show.codes_in_use(db, group_buy_id)),
+        # MEH-3897: the join keeps how it is paid as of now.
+        prepay_timing=reservation_timing(gb.producer.payment_info if gb.producer else None),
     )
     db.add(commit)
     # Flush so the just-added commit is visible to the participant-email query

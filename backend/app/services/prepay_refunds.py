@@ -39,7 +39,7 @@ from app.models.models import (
 )
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
-from app.services.prepay_copy import Prepay, prepay_from_info
+from app.schemas.payment_link import refund_timing
 from app.utils.money import agorot_from_shekels, shekels_text
 
 logger = logging.getLogger(__name__)
@@ -68,26 +68,28 @@ def _fail_open(fn: _F) -> _F:
     return wrapper  # type: ignore[return-value]
 
 
-def prepay_of(producer: Producer | None) -> Prepay | None:
-    return prepay_from_info(producer.payment_info if producer is not None else None)
-
-
 # --- the refund notes ----------------------------------------------------------
 
 
-def _refund_body(
-    intro: str, items: list[tuple[str | None, int]], deposit: bool, path: str
-) -> str:
-    """`items` = (pickup code or None, agorot). A deposit's size is the
-    business's, not ours, so it names codes only (the MEH-3895 rule)."""
-    if deposit:
+Item = tuple[str | None, int, bool]  # pickup code or None, agorot, deposit
+
+
+def _refund_body(intro: str, items: list[Item], path: str) -> str:
+    """A deposit's size is the business's, not ours, so a deposit line names
+    the code only (the MEH-3895 rule). Each item carries its own terms
+    (MEH-3897: stored on the reservation), so one note can hold both."""
+    all_deposit = all(dep for _c, _a, dep in items)
+    if all_deposit:
         ask = "אם המקדמה כבר התקבלה, צריך להחזיר אותה באותה דרך שבה שולמה."
     else:
         ask = "אם התשלום מראש כבר התקבל, צריך להחזיר אותו באותה דרך שבה שולם."
     lines = []
-    for code, agorot in items:
+    for code, agorot, dep in items:
         who = f"קוד {code}" if code else "בלי קוד איסוף"
-        lines.append(f"• {who}" if deposit else f"• {who}: {shekels_text(agorot)} ₪")
+        if all_deposit:
+            lines.append(f"• {who}")
+        else:
+            lines.append(f"• {who}: {'מקדמה' if dep else shekels_text(agorot) + ' ₪'}")
     return (
         "שלום,\n\n"
         f"{intro}\n{ask}\n\n"
@@ -95,6 +97,12 @@ def _refund_body(
         + f"\n\nאפשר לראות הכל בלוח הבקרה:\n{settings.frontend_url}{path}\n\n"
         "צוות מהמקור"
     )
+
+
+def _timing(row: Any, producer: Producer | None) -> str | None:
+    """The row's own stored terms; a row from before the column reads the
+    business's settings (payment_link.refund_timing)."""
+    return refund_timing(row.prepay_timing, producer.payment_info if producer else None)
 
 
 def _mails(db: Session, producer: Producer, subject: str, body: str) -> list[Mail]:
@@ -115,13 +123,22 @@ def _gb_agorot(gb: GroupBuy, c: GroupBuyCommit) -> int:
     return agorot_from_shekels(gb.price_per_unit_group) * int(c.quantity or 1)  # type: ignore[arg-type]
 
 
-def _gb_could_be_paid(gb: GroupBuy) -> Prepay | None:
+def _gb_could_be_paid(gb: GroupBuy) -> bool:
     """The buyer is shown the link only once the group is funded
     (MEH-3895). `funded_notified_at` is one-way (MEH-1651), so a group that
     was funded and fell back still counts: someone may have paid then."""
-    if gb.funded_notified_at is None and gb.status != "funded":
-        return None
-    return prepay_of(gb.producer)
+    return gb.producer is not None and (
+        gb.funded_notified_at is not None or gb.status == "funded"
+    )
+
+
+def _gb_items(gb: GroupBuy, commits: list[GroupBuyCommit]) -> list[Item]:
+    items: list[Item] = []
+    for c in commits:
+        t = _timing(c, gb.producer)
+        if t is not None:
+            items.append((c.pickup_code, _gb_agorot(gb, c), t == "deposit"))  # type: ignore[arg-type]
+    return items
 
 
 GB_PATH = "/producer/dashboard/group-buys"
@@ -132,17 +149,12 @@ def group_buy_leave_mails(
     db: Session, gb: GroupBuy, commit: GroupBuyCommit
 ) -> list[Mail]:
     """Read BEFORE the commit row is deleted."""
-    p = _gb_could_be_paid(gb)
-    if p is None or gb.producer is None:
+    items = _gb_items(gb, [commit]) if _gb_could_be_paid(gb) else []
+    if not items:
         return []
     title = " ".join(str(gb.title or "").split())
     code = f" (קוד האיסוף {commit.pickup_code})" if commit.pickup_code else ""
-    body = _refund_body(
-        f'הצטרפות לקבוצה "{title}" בוטלה עכשיו{code}.',
-        [(commit.pickup_code, _gb_agorot(gb, commit))],  # type: ignore[list-item]
-        p.deposit,
-        GB_PATH,
-    )
+    body = _refund_body(f'הצטרפות לקבוצה "{title}" בוטלה עכשיו{code}.', items, GB_PATH)
     return _mails(db, gb.producer, f'בוטלה הצטרפות לקבוצה "{title}"', body)
 
 
@@ -157,17 +169,16 @@ GB_CANCEL_INTRO = {
 @_fail_open
 def group_buy_cancel_mails(db: Session, gb: GroupBuy, why: str) -> list[Mail]:
     """Read BEFORE the status write's commit (the commits stay either way)."""
-    p = _gb_could_be_paid(gb)
-    if p is None or gb.producer is None:
+    if not _gb_could_be_paid(gb):
         return []
     commits = sorted(gb.commits, key=lambda c: (c.pickup_code or "", str(c.id)))
-    if not commits:
+    items = _gb_items(gb, commits)
+    if not items:
         return []
     title = " ".join(str(gb.title or "").split())
     body = _refund_body(
         GB_CANCEL_INTRO[why].format(title=title) + " אלה ההצטרפויות שבה.",
-        [(c.pickup_code, _gb_agorot(gb, c)) for c in commits],
-        p.deposit,
+        items,
         GB_PATH,
     )
     return _mails(db, gb.producer, f'הקבוצה "{title}" בוטלה: מה להחזיר', body)
@@ -189,8 +200,7 @@ def bag_business_cancel_mails(
     ids = it cancelled none, so the newest stamp would be a buyer's own."""
     location = offer.location
     producer = location.producer if location else None
-    p = prepay_of(producer)
-    if p is None or producer is None or not buyer_ids:
+    if producer is None or not buyer_ids:
         return []
     last: datetime | None = (
         db.query(func.max(RescueOrder.cancelled_at))
@@ -214,13 +224,19 @@ def bag_business_cancel_mails(
         .order_by(RescueOrder.pickup_code)
         .all()
     )
-    if not orders:
+    items: list[Item] = []
+    for o in orders:
+        t = _timing(o, producer)
+        if t is not None:
+            items.append(
+                (o.pickup_code, int(offer.price_agorot) * int(o.qty), t == "deposit")
+            )
+    if not items:
         return []
     name = " ".join(str(producer.name or "").split())
     body = _refund_body(
         "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה, שלא סימנתם «שולם».",
-        [(o.pickup_code, int(offer.price_agorot) * int(o.qty)) for o in orders],
-        p.deposit,
+        items,
         "/producer/dashboard/rescue",
     )
     return _mails(db, producer, f"בוטל סל הפתעה ב{name}: מה להחזיר", body)

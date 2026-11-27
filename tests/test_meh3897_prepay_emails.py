@@ -104,7 +104,9 @@ def test_a_real_reservation_sends_both_emails_with_the_prepay_lines(
     offer = _seed_offer(db, shop["location"])
     buyer = make_user(db, email="buyer3897@example.com")
     r = client.post(
-        "/rescue/orders", json={"offer_id": str(offer.id), "qty": 2}, headers=auth_header(buyer)
+        "/rescue/orders",
+        json={"offer_id": str(offer.id), "qty": 2},
+        headers=auth_header(buyer),
     )
     assert r.status_code == 201, r.text
     code = r.json()["pickup_code"]
@@ -154,12 +156,16 @@ def test_a_business_cancel_of_a_prepaid_bag_lists_what_to_return(
     for i, qty in enumerate((1, 2)):
         buyer = make_user(db, email=f"b{i}-3897@example.com")
         r = client.post(
-            "/rescue/orders", json={"offer_id": str(offer.id), "qty": qty}, headers=auth_header(buyer)
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": qty},
+            headers=auth_header(buyer),
         )
         assert r.status_code == 201, r.text
         codes.append(r.json()["pickup_code"])
     outbox.clear()
-    r = client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
+    r = client.post(
+        f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"])
+    )
     assert r.status_code == 200, r.text
     notes = [(s, b) for to, s, b in outbox if to == "owner@example.com"]
     assert [s for s, _b in notes] == ["בוטל סל הפתעה במאפיית ההצלה: מה להחזיר"]
@@ -170,10 +176,16 @@ def test_a_business_cancel_of_a_prepaid_bag_lists_what_to_return(
         assert f"• קוד {code}: {by_code[code]} ₪" in body
 
 
-def test_a_business_cancel_without_a_link_sends_no_note(client, db, shop, rescue_on, outbox):
+def test_a_business_cancel_without_a_link_sends_no_note(
+    client, db, shop, rescue_on, outbox
+):
     offer = _seed_offer(db, shop["location"])
     buyer = make_user(db, email="b-nolink@example.com")
-    client.post("/rescue/orders", json={"offer_id": str(offer.id), "qty": 1}, headers=auth_header(buyer))
+    client.post(
+        "/rescue/orders",
+        json={"offer_id": str(offer.id), "qty": 1},
+        headers=auth_header(buyer),
+    )
     client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
     assert not [s for _to, s, _b in outbox if "מה להחזיר" in s]
 
@@ -185,7 +197,8 @@ def test_a_business_cancel_without_a_link_sends_no_note(client, db, shop, rescue
 def notes(monkeypatch):
     sent = []
     monkeypatch.setattr(
-        refunds, "send_email",
+        refunds,
+        "send_email",
         lambda to, s, b, **kw: sent.append((to, s, b)),
     )
     return sent
@@ -195,19 +208,31 @@ def _group(db, *, funded=True, info=ADVANCE, members=2, min_participants=2):
     producer, owner = _producer_user(db, email="gbowner3897@example.com")
     producer.payment_info = info
     gb = _make_group_buy(
-        db, producer, status="funded" if funded else "open", min_participants=min_participants
+        db,
+        producer,
+        status="funded" if funded else "open",
+        min_participants=min_participants,
     )
     gb.funded_notified_at = utc_now() if funded else None
     users = []
     for i in range(members):
         u = make_user(db, email=f"m{i}-3897@example.com")
-        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=u.id, quantity=i + 1, pickup_code=f"10{i:02d}"))
+        db.add(
+            GroupBuyCommit(
+                group_buy_id=gb.id,
+                user_id=u.id,
+                quantity=i + 1,
+                pickup_code=f"10{i:02d}",
+            )
+        )
         users.append(u)
     db.commit()
     return gb, owner, users
 
 
-def test_a_leave_from_a_funded_group_tells_the_business_what_to_return(client, db, notes):
+def test_a_leave_from_a_funded_group_tells_the_business_what_to_return(
+    client, db, notes
+):
     gb, _owner, (_a, b) = _group(db, members=2, min_participants=1)
     r = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b))
     assert r.status_code == 200, r.text
@@ -220,7 +245,10 @@ def test_a_leave_from_a_funded_group_tells_the_business_what_to_return(client, d
 
 def test_a_leave_from_a_group_never_funded_sends_nothing(client, db, notes):
     gb, _owner, (a, _b) = _group(db, funded=False)
-    assert client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(a)).status_code == 200
+    assert (
+        client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(a)).status_code
+        == 200
+    )
     assert notes == []
 
 
@@ -262,7 +290,10 @@ def test_the_daily_close_of_a_group_never_funded_sends_nothing(db, notes):
 def test_a_broken_note_never_fails_the_leave(client, db, notes, monkeypatch):
     gb, _owner, (_a, b) = _group(db, members=2, min_participants=1)
     monkeypatch.setattr(refunds, "owner_emails", lambda *a: 1 / 0)
-    assert client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code == 200
+    assert (
+        client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code
+        == 200
+    )
     assert notes == []
 
 
@@ -272,7 +303,9 @@ def test_a_broken_note_never_fails_the_leave(client, db, notes, monkeypatch):
 def _reserve(client, db, offer, email, qty=1):
     buyer = make_user(db, email=email)
     r = client.post(
-        "/rescue/orders", json={"offer_id": str(offer.id), "qty": qty}, headers=auth_header(buyer)
+        "/rescue/orders",
+        json={"offer_id": str(offer.id), "qty": qty},
+        headers=auth_header(buyer),
     )
     assert r.status_code == 201, r.text
     return buyer, r.json()
@@ -286,7 +319,9 @@ def test_the_reminder_card_carries_the_link(client, db, shop, rescue_on, outbox)
     offer = _seed_offer(db, shop["location"])
     _buyer, out = _reserve(client, db, offer, "rem3897@example.com")
     order = db.get(RescueOrder, out["id"])
-    _s, body, _h = render_reservation_email(_reminder_card(order, utc_now()), subject="תזכורת")
+    _s, body, _h = render_reservation_email(
+        _reminder_card(order, utc_now()), subject="תזכורת"
+    )
     assert f"לתשלום: {BIT}" in body
     assert "ומשלמים 15" not in body
 
@@ -297,11 +332,18 @@ def test_a_link_with_an_ampersand_is_escaped_in_the_html():
     assert 'href="https://pay.example.co.il/x?a=1&amp;b=2"' in html
 
 
-def test_a_buyer_who_cancelled_first_is_not_listed_again(client, db, shop, rescue_on, outbox):
+def test_a_buyer_who_cancelled_first_is_not_listed_again(
+    client, db, shop, rescue_on, outbox
+):
     _pay(db, shop["producer"].id, DEPOSIT)
     offer = _seed_offer(db, shop["location"])
     early, first = _reserve(client, db, offer, "early3897@example.com")
-    assert client.post(f"/rescue/orders/{first['id']}/cancel", headers=auth_header(early)).status_code == 200
+    assert (
+        client.post(
+            f"/rescue/orders/{first['id']}/cancel", headers=auth_header(early)
+        ).status_code
+        == 200
+    )
     _late, second = _reserve(client, db, offer, "late3897@example.com")
     outbox.clear()
     client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
@@ -332,7 +374,9 @@ def test_a_test_business_marks_its_notes_as_test(db):
     assert mails and all(test_cause for *_rest, test_cause in mails)
 
 
-def test_a_reservation_marked_paid_is_not_listed_twice(client, db, shop, rescue_on, outbox):
+def test_a_reservation_marked_paid_is_not_listed_twice(
+    client, db, shop, rescue_on, outbox
+):
     # MEH-3897 «סמן כשולם» (#5385) sends its own refund email for a marked
     # reservation; the list holds only the unmarked ones.
     _pay(db, shop["producer"].id, ADVANCE)
@@ -340,7 +384,9 @@ def test_a_reservation_marked_paid_is_not_listed_twice(client, db, shop, rescue_
     _a, marked = _reserve(client, db, offer, "marked3897@example.com")
     _b, plain = _reserve(client, db, offer, "plain3897@example.com")
     r = client.post(
-        f"/rescue/orders/{marked['id']}/paid", json={"paid": True}, headers=auth_header(shop["owner"])
+        f"/rescue/orders/{marked['id']}/paid",
+        json={"paid": True},
+        headers=auth_header(shop["owner"]),
     )
     assert r.status_code == 200, r.text
     outbox.clear()
@@ -355,10 +401,14 @@ def test_a_reservation_marked_paid_is_not_listed_twice(client, db, shop, rescue_
 # --- follow-up (Sapir 27/11: «כל מה שחסר») -----------------------------------------
 
 
-def test_suspending_a_business_tells_it_what_to_return_on_a_funded_group(client, db, notes):
+def test_suspending_a_business_tells_it_what_to_return_on_a_funded_group(
+    client, db, notes
+):
     gb, _owner, _users = _group(db)
     admin = make_user(db, role="admin", email="admin3897@example.com")
-    r = client.post(f"/admin/producers/{gb.producer_id}/toggle-status", headers=auth_header(admin))
+    r = client.post(
+        f"/admin/producers/{gb.producer_id}/toggle-status", headers=auth_header(admin)
+    )
     assert r.status_code == 200, r.text
     db.refresh(gb)
     assert gb.status == "cancelled"
@@ -368,7 +418,9 @@ def test_suspending_a_business_tells_it_what_to_return_on_a_funded_group(client,
     assert "• קוד 1000: 90 ₪\n• קוד 1001: 180 ₪" in body
 
 
-def test_a_reminder_for_a_reservation_marked_paid_stops_asking(client, db, shop, rescue_on, outbox):
+def test_a_reminder_for_a_reservation_marked_paid_stops_asking(
+    client, db, shop, rescue_on, outbox
+):
     from app.models.models import RescueOrder
     from app.services.rescue_reminders import _reminder_card
 
@@ -376,12 +428,104 @@ def test_a_reminder_for_a_reservation_marked_paid_stops_asking(client, db, shop,
     offer = _seed_offer(db, shop["location"])
     _buyer, out = _reserve(client, db, offer, "paidrem3897@example.com")
     r = client.post(
-        f"/rescue/orders/{out['id']}/paid", json={"paid": True}, headers=auth_header(shop["owner"])
+        f"/rescue/orders/{out['id']}/paid",
+        json={"paid": True},
+        headers=auth_header(shop["owner"]),
     )
     assert r.status_code == 200, r.text
     order = db.get(RescueOrder, out["id"])
     db.refresh(order)
-    _s, body, html = render_reservation_email(_reminder_card(order, utc_now()), subject="תזכורת")
+    _s, body, html = render_reservation_email(
+        _reminder_card(order, utc_now()), subject="תזכורת"
+    )
     assert "בית העסק אישר שהתשלום התקבל, ובקופה רק אומרים את הקוד." in body
     assert "לתשלום" not in body and "לתשלום" not in html
     assert "ומשלמים" not in body
+
+
+# --- 4. the terms are kept on the reservation (prepay_timing) ------------------
+
+
+def _order(db, oid):
+    from app.models.models import RescueOrder
+
+    db.expire_all()
+    return db.get(RescueOrder, oid)
+
+
+def test_a_reservation_keeps_the_terms_it_was_made_under(
+    client, db, shop, rescue_on, outbox
+):
+    offer = _seed_offer(db, shop["location"])
+    _u, counter = _reserve(client, db, offer, "t-counter@example.com")
+    _pay(db, shop["producer"].id, DEPOSIT)
+    _u, deposit = _reserve(client, db, offer, "t-deposit@example.com")
+    assert _order(db, counter["id"]).prepay_timing == "counter"
+    assert _order(db, deposit["id"]).prepay_timing == "deposit"
+
+
+def test_a_link_removed_after_reserving_still_gets_the_refund_note(
+    client, db, shop, rescue_on, outbox
+):
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    buyer, order = _reserve(client, db, offer, "t-removed@example.com")
+    _pay(db, shop["producer"].id, None)  # the business took its link down
+    outbox.clear()
+    r = client.post(f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer))
+    assert r.status_code == 200, r.text
+    ((_s, body),) = [(s, b) for to, s, b in outbox if to == "owner@example.com"]
+    assert "אם התשלום מראש כבר התקבל, צריך להחזיר 15 ₪" in body
+
+
+def test_a_link_added_after_reserving_asks_no_refund(
+    client, db, shop, rescue_on, outbox
+):
+    offer = _seed_offer(db, shop["location"])
+    _reserve(client, db, offer, "t-added@example.com")
+    _pay(db, shop["producer"].id, ADVANCE)  # added after she reserved at the counter
+    outbox.clear()
+    client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
+    assert not [s for _to, s, _b in outbox if "מה להחזיר" in s]
+
+
+def test_a_group_note_reads_each_members_own_terms(client, db, notes):
+    gb, owner, _users = _group(db, info=None)  # no link today
+    c0, c1 = sorted(gb.commits, key=lambda c: c.pickup_code)
+    c0.prepay_timing, c1.prepay_timing = "deposit", "advance"
+    db.commit()
+    r = client.patch(
+        f"/group-buys/{gb.id}/status",
+        json={"status": "cancelled", "expected_status": "funded"},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 200, r.text
+    ((_to, _subject, body),) = notes
+    assert "• קוד 1000: מקדמה\n• קוד 1001: 180 ₪" in body
+    assert "אם התשלום מראש כבר התקבל" in body
+
+
+def test_a_member_who_joined_at_the_counter_is_left_out(client, db, notes):
+    gb, _owner, (_a, b) = _group(db)
+    for c in gb.commits:
+        c.prepay_timing = "counter"
+    db.commit()
+    assert (
+        client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code
+        == 200
+    )
+    assert notes == []
+
+
+def test_joining_a_group_keeps_the_terms(client, db, notes):
+    gb, _owner, _users = _group(db, info=DEPOSIT, members=0, min_participants=5)
+    gb.status, gb.funded_notified_at = "open", None
+    db.commit()
+    buyer = make_user(db, email="t-joiner@example.com")
+    r = client.post(
+        f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+    )
+    assert r.status_code == 201, r.text
+    db.expire_all()
+    (c,) = db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).all()
+    assert c.prepay_timing == "deposit"

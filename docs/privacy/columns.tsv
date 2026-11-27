@@ -837,3 +837,5 @@ share_links.expires_at	not-personal	a short preview or claim link an admin made 
 share_links.id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
 share_links.producer_id	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
 share_links.scope	not-personal	a short preview or claim link an admin made for a draft business; only a hash of the code, no personal data; deleted 90 days after it expires (MEH-3896)
+rescue_orders.prepay_timing	orders	a surprise-bag reservation (the payment terms the business showed when it was made, MEH-3897)
+group_buy_commits.prepay_timing	orders	a user joining a group buy (the payment terms the business showed when she joined, MEH-3897)

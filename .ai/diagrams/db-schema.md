@@ -819,6 +819,7 @@ erDiagram
         uuid handed_by FK "SET NULL — keep the record, lose the account"
         timestamp cancelled_at
         timestamp paid_at "MEH-3897 nullable — the business marked the prepay received"
+        string prepay_timing "MEH-3897 nullable advance|deposit|counter (CHECK) — the payment terms when reserved"
         timestamp created_at
     }
 
@@ -881,6 +882,14 @@ erDiagram
 > after that stamp block joining new group buys. A count separate from rescue
 > bags on purpose. Adds no table → `EXPECTED_TABLES` unchanged. Migration
 > `f3a7c91e2b64`.
+
+> **MEH-3897 — payment terms kept on the reservation (27/11/2026):**
+> `rescue_orders.prepay_timing` and `group_buy_commits.prepay_timing`
+> (varchar(10) NULLable, CHECK advance|deposit|counter). Written when the
+> reservation or join is made, from the business's `payment_info`; the refund
+> notes read it, so a link removed or changed later does not change what is owed.
+> NULL = a row from before the column, which falls back to today's settings.
+> Adds no table → `EXPECTED_TABLES` unchanged. Migration `c5e7a9b1d3f4`.
 
 > **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
 > billing will count from: one row per booking a business got through the site,

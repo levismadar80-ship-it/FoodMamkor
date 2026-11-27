@@ -24,7 +24,7 @@ from app.config import settings
 from app.models.models import RescueOffer, RescueOrder
 from app.services.booking_cancellations import owner_emails
 from app.services.email import send_email
-from app.schemas.payment_link import prepay_link
+from app.schemas.payment_link import refund_timing
 from app.services.prepay_copy import Prepay, business_pay_line, prepay_from_info
 from app.services.rescue_emails import day_word, israel_hhmm
 from app.utils.money import shekels_text
@@ -170,7 +170,11 @@ def queue_business_refund_email(
     location = offer.location
     producer = location.producer if location else None
     paid = order.paid_at is not None
-    if producer is None or (prepay_link(producer.payment_info) is None and not paid):
+    if producer is None:
+        return 0
+    # MEH-3897: the reservation's own terms, not today's settings.
+    timing = refund_timing(order.prepay_timing, producer.payment_info)  # type: ignore[arg-type]
+    if timing is None and not paid:
         return 0
     facts = BusinessReservation(
         producer_name=str(producer.name or ""),
@@ -186,7 +190,7 @@ def queue_business_refund_email(
             send_business_refund_email,
             to,
             facts,
-            deposit=(producer.payment_info or {}).get("timing") == "deposit",
+            deposit=(timing or (producer.payment_info or {}).get("timing")) == "deposit",
             test_cause=bool(producer.is_test),  # MEH-2952
             paid=paid,
         )
