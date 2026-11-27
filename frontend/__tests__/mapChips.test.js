@@ -34,7 +34,8 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(labels).toContain("חלב וביצים");
     expect(labels).toContain("מזווה");
     expect(labels).toContain("טיפוח ובית");
-    expect(labels).toContain("לחמים ואפייה");
+    // MEH-3911 (27/11): the group also holds «עוגות וקינוחים» — the label says so.
+    expect(labels).toContain("מאפים וקינוחים");
   });
 
   it("MEH-1441: each category chip declares a CATEGORY_ICONS glyph key; 'all' stays iconless", () => {
