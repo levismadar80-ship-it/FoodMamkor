@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-70 tables, 833 columns.
+70 tables, 835 columns.
 
 | table | columns | FKs out |
 |---|---|---|

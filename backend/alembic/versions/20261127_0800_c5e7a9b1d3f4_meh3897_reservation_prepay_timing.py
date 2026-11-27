@@ -1,7 +1,7 @@
 """meh3897_reservation_prepay_timing
 
 Revision ID: c5e7a9b1d3f4
-Revises: b8ee10dc69a9
+Revises: c6e2a4f8b1d9 (re-pointed from b8ee10dc69a9 after #5420)
 Create Date: 2026-11-27 08:00:00.000000+00:00
 
 MEH-3897, EXPAND only: two nullable columns, nothing existing is touched
@@ -23,7 +23,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "c5e7a9b1d3f4"
-down_revision = "b8ee10dc69a9"
+down_revision = "c6e2a4f8b1d9"
 branch_labels = None
 depends_on = None
 
