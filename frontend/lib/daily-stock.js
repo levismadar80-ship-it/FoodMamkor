@@ -15,7 +15,7 @@
  */
 
 import { israelDay } from "@/lib/product-orders";
-import { splitKey } from "@/lib/product-variants";
+import { lineKey, splitKey } from "@/lib/product-variants";
 
 // The buyer sees «נשארו N» at or below this (services/product_daily_stock.py
 // LOW_STOCK_AT).
@@ -116,8 +116,43 @@ export function stockSlots(offered, menu, picks) {
  * @param {(key: string, values?: any) => string} t order_sheet translator
  */
 export function stockShortText(short, byId, t) {
+  const name = shortName(short, byId);
+  return short.left === 0 ? t("stock_sold_out", { name }) : t("stock_short", { name, count: short.left });
+}
+
+/**
+ * «חלה» or «חלה · זיתים» — the line the sheet names.
+ * @param {{ productId: string, variantId: string | null }} short
+ * @param {Map<string, any>} byId
+ */
+export function shortName(short, byId) {
   const product = byId.get(short.productId);
   const variant = short.variantId ? (product?.variants ?? []).find((/** @type {any} */ v) => v.id === short.variantId) : null;
-  const name = variant ? `${product?.name ?? ""} · ${variant.name}` : (product?.name ?? "");
-  return short.left === 0 ? t("stock_sold_out", { name }) : t("stock_short", { name, count: short.left });
+  return variant ? `${product?.name ?? ""} · ${variant.name}` : (product?.name ?? "");
+}
+
+/**
+ * Take the named line out of the cart: the variant alone, or every line of
+ * the product; close the sheet when nothing is left.
+ * @param {{ productId: string, variantId: string | null }} short
+ * @param {{ picks: Record<string, number>, onChange: (key: string, qty: number) => void, onClose: () => void }} cart
+ */
+export function removeShort(short, { picks, onChange, onClose }) {
+  const keys = short.variantId
+    ? [lineKey(short.productId, short.variantId)]
+    : Object.keys(picks).filter((k) => splitKey(k).productId === short.productId);
+  keys.forEach((k) => onChange(k, 0));
+  if (keys.length >= Object.keys(picks).length) onClose();
+}
+
+/**
+ * A variant's stepper cap: its own room, and the product's room less what is
+ * already picked of the product's other variants. null = no limit.
+ * @param {number | null} variantLeft
+ * @param {number | null} productLeft
+ * @param {number} otherPicked
+ */
+export function variantCap(variantLeft, productLeft, otherPicked) {
+  const fromProduct = productLeft === null ? null : Math.max(0, productLeft - otherPicked);
+  return minOf(variantLeft, fromProduct);
 }

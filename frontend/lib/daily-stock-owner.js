@@ -22,7 +22,6 @@ export async function loadPrepList() {
   return GetMyPrepListProducersMeOrdersPrepGetResponse.parse(data).days;
 }
 
-const DAY_MS = 86_400_000;
 
 /**
  * «היום» / «מחר» / «יום שישי 4.12».
@@ -34,7 +33,39 @@ const DAY_MS = 86_400_000;
 export function prepDayName(day, locale, t, now = new Date()) {
   const today = israelToday(now);
   if (day === today) return t("tabs.today");
-  if (day === israelToday(new Date(now.getTime() + DAY_MS))) return t("prep.tomorrow");
+  // The next calendar date, not +24 hours (the night the clock goes back is 25).
+  const next = new Date(`${today}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  if (day === israelToday(next)) return t("prep.tomorrow");
   // Noon UTC is the same date on the Israel clock, winter and summer.
   return dayLabel(`${day}T12:00:00Z`, locale);
+}
+
+/**
+ * A day's lines, with one more after the sizes of a product that has a limit
+ * for all its sizes together: their sum against that limit.
+ * @param {any[]} lines the server's lines (sizes of one product are adjacent)
+ * @returns {any[]}
+ */
+export function prepRows(lines) {
+  /** @type {any[]} */
+  const out = [];
+  lines.forEach((line, i) => {
+    out.push(line);
+    const next = lines[i + 1];
+    const last = !next || next.product_id !== line.product_id;
+    if (!last || !line.variant_id || typeof line.product_limit !== "number") return;
+    const sizes = lines.filter((l) => l.product_id === line.product_id && Boolean(l.variant_id));
+    out.push({
+      product_id: line.product_id,
+      variant_id: "all",
+      name: line.name,
+      variant_name: null,
+      all: true,
+      confirmed: sizes.reduce((n, l) => n + l.confirmed, 0),
+      waiting: sizes.reduce((n, l) => n + l.waiting, 0),
+      limit: line.product_limit,
+    });
+  });
+  return out;
 }

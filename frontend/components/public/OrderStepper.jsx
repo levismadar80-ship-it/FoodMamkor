@@ -56,16 +56,20 @@ export default function OrderStepper({ product, qty, onChange }) {
   };
   // Daily stock: the most she can pick on any offered day; null = no limit.
   const left = typeof product.left === "number" ? product.left : null;
-  if (!product.in_stock || left === 0) {
+  // Sold out with nothing picked: the words alone. With some already in the
+  // cart (it sold out since), the stepper stays so «−» can take them out.
+  if (!product.in_stock || (left === 0 && qty === 0)) {
     return (
       <span className="text-sm text-fg-muted" data-testid="order-sold-out">
         {left === 0 && product.in_stock ? t("sold_out_days") : t("sold_out")}
       </span>
     );
   }
-  const low = left !== null && left <= LOW_STOCK_AT ? (
+  // «נשארו N» near the end, and whenever «+» has stopped, so a dead button
+  // always says why.
+  const low = left !== null && (left <= LOW_STOCK_AT || qty >= left) ? (
     <span className="text-xs text-fg-muted" data-testid="order-left">
-      {t("left", { count: left })}
+      {left === 0 ? t("sold_out_days") : t("left", { count: left })}
     </span>
   ) : null;
   if (qty === 0) {

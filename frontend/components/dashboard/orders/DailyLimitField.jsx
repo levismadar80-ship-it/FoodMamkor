@@ -21,7 +21,7 @@ import { useTranslations } from "next-intl";
 
 import Input from "@/components/ui/Input";
 
-const LIMIT_MAX = 999;
+export const LIMIT_MAX = 999;
 
 /**
  * The field's text → the limit to save: null for empty, undefined when it is
@@ -63,32 +63,41 @@ export default function DailyLimitField({ id, label, value, unit, busy, onSave }
     if (busy || parsed === undefined || text.trim() === saved) return;
     onSave(parsed);
   };
+  const invalid = parsed === undefined;
   return (
-    <div className="flex items-center justify-between gap-3 py-1">
-      <label htmlFor={id} className="text-sm text-fg-muted">{label}</label>
-      <span className="flex items-center gap-2">
-        <Input
-          id={id}
-          inline
-          size="xs"
-          inputMode="numeric"
-          className="w-20 min-h-touch text-center"
-          value={text}
-          placeholder={t("limit_none")}
-          invalid={parsed === undefined}
-          aria-busy={busy}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commit();
-            }
-          }}
-          data-testid={`daily-limit-${id}`}
-        />
-        <span className="text-xs text-fg-muted w-10">{unit}</span>
-      </span>
+    <div className="py-1">
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={id} className="text-sm text-fg-muted">{label}</label>
+        <span className="flex items-center gap-2">
+          <Input
+            id={id}
+            inline
+            size="xs"
+            inputMode="numeric"
+            className="w-20 min-h-touch text-center"
+            value={text}
+            placeholder={t("limit_none")}
+            invalid={invalid}
+            aria-describedby={invalid ? `${id}-error` : undefined}
+            aria-busy={busy}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commit();
+              }
+            }}
+            data-testid={`daily-limit-${id}`}
+          />
+          <span className="text-xs text-fg-muted w-10">{unit}</span>
+        </span>
+      </div>
+      {invalid && (
+        <p id={`${id}-error`} className="text-xs text-error" data-testid={`daily-limit-error-${id}`}>
+          {t("limit_invalid")}
+        </p>
+      )}
     </div>
   );
 }

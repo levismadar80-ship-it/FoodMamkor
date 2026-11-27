@@ -411,3 +411,175 @@ def test_new_order_email_says_nothing_while_units_are_left(client, db, flag_on, 
 def test_israel_day_of_a_late_utc_start_is_the_next_date():
     # 22:30 UTC Thursday 19/11 = 00:30 Friday 20/11 in Israel (winter).
     assert ds.israel_day(datetime(2026, 11, 19, 22, 30)) == date(2026, 11, 20)
+
+
+def test_booked_counts_on_the_israel_day_across_midnight(db):
+    # Winter (UTC+2): 21:30 UTC is 23:30 on 3/12, 22:30 UTC is 00:30 on 4/12.
+    shop = Shop(db)
+    late = "2026-12-03T21:30:00+00:00"
+    after_midnight = "2026-12-03T22:30:00+00:00"
+    _booked(db, shop, late, shop.bread, 1)
+    _booked(db, shop, after_midnight, shop.bread, 2)
+    taken = ds.booked(db, shop.producer.id, [date(2026, 12, 3), date(2026, 12, 4)])
+    assert taken.product[(date(2026, 12, 3), shop.bread.id)] == 1
+    assert taken.product[(date(2026, 12, 4), shop.bread.id)] == 2
+
+
+def test_every_open_status_holds_units_and_closed_ones_do_not(db):
+    shop = Shop(db)
+    slot = "2026-12-03T10:00:00+00:00"
+    held = ("pending", "change_proposed", "confirmed", "ready", "handed")
+    for state in (*held, "declined", "cancelled", "expired", "no_show"):
+        _booked(db, shop, slot, shop.bread, 1, status=state)
+    taken = ds.booked(db, shop.producer.id, [date(2026, 12, 3)])
+    assert taken.product[(date(2026, 12, 3), shop.bread.id)] == len(held)
+
+
+def test_booked_leaves_out_the_order_being_moved(db):
+    shop = Shop(db)
+    slot = "2026-12-03T10:00:00+00:00"
+    moving = _booked(db, shop, slot, shop.bread, 2, status="confirmed")
+    _booked(db, shop, slot, shop.bread, 1, status="confirmed")
+    day = date(2026, 12, 3)
+    assert ds.booked(db, shop.producer.id, [day]).product[(day, shop.bread.id)] == 3
+    left_out = ds.booked(db, shop.producer.id, [day], exclude_order=moving.id)
+    assert left_out.product[(day, shop.bread.id)] == 1
+
+
+# --- a change of slot (propose / accept) ------------------------------------------
+
+
+def _two_days(client, shop):
+    """Two pickup slots on different Israel days, and one more on the first."""
+    starts = [s["start"] for s in _menu(client, shop)["slots"] if s["fulfilment"] == "pickup"]
+    first = starts[0]
+    other = next(s for s in starts if _day_of(s) != _day_of(first))
+    same = next((s for s in starts if s != first and _day_of(s) == _day_of(first)), None)
+    return first, other, same
+
+
+def _propose(client, shop, order_id, slot):
+    return client.post(
+        f"/producers/me/product-orders/{order_id}/propose-change",
+        json={"slot_start": slot, "note": "מועד אחר"},
+        headers=shop.headers,
+    )
+
+
+def test_proposing_a_day_that_has_no_room_is_refused(client, db, flag_on, sent):
+    shop = Shop(db)
+    shop.bread.daily_limit = 2
+    db.commit()
+    first, other, _ = _two_days(client, shop)
+    created = _order(client, shop, sent, first, [_line(shop.bread, 2)]).json()
+    _booked(db, shop, other, shop.bread, 1, status="confirmed")
+    res = _propose(client, shop, created["id"], other)
+    assert res.status_code == 409
+    assert res.json()["detail"] == ds.only_left_detail("חלה", 1)
+
+
+def test_accepting_a_day_that_sold_out_since_the_proposal_is_refused(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    shop.bread.daily_limit = 2
+    db.commit()
+    first, other, _ = _two_days(client, shop)
+    created = _order(client, shop, sent, first, [_line(shop.bread, 2)]).json()
+    assert _propose(client, shop, created["id"], other).status_code == 200
+    _booked(db, shop, other, shop.bread, 2, status="confirmed")
+    ref = {"token": created["status_token"]}
+    res = client.post("/product-orders/status/accept-change", json=ref)
+    assert res.status_code == 409
+    assert res.json()["detail"] == ds.sold_out_detail("חלה")
+    db.expire_all()
+    order = db.get(ProductOrder, uuid.UUID(created["id"]))
+    assert order.status == "change_proposed"
+
+
+def test_moving_within_the_same_day_does_not_count_the_order_twice(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    shop.bread.daily_limit = 2
+    db.commit()
+    first, _, same = _two_days(client, shop)
+    assert same is not None, "the shop's window offers one slot a day"
+    created = _order(client, shop, sent, first, [_line(shop.bread, 2)]).json()
+    assert _propose(client, shop, created["id"], same).status_code == 200
+    ref = {"token": created["status_token"]}
+    res = client.post("/product-orders/status/accept-change", json=ref)
+    assert res.status_code == 200, res.text
+
+
+# --- who reads the prep list --------------------------------------------------------
+
+
+def test_prep_list_needs_a_login(client, db, flag_on):
+    Shop(db)
+    assert client.get("/producers/me/orders/prep").status_code == 401
+
+
+def test_prep_list_is_404_while_ordering_is_off(client, db):
+    shop = Shop(db)
+    res = client.get("/producers/me/orders/prep", headers=shop.headers)
+    assert res.status_code == 404
+
+
+def test_another_business_sees_only_its_own_prep_list(client, db, flag_on):
+    shop = Shop(db)
+    slot = "2026-12-03T10:00:00+00:00"
+    _booked(db, shop, slot, shop.bread, 3, status="confirmed")
+    other = Shop(db)
+    assert _prep(client, other) == []
+
+
+def test_orders_staff_read_the_prep_list(client, db, flag_on, sent, monkeypatch):
+    from app.models.producer_staff import ProducerStaff
+
+    shop = Shop(db)
+    slot = slot_of(client, shop)
+    _booked(db, shop, slot, shop.bread, 3, status="confirmed")
+    person = make_user(db, email=f"staff{uuid.uuid4().hex[:6]}@example.com")
+    db.add(
+        ProducerStaff(
+            producer_id=shop.producer.id,
+            user_id=person.id,
+            invited_email=person.email,
+            expires_at=datetime(2030, 1, 1),
+            invited_by=shop.owner.id,
+            status="active",
+        )
+    )
+    db.commit()
+    res = client.get("/producers/me/orders/prep", headers=auth_header(person))
+    assert res.status_code == 200, res.text
+    assert res.json()["days"][0]["lines"][0]["confirmed"] == 3
+
+
+def test_prep_list_leaves_out_what_was_already_handed_over(client, db, flag_on):
+    shop = Shop(db)
+    slot = "2026-12-03T10:00:00+00:00"
+    _booked(db, shop, slot, shop.bread, 2, status="handed")
+    _booked(db, shop, slot, shop.bread, 1, status="ready")
+    days = ds.prep_list(db, shop.producer.id, date(2026, 12, 3))
+    assert days[0]["lines"][0]["confirmed"] == 1
+
+
+# --- the new-order email, through the outbox ------------------------------------------
+
+
+def test_the_sent_new_order_email_carries_the_sold_out_line(db, monkeypatch):
+    from tests.test_meh3296_order_notifications import Wire, owe_now
+
+    wire = Wire(monkeypatch)
+    shop = Shop(db)
+    shop.bread.daily_limit = 2
+    db.commit()
+    order = _booked(db, shop, "2026-12-03T10:00:00+00:00", shop.bread, 2)
+    order.idempotency_key = str(uuid.uuid4())
+    db.commit()
+    owe_now(db, order, "new_order", "email")
+    outbox.dispatch_due(db)
+    (mail,) = wire.mail
+    assert "כבר אזל: «חלה»" in mail[2]

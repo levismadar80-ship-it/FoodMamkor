@@ -13,14 +13,16 @@ import he from "../messages/he.json";
 
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 
-import DailyLimitField, { parseLimit } from "@/components/dashboard/orders/DailyLimitField";
+import DailyLimitField, { LIMIT_MAX, parseLimit } from "@/components/dashboard/orders/DailyLimitField";
 import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderStepper from "@/components/public/OrderStepper";
 import api from "@/lib/api";
-import { leftOn, mostLeft, shortOn, stockShortText, stockSlots } from "@/lib/daily-stock";
-import { prepDayName } from "@/lib/daily-stock-owner";
+import { LOW_STOCK_AT, leftOn, mostLeft, removeShort, shortOn, stockShortText, stockSlots, variantCap } from "@/lib/daily-stock";
+import { prepDayName, prepRows } from "@/lib/daily-stock-owner";
 import { lineKey } from "@/lib/product-variants";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 const P1 = "11111111-1111-4111-8111-111111111111";
 const P2 = "22222222-2222-4222-8222-222222222222";
@@ -130,6 +132,45 @@ describe("the buyer's stepper", () => {
     stepper(12, 1);
     expect(screen.queryByTestId("order-left")).toBeNull();
   });
+
+  it("at the cap with many left: «+» stops and says why", () => {
+    stepper(10, 10);
+    expect(screen.getByTestId("order-plus").hasAttribute("disabled")).toBe(true);
+    expect(screen.getByTestId("order-left").textContent).toBe("נשארו 10");
+  });
+
+  it("sold out since it went in the cart: «−» stays so it can come out", () => {
+    const onChange = vi.fn();
+    render(wrap(<OrderStepper product={{ id: P1, name: "חלה", in_stock: true, left: 0 }} qty={2} onChange={onChange} />));
+    expect(screen.getByTestId("order-left").textContent).toBe("אזל לימים הקרובים");
+    expect(screen.getByTestId("order-plus").hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByTestId("order-minus"));
+    expect(onChange).toHaveBeenCalledWith(P1, 1);
+  });
+});
+
+describe("sizes share the product's limit", () => {
+  it("a size's cap is the product's room less the other sizes in the cart", () => {
+    expect(variantCap(null, null, 3)).toBeNull();
+    expect(variantCap(4, null, 3)).toBe(4);
+    expect(variantCap(5, 5, 0)).toBe(5);
+    expect(variantCap(5, 5, 3)).toBe(2);
+    expect(variantCap(null, 5, 9)).toBe(0);
+  });
+
+  it("removing a short line takes the size alone, or every line of the product, and closes an empty sheet", () => {
+    const onChange = vi.fn();
+    const onClose = vi.fn();
+    const picks = { [lineKey(P1, V1)]: 2, [lineKey(P1, V2)]: 1, [P2]: 1 };
+    removeShort({ productId: P1, variantId: V1, left: 0 }, { picks, onChange, onClose });
+    expect(onChange.mock.calls).toEqual([[lineKey(P1, V1), 0]]);
+    expect(onClose).not.toHaveBeenCalled();
+    onChange.mockClear();
+    removeShort({ productId: P1, variantId: null, left: 0 }, { picks, onChange, onClose });
+    expect(onChange.mock.calls.map((c) => c[0]).sort()).toEqual([lineKey(P1, V1), lineKey(P1, V2)].sort());
+    removeShort({ productId: P2, variantId: null, left: 0 }, { picks: { [P2]: 1 }, onChange, onClose });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("«כמה ליום» field", () => {
@@ -139,6 +180,13 @@ describe("«כמה ליום» field", () => {
     expect(parseLimit("0")).toBeUndefined();
     expect(parseLimit("1000")).toBeUndefined();
     expect(parseLimit("2.5")).toBeUndefined();
+  });
+
+  it("an invalid value says what is allowed", () => {
+    render(wrap(<DailyLimitField id="x" label="כמה" value={null} unit="יחידות" busy={false} onSave={() => {}} />));
+    fireEvent.change(screen.getByTestId("daily-limit-x"), { target: { value: "0" } });
+    expect(screen.getByTestId("daily-limit-error-x").textContent).toBe("מספר שלם מ-1 עד 999, או ריק בלי הגבלה");
+    expect(screen.getByTestId("daily-limit-x").getAttribute("aria-describedby")).toBe("x-error");
   });
 
   it("saves on Enter and on leaving the field, only when it changed", () => {
@@ -251,13 +299,32 @@ describe("«מה להכין» from the server", () => {
     expect(container.querySelector('[data-testid="orders-prep"]')).toBeNull();
   });
 
-  it("a failed read renders nothing", async () => {
-    api.get.mockRejectedValue(new Error("down"));
-    let view;
+  it("a failed read says so, and «לנסות שוב» reads again", async () => {
+    api.get.mockRejectedValueOnce(new Error("down"));
     await act(async () => {
-      view = render(wrap(<OrderPrepList orders={[]} />));
+      render(wrap(<OrderPrepList orders={[]} />));
     });
-    expect(view.container.querySelector('[data-testid="orders-prep"]')).toBeNull();
+    expect(screen.getByTestId("orders-prep-failed").textContent).toContain("לא הצלחנו לטעון את «מה להכין».");
+    api.get.mockResolvedValueOnce({ data: { days: [{ day: FRI, lines: [prepLine()] }] } });
+    await act(async () => fireEvent.click(screen.getByTestId("orders-prep-retry")));
+    expect(screen.queryByTestId("orders-prep-failed")).toBeNull();
+    expect(screen.getByTestId("orders-prep-line").textContent).toContain("3 × חלה");
+  });
+
+  it("sizes under a limit for all of them get a sum line against it", async () => {
+    const lines = [
+      prepLine({ variant_id: V1, variant_name: "זיתים", confirmed: 3, waiting: 1, product_limit: 20 }),
+      prepLine({ variant_id: V2, variant_name: "שומשום", confirmed: 2, product_limit: 20 }),
+      prepLine({ product_id: P2, name: "עוגה", confirmed: 1 }),
+    ];
+    const rows = prepRows(lines);
+    expect(rows).toHaveLength(4);
+    expect(rows[2]).toMatchObject({ all: true, confirmed: 5, waiting: 1, limit: 20 });
+    expect(prepRows([prepLine({ variant_id: V1, variant_name: "זיתים" })])).toHaveLength(1);
+    await show([{ day: FRI, lines }]);
+    const shown = screen.getAllByTestId("orders-prep-line");
+    expect(shown[2].textContent).toContain("6 × חלה מכל הסוגים יחד");
+    expect(shown[2].textContent).toContain("מתוך 20 ליום");
   });
 
   it("1 day: its name, no chips, the lines with waiting and the limit", async () => {
@@ -305,5 +372,19 @@ describe("«מה להכין» from the server", () => {
     expect(prepDayName(FRI, "he", t, now)).toBe("tabs.today");
     expect(prepDayName(SAT, "he", t, now)).toBe("prep.tomorrow");
     expect(prepDayName("2026-12-07", "he", t, now)).not.toMatch(/today|tomorrow/);
+  });
+});
+
+describe("the client mirrors the server's numbers", () => {
+  // Source text on purpose: the Python constants cannot run here.
+  const server = readFileSync(path.join(process.cwd(), "../backend/app/services/product_daily_stock.py"), "utf8");
+  const schema = readFileSync(path.join(process.cwd(), "../backend/app/schemas/product_order_offer.py"), "utf8");
+
+  it("«נשארו N» starts at the same count", () => {
+    expect(server).toMatch(new RegExp(`^LOW_STOCK_AT = ${LOW_STOCK_AT}$`, "m"));
+  });
+
+  it("the field allows what the API allows", () => {
+    expect(schema).toContain(`daily_limit: int | None = Field(default=None, ge=1, le=${LIMIT_MAX})`);
   });
 });

@@ -54,7 +54,7 @@ import {
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
 import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
-import { stockSlots, stockShortText } from "@/lib/daily-stock";
+import { removeShort, shortName, stockSlots, stockShortText } from "@/lib/daily-stock";
 import Checkbox from "@/components/ui/Checkbox";
 
 const QUOTE_DELAY_MS = 400;
@@ -192,9 +192,14 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         {limiting ? (
           <OrderSheetDayConflict product={limiting} onRemove={() => removeFromCart(limiting.id, { picks, onChange, onClose })} />
         ) : short ? (
-          <InlineMessage tone="info">
-            <span data-testid="order-sheet-stock-short">{stockShortText(short, byId, t)}</span>
-          </InlineMessage>
+          <div className="space-y-2">
+            <InlineMessage tone="info">
+              <span data-testid="order-sheet-stock-short">{stockShortText(short, byId, t)}</span>
+            </InlineMessage>
+            <Button type="button" variant="outlined" size="sm" onClick={() => removeShort(short, { picks, onChange, onClose })} data-testid="order-sheet-stock-remove">
+              {t("day_conflict_remove", { name: shortName(short, byId) })}
+            </Button>
+          </div>
         ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (

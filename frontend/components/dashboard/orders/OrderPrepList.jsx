@@ -20,9 +20,10 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-import Button from "@/components/ui/Button";
 import Heading from "@/components/ui/Heading";
-import { loadPrepList, prepDayName } from "@/lib/daily-stock-owner";
+import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { loadPrepList, prepDayName, prepRows } from "@/lib/daily-stock-owner";
 import { orderLineName } from "@/lib/product-variants";
 
 /** @param {{ line: any }} props */
@@ -31,13 +32,29 @@ function PrepLine({ line }) {
   const total = line.confirmed + line.waiting;
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-3" data-testid="orders-prep-line">
-      <span className="text-text">{t("line", { count: total, name: orderLineName(line) })}</span>
+      <span className="text-text">
+        {t("line", { count: total, name: orderLineName(line) })}
+        {line.all && <span className="text-fg-muted"> {t("all_kinds")}</span>}
+      </span>
       <span className="text-xs text-fg-muted">
         {line.waiting > 0 && t("waiting", { count: line.waiting })}
         {line.waiting > 0 && typeof line.limit === "number" && " · "}
         {typeof line.limit === "number" && t("of_limit", { limit: line.limit })}
       </span>
     </li>
+  );
+}
+
+/** @param {{ onRetry: () => void }} props */
+function PrepFailed({ onRetry }) {
+  const t = useTranslations("dashboard.producer.orders");
+  return (
+    <div className="space-y-2" data-testid="orders-prep-failed">
+      <InlineMessage tone="error">{t("prep.load_error")}</InlineMessage>
+      <Button type="button" variant="outlined" size="sm" onClick={onRetry} data-testid="orders-prep-retry">
+        {t("retry")}
+      </Button>
+    </div>
   );
 }
 
@@ -48,15 +65,23 @@ export default function OrderPrepList({ orders }) {
   const locale = useLocale();
   const [days, setDays] = useState(/** @type {any[] | null} */ (null));
   const [picked, setPicked] = useState(/** @type {string | null} */ (null));
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     loadPrepList()
-      .then((rows) => live && setDays(rows))
-      .catch(() => live && setDays([]));
+      .then((rows) => {
+        if (!live) return;
+        setFailed(false);
+        setDays(rows);
+      })
+      .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [orders]);
+  }, [orders, attempt]);
+  // A failed read says so: an empty box would read as «nothing to prepare».
+  if (failed) return <PrepFailed onRetry={() => setAttempt((n) => n + 1)} />;
   if (!days || days.length === 0) return null;
   const day = days.find((d) => d.day === picked) ?? days[0];
   return (
@@ -82,7 +107,7 @@ export default function OrderPrepList({ orders }) {
       )}
       {days.length === 1 && <p className="text-sm text-fg-muted">{prepDayName(day.day, locale, tOrders)}</p>}
       <ul className="text-sm space-y-1" aria-labelledby="orders-prep-title">
-        {day.lines.map((/** @type {any} */ line) => (
+        {prepRows(day.lines).map((/** @type {any} */ line) => (
           <PrepLine key={`${line.product_id}-${line.variant_id}-${line.name}`} line={line} />
         ))}
       </ul>

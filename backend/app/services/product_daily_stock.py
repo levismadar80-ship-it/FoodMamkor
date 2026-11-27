@@ -26,6 +26,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, Iterable
 
 from fastapi import HTTPException, status
+from sqlalchemy import true
 from sqlalchemy.orm import Session
 
 from app.models.catalog import Product, ProductVariant
@@ -40,8 +41,11 @@ from app.utils.clock import ISRAEL_TZ
 # already handed over. Declined / cancelled / expired / no-show give them back.
 COUNTED_STATUSES: tuple[str, ...] = (*PRODUCT_ORDER_OPEN_STATUSES, "handed")
 # The two halves of the prep list: confirmed by the business, and waiting.
-CONFIRMED_STATUSES = ("confirmed", "ready", "handed")
+# A handed order still holds its units (COUNTED_STATUSES) but is not on the
+# prep list: it was already made and given.
+CONFIRMED_STATUSES = ("confirmed", "ready")
 WAITING_STATUSES = ("pending", "change_proposed")
+PREP_STATUSES = (*WAITING_STATUSES, *CONFIRMED_STATUSES)
 # The buyer sees «נשארו N» at or below this (Shopify / Amazon show a low-stock
 # line only near the end).
 LOW_STOCK_AT = 3
@@ -92,8 +96,10 @@ def booked(
     producer_id: Any,
     days: Iterable[date],
     statuses: tuple[str, ...] = COUNTED_STATUSES,
+    exclude_order: Any = None,
 ) -> Booked:
-    """Units already ordered from this business on each of `days`."""
+    """Units already ordered from this business on each of `days`, leaving
+    out `exclude_order` (an order being moved to another slot)."""
     wanted = set(days)
     out = Booked(defaultdict(int), defaultdict(int))
     if not wanted:
@@ -113,6 +119,7 @@ def booked(
             ProductOrder.slot_start >= lo,
             ProductOrder.slot_start < hi,
             ProductOrderItem.product_id.isnot(None),
+            ProductOrder.id != exclude_order if exclude_order is not None else true(),
         )
         .all()
     )
@@ -142,10 +149,16 @@ def _variant_label(product: Product, variant: ProductVariant) -> str:
 
 
 def refuse_over_limit(
-    db: Session, producer_id: Any, lines: list[ProductOrderItem], start: datetime
+    db: Session,
+    producer_id: Any,
+    lines: list[ProductOrderItem],
+    start: datetime,
+    exclude_order: Any = None,
 ) -> None:
     """409 naming the first line (in the buyer's order) that would take its
-    product or variant past the day's limit. Call under the business lock."""
+    product or variant past the day's limit. Call under the business lock.
+    `exclude_order`: an existing order moving to `start` — its own units are
+    not counted twice (a proposed or accepted change of slot)."""
     day = israel_day(start)
     ids = {line.product_id for line in lines}
     products = {p.id: p for p in db.query(Product).filter(Product.id.in_(ids)).all()}
@@ -154,7 +167,7 @@ def refuse_over_limit(
         for p in products.values()
     ):
         return
-    taken = booked(db, producer_id, [day])
+    taken = booked(db, producer_id, [day], exclude_order=exclude_order)
     asked_product: dict[Any, int] = defaultdict(int)
     asked_variant: dict[Any, int] = defaultdict(int)
     for line in lines:
@@ -277,7 +290,7 @@ def prep_list(db: Session, producer_id: Any, today: date) -> list[dict[str, Any]
         .join(ProductOrderItem, ProductOrderItem.order_id == ProductOrder.id)
         .filter(
             ProductOrder.producer_id == producer_id,
-            ProductOrder.status.in_(COUNTED_STATUSES),
+            ProductOrder.status.in_(PREP_STATUSES),
             ProductOrder.slot_start >= lo,
             ProductOrder.slot_start < hi,
         )

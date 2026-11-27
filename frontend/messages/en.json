@@ -6375,7 +6375,8 @@
           "limit_total": "Per day, all kinds together",
           "limit_by_variant": "You can also limit each kind on its own:",
           "limit_none": "No limit",
-          "limit_unit_100g": "× 100 g"
+          "limit_unit_100g": "× 100 g",
+          "limit_invalid": "A whole number from 1 to 999, or empty for no limit"
         },
         "prep": {
           "title": "What to prepare",
@@ -6383,7 +6384,9 @@
           "days": "Days",
           "tomorrow": "Tomorrow",
           "waiting": "{count} awaiting your answer",
-          "of_limit": "of {limit} a day"
+          "of_limit": "of {limit} a day",
+          "load_error": "We couldn't load «what to prepare».",
+          "all_kinds": "all kinds together"
         },
         "intro": {
           "title": "New: pre-orders from your page",
