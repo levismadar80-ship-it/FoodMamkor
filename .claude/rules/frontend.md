@@ -64,7 +64,7 @@ defined in more files than `duplicate-name-baseline.txt` allows fails
 | Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
 | Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
 | Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |
-| API error → Hebrew message / toast | `errors.js` | `errorMessage` (reads `error.api.<code>`, MEH-1943), `detailToMessage`, `showErrorToast` |
+| API error → Hebrew message / toast | `errors.js` | `errorMessage` (reads error.api.CODE via `defaultCodeResolver`, MEH-1943), `detailToMessage`, `showErrorToast` |
 | Toast | `toast.js` | `showToast` |
 | Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
 | Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
