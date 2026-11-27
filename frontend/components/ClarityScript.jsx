@@ -11,7 +11,9 @@ import { usePathname } from "next/navigation";
 // /claim on mount; Clarity waits for that. MEH-2974: /owner-invite/<token>
 // is the same shape and the same risk, so it waits the same way.
 // MEH-3896: /c/<code>, the short claim link, is the same credential.
-const CLAIM_TOKEN_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]/;
+// MEH-3975: /verify-email holds the verify token and ?claim=<code> in its
+// query; the path is all this sees, so the whole page is off.
+const CLAIM_TOKEN_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]|\/verify-email(?:$|[/?])/;
 
 export default function ClarityScript({ projectId }) {
   const [consented, setConsented] = useState(false);

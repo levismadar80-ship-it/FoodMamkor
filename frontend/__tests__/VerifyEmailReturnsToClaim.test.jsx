@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import VerifyEmailClient from "@/app/[locale]/verify-email/VerifyEmailClient";
 import { readClaimToken } from "@/lib/claim-token";
-import { claimCodeForSignup } from "@/lib/claim-return";
+import { claimCodeForSignup, takeClaimLanding } from "@/lib/claim-return";
 
 const CODE = "Pk8VP2JpqGI3";
 const params = { current: `token=tok-123&claim=${CODE}` };
@@ -110,5 +110,38 @@ describe("claimCodeForSignup (MEH-3975)", () => {
     expect(claimCodeForSignup("/meshek-hadugma")).toBeNull();
     sessionStorage.setItem("mehamakor.claimToken", "eyJhbGciOiJIUzI1NiJ9.e30.sig");
     expect(claimCodeForSignup("/claim")).toBeNull();
+  });
+});
+
+describe("takeClaimLanding (MEH-3975)", () => {
+  const at = (href) => {
+    window.location.href = href;
+    return vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+  };
+  afterEach(() => vi.restoreAllMocks());
+
+  it("strips claim from the address and keeps every other parameter", () => {
+    const spy = at(`https://mehamakor.co.il/verify-email?token=tok-123&claim=${CODE}`);
+    expect(takeClaimLanding(CODE)).toBe("/claim");
+    expect(spy.mock.calls[0].slice(1)).toEqual(["", "/verify-email?token=tok-123"]);
+  });
+
+  it("keeps the English prefix", () => {
+    at(`https://mehamakor.co.il/en/verify-email?token=t&claim=${CODE}`);
+    expect(takeClaimLanding(CODE)).toBe("/en/claim");
+  });
+
+  it("storage refused: the code travels in the address instead", () => {
+    at(`https://mehamakor.co.il/verify-email?token=t&claim=${CODE}`);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    expect(takeClaimLanding(CODE)).toBe(`/c/${CODE}`);
+  });
+
+  it("no claim parameter: nothing to do", () => {
+    const spy = at("https://mehamakor.co.il/verify-email?token=t");
+    expect(takeClaimLanding(null)).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
   });
 });

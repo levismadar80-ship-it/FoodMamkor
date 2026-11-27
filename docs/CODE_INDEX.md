@@ -417,6 +417,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `chip-copy.js` | MEH-2748 — attach the words to a filter chip at render time. lib/filter-taxonomy.js (FILTER_AXES) and lib/map-chips.js (CATEGORY_CHIPS) hold keys and wiring … |
 | `chip-gate.js` | The site rule for any chip row: a chip that would open on an empty result is not drawn (MEH-3128). … |
 | `chip-icons.js` | MEH-1418 — leading Phosphor icons for the toggle/attribute filter chips (verified · delivery · kosher · diet · quality) across the three discovery surfaces … |
+| `claim-return.js` | Bring a business owner who signs up BY EMAIL from the claim page back to the claim after she verifies the address, from whichever browser opens the mail … |
 | `claim-token.js` | Keep bearer tokens that arrive in a URL out of every URL after the first one — the owner-claim token (MEH-2321) and, since MEH-2974, the owner-INVITE token. … |
 | `client-messages.js` | MEH-2233: which message namespaces the ROOT client provider ships. |
 | `clipboard.js` | The one way to copy text on the site. It tries the Clipboard API, then the old textarea + execCommand path, and always answers true/false. … |

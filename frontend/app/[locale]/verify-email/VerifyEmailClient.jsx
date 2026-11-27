@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EnvelopeSimple, CheckCircle, LinkBreak } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -83,14 +83,21 @@ function VerifyEmailContent() {
   const t = useTranslations();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const claimParam = searchParams.get("claim"); // MEH-3975
+  // MEH-3975: read once. takeClaimLanding strips `claim` from the address,
+  // and Next syncs replaceState into useSearchParams; a dependency on the
+  // live value would re-run the effect and spend the verify token twice.
+  const claimParam = useRef(searchParams.get("claim"));
+  const claimTaken = useRef(false);
   const [verifyState, setVerifyState] = useState("loading"); // loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
   const [linkLanding, setLinkLanding] = useState(null); // MEH-3087
   const { user, loading: authLoading } = useRedirectWhenLoggedIn(verifyState);
 
   useEffect(() => {
-    claimLanding = takeClaimLanding(claimParam);
+    if (!claimTaken.current) {
+      claimTaken.current = true;
+      claimLanding = takeClaimLanding(claimParam.current);
+    }
     if (!token) {
       setVerifyState("error");
       setErrorMsg(t("auth.verifyEmail.errors.invalid_link"));
@@ -110,7 +117,7 @@ function VerifyEmailContent() {
           detailToMessage(err.response?.data?.detail) || t("auth.verifyEmail.errors.invalid_or_expired")
         );
       });
-  }, [token, claimParam, t]);
+  }, [token, t]);
 
   // MEH-2567: all three states use the shared StatusPage layout (line icon,
   // no card); the red filled X and the amber envelope are gone. Copy unchanged.
@@ -134,7 +141,7 @@ function VerifyEmailContent() {
       icon={LinkBreak}
       title={t("auth.verifyEmail.error_title")}
       body={errorMsg}
-      primary={{ href: "/", label: t("auth.verifyEmail.error_cta") }}
+      primary={{ href: claimLanding || "/", label: t("auth.verifyEmail.error_cta") }} // MEH-3975
     />
   );
 }

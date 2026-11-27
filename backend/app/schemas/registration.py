@@ -27,6 +27,7 @@ from app.limits import (
     cap_list,
 )
 from app.schemas.password import PasswordField
+from app.services.share_links import looks_like_share_code  # MEH-3975
 from app.services.sanitization import sanitize_text
 from app.schemas.catalog import DeliveryAreaCreate
 from app.schemas.schemas import (
@@ -46,10 +47,6 @@ from app.schemas.schemas import (
     _terms_must_be_accepted,
     _url_scheme_validator,
 )
-
-
-# MEH-3975: services/share_links.py _CODE_RE (12 letters/digits).
-_CLAIM_CODE_RE = re.compile(r"^[A-Za-z0-9]{12}$")
 
 
 class UserRegister(BaseModel):
@@ -89,11 +86,11 @@ class UserRegister(BaseModel):
     @field_validator("claim_code")
     @classmethod
     def _claim_code_shape(cls, v: str | None) -> str | None:
-        # Same shape as services/share_links.py looks_like_share_code; checked
-        # here so nothing else can be spliced into the emailed URL.
+        # services/share_links.py owns the shape; checked here so nothing
+        # else can be spliced into the emailed URL.
         if v is None or v == "":
             return None
-        if not _CLAIM_CODE_RE.match(v):
+        if not looks_like_share_code(v):
             raise ValueError("claim_code must be a 12-character share code")
         return v
 

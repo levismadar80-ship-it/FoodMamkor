@@ -22,6 +22,10 @@ describe("replayAllowed (Sentry replay gate)", () => {
     ["/c/K7m2Qx9aPbR4", true, false],
     ["/en/c/K7m2Qx9aPbR4", true, false],
     ["/claim", true, true],
+    // MEH-3975: the verify page carries the token and ?claim=<code>.
+    ["/verify-email", true, false],
+    ["/en/verify-email", true, false],
+    ["/verify-emailx", true, true],
     ["", true, true],
   ])("%s with full consent=%s → %s", (path, consent, expected) => {
     expect(replayAllowed(path, consent)).toBe(expected);

@@ -237,6 +237,12 @@ export function readOwnerInviteCodeSent(token) {
   }
 }
 
+// MEH-3975: the short code rides on the verification link as ?claim=<code>
+// (and, encoded, inside a ?redirect=). /verify-email strips it on mount, but
+// the first page view and a trace can still carry it.
+const CLAIM_QUERY = new RegExp(String.raw`([?&]claim=)${SHORT_CODE}`, "g");
+const CLAIM_QUERY_ENCODED = new RegExp(String.raw`((?:%3F|%26)claim%3D)${SHORT_CODE}`, "gi");
+
 export function redactClaimPath(value) {
   if (typeof value !== "string") return value;
   return value
@@ -253,7 +259,9 @@ export function redactClaimPath(value) {
     .replace(SHORT_LINK_PATH, "$1/[token]")
     .replace(SHORT_LINK_PATH_ENCODED, "$1%2F[token]")
     .replace(ORDER_LINK_TOKEN, "$1[token]")
-    .replace(ORDER_LINK_TOKEN_ENCODED, "$1[token]");
+    .replace(ORDER_LINK_TOKEN_ENCODED, "$1[token]")
+    .replace(CLAIM_QUERY, "$1[token]")
+    .replace(CLAIM_QUERY_ENCODED, "$1[token]");
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and
