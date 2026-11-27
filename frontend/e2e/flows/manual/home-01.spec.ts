@@ -119,10 +119,20 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
     await gotoHome(page);
     const layer = scope(page).getByTestId("hero-image-layer");
     await expect(layer).toHaveCount(1, FIRST_PAINT);
-    const style = await layer.evaluate((el) => {
-      const cs = getComputedStyle(el as HTMLElement);
-      return { image: cs.backgroundImage, animation: cs.animationName, size: cs.backgroundSize };
-    });
+    const read = () =>
+      layer.evaluate((el) => {
+        const cs = getComputedStyle(el as HTMLElement);
+        return { image: cs.backgroundImage, animation: cs.animationName, size: cs.backgroundSize };
+      });
+    // MEH-3838: one read could land on a node React was replacing (the hidden
+    // server copy of MEH-3834, swapped for the client render). A detached node's
+    // computed style is "" for every property, so the first try read "". Poll
+    // until the layer in the page reports its image; the asserts below then
+    // read that settled node. A layer that never gets the photo still fails.
+    await expect
+      .poll(async () => (await read()).image, { message: "the hero photo is served from Cloudinary", timeout: 10_000 })
+      .toContain("res.cloudinary.com");
+    const style = await read();
     expect(style.image, "the hero photo is served from Cloudinary").toContain("res.cloudinary.com");
     expect(style.image, "…and is the produce hero, not the old stock frame").toContain("home/hero-produce");
     expect(style.size).toBe("cover");
