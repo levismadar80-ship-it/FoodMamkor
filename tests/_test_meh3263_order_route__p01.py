@@ -546,7 +546,7 @@ def test_the_delivery_fee(facts, city, subtotal, expected):
             _facts(has_area=True, area_min_order=100),
             "נשר",
             9999,
-            delivery.AREA_MINIMUM_DETAIL,
+            delivery.minimum_detail(100, 9999),
         ),
     ],
 )

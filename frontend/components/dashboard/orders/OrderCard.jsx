@@ -10,7 +10,8 @@
  *           a refused move comes back as a Hebrew 409 and is shown inline).
  * Related:  lib/product-orders.js (formatting), OrderActions.jsx
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps
- *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»)
+ *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»);
+ *           MEH-3971 (the delivery city beside the street)
  */
 
 import { useLocale, useTranslations } from "next-intl";
@@ -47,7 +48,8 @@ function OrderFacts({ order }) {
       </p>
       {fee > 0 && <p>{t("delivery_fee", { fee: shekelsText(fee) })}</p>}
       {order.has_estimate && (order.final_total_agorot ?? null) === null && <p>{t("estimate")}</p>}
-      {order.delivery_address && <p>{t("address", { address: order.delivery_address })}</p>}
+      {/* MEH-3971: the city too — she may deliver to several. */}
+      {order.delivery_address && <p data-testid="order-address">{t("address", { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(", ") })}</p>}
       {order.note && <p>{t("note", { note: order.note })}</p>}
       {order.age_declared && <p>{t("age")}</p>}
     </div>
