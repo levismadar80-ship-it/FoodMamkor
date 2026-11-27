@@ -43,7 +43,8 @@ def test_a_new_order_for_a_slot_within_a_day_lapses_by_its_slot(
     shop = Shop(db)
     assert send(client, shop, sent).status_code == 201
     order = db.query(ProductOrder).one()
-    assert order.expires_at <= order.slot_start
+    # The slot is under a day away, so the slot, not the 24 hours, decides.
+    assert order.expires_at == order.slot_start
 
 
 def test_a_proposed_slot_sooner_than_a_day_bounds_the_buyers_answer(
@@ -61,4 +62,21 @@ def test_a_proposed_slot_sooner_than_a_day_bounds_the_buyers_answer(
     db.expire_all()
     order = db.query(ProductOrder).one()
     assert order.proposed_slot_start is not None
-    assert order.expires_at <= order.proposed_slot_start
+    assert order.expires_at == order.proposed_slot_start
+
+
+def test_a_proposal_without_a_new_slot_is_bounded_by_the_orders_own_slot(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    created = send(client, shop, sent).json()  # the second slot, under a day away
+    res = client.post(
+        f"/producers/me/product-orders/{created['id']}/propose-change",
+        json={"total_agorot": 5000, "note": "נשארה חלה אחת"},
+        headers=shop.headers,
+    )
+    assert res.status_code == 200, res.text
+    db.expire_all()
+    order = db.query(ProductOrder).one()
+    assert order.proposed_slot_start is None
+    assert order.expires_at == order.slot_start
