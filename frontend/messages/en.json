@@ -6381,7 +6381,7 @@
           "limit_unit_100g": "× 100 g",
           "limit_invalid": "A whole number from 1 to 999, or empty for no limit",
           "lead": "How far ahead to order",
-          "lead_none": "No minimum, any open time",
+          "lead_none": "No need to order ahead",
           "lead_option": "{n, plural, one {# day ahead} other {# days ahead}}"
         },
         "prep": {
@@ -8427,7 +8427,7 @@
     "none_picked": "Pick at least one day, or «Every day»",
     "line_one": "Available on {day}s",
     "line_many": "Available on {days}",
-    "lead_line": "Order {n, plural, one {# day} other {# days}} ahead"
+    "lead_line": "Order at least {n, plural, one {# day} other {# days}} ahead"
   },
   "price_unit": {
     "unit": "per unit",

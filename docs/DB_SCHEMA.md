@@ -1446,7 +1446,7 @@
 
 - `products_available_weekdays_check`: `available_weekdays >= 1 AND available_weekdays <= 127`
 - `products_daily_limit_check`: `daily_limit >= 1 AND daily_limit <= 999`
-- `products_lead_days_check`: `lead_days >= 1 AND lead_days <= 14`
+- `products_lead_days_check`: `lead_days >= 1 AND lead_days <= 7`
 - `products_price_unit_check`: `price_unit IN ('unit', 'kg', '100g', 'bottle', 'box', 'pack')`
 
 **Indexes**

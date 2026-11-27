@@ -8,7 +8,8 @@ MEH-3932 (Fischgrund bakery, 27/11): a business sets, per product, how many
 days ahead it must be ordered. The pickup's Israel day must be at least
 today + lead_days.
 
-- products.lead_days: SMALLINT NULL, CHECK 1..14.
+- products.lead_days: SMALLINT NULL, CHECK 1..7. Slots are offered for 14
+  days, so 7 always leaves a week to pick from.
 
 Expand-only (ADR-007): one nullable column with no default, so every
 existing row reads NULL = no product rule and keeps today's behaviour;
@@ -34,7 +35,7 @@ def upgrade() -> None:
     op.create_check_constraint(
         "products_lead_days_check",
         "products",
-        "lead_days >= 1 AND lead_days <= 14",
+        "lead_days >= 1 AND lead_days <= 7",
     )
 
 

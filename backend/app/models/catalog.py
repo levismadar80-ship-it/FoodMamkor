@@ -211,7 +211,7 @@ class Product(Base):
             name="products_daily_limit_check",
         ),
         CheckConstraint(
-            "lead_days >= 1 AND lead_days <= 14",
+            "lead_days >= 1 AND lead_days <= 7",
             name="products_lead_days_check",
         ),
         Index(

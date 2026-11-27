@@ -21,8 +21,12 @@ import { useTranslations } from "next-intl";
 
 import Select from "@/components/ui/Select";
 
-/** The days she can pick: a week day by day, then 10 and 14 (the server's cap). */
-export const LEAD_DAY_CHOICES = [1, 2, 3, 4, 5, 6, 7, 10, 14];
+/**
+ * The days she can pick, up to the server's cap (product_lead_days.py
+ * LEAD_DAYS_MAX = 7). Slots are offered two weeks ahead, so 7 still leaves a
+ * week to choose from; 14 would leave none.
+ */
+export const LEAD_DAY_CHOICES = [1, 2, 3, 4, 5, 6, 7];
 
 /**
  * @param {{ id: string, value: number | null | undefined, busy: boolean, onSave: (days: number | null) => void }} props

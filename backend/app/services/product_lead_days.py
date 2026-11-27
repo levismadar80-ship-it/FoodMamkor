@@ -32,7 +32,7 @@ def too_soon_detail(name: str, days: int) -> str:
     ahead = "יום אחד" if days == 1 else ("יומיים" if days == 2 else f"{days} ימים")
     return (
         f"את «{name}» צריך להזמין לפחות {ahead} מראש. "
-        "צריך לבחור מועד מאוחר יותר או להסיר אותו מההזמנה"
+        "צריך לבחור מועד מאוחר יותר או להסיר מההזמנה"
     )
 
 

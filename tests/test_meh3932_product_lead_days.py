@@ -10,7 +10,14 @@ the menu carries it · a time the business proposes herself is not checked.
 
 from datetime import UTC, datetime
 
+import pytest
+
+from app.models.product_orders import PRODUCT_LEAD_DAYS_MAX
+from app.routers import product_order_offer as offer_router
+from app.services import chat_business_context
 from app.services import product_lead_days as ld
+from app.services import product_order_create as create_service
+from app.services.product_order_slots import SLOT_HORIZON_DAYS
 from _test_meh3263_order_route__common import (  # noqa: F401 — fixtures
     Shop,
     code_for,
@@ -26,8 +33,20 @@ def _menu(client, shop):
     return client.get(f"/producers/{shop.id}/order-menu").json()
 
 
+# One instant for the menu, the order route and the test's own count, so a
+# run that straddles Israel midnight cannot read two different days
+# (testing.md, clock-dependent tests).
+_FROZEN = datetime.now(UTC).replace(tzinfo=None)
+
+
+@pytest.fixture(autouse=True)
+def _one_clock(monkeypatch):
+    monkeypatch.setattr(offer_router, "utc_now", lambda: _FROZEN)
+    monkeypatch.setattr(create_service, "utc_now", lambda: _FROZEN)
+
+
 def _now():
-    return datetime.now(UTC)
+    return _FROZEN
 
 
 def _ahead(slot):
@@ -94,6 +113,26 @@ def test_with_two_lines_the_limited_one_is_named(client, db, flag_on, sent):
     assert "«חלה»" not in res.json()["detail"]
 
 
+def test_two_limited_products_the_longer_lead_decides(client, db, flag_on, sent):
+    shop = Shop(db)
+    soonest, later = _soonest_and_later(client, shop)
+    shop.bread.lead_days = _ahead(soonest) or None
+    shop.cheese.lead_days = _ahead(later)
+    db.commit()
+    res = _order(client, shop, sent, soonest, [shop.bread, shop.cheese])
+    assert res.status_code == 409
+    assert res.json()["detail"] == ld.too_soon_detail("גבינה", _ahead(later))
+    assert _order(client, shop, sent, later, [shop.bread, shop.cheese]).status_code == 201
+
+
+def test_the_chat_says_how_far_ahead_only_when_set(db):
+    shop = Shop(db)
+    assert "order_days_ahead" not in chat_business_context._product(shop.bread)
+    shop.bread.lead_days = 2
+    db.commit()
+    assert chat_business_context._product(shop.bread)["order_days_ahead"] == 2
+
+
 def test_the_menu_carries_the_lead(client, db, flag_on):
     shop = Shop(db)
     shop.bread.lead_days = 2
@@ -146,8 +185,20 @@ def test_owner_sets_keeps_and_clears_the_lead(client, db, flag_on):
 def test_lead_out_of_range_is_refused(client, db, flag_on):
     shop = Shop(db)
     assert _put(client, shop, shop.bread, lead_days=0).status_code == 422
-    assert _put(client, shop, shop.bread, lead_days=15).status_code == 422
-    assert _put(client, shop, shop.bread, lead_days=14).status_code == 200
+    over = PRODUCT_LEAD_DAYS_MAX + 1
+    assert _put(client, shop, shop.bread, lead_days=over).status_code == 422
+    assert _put(client, shop, shop.bread, lead_days=PRODUCT_LEAD_DAYS_MAX).status_code == 200
+
+
+def test_the_longest_lead_still_leaves_slots_to_order(client, db, flag_on, sent):
+    """The review's high finding: a cap at the 14-day slot horizon left none."""
+    assert PRODUCT_LEAD_DAYS_MAX < SLOT_HORIZON_DAYS
+    shop = Shop(db)
+    shop.bread.lead_days = PRODUCT_LEAD_DAYS_MAX
+    db.commit()
+    far = [s for s in _pickups(client, shop) if _ahead(s) >= PRODUCT_LEAD_DAYS_MAX]
+    assert far, "no slot left for the longest lead"
+    assert _order(client, shop, sent, far[0], [shop.bread]).status_code == 201
 
 
 def test_another_business_cannot_set_my_lead(client, db, flag_on):

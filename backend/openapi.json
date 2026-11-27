@@ -19879,7 +19879,7 @@
           "lead_days": {
             "anyOf": [
               {
-                "maximum": 14.0,
+                "maximum": 7.0,
                 "minimum": 1.0,
                 "type": "integer"
               },

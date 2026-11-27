@@ -183,7 +183,7 @@ erDiagram
         boolean contains_alcohol "MEH-3218: default false"
         smallint available_weekdays "MEH-3618: Sun=1..Sat=64, NULL = every day, CHECK 1..127"
         smallint daily_limit "daily stock 27/11: units per pickup day across variants, NULL = no limit, CHECK 1..999"
-        smallint lead_days "MEH-3932: pickup Israel day >= today + N, NULL = no product rule, CHECK 1..14"
+        smallint lead_days "MEH-3932: pickup Israel day >= today + N, NULL = no product rule, CHECK 1..7"
     }
 
     producer_order_settings {

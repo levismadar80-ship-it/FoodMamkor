@@ -55,6 +55,11 @@ describe("the lead-days rule", () => {
     expect(slotsForProducts(SLOTS, [friOnly], NOW)).toEqual([FRI_SLOT]);
   });
 
+  it("two limited products: the longer lead decides", () => {
+    const cart = [product(JAM, "ריבה", { lead_days: 1 }), product(BREAD, "חלה", { lead_days: 2 })];
+    expect(slotsForProducts(SLOTS, cart, NOW)).toEqual([FRI_SLOT]);
+  });
+
   it("when no slot is far enough, names the product that needs the lead", () => {
     const cart = [product(JAM, "ריבה"), product(BREAD, "חלה", { lead_days: 3 })];
     expect(slotsForProducts(SLOTS, cart, NOW)).toEqual([]);
@@ -63,10 +68,10 @@ describe("the lead-days rule", () => {
 
   it("the line reads one day, two days, many days, and joins the days a product is made", () => {
     expect(availabilityLine(product(BREAD, "חלה"), tw)).toBeNull();
-    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 1 }), tw)).toBe("צריך להזמין יום אחד מראש");
-    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 2 }), tw)).toBe("צריך להזמין יומיים מראש");
-    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 5 }), tw)).toBe("צריך להזמין 5 ימים מראש");
-    expect(availabilityLine(product(BREAD, "חלה", { available_weekdays: FRI_BIT, lead_days: 2 }), tw)).toBe("זמין בימי שישי · צריך להזמין יומיים מראש");
+    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 1 }), tw)).toBe("צריך להזמין לפחות יום אחד מראש");
+    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 2 }), tw)).toBe("צריך להזמין לפחות יומיים מראש");
+    expect(availabilityLine(product(BREAD, "חלה", { lead_days: 5 }), tw)).toBe("צריך להזמין לפחות 5 ימים מראש");
+    expect(availabilityLine(product(BREAD, "חלה", { available_weekdays: FRI_BIT, lead_days: 2 }), tw)).toBe("זמין בימי שישי · צריך להזמין לפחות יומיים מראש");
   });
 });
 
@@ -77,7 +82,7 @@ describe("the line under a product", () => {
     const { rerender } = render(withIntl(<ProductWeekdaysLine product={product(BREAD, "חלה")} />));
     expect(screen.queryByTestId("product-weekdays-line")).toBeNull();
     rerender(withIntl(<ProductWeekdaysLine product={product(BREAD, "חלה", { lead_days: 2 })} />));
-    expect(screen.getByTestId("product-weekdays-line").textContent).toBe("צריך להזמין יומיים מראש");
+    expect(screen.getByTestId("product-weekdays-line").textContent).toBe("צריך להזמין לפחות יומיים מראש");
   });
 });
 
@@ -105,22 +110,23 @@ describe("OrderSheet — lead days", () => {
   it("too soon for every slot: names the product and its lead, offers to remove it", () => {
     renderSheet([product(BREAD, "חלה", { lead_days: 3 }), product(JAM, "ריבה")], { [BREAD]: 1, [JAM]: 1 });
     expect(screen.queryByTestId("order-sheet-slot")).toBeNull();
-    expect(screen.getByTestId("order-sheet-day-conflict").textContent).toContain("«חלה» צריך להזמין 3 ימים מראש");
+    expect(screen.getByTestId("order-sheet-day-conflict").textContent).toContain("«חלה» צריך להזמין לפחות 3 ימים מראש");
     expect(screen.getByTestId("order-sheet-day-conflict-remove")).toBeTruthy();
   });
 });
 
 describe("the owner's field", () => {
-  it("offers «בלי» and the days up to 14, shows the saved value, and saves a change", () => {
+  it("offers «אין צורך» and the days up to the server's cap of 7, shows the saved value, and saves a change", () => {
     const onSave = vi.fn();
     render(withIntl(<LeadDaysField id="x" value={2} busy={false} onSave={onSave} />));
     const select = /** @type {HTMLSelectElement} */ (screen.getByTestId("lead-days-x"));
     expect(select.value).toBe("2");
     expect([...select.options].map((o) => o.textContent)).toEqual([
-      "בלי, כל מועד פתוח", "יום אחד מראש", "יומיים מראש", "3 ימים מראש", "4 ימים מראש",
-      "5 ימים מראש", "6 ימים מראש", "7 ימים מראש", "10 ימים מראש", "14 ימים מראש",
+      "אין צורך להזמין מראש", "יום אחד מראש", "יומיים מראש", "3 ימים מראש", "4 ימים מראש",
+      "5 ימים מראש", "6 ימים מראש", "7 ימים מראש",
     ]);
-    expect(Math.max(...LEAD_DAY_CHOICES)).toBe(14); // the server's cap
+    // products.lead_days CHECK 1..7: slots go 14 days out, so 7 leaves a week.
+    expect(Math.max(...LEAD_DAY_CHOICES)).toBe(7);
     fireEvent.change(select, { target: { value: "3" } });
     expect(onSave).toHaveBeenLastCalledWith(3);
     fireEvent.change(select, { target: { value: "" } });
