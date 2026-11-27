@@ -176,7 +176,7 @@ export default function AdminReportsPage() {
               <button data-autofocus
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>
