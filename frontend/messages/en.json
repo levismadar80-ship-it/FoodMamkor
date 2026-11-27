@@ -8423,6 +8423,8 @@
     "when_pickup": "Pickup on {day}, {from}–{until} · {address}",
     "when_pickup_no_address": "Pickup on {day}, {from}–{until}",
     "when_delivery": "Delivery on {day}, {from}–{until}",
+    "requested_pickup": "You asked for pickup on {day}, {from}–{until}",
+    "requested_delivery": "You asked for delivery on {day}, {from}–{until}",
     "proposal": "The business suggests a change",
     "accept": "Works for me",
     "cancel": "Cancel the order",
