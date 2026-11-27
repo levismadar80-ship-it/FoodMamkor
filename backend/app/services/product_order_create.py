@@ -158,7 +158,9 @@ def _replayed(db: Session, body: OrderCreateIn, phone: str) -> ProductOrder | No
     return existing
 
 
-def _check_phone_standing(db: Session, phone: str, now: datetime) -> None:
+def _check_phone_standing(
+    db: Session, phone: str, now: datetime, repeat_id: Any = None
+) -> None:
     no_shows = (
         db.query(func.count(ProductOrder.id))
         .filter(
@@ -172,11 +174,16 @@ def _check_phone_standing(db: Session, phone: str, now: datetime) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=PHONE_BLOCKED_DETAIL
         )
+    if repeat_id is not None:
+        # MEH-3933: a weekly repeat's orders are capped by the repeats
+        # themselves (3 per phone per business), not by the open-order count.
+        return
     open_orders = (
         db.query(func.count(ProductOrder.id))
         .filter(
             ProductOrder.customer_phone == phone,
             ProductOrder.status.in_(PRODUCT_ORDER_OPEN_STATUSES),
+            ProductOrder.repeat_id.is_(None),
         )
         .scalar()
     )
@@ -424,7 +431,7 @@ def create_order(
     # not even for a slot after it.
     if row.shabbat_observant and rest_end_if_inside(now) is not None:
         raise _conflict(RESTING_DETAIL)
-    _check_phone_standing(db, phone, now)
+    _check_phone_standing(db, phone, now, repeat_id)
     _check_business_room(db, producer.id)
 
     slot = _slot(offered_slots(db, producer, row, now), body)
@@ -477,7 +484,12 @@ def create_order(
         # another phone number's lock got there first. This one wrote nothing.
         db.rollback()
         raise _conflict(KEY_REUSED_DETAIL) from clash
-    record_created(db, order, Actor("customer", user.id if user else None))  # type: ignore[arg-type]
+    by = (
+        SYSTEM
+        if repeat_id is not None
+        else Actor("customer", user.id if user else None)  # type: ignore[arg-type]
+    )
+    record_created(db, order, by)
     _start_repeat_if_asked(db, order, body, repeat_id)
     has_estimate = any(line.price_is_estimate for line in lines)
     if _may_auto_confirm(db, row, order, has_estimate):

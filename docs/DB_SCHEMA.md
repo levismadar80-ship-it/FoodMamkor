@@ -1414,6 +1414,7 @@
 - `ix_product_orders_expires_at` (expires_at)
 - `ix_product_orders_producer_slot` (producer_id, slot_start)
 - `ix_product_orders_producer_status` (producer_id, status)
+- `ix_product_orders_repeat_id` (repeat_id)
 - `ix_product_orders_user_id` (user_id)
 - `uq_product_orders_idempotency_key` UNIQUE (idempotency_key) WHERE `idempotency_key IS NOT NULL`
 - `uq_product_orders_open_pickup_code` UNIQUE (producer_id, pickup_code) WHERE `status IN ('confirmed', 'ready')`

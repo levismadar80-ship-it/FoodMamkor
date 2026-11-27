@@ -171,7 +171,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, fulfilment, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, repeatWeekly: form.repeat, key }),
+        orderBody({ producerId: producer.id, picks, ...form, fulfilment, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, repeatWeekly: form.repeat && Boolean(me), key }),
       );
       drafts.delete(producer.id);
       router.push(href);
@@ -216,7 +216,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         <Input label={t("name")} required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" data-testid="order-sheet-name" />
         <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
-        <OrderSheetRepeat slot={slot} checked={form.repeat} onChange={(repeat) => set({ repeat })} />
+        <OrderSheetRepeat slot={slot} checked={form.repeat} signedIn={Boolean(me)} onChange={(repeat) => set({ repeat })} />
         {hasAlcohol && (
           <Checkbox
             className="flex items-start gap-2 text-sm text-text"

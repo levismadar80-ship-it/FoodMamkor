@@ -17,7 +17,9 @@ Does NOT: price, check or write an order itself — every week goes through
 Related:  app/models/product_order_repeats.py, app/routers/product_order_buyer.py
           (the buyer's stop), app/routers/product_order_business.py (the
           business's stop), app/services/product_order_outbox.py (_day, _hhmm)
-History:  MEH-3933 (creation, 27/11/2026)
+History:  MEH-3933 (creation, 27/11/2026); review round 1: a logged-in buyer
+          only, no alcohol, a declined or unanswered week counts as skipped,
+          weeks missed while the job was off are passed over, not counted
 """
 
 import logging
@@ -36,6 +38,7 @@ from app.models.models import Producer, User
 from app.models.product_order_repeats import ProductOrderRepeat
 from app.models.product_orders import ProductOrder
 from app.schemas.product_order_buy import OrderCreateIn
+from app.sentry import capture_background_exception
 from app.services.email_outbox import enqueue_email
 from app.utils.clock import ISRAEL_TZ, utc_now
 
@@ -51,6 +54,14 @@ TOO_MANY_FOR_PHONE_DETAIL = (
     "אפשר לשלוח את ההזמנה בלי לחזור עליה כל שבוע."
 )
 NOT_REPEATING_DETAIL = "ההזמנה הזאת לא חוזרת כל שבוע"
+LOGIN_DETAIL = (
+    "כדי שההזמנה תחזור כל שבוע צריך להתחבר לחשבון. אפשר לשלוח אותה גם בלי לחזור עליה."
+)
+ALCOHOL_DETAIL = (
+    "על הזמנה עם אלכוהול אי אפשר לחזור כל שבוע. אפשר לשלוח אותה בלי לחזור עליה."
+)
+# A week the business declined or let expire did not work either (review M3).
+_FAILED_WEEK_STATUSES = ("declined", "expired")
 _NOT_TAKING_REASON = "בית העסק לא מקבל כרגע הזמנות באתר"
 
 
@@ -84,7 +95,14 @@ def is_due(last_slot_start: datetime, now: datetime) -> bool:
 
 
 def start_repeat(db: Session, order: ProductOrder, body: OrderCreateIn) -> None:
-    """Start the weekly repeat of `order`, in its transaction (no commit)."""
+    """Start the weekly repeat of `order`, in its transaction (no commit).
+
+    A logged-in buyer only: the skip and stop notices go to her email, and a
+    guest has none. No alcohol: the age declaration is made per order."""
+    if order.user_id is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=LOGIN_DETAIL)
+    if order.age_declared:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=ALCOHOL_DETAIL)
     active = db.query(func.count(ProductOrderRepeat.id)).filter(
         ProductOrderRepeat.producer_id == order.producer_id,
         ProductOrderRepeat.state == "active",
@@ -138,6 +156,10 @@ def _stop(db: Session, repeat: ProductOrderRepeat, by: str, now: datetime) -> No
     repeat.state = "stopped"  # type: ignore[assignment]
     repeat.stopped_by = by  # type: ignore[assignment]
     repeat.stopped_at = now  # type: ignore[assignment]
+    # Nothing reads these once it is stopped (review M4); the name and the
+    # phone stay for the orders board and go with the account.
+    repeat.delivery_address = None  # type: ignore[assignment]
+    repeat.note = None  # type: ignore[assignment]
     _mail_stopped(db, repeat, by)
 
 
@@ -298,6 +320,9 @@ def _make_week(db: Session, repeat_id: Any, start: datetime) -> str:
 
     repeat = db.get(ProductOrderRepeat, repeat_id)
     assert repeat is not None
+    last_failed = _last_week_failed(db, repeat)
+    if last_failed and int(repeat.skipped_in_row) + 1 >= SKIP_LIMIT:
+        return _advance(db, repeat_id, start, misses=1, reason=None)
     key = str(week_key(repeat.id, start))
     done = db.query(ProductOrder.id).filter(ProductOrder.idempotency_key == key)
     reason = None
@@ -310,6 +335,28 @@ def _make_week(db: Session, repeat_id: Any, start: datetime) -> str:
             if exc.detail == RESTING_DETAIL:
                 return "waiting"
             reason = _reason(exc)
+    misses = int(last_failed) + int(reason is not None)
+    return _advance(db, repeat_id, start, misses, reason)
+
+
+def _last_week_failed(db: Session, repeat: ProductOrderRepeat) -> bool:
+    """The order made for the week that just began was declined or expired."""
+    row = (
+        db.query(ProductOrder.status)
+        .filter(
+            ProductOrder.repeat_id == repeat.id,
+            ProductOrder.slot_start == repeat.last_slot_start,
+        )
+        .first()
+    )
+    return row is not None and row[0] in _FAILED_WEEK_STATUSES
+
+
+def _advance(
+    db: Session, repeat_id: Any, start: datetime, misses: int, reason: str | None
+) -> str:
+    """Move the repeat on to `start` and count `misses` weeks that did not
+    work. Returns "made", "skipped", "stopped" or "raced"."""
     # Locked before it moves on: a second run that got here first already
     # moved it, and this one leaves it as it is.
     repeat = (
@@ -322,15 +369,19 @@ def _make_week(db: Session, repeat_id: Any, start: datetime) -> str:
         db.commit()
         return "raced"
     repeat.last_slot_start = start  # type: ignore[assignment]
-    if reason is None:
+    if misses == 0:
         repeat.skipped_in_row = 0  # type: ignore[assignment]
         db.commit()
         return "made"
-    repeat.skipped_in_row = int(repeat.skipped_in_row) + 1  # type: ignore[assignment]
+    repeat.skipped_in_row = int(repeat.skipped_in_row) + misses  # type: ignore[assignment]
     if int(repeat.skipped_in_row) >= SKIP_LIMIT:
         _stop(db, repeat, "system", utc_now())
         db.commit()
         return "stopped"
+    if reason is None:
+        # This week was made; only last week's decline is counted.
+        db.commit()
+        return "made"
     _mail_skipped(db, repeat, start, reason)
     db.commit()
     return "skipped"
@@ -349,10 +400,27 @@ def _due_ids(db: Session, now: datetime) -> list[Any]:
     return [row[0] for row in rows]
 
 
+def _pass_over_missed_weeks(db: Session, repeat_id: Any, now: datetime) -> None:
+    """Weeks whose slot already began while the job was off (or ordering was
+    off) are passed over, not counted and not mailed (review M2): the next
+    week made is the first one still ahead."""
+    repeat = (
+        db.query(ProductOrderRepeat)
+        .filter(ProductOrderRepeat.id == repeat_id)
+        .with_for_update()
+        .one()
+    )
+    last: datetime = repeat.last_slot_start  # type: ignore[assignment]
+    while next_slot_start(last) <= now:
+        last = next_slot_start(last)
+    if last != repeat.last_slot_start:
+        repeat.last_slot_start = last  # type: ignore[assignment]
+    db.commit()
+
+
 def _run_one(db: Session, repeat_id: Any, now: datetime, counters: RunCounters) -> None:
-    # A week far behind (the job was off) catches up one week per pass; a
-    # past slot is refused by create_order and counts as a skipped week.
-    for _ in range(SKIP_LIMIT + 1):
+    _pass_over_missed_weeks(db, repeat_id, now)
+    for _ in range(2):
         repeat = db.get(ProductOrderRepeat, repeat_id)
         if repeat is None or repeat.state != "active":
             return
@@ -377,4 +445,5 @@ def run_due(db: Session, now: datetime | None = None) -> RunCounters:
             db.rollback()
             counters.errors.append(str(repeat_id))
             log.error("[ORDER-REPEAT] %s failed: %s", repeat_id, exc, exc_info=True)
+            capture_background_exception(exc, task="order-repeats")
     return counters

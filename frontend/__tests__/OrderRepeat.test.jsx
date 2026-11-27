@@ -87,27 +87,33 @@ describe("the order sheet", () => {
     expect(orderBody({ ...base, repeatWeekly: true }).repeat_weekly).toBe(true);
   });
 
+  it("a guest does not see it", () => {
+    wrap(<OrderSheetRepeat signedIn={false} slot={FRIDAY_9} checked onChange={() => {}} />);
+    expect(screen.queryByText("להזמין את זה שוב כל שבוע")).toBeNull();
+    expect(screen.queryByTestId("order-sheet-repeat-hint")).toBeNull();
+  });
+
   it("closed: the label only", () => {
-    wrap(<OrderSheetRepeat slot={FRIDAY_9} checked={false} onChange={() => {}} />);
+    wrap(<OrderSheetRepeat signedIn slot={FRIDAY_9} checked={false} onChange={() => {}} />);
     expect(screen.getByText("להזמין את זה שוב כל שבוע")).toBeTruthy();
     expect(screen.queryByTestId("order-sheet-repeat-hint")).toBeNull();
   });
 
   it("open with a slot: the day and time", () => {
-    wrap(<OrderSheetRepeat slot={FRIDAY_9} checked onChange={() => {}} />);
+    wrap(<OrderSheetRepeat signedIn slot={FRIDAY_9} checked onChange={() => {}} />);
     expect(screen.getByTestId("order-sheet-repeat-hint").textContent).toBe(
-      "כל שישי ב-09:00 נשלח לבית העסק את אותה הזמנה, ובית העסק יאשר אותה כמו כל הזמנה. אפשר לעצור בכל רגע מעמוד ההזמנה.",
+      "כל יום שישי בשעה 09:00 נשלח לבית העסק את אותה הזמנה, ובית העסק יאשר אותה כמו כל הזמנה. אפשר לעצור בכל רגע מעמוד ההזמנה.",
     );
   });
 
   it("open before a slot is picked: says it follows the slot", () => {
-    wrap(<OrderSheetRepeat slot="" checked onChange={() => {}} />);
+    wrap(<OrderSheetRepeat signedIn slot="" checked onChange={() => {}} />);
     expect(screen.getByTestId("order-sheet-repeat-hint").textContent).toBe(he.order_repeat.sheet_hint_no_slot);
   });
 
   it("ticking it reports the change", () => {
     const onChange = vi.fn();
-    wrap(<OrderSheetRepeat slot={FRIDAY_9} checked={false} onChange={onChange} />);
+    wrap(<OrderSheetRepeat signedIn slot={FRIDAY_9} checked={false} onChange={onChange} />);
     fireEvent.click(screen.getByRole("checkbox"));
     expect(onChange).toHaveBeenCalledWith(true);
   });
@@ -140,7 +146,7 @@ describe("the buyer's status page", () => {
     const onChange = vi.fn();
     show(order({ repeat: "active" }), onChange);
     expect(screen.getByTestId("order-repeat").textContent).toContain(
-      "הזמנה קבועה: כל שישי ב-09:00. ההזמנה של השבוע הבא נשלחת לבית העסק אחרי המועד של השבוע.",
+      "הזמנה קבועה: כל יום שישי בשעה 09:00. ההזמנה של השבוע הבא נשלחת לבית העסק אחרי המועד של השבוע.",
     );
     fireEvent.click(screen.getByTestId("order-repeat-stop"));
     expect(api.post).not.toHaveBeenCalled();
@@ -189,7 +195,7 @@ describe("the business's order card", () => {
     const onChanged = vi.fn();
     card(order({ repeat: "active" }), onChanged);
     expect(screen.getByTestId("order-repeat-badge").textContent).toBe("הזמנה קבועה");
-    expect(screen.getByTestId("order-repeat-control").textContent).toContain("חוזרת כל שישי ב-09:00.");
+    expect(screen.getByTestId("order-repeat-control").textContent).toContain("חוזרת כל יום שישי בשעה 09:00.");
     // The order's own status badge is unchanged.
     expect(screen.getByTestId("order-status").textContent).toBe(he.dashboard.producer.orders.status.pending);
     fireEvent.click(screen.getByTestId("order-repeat-stop"));

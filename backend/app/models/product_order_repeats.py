@@ -2,7 +2,7 @@
 Module:   product_order_repeats
 Purpose:  A buyer's weekly repeat of an order (MEH-3933, Fischgrund bakery
           27/11): the same lines, the same weekday and time on the Israel
-          clock, the same way to get it. A daily job makes each week's order
+          clock, the same way to get it. An hourly job makes each week's order
           from it, as an ordinary order the business confirms.
 Touches:  DB table product_order_repeats. No other side effects.
 Does NOT: hold prices — each week's order prices its lines at that day's

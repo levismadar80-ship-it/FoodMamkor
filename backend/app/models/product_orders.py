@@ -385,6 +385,7 @@ class ProductOrder(Base):
         UUID(as_uuid=True),
         ForeignKey("product_order_repeats.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)

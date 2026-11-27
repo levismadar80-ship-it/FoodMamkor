@@ -6,8 +6,10 @@
  * Purpose:  «להזמין את זה שוב כל שבוע» in the order sheet (MEH-3933), with the
  *           day and time it will repeat on once a slot is picked.
  * Touches:  nothing — the sheet sends `repeat_weekly` with the order.
- * Does NOT: check the caps (3 per phone, 300 per business): the server
- *           refuses with a Hebrew 409, shown by the sheet like any refusal.
+ * Does NOT: check the caps (3 per phone, 300 per business), or alcohol: the
+ *           server refuses with a Hebrew 409, shown by the sheet like any
+ *           refusal. Not shown to a guest: the skip and stop notices go by
+ *           email to the buyer's account (MEH-3933 review).
  * Related:  components/public/OrderSheet.jsx, lib/order-repeat.js
  * History:  MEH-3933 (creation, 27/11/2026)
  */
@@ -17,10 +19,11 @@ import { useTranslations } from "next-intl";
 import Checkbox from "@/components/ui/Checkbox";
 import { repeatWhen } from "@/lib/order-repeat";
 
-/** @param {{ slot: string, checked: boolean, onChange: (checked: boolean) => void }} props */
-export default function OrderSheetRepeat({ slot, checked, onChange }) {
+/** @param {{ slot: string, checked: boolean, signedIn: boolean, onChange: (checked: boolean) => void }} props */
+export default function OrderSheetRepeat({ slot, checked, signedIn, onChange }) {
   const t = useTranslations("order_repeat");
   const tDays = useTranslations("product_weekdays");
+  if (!signedIn) return null;
   return (
     <div className="space-y-1">
       <Checkbox

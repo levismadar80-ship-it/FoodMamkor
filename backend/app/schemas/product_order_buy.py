@@ -103,7 +103,7 @@ class OrderCreateIn(BaseModel):
     # after a lost answer creates one order, not two.
     idempotency_key: UUID
     # MEH-3933: «להזמין את זה שוב כל שבוע» — the same order on the same
-    # weekday and time, made by the daily job (services/product_order_repeat).
+    # weekday and time, made by the hourly job (services/product_order_repeat).
     repeat_weekly: bool = False
 
     @field_validator("items", mode="before")

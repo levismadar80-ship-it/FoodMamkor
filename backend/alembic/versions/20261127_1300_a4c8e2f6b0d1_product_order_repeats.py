@@ -5,7 +5,7 @@ Revises: c5e7a9b1d3f4
 Create Date: 2026-11-27 13:00:00.000000+00:00
 
 MEH-3933 (Fischgrund bakery, 27/11): a buyer can ask for the same order
-every week. A daily job makes each week's order from the repeat.
+every week. An hourly job makes each week's order from the repeat.
 
 - product_order_repeats: new table (see app/models/product_order_repeats.py).
 - product_orders.repeat_id: UUID NULL, FK → product_order_repeats.id ON
@@ -107,9 +107,12 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
+    # A repeat's orders are read by repeat_id (last week's result, SET NULL).
+    op.create_index("ix_product_orders_repeat_id", "product_orders", ["repeat_id"])
 
 
 def downgrade() -> None:
+    op.drop_index("ix_product_orders_repeat_id", table_name="product_orders")
     op.drop_column("product_orders", "repeat_id")
     op.drop_index("ix_product_order_repeats_phone", table_name="product_order_repeats")
     op.drop_index(
