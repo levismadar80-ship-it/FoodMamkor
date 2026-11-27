@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Link from "@/components/ui/Link";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -34,11 +35,16 @@ const SENT_AT_KEY = "mehamakor.otp_sent_at";
 // MEH-3302: the user flow keeps its own clock — a code sent to a business
 // number must not open the code box on the user's own card.
 const USER_SENT_AT_KEY = "mehamakor.user_otp_sent_at";
+// MEH-3868: where the business number is edited (lib/dashboard-edit-anchors.js
+// registers #contact-channels). A page Sapir built and the owner claimed carries
+// the number Sapir typed, so the card says which number gets the code.
+const CHANGE_NUMBER_HREF = "/producer/dashboard/edit#contact-channels";
 
 /** When the last code was sent in this tab, or 0. Storage may be absent or
  *  throw (private mode, cleared data) — then it is simply 0. */
 function readOtpSentAt(key = SENT_AT_KEY) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- hand-off state between two steps of one flow (login, claim, pending action); read when the step runs, never painted at load
     const raw = globalThis.sessionStorage?.getItem(key);
     const ts = raw ? Number(raw) : 0;
     return Number.isFinite(ts) && Date.now() - ts < OTP_TTL_MS ? ts : 0;
@@ -64,7 +70,10 @@ function forgetOtpSent(key = SENT_AT_KEY) {
 }
 
 /**
- * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" | "user" | "inline", title?: string, description?: string }} props
+ * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" | "user" | "inline", title?: string, description?: string, phone?: string | null }} props
+ * `phone` (MEH-3868): the business number the code goes to. When given, the
+ * card names it and links to where it is changed. Not passed under the phone
+ * field itself, nor for the `user` flow.
  * `reverify` (grill B8): a live business whose number changed. Its own title,
  * no "before review" description, and the server's own success sentence
  * (the submit-flow toast talks about sending for review).
@@ -72,7 +81,7 @@ function forgetOtpSent(key = SENT_AT_KEY) {
  * /users/me/verify-phone*, takes its title and description from the caller,
  * and shows no toast — the caller's paused notice disappears on success.
  */
-export default function PhoneVerifyCard({ onVerified, variant = "submit", title, description }) {
+export default function PhoneVerifyCard({ onVerified, variant = "submit", title, description, phone = null }) {
   const reverify = variant === "reverify";
   const userFlow = variant === "user";
   // MEH-3659: inside the draft checklist's WhatsApp row, which already names
@@ -198,6 +207,19 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
       {codeSent && !userFlow && (
         <p role="status" data-testid="phone-verify-code-sent" className="text-xs text-text mb-3">
           {t("code_sent")}
+        </p>
+      )}
+
+      {phone && !userFlow && (
+        <p data-testid="phone-verify-number" className="text-sm text-text mb-3">
+          {t("sends_to")} <bdi dir="ltr">{phone}</bdi>{" · "}
+          <Link
+            href={CHANGE_NUMBER_HREF}
+            data-testid="phone-verify-change"
+            className="tap-area"
+          >
+            {t("change_number")}
+          </Link>
         </p>
       )}
 

@@ -200,6 +200,11 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
   // MEH-3333: the edit page also mounts the pickup-locations editor, which reads
   // this list on load. A stub, not a mock: nothing here asserts on locations.
   await page.route((u) => /\/api\/admin\/producers\/[^/]+\/locations\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-3873: the edit page's events panel reads the business's events.
+  await page.route((u) => /\/api\/admin\/producers\/[^/]+\/events\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-3876: …and its experiences panel reads the business's experiences. Unstubbed,
+  // that read 401s with the fake token and signs the app out (the order-settings note below).
+  await page.route((u) => /\/api\/admin\/producers\/[^/]+\/experiences\/?$/.test(u.pathname), (r) => json(r, []));
   // MEH-3524: the edit page mounts the alcohol panel, which reads order-settings.
   // Unstubbed, that read reaches the backend with the fake token, 401s, the refresh
   // fails and the app signs out mid-test: «שמרו שינויים» detaches before the click

@@ -38,6 +38,36 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.18 (27/11): one line for businesses, moved from
+  // docs/release/whats-new-pending.md: daily stock per product with «נשארו N»
+  // and «מה להכין» (#5420, MEH-3930). The rest of 1.5.18 is layout fixes,
+  // emails, admin and tests. Copy checked by the release thread under Sapir's
+  // standing approval of new UI copy (20/11) and her go for 1.5.18 (27/11).
+  { version: "1.5.18", key: "v1_5_18", date: "2026-11-27", items: 1 },
+  // 1.5.17 (27/11): four lines for businesses. Two moved here from
+  // docs/release/whats-new-pending.md (experiences course #5383, owner
+  // assistant #5387); «בתיאום מראש» as the owner's own answer (#5412,
+  // MEH-2447); the business's own prepay link and «סמן כשולם» on surprise
+  // bags and group buys (#5379, #5385). Copy checked by the release thread
+  // under Sapir's standing approval of 26/11 23:15 («מאשרת מה שתחליט»).
+  { version: "1.5.17", key: "v1_5_17", date: "2026-11-27", items: 4 },
+  // 1.5.16 (26/11): pasting a list of delivery cities (#5353) improves an
+  // existing field; the admin events panel (#5356) is for the team, not for
+  // businesses; the rest is tests and docs. Nothing new for businesses, so
+  // items: 0.
+  { version: "1.5.16", key: "v1_5_16", date: "2026-11-26", items: 0 },
+  // 1.5.15 (25/11): one line for businesses, staff who handle only orders
+  // (#5317, MEH-3526), approved word for word by Sapir on the release
+  // thread's decision card on 25/11. The rest is the map, the home page, the
+  // email events, refactors and tests.
+  { version: "1.5.15", key: "v1_5_15", date: "2026-11-25", items: 1 },
+  // 1.5.14 (24/11): seven lines approved word for word by Sapir in the
+  // release thread («מאשרת», 24/11 21:29): order-form preview, AI drafts from
+  // text, tomorrow's surprise bags, the closed-day warning, review requests,
+  // «שיתוף», and the «בישול לפי הזמנה» category. i7, the weekly surprise-bag
+  // schedule (MEH-3703), moved here from docs/release/whats-new-pending.md and
+  // approved word for word by Sapir on 25/11.
+  { version: "1.5.14", key: "v1_5_14", date: "2026-11-24", items: 8 },
   // 1.5.13 (23/11): the self-purchase block (#5164, MEH-3691) fixes an
   // existing tool rather than adding one; the rest is tests, CI and
   // dependency bumps. Nothing for businesses, so items: 0.

@@ -1046,6 +1046,8 @@ class ProductOut(BaseModel):
     no_allergens: bool = False  # MEH-3445
     # MEH-3618: Sunday = 1 … Saturday = 64; NULL = every day.
     available_weekdays: int | None = None
+    # MEH-3932: days ahead it must be ordered; NULL = no product rule.
+    lead_days: int | None = None
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
     # MEH-3617: sizes or flavours, in the owner's order. Empty = none.

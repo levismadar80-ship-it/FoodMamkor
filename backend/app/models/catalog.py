@@ -25,7 +25,7 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import SmallInteger  # MEH-3511: delivery_areas day counts
 
@@ -144,6 +144,14 @@ class Product(Base):
     # Saturday = 64. NULL = every day, as before. Conversions and the order
     # check: services/product_weekdays.py.
     available_weekdays = Column(SmallInteger, nullable=True)
+    # Daily stock: how many units (in the product's own order unit) can be
+    # ordered for one pickup day, counted across all its variants. NULL = no
+    # limit. Counting and refusal: services/product_daily_stock.py.
+    daily_limit = Column(SmallInteger, nullable=True)
+    # MEH-3932: how many days ahead it must be ordered — the pickup's Israel
+    # day is at least today + lead_days. NULL = no product rule (the
+    # business's lead_time_hours still applies). services/product_lead_days.py.
+    lead_days = Column(SmallInteger, nullable=True)
     # MEH-2312: an imported product lands as a draft. A draft is invisible to
     # every public read (producer page, search, sitemap, counts) until an
     # admin approves it. Owner-created products never set it.
@@ -198,6 +206,14 @@ class Product(Base):
             "available_weekdays >= 1 AND available_weekdays <= 127",
             name="products_available_weekdays_check",
         ),
+        CheckConstraint(
+            "daily_limit >= 1 AND daily_limit <= 999",
+            name="products_daily_limit_check",
+        ),
+        CheckConstraint(
+            "lead_days >= 1 AND lead_days <= 7",
+            name="products_lead_days_check",
+        ),
         Index(
             "idx_products_dietary",
             "producer_id",
@@ -228,6 +244,10 @@ class ProductVariant(Base):
             "price_agorot IS NULL OR price_agorot >= 0",
             name="product_variants_price_check",
         ),
+        CheckConstraint(
+            "daily_limit >= 1 AND daily_limit <= 999",
+            name="product_variants_daily_limit_check",
+        ),
         Index("ix_product_variants_product_id", "product_id"),
     )
 
@@ -243,6 +263,9 @@ class ProductVariant(Base):
         Boolean, default=True, nullable=False, server_default=text("true")
     )
     position = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    # Daily stock of this size or flavour alone; NULL = only the product's
+    # own limit (if any) applies. services/product_daily_stock.py.
+    daily_limit = Column(SmallInteger, nullable=True)
 
     product = relationship("Product", back_populates="variants")
 
@@ -353,6 +376,14 @@ class ProducerLocation(Base):
     # the address, not on a bag or an order, so every pickup here reads one
     # text. NULL = none; the schema stores "" as NULL.
     pickup_note = Column(Text, nullable=True)
+    # MEH-3703: the weekly surprise-bag routine at this point — weekdays,
+    # window, qty, price, paused, skipped dates. Its shape is
+    # schemas/rescue_schedule.py RescueScheduleStored; services/rescue_schedule.py publishes
+    # from it. NULL = no routine. A column, not a table (revision docstring).
+    # none_as_null: Python None must write SQL NULL, not the JSON value null,
+    # which the CHECK (an object or NULL) refuses — a DELETE of the routine
+    # would otherwise fail.
+    rescue_schedule = Column(JSONB(none_as_null=True), nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -389,6 +420,11 @@ class ProducerLocation(Base):
         CheckConstraint(
             "location_precision IN ('exact', 'approximate')",
             name="producer_location_precision",
+        ),
+        # MEH-3703, mirrored from revision b7d9f1a3c5e8.
+        CheckConstraint(
+            "rescue_schedule IS NULL OR jsonb_typeof(rescue_schedule) = 'object'",
+            name="producer_locations_rescue_schedule_check",
         ),
     )
 

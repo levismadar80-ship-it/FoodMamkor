@@ -38,20 +38,26 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/analytics.py` | Counters and daily rollups: page views, contact and WhatsApp clicks, per-day analytics. |
 | `models/billing.py` | The 'billable_events' table — one row per booking a business got through the site (ADR-042), kept so the count survives after the booking itself is purged or … |
 | `models/catalog.py` | What a business sells and where: products, delivery areas, locations (branches and sale points) and offers. |
+| `models/email_events.py` | One delivery event Resend reported for an email we sent (delivered, bounced, marked as spam, suppressed, clicked), so we can see which emails reach people and … |
 | `models/email_outbox.py` | One email the site owes someone, written in the same transaction as the thing that caused it (a business approved, a sign-up taken), so a deploy, a crash or a … |
 | `models/engagement.py` | What visitors do with a business page: favourites, saved items, alerts, delivery waitlist, reviews, newsletter, contact messages, reports, search queries. |
 | `models/events.py` | Events, workshops (experiences), their registrations and group buys. |
 | `models/home_products.py` | Home-kitchen products posted by neighbours, their WhatsApp clicks and ratings. |
 | `models/models.py` | The core tables every other model module points at: City, Producer, User, RetiredSlug, AdminSetting, StaticPage, Category, ProducerCategory. |
+| `models/producer_staff.py` | Who besides the owner may handle a business's orders. One row per invite; an accepted invite is the staff member's access. |
 | `models/product_orders.py` | The tables behind on-site ordering («בקשת הזמנה»): a business's ordering settings, an order, its lines, and the log of its status changes. |
 | `models/recipes.py` | Recipes a business publishes on its page, and their moderation state. |
 | `models/rescue.py` | The rescue-bags pilot: offers, orders, reviews and the typical items a business lists for its bags. |
+| `models/share_links.py` | A short link an admin sends a business (MEH-3896): a random 12-character code that opens one draft's preview or claim page, instead of a ~250-character JWT … |
+| `owner_sections.py` | The one list of owner-dashboard screens the owner assistant knows: each screen's path, name and what is on it, and the edit-page cards it may send the owner … |
 | `pricing.py` | The server's copy of the price list (ADR-042) and the two fee calculations the billing ledger needs. Money is in agorot, as ints. |
 | `rate_limit.py` | Shared rate limiter instance used across all routers. |
 | `router_registry.py` | — אין כותרת — |
 | `routers/admin.py` | — אין כותרת — |
+| `routers/admin_business_content.py` | Admin creates and edits a business's events and experiences on its behalf, with the business's written consent confirmed on every save (the box on the form → … |
 | `routers/admin_checklist.py` | MEH-1399 Phase 2 — the pre-approval review checklist as data. Serves the editable item list and records which items an admin ticked for a given producer, with … |
 | `routers/admin_decisions.py` | The admin review decisions under /admin/producers: the pending queue, approve, reject (with presets), request changes, and the verified badge, plus the two … |
+| `routers/admin_draft_merge.py` | Move a draft the admin prepared to the owner who registered the same business herself: the draft becomes the page in her account, and what she had added moves … |
 | `routers/admin_experiences.py` | Admin moderation routes for experiences (community workshops). |
 | `routers/admin_extra.py` | Extended admin endpoints for the full dashboard: users management, content (categories + static pages), analytics, settings. |
 | `routers/admin_kashrut.py` | MEH-51: Admin endpoints for kashrut badge review + ambassador toggle. |
@@ -71,6 +77,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/business_suggestions.py` | Let a visitor suggest a business that is not on Mehamakor yet, and turn that suggestion into an ordinary outreach lead the team works by hand. … |
 | `routers/category_requests.py` | MEH-141: Category request flow — public submit + admin review. |
 | `routers/chat.py` | Chat assistant router — answers questions about mehamakor.co.il via Claude. |
+| `routers/chat_owner.py` | POST /chat/owner — the assistant inside the business owner's dashboard. It knows her business (status, what still blocks «שליחה לבדיקה», empty fields), the … |
 | `routers/cities.py` | MEH-213: GET /cities — autocomplete endpoint backed by the canonical cities table. … |
 | `routers/events.py` | Events feature — sits on top of producers. |
 | `routers/experiences.py` | Public + authenticated routes for the experiences (community workshops) feature. |
@@ -79,6 +86,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/google_rating.py` | Serve the quiet public "Google rating" trust line for a producer — live star rating + review count fetched per-request from Google, only for producers an … |
 | `routers/group_buy_capacity.py` | The MEH-3592 group-buy routes: a participant changes her quantity, a visitor joins or leaves the waitlist of a full group, and the business changes its caps … |
 | `routers/group_buy_mine.py` | «הקבוצות שלי» (MEH-3609): the signed-in person's own group buys, so she can get back to one without the email link. |
+| `routers/group_buy_pickup.py` | MEH-3735 — the business's pickup list for a group buy (codes and quantities only) and its «נמסר» / «לא הגיע» marks; … |
 | `routers/group_buys.py` | MEH-52: Group buy endpoints — commit counter + price unlock. |
 | `routers/health.py` | Health endpoints — MEH-483. |
 | `routers/holiday_mode.py` | — אין כותרת — |
@@ -91,6 +99,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/producer_claim.py` | Owner-claim link — an admin prepares a DRAFT business with no owner, sends its owner a signed link, and she takes it over with her OWN account and her own … |
 | `routers/producer_draft_preview.py` | The two steps between "the admin built a draft page for a business" and "the page is live because its owner said yes" (MEH-3377): a read-only preview link the … |
 | `routers/producer_google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): see whether her business is linked to its Google profile, search for it, link or unlink it, and check that … |
+| `routers/producer_identity_check.py` | Tell the sign-up form, before the business is created, that this business already has a page on Mehamakor, and (masked) which account holds it, so a staff … |
 | `routers/producer_me.py` | — אין כותרת — |
 | `routers/producer_me_analytics.py` | The owner's own traffic numbers under /producers/me/analytics: views, WhatsApp clicks and favourites per window, measured on the Israel calendar day. |
 | `routers/producer_me_locations.py` | The owner's branches and sale points under /producers/me/locations: list, add, edit (which also sets the primary), delete. |
@@ -102,6 +111,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/producer_owner_invite.py` | Owner invite — an admin builds a business's page end to end, after written consent from its owner, then hands it over: a one-time link on which the owner sets … |
 | `routers/producer_owner_invite_existing.py` | Accept an owner invite on an account that ALREADY EXISTS (MEH-3256, grill retro D8). … |
 | `routers/producer_recipes.py` | Producer-self CRUD + public read for producer-owned recipes (MEH-589 chunk 2/4 of the producer-recipes epic). |
+| `routers/producer_staff.py` | A business invites up to 5 people by email to handle its orders; the invited person signs in with their own account and accepts; … |
 | `routers/producers.py` | — אין כותרת — |
 | `routers/product_describe.py` | «הצעת תיאור» (MEH-3479): Claude suggests a short description for one product; the owner (or the admin, in her place) edits it in the form and only the product … |
 | `routers/product_order_business.py` | The business's side of on-site ordering: list the orders sent to it, and act on one — confirm, decline, propose a change, mark ready, hand over, report a … |
@@ -115,6 +125,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/reports.py` | — אין כותרת — |
 | `routers/rescue.py` | The rescue-bags pilot API — a business publishes today's or tomorrow's bags (MEH-3702), a buyer reserves one and gets a 4-digit code, the business marks it … |
 | `routers/rescue_pilot.py` | Tell the business, before the publish form, which of its pickup points are in a town the rescue-bags pilot is open in (MEH-2921 c). |
+| `routers/resend_webhook.py` | Receive Resend's signed delivery events (delivered, bounced, complained, suppressed, failed, clicked) and keep one row each, so a business owner whose address … |
 | `routers/review_reply_suggest.py` | «הצעת תשובה» (MEH-3480): Claude drafts a short reply from the business to one review; the owner edits it in the reply box and only her own «שמירה» sends it. |
 | `routers/reviews.py` | Producer reviews (1-5 stars + optional body, 10-500 chars). |
 | `routers/saved_items.py` | MEH-2557 — save recipes, events and experiences to «המועדפים שלי». |
@@ -125,10 +136,12 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `routers/whatsapp_webhook.py` | Meta WhatsApp Cloud API webhook receiver — GET verification challenge + POST inbound-message persistence + outbound-status reconciliation, all gated by … |
 | `schemas/__init__.py` | Load schemas.py first: its sibling modules import the shared validators from it, and it re-exports them at its bottom (MEH-3270). |
 | `schemas/admin_block.py` | Admin moderation switches on a user or a business. |
+| `schemas/admin_on_behalf.py` | Request bodies for an admin writing a business's events and experiences: the owner's own create/update shapes plus one required field, 'owner_consent', that … |
 | `schemas/admin_passkey.py` | Request and response shapes of the admin passkey routes (MEH-3305). |
 | `schemas/admin_review.py` | Admin review inputs and outputs: kashrut requests and reminders, checklist, review checks, approve / reject / request-changes bodies. |
 | `schemas/billing.py` | Response shapes for the billing summary routes (MEH-3181). |
 | `schemas/catalog.py` | Categories, cities, delivery areas, locations, offers and products as the API reads and writes them. |
+| `schemas/cities_match.py` | Body and answer of POST /cities/match — a pasted list of city names checked against the canonical city list in one request (MEH-3867). |
 | `schemas/community.py` | Users, favourites and reports. |
 | `schemas/delivery_time.py` | One rule for «מגיע תוך 3–5 ימי עסקים» wherever it is stored (the business, a delivery zone — MEH-3511): whole business days within bounds, and the shorter end … |
 | `schemas/events.py` | Events, organisers and the event filters. |
@@ -137,16 +150,21 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/google_profile.py` | Response shapes for the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641). |
 | `schemas/group_buy_counts.py` | The public per-status count behind the /group-buys status tabs, so a tab with nothing in it is not drawn (MEH-3128). |
 | `schemas/group_buy_mine.py` | «הקבוצות שלי» — one row per group buy the signed-in person joined (MEH-3609), enough to list it and open its page. |
+| `schemas/group_buy_pickup.py` | MEH-3735 — what the business sees at pickup: codes and quantities, and the mark it wrote. Never a name, email or user id (MEH-1651). |
 | `schemas/group_buys_requests.py` | Group buys, category requests and business name-change requests. |
+| `schemas/identity_check.py` | Body and answer of POST /producer-identity-check — the sign-up form asks whether the business being registered already has a page (MEH-3884). |
 | `schemas/menu_import.py` | The menu reader's rows (what the owner reviews) and the publish body (what the owner approved). MEH-3430. |
 | `schemas/my_orders_any.py` | The answer of GET /users/me/orders/any (MEH-3698): whether «ההזמנות שלי» has anything to show the caller. |
 | `schemas/order_cutoff.py` | One rule for «מזמינים עד יום X בשעה HH:MM» wherever a row carries its own cutoff (a pickup point, MEH-3512; … |
+| `schemas/owner_chat.py` | The owner-dashboard assistant's request and answer: her chat, the screen she is on and her interface language; … |
 | `schemas/owner_detach.py` | Request body for the admin's «ניתוק בעלים» (MEH-3256, grill retro D9). |
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
 | `schemas/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner's free text in, a draft of the business-page fields out. Nothing is saved by the read. |
 | `schemas/password.py` | MEH-305 — Pydantic password field type. |
+| `schemas/payment_link.py` | The business's own prepay link inside producers.payment_info (MEH-3895, option A of docs/research/rescue-prepay-2026-11.md): one validator for the write, one … |
 | `schemas/producer.py` | The business page, write side: create, admin create, owner update, admin update, plus AVAILABILITY_STATES and normalize_google_place_id, which services import. |
 | `schemas/producer_out.py` | The business page, read side: list card, detail, admin and owner views, kashrut certificate ref, Google place id and rating. |
+| `schemas/producer_staff.py` | Request and response shapes of the order-staff routes (MEH-3526). |
 | `schemas/product_describe.py` | The request and answer of «הצעת תיאור» (MEH-3479). Every string is capped; nothing here is stored. |
 | `schemas/product_order_buy.py` | Request/response shapes for an on-site order: asking for a phone code, sending the order, the buyer's status view, and what a business sends when it acts on … |
 | `schemas/product_order_offer.py` | Request/response shapes for what a business offers for on-site ordering: its weekly windows, a product's ordering fields, and the public order menu. |
@@ -156,6 +174,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/recipes_outreach.py` | Business recipes, outreach leads and the public suggest-a- business form. |
 | `schemas/registration.py` | Request and response shapes for sign-up, login, OAuth, password reset, the owner-claim link and the owner invite. |
 | `schemas/rescue.py` | Request/response shapes for the rescue-bags pilot — what a business sends to publish a bag, what a buyer sends to reserve one, and what the three tables … |
+| `schemas/rescue_schedule.py` | The shape of a pickup point's weekly surprise-bag routine — what the business sends, what is stored in producer_locations.rescue_schedule, and what the … |
 | `schemas/review_reply_suggest.py` | The answer of POST /reviews/{id}/reply/suggest (MEH-3480). |
 | `schemas/reviews.py` | Reviews, review invites, owner replies and listing removal. |
 | `schemas/schemas.py` | — אין כותרת — |
@@ -163,13 +182,17 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `sentry.py` | MEH-500: backend Sentry SDK init. |
 | `services/account_guards.py` | MEH-3248 — who may be deleted, and through which door. |
 | `services/admin_audit.py` | One append-only row for every successful change an admin makes: who, what (method + route template), on what, when, from where. |
+| `services/admin_category_writes.py` | The admin's create, rename and delete of a category, with the guards that keep the taxonomy safe: a duplicate name, a seeded (system) row, a licensed row, and … |
+| `services/admin_create_duplicates.py` | Stop the admin «new business» form from opening a second page for a business we already have. … |
 | `services/admin_dashboard.py` | The numbers behind the admin home ('GET /admin/dashboard') and the admin analytics page ('GET /admin/analytics'). |
 | `services/admin_draft_missing.py` | For a draft its owner has claimed («נקלט, בהשלמה»), say what is still missing before she can send it for review, so the admin's follow-up call is about one … |
 | `services/admin_passkey.py` | The second factor of an admin account: a passkey (WebAuthn) checked after the password or Google / Apple sign-in, and ten one-time recovery codes for a lost … |
 | `services/admin_pending_reminder.py` | Once a morning, email the admin a list of the businesses that have waited for approval 2 business days or more. The owner was told «תשובה עד 3 ימי עסקים»; … |
 | `services/admin_producer_emails.py` | Text and HTML bodies of the emails an admin decision sends to a business owner: approved, rejected, changes requested. |
 | `services/admin_producer_reads.py` | What the admin business screens READ: the business list with its queue order and per-row enrichment, one business, the licence-expiry list and the … |
+| `services/admin_producer_writes.py` | The admin's create and edit of a business (POST /admin/producers and PUT /admin/producers/{id}): slug, categories, delivery areas, the editorial pick, the … |
 | `services/admin_settings.py` | Read and write the admin toggles kept in 'admin_settings' ('GET/PUT /admin/settings', 'GET/POST /admin/settings/vacation'). |
+| `services/admin_user_writes.py` | The admin's changes to one account: the role change (with the linked-business and super-admin refusals), the block toggle (which hides a live business left … |
 | `services/ai_budget.py` | One site-wide daily ceiling on paid AI calls, per model tier (MEH-3498). Above it every generation tool answers as if the key were missing: the chat gives its … |
 | `services/ai_text.py` | One short plain-text answer from Claude, and the claim filter, for the owner-side suggestions: a product description (MEH-3479) and a review-reply draft … |
 | `services/analytics.py` | Analytics tracking + metrics helpers for feature/producer-analytics. |
@@ -184,6 +207,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/billing_summary.py` | Read the billable-events ledger: what one business got through the site in a month, and — for the admin — which businesses passed the results threshold and … |
 | `services/bio_generator.py` | AI description writer for producer profiles (MEH-56; MEH-1173). |
 | `services/booking_cancellations.py` | When bookings stop being real, cancel them and tell the people who made them (D1 of the 14/11 grill retro, MEH-3227): 1. … |
+| `services/business_identity.py` | The one answer to «is this already a business we have?». Compares the strong identity signals (phone, email, Instagram, website, Facebook) of a business being … |
+| `services/business_name_key.py` | The one comparison key for a business name: lower-case, no quote marks or invisible characters, single spaces. «ג׳חנון» and «ג'חנון» get the same key. |
 | `services/capabilities.py` | The one place that answers "what may this business do?" — so no route reads 'producer.plan' or a billing column on its own. … |
 | `services/category_slug.py` | Produce the stable ASCII identity for a category row, server-side, so 'categories.slug' can be NOT NULL without any writer having to remember it. |
 | `services/chat_business_context.py` | The facts the site chat answers from when a question names ONE business (MEH-3481). … |
@@ -194,12 +219,17 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/chat_site_knowledge.py` | The prompt paragraph that tells the AI assistant which tools a business gets — built from the site's own tool registry, not written by hand, so a new tool … |
 | `services/city_centroid.py` | Answer "where is this town?" from the seeded 'cities' table, so a business that gave only a town (no street address) still gets a usable, approximate map … |
 | `services/content_notifications.py` | Email notifications for recipe and kashrut moderation, and for reviews. |
+| `services/course_meetings.py` | MEH-3898 — a course: one experience that meets several times (a 5-meeting cheese-making course), with ONE sign-up for all of them. … |
 | `services/date_rules.py` | One rule for "an event or experience date may not be in the past" (D6 of the 14/11 grill retro, MEH-3224), read by both routers. |
 | `services/delivery_validation.py` | Guard the MEH-1255 delivery-exclusion invariant on PATCH-style producer updates: an exclusion list ("לכל הארץ חוץ מ:") is only legal while delivery_nationwide … |
 | `services/delivery_waitlist.py` | The one owner of the waitlist's two writes — adding an entry (POST /producers/{id}/delivery-waitlist, routers/producers.py) and the once-only email fan-out … |
+| `services/delivery_waitlist_requests.py` | What the three public delivery-waitlist routes do with a request: join a business's per-city waitlist (with the «אשמח לארח» host confirmation), confirm … |
 | `services/delivery_zones.py` | Write a business's named delivery zones and copy each zone's days, minimum, fee and free-delivery threshold onto the delivery_areas rows of its cities. |
 | `services/description_writer.py` | Suggest a short Hebrew description for one product from what the owner already typed (name, group, price, current description). … |
+| `services/draft_merge_emails.py` | The two emails of the draft-twin flow (MEH-3865): the admin hears that a business sent for review looks like a draft she prepared, and the owner hears that … |
+| `services/draft_merge_policy.py` | What survives when an admin-prepared draft is moved to the owner who registered the same business herself (MEH-3865): column by column of 'producers', and … |
 | `services/draft_preview.py` | The signed token behind a draft business's read-only preview link (MEH-3377): mint and decode, nothing else. |
+| `services/draft_twins.py` | Find the admin-prepared draft (ownerless, status 'draft') that is the same business as one its owner registered herself, and say WHY they match, so the admin … |
 | `services/email.py` | Email delivery via Resend HTTP API. |
 | `services/email_branding.py` | The brand header shared by every HTML email (MEH-2834 PR 2). |
 | `services/email_change_guard.py` | The password gate on an account-email change (PATCH /users/me): a per-ACCOUNT cap on wrong passwords, and the messages for an account that has no password at … |
@@ -211,6 +241,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/farmer_declaration.py` | Server-side gate + record for the grower declaration («גידלתי בחלקתי בלבד») at producer registration, apart from the licensing declaration (declared_at / … |
 | `services/form_fill_windows.py` | The hand-over windows of an order-setup draft (MEH-3752): keep a window only when the text names its day and states its hours (a clock time, an hour number, … |
 | `services/form_filler.py` | The shared «fill the form from text» engine (MEH-3740): an owner pastes free text and gets a DRAFT of one dashboard form back. … |
+| `services/freshness_month_numbers.py` | Last calendar month's numbers for the one monthly owner email on the 1st (MEH-3194, Sapir 24/11: one monthly touch, value before any bill): bookings through … |
 | `services/gallery_cap.py` | The free-plan cap on a business's GALLERY (3 photos), enforced where the gallery is written (PUT /producers/me 'images'). |
 | `services/google_code_exchange.py` | Swap the one-time authorization code from our own Google button (GIS code client, popup, redirect_uri "postmessage") for a Google-signed ID token, and accept … |
 | `services/google_profile.py` | The owner's «הפרופיל שלכם בגוגל» tool: search Google for her own profile, decide whether a picked profile is hers (name or phone matches the business), and … |
@@ -218,6 +249,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/group_buy_delist.py` | When an admin takes a business off the site, cancel its live group buys and tell their participants (MEH-2498). |
 | `services/group_buy_expiry.py` | Close every open group buy whose deadline passed below its minimum, and tell each participant it is not going ahead (MEH-3287). |
 | `services/group_buy_goal_flap.py` | A funded group buy can drop below its minimum when someone leaves, and then cross it again. … |
+| `services/group_buy_no_show.py` | MEH-3735 — «לא הגיע» for group buys, the rescue mechanism's sibling. Each participant has a pickup code; … |
 | `services/group_buy_notifications.py` | Tell both sides that a group buy reached its goal — the business that it is funded and by how many participants, each participant that they should reach out … |
 | `services/group_buy_pickup_place.py` | The branch a group buy is picked up from (MEH-3610): check that a chosen branch is the business's own, and render it as public as the business made it. |
 | `services/group_buy_pickup_reminder.py` | The reminder before pickup (MEH-3610): once per funded group buy, the evening before its pickup window, each participant gets the time, the place and the notes. |
@@ -239,11 +271,15 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/moderation_schemas.py` | MEH-2351: JSON schemas for the moderation calls' structured outputs. |
 | `services/newsletter_sync.py` | Mirror newsletter subscribers into Resend Contacts (MEH-2611). |
 | `services/oauth_verifiers.py` | OAuth provider verification + Google avatar re-host. |
+| `services/offer_supply.py` | Which businesses have something on today besides their products: a surprise bag today, an open group buy, an upcoming event, a listed experience (MEH-3824). … |
+| `services/onboarding_day30_numbers.py` | The numbers block of the day-30 onboarding email («חודש איתנו»): the business's last 30 days of page views, WhatsApp clicks, contact clicks and saves, so the … |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
+| `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |
 | `services/outbound_guard.py` | Outside production, no message reaches a real person. Every channel that can reach a person asks this module first, so the protection comes from the … |
 | `services/outreach_lead_registration.py` | Mark an outreach lead «registered» when its owner signs up through the lead's prefill link (MEH-3026 F11) — until now the pipeline status never moved, so the … |
-| `services/owner_attention.py` | The «מה מחכה לך» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her events / … |
+| `services/owner_assistant.py` | What the owner-dashboard assistant knows and may do: the prompt (every dashboard screen, the edit cards it links to), the owner's own business state (status, … |
+| `services/owner_attention.py` | The «מה ממתין לטיפול» card on the business dashboard home (MEH-3108): what is waiting for the owner right now — reviews with no reply, new sign-ups to her … |
 | `services/owner_detach.py` | The one mail of the admin «ניתוק בעלים» action: tells the former owner that her account is no longer linked to the business and that the account itself stays. |
 | `services/owner_invite_google.py` | Let a FRESH Google sign-in stand in for the email code when a signed-in account accepts an owner invite (MEH-3675, Sapir's choice 22/11: «כן, רק בכניסה טרייה»). |
 | `services/owner_products.py` | The owner's own product rows: the lookup that keeps a draft (the admin import's until approved) and another business's product out, and the rules a product … |
@@ -254,17 +290,23 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/pending_nudge.py` | Daily-scheduler entry point for the nudge emails sent to a business that registered but has not reached the review queue. … |
 | `services/phone_reverify.py` | A business that changes its WhatsApp number loses its phone verification, and any code sent to the old number stops working. |
 | `services/pickup_schedule.py` | Keep a location's pickup schedule consistent after a write: a branch holds no pickup days or cutoff, and the stored cutoff is a day and a time together or … |
+| `services/prepay_copy.py` | How a bag paid ahead through the business's own link (MEH-3895) is described in the reservation emails: the buyer's code email and its reminder, and the … |
+| `services/prepay_refunds.py` | When money may have been paid ahead through the business's own link (MEH-3895) and the thing it paid for is gone, the business is told what to return: a … |
 | `services/producer_approval.py` | What approving a business page does to its row: slug guard and minting, the approvable-state check, applying the approved state and persisting it with … |
 | `services/producer_catalog.py` | The small public catalog reads (total count, one random business) and the request checks of GET /producers. |
 | `services/producer_detail.py` | Load one public business page (by slug or by id) and build the ProducerDetailOut it answers with. |
 | `services/producer_duplicates.py` | Tell the admin producers list, per row, whether ANOTHER business in any status shares its name or its phone, so «כפילות?» sees a draft's self-registered twin … |
+| `services/producer_images.py` | The one answer to "which of this business's photos stands for it" on a card, a row or a share preview: the first non-blank entry of 'producers.images', … |
 | `services/producer_insights.py` | The counting rules behind the business dashboard's numbers — page views, search appearances, WhatsApp clicks, other contact clicks and new followers — in ONE … |
 | `services/producer_listing.py` | Producer listing query builder. |
 | `services/producer_me_writes.py` | The owner PUT /producers/me write helpers — delivery areas, the active offer, the second phone, the gallery rules, the per-producer advisory lock, the … |
+| `services/producer_owner_update.py` | The owner's save of her own business card (PUT /producers/me): the writable-field set, the delivery/offer/category writes, and the admin pings that follow a … |
 | `services/producer_queries.py` | Producer query helpers — pure ORM utilities used by the producers router. |
 | `services/producer_recipe_moderation.py` | Claude Haiku pre-check on producer-submitted recipes before they enter the admin queue (MEH-589 chunk 2/4). |
 | `services/producer_risk.py` | Anthropic-Haiku-backed signup risk score (0-100) + one-sentence Hebrew reasoning, written to producers.risk_score / producers.risk_reasoning asynchronously … |
+| `services/product_daily_stock.py` | Daily stock: how many units of a product (all its variants) or of one variant were already ordered for a pickup day, how many are left, the refusal of an … |
 | `services/product_import.py` | Turn a list of rows from a business's existing store (first source: mypips) into DRAFT products for that business. … |
+| `services/product_lead_days.py` | Refuses an order whose pickup day, on the Israel clock, is sooner than a product's 'products.lead_days' allows: the pickup's day must be at least today + … |
 | `services/product_order_actions.py` | Everything that happens to an order after it was sent: the buyer cancels or accepts a proposed change; … |
 | `services/product_order_clock.py` | The clock an order's timers run on: hours that are counted only outside Shabbat and the festivals (Sapir, 14/11: «שעון 24 השעות נעצר אז לכולם»), and the … |
 | `services/product_order_create.py` | Write one buyer's order request: check that the business takes orders, that the slot, the products and the delivery are still real, price everything from the … |
@@ -294,8 +336,12 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/rescue_digest.py` | At pickup_start, send one WhatsApp message per rescue offer to the BUSINESS, listing the day's pickup codes and how many bags each one is for, so the counter … |
 | `services/rescue_emails.py` | One email per reservation with the pickup code, what is paid at the counter, the pickup window and address, and the free-cancel cutoff. … |
 | `services/rescue_no_show.py` | MEH-3226 (D4 of the 14/11 grill retro) — the buyer hears about every no-show the business marks, so a block never arrives as a surprise: the first mail says … |
+| `services/rescue_notify.py` | Queue what the rescue-bags routes tell people after a commit: the follower alert on a bag for today, the buyer's reservation and cancel emails, and one email … |
+| `services/rescue_payment.py` | The business marks a surprise-bag reservation as paid ahead, or undoes the mark (MEH-3897). … |
 | `services/rescue_reads.py` | What the surprise-bag (rescue) screens read: today's public list, the buyer's own reservations, the business's orders and bags of the day, the business's … |
 | `services/rescue_reminders.py` | MEH-3702 — on the morning of the pickup day, remind every buyer who reserved a bag on an EARLIER day: the code, the window, the free cancel. … |
+| `services/rescue_routine_writes.py` | The rules behind the weekly-routine routes under /producers/me/rescue (MEH-3703): find the caller's own pickup point, save or stop its routine, skip or … |
+| `services/rescue_schedule.py` | Turn each pickup point's weekly routine into ordinary rescue_offers rows for the days buyers can reserve (today and tomorrow), and keep the routine itself: … |
 | `services/rescue_writes.py` | The state changes behind the rescue-bag write routes: cancel a whole offer, reserve, hand over, no-show, buyer cancel, review, clear a no-show block, record … |
 | `services/resend_client.py` | One place that configures the Resend SDK: the API key, and a 10 s HTTP timeout instead of the SDK's 30 s default. … |
 | `services/resend_verify_cap.py` | A per-ACCOUNT cap on POST /auth/resend-verify, on top of the route's per-IP limit, so rotating IPs cannot flood one inbox (MEH-2906). |
@@ -305,7 +351,10 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/review_invite.py` | The one builder of a business's «request a review» URL — the verified-review link ('?rt=<30-day invite token>') that the owner shares from her dashboard and … |
 | `services/review_reports.py` | «דיווח על ביקורת» (MEH-3260) — build the admin email for a visitor's report on one review, and drop a repeat of the same report. |
 | `services/sanitization.py` | HTML sanitization helper — defense-in-depth per ASVS V13 (MEH-329). |
+| `services/share_links.py` | Mint and resolve the short code behind a draft's preview link (/v/<code>) and claim link (/c/<code>) — MEH-3896. … |
 | `services/signup_fill_digest.py` | Once a week (Sunday, Israel clock) check what share of the businesses that signed up in the last 7 days have a referral source («מאיפה שמעתם») and a location, … |
+| `services/staff_emails.py` | The email a business sends to invite someone to handle its orders. |
+| `services/staff_membership.py` | End a person's active order-staff membership when the same account becomes a business owner, so the old business's team list and its 5 seats stop counting … |
 | `services/staging_reset_job.py` | Once a week, put the STAGING database back to the seed recipe by running 'scripts/reset_staging.py --confirm', so E2E users and hand-made test rows stop … |
 | `services/submission_confirmation.py` | Confirm in writing, to the business owner, that a profile reached the review queue — fixing the submission timestamp and the "עד 3 ימי עסקים" promise the SLA … |
 | `services/submission_gate.py` | The single answer to "may this business be sent to the admin review queue, and if not, what is it missing?". … |
@@ -372,8 +421,11 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `contact-method.js` | Primary contact method helpers (MEH-17). Pure functions — no React. |
 | `contact-topics.js` | The one whitelist of contact-form topics, and the ?topic= reader that falls back to the default for anything else. |
 | `contact-tracking.js` | Analytics beacons for any /producer surface. |
+| `cookie-banner-height-inline.js` | Publish the cookie banner's height as --cookie-banner-h on <html> while the banner is being parsed, so /map reserves the banner's strip from the first paint … |
 | `cookie-consent.js` | Cookie-consent storage contract — the ONE place that knows the localStorage key, the accepted values and the event name (MEH-2394 reviewer note: the … |
 | `css-url.js` | A quoted, escaped CSS 'url()' for an inline background-image. The picture can be an owner-supplied URL; … |
+| `daily-stock-owner.js` | The owner's side of daily stock: read the week's prep list («מה להכין») and name its days. |
+| `daily-stock.js` | Daily stock on the buyer's side: how many of a product or variant are left on each offered day (the menu's 'stock' rows), the most she can pick, the «נשארו N» … |
 | `dashboard-edit-anchors.js` | The deep-link registry for the producer dashboard's edit page — which card a URL hash means, where to scroll, and which accordion group to open. |
 | `dashboard-status-classes.js` | Dashboard status colours — one owner for the four "tools" spokes (MEH-1640). |
 | `dates.js` | — אין כותרת — |
@@ -440,6 +492,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `listing-supply.js` | — אין כותרת — |
 | `map-chips.js` | Map filter chips (MEH-14). Category chips: all · meat · produce · dairy · bread (keys). … |
 | `map-city-params.js` | /map's city → GET /producers param, in one place. |
+| `map-offer-marks.js` | MEH-3824 — the small mark on a business's pin while one of the map's offer switches is on (סלי הפתעה · קבוצות רכישה · אירועים · חוויות). … |
 | `map-pin-labels.js` | The business name next to its pin once the map is zoomed in close (Google Maps pattern) — so a pin can be read without tapping it. … |
 | `map-ssr-producers.js` | Fetch a representative batch of businesses server-side, for the sr-only index /map renders so Googlebot can see the businesses the interactive map holds … |
 | `map-view-state.js` | MEH-1414 — persist the /map camera (center + zoom) across navigation so back-navigation from a producer page lands on the spot the visitor left, not the … |
@@ -464,7 +517,10 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
 | `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |
-| `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out), and the prep list of the «היום» tab. |
+| `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out, daily stock). … |
+| `owner-assistant-store.js` | Keep the owner's assistant conversation in this browser for a week, so closing the tab or reloading does not lose it. |
+| `owner-page-updated.js` | Tell the open dashboard screen that the business was saved from somewhere else on the page (the dashboard assistant's fill), so it reads the business again … |
+| `owner-pages.js` | The dashboard paths the owner assistant may link to, which screen a dashboard URL belongs to, and the function that splits an answer into text and links to … |
 | `owner-preview.js` | One rule for "an owner or admin is opening an item that may not be public yet" (MEH-2977 follow-up). … |
 | `page-fill.js` | «ספרו לנו על העסק» (MEH-3483): turn the server's draft of the page fields into preview rows, and the rows the owner kept into the writes that save them. |
 | `pagination.js` | Pagination helpers (MEH-23). Pure functions — no React, no DOM. |
@@ -488,6 +544,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `producer-points.js` | Derive a producer's map-able points from its own data — the single answer to "where is this business on the map?", shared by the marker layer and the /map … |
 | `producer-route.js` | Single source of truth for "is this the public producer detail page?" — BOTH surfaces that render it: the '/producer/[id]' leaf (excluding the … |
 | `producer-status.js` | Producer status — render-only labels and color tokens. DB emits raw codes (draft / pending / approved / rejected / inactive — see … |
+| `producers-sort.js` | The /producers sort axis (?sort=): which values are legal, how a URL value is read, and what each sends to the API. |
 | `product-display-order.js` | The ONE place that decides the order products are shown in, for the public business page and the owner's dashboard alike (MEH-3055). … |
 | `product-orders.js` | The one place on-site ordering's business-side fetches, list groups and money/time formatting live, so the dashboard screens never re-derive them. |
 | `product-price.js` | What a product's price is per (MEH-2936): «80₪ לבקבוק», «35₪–60₪ לק״ג», and for 'unit' just the price, so a product that never chose a unit reads exactly as … |
@@ -504,10 +561,13 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `region-pages.js` | Single owner of the category x region landing pages (MEH-2790) — the threshold, the path shape, and the region lookup. … |
 | `register-draft.js` | Own the on-disk shape of the producer-registration draft — what is written, what counts as content worth resuming, and when a stored draft is too old to offer … |
 | `register-route.js` | The ONE predicate for "is this pathname inside the registration flow", shared by every surface that has to stay out of its way. |
+| `render-time.js` | The moment the server rendered this HTML, written into <head> by the root layout, so a component that shows something by the clock can hydrate with the … |
 | `replay-prehydration-input.js` | MEH-2602: typing that lands before hydration must not be silently dropped. |
+| `rescue-sort.js` | The /rescue list's sort orders (MEH-3704): by pickup time (the server's order, the default), closest, cheapest, highest rated. |
 | `rescue.js` | The one place the rescue-bags pilot's flag, its fetches and its unit formatting live, so no component re-derives any of them. |
 | `resolved-questions.js` | Resolve WHICH ready-made questions a producer's public page shows right now, and how each one is served (answered in-page vs opens a channel). … |
 | `review-invite.js` | Keep the owner's "request a review" token ('?rt=' on the shared link) for the producer it was minted for, so ReviewsSection can unlock the form and forward it … |
+| `reviews-page.js` | One read of a business's reviews page 1 shared by the two parts of the business page that need it: the quote under the header (ReviewExcerpt) and the reviews … |
 | `route-memory.js` | Small facts about client-side navigation that the page components cannot learn on their own, and one use of them: 1. … |
 | `safe-redirect.js` | Clamp a post-login '?redirect=' value to an internal, same-origin path so an attacker-supplied param can't bounce the user off-site. |
 | `saved-cache.js` | In-memory set of the current user's saved recipes / events / experiences (MEH-2558), keyed "<type>:<id>". … |
@@ -526,6 +586,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `social-links.js` | ONE definition of "turn a stored instagram field into a link". |
 | `special-hours.js` | Convert between the backend 'producers.special_hours' JSONB shape ({"YYYY-MM-DD": {ranges: [{open, close}], note?}}) and the date-row editor model the … |
 | `ssr-entity-fetch.js` | The server-side fetch at the top of the four detail pages (producer, event, experience, group-buy): one request, one three-way answer, one way of reporting it. |
+| `staff.js` | The order-staff calls (MEH-3526): the owner lists, invites and removes; the invited person accepts. |
+| `stream-settled.js` | Run a mount-time state update only once no streamed part of the page is still waiting to be revealed, so the update cannot make React throw the server HTML … |
 | `submission-gate.js` | Answer "may this business be sent for review, and if not, what is missing?" on the CLIENT, so the dashboard can disable the "שליחה לבדיקה" CTA and name the … |
 | `time-format.js` | The single owner of how a time-of-day is SHOWN to a reader — "09:00" becomes "9:00". … |
 | `time-range.js` | One owner for how an event's time reads: «09:30», or «09:30–15:00» when it has an end time (MEH-2469). |
@@ -547,8 +609,10 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-google-sign-in.js` | The one place that adds Google's GSI <script>: loadGsiScript() for our own Google button, and preloadGsiWhenIdle() so the library is ready before a sign-in … |
 | `use-home-page.js` | — אין כותרת — |
 | `use-hub-nav-gate.js` | MEH-2858 — decide whether the footer's «קבוצות רכישה» / «סלי הפתעה» links appear. Each appears only while its hub has at least one public item, so no list on … |
+| `use-image-loads.js` | For a picture drawn as a CSS 'background-image' (no <img>, so no onError): returns the URL while it loads or has loaded, and null once the browser reports it … |
 | `use-intent-prefetch.js` | Start loading a page the moment a reader shows intent to open it — a finger touches the link, the mouse enters it, or it takes focus — instead of waiting for … |
-| `use-israel-today.js` | Today's date on the Israel clock that follows the clock: a page left open across midnight re-renders with the new day, so a bag listed as «מחר» becomes «היום» … |
+| `use-israel-today.js` | Today's date on the Israel clock for anything a component draws from it («היום», «מחר», a list without yesterday's events). … |
+| `use-list-return.js` | Back from a card on an infinite-scroll list returns the reader to the pages she had loaded and to her place in them, the way the big sites do (Etsy, Airbnb, … |
 | `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. MEH-3698: it appears only for a signed-in person who has something to see there — an … |
 | `use-order-cart.js` | The buyer's picks on one business page, held by ProducerDetail so the product rows and the order bar read the same state. |
 | `use-orders-tab.js` | Whether the dashboard shows the «הזמנות» tab, and its counter (orders waiting for an answer). |
@@ -562,6 +626,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `validators.js` | Shared validators for form inputs across the site. Used in /register, /register/producer, and anywhere phone/password need client-side validation. |
 | `watch-favorited.js` | MEH-3465: one business's saved state, now and on every change. FavoriteButton, ProducerUpdatesButton, ProducerHeader and ProducerCard each carried this … |
 | `webauthn.js` | The browser half of an admin passkey (MEH-3305): turn the server's JSON options into what 'navigator.credentials' takes, and the credential it returns back … |
+| `weekly-menu-share.js` | «מה יש השבוע»: the ready WhatsApp message a business sends to her customers, a group or her status. … |
 | `whats-new.js` | The «מה חדש» release list for business owners (MEH-3200): which versions have news for businesses, how many lines each has, and whether the owner has already … |
 | `wizard-step-numbers.js` | Turn a wizard's STEP enum into the numbers a user actually SEES. A step that is conditionally absent makes the enum value and the visible position diverge, … |
 | `zod-csp.js` | Turn off Zod's eval probe in the browser, so the CSP stops reporting «Blocked unsafe eval()» on every page that parses an API response. |
@@ -616,6 +681,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ContactCtaVariants.jsx` | — אין כותרת — |
 | `CookieBanner.jsx` | — אין כותרת — |
 | `CookieSettingsButton.jsx` | — אין כותרת — |
+| `CourseMeetingsList.jsx` | MEH-3898 — the meetings of a course on the experience page, one line each: «מפגש 2 · יום שלישי, 12 בינואר 2027 · 18:00». … |
 | `CoverageRequestCta.jsx` | — אין כותרת — |
 | `CustomCursor.jsx` | — אין כותרת — |
 | `DashboardFooter.jsx` | MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with localeDetection off an /en reader landed on the Hebrew page. |
@@ -691,6 +757,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `OwnerRow.jsx` | OwnerRow — who runs an event or an experience, as one tappable row: initial avatar, the line, and a forward chevron (the Eventbrite «Organized by» / Airbnb … |
 | `OwnerSectionEditLink.jsx` | Owner-only per-section edit affordance on the public business page (MEH-1306) — a calm muted pencil beside a mapped section that deep-links into the matching … |
 | `PageFillPanel.jsx` | «ספרו לנו על העסק» (MEH-3483). The owner writes about her business in her own words; Claude drafts the page fields; … |
+| `PageFillReview.jsx` | The second half of «ספרו לנו על העסק» (MEH-3483): a draft of the page fields shown field by field, each with a checkbox, and the save of only what the owner … |
 | `Pagination.jsx` | — אין כותרת — |
 | `PasskeyRecoveryPanel.jsx` | PasskeyRecoveryPanel — the second sign-in step when the passkey did not answer (MEH-3305): the admin cancelled the device prompt, or the device is gone. … |
 | `PasswordInput.jsx` | MEH-306 — reusable password input with live policy feedback. |
@@ -713,6 +780,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `PromotedServiceChips.jsx` | — אין כותרת — |
 | `RecipeForm.jsx` | RecipeForm — MEH-590 chunk 3/4 of the producer-recipes epic. |
 | `RecipeStatusBadge.jsx` | RecipeStatusBadge — MEH-590 chunk 3/4 of the producer-recipes epic. |
+| `RegisterIdentityCheck.jsx` | Under «הבא» on the sign-up form's details step: when this business already has a page (any status, with an account or without), say so before a second one is … |
 | `RegisterNameCheck.jsx` | Under the business-name field of the sign-up form: when a live business already carries the typed name, say so and point its owner at the existing page … |
 | `RegistrationCta.jsx` | The sign-up block on a public event / workshop page, by the owner's «איך נרשמים?» choice (MEH-2768): site_form → «הרשמה לסדנה/לאירוע» opens the form below it, … |
 | `RegistrationMethodField.jsx` | «איך נרשמים?» — the owner picks how visitors sign up to an event or an experience (MEH-2762 chunk 2): on-site form (default), WhatsApp, phone, or an external … |
@@ -745,7 +813,10 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsAppUpdatesPill.jsx` | — אין כותרת — |
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
+| `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
+| `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
+| `admin/AdminDuplicateMatches.jsx` | On the admin «new business» form, after the server answered 409 DUPLICATE_BUSINESS, list the businesses we already have that share a phone, email, Instagram, … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
 | `admin/AdminLinkPanel.jsx` | — אין כותרת — |
@@ -772,33 +843,42 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/TestBusinessTag.jsx` | — אין כותרת — |
 | `admin/TestBusinessToggle.jsx` | — אין כותרת — |
 | `admin/WhatsappBlockedSection.jsx` | Admin: WhatsApp messages the outbound guard dropped outside production (MEH-3402 follow-up). … |
+| `admin/useGalleryUpload.js` | Uploads the admin's picked gallery photos one by one and keeps every photo that made it, even when a later one fails; … |
 | `auth/AuthSplitLayout.jsx` | — אין כותרת — |
 | `brand/Seed.jsx` | Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single seed may be rotated, scaled and given any seed colour. … |
 | `brand/SeedBurst.jsx` | The seed layer's success moment (MEH-2833, board 5 v2): the logo bloom and two rings of single seeds pointing outward, left open below the bloom (as on the … |
 | `brand/SeedMark.jsx` | SeedMark — the full bloom (the logo's five seeds, in place), as decoration. MEH-2833: the logo is never rotated, recoloured or rearranged; … |
+| `cities-paste.js` | Paste a whole list of cities into a CitiesAutocomplete field: one request checks every name, the known ones become chips, the rest are reported instead of … |
 | `dashboard/CoverageCtaToggle.jsx` | The owner's on/off for the public «לא מגיעים אליך?» CTA on her page. Saves immediately (one field, no form), like the alert switches in AlertPrefsPanel. |
 | `dashboard/ProductVariantsField.jsx` | The «אפשרויות» block of the owner's product editor: sizes or flavours of one product, each with a name, an optional price, an «במלאי» switch and its place in … |
 | `dashboard/ProductWeekdaysField.jsx` | «ימים שהמוצר זמין» in the owner's product form (MEH-3618): «כל הימים» (the default) or some of the seven days, as chips. Holds the mask in the form; … |
+| `dashboard/RescueScheduleForm.jsx` | The weekly surprise-bag routine of every pickup point: days, hours, how many bags and the price, set once; … |
+| `dashboard/RescueScheduleStrip.jsx` | One line per pickup point under the counters on the rescue tab: what tomorrow's routine bag is, and «לדלג על מחר» (or «לבטל את הדילוג»). … |
 | `dashboard/RescueTab.jsx` | — אין כותרת — |
 | `dashboard/google-profile/GoogleProfileCheck.jsx` | Compare what Google shows with the business page, on request (MEH-3641): name, phone and website each get a verdict; … |
 | `dashboard/google-profile/GoogleProfileGuide.jsx` | The three steps to open or fix a Google Business Profile, the business page's link to paste into it, and Google's rule on review incentives (MEH-3641). |
 | `dashboard/google-profile/GoogleProfileHubTile.jsx` | The «הפרופיל בגוגל» tile in the edit tab's hub, after «קשר» (MEH-3723, Sapir's pick 22/11). … |
 | `dashboard/google-profile/GoogleProfileLink.jsx` | Find the business's own Google profile and link it, or unlink it (MEH-3641). The server accepts a link only when the Google name or phone matches the … |
 | `dashboard/google-profile/GoogleProfileTool.jsx` | The body of /producer/dashboard/google-profile (MEH-3641): reads whether the business is linked and whether Google can be asked, then shows the link half, the … |
+| `dashboard/orders/DailyLimitField.jsx` | «כמה ביום» in a product row of the orders tab: how many units of a product (or of one of its sizes or flavours) can be ordered for one pickup day. … |
+| `dashboard/orders/LeadDaysField.jsx` | «כמה זמן מראש צריך להזמין» in a product row of the orders tab (MEH-3932): the product is offered only for pickup days at least that many days off, on the … |
 | `dashboard/orders/OrderActions.jsx` | The buttons an order's status offers the business, and the one dialog a button opens. … |
 | `dashboard/orders/OrderCard.jsx` | One on-site order as the business sees it: who, what, when, how much, and the actions its status allows. |
 | `dashboard/orders/OrderCustomersCard.jsx` | «הלקוחות שלכם» in the «הזמנות» tab: who ordered through the site, how many times and when last, «לקוח חוזר» from two orders, and a CSV download so the … |
 | `dashboard/orders/OrderDialogs.jsx` | The four forms an order action may need: a final price after weighing, a decline reason, a proposed change, a hand-over code, and a cancel note. … |
-| `dashboard/orders/OrderPrepList.jsx` | «מה להכין» at the top of the «היום» list: today's confirmed orders summed by product, so the business prepares from one list instead of adding up the cards. |
+| `dashboard/orders/OrderPrepList.jsx` | «מה להכין» above the order lists: for each pickup day from today for a week, how many of each product and size to prepare — confirmed, and apart from it what … |
 | `dashboard/orders/OrderProductsCard.jsx` | The business's products with the two switches on-site ordering needs every day: «פתוח להזמנה באתר» and «אזל כרגע». |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
+| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בווטסאפ» (she picks the … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
+| `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |
 | `group-buy/GroupBuyCalendarButton.jsx` | MEH-3597 (Sapir 21/11, «תבדוק מה עוד חסר»): a member who joined can put the pickup in her calendar, as an event page allows (MEH-2468). … |
 | `group-buy/GroupBuyLineTotal.jsx` | MEH-3592: under the quantity field — what is left (a units cap) and what the order comes to («3 ק"ג × 13₪ = 39₪»). … |
 | `group-buy/GroupBuyMemberPanel.jsx` | MEH-3592: what a participant sees on the join card — her confirmation, a quantity she can change until the deadline (Kickstarter: a pledge can change until … |
 | `group-buy/GroupBuyOwnerSettings.jsx` | MEH-3592: on the owner's group-buy card — change the caps (never below what already joined, the server refuses that) and stop / reopen joins. … |
+| `group-buy/GroupBuyPickupList.jsx` | MEH-3735 — on the owner's card of a group buy that reached its goal: each participant's pickup code and quantity, and after the pickup ended a «נמסר» / «לא … |
 | `group-buy/GroupBuyPickupWindowFields.jsx` | MEH-3597: the pickup window on the create form — a day + start time, and an end time that day. … |
 | `group-buy/GroupBuySafetyFields.jsx` | Two things a participant needs to collect safely (MEH-3610): the branch she picks up from, and the allergens the business declares — the same two a rescue bag … |
 | `group-buy/GroupBuyWaitlistPanel.jsx` | MEH-3592: a full group buy offers a waitlist instead of a dead end (Eventbrite: a released ticket emails the first in line). … |
@@ -812,15 +892,20 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `offer-detail/HowSteps.jsx` | «איך זה עובד» as numbered steps, one look for every offer page (group buy, rescue bag). Airbnb draws stays and experiences from one set of listing sections; … |
 | `offer-detail/PickupLine.jsx` | The pickup time as one line right under an offer's title (clock, bold label, the window): the first thing a buyer decides on, and on a phone the «where» … |
 | `offer-detail/WhereSection.jsx` | «איפה ומתי מקבלים» for an offer page: icon rows (when, where, pickup, delivery), then the map with Waze / Google, or — when only a text address is known — the … |
+| `owner-assistant/OwnerAssistant.jsx` | The dashboard assistant's entry: one «עוזרת» button in the dashboard's tab row (phone and desktop, the same element), and the panel it opens. … |
+| `owner-assistant/OwnerAssistantCard.jsx` | What an assistant answer opens inside the chat: the page-fields review, the product rows read from her text, the menu upload, the photos card, or the WhatsApp … |
+| `owner-assistant/OwnerAssistantNudge.jsx` | The assistant speaks first: on the dashboard home of a business in draft that still has items before «שליחה לבדיקה», one line says how many are left and a … |
+| `owner-assistant/OwnerAssistantPanel.jsx` | The conversation inside the owner's dashboard assistant: her messages, the answers (with links to the right screen or card), questions to tap for the screen … |
+| `owner-assistant/OwnerAssistantText.jsx` | One owner-assistant answer, with the dashboard screens, edit cards and site pages it names turned into links. |
 | `producer/BusinessQrCard.jsx` | — אין כותרת — |
 | `producer/DraftSubmitBanner.jsx` | — אין כותרת — |
 | `producer/FeedPostCanvas.jsx` | MEH-3330 — the «פוסט מוכן לשיתוף» card in the owner's share kit. She picks a moment (this week · a new product · an upcoming holiday), sees the 4:5 post built … |
 | `producer/FirstMomentCard.jsx` | A once-only «רגע ראשון» card at the top of the dashboard home — first review, first WhatsApp click, 100 views, first follower (MEH-3200 part 2; … |
-| `producer/LinkEverywhere.jsx` | MEH-3331 — «הקישור שלך בכל מקום»: four places a business puts its page link once (Instagram bio, Facebook page button, Google profile, WhatsApp Business … |
+| `producer/LinkEverywhere.jsx` | MEH-3331 — «קישור אחד לכל מקום»: four places a business puts its page link once (Instagram bio, Facebook page button, Google profile, WhatsApp Business … |
 | `producer/MonthValueLine.jsx` | One line on the dashboard home: what the business got through the site this month, as bookings and their value (MEH-3194 point 1 — the value is shown before … |
 | `producer/NewToolPill.jsx` | The «חדש» pill on a «כלים» tile (or an «עריכה» hub tile, MEH-3723) whose tool arrived in a release of the last 14 days (MEH-3200 part 2, copy approved 14/11). … |
 | `producer/OrdersIntroCard.jsx` | «חדש: הזמנות מראש מהעמוד שלכם» — tells a business that on-site ordering exists and takes it to the «הזמנות» tab. … |
-| `producer/OwnerAttentionCard.jsx` | «מה מחכה לך» — the top of the dashboard home lists what is waiting for the owner right now, each row one tap from the tool that handles it (MEH-3108; … |
+| `producer/OwnerAttentionCard.jsx` | «מה ממתין לטיפול» — the top of the dashboard home lists what is waiting for the owner right now, each row one tap from the tool that handles it (MEH-3108; … |
 | `producer/OwnerWelcomeCard.jsx` | A one-time «ברוכים הבאים למהמקור» note from the founders (Sapir + Topaz, MEH-3323) at the top of the dashboard home for a new business (≤ 30 days old), closed … |
 | `producer/RequestReviewCard.jsx` | — אין כותרת — |
 | `producer/ShareKitSection.jsx` | — אין כותרת — |
@@ -855,23 +940,27 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `rescue/RescueList.jsx` | — אין כותרת — |
 | `rescue/RescueReview.jsx` | — אין כותרת — |
 | `rescue/RescueSection.jsx` | — אין כותרת — |
+| `rescue/ShareCodeButton.jsx` | «לשלוח לחבר שיאסוף» on a reserved bag (MEH-3704): the pickup code, the business, the day and window, the address and what to say at the counter, through the … |
 | `ui/AddToCalendarButton.jsx` | «הוספה ליומן» for one timed slot — an order's pickup or delivery window today; a bag or group-buy pickup next. … |
 | `ui/Avatar.jsx` | One circle for the signed-in person everywhere it shows (Header menu button, BottomNav, account sheet, settings): their photo when there is one, otherwise ONE … |
 | `ui/BackLink.jsx` | MEH-2728: a client component so a SERVER page can render it too (rescue/page.js). Phosphor icons read React context, which a server component has no access to … |
 | `ui/Badge.jsx` | — אין כותרת — |
 | `ui/Button.jsx` | — אין כותרת — |
 | `ui/Card.jsx` | — אין כותרת — |
+| `ui/Checkbox.jsx` | A native <input type="checkbox"> inside its own <label>, so the whole row (box + text) is the hit area: at least 44px tall below md and 32px from md up … |
 | `ui/Dialog.jsx` | — אין כותרת — |
 | `ui/EmptyState.jsx` | — אין כותרת — |
 | `ui/FactLine.jsx` | The only way a fact line on the business page gets an icon, so every such icon has the same size, colour and spacing. … |
 | `ui/GoogleButton.jsx` | Our own «להמשיך עם Google» button (MEH-3690). Drawn by us, so it is on screen with the page or the modal — Google's rendered button arrived about a second … |
 | `ui/Heading.jsx` | Render h1-h4 with the project's font tokens so pages stop repeating inline 'font-headline-* text-* font-bold' triplets. Net-new atom. |
+| `ui/IconButton.jsx` | The one place an icon-only button is written. 'label' is required and becomes the accessible name ('aria-label'), so a nameless icon button cannot be written … |
 | `ui/InlineMessage.jsx` | The one look for a form-level or page-level message that appears in place: a submit error, «נשמר», a load error in a row. … |
 | `ui/Input.jsx` | — אין כותרת — |
 | `ui/Link.jsx` | — אין כותרת — |
 | `ui/OfferCard.jsx` | — אין כותרת — |
 | `ui/PasswordField.jsx` | — אין כותרת — |
 | `ui/Popover.jsx` | — אין כותרת — |
+| `ui/PrepayButton.jsx` | «לתשלום» — opens the business's own prepay link (Bit / PayBox / its clearing) in a new tab, with the host printed under it so the buyer sees where she is … |
 | `ui/PreviewBanner.jsx` | The one green «you are looking at a preview» strip, with the eye, above a page shown as someone else would see it. |
 | `ui/RatingCompact.jsx` | — אין כותרת — |
 | `ui/SectionHeading.jsx` | A section's h2 takes its size from a named ROLE, never from classes written at the call site. … |
@@ -881,7 +970,9 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `ui/StruckPrice.jsx` | The one way a crossed-out price is drawn: an <s>, left-to-right so ₪ and the digits keep their order inside RTL, muted, struck. … |
 | `ui/Switch.jsx` | Every role="switch" draws the same track: 40×24, a 16px knob that sits at the inline-START when off and the inline-END when on (logical insets, so it moves … |
 | `ui/Textarea.jsx` | — אין כותרת — |
+| `ui/TimeOfDaySelect.jsx` | A clock time «HH:MM» picked from two selects (hour 00–23, minutes in steps), so it always reads on a 24-hour clock (MEH-3823). … |
 | `ui/Tooltip.jsx` | — אין כותרת — |
+| `ui/WeekdayChips.jsx` | Pick days of the week as chips, Sunday first, on the shared mask (Sunday = 1 … Saturday = 64, lib/product-weekdays.js). … |
 | `ui/field.jsx` | One source for the look of a compact field (border, radius, focus ring, error border, disabled) and for the label + message wiring around it, so Input, Select … |
 | `ui/index.js` | Barrel export for the atomic UI layer (MEH-602). |
 | `ui/overlay-icon-button.js` | MEH-3115: one anatomy for every icon-only button that sits ON a photo — the business hero's heart / share / bell, the recipe, event and experience cover … |
@@ -903,6 +994,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/admin/producers/AdminDraftClaimActions.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminDraftLinkAge.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminDraftMissing.jsx` | — אין כותרת — |
+| `[locale]/admin/producers/AdminDraftTwin.jsx` | On a row of the admin producers list, say that a draft the admin prepared and a business its owner registered herself look like one business, why (same phone, … |
 | `[locale]/admin/producers/AdminProducersTable.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminProducersToolbar.jsx` | — אין כותרת — |
 | `[locale]/admin/producers/AdminReviewChecklist.jsx` | AdminReviewChecklist — the pre-approval review checklist for a pending producer, rendered as a sub-row in AdminProducersTable. |
@@ -910,6 +1002,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/admin/producers/ProducerDecisionModal.jsx` | ONE admin decision composer for a business awaiting review. The chosen REASON decides the outcome, not the button the admin happened to click: a fixable … |
 | `[locale]/admin/producers/QueueSlaSummary.jsx` | One line above the admin producers table — how many businesses are waiting for review, and how long the oldest has waited. … |
 | `[locale]/admin/producers/ReviewEvidence.jsx` | ReviewEvidence — MEH-1399 chunk 4, the «תיק בדיקה»: the links an admin needs while working a business, gathered next to the checklist instead of hunted for in … |
+| `[locale]/admin/producers/SlugConfirmDialog.jsx` | Before a business with no English address goes live, the admin sees the suggested address, edits it if it reads badly, and confirms (MEH-3914). … |
 | `[locale]/admin/producers/sla-statuses.js` | The one answer to "is this row waiting on the admin, and therefore accruing the «עד 3 ימי עסקים» clock". … |
 | `[locale]/admin/producers/use-admin-producers.js` | — אין כותרת — |
 | `[locale]/admin/producers/use-reject-flow.js` | Controller for the admin decision composer — fetches the canonical reason labels, holds the modal's state, and routes the submit to ONE of two existing … |
@@ -947,7 +1040,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/map/components/MapCardList.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapKey.jsx` | — אין כותרת — |
 | `[locale]/map/components/MapPane.jsx` | — אין כותרת — |
-| `[locale]/map/components/MapPickupPointPanel.jsx` | MEH-3756 — under the picked-business card on the phone map, when the tapped pin is a pickup point or a market stand: when and how to collect there (its hours, … |
+| `[locale]/map/components/MapPickupPointPanel.jsx` | The action panel under the picked-business card on the phone map, for EVERY pin (one card for all pins, Sapir 25/11 — Google Maps / Apple Maps give every … |
+| `[locale]/map/components/MapRescueRow.jsx` | The business's surprise bag today, as one row under the business picked on the map: «סל הפתעה», the pickup window and the price, linking to the bag's own … |
 | `[locale]/map/components/MobileSheetSelectedCard.jsx` | — אין כותרת — |
 | `[locale]/map/components/NearMePill.jsx` | — אין כותרת — |
 | `[locale]/map/components/ServiceChipRow.jsx` | — אין כותרת — |
@@ -980,7 +1074,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/[id]/components/ReservistBadgeLine.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/ReviewExcerpt.jsx` | — אין כותרת — |
 | `[locale]/producer/[id]/components/StickyContactBar.jsx` | — אין כותרת — |
-| `[locale]/producer/[id]/hooks/useLazyReviews.js` | — אין כותרת — |
+| `[locale]/producer/[id]/hooks/useProducerActivities.js` | The business page's upcoming events, experiences, open group buys and recipes, read together so the page paints them in one go instead of inserting each list … |
 | `[locale]/producer/[id]/hooks/useProducerData.js` | — אין כותרת — |
 | `[locale]/producer/[id]/hooks/useStickyBar.js` | — אין כותרת — |
 | `[locale]/producer/[id]/lib/order-status.js` | Pure mapper + formatters behind the producer page's SINGLE status element — resolves which of the five precedence branches wins and formats the Israel-local … |
@@ -995,7 +1089,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/producer/dashboard/edit/OrderCutoffPicker.jsx` | «מקבלים הזמנות עד»: a weekday select + a time input, for a row that has its own order cutoff — a pickup point (MEH-3512) or a delivery zone (MEH-3511). … |
 | `[locale]/producer/dashboard/edit/OrderWindowEditor.jsx` | Weekly ORDER-acceptance window editor for the producer dashboard — 7 day rows (א׳–ש׳), a per-day toggle plus open/close time inputs, and a "clear all" action … |
 | `[locale]/producer/dashboard/edit/OrganizerCityCard.jsx` | An organizer changes the city shown on her public page. |
-| `[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx` | «איך משלמים לך?» — the owner picks how customers pay (five tiles with icons + a «בחירת הכל» switch), when they pay (one of three, clearable), and one optional … |
+| `[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx` | «איך משלמים לעסק?» — the owner picks how customers pay (five tiles with icons + a «בחירת הכל» switch), when they pay (one of three, clearable), and one … |
 | `[locale]/producer/dashboard/edit/PickupScheduleField.jsx` | In the location editor, for a pickup point or a market stand: which weekdays it is open for pickup, and (optionally) its own order cutoff — «מקבלים הזמנות עד … |
 | `[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx` | — אין כותרת — |
 | `[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx` | Per-date overrides ABOVE the weekly order window — "ערב ראש השנה 09:00–13:00", "כיפור: סגור" — for the producer dashboard. … |
@@ -1039,6 +1133,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/rescue/[offerId]/RescueOfferPage.jsx` | — אין כותרת — |
 | `[locale]/reset-password/ResetPasswordClient.jsx` | — אין כותרת — |
 | `[locale]/share/ShareClient.jsx` | — אין כותרת — |
+| `[locale]/staff-invite/StaffInviteClient.jsx` | What someone a business invited to its order team opens from the email (MEH-3526): sign in with the invited address, tap once, land on the business's orders … |
+| `[locale]/staff-invite/staff-invite-metadata.js` | Page metadata for the order-staff invite page: never indexed, no alternates, no referrer, because on /staff-invite/[token] the path IS the credential. |
 | `[locale]/unsubscribe/weekly/UnsubscribeClient.jsx` | — אין כותרת — |
 | `[locale]/verify-email/VerifyEmailClient.jsx` | — אין כותרת — |
 | `fonts.js` | The four brand typefaces, self-hosted from files committed in this repo. |

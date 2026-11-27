@@ -171,6 +171,9 @@ async function createBusiness(
       name,
       city: "תל אביב",
       phone: "0501234567",
+      // MEH-3883: every slot shares this phone on purpose; without the flag
+      // the admin create answers 409 DUPLICATE_BUSINESS from the second slot.
+      allow_duplicate: true,
       short_description: "עסק בדיקה אוטומטי",
       description: "נוצר ע״י ספק הבדיקות של MEH-2974 ונמחק בסוף הריצה.",
       category_ids: [],

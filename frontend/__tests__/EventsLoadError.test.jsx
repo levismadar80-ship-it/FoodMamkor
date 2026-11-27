@@ -77,7 +77,7 @@ vi.mock("@/components/CitySearch", () => ({ default: () => <input data-testid="c
 // events/experiences pair it was written for, and so the gates' requests
 // do not land in this file's api.get expectations. The four-tab row has
 // its own file: __tests__/ListingHubTabs.test.jsx.
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false, useHubNavGateState: () => ({ visible: !!(false), settled: true }) }));
 vi.mock("@/components/ChipScrollRow", () => ({
   default: ({ onChipClick }) => (
     <button type="button" data-testid="chip-harvest" onClick={() => onChipClick("harvest")} />

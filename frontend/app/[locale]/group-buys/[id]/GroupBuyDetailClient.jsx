@@ -12,6 +12,7 @@ import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
+import { groupBuyPrepay } from "@/lib/payment-info";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
@@ -74,6 +75,7 @@ function saveDraftQuantity(gbId, value) {
 /** Read and clear the kept quantity; null when none (or storage is blocked). */
 function takeDraftQuantity(gbId) {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- restores a draft the visitor typed on this page earlier; the field it fills is already on screen
     const raw = sessionStorage.getItem(QTY_DRAFT_KEY(gbId));
     if (raw === null) return null;
     sessionStorage.removeItem(QTY_DRAFT_KEY(gbId));
@@ -476,7 +478,12 @@ export default function GroupBuyDetailClient({ id }) {
 
         {/* Already committed — MEH-3592: quantity edit + the last-day leave rule. */}
         {gb.user_committed && (
-          <GroupBuyMemberPanel gb={gb} joinable={joinable} full={full} cancelling={cancelling} onCancel={handleCancel} onChanged={load} />
+          <GroupBuyMemberPanel
+            gb={gb} joinable={joinable} full={full} cancelling={cancelling} onCancel={handleCancel} onChanged={load}
+            // MEH-3895: the business's own prepay link, once the group is
+            // funded — never while it can still fail.
+            prepay={groupBuyPrepay(gb, producer?.payment_info)}
+          />
         )}
 
         {/* MEH-3287: the daily job cancels a group that missed its minimum by the

@@ -66,6 +66,11 @@ PAID_TOOL_ROUTES: Final = {
         "app.routers.events:update_event",
         "app.routers.experiences:submit_experience",
         "app.routers.experiences:update_experience",
+        # MEH-3873: the admin writing for a business, through the same writers.
+        "app.routers.admin_business_content:admin_create_business_event",
+        "app.routers.admin_business_content:admin_update_business_event",
+        "app.routers.admin_business_content:admin_create_business_experience",
+        "app.routers.admin_business_content:admin_update_business_experience",
     ),
     "group_buy": ("app.routers.group_buys:create_group_buy",),
     "rescue_bags": ("app.routers.rescue:create_offer",),

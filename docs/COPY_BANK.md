@@ -30,7 +30,7 @@
 ### Subtitle — Friday variant
 | Field | Value |
 |---|---|
-| **Current** | `שישי בפתח. מה הולך על שולחן השבת שלך?` (MEH-3001: shown from Thursday 18:00, so it no longer says Friday has arrived) |
+| **Current** | `שישי בפתח. מה הולך על שולחן השבת?` (MEH-3001: shown from Thursday 18:00, so it no longer says Friday has arrived) |
 | **i18n key** | `home.hero.friday_subtitle` |
 | **Status** | ✅ |
 | **Why** | Context-aware copy shown on Fridays. Connects to the Shabbat shopping ritual. |
@@ -406,7 +406,7 @@
 ### Newsletter input placeholder
 | Field | Value |
 |---|---|
-| **Current** | `המייל שלך, בבקשה` |
+| **Current** | `כתובת מייל` (MEH-3812) |
 | **i18n key** | `nav.footer.newsletter_placeholder` |
 | **Status** | ✅ |
 
@@ -892,7 +892,7 @@ Unchanged and reused as-is: `join.eyebrow` · `join.h1` · `join.subhead` · `jo
 | found | qr_code | QrCode | `קוד QR` | `להדפסה, לדלפק או לדוכן` |
 | contact | primary_cta | ChatCircleText | `כפתור פנייה` | `וואטסאפ, טלפון או אתר, לפי הבחירה שלכם` |
 | contact | wa_prefill | PaperPlaneTilt | `הודעה מוכנה` | `בוואטסאפ: "הגעתי דרך מהמקור"` |
-| contact | delivery_checker | Truck | `בדיקת משלוח` | `"יש משלוח לעיר שלך?"` |
+| contact | delivery_checker | Truck | `בדיקת משלוח` | `"יש משלוח אליי?"` |
 | contact | nav_buttons | NavigationArrow | `ניווט לאיסוף` | `Waze ו-Google Maps` |
 | return | group_buys | UsersThree | `קניות קבוצתיות` | `כמה לקוחות מזמינים יחד, במחיר נמוך יותר` |
 | return | events | CalendarBlank | `אירועים וסדנאות` | `עם הרשמה באתר` |
@@ -1328,7 +1328,7 @@ Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yea
 | `pricing.page.step2_body` | `כשההזמנות בתשלום דרך האתר מגיעות ל-{threshold} ₪ בחודש, נודיע {noticeDays} יום מראש, בכתב.` |
 | `pricing.page.notice_body` | `נודיע {noticeDays} יום מראש, בכתב. מי שלא בוחר מסלול נשאר עם העמוד, בחינם: הכלים בתשלום נסגרים להזמנות חדשות, והזמנות שכבר נרשמו מתקיימות כרגיל.` |
 | `pricing.page.counted_body` | `הרשמה שלא בוטלה, הזמנה בקבוצת רכישה שנסגרה ושקית שנאספה. ביטול, או לקוח שלא הגיע, לא נספרים. הרשמה בחינם לא נספרת. פנייה בוואטסאפ, בטלפון או במייל לא נספרת ולא עולה כסף.` |
-| `about_business.faq.difference.a` | `שם העסק הוא עוד שורה בפיד או ברשימת תוצאות. כאן כל עסק מקבל עמוד משלו עם הסיפור, התמונות והאנשים שמאחוריו — כמו כתבה עליך, לא כמו מודעה. בלי אלגוריתם שמחליט מי יראה אותך. ומאחורי האתר עומדת אני, ספיר — קוראת כל מייל אישית ועונה. ואם תרצו לרדת מהאתר, מסירות את העסק בלי שאלות.` |
+| `about_business.faq.difference.a` | `שם העסק הוא עוד שורה בפיד או ברשימת תוצאות. כאן כל עסק מקבל עמוד משלו עם הסיפור, התמונות והאנשים שמאחוריו — כמו כתבה על העסק, לא כמו מודעה. בלי אלגוריתם שמחליט מי יראה את העסק. ומאחורי האתר עומדת אני, ספיר — קוראת כל מייל אישית ועונה. ואם תרצו לרדת מהאתר, מסירות את העסק בלי שאלות.` |
 | `about_why_local.fairness_body` | `בלי מתווכים: הכסף עובר ישירות למי שגידל, אפה, בישל או יצר.` |
 | `about_why_local.start_body` | `בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר, בלי מתווכים.` |
 | `about_why_local.changes_3` | `המחיר שמופיע הוא של בית העסק, והתשלום עובר ישירות אליו.` |

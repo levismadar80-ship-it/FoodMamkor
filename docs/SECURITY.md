@@ -420,7 +420,7 @@ module.exports = {
 שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
 ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
 מקור הדיווח «Blocked unsafe eval()» בשלב 1 היה בדיקה ש-Zod עושה עם `Function("")` (MEH-3706, `zod/v4/core/util.js:218`), ולא קוד שלנו. ‏MEH-3733 מכבה אותה (`z.config({ jitless: true })` ב-`frontend/lib/zod-csp.js`, שה-import הראשון שלו הוא ב-`frontend/instrumentation-client.js`). לכן «שבוע נקי» נספר מיום המיזוג של MEH-3733.
-שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את שני הסקריפטים ה-inline של MEH-2233: ‏`frontend/lib/prehydration-flags-inline.js` ב-`<head>` (בלי nonce עליו הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת) ו-`frontend/lib/guest-to-login-inline.js` של `/favorites` (בלי nonce עליו אורחת מגיעה ל-`/login` רק אחרי ה-hydration, כמו קודם). `CspReportOnly.test.js` שומר
+שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את שני הסקריפטים ה-inline של MEH-2233: ‏`frontend/lib/prehydration-flags-inline.js` ב-`<head>` (בלי nonce עליו הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת) ו-`frontend/lib/guest-to-login-inline.js` של `/favorites` (בלי nonce עליו אורחת מגיעה ל-`/login` רק אחרי ה-hydration, כמו קודם). וגם סקריפט שלישי, `frontend/lib/cookie-banner-height-inline.js` (MEH-3820), שבא מיד אחרי באנר העוגיות ב-HTML של השרת: בלי nonce עליו המפה בנייד שוב מתכווצת אחרי ה-hydration. `CspReportOnly.test.js` שומר
 ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
 בלי `NEXT_PUBLIC_SENTRY_DSN` אין report-uri, ולכן הכותרת Report-Only לא נשלחת בכלל (MEH-3286): מדיניות שאין לה לאן לדווח לא מודדת כלום, ו-WebKit כותב עליה שגיאה בקונסול בכל דף.
 
@@ -527,6 +527,18 @@ registration / owner-invite / account-delete route) exactly as before.
 - **The token is verified twice:** in the swap
   (`services/google_code_exchange.py`: issuer, audience = our client id,
   expiry, plus `email_verified`) and again by the route that signs in.
+- **`email_verified` is checked for every Google token (MEH-3813):**
+  `verify_google_token` (`services/oauth_verifiers.py`) returns None unless
+  the claim is exactly `True`, so `/auth/google`,
+  `/auth/register/producer/oauth`, the owner invite and the account delete
+  all refuse a Google account whose email Google has not verified, with the
+  same 401 / 403 / 422 they give any bad token. Before, only the swap and the
+  owner invite checked it, so a token posted straight to `/auth/google`
+  created an account stamped `email_verified=True` on an address Google had
+  not verified (passing every verified-email gate and squatting the address).
+  Known trade-off: a linked Google-only account whose token ever came with
+  `email_verified:false` could neither sign in nor re-confirm a delete; Google
+  sends `true` for Gmail, Workspace and Cloud Identity accounts.
 - **No state, no cookie:** the swap writes nothing and sets no cookie. It
   returns the token in the JSON body only, which CORS keeps from other sites,
   so Google's suggested `X-Requested-With` check would add nothing here.
@@ -890,9 +902,10 @@ route template), on what (`target_type`, `target_id`), a reduced before/after
 ## 17a. Webhook HMAC verification (MEH-509 PR2c)
 
 The Meta WhatsApp Cloud API delivers inbound messages via
-`POST /webhook/whatsapp`. This is the only public endpoint on
-`mehamakor.online` that writes to a producer-adjacent DB table
-(`inbound_messages`) without a JWT or `require_admin` dependency —
+`POST /webhook/whatsapp`. This and `POST /webhook/resend` (§17b) are the
+only public endpoints on
+`mehamakor.online` that write to a DB table
+(`inbound_messages`, `email_events`) without a JWT or `require_admin` dependency —
 **the HMAC-SHA256 signature on the request body IS the authentication
 gate**. A subtle bug here is the difference between a private inbox
 and an open-firehose write endpoint for anyone on the public internet.
@@ -955,6 +968,28 @@ the mismatch.
 
 ---
 
+
+## 17b. Resend delivery events — Svix signature (MEH-3839)
+
+`POST /webhook/resend` (`backend/app/routers/resend_webhook.py`) takes
+Resend's delivery events (delivered, bounced, complained, suppressed, failed,
+clicked) and writes `email_events`. The Svix signature is the gate.
+
+- **Verified by the Resend SDK** (`resend.Webhooks.verify`): HMAC-SHA256 over
+  `svix-id.svix-timestamp.body` with the `whsec_` secret, every `v1,`
+  signature compared in constant time, timestamp within ±5 minutes. Any
+  failure, a body that is not UTF-8 included, is 401. A replay inside the
+  window hits the unique `svix_id` and inserts nothing; after it the
+  timestamp refuses it.
+- **Off until `RESEND_WEBHOOK_SECRET` is set:** 503, so Resend keeps retrying
+  and nothing is accepted unsigned.
+- **Bounded:** 300/minute, a 64 KB cap on the declared Content-Length and on
+  the body read (a chunked body is bounded by the proxy, as for WhatsApp).
+- **No address stored or logged:** the row keeps the recipient's domain and
+  the account id; the 401 log line carries the SDK's reason only; the handler
+  never logs the payload. Rows are deleted after 30 days and by
+  `scripts/anonymize_restored_db.sql`.
+
 ## 17b. Draft-preview link (MEH-3377)
 
 A third signed link next to the claim link and the owner invite, and the weakest of the three on purpose.
@@ -962,8 +997,18 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **Scope.** HS256 JWT `{producer_id, scope: "producer_draft_preview"}`, `exp` essential, 14 days (`backend/app/services/draft_preview.py`). The claim decoder refuses it and its decoder refuses a claim token; `get_current_user` refuses both.
 - **What it grants.** Reading one ownerless draft as `ProducerDetailOut`, the same shape the live page serves. It cannot claim, edit or publish.
 - **Stateless.** No table and no revocation before `exp`. The row's state is the revocation: once the draft is published, claimed, rejected or deleted, every link to it answers the same 404 as a forged one.
+- **MEH-3896, the short link.** The admin now gets `/v/<code>` (preview) and `/c/<code>` (claim): 12 random base62 characters from `secrets.choice` (~71 bits, above OWASP's 64-bit floor for a value that is itself the credential), stored only as SHA-256 in `share_links`, with its own scope column, a 14-day `expires_at`, and the producer row's state as the revocation, exactly as for the JWT. Unknown, expired, wrong-scope and dead codes all get the same 404 as a forged JWT, and a code is shape-checked before any query. Guessing is bounded by the route's rate limit (60/min preview, 30/min claim preview) against a 62^12 space. The JWT decoders stay for the links already sent, until their `exp`. `lib/claim-token.js`, `ClarityScript.jsx` and `backend/app/utils/pii.py` redact `/v/<code>`, `/c/<code>` and `/producer-preview/<code>` like the JWT paths. Tests: `tests/test_meh3896_share_links.py`.
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
+
+## 17b-staff. Order staff: a second principal on the order routes (MEH-3526)
+
+A business can let up to 5 people handle its orders, and nothing else.
+
+- **The gate.** `require_order_access` (`backend/app/services/order_access.py`) admits the owner, or a user with an `active` row in `producer_staff` on a business that still has an owner. It is read from the database on every request; there is no JWT claim, so a removed member is out on the next call. It guards only the eight routes of `product_order_business.py`; every other owner route, the customer list included, keeps `require_producer`. Staff keep `role = consumer` and `producer_id = NULL`.
+- **The link.** `secrets.token_urlsafe(32)`, stored only as sha256 (`token_hash`), 7 days, single use through a conditional UPDATE whose row count decides; a resend replaces the hash. Accepting needs a signed-in plain consumer account whose verified email equals the invited one. The page moves the token to sessionStorage and leaves the address; `lib/claim-token.js`, Clarity, the Sentry replay gate and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redact `/staff-invite/<token>`; the page is `noindex` and `no-referrer`.
+- **No enumeration.** The invite answer is the same whether or not the address has an account.
+- **Becoming an owner ends it.** A claim, an owner invite or a business registration revokes the account's active membership (`services/staff_membership.py`).
 
 ## 17b-0. The owner links her own Google profile (MEH-3641)
 
@@ -1365,6 +1410,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
 - **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
+- **`POST /producer-identity-check` (MEH-3884) is a phone → «a page exists» lookup, accepted on purpose.** The sign-up form warns a staff member or co-owner that her business already has a page (Farmerim, 26/11). What an anonymous caller learns per phone: that a business (any status) carries that number as its main or second phone, and the masked login email of its oldest account (`o***@domain`; a 1–2 letter local part is hidden whole). Limits that keep it from being the oracle this section removed: no email is read from the body (a signed-in caller is checked on her OWN email and phone, and only once each is verified, since anyone can sign up unverified); an owner's account phone (never published) is never matched here, signed in or not (the admin email still compares it, server side; /security-review 26/11); 10/min + 60/hour per IP; no name, id or status in the answer. The exposure that remains — the domain of the login email, for a non-public page — was accepted by Sapir with the copy (MEH-3883). Pinned by `tests/test_meh3884_business_identity.py`.
 - **Account deletion needs proof, not just a session (MEH-3248).** `POST /auth/me/delete` (5/hour) requires the current password; an account without one sends a fresh Google/Apple `id_token` whose `sub` is this account's linked id and whose `iat` is ≤5 min old (`services/account_guards.verify_deletion_credentials`). A provider token never stands in for a password. Admins and the super-admin are refused (403) before any credential check, on the self door and on `DELETE /admin/users/{id}` (`assert_deletable`). The bodyless `DELETE /auth/me` is gone (405).
 - **No auto-login on register.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users verify via the email link. Since MEH-3087 a valid link also signs in **the browser that registered**: every register reply (all branches, same shape) sets an HttpOnly `signup_marker` cookie = HMAC(secret, verify token); `GET /auth/verify-email` returns an access token and sets the refresh + fingerprint cookies only when that cookie matches the link, the user is not blocked and the browser carries no session. Any other holder of the link is verified and logs in with a password — so registering another person's email with your own password never leaves you inside the account they are signed in to. The register response still carries no token and no session cookie. Password login at `/auth/login` works before verification too. Frontend success screens show a unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both `/register` and `/register/producer` non-upgrade.
 - **Upgrade path preserved** (authenticated user adding producer to existing account): still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders the existing dashboard CTA on step 3. No enumeration vector — caller already proved control of the email via JWT.

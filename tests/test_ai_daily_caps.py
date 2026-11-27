@@ -50,6 +50,9 @@ CALLS_AI = re.compile(r"\.messages\.(create|stream|parse)\(|ai_text\.ask\(")
 # test_every_ai_module_is_classified until someone decides which it is.
 GENERATION = {
     # A business (or its admin) presses a button and pays for a generation.
+    # MEH-3902: the owner's dashboard assistant; 150/day per business, and a
+    # tighter 20/day for the page fill / product read it runs (HEAVY_DAILY).
+    "app.routers.chat_owner",
     "app.services.bio_generator",
     "app.services.description_writer",
     "app.services.form_filler",

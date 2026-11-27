@@ -11,7 +11,9 @@
 * `frontend/app/[locale]/map/components/MapPane.jsx` — הלוח, הפקדים, המקרא.
 * `frontend/lib/category-registry.js` · `frontend/lib/category-taxonomy.js` — צבע הסיכה לפי אחת מ-6 הקבוצות והאייקון לפי הקטגוריה עצמה; המקרא מציג את 6 הקבוצות בשפת הקוראת ומסנן קבוצה שלמה (MEH-3076).
 * `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` — כרטיס העסק הנבחר בנייד, כולל סגירה ב-Escape.
-* `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, כשהסיכה היא נקודת איסוף או דוכן (MEH-3756): ימי איסוף, הוראות איסוף, Waze ו-Google לנקודה מדויקת, וכפתור «לדף בית העסק». טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
+* `frontend/app/[locale]/map/components/MapPickupPointPanel.jsx` — מתחת לכרטיס הנבחר בנייד, לכל סיכה: Waze ו-Google לנקודה מדויקת וכפתור «לדף בית העסק» (כרטיס אחד לכל הסיכות, ספיר 25/11). בסיכה של נקודת איסוף או דוכן גם ימי איסוף והוראות איסוף (MEH-3756). טסט: `frontend/__tests__/MapPickupPointPanel.test.jsx`.
+* `frontend/app/[locale]/map/components/MapRescueRow.jsx` — מתחת לבית העסק שנבחר (הכרטיס הצף בנייד, והכרטיס הפעיל ברשימה): סל ההפתעה של היום, עם חלון האיסוף והמחיר וקישור לדף הסל (MEH-3824). הסל מגיע בשדה `rescue_today` של רשימת בתי העסק, בלי בקשה נוספת. אין תג על הסיכה, לפי החלטת ספיר מ-25/11. טסט: `frontend/__tests__/MapRescueOnMap.test.jsx`.
+* `frontend/lib/map-offer-marks.js` — ארבעת מתגי ההצעות ב«סינון» של המפה (MEH-3824, ספיר 25/11): סלי הפתעה, קבוצות רכישה, אירועים וחוויות, בשתי קבוצות, «הזדמנויות» ו«אירועים וסדנאות». מתג מוצג רק כשיש במפה לפחות בית עסק אחד שהוא יתאים לו (`gateMin: 1` ב-`frontend/lib/filter-taxonomy.js`), ומתג דלוק נשאר כדי שאפשר יהיה לכבות אותו. כשמתג דלוק, הסיכות של בתי העסק שמתאימים לו מקבלות סימון קטן, באותו אייקון שליד המתג. למקרא המפה (`MapKey`, MEH-3119) אין שורה לסימון הזה, וזו החלטה (ספיר 25/11): הסימון מופיע רק אחרי שמדליקים מתג, והמתג הדלוק עם האייקון שלו הוא ההסבר. מקרא שמונה רק את מה שעל המפה כרגע זה גם הכיוון של כלי מפות כמו ArcGIS. השרת מסנן לפי `?rescue_today` / `?group_buy` / `?event` / `?experience` (`backend/app/services/offer_supply.py`). טסטים: `tests/test_meh3824_offer_filters.py` · `frontend/__tests__/mapOfferSwitches.test.js` · `frontend/__tests__/gatePredicateFields.test.js` · `frontend/__tests__/mapOfferMarkPins.test.jsx`.
 * `frontend/components/MapBottomSheet.jsx` — הגיליון התחתון.
 * `frontend/app/[locale]/map/state/useProducersFeed.js` — הזנת הנתונים, עם אימות Zod.
 * `frontend/lib/producer-points.js` — מאיפה מגיעה נקודה לכל בית עסק.
@@ -25,8 +27,10 @@
 * `frontend/e2e/flows/manual/map-01.spec.ts` · `frontend/e2e/flows/manual/map-02.spec.ts` (fixtures and `tapMarker`: `frontend/e2e/flows/manual/_map-shared.ts`) — כולל המקרה של MEH-2776, ב-`frontend/e2e/flows/manual/map-02.spec.ts` (פקד אחד, שתי מעטפות).
 * `frontend/e2e/flows/manual/map-back-restore.spec.ts` · `frontend/e2e/flows/manual/map-banner-controls.spec.ts`
 * `frontend/e2e/flows/07-gps-button.spec.ts` · `frontend/e2e/flows/43-minimap-buttons-over-tiles.spec.ts`
+* `frontend/__tests__/CookieBannerHeightBeforePaint.test.jsx` · המקרה של MEH-3820 ב-`frontend/__tests__/MapManualOrigin.test.jsx` — המפה בנייד לא זזה בזמן הטעינה: הסרגל העליון בזרימה, ושטח באנר העוגיות נשמר כבר בציור הראשון (MEH-3820).
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 * `frontend/__tests__/CategoryPinGroupColours.test.jsx` · `frontend/__tests__/useMapFilters.legendGroups.test.js` — צבע לקבוצה, אייקון לקטגוריה, מקרא של 6 קבוצות (MEH-3076).
-* `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והשם המתועתק `byshvl-lpy-hzmnh` שהחזית מסתמכת עליו (MEH-3738).
+* `frontend/__tests__/CookedFoodCategoryReady.test.js` · `tests/test_meh3738_cooked_food_slug.py` — הקטגוריה «בישול לפי הזמנה» (נוצרת מהאדמין): אייקון משלה, קבוצת המזווה במפה, שם ושורת דוגמה בשתי השפות, והכתובת `cooked-to-order` (MEH-3738, אנגלית מ-MEH-3911).
+* `frontend/__tests__/CakesCategoryReady.test.js` · `tests/test_meh3911_english_category_slugs.py` — הקטגוריה «עוגות וקינוחים» (נוצרת מהאדמין): אייקון משלה, קבוצת המאפים במפה, שם ושורת דוגמה בשתי השפות. כתובות הקטגוריות באנגלית: האדמין מקליד כתובת באנגלית ביצירה, והמיגרציה `b3d5f7a9c1e2` מתקנת את `coffee` / `cooked-to-order` / `cakes-desserts` (MEH-3911).
 
 **מזהי רישום שזה מכסה.** `map_precision`, `multi_locations` (הצד הציבורי).

@@ -34,6 +34,8 @@ MAX_LOCATIONS = 20
 MAX_UPCOMING_EVENTS = 30
 MAX_UPCOMING_EXPERIENCES = 30
 MAX_OPEN_GROUP_BUYS = 30
+# MEH-3526: people a business invited to handle its orders (pending + active).
+MAX_STAFF = 5
 # MEH-3617: sizes or flavours of ONE product (product_variants).
 MAX_VARIANTS_PER_PRODUCT = 10
 # MEH-3055: product groups live in producers.product_groups (JSONB), so this
@@ -66,6 +68,7 @@ _CAP_DETAIL = {
     "events": f"אפשר להוסיף עד {MAX_UPCOMING_EVENTS} אירועים עתידיים. כדי להוסיף אירוע חדש, צריך קודם למחוק אחד קיים.",
     "experiences": f"אפשר להוסיף עד {MAX_UPCOMING_EXPERIENCES} חוויות עתידיות. כדי להוסיף חוויה חדשה, צריך קודם למחוק אחת קיימת.",
     "group_buys": f"אפשר להוסיף עד {MAX_OPEN_GROUP_BUYS} קבוצות רכישה פתוחות. כדי להוסיף קבוצה חדשה, צריך קודם לסגור אחת קיימת.",
+    "staff": f"אפשר להזמין עד {MAX_STAFF} עובדים. כדי להזמין עובד חדש, צריך קודם להסיר אחד מהצוות.",
     "variants": f"אפשר להוסיף עד {MAX_VARIANTS_PER_PRODUCT} אפשרויות למוצר אחד. כדי להוסיף אפשרות חדשה, צריך קודם למחוק אחת קיימת.",
 }
 
@@ -94,6 +97,7 @@ CAPS = {
     "events": MAX_UPCOMING_EVENTS,
     "experiences": MAX_UPCOMING_EXPERIENCES,
     "group_buys": MAX_OPEN_GROUP_BUYS,
+    "staff": MAX_STAFF,
     "variants": MAX_VARIANTS_PER_PRODUCT,
 }
 
@@ -116,6 +120,7 @@ OWNED_TABLE_CAPS = {
     "producer_locations": "locations",
     "events": "events",
     "group_buys": "group_buys",
+    "producer_staff": "staff",
 }
 
 OWNED_TABLE_EXEMPT = {
@@ -144,6 +149,7 @@ OWNED_TABLE_EXEMPT = {
     "producer_contact_clicks": "system-written analytics, rate-limited beacon",
     "producer_whatsapp_clicks": "system-written analytics, rate-limited beacon",
     "business_billing": "at most one row per business by construction: producer_id is the primary key (MEH-3180)",
+    "share_links": "admin-only mint (POST /admin/producers/{id}/preview-link and /claim-link, 30/hour each); every row is deleted 90 days after it expires by the daily retention purge (MEH-3896)",
     "billable_events": "system-written ledger: one row per registration / group-buy order / rescue order (unique on kind + source_id), each of which is itself capped or rate-limited (MEH-3179)",
 }
 

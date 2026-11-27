@@ -13,13 +13,15 @@ import {
   trackContactClick,
 } from "@/lib/contact-tracking";
 import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
+import { readFirstReviewsPage } from "@/lib/reviews-page";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 import ReviewReportMenu from "@/components/ReviewReportMenu";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
-import { SkeletonList } from "@/components/Skeleton";
+import { SkeletonReviewRows } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
@@ -123,6 +125,9 @@ export function StarRow({ value, size = 16, ariaLabel }) {
     </div>
   );
 }
+
+// Reviews the list opens with ("הצג עוד" adds 3 more); also the loading rows (MEH-3819).
+const INITIAL_VISIBLE = 3;
 
 // MEH-1337: Google-style distribution — one row per star, 5★ first. Shown
 // only from DISTRIBUTION_MIN visible reviews (fewer has nothing to distribute).
@@ -334,7 +339,7 @@ export default function ReviewsSection({
   const [page, setPage] = useState(1);
   // Reviews render 3-at-a-time; "הצג עוד" reveals +3 and appends the next
   // server page when the local buffer runs out (replaces the old carousel).
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);
   const [body, setBody] = useState("");
@@ -425,9 +430,14 @@ export default function ReviewsSection({
     if (inFlightRef.current) return; // HOT-018: drop overlapping requests
     inFlightRef.current = true;
     setLoading(true);
-    api
-      .get(`/producers/${producerId}/reviews`, { params: { page: p } })
-      .then((r) => {
+    // MEH-3836: page 1 joins the header quote's read (lib/reviews-page.js).
+    const read =
+      p === 1
+        ? readFirstReviewsPage(producerId)
+        : api.get(`/producers/${producerId}/reviews`, { params: { page: p } }).then((r) => r.data);
+    read
+      .then((data) => {
+        const r = { data };
         const fresh = Array.isArray(r.data?.reviews) ? r.data.reviews : [];
         // Append (was replace) so "הצג עוד" accumulates pages. id-dedupe guards
         // a double page-1 fetch (StrictMode / IO re-observe) from producing
@@ -449,9 +459,23 @@ export default function ReviewsSection({
       });
   };
 
+  // MEH-3836: a business with reviews reads page 1 with the page, as the
+  // header quote already does (one shared request). Read on scroll, the rows
+  // arrived under the reader's eyes and pushed the write-a-review line and
+  // the next section down (CLS 0.12 on a phone, MEH-3809 guard). Web.dev's
+  // CLS guide: content that loads late either has its space held or arrives
+  // before it is in view. A business with no reviews keeps the scroll gate
+  // below, so its page makes no reviews request until it is needed.
+  // Decided once, at mount: a first review posted on this page raises
+  // reviewCount, and a re-read then would swap the new row for the skeleton.
+  const [eager] = useState(() => reviewCount > 0);
+  useEffect(() => {
+    if (producerId && eager) fetchPage(1);
+  }, [producerId, eager]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Lazy-load via IntersectionObserver — only fetch when section is visible.
   useEffect(() => {
-    if (!producerId) return;
+    if (!producerId || eager) return;
     const el = sectionRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -465,7 +489,7 @@ export default function ReviewsSection({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [producerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [producerId, eager]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pre-fill form if user already has a review (passed WA gate before).
   useEffect(() => {
@@ -537,7 +561,10 @@ export default function ReviewsSection({
   // MEH-3053: at zero reviews (no heading, no summary, no list) the invite row
   // is the first thing in the section. Its hairline + mt-8 then framed an
   // empty 80px band under the products list; the section's mt-12 is the gap.
-  const inviteFirst = !loading && total === 0 && reviews.length === 0;
+  // MEH-3819: not gated on the read. The section mounts with the page now, and
+  // at zero reviews its empty state is drawn at once; waiting for `!loading`
+  // drew the invite with mt-8 + hairline first and moved it when the read ended.
+  const inviteFirst = total === 0 && reviews.length === 0;
 
   return (
     <section ref={sectionRef} className="mt-12">
@@ -587,8 +614,18 @@ export default function ReviewsSection({
       )}
 
       {/* Reviews list */}
-      {loading ? (
-        <SkeletonList count={2} label={t("loading")} />
+      {/* MEH-3819: the section now mounts with the page, so its loading rows
+          stand in for the list in place: one row per review that will show
+          (up to the 3 the list opens with), and none for a business with no
+          reviews — its empty state is drawn at once, and the read confirms it. */}
+      {loading && total > 0 ? (
+        <>
+          {/* MEH-3871: rows in the real row's box, and the «הצג עוד» slot held
+              when more reviews than the list opens with are coming, so the
+              list arriving moves nothing below it. */}
+          <SkeletonReviewRows count={Math.min(total, INITIAL_VISIBLE)} label={t("loading")} />
+          {total > INITIAL_VISIBLE && <div className="mt-4 min-h-touch" aria-hidden="true" data-testid="reviews-show-more-slot" />}
+        </>
       ) : reviews.length === 0 ? (
         isOwner ? (
           <>
@@ -695,10 +732,27 @@ export default function ReviewsSection({
       {/* MEH-2999: who may write a review, as a card UNDER the reviews (was a
           quiet grey line, MEH-2592). Same gates: «login» for a visitor; «contact»
           for a logged-in, non-owner reader who has not contacted the business
-          and holds no invite link — at zero reviews too. Nothing until
-          /auth/me answers, or a signed-in reader sees the guest card for a
-          second before it swaps (30/10). */}
-      {authLoading ? null : !user ? (
+          and holds no invite link — at zero reviews too. Nothing visible
+          until /auth/me answers, or a signed-in reader sees the guest card for
+          a second before it swaps (30/10). */}
+      {/* MEH-3871: until /auth/me answers (it waits for hydration, MEH-3828,
+          so seconds on a slow phone) the guest card holds its place unseen.
+          Most readers are guests, so for them it only becomes visible; it
+          used to mount from nothing and push the delivery section down.
+          Accepted trade: a signed-in reader whose card is shorter (write
+          mode) or absent (the owner on her own page) sees it close once. */}
+      {authLoading ? (
+        <div className="invisible" aria-hidden="true" inert={INERT_PRESENT} data-testid="reviews-write-hint-placeholder">
+          <ReviewInviteCard
+            mode="login"
+            first={inviteFirst}
+            loginNext={loginNext}
+            producerId={producerId}
+            producerName={producerName}
+            testId="reviews-write-hint-held"
+          />
+        </div>
+      ) : !user ? (
         <ReviewInviteCard
           mode="login"
           first={inviteFirst}

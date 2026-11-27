@@ -34,6 +34,7 @@ tests/test_group_buys_api.py — extend it alongside any new template here.
 """
 
 from __future__ import annotations
+from typing import Any
 
 import logging
 from datetime import datetime, timezone
@@ -46,9 +47,10 @@ logger = logging.getLogger(__name__)
 
 
 def _send_email(
-    to_email: str, subject: str, body: str, test_cause: bool = False
+    to_email: str, subject: str, body: str, test_cause: bool = False, **opts: Any
 ) -> None:
-    send_email(to_email, subject, body, test_cause=test_cause)
+    # MEH-3839: `kind=` passes through in opts.
+    send_email(to_email, subject, body, test_cause=test_cause, **opts)
 
 
 def _group_buy_url(group_buy_id: str) -> str:
@@ -84,7 +86,9 @@ def notify_producer_funded(
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(producer_email, subject, body, test_cause=test_cause)
+    _send_email(
+        producer_email, subject, body, test_cause=test_cause, kind="group_buy_funded"
+    )
 
 
 def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
@@ -355,7 +359,9 @@ def notify_producer_late_joiner(  # noqa: PLR0913 — plain data for a Backgroun
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(producer_email, subject, body, test_cause=test_cause)
+    _send_email(
+        producer_email, subject, body, test_cause=test_cause, kind="group_buy_joined"
+    )
 
 
 def notify_waitlist_place(

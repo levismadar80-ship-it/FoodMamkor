@@ -48,6 +48,9 @@ class UserAdminOut(BaseModel):
     # rescue-bag reservations — drives the badge and «שחרור חסימת סלים».
     rescue_active_no_shows: int = 0
     rescue_blocked: bool = False
+    # MEH-3735: the group-buy count, separate from the rescue one.
+    group_buy_active_no_shows: int = 0
+    group_buy_blocked: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -69,6 +72,13 @@ class CategoryCreate(CategoryIn):
     «no». PUT keeps CategoryIn: the flag is not editable through rename."""
 
     requires_license: bool
+    # MEH-3911: the public slug (/producers/<slug>/<region>) in English, typed
+    # by the admin. Optional only so older API callers keep working — the admin
+    # screen requires it. Without it the server falls back to transliterating
+    # the Hebrew name, which is how «kph» and «avgvt-vkynvchym» happened.
+    slug: str | None = Field(
+        default=None, min_length=2, max_length=50, pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$"
+    )
 
 
 # Admin: Static Pages

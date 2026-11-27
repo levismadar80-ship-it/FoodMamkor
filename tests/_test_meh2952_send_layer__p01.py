@@ -134,7 +134,8 @@ def test_production_profile_admin_approve_of_a_test_business_sends_nothing(
     admin = make_user(db, email="admin@sample.co.il", role="admin")
 
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(admin),
     )
 
     assert r.status_code == 200, r.text
@@ -151,7 +152,8 @@ def test_production_profile_admin_approve_of_an_ordinary_business_sends(
     admin = make_user(db, email="admin@sample.co.il", role="admin")
 
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm",
+        headers=auth_header(admin),
     )
 
     assert r.status_code == 200, r.text

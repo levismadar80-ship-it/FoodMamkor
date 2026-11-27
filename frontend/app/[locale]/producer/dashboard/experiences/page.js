@@ -21,7 +21,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { detailToMessage } from "@/lib/errors";
 // MEH-999: the empty list was a bare <p> — now the shared EmptyState, same as
 // the recipes manage list (recipes/page.js:25).
@@ -123,7 +123,7 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
 export default function ManageExperiencesPage() {
   const t = useTranslations("dashboard.producer.manage_experiences");
   const tReg = useTranslations("registration.list");
-  const today = israelToday();
+  const today = useIsraelToday(); // MEH-3861: same day in both renders
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -227,7 +227,7 @@ export default function ManageExperiencesPage() {
             return (
             <li
               key={ex.id}
-              className={`bg-surface border rounded-md p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
+              className={`bg-surface border rounded-md p-4 ${cancelled ? "border-warning-300 bg-warning-50/40" : "border-border"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">

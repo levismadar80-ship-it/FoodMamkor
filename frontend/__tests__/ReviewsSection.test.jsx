@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
+import ReviewExcerpt from "@/app/[locale]/producer/[id]/components/ReviewExcerpt";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
 import { pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 
@@ -19,7 +20,7 @@ vi.mock("next-intl", () => ({
       reply_save: "שמירה",
       cancel: "ביטול",
       submit_saving: "בשמירה…",
-      owner_only_eyebrow: "מוצג רק לך",
+      owner_only_eyebrow: "מוצג רק לבעלי העסק",
     };
     const t = (key) => flat[key] || key;
     // guest login-prompt path: render the `login` chunk so its href is testable
@@ -35,6 +36,7 @@ const { apiMock, authState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({ default: apiMock }));
+import { forgetReviewsReads } from "@/lib/reviews-page";
 // MEH-1285: the login prompt now uses Link from @/i18n/navigation
 // (locale-aware); stub it so next-intl's createNavigation isn't loaded
 // under jsdom.
@@ -83,6 +85,7 @@ beforeEach(() => {
   sessionStorage.removeItem("review_draft_stars_p-1");
   apiMock.get.mockReset();
   apiMock.put.mockReset();
+  forgetReviewsReads(); // MEH-3836: page-1 reads are joined across components
   global.IntersectionObserver = class {
     constructor(cb) {
       this.cb = cb;
@@ -172,10 +175,10 @@ describe("ReviewsSection — business reply (MEH-1039)", () => {
 });
 
 describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
-  it("shows the 'מוצג רק לך' eyebrow above the owner empty state", async () => {
+  it("shows the 'מוצג רק לבעלי העסק' eyebrow above the owner empty state", async () => {
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={true} />);
-    expect(await screen.findByText("מוצג רק לך")).toBeInTheDocument();
+    expect(await screen.findByText("מוצג רק לבעלי העסק")).toBeInTheDocument();
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
@@ -185,7 +188,7 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     // The reader path renders no empty state at all since MEH-2592.
     await waitFor(() => expect(screen.queryByText("loading")).not.toBeInTheDocument());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
+    expect(screen.queryByText("מוצג רק לבעלי העסק")).not.toBeInTheDocument();
   });
 });
 
@@ -224,7 +227,17 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
-    expect(screen.queryByTestId("reviews-star-1")).toBeNull();
+    // MEH-3871: the card's height is held by an invisible, inert, hidden copy
+    // so the sections under it do not jump when auth answers. Nothing in it
+    // can be seen, focused or read; no star exists outside it.
+    const held = screen.getByTestId("reviews-write-hint-placeholder");
+    expect(held).toHaveClass("invisible");
+    expect(held).toHaveAttribute("aria-hidden", "true");
+    expect(held).toHaveAttribute("inert");
+    // The held copy is the guest login card (its stars), and no star is outside it.
+    const stars = screen.queryAllByTestId("reviews-star-1");
+    expect(stars.length).toBeGreaterThan(0);
+    expect(stars.every((el) => held.contains(el))).toBe(true);
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
@@ -664,13 +677,81 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
 describe("ReviewsSection — loading state (MEH-2606)", () => {
   it("while the list loads: review-row skeleton under role=status, label sr-only, no visible text line", async () => {
     apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
-    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={2} />);
     const status = await screen.findByRole("status");
     expect(status).toHaveAttribute("aria-busy", "true");
     expect(status.querySelector(".sr-only")).toHaveTextContent("loading");
     expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
     // the old loading line was a visible <p>; nothing outside the sr-only span reads "loading"
     expect(screen.getAllByText("loading").every((el) => el.classList.contains("sr-only"))).toBe(true);
+  });
+
+  // MEH-3819: the section mounts with the page, so its loading rows stand in
+  // for the list in place — as many rows as the list will open with.
+  it("loading rows match the list it opens with: 3 for many reviews, none for zero", async () => {
+    apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
+    const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={7} />);
+    const status = await screen.findByRole("status");
+    expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(3);
+    unmount();
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    // Zero reviews: no loading rows that would shrink to the one quiet line.
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  // MEH-3871: the «הצג עוד» row is held while the list loads only when more
+  // reviews are coming than the list opens with — so its arrival moves nothing.
+  it("show-more slot while loading: held for 4+ reviews, absent for 3 or fewer", async () => {
+    apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
+    const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={4} />);
+    await screen.findByRole("status");
+    expect(screen.getByTestId("reviews-show-more-slot")).toHaveAttribute("aria-hidden", "true");
+    unmount();
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={3} />);
+    await screen.findByRole("status");
+    expect(screen.queryByTestId("reviews-show-more-slot")).toBeNull();
+  });
+});
+
+// MEH-3836: a business with reviews reads page 1 with the page, joined to the
+// header quote's read; a business with none still waits for the scroll.
+describe("ReviewsSection — when page 1 is read (MEH-3836)", () => {
+  const neverInView = class {
+    observe() {}
+    disconnect() {}
+  };
+
+  it("reviews → read at mount without the scroll, in one request shared with the header quote", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 2, pages: 1 } });
+    render(
+      <>
+        <ReviewExcerpt producerId="p-1" reviewsCount={2} />
+        <ReviewsSection producerId="p-1" isOwner={false} reviewCount={2} />
+      </>,
+    );
+    // The list's loading rows give way without the section ever being in view.
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    const pageOne = apiMock.get.mock.calls.filter(([url, cfg]) => url === "/producers/p-1/reviews" && cfg?.params?.page === 1);
+    expect(pageOne).toHaveLength(1);
+  });
+
+  it("no reviews → no read until the section is in view", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 0, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    await act(async () => {});
+    expect(apiMock.get).not.toHaveBeenCalled();
+  });
+
+  it("no reviews at mount, then a first one posted → still no read (the new row is not swapped for loading rows)", async () => {
+    global.IntersectionObserver = neverInView;
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 0, pages: 1 } });
+    const { rerender } = render(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={0} />);
+    await act(async () => {});
+    rerender(<ReviewsSection producerId="p-1" isOwner={false} reviewCount={1} />);
+    await act(async () => {});
+    expect(apiMock.get).not.toHaveBeenCalled();
   });
 });
 
@@ -947,6 +1028,17 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  // MEH-3819: the section mounts with the page, before /reviews answers. At
+  // zero reviews the invite row is drawn in its final form at once, so the
+  // read's answer does not move it.
+  it("0 reviews, guest, read still pending: the row already has no hairline and no top gap", () => {
+    apiMock.get.mockImplementation(() => new Promise(() => {}));
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = screen.getByTestId("reviews-write-hint");
     expect(row.className).not.toMatch(RULE);
     expect(row.className).not.toMatch(GAP);
   });

@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
  * Purpose:  MEH-2100 — the draft→submit-for-review state machine, end to end in
  *           a real browser. Pins the four things the batch actually changed:
  *             A — a `draft` business gets the COMPLETION surface and never the
- *                 "העמוד שלך בבדיקה" review banner, with the missing items
+ *                 "עמוד העסק בבדיקה" review banner, with the missing items
  *                 named, the CTA disabled and the OTP card mounted in place.
  *             B — completing the requirements shows the CTA; one tap POSTs
  *                 to /producers/me/submit-for-review exactly once and the
@@ -266,9 +266,11 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await expect(card(page).getByRole("listitem")).toHaveCount(DRAFT_ROWS.length);
     await expect(missingRows(page)).toHaveCount(DRAFT_ROWS.length);
     await expect(page.getByTestId("completeness-counter")).toHaveText("0 מתוך 4");
-    // One open row only — the first one.
-    await expect(card(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(1);
+    // The first missing row is open, and so is WhatsApp (MEH-3886): the code
+    // button never waits behind the other steps.
+    await expect(card(page).getByTestId(/^completeness-open-(?!cta)/)).toHaveCount(2);
     await expect(openRow(page, "details")).toBeVisible();
+    await expect(openRow(page, "phone_verified")).toBeVisible();
 
     // Nothing to press until the list is done: no button, no disabled hint.
     await expect(page.getByTestId("draft-submit-actions")).toHaveCount(0);

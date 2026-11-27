@@ -1,5 +1,10 @@
 # מהמקור — DB schema
 
+> **Columns, types and constraints: read [docs/DB_SCHEMA.md](../../docs/DB_SCHEMA.md)** —
+> generated from the models and held by `tests/test_db_schema_doc.py` (MEH-3929).
+> This diagram is kept by hand, is known to lag (e.g. `rescue_orders.paid_at`),
+> and is for the relationship picture only. Where the two differ, DB_SCHEMA.md is right.
+
 > Mermaid ER diagram for the main tables + relationships. **Source of
 > truth is `backend/app/models/` (`models.py` for users, businesses and
 > categories; one sibling file per area since MEH-3269)** — if this drifts, update
@@ -22,6 +27,7 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o{ share_links : "short preview / claim links (MEH-3896)"
     producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
@@ -76,7 +82,7 @@ erDiagram
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
-        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
+        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80, link = optional https prepay link (MEH-3895, shown only on advance/deposit)}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
         json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above, + MEH-3511 delivery_days_min/max, order_cutoff_day/time}] ≤20; nationwide may hold zones since MEH-3511"
         string plan "free|premium"
@@ -176,6 +182,8 @@ erDiagram
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
         smallint available_weekdays "MEH-3618: Sun=1..Sat=64, NULL = every day, CHECK 1..127"
+        smallint daily_limit "daily stock 27/11: units per pickup day across variants, NULL = no limit, CHECK 1..999"
+        smallint lead_days "MEH-3932: pickup Israel day >= today + N, NULL = no product rule, CHECK 1..7"
     }
 
     producer_order_settings {
@@ -202,6 +210,21 @@ erDiagram
         time end_time
         string fulfilment "pickup|delivery"
         timestamp created_at
+    }
+
+    producer_staff {
+        uuid id PK
+        uuid producer_id FK "CASCADE; the business (MEH-3526)"
+        uuid user_id FK "nullable, CASCADE; set on accept. UNIQUE WHERE status='active'"
+        string invited_email "UNIQUE (producer_id, lower) among live rows"
+        string role "orders (CHECK)"
+        string token_hash "nullable; sha256 of the invite token, NULL after accept/revoke"
+        timestamp expires_at "invite + 7 days"
+        uuid invited_by FK "nullable, SET NULL"
+        string status "pending | active | revoked (CHECK); a withdrawn invite is deleted"
+        timestamp created_at
+        timestamp accepted_at "nullable"
+        timestamp revoked_at "nullable"
     }
 
     product_orders {
@@ -276,6 +299,28 @@ erDiagram
         timestamp created_at "deleted after 30 days"
     }
 
+    email_events {
+        uuid id PK
+        string svix_id UK "Resend retries with the same id"
+        string event_type "email.delivered, bounced, clicked, ... (MEH-3839)"
+        string kind "the tag send_email put on it, or other"
+        uuid user_id FK "nullable, SET NULL"
+        string recipient_domain "never the full address"
+        string resend_email_id
+        string detail "bounce type/subType; never server text"
+        timestamp created_at "deleted after 30 days"
+    }
+
+    share_links {
+        uuid id PK
+        string code_hash UK "sha256 of the 12-char code, never the code (MEH-3896)"
+        string scope "draft_preview or producer_claim (CHECK)"
+        uuid producer_id FK "CASCADE"
+        timestamp expires_at "14 days; deleted 90 days after"
+        timestamp created_at
+        uuid created_by FK "nullable, SET NULL"
+    }
+
     product_order_items {
         uuid id PK
         uuid order_id FK "CASCADE"
@@ -297,6 +342,7 @@ erDiagram
         int price_agorot "nullable = the product's price"
         boolean in_stock "default true"
         int position "order on the page"
+        smallint daily_limit "daily stock 27/11: units per pickup day, NULL = no limit, CHECK 1..999"
     }
 
     product_order_events {
@@ -540,6 +586,7 @@ erDiagram
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
         jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
+        jsonb course_meetings "MEH-3898 course meetings [{date,time}], one sign-up; NULL = not a course"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
@@ -590,6 +637,10 @@ erDiagram
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
+
+> **MEH-2447 `producers.by_arrangement` (migration `b8ee10dc69a9`):** bool, NOT
+> NULL, default false — the owner's «בתיאום מראש» answer. No CHECK: readers AND it
+> with `has_physical_location`.
 
 > **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
 > `__table_args__`):** `producers` carries two CHECK constraints — a producer
@@ -729,7 +780,7 @@ erDiagram
         timestamp sent_at "indexed (user,producer,channel,sent_at)"
     }
 
-    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702)"
+    producer_locations ||--o{ rescue_offers : "today's and tomorrow's bags (MEH-2644, MEH-3702); rescue_schedule JSONB = the weekly routine the hourly job publishes from (MEH-3703)"
     rescue_offers ||--o{ rescue_orders : "reservations"
     rescue_orders ||--o| rescue_reviews : "one review each"
     users ||--o{ rescue_orders : "reserves"
@@ -737,6 +788,8 @@ erDiagram
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
     producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
+    producers ||--o{ producer_staff : "order staff, max 5 live (MEH-3526)"
+    users |o--o{ producer_staff : "the staff member, once accepted"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
@@ -773,6 +826,8 @@ erDiagram
         timestamp handed_at
         uuid handed_by FK "SET NULL — keep the record, lose the account"
         timestamp cancelled_at
+        timestamp paid_at "MEH-3897 nullable — the business marked the prepay received"
+        string prepay_timing "MEH-3897 nullable advance|deposit|counter (CHECK) — the payment terms when reserved"
         timestamp created_at
     }
 
@@ -827,6 +882,22 @@ erDiagram
 > `pickup_end` is AFTER this stamp — so one write releases a buyer and the
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-3735 — group-buy no-show (24/11/2026):** `group_buy_commits` gains
+> `pickup_code` (4 digits, UNIQUE per group, backfilled for existing commits),
+> `handed_at` and `no_show_at` (CHECK: at most one is set); `users` gains
+> `group_buy_block_cleared_at`, the admin release. Two no-shows inside 30 days
+> after that stamp block joining new group buys. A count separate from rescue
+> bags on purpose. Adds no table → `EXPECTED_TABLES` unchanged. Migration
+> `f3a7c91e2b64`.
+
+> **MEH-3897 — payment terms kept on the reservation (27/11/2026):**
+> `rescue_orders.prepay_timing` and `group_buy_commits.prepay_timing`
+> (varchar(10) NULLable, CHECK advance|deposit|counter). Written when the
+> reservation or join is made, from the business's `payment_info`; the refund
+> notes read it together with today's link, so a link removed later still
+> leaves a note. NULL = a row from before the column (today's settings only).
+> Adds no table → `EXPECTED_TABLES` unchanged. Migration `c5e7a9b1d3f4`.
 
 > **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
 > billing will count from: one row per booking a business got through the site,

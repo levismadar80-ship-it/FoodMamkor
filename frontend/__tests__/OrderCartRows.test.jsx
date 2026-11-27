@@ -24,6 +24,11 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // MEH-1901: CaretLeft joins the set — the product grid row and signature card
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
   Check: () => null, // MEH-3622: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon

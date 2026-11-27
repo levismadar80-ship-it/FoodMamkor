@@ -22,7 +22,12 @@
  *           MEH-2012 (image_url became a file upload against POST /upload/image
  *           — this was the LAST surface still asking an owner to paste a
  *           Cloudinary URL; the client-side URL validation went with it, because
- *           the endpoint can legitimately answer with a relative path).
+ *           the endpoint can legitimately answer with a relative path);
+ *           MEH-3876 (`adminProducerId`: the same form, saved by an admin for
+ *           that business through POST /admin/producers/{id}/experiences and
+ *           PUT /admin/experiences/{id}, with a required «בית העסק אישר» box
+ *           whose value goes out as `owner_consent: true` — the EventForm
+ *           shape of MEH-3873).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -39,7 +44,8 @@ import CollectionNotice from "@/components/CollectionNotice";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
-import ExperienceSessionsField, { isHalfSession } from "@/components/ExperienceSessionsField";
+import ExperienceSessionsField, { isHalfSession, courseMeetingsPayload, COURSE_MIN } from "@/components/ExperienceSessionsField";
+import Checkbox from "@/components/ui/Checkbox";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -72,10 +78,24 @@ const EMPTY = {
   recurring_schedule: "",
   // MEH-3447: a recurring workshop's dates, each with its own places.
   sessions: [],
+  // MEH-3898: a course — several meetings, ONE sign-up. Its first meeting
+  // is the date the server stores.
+  is_course: false,
+  course_meetings: [],
   // MEH-2766: «איך נרשמים?» — a new workshop defaults to the on-site form.
   registration_method: "site_form",
   registration_url: "",
 };
+
+/** MEH-3898: a course sends its meetings and dates itself by the first one
+ * (the server does the same); anything else sends its own date. */
+function whenPayload(form) {
+  if (!form.is_course) {
+    return { event_date: form.event_date, event_time: form.event_time || null, course_meetings: [] };
+  }
+  const meetings = courseMeetingsPayload(form.course_meetings);
+  return { event_date: meetings[0].date, event_time: meetings[0].time, course_meetings: meetings };
+}
 
 /** MEH-3447: the dates as the server takes them — filled rows only. */
 function sessionsPayload(rows) {
@@ -110,6 +130,8 @@ function seed(initial) {
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
     sessions: Array.isArray(initial.sessions) ? initial.sessions : [],
+    is_course: Array.isArray(initial.course_meetings) && initial.course_meetings.length > 0,
+    course_meetings: Array.isArray(initial.course_meetings) ? initial.course_meetings : [],
     registration_method: initial.registration_method ?? "site_form",
     registration_url: initial.registration_url ?? "",
   };
@@ -127,6 +149,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "description",
   "image_url",
   "event_date",
+  "course_meetings",
   "duration_minutes",
   "location_type",
   "city",
@@ -135,6 +158,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "min_participants",
   "sessions",
   "registration_url",
+  "owner_consent", // MEH-3876: admin only
 ];
 
 const EXPERIENCE_FIELD_ID = {
@@ -142,6 +166,8 @@ const EXPERIENCE_FIELD_ID = {
   description: "experience-description",
   image_url: "experience-image",
   event_date: "experience-date",
+  // MEH-3898: the first empty half of a meeting row, or the add button.
+  course_meetings: "experience-course-first",
   duration_minutes: "experience-duration",
   // The pill row has no single control to focus — the first pill is the entry
   // point, matching how a radio group focuses its first option.
@@ -153,6 +179,7 @@ const EXPERIENCE_FIELD_ID = {
   // MEH-3447: the first empty half of an incomplete date row.
   sessions: "experience-session-incomplete",
   registration_url: "registration_url",
+  owner_consent: "experience-owner-consent",
 };
 
 // MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
@@ -187,7 +214,13 @@ function validateExperienceForm(f, t, tReg) {
   // MEH-2012: no image_url check — see the note above isWholeNumber. The value
   // comes from our own upload endpoint now, and an upload failure sets
   // fieldErrors.image_url directly from handleImageUpload.
-  if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-3898: a course's date is its first meeting; it needs two whole ones.
+  if (f.is_course) {
+    const rows = f.course_meetings ?? [];
+    if (rows.some(isHalfSession) || courseMeetingsPayload(rows).length < COURSE_MIN) {
+      errors.course_meetings = t("course_error");
+    }
+  } else if (!f.event_date) errors.event_date = t("error_date_required");
   // MEH-3447: a date row with only its date or only its time would be dropped
   // on save; the field shows «בחרו מועד.» on it instead.
   if (f.is_recurring && (f.sessions ?? []).some(isHalfSession)) errors.sessions = "incomplete";
@@ -237,16 +270,21 @@ function validateExperienceForm(f, t, tReg) {
  * @param {(data:object)=>void} props.onSuccess  called with the created/updated row
  * @param {string} [props.cancelHref]
  * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
+ * @param {string|null} [props.adminProducerId]  MEH-3876: an admin writes for this business
+ * @param {() => void} [props.onCancel]  MEH-3876: cancel in place instead of the cancel link
  */
 // MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
 // up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
-export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false }) {
+export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false, adminProducerId = null, onCancel = undefined }) {
   const t = useTranslations("experiences.new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+  const tAdmin = useTranslations("admin"); // MEH-3876
+  // MEH-3876: the admin's confirmation that the business agreed, every save.
+  const [ownerConsent, setOwnerConsent] = useState(false);
   const [form, setForm] = useState(() => seed(initial));
   const [verdict, setVerdict] = useState(null); // { status, reason, suggestion }
   const [checking, setChecking] = useState(false);
@@ -370,6 +408,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setUnverifiedHits(0);
 
     const errors = validateExperienceForm(form, t, tReg);
+    if (adminProducerId && !ownerConsent) errors.owner_consent = tAdmin("business_events.consent_required");
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
@@ -389,8 +428,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       description: form.description.trim(),
       image_url: form.image_url.trim() || null,
       category: form.category || null,
-      event_date: form.event_date,
-      event_time: form.event_time || null,
+      ...whenPayload(form),
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       // MEH-2013: `|| null` is defence in depth, not a live path.
       // validateExperienceForm has already rejected an empty location_type
@@ -422,9 +460,15 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
     setSubmitting(true);
     try {
-      const r = isEdit
-        ? await api.put(`/experiences/${initial.id}`, payload)
-        : await api.post("/experiences", payload);
+      // REUSES: components/EventForm.jsx (MEH-3873) — the admin routes take the
+      // owner's body plus `owner_consent: true`.
+      const r = adminProducerId
+        ? isEdit
+          ? await api.put(`/admin/experiences/${initial.id}`, { ...payload, owner_consent: true })
+          : await api.post(`/admin/producers/${adminProducerId}/experiences`, { ...payload, owner_consent: true })
+        : isEdit
+          ? await api.put(`/experiences/${initial.id}`, payload)
+          : await api.post("/experiences", payload);
       onSuccess?.(r.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -477,10 +521,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       {/* Live moderation feedback */}
       {checking && <p className="text-xs text-fg-muted">{t("checking_content")}</p>}
       {verdict?.status === "FLAGGED" && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-md p-3 text-sm">
+        <div className="bg-warning-50 border border-warning-300 text-warning-800 rounded-md p-3 text-sm">
           <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason}
           {verdict.suggestion && (
-            <p className="text-xs text-yellow-700 mt-1">
+            <p className="text-xs text-warning-700 mt-1">
               <Lightbulb size={14} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.suggestion}
             </p>
           )}
@@ -609,17 +653,47 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          id="experience-date"
-          label={t("field_date")}
-          type="date"
-          value={form.event_date}
-          onChange={setField("event_date")}
-          required
-          error={fieldErrors.event_date}
-        />
-        <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
+      {!form.is_course && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            id="experience-date"
+            label={t("field_date")}
+            type="date"
+            value={form.event_date}
+            onChange={setField("event_date")}
+            required
+            error={fieldErrors.event_date}
+          />
+          <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
+        </div>
+      )}
+      {/* MEH-3898: a course swaps the one date for its list of meetings, in
+          the same place. A course is never recurring: ticking one unticks
+          the other (the server refuses both). */}
+      <div>
+        <Checkbox
+          className="flex items-center gap-2"
+          checked={form.is_course}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setForm((f) => ({ ...f, is_course: on, ...(on ? { is_recurring: false } : {}) }));
+            setFieldErrors((errs) => ({ ...errs, course_meetings: undefined, event_date: undefined }));
+          }}
+          data-testid="experience-is-course"
+        >
+          <span className="text-sm">{t("is_course")}</span>
+        </Checkbox>
+        {form.is_course && (
+          <ExperienceSessionsField
+            kind="course"
+            sessions={form.course_meetings}
+            error={fieldErrors.course_meetings}
+            onChange={(course_meetings) => {
+              setForm((f) => ({ ...f, course_meetings }));
+              setFieldErrors((errs) => (errs.course_meetings ? { ...errs, course_meetings: undefined } : errs));
+            }}
+          />
+        )}
       </div>
 
       <Input
@@ -774,10 +848,16 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       </Field>
 
       <div>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.is_recurring} onChange={setField("is_recurring")} className="w-4 h-4" />
+        <Checkbox
+          className="flex items-center gap-2"
+          checked={form.is_recurring}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setForm((f) => ({ ...f, is_recurring: on, ...(on ? { is_course: false } : {}) }));
+          }}
+        >
           <span className="text-sm">{t("is_recurring")}</span>
-        </label>
+        </Checkbox>
         {form.is_recurring && (
           <div className="mt-2">
             <Input
@@ -808,6 +888,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         url={form.registration_url}
         onUrlChange={(v) => setField("registration_url")({ target: { value: v } })}
         urlError={fieldErrors.registration_url}
+        businessUrl={adminProducerId ? `/admin/producers/${adminProducerId}` : undefined}
       />
 
       <CollectionNotice
@@ -816,10 +897,38 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         testId="experience-collection-notice"
       />
 
+      {adminProducerId && (
+        <div>
+          <Checkbox
+            id={EXPERIENCE_FIELD_ID.owner_consent}
+            checked={ownerConsent}
+            onChange={(e) => {
+              setOwnerConsent(e.target.checked);
+              setFieldErrors((errs) => (errs.owner_consent ? { ...errs, owner_consent: undefined } : errs));
+            }}
+            aria-describedby={fieldErrors.owner_consent ? `${EXPERIENCE_FIELD_ID.owner_consent}-error` : undefined}
+            data-testid="experience-owner-consent"
+          >
+            {tAdmin("business_experiences.consent_label")}
+          </Checkbox>
+          {fieldErrors.owner_consent && (
+            <span id={`${EXPERIENCE_FIELD_ID.owner_consent}-error`} className="text-xs text-error mt-1 block">
+              {fieldErrors.owner_consent}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-4 border-t border-border">
-        <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
-          {t("cancel")}
-        </Link>
+        {onCancel ? (
+          <Button type="button" variant="outlined" onClick={onCancel}>
+            {t("cancel")}
+          </Button>
+        ) : (
+          <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
+            {t("cancel")}
+          </Link>
+        )}
         <Button
           type="submit"
           // MEH-2012: `uploading` joins the gate. Submitting mid-upload would

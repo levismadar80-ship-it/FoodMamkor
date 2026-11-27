@@ -212,14 +212,27 @@ describe("a page left open across midnight (MEH-3805)", () => {
 
 describe("the free-cancel deadline", () => {
   it("says «מחר ב-» when the deadline is on the next Israel day, the bare time when today", () => {
-    const at = (day) => `${day}T09:00:00Z`; // 11:00/12:00 in Israel, same date
-    const { rerender } = render(
-      <RescueConfirmation order={order({ date: TOMORROW, cancel_until: at(TOMORROW) })} onCancel={() => {}} />,
-    );
-    const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
-    expect(document.body.textContent).toContain(tomorrowText);
-    rerender(<RescueConfirmation order={order()} onCancel={() => {}} />);
-    expect(document.body.textContent).not.toContain(tomorrowText);
+    // The clock is frozen at 10:00 Israel on 10/12. On the real clock, from
+    // 23:30 Israel the default deadline (now + 30 min) is already tomorrow
+    // and the «today» half went red (MEH-3704 CI, 21:39 UTC).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-12-10T08:00:00Z"));
+      const { rerender } = render(
+        <RescueConfirmation
+          order={order({ date: "2026-12-11", cancel_until: "2026-12-11T09:00:00Z" })}
+          onCancel={() => {}}
+        />,
+      );
+      const tomorrowText = r.row.cancel_at_tomorrow.replace("{time}", "");
+      expect(document.body.textContent).toContain(tomorrowText);
+      // Today's bag, deadline 10:30 Israel the same day: the bare time.
+      rerender(<RescueConfirmation order={order({ date: "2026-12-10" })} onCancel={() => {}} />);
+      expect(document.body.textContent).toContain("10:30");
+      expect(document.body.textContent).not.toContain(tomorrowText);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

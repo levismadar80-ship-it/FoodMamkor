@@ -38,7 +38,7 @@ import pytest
 from app.routers.producer_me import SENSITIVE_FIELDS
 from tests.conftest import auth_header, make_producer, make_user
 
-PATCH_TARGET = "app.routers.producer_me.notify_admin_producer_sensitive_edit"
+PATCH_TARGET = "app.services.producer_owner_update.notify_admin_producer_sensitive_edit"
 
 
 # The seeded phone, so "unchanged" and "changed" are different strings and a

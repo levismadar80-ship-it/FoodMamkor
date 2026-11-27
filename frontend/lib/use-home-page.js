@@ -2,7 +2,7 @@
 /* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, id-length */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +16,9 @@ import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-fil
 // MEH-2130: home's URL param name per axis comes from the taxonomy — the one
 // place `has_delivery ⇄ ?delivery=1` is declared.
 import { homeParamFor } from "@/lib/filter-taxonomy";
+
+// Server render has no layout effects (MEH-3860 Friday mode, below).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 // MEH-2130: the axes home's chip row renders, hydrates and serializes — ONE
 // list, derived from the taxonomy via CHIPS_CONFIG (the same array
@@ -197,15 +200,25 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [fridayMode, setFridayMode] = useState(false);
+  // MEH-3860: null = not known yet (server HTML and hydration); CSS on
+  // data-friday-mode shows the right hero line and strip slot meanwhile. It is
+  // decided in a layout effect, so the swap to the real strip lands before the
+  // next paint, and the <html> flag follows the clock while the page is open.
+  const [fridayMode, setFridayMode] = useState(/** @type {boolean | null} */ (null));
 
-  useEffect(() => {
-    setFridayMode(isFridayMode());
-    const tid = setInterval(() => setFridayMode(isFridayMode()), 60 * 1000);
+  useIsomorphicLayoutEffect(() => {
+    const sync = () => {
+      const on = isFridayMode();
+      document.documentElement.toggleAttribute("data-friday-mode", on);
+      setFridayMode(on);
+    };
+    sync();
+    const tid = setInterval(sync, 60 * 1000);
     return () => clearInterval(tid);
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
       setShowNewUserHint(true);
     }
@@ -214,6 +227,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   useEffect(() => {
     if (!showNewUserHint) return;
     const onStorage = () => {
+      // eslint-disable-next-line no-restricted-syntax -- measured with a returning visitor in e2e/flows/50-returning-visitor-no-shift.spec.ts (MEH-3858)
       if (localStorage.getItem("favorite_hint_shown")) setShowNewUserHint(false);
     };
     window.addEventListener("storage", onStorage);
@@ -255,6 +269,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // runs this effect twice in dev — the second call would read `false`.
     if (historyReturnRef.current === null) historyReturnRef.current = consumeHistoryReturn();
     const savedCount = historyReturnRef.current
+      // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
       ? Number(window.sessionStorage?.getItem("home_visible_count"))
       : NaN;
     // MEH-1387: clamp a restored count to the cap — sessions saved before the
@@ -352,6 +367,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!historyReturnRef.current) return;
+    // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
     const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
     if (!Number.isFinite(savedY) || savedY <= 0) return;
     requestAnimationFrame(() => {
@@ -435,6 +451,21 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   };
 
+  // MEH-1487 region fallback read, shared by loadProducers and the effect
+  // below. Resolves { city, regionName, producers } (an empty list when the
+  // region has none or the read failed), or null when the city has no region.
+  const fetchRegionFallback = (city) => {
+    const region = findRegionForCity(city);
+    if (!region) return Promise.resolve(null);
+    return api
+      .get("/producers", { params: { delivery_cities: region.cities } })
+      .then((r) => {
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        return { city, regionName: region.name, producers: parsed.success ? parsed.data : [] };
+      })
+      .catch(() => ({ city, regionName: region.name, producers: [] }));
+  };
+
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
     api
@@ -444,7 +475,19 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
         // MEH-779). On parse failure show an empty grid rather than
         // crashing on a malformed row.
         const parsed = ProducersResponseSchema.safeParse(r.data);
-        setProducers(parsed.success ? parsed.data : []);
+        const rows = parsed.success ? parsed.data : [];
+        // MEH-3821: an empty city result waits for its region fallback and
+        // lands with it. Committing the empty grid first showed the one-line
+        // "no delivery" note, then the fallback grid a moment later — the
+        // section collapsed and grew back and moved the mini-map (≈ 0.4 CLS).
+        if (rows.length === 0 && params.delivery_city) {
+          return fetchRegionFallback(params.delivery_city).then((fallback) => ({ rows, fallback }));
+        }
+        return { rows, fallback: undefined };
+      })
+      .then(({ rows, fallback }) => {
+        if (fallback !== undefined) setRegionFallback(fallback);
+        setProducers(rows);
         // Only reset visibleCount when the user actually changed filters
         // (i.e. was given `params`). The initial load and the back-from-
         // producer load should keep the restored visibleCount.
@@ -468,30 +511,19 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       setRegionFallback(null);
       return;
     }
-    const region = findRegionForCity(city);
-    if (!region) {
-      setRegionFallback(null);
-      return;
-    }
+    // MEH-3821: loadProducers already brought this city's fallback with the
+    // empty result — don't read it again. `regionFallback` is deliberately not
+    // a dependency: it is this dedupe guard only, and the effect must run on a
+    // new result or city, not on its own write.
+    if (regionFallback?.city === city) return;
     let cancelled = false;
-    api
-      .get("/producers", { params: { delivery_cities: region.cities } })
-      .then((r) => {
-        const parsed = ProducersResponseSchema.safeParse(r.data);
-        const list = parsed.success ? parsed.data : [];
-        if (!cancelled) {
-          setRegionFallback(
-            list.length ? { regionName: region.name, producers: list } : null,
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRegionFallback(null);
-      });
+    fetchRegionFallback(city).then((fallback) => {
+      if (!cancelled) setRegionFallback(fallback);
+    });
     return () => {
       cancelled = true;
     };
-  }, [producers, producersLoading, filters.delivery_city]);
+  }, [producers, producersLoading, filters.delivery_city]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-1080: handleCategoryCardClick removed — homepage category cards are
   // real <Link>s to /producers?category=<id> (HomeCategoryGrid.jsx); no

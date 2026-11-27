@@ -20,6 +20,8 @@
  *           · MEH-3746 (the link to the order preview beside the title)
  *           · MEH-3752 («ספרו לנו איך אתם מקבלים הזמנות»: one draft for the
  *           three setup cards, each saved with its own button)
+ *           · MEH-3526 (order staff: the orders board alone; the settings,
+ *           windows, products and customers routes are the owner's)
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -36,12 +38,20 @@ import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
+import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
+import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
+
+/** MEH-3526: what order staff see — the orders, nothing the owner sets up. */
+async function loadStaff() {
+  return { staff: true, orders: await loadOrders() };
+}
 
 /** Everything the page shows, in one round. `settings: null` = ordering off. */
 async function loadAll() {
@@ -53,11 +63,16 @@ async function loadAll() {
     api.get("/producers/me").then((res) => res.data).catch(() => null),
   ]);
   const setUp = isSetUp(settings, windows);
-  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp };
+  // MEH-3931: the name and page link for «מה יש השבוע».
+  const business = me ? { name: me.name, slug: me.slug, id: me.id } : null;
+  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp, business };
 }
 
 export default function OrdersPage() {
   const t = useTranslations("dashboard.producer.orders");
+  // MEH-3526: the layout already sends staff here and nowhere else.
+  const { user } = useAuth();
+  const staffOf = user?.role !== "producer" ? user?.staff_of ?? null : null;
   const [data, setData] = useState(/** @type {any} */ (null));
   const [failed, setFailed] = useState(false);
 
@@ -65,10 +80,12 @@ export default function OrdersPage() {
   // MEH-3216: what the «מה חסר» checklist needs beyond the settings.
   const [products, setProducts] = useState(/** @type {{ orderable: number, total: number } | null} */ (null));
   const [windowsCount, setWindowsCount] = useState(/** @type {number | null} */ (null));
-  const countProducts = useCallback(
-    (/** @type {any[]} */ rows) => setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length }),
-    [],
-  );
+  // MEH-3931: a product switched on, off or sold out re-reads «מה יש השבוע».
+  const [productsSeen, setProductsSeen] = useState(0);
+  const countProducts = useCallback((/** @type {any[]} */ rows) => {
+    setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length });
+    setProductsSeen((n) => n + 1);
+  }, []);
   // A failed products read counts as none, so the step points to «עריכה».
   const noProducts = useCallback(() => setProducts({ orderable: 0, total: 0 }), []);
   // MEH-3752: the last order-setup draft; each card fills from it and opens.
@@ -76,13 +93,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     let live = true;
-    loadAll()
+    (staffOf ? loadStaff() : loadAll())
       .then((loaded) => live && setData(loaded))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [attempt]);
+  }, [attempt, staffOf]);
   const retry = () => {
     setFailed(false);
     setAttempt((n) => n + 1);
@@ -107,15 +124,16 @@ export default function OrdersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
         {/* MEH-3746: the order form as a buyer sees it, before ordering is on. */}
-        <Link
+        {!staffOf && <Link
           href="/producer/dashboard/orders/preview"
           data-testid="orders-preview-link"
           className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
         >
           <Eye size={16} aria-hidden="true" />
           {t("preview_link")}
-        </Link>
+        </Link>}
       </div>
+      {staffOf && <p data-testid="orders-staff-note" className="text-sm text-fg-muted">{t("staff_note", { name: staffOf.name })}</p>}
       {failed && (
         <div className="space-y-2">
           <InlineMessage tone="error">{t("load_error")}</InlineMessage>
@@ -123,6 +141,10 @@ export default function OrdersPage() {
         </div>
       )}
       {!data && !failed && <Skeleton count={3} testId="orders-loading" />}
+      {/* Daily stock (27/11): the week's «מה להכין», above the lists — what she
+          bakes from, staff included. */}
+      {data && !failed && <OrderPrepList orders={data.orders} />}
+      {data?.staff && <OrdersBoard orders={data.orders} onChanged={replace} />}
       {data?.settings && (
         <>
           <OrderSetupChecklist
@@ -135,6 +157,9 @@ export default function OrdersPage() {
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
           <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} draft={draft} />
+          {/* MEH-3931: «מה יש השבוע», once ordering is set up; a link to an
+              off ordering would open a page that takes no orders. */}
+          {setUp && <OrderWeekShareCard business={data.business} refresh={productsSeen} />}
           {/* MEH-3561: who ordered and who came back, with a CSV download. */}
           <OrderCustomersCard />
           {/* MEH-3752: beside the one-time setup it fills, not above the

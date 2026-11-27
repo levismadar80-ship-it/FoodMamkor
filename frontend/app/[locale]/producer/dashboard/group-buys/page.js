@@ -30,6 +30,7 @@ import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
 import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings"; // MEH-3592
+import GroupBuyPickupList from "@/components/group-buy/GroupBuyPickupList"; // MEH-3735
 import GroupBuySafetyFields from "@/components/group-buy/GroupBuySafetyFields"; // MEH-3610
 import GroupBuyPickupWindowFields, { pickupWindowPayload } from "@/components/group-buy/GroupBuyPickupWindowFields"; // MEH-3597
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -461,7 +462,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             data-autofocus
             disabled={busy}
             onClick={onClose}
-            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-background-alt transition disabled:opacity-50"
           >
             {t("back")}
           </button>
@@ -776,6 +777,9 @@ export default function ProducerGroupBuysPage() {
                 {(gb.status === "open" || gb.status === "funded") && parseNaiveUtc(gb.deadline) >= new Date() && (
                   <GroupBuyOwnerSettings gb={gb} onSaved={load} />
                 )}
+                {/* MEH-3735: codes and «נמסר» / «לא הגיע» once the goal was reached. */}
+                {(gb.status === "funded" || gb.status === "fulfilled") &&
+                  !(Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note) && <GroupBuyPickupList gb={gb} />}
                 {actions.length > 0 && (
                   <div
                     data-testid="group-buy-actions"

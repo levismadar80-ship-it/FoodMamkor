@@ -8,6 +8,7 @@ import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import QueueSlaSummary from "./QueueSlaSummary";
 import ProducerDecisionModal from "./ProducerDecisionModal";
+import SlugConfirmDialog from "./SlugConfirmDialog";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
 import { approveConfirmMessage } from "@/lib/admin-review-checklist";
@@ -68,7 +69,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           <button data-autofocus
             disabled={deleting}
             onClick={onCancel}
-            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition disabled:opacity-50"
           >
             {t("common.cancel")}
           </button>
@@ -103,7 +104,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
           </Button>
           <button data-autofocus
             onClick={onCancel}
-            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition"
           >
             {t("cancel")}
           </button>
@@ -118,6 +119,10 @@ function ProducersAdminPage() {
   // replaces the raw approve on the row button; `quickApprove` (the real
   // request) is what it ultimately calls once the checklist is clear/confirmed.
   const checklist = useReviewChecklist(h.quickApprove);
+
+  // MEH-3818: one skeleton until the list answered — the same one the Suspense
+  // boundary shows — so the page appears once, with its rows.
+  if (!h.firstLoadDone) return <SuspenseFallback />;
 
   return (
     <div className="space-y-5">
@@ -203,6 +208,14 @@ function ProducersAdminPage() {
         deleting={h.confirmDelete ? h.isBusy(`delete:${h.confirmDelete.id}`) : false}
         onConfirm={h.confirmDeleteProducer}
         onCancel={h.closeDeleteConfirm}
+      />
+
+      {/* MEH-3914: confirm the English address of a business that has none. */}
+      <SlugConfirmDialog
+        slugPrompt={h.slugPrompt}
+        busy={h.slugPrompt ? h.isBusy(`approve:${h.slugPrompt.producer.id}`) : false}
+        onConfirm={(slug) => h.quickApprove(h.slugPrompt.producer, slug)}
+        onCancel={h.closeSlugPrompt}
       />
 
       {/* MEH-1396: soft review-checklist confirm on approve with unticked items. */}

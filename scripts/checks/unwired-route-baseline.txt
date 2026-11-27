@@ -46,6 +46,7 @@ GET	/admin/recipes/pending	scanner-miss	frontend/e2e/golden/07-a1-admin.spec.ts
 # Called by hand with an admin token; the doc says how.
 POST	/admin/seed-cities	ops-manual	docs/DEPLOYMENT.md
 GET	/webhook/whatsapp	webhook
+POST	/webhook/resend	webhook
 POST	/webhook/whatsapp	webhook
 GET	/health	health
 GET	/health/places	health
@@ -55,6 +56,7 @@ GET	/health/readiness	health
 #
 # --- real gaps: built on the server, no screen yet. Each has its card.
 POST	/producers/me/availability-confirm	pending-ui	MEH-2697
+DELETE	/users/me/staff-membership	pending-ui	MEH-3526
 PUT	/admin/producers/{_}/products/{_}/price	pending-ui	MEH-3943
 #
 # --- old spellings kept through a release, each with the card that removes it

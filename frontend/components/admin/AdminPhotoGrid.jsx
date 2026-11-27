@@ -15,6 +15,7 @@
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * The chosen photo first, every other photo in its old order.
@@ -47,14 +48,13 @@ export default function AdminPhotoGrid({ images, onChange, onRemove }) {
               alt=""
               className={`w-full h-24 object-cover rounded-sm border ${i === 0 ? "border-2 border-action-primary" : "border-border"}`}
             />
-            <button
-              type="button"
+            <IconButton
               onClick={() => onRemove(url)}
-              className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition before:absolute before:-inset-[10px] before:content-['']"
-              aria-label={t("common.delete")}
+              className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
+              label={t("common.delete")}
             >
               <X size={14} weight="bold" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
           {i === 0 ? (
             <span className="text-xs font-medium text-action-primary min-h-touch inline-flex items-center" data-testid="admin-photo-main">

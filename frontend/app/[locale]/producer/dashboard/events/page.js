@@ -25,7 +25,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { SkeletonList } from "@/components/Skeleton";
 import RegistrationsList from "@/components/RegistrationsList";
 
@@ -39,7 +39,7 @@ const NOT_LIVE_NOTE_KEY = {
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
-  const today = israelToday();
+  const today = useIsraelToday(); // MEH-3861: same day in both renders
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -149,7 +149,7 @@ export default function ManageEventsPage() {
             <li
               key={ev.id}
               data-testid="manage-event-row"
-              className={`bg-surface border rounded-md p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
+              className={`bg-surface border rounded-md p-4 ${ev.is_active || past ? "border-border" : "border-warning-300 bg-warning-50/40"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">

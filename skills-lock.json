@@ -399,12 +399,12 @@
     "mehamakor-business-page": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5ea34da46c305dfc378fbbd6b2b0f8c34998751c7bc9d914e4e2b4c2064fd136"
+      "computedHash": "7b3bcccbc22384f2a0fb59c7663a8a4ba2fc20fa497d47d6992ff7eec922eda7"
     },
     "mehamakor-daily-outreach": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "d635b2ea27e42de8a1e33d3c8c142c372434c492d579211696785efb902033de"
+      "computedHash": "1a76808a63e9e5ed7b961d4e4273463a35cc485073385fea44c2d102097740ff"
     },
     "mehamakor-instagram-posts": {
       "source": "local",
@@ -415,6 +415,11 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "8c56dc3f924cf7e1f28bb5626690c5090952e73fd00967935368c87dd0788869"
+    },
+    "screenshot-review": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "39cd70a75337d332ca64404b0d17d7c0b736a133d142188a22d7cbea60371ad8"
     }
   }
 }

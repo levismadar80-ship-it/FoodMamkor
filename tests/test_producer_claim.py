@@ -38,6 +38,7 @@ from app.config import settings
 from app.constants import DECLARATION_VERSION, TERMS_VERSION
 from app.database import SessionLocal
 from app.models import Producer, User
+from app.services.share_links import resolve_share_code
 
 CLAIM = "/producer-claim"
 PREVIEW = "/producer-claim/preview"
@@ -215,8 +216,10 @@ class TestAdminClaimLink:
         r = client.post(_link(p.id), headers=auth_header(admin))
         assert r.status_code == 200, r.text
         url = r.json()["url"]
-        assert url.startswith(f"{settings.frontend_url}/claim/")
-        assert decode_producer_claim_token(url.rsplit("/", 1)[1]) == p.id
+        # MEH-3896: the short /c/<code> link, not the JWT.
+        assert url.startswith(f"{settings.frontend_url}/c/")
+        code = url.rsplit("/", 1)[1]
+        assert resolve_share_code(db, code, "producer_claim") == p.id
 
     def test_non_admin_is_refused(self, client, db):
         user = make_user(db)

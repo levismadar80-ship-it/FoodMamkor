@@ -57,12 +57,14 @@ import { parseNaiveUtc } from "@/lib/dates";
 import { EVENT_CATEGORIES, findExperienceCategory } from "@/lib/event-categories";
 import { israelLocalToUtcStamp } from "@/lib/event-ics";
 import { eventWhen } from "@/lib/event-when";
+import useIsraelToday from "@/lib/use-israel-today";
 import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/order-window-status";
 import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 import StruckPrice from "@/components/ui/StruckPrice";
 import { agorotToShekels } from "@/lib/money";
+import useImageLoads from "@/lib/use-image-loads";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -271,7 +273,8 @@ const SOURCES = Object.freeze([
       time: hhmm(row.event_time),
       day: row.event_date,
       category: row.category || null,
-      image: row.image_url || null,
+      // MEH-3894: the host business's photo when the experience has none.
+      image: row.image_url || row.owner_image_url || null,
       who: row.host?.producer_name || row.host?.name || null,
       plate: row.host?.producer_name || row.host?.name || null,
       city: row.city || null,
@@ -403,20 +406,17 @@ const TYPE_LABEL_KEY = Object.freeze({
  * under or against a control).
  */
 function CardPicture({ entry, children }) {
+  // MEH-3894: a photo that fails to load shows the plate, not an empty box.
+  const image = useImageLoads(
+    entry.image ? optimizeCloudinary(entry.image, { aspectRatio: IMAGE_RATIOS.strip, width: 640 }) : null,
+  );
   return (
     <div className="relative aspect-[16/10] overflow-hidden bg-background-alt" aria-hidden="true">
-      {entry.image ? (
+      {image ? (
         <div
           data-testid="whats-on-image"
           className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]"
-          style={{
-            backgroundImage: cssUrl(
-              optimizeCloudinary(entry.image, {
-                aspectRatio: IMAGE_RATIOS.strip,
-                width: 640,
-              }),
-            ),
-          }}
+          style={{ backgroundImage: cssUrl(image) }}
         />
       ) : (
         // The plate names the BUSINESS; an entry with no business to name
@@ -601,6 +601,8 @@ export default function HomeWhatsOn() {
   // MEH-2962: every string a card or a row heading shows already exists under
   // its own feature — nothing here is new copy.
   const tEvents = useTranslations("events");
+  // MEH-3861: «היום» / «מחר» against one day for both renders.
+  const today = useIsraelToday();
   const tGroupBuys = useTranslations("group_buys.list");
   const tRescue = useTranslations("rescue.home");
   const tProducerGroupBuys = useTranslations("producer.detail.sections.group_buys");
@@ -697,7 +699,7 @@ export default function HomeWhatsOn() {
   // «היום» / «מחר» for a date that close, else the weekday (events and
   // experiences) or DD.MM (a basket) — read in Israel's zone either way.
   const dayWord = (entry, fallback) => {
-    const when = eventWhen(entry.day);
+    const when = eventWhen(entry.day, today);
     if (when === "today") return tEvents("detail.when_today");
     if (when === "tomorrow") return tEvents("detail.when_tomorrow");
     return fallback();

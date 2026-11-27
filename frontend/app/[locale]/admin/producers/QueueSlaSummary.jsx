@@ -16,8 +16,10 @@
  * History:  MEH-2138 chunk E (creation). The other three items of that chunk —
  *           oldest-first ordering, the per-row badge, the serializer field —
  *           already shipped under MEH-2110; this is the residual.
+ *           MEH-3818: once shown, keeps its slot when a filter empties it.
  */
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 // MEH-2161: the SAME constant `WaitingBadge` reads, imported rather than
@@ -34,14 +36,33 @@ import { SLA_STATUSES } from "./sla-statuses";
  *   paged slice would make the count a claim about the current page while
  *   reading as a claim about the queue.
  */
+const PILL = "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium";
+
 export default function QueueSlaSummary({ rows }) {
   const t = useTranslations("admin");
   const queued = (rows || []).filter((p) => SLA_STATUSES.includes(p?.status));
+  // Latched during render, not in an effect: React's «storing information
+  // from previous renders» pattern, so the slot exists on the very render
+  // that empties the list (an effect would add one extra render first).
+  const [shown, setShown] = useState(false);
+  if (queued.length > 0 && !shown) setShown(true);
 
   // Nothing waiting → render nothing. A «0 ממתינים» line is a permanent
   // fixture that says nothing on the day it matters, and the empty queue is
   // already legible from the table itself.
-  if (queued.length === 0) return null;
+  // MEH-3818: but once the line was on screen, a search or filter that empties
+  // it keeps its height, so the toolbar and the table do not jump up under the
+  // admin's eyes when the results arrive (CLS 0.27–0.65, MEH-3809 load guard).
+  // Web.dev's CLS guide: hold the space of content that comes and goes.
+  if (queued.length === 0) {
+    // The slot is the line's own box, emptied: an inline pill sits on a line
+    // box taller than the pill (34px, not 28), so a plain h-7 block missed by 6.
+    return shown ? (
+      <div aria-hidden="true" data-testid="queue-sla-slot">
+        <span className={`invisible ${PILL}`}>&nbsp;</span>
+      </div>
+    ) : null;
+  }
 
   const oldest = queued.reduce(
     (max, p) => Math.max(max, p.business_days_waiting ?? 0),
@@ -61,7 +82,7 @@ export default function QueueSlaSummary({ rows }) {
       data-testid="queue-sla-summary"
       data-count={queued.length}
       data-oldest={oldest}
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${tone}`}
+      className={`${PILL} ${tone}`}
     >
       <span>{t("producers.queue_summary", { count: queued.length, days: oldest })}</span>
     </div>

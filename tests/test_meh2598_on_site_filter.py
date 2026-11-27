@@ -33,6 +33,8 @@ def _store(db, name, **shape):
     legacy = shape.get("legacy")
     producer = make_producer(db, name=name)
     producer.has_physical_location = physical
+    # MEH-2447: the owner's «בתיאום מראש» answer.
+    producer.by_arrangement = shape.get("arranged", False)
     if not physical:
         # DB CHECK: has_physical_location OR offers_delivery.
         producer.offers_delivery = True
@@ -61,6 +63,8 @@ def _seed_matrix(db):
     _store(db, "שעות רק בסניף", primary=False)
     _store(db, "שעות ישנות בלבד", hours=None, legacy="ו 8-13")
     _store(db, "בלי חנות פיזית", physical=False)
+    # MEH-2447: hours stated, but the owner said «בתיאום מראש» — no walk-in.
+    _store(db, "בתיאום מראש עם שעות", arranged=True)
     make_producer(db, name="משלוחים בלבד", delivery_cities=["עכו"])
 
 
@@ -83,7 +87,7 @@ def test_sells_on_site_matches_filter_membership(client, db):
     """Anti-drift: the Python flag and the SQL predicate agree on every shape."""
     _seed_matrix(db)
     everything = client.get("/producers")
-    assert len(everything.json()) == 7, "all seven shapes are in the unfiltered feed"
+    assert len(everything.json()) == 8, "all eight shapes are in the unfiltered feed"
     on_site = set(_names(client.get("/producers", params=ON_SITE)))
     for row in everything.json():
         assert row["sells_on_site"] is (row["name"] in on_site), (
@@ -97,3 +101,13 @@ def test_control_pickup_alone_is_unchanged(client, db):
     """Control (passes before AND after): pickup without on_site is untouched."""
     _seed_matrix(db)
     assert _names(client.get("/producers", params=PICKUP)) == []
+
+
+def test_meh2447_by_arrangement_is_not_on_site_and_is_served(client, db):
+    """MEH-2447: a store whose owner answered «בתיאום מראש» is left out of
+    «קנייה במקום» even with hours, and the feed carries her answer."""
+    _seed_matrix(db)
+    assert "בתיאום מראש עם שעות" not in _names(client.get("/producers", params=ON_SITE))
+    rows = {r["name"]: r for r in client.get("/producers").json()}
+    assert rows["בתיאום מראש עם שעות"]["by_arrangement"] is True
+    assert rows["חנות עם שעות"]["by_arrangement"] is False

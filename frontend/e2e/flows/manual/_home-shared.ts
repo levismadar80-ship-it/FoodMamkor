@@ -30,6 +30,7 @@ import { ORDER_DAY_KEYS } from "../../../lib/order-window-status.js";
 import { REGIONS } from "../../../data/regions.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CATEGORY_CARDS } from "../../../lib/home-categories.js";
+import { heAxisCopy } from "../_axis-label";
 
 // MEH-2308: the chat launcher's accessible name is its visible pill text on a
 // first desktop visit and the aria-label once it is icon-only — match either.
@@ -233,15 +234,14 @@ export const FRIDAY_EN = en.group_buys.friday_delivery;
 export type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
 // MEH-2748: the taxonomy holds keys only; the Hebrew label/subtext are read from
 // the same he.json the app renders (`filter_axes.<key>`).
-const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
 export const AXES = Object.fromEntries(
-  Object.entries(FILTER_AXES as Record<string, object>).map(([key, axis]) => [
+  Object.entries(FILTER_AXES as Record<string, { labelKey?: string }>).map(([key, axis]) => [
     key,
-    { key, ...axis, label: AXIS_COPY[key].label, subtext: AXIS_COPY[key].subtext ?? null },
+    { key, ...axis, ...heAxisCopy(he, key, axis) },
   ]),
 ) as Record<string, Axis>;
 export type Chip = { key: string; label: string };
-export const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXIS_COPY[c.key].label })) as Chip[];
+export const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXES[c.key]?.label ?? (he.filter_axes as Record<string, { label: string }>)[c.key].label })) as Chip[];
 
 // MEH-2598: home promotes the shared service trio «משלוח · איסוף עצמי · קנייה
 // במקום» out of CHIPS_CONFIG and files the rest — «מאומת» included — behind the
@@ -510,6 +510,25 @@ export async function seedStorage(page: Page, key: string, value: string): Promi
 
 /** A manual tester has consented already — otherwise the CookieBanner reserves footprint (MEH-945) and moves every floating-element measurement below. */
 export const consent = (page: Page) => seedStorage(page, "cookieConsent", "essential"); // CookieBanner.jsx:30
+
+/**
+ * MEH-3905: a weekday noon for every home test. Thu 18:00 → Fri 14:00 Israel
+ * the page is in Friday mode (lib/friday-mode.js) and the Friday strip (219px)
+ * mounts between the hero and the trust band. The server asked the real
+ * backend and drew no slot; `mockApi` then answers the strip's own query with
+ * the test's list, so the strip arrives late and the load guard (MEH-3809)
+ * reds every home test in that window: CLS 0.135, 26/11 16:00 UTC on. A real
+ * visitor's server and browser ask the same backend. MEH-2979 pinned the same
+ * noon in four places; each home spec file now pins it in a file-level
+ * `beforeEach`. The strip's own tests force Friday mode with
+ * `friday_mode_override`, which wins over the clock, and a test that pins its
+ * own time runs after this and wins.
+ */
+export const WEEKDAY_NOON = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
+
+export async function pinWeekdayNoon(page: Page): Promise<void> {
+  await page.clock.setFixedTime(WEEKDAY_NOON);
+}
 
 /** Navigate to home and gate on the transition being over BEFORE any strict locator runs. */
 export async function gotoHome(page: Page, path = "/"): Promise<void> {

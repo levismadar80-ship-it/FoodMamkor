@@ -22,6 +22,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
+from app.schemas.payment_link import prepay_link
 from app.data.cities import canonical_city
 from app.models.models import (
     Producer,
@@ -30,6 +31,7 @@ from app.models.models import (
     RescueOrder,
     RescueTypicalItems,
 )
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.utils.clock import utc_now
 from app.utils.pii import round_coord
@@ -72,7 +74,7 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * radius_km * math.asin(math.sqrt(a))
 
 
-def _public_business_clauses() -> tuple[Any, ...]:
+def public_business_clauses() -> tuple[Any, ...]:
     """The business filter shared by the bag list and the bag page: approved,
     not a seeded test row (MEH-2952). One place, so the page never shows a bag
     the list would hide (MEH-3586)."""
@@ -109,7 +111,7 @@ def public_offers(  # noqa: PLR0913 — keyword-only inputs the router reads (ME
             # "זמן האיסוף חלף"), so listing it would offer a button that can
             # only fail. Same naive-UTC comparison as the reserve guard.
             RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
-            *_public_business_clauses(),
+            *public_business_clauses(),
         )
     )
     # Only pilot towns are listed, whatever is asked for. Without this an
@@ -194,10 +196,12 @@ def _public_row(
             "name": producer.name,
             "slug": producer.slug,
             "city": producer.city,
-            "image_url": (producer.images or [None])[0],
+            "image_url": first_image(producer.images),  # MEH-3894
             "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
+            # MEH-3704: the list sorts by it; the bag page shows it (MEH-3586).
+            "avg_rating": producer.avg_rating or None,
         },
         "typical_items": list(typical[0] or []),
         "allergens": typical[1],
@@ -229,7 +233,7 @@ def offer_detail(
         .filter(
             RescueOffer.id == offer_id,
             RescueOffer.date.between(*reserve_days(today)),
-            *_public_business_clauses(),
+            *public_business_clauses(),
             ProducerLocation.city.in_(pilot),
         )
         .one_or_none()
@@ -260,13 +264,17 @@ def offer_detail(
     exact = location.location_precision == "exact"
     out["lat"] = location.lat if exact else None
     out["lng"] = location.lng if exact else None
-    out["producer"]["avg_rating"] = producer.avg_rating or None
-    out["producer"]["reviews_count"] = producer.reviews_count or 0
     # MEH-3593: the point's own; withheld with the pin on an approximate point.
     out["pickup_note"] = location.pickup_note if exact else None
+    out["producer"]["reviews_count"] = producer.reviews_count or 0
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None
+    link = prepay_link(producer.payment_info)  # MEH-3895
+    out["producer"]["prepay_link"] = link
+    out["producer"]["prepay_timing"] = (
+        (producer.payment_info or {}).get("timing") if link else None
+    )
     return out
 
 
@@ -319,6 +327,7 @@ def my_reservations(db: Session, *, user_id: Any, today: date) -> list[dict[str,
             "status": o.status,
             "handed_at": o.handed_at,
             "cancelled_at": o.cancelled_at,
+            "paid_at": o.paid_at,
             "created_at": o.created_at,
             "price_agorot": o.offer.price_agorot,
             "cancel_until": o.offer.cancel_until,
@@ -431,6 +440,8 @@ def business_orders_today(
 
     No buyer identity is returned; see RescueOwnerOrderOut for why.
     """
+    producer = db.get(Producer, producer_id)
+    prepay = bool(producer and prepay_link(producer.payment_info))
     rows = (
         db.query(RescueOrder, RescueOffer)
         .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
@@ -455,9 +466,13 @@ def business_orders_today(
             "status": order.status,
             "handed_at": order.handed_at,
             "cancelled_at": order.cancelled_at,
+            "paid_at": order.paid_at,
             "created_at": order.created_at,
             "pickup_start": offer.pickup_start,
             "pickup_end": offer.pickup_end,
+            # MEH-3897: the dashboard offers «סמן כשולם» only to a business
+            # that asks buyers to pay ahead through its own link.
+            "prepay": prepay,
         }
         for order, offer in rows
     ]

@@ -27,8 +27,8 @@ import ProducerSections from "./components/ProducerSections";
 import StickyContactBar from "./components/StickyContactBar";
 import OrderBar from "@/components/public/OrderBar";
 import { useOrderCart } from "@/lib/use-order-cart";
-import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
+import { useProducerActivities } from "./hooks/useProducerActivities";
 import { useStickyBar } from "./hooks/useStickyBar";
 import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/producer-format";
 import { getSectionNavItems } from "./lib/section-nav";
@@ -57,9 +57,9 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
  * page (the owner's order preview, «→ הזמנות»), so the phone's «→ חזרה»
  * would be a second back link (MEH-3777).
  *
- * @param {{ initialProducer?: object | null, fetchPath?: string | null, hideHistoryBack?: boolean }} props
+ * @param {{ initialProducer?: object | null, initialActivities?: { events: any[], experiences: any[], groupBuys: any[] } | null, fetchPath?: string | null, hideHistoryBack?: boolean }} props
  */
-export default function ProducerDetail({ initialProducer = null, fetchPath = null, hideHistoryBack = false }) {
+export default function ProducerDetail({ initialProducer = null, initialActivities = null, fetchPath = null, hideHistoryBack = false }) {
   const params = useParams();
   const { user } = useAuth();
   const t = useTranslations();
@@ -70,21 +70,42 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // Suspense boundary; an effect also cannot mismatch hydration (MEH-517).
   // MEH-3019: before paint (like HistoryBackLink's own read), so a map arrival
   // never paints «→ חזרה» for a frame before «חזרה למפה» replaces it.
-  const [fromMap, setFromMap] = useState(false);
+  // MEH-3856: null until that read — the server HTML and the first client
+  // render then carry the row marked data-from-map-only, which globals.css
+  // shows only when the inline flags script saw ?from=map. A link opened
+  // fresh on a phone so has the row from the first paint, instead of the row
+  // pushing the gallery down after hydration. After the read it is a plain
+  // true / false, so a later in-app visit never relies on the stale flag.
+  const [fromMap, setFromMap] = useState(/** @type {boolean | null} */ (null));
   useIsomorphicLayoutEffect(() => {
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
 
-  const { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
+  const { producer, loading, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
     params,
     fetchPath,
     initialProducer,
   });
+  // MEH-3819: events, experiences and group buys, read together. The client
+  // route (/producer/<id>, no server data) reads them alongside the producer
+  // by the id in the URL, and waits for them before painting (below).
+  const activities = useProducerActivities({
+    producerId: producer?.id ?? (initialProducer || fetchPath ? null : params?.id),
+    // MEH-3836: recipes are read by slug, so they start once the producer is in.
+    slug: producer ? (producer.slug ?? "") : null,
+    initial: initialActivities,
+  });
+  const events = activities.events;
   // MEH-1207: ProducerSections still registers its section elements here (its
   // sectionRefs prop is unchanged); the anchor-nav addresses sections by id.
   const sectionRefs = useRef({});
-  const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
-  const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+  // MEH-3819: the client route shows the loading line until its activities
+  // answer, so the sections (and the inline contact card) mount one render
+  // AFTER `producer` is set. Effects that look up DOM in the sections key on
+  // this, not on `producer`, or they run against the loading line, find
+  // nothing, and never run again (the sticky bar stayed parked in WebKit).
+  const painted = Boolean(producer) && !loading && (Boolean(initialProducer) || activities.ready);
+  const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: painted ? producer.id : null });
   // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
   // order bar. Reads the menu only for a business that takes orders.
   const orderCart = useOrderCart(producer);
@@ -115,17 +136,27 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // producer has rendered (mirror of edit/page.js applyHash, load-time only;
   // later same-page hash clicks scroll natively because the target exists).
   useEffect(() => {
-    if (!producer) return;
+    if (!painted) return;
     const hash = window.location.hash.replace(/^#/, "");
     if (!hash.startsWith("section-")) return;
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [producer]);
+  }, [painted]);
 
-  if (loading) {
+  // MEH-3819: the client route paints once its activity lists answered too,
+  // so they never land above the reviews and delivery a moment later. A
+  // server-rendered page (initialProducer) never waits here: it would trade
+  // its server HTML for the loading line.
+  // MEH-3836: the loading and not-found lines carry their own keys, so the
+  // page below MOUNTS a new root instead of React reusing the loading line's
+  // <div> and re-classing it from max-w-4xl to max-w-6xl. A reused node that
+  // grows from 896 to 1152 px counts as a layout shift of the whole first
+  // screen (CLS 0.13 on every /producer/<id> load, MEH-3809 guard); a new
+  // node is an insertion, which CLS does not count.
+  if (loading || (producer && !painted)) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
+      <div key="loading" className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.loading_fresh")}
       </div>
     );
@@ -133,7 +164,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
+      <div key="not-found" className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.not_found")}
       </div>
     );
@@ -157,6 +188,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // OtherBusinesses band.
   return (
     <div
+      key="page"
       // MEH-3216 stage 5b: room under the last row for the order bar, which
       // shows on every width (the contact bar is phone-only and IO-driven).
       className={`max-w-6xl mx-auto px-4 pt-6 ${orderCart.count > 0 ? "pb-24" : "pb-6"}`}
@@ -176,10 +208,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           Desktop is unchanged. The BreadcrumbList JSON-LD (lib/seo.js) does not
           read this render. Margins sit on the children, so a direct arrival on
           a phone leaves no empty gap above the gallery. */}
-      <div className="lg:mb-4" data-testid="producer-breadcrumb-block">
-        {!fromMap && !hideHistoryBack && <HistoryBackLink className="lg:hidden mb-2" />}
+      <div className="lg:mb-4 lg:relative" data-testid="producer-breadcrumb-block">
+        {fromMap !== true && !hideHistoryBack && <HistoryBackLink className="lg:hidden mb-2" />}
         <Breadcrumb
-          className="hidden lg:block"
+          // MEH-3836: room at the line's end for «חזרה למפה», always, so a
+          // long name never runs under it and the link never re-wraps the line.
+          className="hidden lg:block lg:pe-40"
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
             ...(primaryCategory
@@ -188,8 +222,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { label: producer.name },
           ]}
         />
-        {fromMap && (
-          <p className="mb-2 lg:mb-0 lg:mt-2">
+        {/* MEH-3836: on desktop «חזרה למפה» sits on the breadcrumb's own line,
+            at its end. The page is static, so the link can only be added
+            after it is on screen; on a line of its own it pushed the gallery
+            and everything under it down 33px (CLS 0.19–0.22, load guard). */}
+        {fromMap !== false && (
+          <p
+            className="mb-2 lg:mb-0 lg:absolute lg:inset-y-0 lg:end-0 lg:flex lg:items-center"
+            data-from-map-only={fromMap === null ? "" : undefined}
+          >
             {/* MEH-3085: the site BackLink. /map restores the camera the
                 visitor left on its own (lib/map-view-state.js). */}
             <BackLink href="/map" data-testid="back-to-map" label={t("producer.detail.back_to_map")} />
@@ -297,9 +338,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <ProducerSections
             producer={producer}
             events={events}
+            experiences={activities.experiences}
+            groupBuys={activities.groupBuys}
+            recipes={activities.recipes}
             sectionRefs={sectionRefs}
-            reviewsContainerRef={reviewsContainerRef}
-            reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
             onReviewsTotalChange={setReviewsCount}
             orderCart={orderCart}

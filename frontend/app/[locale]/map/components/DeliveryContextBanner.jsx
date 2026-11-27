@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * Module:   DeliveryContextBanner
@@ -48,14 +49,13 @@ export default function DeliveryContextBanner({ city }) {
             the second child lands at the inline-end (visual left), the same
             outcome the MEH-2038 end-* rule produces for absolutely
             positioned close buttons; no physical class involved. */}
-        <button
-          type="button"
+        <IconButton
           onClick={() => setDismissed(true)}
-          aria-label={t("map.filter.banner_dismiss_aria")}
+          label={t("map.filter.banner_dismiss_aria")}
           className="shrink-0 w-11 h-11 -my-2.5 -me-1 rounded-full hover:bg-primary/10 flex items-center justify-center transition"
         >
           <X size={14} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
       <Link
         href={`/producers?city=${encodeURIComponent(city)}`}

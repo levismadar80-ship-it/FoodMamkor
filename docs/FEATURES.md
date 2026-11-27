@@ -76,6 +76,8 @@ left in v1" vs "what's planned for v2".
 | `/unsubscribe/weekly` | Stop the weekly owner summary email (MEH-3079) |
 | `/freshness/confirm` | «כן, הכול נכון» landing from the monthly owner freshness email (MEH-3393) |
 | `/draft-preview/[token]` | Token link: an owner previews her draft business page and consents to publish (MEH-3377) |
+| `/v/[token]` | Short token link (`mehamakor.co.il/v/<12 characters>`) to the same draft preview; the new form of `/draft-preview/[token]` (MEH-3896) |
+| `/c/[token]` | Short token link (`mehamakor.co.il/c/<12 characters>`) to the owner-claim page; the new form of `/claim/[token]` (MEH-3896) |
 | `/delivery-waitlist/host-confirm` | A pickup-point host confirms from the email link |
 
 ### Business owners
@@ -91,12 +93,14 @@ left in v1" vs "what's planned for v2".
 | `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change, «הוספה ליומן» once confirmed or ready (MEH-3616). The business name links to its page, with its contact button, and a confirmed pickup gets Waze / Google Maps to the address (MEH-3755). «להזמין שוב» once finished (MEH-3764: the items still on the menu go back in the cart on the business page, the rest are named). The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
+| `/staff-invite` | Accept an invite to handle a business's orders (MEH-3526, after the token step) |
+| `/staff-invite/[token]` | Order-staff invite link landing |
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
 | `/producer/dashboard/orders/preview` | «איך זה נראה ללקוחות»: her business page in preview mode with her own order menu, so she sees the order form a buyer gets (slots, cancel line, minimum) even before ordering is on; sending and the WhatsApp code are off (MEH-3746) |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
-| `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches, «מה להכין» on the today list, «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
+| `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches and «כמה אפשר להזמין ליום» (per size too; daily stock, 27/11), «מה להכין» above the lists for each pickup day of the coming week (confirmed apart from waiting, against the day's limit), «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
@@ -116,6 +120,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/recipes/[id]/edit` | Edit a recipe |
 | `/producer/dashboard/rescue` | Manage surprise bags: offers, reservations, pickups |
 | `/producer/dashboard/rescue/counter-card` | A5 card for the till: check the code, hand over the bag |
+| `/producer/dashboard/rescue/schedule` | Weekly surprise-bag routine per pickup point, and the days to skip |
 
 ### About, trust and legal
 

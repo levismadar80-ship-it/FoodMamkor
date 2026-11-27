@@ -27,10 +27,11 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.schemas.payment_link import reservation_timing  # MEH-3897
 from app.models.models import (
     RESCUE_MAX_QTY_PER_ORDER,
     Producer,
@@ -61,7 +62,7 @@ from app.utils.clock import israel_today, utc_now
 # The router's `_offer_for_update`, passed in (see the module docstring).
 OfferLock = Callable[[Session, UUID], RescueOffer]
 
-BLOCKED_DETAIL = "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
+BLOCKED_DETAIL = "שני סלים לא נאספו, ולכן אי אפשר לשריין סלים חדשים כרגע. כתבו לנו"
 
 # How many times to retry a colliding pickup code before giving up. The code
 # is unique per OFFER and an offer holds at most 20 bags, so a collision is
@@ -118,6 +119,10 @@ def issue_order(
     The UNIQUE (offer_id, pickup_code) is the authority for uniqueness; this
     loop only avoids handing the buyer a 500 on the rare collision.
     """
+    location = offer.location
+    # MEH-3897: the reservation keeps how it is paid as of now.
+    producer = location.producer if location is not None else None
+    timing = reservation_timing(producer.payment_info if producer is not None else None)
     for _ in range(_CODE_ATTEMPTS):
         candidate = RescueOrder(
             offer_id=offer.id,
@@ -125,6 +130,7 @@ def issue_order(
             qty=qty,
             pickup_code=new_pickup_code(),
             status="reserved",
+            prepay_timing=timing,
         )
         db.add(candidate)
         try:
@@ -190,6 +196,20 @@ def _check_offer_day(body: RescueOfferCreate, today: date) -> None:
         )
 
 
+# MEH-3703: one publisher at a time, by hand or by the weekly routine. The
+# "no active bag yet" check and the insert are two statements; without one
+# lock a hand publish and the hourly job could both pass the check.
+PUBLISH_LOCK_KEY = "rescue-schedule-publish"
+
+
+def lock_offer_publishing(db: Session) -> None:
+    """Take the transaction-scoped lock every bag insert waits on."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"),
+        {"k": PUBLISH_LOCK_KEY},
+    )
+
+
 def publish_offer(
     db: Session,
     *,
@@ -242,6 +262,7 @@ def publish_offer(
 
     _check_offer_day(body, today)
 
+    lock_offer_publishing(db)
     # One active bag per point per day: `qty_left` is per OFFER, so a second
     # row for the same evening would show the same business twice with two
     # separate stock counts and two codes per buyer.

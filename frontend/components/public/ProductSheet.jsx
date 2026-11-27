@@ -39,6 +39,7 @@ import {
   isPrimaryExternal,
 } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackPrimaryCtaClick } from "@/lib/contact-tracking";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * Module:   ProductSheet
@@ -445,18 +446,17 @@ export default function ProductSheet({
         aria-label={product.name}
         data-testid="product-sheet"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-surface shadow-xl md:max-w-md md:rounded-2xl"
+        className="vv-pin relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-surface shadow-xl md:max-w-md md:rounded-2xl"
       >
-        <button
+        <IconButton
           ref={closeRef}
-          type="button"
           onClick={onClose}
-          aria-label={t("producer.detail.sections.products.sheet_close_aria")}
+          label={t("producer.detail.sections.products.sheet_close_aria")}
           data-testid="product-sheet-close"
           className={`absolute top-3 end-3 z-10 ${OVERLAY_CONTROL_CLS}`}
         >
           <X size={20} weight="bold" aria-hidden="true" />
-        </button>
+        </IconButton>
         {/* MEH-3622: share THIS product — the page's own URL + `?product=<id>`,
             which the page already opens on arrival (PR #3972). Wolt and Etsy
             give every item its own link; a post about one cake should open

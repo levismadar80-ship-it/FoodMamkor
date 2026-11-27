@@ -117,7 +117,7 @@ describe("owner DeliveryCard resolves the codes", () => {
     );
     // One real change (untick the physical store; delivery+nationwide stays valid)
     // so the save button enables.
-    fireEvent.click(screen.getByRole("checkbox", { name: D.has_physical_location }));
+    fireEvent.click(screen.getByRole("checkbox", { name: D.place_onsite }));
     fireEvent.click(screen.getByRole("button", { name: D.save_cta }));
   }
 

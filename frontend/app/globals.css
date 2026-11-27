@@ -199,6 +199,18 @@ html[dir="rtl"] {
   direction: rtl;
 }
 
+/* MEH-3927 — the site has no dark theme, so it says so.
+   `only light` is the signal Chrome's Auto Dark Theme honours: without it a
+   phone in dark mode (Chrome on Android with the "darken websites" setting,
+   some in-app browsers) inverts the cream page, the logos and the photos'
+   frames. Measured 27/11 in Chromium (forceDarkModeEnabled, the browser
+   preferring dark): the cream F5F0E8 page rendered as 29251F without this
+   line and stayed F5F0E8 with it (hex spelled without the hash: raw-color-tokens.sh scans comments). Samsung Internet's own dark mode does not reliably honour it (residual
+   risk). Guard: e2e/flows/44-light-only-color-scheme.spec.ts */
+:root {
+  color-scheme: only light;
+}
+
 html {
 
   /* MEH-1775 — THE bottom inset. Single source of truth for how much vertical
@@ -332,6 +344,31 @@ h1, h2, h3 {
 [dir="rtl"] [dir="ltr"] em,
 [dir="rtl"] [dir="ltr"] i {
   font-style: italic;
+}
+
+/* MEH-3856: the business page renders «חזרה למפה» in its server HTML, marked
+   data-from-map-only, and the inline flags script (lib/prehydration-flags-inline.js)
+   sets html[data-from-map] when the URL says ?from=map. So the row is there
+   from the first paint on such a link, and absent otherwise, instead of being
+   added after hydration above the gallery (it pushed the page down on a phone).
+   Only the hide is written here: the row keeps its own display classes. */
+html:not([data-from-map]) [data-from-map-only] {
+  display: none;
+}
+
+/* MEH-3878: while the route loader is on screen the site footer waits. On a
+   first load the page itself arrives after the loader (React sends a large
+   page as a later chunk and swaps it in at least 300ms after the first paint),
+   so a footer in view at that moment was pushed down by the whole page: CLS
+   0.41 on /recommend#share, where the browser had already scrolled to the
+   bottom. The loader's min-h-screen (MEH-2754) only helps at scroll 0; a hash
+   link, a reload that restores the scroll, or a short page still showed it.
+   A footer that is not drawn yet cannot move; it appears with the page.
+   Without :has() (Safari < 15.4) the footer stays as before. */
+@supports selector(:has(*)) {
+  body:has([data-route-loader]) footer[data-site-footer] {
+    display: none;
+  }
 }
 
 /* MEH-2487: a page whose last band is full colour (marked data-meets-footer)
@@ -494,8 +531,30 @@ body.sheet-open .cookie-banner {
 html[data-cookie-answered] .cookie-banner[data-prehydration] {
   display: none;
 }
+/* MEH-3820: /map's phone shell reserves the banner's strip from the first
+   paint while the visitor has not answered (the banner is in the server HTML,
+   and lib/cookie-banner-height-inline.js publishes --cookie-banner-h before
+   paint). Before, the reserve waited for hydration and the map shrank ~5 s in
+   on a slow phone (0.118 CLS). Not while the sheet is open: the banner is
+   hidden then (body.sheet-open above), so there is nothing to make room for.
+   --map-banner-reserve is the ONE definition of the length; MapClient.jsx
+   MOBILE_BANNER_RESERVE reads it for a banner re-opened from the footer. */
+:root {
+  --map-banner-reserve: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px));
+}
+html:not([data-cookie-answered]) body:not(.sheet-open) [data-map-banner-reserve] {
+  --map-pane-reserve: var(--map-banner-reserve);
+  padding-bottom: var(--map-pane-reserve);
+}
 html[data-has-token] [data-auth-pending] {
   visibility: hidden;
+}
+/* MEH-3860: Friday mode is known before the first paint (data-friday-mode,
+   lib/prehydration-flags-inline.js), so the hero line and the strip's slot
+   are right from the first frame instead of changing after hydration. */
+html:not([data-friday-mode]) [data-friday-only],
+html[data-friday-mode] [data-friday-off] {
+  display: none;
 }
 /* A stored session sees a «loading» line instead of an empty pane. */
 html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
@@ -973,7 +1032,11 @@ html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
    Does not work inside an `overflow` scroller that would clip the pseudo
    (the admin phone strip uses `min-h-touch` for that reason). */
 @layer utilities {
-  .tap-area {
+  /* MEH-3832: :where() keeps this at zero specificity, so a caller's own
+     `absolute` / `fixed` / `sticky` always wins over it, whatever the order of
+     the two rules in the stylesheet. The ::before only needs SOME positioned
+     box to measure from, and any of those is one. */
+  :where(.tap-area) {
     position: relative;
   }
   .tap-area::before {

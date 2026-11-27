@@ -23,7 +23,7 @@ import {
 
 let ids = new Set();
 // MEH-2724: the full producer rows from the SAME response, newest first, for
-// the homepage «המועדפים שלך» strip. Parsed per row (one bad row costs one
+// the homepage «המועדפים שלכם» strip. Parsed per row (one bad row costs one
 // card, as on /favorites). Filtered through `ids` on read, so a heart removed
 // anywhere drops the card at once. Rows with no created_at sort last.
 let rows = [];
@@ -66,7 +66,13 @@ export function clearFavoritesStripHint() {
 
 export function hadFavoritesLastVisit() {
   try {
-    return localStorage.getItem(STRIP_HINT_KEY) === "1";
+    // MEH-3858: the same condition as the pre-paint script in
+    // app/[locale]/home/HomeStaticBlocks.jsx (FAVORITES_PREPAINT_SCRIPT). A
+    // hint left behind by a session that ended in api.js (token removed,
+    // hint kept) reserved the strip after mount and collapsed it when auth
+    // came back signed out: CLS 0.14 on a phone's home page.
+    // eslint-disable-next-line no-restricted-syntax -- same condition as the pre-paint script in app/[locale]/home/HomeStaticBlocks.jsx (MEH-3858)
+    return localStorage.getItem("token") !== null && localStorage.getItem(STRIP_HINT_KEY) === "1";
   } catch {
     return false;
   }

@@ -2,7 +2,9 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_business_content,
     admin_decisions,
+    admin_draft_merge,
     admin_experiences,
     admin_checklist,
     admin_extra,
@@ -22,6 +24,7 @@ from app.routers import (
     business_suggestions,
     category_requests,
     chat,
+    chat_owner,
     cities,
     events,
     experiences,
@@ -30,6 +33,7 @@ from app.routers import (
     group_buys,
     group_buy_capacity,
     group_buy_mine,
+    group_buy_pickup,
     my_orders_any,
     health,
     holiday_mode,
@@ -43,6 +47,7 @@ from app.routers import (
     producer_me_review,
     producer_me_weekly_summary,
     producer_name_check,
+    producer_identity_check,
     producer_name_requests,
     producer_owner_invite,
     producer_owner_invite_existing,
@@ -56,6 +61,7 @@ from app.routers import (
     page_fill,
     form_fill,
     product_order_business,
+    producer_staff,
     product_order_buyer,
     product_order_offer,
     product_variants,
@@ -74,6 +80,7 @@ from app.routers import (
     system,
     upload,
     users_me,
+    resend_webhook,
     whatsapp_webhook,
 )
 
@@ -93,6 +100,8 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(review_reply_suggest.router)
     # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
     app.include_router(page_fill.router)
+    # owner assistant (26/11): POST /chat/owner, the dashboard's own assistant
+    app.include_router(chat_owner.router)
     # MEH-3740: «יש לכם מתכון כתוב?» — one draft route for every dashboard form
     app.include_router(form_fill.router)
     # MEH-3641: «הפרופיל שלכם בגוגל» — /producers/me/google-profile
@@ -129,6 +138,8 @@ def _include_admin(app: FastAPI) -> None:
     # as the owner's routes via services/product_organize.py. Here, not in
     # register_routers, to keep that function under the statement limit.
     app.include_router(admin_product_organize.router)
+    # MEH-3865: move a prepared draft to the owner who registered herself.
+    app.include_router(admin_draft_merge.router)
     # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
     app.include_router(admin_test_business.router)
     # MEH-3690: POST /auth/google/code, our own Google button's code swap.
@@ -170,13 +181,44 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3526: order staff — invite, accept, remove, leave.
+    app.include_router(producer_staff.owner_router)
+    app.include_router(producer_staff.invite_router)
+    app.include_router(producer_staff.member_router)
     # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
     app.include_router(group_buy_capacity.router)
     # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
     # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
+    # MEH-3735: pickup codes, «נמסר» / «לא הגיע», the admin block release.
+    app.include_router(group_buy_pickup.router)
+    app.include_router(group_buy_pickup.admin_router)
     # MEH-3698: does «ההזמנות שלי» have anything? One read for the menu gate.
     app.include_router(my_orders_any.router)
+
+
+def _include_webhooks(app: FastAPI) -> None:
+    """Inbound webhooks from outside services; each one checks a signature."""
+    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
+    app.include_router(whatsapp_webhook.router)
+    # MEH-3839: Resend delivery events. /webhook/resend.
+    app.include_router(resend_webhook.router)
+
+
+def _register_admin_on_behalf(app: FastAPI) -> None:
+    """Admin writes made on a business's behalf. Its own function because
+    register_routers sits at ruff's 50-statement cap (PLR0915)."""
+    # MEH-3333: admin CRUD for a business's locations (pickup points).
+    app.include_router(admin_producer_locations.router)
+    # MEH-3873: admin writes a business's events + experiences, with consent.
+    app.include_router(admin_business_content.router)
+
+
+def _include_signup_checks(app: FastAPI) -> None:
+    """The sign-up form's read-only «already on the site?» lookups. Their own
+    function because register_routers sits at ruff's 50-statement cap."""
+    app.include_router(producer_name_check.router)  # MEH-3086
+    app.include_router(producer_identity_check.router)  # MEH-3884
 
 
 def register_routers(app: FastAPI) -> None:
@@ -193,7 +235,7 @@ def register_routers(app: FastAPI) -> None:
     # MEH-3305: /auth/passkey/* — the admin second factor.
     app.include_router(admin_passkey.router)
     app.include_router(cities.router)
-    app.include_router(producer_name_check.router)  # MEH-3086
+    _include_signup_checks(app)
     _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
     app.include_router(billing.router)  # MEH-3181
@@ -222,8 +264,7 @@ def register_routers(app: FastAPI) -> None:
     # MEH-589: producer recipes chunk 2/4
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
-    # MEH-3333: admin CRUD for a business's locations (pickup points).
-    app.include_router(admin_producer_locations.router)
+    _register_admin_on_behalf(app)
     # MEH-2312: admin catalog import → drafts → approve.
     app.include_router(admin_product_import.router)
     app.include_router(reviews.router)
@@ -254,6 +295,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)
-    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
-    app.include_router(whatsapp_webhook.router)
+    _include_webhooks(app)
     _register_flagged_features(app)

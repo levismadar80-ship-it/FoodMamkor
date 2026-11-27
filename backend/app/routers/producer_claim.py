@@ -28,7 +28,7 @@ History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
 """
 
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import structlog
@@ -36,7 +36,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.auth import (
-    create_producer_claim_token,
+    PRODUCER_CLAIM_RENEW_GRACE_DAYS,
+    PRODUCER_CLAIM_TTL_DAYS,
     decode_lapsed_producer_claim_token,
     decode_producer_claim_token,
     get_current_user,
@@ -64,8 +65,11 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_risk import score_producer
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
+from app.services.share_links import link_producer_id, mint_share_code
+from app.services.staff_membership import end_staff_membership
 
 logger = structlog.get_logger(__name__)
 
@@ -140,7 +144,15 @@ def create_claim_link(
         )
     if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
-    token, expires_at = create_producer_claim_token(producer.id)  # type: ignore[arg-type]
+    # MEH-3896: a short /c/<code> link backed by a share_links row, added in
+    # the same commit as the stamp below.
+    code, expires_at = mint_share_code(
+        db,
+        producer_id=producer.id,  # type: ignore[arg-type]
+        scope="producer_claim",
+        ttl_days=PRODUCER_CLAIM_TTL_DAYS,
+        created_by=user.id,  # type: ignore[arg-type]
+    )
     # MEH-2496: the stamp the drafts list reads («קישור נשלח ב-…»). Every 409
     # above raises before this line, so a refused mint stamps nothing. It
     # records the LATEST link only — an earlier link stays valid until its own
@@ -158,7 +170,7 @@ def create_claim_link(
         expires_at=expires_at.isoformat(),
     )
     return ProducerClaimLinkOut(
-        url=f"{settings.frontend_url}/claim/{token}", expires_at=expires_at
+        url=f"{settings.frontend_url}/c/{code}", expires_at=expires_at
     )
 
 
@@ -169,7 +181,9 @@ def preview_claim(
     body: ProducerClaimPreviewRequest,
     db: Session = Depends(get_db),
 ) -> ProducerClaimPreviewOut:
-    producer_id = decode_producer_claim_token(body.token)
+    producer_id = link_producer_id(
+        db, body.token, "producer_claim", decode_producer_claim_token
+    )
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
         if producer_id
@@ -183,7 +197,7 @@ def preview_claim(
         name=producer.name,
         city=producer.city,
         short_description=producer.short_description,
-        image=(producer.images or [None])[0],
+        image=first_image(producer.images),  # MEH-3894
         # Public on the business page anyway. The claim page needs them for
         # the SAME rule registration applies: an agricultural category adds
         # the grower declaration (RegisterProducerClient FARMER_DECLARATION_*).
@@ -229,7 +243,13 @@ def request_new_claim_link(
     cannot be used to probe which producer ids exist (same reason as
     _LINK_INVALID above).
     """
-    producer_id = decode_lapsed_producer_claim_token(body.token)
+    producer_id = link_producer_id(
+        db,
+        body.token,
+        "producer_claim",
+        decode_lapsed_producer_claim_token,
+        grace=timedelta(days=PRODUCER_CLAIM_RENEW_GRACE_DAYS),
+    )
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
         if producer_id
@@ -302,7 +322,9 @@ def claim_producer(
             status_code=422, detail="יש לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך"
         )
 
-    producer_id = decode_producer_claim_token(body.token)
+    producer_id = link_producer_id(
+        db, body.token, "producer_claim", decode_producer_claim_token
+    )
     # FOR UPDATE serialises two claims racing on one link: the second waits,
     # then sees the owner the first one set and gets the 409 (MEH-2321 D3).
     # test_two_accounts_one_link_in_flight_second_is_409 covers it.
@@ -332,6 +354,8 @@ def claim_producer(
     user.producer_id = producer.id
     user.role = "producer"  # type: ignore[assignment]
     user.is_producer = True  # type: ignore[assignment]
+    # MEH-3526: an owner is no longer someone else's order staff.
+    end_staff_membership(db, user.id)
     user.terms_accepted_at = now  # type: ignore[assignment]
     user.terms_version = TERMS_VERSION  # type: ignore[assignment]
     db.commit()

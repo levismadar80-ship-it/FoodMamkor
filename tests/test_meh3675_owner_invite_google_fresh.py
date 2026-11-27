@@ -103,12 +103,23 @@ def test_a_signin_just_inside_the_window_is_accepted(client, db):
     assert r.status_code == 200, r.text
 
 
-def test_unverified_google_email_is_refused(client, db):
+def test_unverified_google_email_is_refused(client, db, monkeypatch):
+    """MEH-3813: the check lives in the REAL verifier now, so only Google's
+    signature check is faked here, not `verify_google_token`."""
+    from google.oauth2 import id_token as google_id_token
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "google_client_id", "ours.apps.googleusercontent.com")
     producer, token = _invited(client, db)
     user = _google_user(db)
     for flag in (False, None, "true"):
-        with _with_claims(_claims(email_verified=flag)):
-            r = _accept(client, token, user)
+        monkeypatch.setattr(
+            google_id_token,
+            "verify_oauth2_token",
+            lambda *_a, _f=flag: _claims(email_verified=_f),
+        )
+        r = _accept(client, token, user)
         assert r.status_code == 422, flag
     _not_accepted(db, producer, user)
 

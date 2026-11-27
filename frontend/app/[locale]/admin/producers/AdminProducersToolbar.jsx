@@ -18,7 +18,7 @@ function SearchInput({ value, onChange, onSearch }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
-      className="flex-1"
+      className="flex-1 md:min-w-64"
     />
   );
 }
@@ -49,8 +49,8 @@ function StatusSelect({ value, onChange }) {
 function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
-    ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-surface border-border text-muted hover:border-yellow-400";
+    ? "bg-warning-100 border-warning-400 text-warning-800"
+    : "bg-surface border-border text-muted hover:border-warning-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
@@ -59,7 +59,7 @@ function IncompleteToggle({ active, count, onToggle }) {
     >
       <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? t("producers.toolbar.show_all") : t("producers.toolbar.incomplete_label")}
       {count > 0 && (
-        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-text text-xs font-bold">
+        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-warning-500 text-text text-xs font-bold">
           {count}
         </span>
       )}
@@ -143,7 +143,10 @@ export default function AdminProducersToolbar({
 }) {
   const t = useTranslations("admin");
   return (
-    <div className="flex flex-col md:flex-row gap-3">
+    // MEH-3917: md:flex-wrap — with the admin sidebar open, the one-line row
+    // was 1437 px wide at 1280 and pushed «ייצוא» and «+ בית עסק חדש» off the
+    // page; now the chips and actions drop to a second line instead.
+    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
       <Button onClick={() => onSearch()} variant="primary" size="sm">

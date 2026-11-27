@@ -57,11 +57,18 @@ export default function RescueOfferAction({ offer, reservation }) {
   const buttonRef = useRef(null);
   const available = !order && offer.state === "available";
   const buttonInView = useInView(buttonRef, available);
+  const pickupLine = [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null;
 
   if (order) {
     return (
       <div className="space-y-4" data-testid="rescue-offer-reserved">
-        <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+        <RescueConfirmation
+          order={order}
+          onCancel={cancel}
+          cancelling={busy}
+          place={{ name: offer.producer?.name, address: pickupLine }} // MEH-3704
+          prepay={{ link: offer.producer?.prepay_link ?? null, timing: offer.producer?.prepay_timing ?? null }} // MEH-3895
+        />
         {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
           <AddToCalendarButton
             testId="rescue-offer-add-to-calendar"
@@ -70,7 +77,7 @@ export default function RescueOfferAction({ offer, reservation }) {
               start: offer.pickup_start,
               end: offer.pickup_end,
               title: t("offer_page.calendar_title", { business_name: offer.producer?.name ?? "" }),
-              location: [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null,
+              location: pickupLine,
               // The bag page is public, but the pickup code is not: no URL,
               // so the calendar entry never carries anything secret.
             }}
@@ -88,7 +95,7 @@ export default function RescueOfferAction({ offer, reservation }) {
 
   const price = shekels(offer.price_agorot);
   const until = israelTime(offer.pickup_end);
-  const cancelUntil = rescueCancelText(offer.cancel_until, t); // MEH-3702
+  const cancelUntil = rescueCancelText(offer.cancel_until, t, day); // MEH-3702
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
   const button = (label, testId) => (
     <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid={testId} variant="primary" size="lg" className="w-full">

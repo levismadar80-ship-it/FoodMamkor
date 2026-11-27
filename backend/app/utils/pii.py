@@ -50,9 +50,26 @@ _URL_TOKEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         re.compile(r"(/producer-preview|/draft-preview)/eyJ[\w-]*\.[\w-]+\.[\w-]+"),
         r"\1/[token]",
     ),
+    # MEH-3896: the short links — /producer-preview/<code> (API), /v/<code> and
+    # /c/<code> (the pages, seen in Referer). 12 base62 characters; the
+    # look-ahead keeps a longer word out.
+    (
+        re.compile(r"(/producer-preview|/v|/c)/[A-Za-z0-9]{12}(?![\w-])"),
+        r"\1/[token]",
+    ),
+    # The same, percent-encoded inside a `redirect=` value (a Referer).
+    (
+        re.compile(
+            r"(%2F(?:[a-z]{2}%2F)?(?:v|c|producer-preview))%2F[A-Za-z0-9]{12}(?![\w-])",
+            re.IGNORECASE,
+        ),
+        r"\1%2F[token]",
+    ),
     # /owner-invite/<token_urlsafe(32)> — the page, and /auth/owner-invite/…,
     # which this matches as a substring.
     (re.compile(r"/owner-invite/[\w-]{40,}"), "/owner-invite/[token]"),
+    # MEH-3526: /staff-invite/<token_urlsafe(32)> — the order-staff invite page.
+    (re.compile(r"/staff-invite/[\w-]{40,}"), "/staff-invite/[token]"),
     # /registration(s)/<token_urlsafe(32)> — the sign-up cancel link.
     (re.compile(r"(/registrations?)/[\w-]{40,}"), r"\1/[token]"),
     # MEH-3273: /register/producer/prefill/<token_urlsafe(32)> (returns lead

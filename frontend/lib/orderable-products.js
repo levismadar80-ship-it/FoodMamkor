@@ -2,8 +2,8 @@
 /**
  * Module:   orderable-products
  * Purpose:  The business's own products as the «הזמנות» tab switches them
- *           (open for ordering on the site, sold out), and the prep list of
- *           the «היום» tab.
+ *           (open for ordering on the site, sold out, daily stock). The prep
+ *           list moved to the server (lib/daily-stock-owner.js, 27/11).
  * Touches:  GET /producers/me/products/ordering ·
  *           PUT /producers/me/products/{id}/ordering
  * Does NOT: change a product's price, name or unit — the product routes in
@@ -17,15 +17,10 @@
  */
 
 import api from "@/lib/api";
-import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import {
   GetMyProductsOrderingProducersMeProductsOrderingGetResponse,
   PutProductOrderingProducersMeProductsProductIdOrderingPutResponse,
 } from "@/lib/generated/api.zod";
-
-// What the business has committed to: a request still waiting for her
-// answer, or a proposal the buyer has not accepted, is not prepared yet.
-const PREP_STATUSES = ["confirmed", "ready"];
 
 /** @returns {Promise<any[]>} */
 export async function loadProductsOrdering() {
@@ -37,7 +32,7 @@ export async function loadProductsOrdering() {
  * Save one product with one field changed; the rest of the row goes back
  * as it was read.
  * @param {any} product
- * @param {{ is_orderable?: boolean, in_stock?: boolean }} change
+ * @param {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, lead_days?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} change
  */
 export async function saveProductOrdering(product, change) {
   const body = {
@@ -52,22 +47,3 @@ export async function saveProductOrdering(product, change) {
   return { ...product, ...PutProductOrderingProducersMeProductsProductIdOrderingPutResponse.parse(data) };
 }
 
-/**
- * Today's committed orders summed by product, biggest count first.
- * @param {any[]} todays the «היום» list
- * @returns {{ name: string, count: number }[]}
- */
-export function prepList(todays) {
-  /** @type {Map<string, number>} */
-  const counts = new Map();
-  for (const order of todays ?? []) {
-    if (!PREP_STATUSES.includes(order.status)) continue;
-    for (const line of order.items ?? []) {
-      const name = orderLineName(line); // MEH-3617: each size counted apart
-      counts.set(name, (counts.get(name) ?? 0) + line.qty);
-    }
-  }
-  return [...counts]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "he"));
-}

@@ -126,14 +126,15 @@ vi.mock("@/components/LanguageToggle", () => ({
 }));
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
+  useExperiencesNavGateState: () => ({ visible: !!(experiencesGateRef.current), settled: true }),
 }));
 // MEH-2965: the other three reads behind the same gate. Closed and stubbed, so
 // "gate open" in this suite is exactly the one ref above and no hook reaches
 // the real api.
-vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false, useEventsNavGateState: () => ({ visible: !!(false), settled: true }) }));
 // MEH-3125: the rescue read clears the separate `opportunity-supply` gate.
 const rescueGateRef = { current: false };
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => hub === "rescue" && rescueGateRef.current }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => hub === "rescue" && rescueGateRef.current, useHubNavGateState: (hub) => ({ visible: !!(hub === "rescue" && rescueGateRef.current), settled: true }) }));
 
 const STATES = {
   guest: { user: null, signedIn: false, role: null },

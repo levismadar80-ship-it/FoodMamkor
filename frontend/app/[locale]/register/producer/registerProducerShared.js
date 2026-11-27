@@ -15,44 +15,55 @@ export const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 
 // `onsite` is the schema default (has_physical_location: true,
 // offers_delivery: false, schemas.py:957-958), so a visitor who never
 // touches the radio still posts a coherent shape.
-const FULFILMENT_OPTIONS = [
-  { value: "onsite", has_physical_location: true, offers_delivery: false },
-  { value: "delivery", has_physical_location: false, offers_delivery: true },
-  { value: "both", has_physical_location: true, offers_delivery: true },
-];
+// MEH-2447: three answers now — «בשעות קבועות» (onsite), «בתיאום מראש»
+// (arranged, producers.by_arrangement) and «משלוח» (delivery). onsite and
+// arranged are two kinds of the same place, so they exclude each other; either
+// one pairs with delivery. The stored value joins the ticked axes with "+" in
+// FULFILMENT_AXES order, except onsite+delivery, which keeps its old name
+// "both" so a draft saved before this change still loads.
+// `fulfilment` is STORED, not derived from the booleans: the form's defaults
+// ARE "onsite", so a derived value would never be "" and the required gate
+// could never fire. «nothing ticked» is "" — the required gate's empty answer.
+export const FULFILMENT_AXES = ["onsite", "arranged", "delivery"];
+const EXCLUSIVE = { onsite: "arranged", arranged: "onsite" };
 
-// `fulfilment` is STORED, not derived from the two booleans. Deriving it was
-// the first shape and it was wrong: the form's defaults are
-// has_physical_location:true + offers_delivery:false, which IS "onsite", so a
-// derived value is never "" — the radio would arrive pre-lit on a question
-// nobody answered and the required gate below could never fire. One stored
-// answer, booleans computed from it at submit.
-// MEH-2939: asked as two checkboxes (one per boolean), not three radios. The
-// stored answer stays one of the values above so fulfilmentBooleans remains
-// the single mapping point and an existing draft ("both") still loads.
-// «neither» is "" — the required gate's empty answer.
-export const FULFILMENT_AXES = ["onsite", "delivery"];
+/** @param {string} value @returns {string[]} */
+function axesOf(value) {
+  if (value === "both") return ["onsite", "delivery"];
+  const parts = String(value || "").split("+");
+  return FULFILMENT_AXES.filter((a) => parts.includes(a));
+}
 
-/** @param {string} value @param {"onsite"|"delivery"} axis */
+/** @param {string[]} axes */
+function valueOf(axes) {
+  const ordered = FULFILMENT_AXES.filter((a) => axes.includes(a));
+  return ordered.join("+") === "onsite+delivery" ? "both" : ordered.join("+");
+}
+
+/** @param {string} value @param {string} axis */
 export function fulfilmentHasAxis(value, axis) {
-  return value === axis || value === "both";
+  return axesOf(value).includes(axis);
 }
 
-/** @param {string} value @param {"onsite"|"delivery"} axis */
+/** @param {string} value @param {string} axis */
 export function toggleFulfilmentAxis(value, axis) {
-  const onsite = axis === "onsite" ? !fulfilmentHasAxis(value, "onsite") : fulfilmentHasAxis(value, "onsite");
-  const delivery = axis === "delivery" ? !fulfilmentHasAxis(value, "delivery") : fulfilmentHasAxis(value, "delivery");
-  if (onsite && delivery) return "both";
-  if (onsite) return "onsite";
-  if (delivery) return "delivery";
-  return "";
+  const axes = axesOf(value);
+  if (axes.includes(axis)) return valueOf(axes.filter((a) => a !== axis));
+  return valueOf([...axes.filter((a) => a !== EXCLUSIVE[axis]), axis]);
 }
 
+/** @param {string} value */
 export function fulfilmentBooleans(value) {
-  const hit = FULFILMENT_OPTIONS.find((o) => o.value === value);
+  const axes = axesOf(value);
+  // Nothing answered (an organizer, or a pre-gate draft) posts the schema
+  // default — a place, no delivery, not by arrangement.
+  if (axes.length === 0) {
+    return { has_physical_location: true, offers_delivery: false, by_arrangement: false };
+  }
   return {
-    has_physical_location: hit ? hit.has_physical_location : true,
-    offers_delivery: hit ? hit.offers_delivery : false,
+    has_physical_location: axes.includes("onsite") || axes.includes("arranged"),
+    offers_delivery: axes.includes("delivery"),
+    by_arrangement: axes.includes("arranged"),
   };
 }
 

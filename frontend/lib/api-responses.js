@@ -48,6 +48,7 @@ import {
   AdminCreateProducerAdminProducersPostResponse,
   ClaimProducerProducerClaimPostResponse,
   CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse,
+  MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse,
   CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse,
   GetFavoritesUsersMeFavoritesGetResponseItem,
   GetOwnerInviteAuthOwnerInviteTokenGetResponse,
@@ -56,14 +57,19 @@ import {
   GetSavedIdsUsersMeSavedIdsGetResponse,
   GetSavedUsersMeSavedGetResponse,
   GetStatsStatsGetResponse,
+  InviteStaffProducersMeStaffPostResponse,
   ListCategoriesCategoriesGetResponse,
   ListMyGroupBuysProducersMeGroupBuysGetResponseItem,
+  ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse,
   ListReviewsNestedProducersProducerIdReviewsGetResponse,
+  ListStaffProducersMeStaffGetResponse,
   PreviewClaimProducerClaimPreviewPostResponse,
   ProducerNameCheckProducerNameCheckGetResponse,
+  ProducerIdentityCheckProducerIdentityCheckPostResponse,
   RandomProducerProducersRandomGetResponse,
   UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse,
   GoogleCodeAuthGoogleCodePostResponse,
+  MatchCitiesCitiesMatchPostResponse,
 } from "@/lib/generated/api.zod";
 
 /** @param {unknown} value */
@@ -86,6 +92,10 @@ const rowOf = (objectSchema, key) => objectSchema.shape[key].def.element;
 export const CategoriesResponseSchema = ListCategoriesCategoriesGetResponse;
 export const StatsSchema = GetStatsStatsGetResponse;
 export const RandomProducerSchema = RandomProducerProducersRandomGetResponse;
+
+// --- city fields ----------------------------------------------------------
+// MEH-3867: a pasted list of cities, checked in one request.
+export const CitiesMatchSchema = MatchCitiesCitiesMatchPostResponse;
 
 // --- favorites and saved items -------------------------------------------
 // The hearts' cache needs `producer_id` only. Picking it keeps one bad nested
@@ -138,6 +148,9 @@ export const ProducerClaimResultSchema = ClaimProducerProducerClaimPostResponse;
 export const ProducerAdminCreatedSchema = /* @__PURE__ */ zod.pick(AdminCreateProducerAdminProducersPostResponse, {
   id: true,
 });
+// MEH-3865: the admin's «העברת הטיוטה לבעלים» answer.
+export const DraftMergeSchema = MergeDraftIntoOwnerAdminProducersDraftIdMergeOwnerPostResponse;
+
 export const ProducerClaimLinkSchema = /* @__PURE__ */ CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse.check(
   zod.refine((body) => isUrl(body.url), { message: "claim link is not a URL" }),
 );
@@ -183,6 +196,8 @@ export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGro
     path: ["status"],
   }),
 );
+// MEH-3735: the owner's pickup list for one group buy (codes, never names).
+export const GroupBuyPickupsSchema = ListPickupsProducersMeGroupBuysGroupBuyIdPickupsGetResponse;
 // The public group page reads the business's delivery fields and, under a "no"
 // verdict, its phone and name — all of ProducerDetailOut, so the whole of it.
 export const GroupBuyProducerDeliverySchema = GetProducerProducersProducerIdGetResponse;
@@ -192,7 +207,13 @@ export const OrderBusinessSchema = GetProducerProducersProducerIdGetResponse;
 
 // --- sign-up --------------------------------------------------------------
 export const NameCheckResponseSchema = ProducerNameCheckProducerNameCheckGetResponse;
+// MEH-3884: «this business already has a page», under the phone field.
+export const IdentityCheckResponseSchema = ProducerIdentityCheckProducerIdentityCheckPostResponse;
 
 // --- sign-in --------------------------------------------------------------
 // MEH-3690: our own Google button reads the ID token the code was swapped for.
 export const GoogleCodeResponseSchema = GoogleCodeAuthGoogleCodePostResponse;
+
+// MEH-3526: the owner's order-staff list, and the row an invite answers with.
+export const StaffListOutSchema = ListStaffProducersMeStaffGetResponse;
+export const StaffMemberOutSchema = InviteStaffProducersMeStaffPostResponse;

@@ -8,13 +8,15 @@ import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
 import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import AdminOwnerStoryFields from "@/components/admin/AdminOwnerStoryFields";
 import api from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
+import useGalleryUpload from "@/components/admin/useGalleryUpload";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-responses";
-import { israelToday } from "@/lib/israel-date";
+import useIsraelToday from "@/lib/use-israel-today";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
@@ -31,6 +33,9 @@ import {
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
+import AdminDuplicateMatches, { duplicateMatchesOf } from "@/components/admin/AdminDuplicateMatches";
+import Checkbox from "@/components/ui/Checkbox";
+import { placeChecks, togglePlace } from "@/lib/fulfillment-tags";
 
 // MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -223,6 +228,7 @@ const EMPTY = {
   images: [],
   // MEH-213 — location mode
   has_physical_location: true,
+  by_arrangement: false, // MEH-2447
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
@@ -237,6 +243,7 @@ const EMPTY = {
 /** MEH-3475: the delivery fields the edit page's panel owns. */
 const DELIVERY_GROUP = [
   "has_physical_location",
+  "by_arrangement",
   "offers_delivery",
   "delivery_nationwide",
   "delivery_area_cities",
@@ -313,7 +320,16 @@ function Field({ label, children, full = false }) {
   );
 }
 
-export default function ProducerForm({ initial = null, producerId = null }) {
+/**
+ * @param {{ initial?: any, producerId?: any, unsavedSections?: string[],
+ *   reportDirty?: (key: string, dirty: boolean) => void }} props
+ *   unsavedSections — MEH-3915: titles of the edit page's sections that have
+ *   their own save and hold unsaved edits; while any does, the save waits.
+ *   reportDirty — handed to the locations editor below, which is one of them.
+ */
+export default function ProducerForm({ initial = null, producerId = null, unsavedSections = [], reportDirty = undefined }) {
+  // MEH-3861: the first date a picker allows, the same in both renders.
+  const today = useIsraelToday();
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
@@ -342,7 +358,27 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-2325: create-only. Kept out of `form` so the edit payload can never
   // carry it — a draft is born as a draft, never turned into one later.
   const [asDraft, setAsDraft] = useState(false);
-  const [categories, setCategories] = useState([]);
+  // MEH-3883: create-only. The 409 list of businesses we already have, with
+  // the compared values it was checked against; a second, explicit click
+  // resends the form with allow_duplicate. Edit a compared field and the list
+  // (and its «create anyway») goes away: the new values were never checked.
+  const [dup, setDup] = useState(/** @type {{ matches: any[], total: number, key: string } | null} */ (null));
+  const allowDuplicateRef = useRef(false);
+  const formRef = useRef(/** @type {HTMLFormElement | null} */ (null));
+  const dupKey = [form.phone, form.secondary_phone, form.contact_email, form.instagram, form.website, form.facebook].join("|");
+  const [blockedByUnsaved, setBlockedByUnsaved] = useState(false);
+  // Once every section is saved the note goes, and a section edited after
+  // that brings it back only on the next press of save.
+  useEffect(() => {
+    if (!unsavedSections.length) setBlockedByUnsaved(false);
+  }, [unsavedSections.length]);
+  // MEH-3818: through the shared read cache. The edit and new pages read the
+  // same key before they draw the form, so the list is here on the form's
+  // first paint instead of being inserted into it a moment later and pushing
+  // every field below it down (CLS 0.12–0.20, MEH-3809 guard; field p75
+  // 0.28 on edit and 1.0 on new, Sentry 25/11).
+  const { data: categoriesData } = useApi("/categories");
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
   // MEH-1506: admin-only Google Place lookup — search by the producer's own
@@ -352,10 +388,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [placeCandidates, setPlaceCandidates] = useState(null);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
-
-  useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
-  }, []);
 
   useEffect(() => {
     if (initial) {
@@ -428,6 +460,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         opening_hours: initial.opening_hours ?? "",
         // MEH-213 — location mode
         has_physical_location: initial.has_physical_location ?? true,
+        by_arrangement: initial.by_arrangement ?? false,
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
         // MEH-903 A: the single cities input is populated from the delivery_areas
@@ -499,31 +532,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     });
   };
 
+  // MEH-3915: one photo at a time, each kept as soon as it is up; a failure
+  // stays under the picker (useGalleryUpload) instead of a passing toast.
+  const gallery = useGalleryUpload((url) =>
+    setForm((f) => ({ ...f, images: [...(f.images || []), url] })),
+  );
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    // MEH-228 pattern: image upload routes through useAdminAction — per-key
-    // in-flight lock + central error toast (no more swallowed failures).
-    run(
-      "producer-images",
-      async () => {
-        const uploaded = [];
-        for (const file of files) {
-          const fd = new FormData();
-          fd.append("file", file);
-          const r = await api.post("/upload/image", fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          uploaded.push(r.data.url);
-        }
-        setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
-      },
-      (err) =>
-        showToast.error(
-          detailToMessage(err.response?.data?.detail) ||
-            t("producers.form.errors.image_upload"),
-        ),
-    );
+    e.target.value = ""; // the same file can be picked again after a failure
+    gallery.upload(files);
   };
 
   const removeImage = (url) => {
@@ -532,6 +549,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // MEH-3883: read-and-clear, so only the «create anyway» send carries it.
+    const allowDuplicate = allowDuplicateRef.current;
+    allowDuplicateRef.current = false;
+    // MEH-3915: a save leaves the page, so edits waiting in a section with
+    // its own «שמירה» (delivery, order window, payment) would be lost unseen.
+    if (unsavedSections.length) {
+      setBlockedByUnsaved(true);
+      return;
+    }
     // Explicit field list (no {...form} spread): the legacy delivery_cities
     // column is never sent — delivery_area_cities is the sole cities channel
     // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
@@ -604,6 +630,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       images: form.images,
       // MEH-213 — location mode
       has_physical_location: form.has_physical_location,
+      by_arrangement: form.has_physical_location && form.by_arrangement,
       offers_delivery: form.offers_delivery,
       delivery_nationwide: form.delivery_nationwide,
       // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
@@ -641,21 +668,25 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         } else if (asDraft) {
           // MEH-2325: land on the draft's edit page, where the claim-link
           // panel lives — the next thing the admin does is mint the link.
-          const r = await api.post("/admin/producers", { ...payload, as_draft: true });
+          const r = await api.post("/admin/producers", { ...payload, as_draft: true, allow_duplicate: allowDuplicate });
           const created = ProducerAdminCreatedSchema.safeParse(r.data);
           // The draft exists either way; without an id the list is where she finds it.
           router.push(created.success ? `/admin/producers/${created.data.id}/edit` : "/admin?tab=producers");
           return;
         } else {
-          await api.post("/admin/producers", payload);
+          await api.post("/admin/producers", { ...payload, allow_duplicate: allowDuplicate });
         }
         router.push("/admin?tab=producers");
       },
-      (err) =>
+      (err) => {
+        const found = duplicateMatchesOf(err);
+        setDup(found && { ...found, key: dupKey });
+        if (found) return;
         showToast.error(
           detailToMessage(err.response?.data?.detail, makeDeliveryCodeResolver(tDelivery)) ||
             t("producers.form.errors.save"),
-        ),
+        );
+      },
     );
   };
 
@@ -667,7 +698,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
@@ -920,19 +951,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             const capDisabled =
               !checked && form.category_ids.length >= MAX_CATEGORIES;
             return (
-              <label
+              <Checkbox
                 key={c.id}
-                className={`flex items-center gap-2 text-sm ${
-                  capDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                }`}
+                className="flex items-center gap-2 text-sm"
+                checked={checked}
+                disabled={capDisabled}
+                onChange={() => toggleCategory(c.id)}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={capDisabled}
-                  onChange={() => toggleCategory(c.id)}
-                  className="w-4 h-4 accent-primary"
-                />
                 <span>{c.name}</span>
                 {isPrimary && (
                   <span
@@ -942,46 +967,41 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                     {t("producers.form.primary_badge")}
                   </span>
                 )}
-              </label>
+              </Checkbox>
             );
           })}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-border">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.grass_fed}
-              onChange={(e) => update("grass_fed", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            checked={form.grass_fed}
+            onChange={(e) => update("grass_fed", e.target.checked)}
+          >
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
-          </label>
+          </Checkbox>
           {/* MEH-2699: owner-declared reservist claim — shown on edit so the
               admin can see it and correct a false declaration. */}
           {producerId && (
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                name="reservist_owned"
-                checked={!!form.reservist_owned}
-                onChange={(e) => update("reservist_owned", e.target.checked)}
-                className="w-4 h-4 accent-primary"
-              />
+            <Checkbox
+              className="flex items-center gap-2 text-sm"
+              name="reservist_owned"
+              checked={!!form.reservist_owned}
+              onChange={(e) => update("reservist_owned", e.target.checked)}
+            >
               <Medal size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.reservist_owned")}
-            </label>
+            </Checkbox>
           )}
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           {/* MEH-766 ch3: "verified" checkbox removed — verification is the
               admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!form.is_recommended}
-              onChange={(e) => update("is_recommended", e.target.checked)}
-              className="w-4 h-4 accent-accent"
-            />
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            boxClassName="accent-accent"
+            checked={!!form.is_recommended}
+            onChange={(e) => update("is_recommended", e.target.checked)}
+          >
             {t("producers.form.fields.recommended")}
-          </label>
+          </Checkbox>
           {/* MEH-2274 (MEH-1494 chunk B, frontend half). Three deliberate
               choices here, each of which the backend already decided:
 
@@ -1108,20 +1128,27 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       {!producerId && (
       <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.has_physical_location}
-              onChange={(e) => update("has_physical_location", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t("producers.form.fields.has_physical_location")}
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.offers_delivery}
+          {/* MEH-2447: fixed hours or by arrangement, so a farm is no longer
+              saved as «חנות פיזית». Same pair as the owner's DeliveryCard. */}
+          {/** @type {("onsite"|"arranged")[]} */ (["onsite", "arranged"]).map((axis) => (
+            <Checkbox
+              key={axis}
+              className="flex items-center gap-2 text-sm"
+              data-testid={`admin-place-${axis}`}
+              checked={placeChecks(form.has_physical_location, form.by_arrangement)[axis]}
               onChange={(e) => {
+                const next = togglePlace(axis, e.target.checked);
+                update("has_physical_location", next.hasPhysical);
+                update("by_arrangement", next.byArrangement);
+              }}
+            >
+              {t(`producers.form.fields.place_${axis}`)}
+            </Checkbox>
+          ))}
+          <Checkbox
+            className="flex items-center gap-2 text-sm"
+            checked={form.offers_delivery}
+            onChange={(e) => {
                 const on = e.target.checked;
                 update("offers_delivery", on);
                 // MEH-1879: the delivery block below is CONDITIONALLY RENDERED
@@ -1142,29 +1169,26 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   update("delivery_excluded_cities", []);
                 }
               }}
-              className="w-4 h-4 accent-primary"
-            />
+          >
             {t("producers.form.fields.offers_delivery")}
-          </label>
+          </Checkbox>
           {!form.has_physical_location && !form.offers_delivery && (
             <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
           )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.delivery_nationwide}
-                  onChange={(e) => {
+              <Checkbox
+                className="flex items-center gap-2 text-sm"
+                checked={form.delivery_nationwide}
+                onChange={(e) => {
                     update("delivery_nationwide", e.target.checked);
                     // Clear cities entering nationwide; clear exclusions leaving it.
                     if (e.target.checked) update("delivery_cities", []);
                     else update("delivery_excluded_cities", []);
                   }}
-                  className="w-4 h-4 accent-primary"
-                />
+              >
                 {t("producers.form.fields.delivery_nationwide")}
-              </label>
+              </Checkbox>
               {!form.delivery_nationwide && (
                 <div data-testid="delivery-cities-block">
                   <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
@@ -1280,10 +1304,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           multiple
           aria-label={t("producers.form.sections.images")}
           onChange={handleImageUpload}
-          disabled={isBusy("producer-images")}
+          disabled={gallery.busy}
           className="text-sm w-full max-w-full"
         />
-        {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {gallery.busy && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {gallery.failure && (
+          <InlineMessage className="mt-2" data-testid="gallery-upload-error">
+            {gallery.failure}
+          </InlineMessage>
+        )}
         {/* MEH-3320: main-photo marker + «make main» live in AdminPhotoGrid. */}
         <AdminPhotoGrid
           images={form.images ?? []}
@@ -1330,7 +1359,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.vacation_until}
             // MEH-1983: Israel's today, not UTC's — the server validates
             // vacation_until against israel_today().
-            min={israelToday()}
+            min={today}
             onChange={(e) => update("vacation_until", e.target.value)}
             dir="ltr"
           />
@@ -1348,27 +1377,46 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       {!producerId && (
         <Section title={t("producers.claim.title")} testId="as-draft-section">
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="as-draft-checkbox"
-              checked={asDraft}
-              onChange={(e) => setAsDraft(e.target.checked)}
-              className="w-4 h-4 accent-primary mt-1"
-            />
+          <Checkbox
+            className="flex items-start gap-2"
+            boxClassName="mt-1"
+            data-testid="as-draft-checkbox"
+            checked={asDraft}
+            onChange={(e) => setAsDraft(e.target.checked)}
+          >
             <span>
               <span className="block text-sm font-medium">{t("producers.form.fields.as_draft")}</span>
               <span className="block text-xs text-muted mt-1">{t("producers.form.fields.as_draft_hint")}</span>
             </span>
-          </label>
+          </Checkbox>
         </Section>
       )}
 
+      {!producerId && dup && dup.key === dupKey && (
+        <AdminDuplicateMatches
+          matches={dup.matches}
+          total={dup.total}
+          busy={isBusy("producer-save")}
+          onCreateAnyway={() => {
+            allowDuplicateRef.current = true;
+            // Through the form, so native validation still runs.
+            formRef.current?.requestSubmit();
+          }}
+        />
+      )}
+      {blockedByUnsaved && unsavedSections.length > 0 && (
+        <InlineMessage data-testid="unsaved-sections-error">
+          {t("producers.form.errors.unsaved_sections", { sections: unsavedSections.join(", ") })}
+        </InlineMessage>
+      )}
       <div className="flex gap-3">
         <Button
           type="submit"
           disabled={
             isBusy("producer-save") ||
+            // MEH-3915: a save mid-upload wrote the gallery without the photos
+            // still on their way and left the page.
+            gallery.busy ||
             (!producerId && !form.has_physical_location && !form.offers_delivery) ||
             (!producerId && form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
@@ -1392,7 +1440,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     {producerId && (
       <div className="mt-6 max-w-4xl" data-testid="admin-locations-editor">
         <Section title={t("producers.form.sections.delivery_pickup")}>
-          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} />
+          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} reportDirty={reportDirty} />
         </Section>
       </div>
     )}

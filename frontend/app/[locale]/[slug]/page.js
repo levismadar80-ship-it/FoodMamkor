@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, buildTitleNoBrand, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
+import * as Sentry from "@sentry/nextjs";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildUntranslatedEntityMeta, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1119: isSlugShaped (+ its RESERVED / SLUG_SHAPE / SCANNER_PREFIXES) moved
@@ -49,6 +50,50 @@ async function getProducerBySlug(slug) {
     throw err;
   }
   return res.json();
+}
+
+// MEH-3819: the page's events, experiences and open group buys, read on the
+// server with the producer, so the page arrives with them instead of inserting
+// each list above the reviews and delivery a moment after it paints (≈ 0.8 CLS
+// on a phone deep-linked to #reviews, 24/11). Same 60 s cache as the producer.
+// Any failure returns null and the browser reads them as before
+// (useProducerActivities) — a missing list must never cost the page.
+// A short timeout and no retry: these lists are not worth a slow first byte.
+const ACTIVITIES_TIMEOUT_MS = 2500;
+async function getProducerActivities(producerId, slug) {
+  const id = encodeURIComponent(producerId);
+  /** @param {string} path */
+  const list = async (path) => {
+    const res = await serverFetch(
+      `${API_URL}${path}`,
+      { next: { revalidate: 60 } },
+      { timeoutMs: ACTIVITIES_TIMEOUT_MS, retries: 0 },
+    );
+    if (!res.ok) throw Object.assign(new Error(`${path}: ${res.status}`), { status: res.status });
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  };
+  try {
+    // MEH-3836: recipes too, so «מתכונים» is in the server HTML instead of
+    // landing above the reviews after the paint.
+    const [events, experiences, groupBuys, recipes] = await Promise.all([
+      list(`/events?producer_id=${id}`),
+      list(`/experiences?producer_id=${id}`),
+      list(`/group-buys?producer_id=${id}`),
+      // A failed recipes read costs only the recipes (null → the browser
+      // reads them), not the three lists above.
+      slug ? list(`/producers/${encodeURIComponent(slug)}/recipes`).catch(() => null) : Promise.resolve([]),
+    ]);
+    return { events, experiences, groupBuys, ...(recipes ? { recipes } : {}) };
+  } catch (err) {
+    // Not silent: reported, and the browser reads the lists itself. A 429 is
+    // the per-IP limit on the server's one egress address (SYSTEM_MAP «What
+    // gives first» 3) — expected under a crawl, so not reported per page.
+    if (err?.status !== 429) {
+      Sentry.captureException(err, { level: "warning", extra: { producerId } });
+    }
+    return null;
+  }
 }
 
 // MEH-476 PR 3b2: per-page hreflang for producer alias route. D1 title
@@ -122,6 +167,7 @@ export default async function ProducerSlugPage(props) {
   const producer = await getProducerBySlug(slug);
   if (!producer) notFound();
   if (producer === GONE) return <ProducerGone />;
+  const activities = await getProducerActivities(producer.id, producer.slug);
 
   return (
     <>
@@ -139,6 +185,7 @@ export default async function ProducerSlugPage(props) {
       <ProducerDetail
         key={slug}
         initialProducer={producer}
+        initialActivities={activities}
         fetchPath={`/producers/by-slug/${encodeURIComponent(slug)}`}
       />
     </>

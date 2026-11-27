@@ -1,8 +1,11 @@
 /**
- * MEH-3736 — /group-buys starts from the city the user already saved on the
- * site (lib/use-user-city.js), but only when that city has an open group buy:
- * with few groups, a saved city with none would open on an empty list.
+ * MEH-3736 → MEH-3857 — /group-buys and the city the user saved on the site
+ * (lib/use-user-city.js). Since MEH-3857 (Sapir, 25/11) the saved city is
+ * OFFERED as the one option of the empty city field when it is focused; it is
+ * no longer filled in after the load, which changed the field and the status
+ * chips a moment after the first paint (staging, iPhone, 25/11).
  * Typing still filters as before and never writes the saved city.
+ * The real CitySearch is rendered: the suggestion is its behaviour.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -17,11 +20,6 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }) => <a href={href} {...rest}>{children}</a>,
 }));
 vi.mock("next/image", () => ({ default: (props) => <img alt="" {...props} /> }));
-vi.mock("@/components/CitySearch", () => ({
-  default: ({ value, onChange }) => (
-    <input data-testid="city-input" value={value} onChange={(e) => onChange(e.target.value)} />
-  ),
-}));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 
 const GB = {
@@ -45,14 +43,16 @@ const GB = {
 };
 const ALL = { open: 3, funded: 0, fulfilled: 0 };
 const listCalls = () => api.get.mock.calls.filter(([url, cfg]) => url === "/group-buys" && cfg?.params?.status);
+const cityAsked = () => api.get.mock.calls.some(([, cfg]) => cfg?.params?.city);
+const field = () => screen.getByRole("combobox");
+const options = () => screen.queryAllByRole("option");
+const settle = () => new Promise((r) => setTimeout(r, 20));
 
-/** counts per city: the saved city's open count decides the seed */
-function mockApi(openInSavedCity) {
+function mockApi() {
   api.get.mockImplementation((url, cfg) => {
+    if (url === "/cities") return Promise.resolve({ data: [] });
     if (url === "/group-buys/counts") {
-      return Promise.resolve({
-        data: cfg?.params?.city ? { open: openInSavedCity, funded: 0, fulfilled: 0 } : ALL,
-      });
+      return Promise.resolve({ data: cfg?.params?.city ? { open: 1, funded: 0, fulfilled: 0 } : ALL });
     }
     return Promise.resolve({ data: [GB] });
   });
@@ -61,87 +61,61 @@ function mockApi(openInSavedCity) {
 beforeEach(() => {
   api.get.mockReset();
   localStorage.clear();
+  mockApi();
 });
 afterEach(cleanup);
 
-describe("/group-buys starts from the saved city (MEH-3736)", () => {
-  it("a saved city with an open group buy fills the field and filters the list", async () => {
+describe("/group-buys offers the saved city, never fills it in (MEH-3857)", () => {
+  it("a saved city leaves the field empty after the load and asks for no city", async () => {
     localStorage.setItem("user_city", "זכרון יעקב");
-    mockApi(1);
     render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() => expect(screen.getByTestId("city-input").value).toBe("זכרון יעקב"));
+    await waitFor(() => expect(listCalls()).toHaveLength(1));
+    await settle();
+    expect(field().value).toBe("");
+    expect(cityAsked()).toBe(false);
+  });
+
+  it("focusing the empty field offers the saved city as its only option", async () => {
+    localStorage.setItem("user_city", "זכרון יעקב");
+    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
+    await settle();
+    fireEvent.focus(field());
+    expect(options().map((o) => o.textContent)).toEqual(["זכרון יעקב"]);
+  });
+
+  it("picking the offered city filters the list by it", async () => {
+    localStorage.setItem("user_city", "זכרון יעקב");
+    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
+    await settle();
+    fireEvent.focus(field());
+    fireEvent.mouseDown(options()[0]);
+    expect(field().value).toBe("זכרון יעקב");
     await waitFor(() =>
       expect(listCalls().some(([, cfg]) => cfg.params.city === "זכרון יעקב")).toBe(true),
     );
   });
 
-  it("a saved city with no open group buy leaves the field empty (all cities)", async () => {
-    localStorage.setItem("user_city", "אילת");
-    mockApi(0);
+  it("no saved city: focusing the empty field offers nothing", async () => {
     render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() =>
-      expect(api.get.mock.calls.some(([url, cfg]) => url === "/group-buys/counts" && cfg?.params?.city === "אילת")).toBe(true),
-    );
-    await new Promise((r) => setTimeout(r, 20));
-    expect(screen.getByTestId("city-input").value).toBe("");
-    expect(listCalls().every(([, cfg]) => !cfg.params.city)).toBe(true);
+    await settle();
+    fireEvent.focus(field());
+    expect(options()).toHaveLength(0);
+    expect(cityAsked()).toBe(false);
   });
 
-  it("no saved city: the field stays empty and no city is asked for", async () => {
-    mockApi(1);
-    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() => expect(listCalls()).toHaveLength(1));
-    await new Promise((r) => setTimeout(r, 20));
-    expect(screen.getByTestId("city-input").value).toBe("");
-    expect(api.get.mock.calls.every(([, cfg]) => !cfg?.params?.city)).toBe(true);
-  });
-
-  it("typing after the seed filters by the typed city and leaves the saved city alone", async () => {
+  it("typing filters by the typed city and leaves the saved city alone", async () => {
     localStorage.setItem("user_city", "זכרון יעקב");
-    mockApi(1);
     render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() => expect(screen.getByTestId("city-input").value).toBe("זכרון יעקב"));
-    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "חיפ" } });
+    await settle();
+    fireEvent.change(field(), { target: { value: "חיפ" } });
     await waitFor(() => expect(listCalls().some(([, cfg]) => cfg.params.city === "חיפ")).toBe(true));
     expect(localStorage.getItem("user_city")).toBe("זכרון יעקב");
   });
 
-  it("a user who already typed is not overridden by a late seed answer", async () => {
-    localStorage.setItem("user_city", "זכרון יעקב");
-    let release;
-    api.get.mockImplementation((url, cfg) => {
-      if (url === "/group-buys/counts" && cfg?.params?.city === "זכרון יעקב") {
-        return new Promise((r) => {
-          release = () => r({ data: { open: 1, funded: 0, fulfilled: 0 } });
-        });
-      }
-      if (url === "/group-buys/counts") return Promise.resolve({ data: ALL });
-      return Promise.resolve({ data: [GB] });
-    });
-    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() => expect(typeof release).toBe("function"));
-    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "חיפה" } });
-    release();
-    await new Promise((r) => setTimeout(r, 20));
-    expect(screen.getByTestId("city-input").value).toBe("חיפה");
-    expect(listCalls().every(([, c]) => c.params.city !== "זכרון יעקב")).toBe(true);
-  });
-
-  it("clearing the seeded field lists all cities again", async () => {
-    localStorage.setItem("user_city", "זכרון יעקב");
-    mockApi(1);
-    render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
-    await waitFor(() => expect(screen.getByTestId("city-input").value).toBe("זכרון יעקב"));
-    const before = listCalls().length;
-    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "" } });
-    await waitFor(() => expect(listCalls().length).toBeGreaterThan(before));
-    expect(listCalls().at(-1)[1]).toEqual({ params: { status: "open" } });
-  });
-
   it("an older all-cities answer landing last does not replace the city's list", async () => {
-    localStorage.setItem("user_city", "זכרון יעקב");
     let releaseAll;
     api.get.mockImplementation((url, cfg) => {
+      if (url === "/cities") return Promise.resolve({ data: [] });
       if (url === "/group-buys/counts") {
         return Promise.resolve({ data: cfg?.params?.city ? { open: 1, funded: 0, fulfilled: 0 } : ALL });
       }
@@ -151,9 +125,11 @@ describe("/group-buys starts from the saved city (MEH-3736)", () => {
       });
     });
     render(<GroupBuysClient initialItems={[GB]} initialCounts={ALL} />);
+    await waitFor(() => expect(typeof releaseAll).toBe("function"));
+    fireEvent.change(field(), { target: { value: "זכרון יעקב" } });
     await waitFor(() => expect(screen.getByTestId("group-buy-card").getAttribute("href")).toContain("gb-city"));
     releaseAll();
-    await new Promise((r) => setTimeout(r, 20));
+    await settle();
     expect(screen.getByTestId("group-buy-card").getAttribute("href")).toContain("gb-city");
   });
 });

@@ -54,6 +54,21 @@ const SIZE_CLASSES = {
 };
 
 /**
+ * The pill look, for a control that has to be an <a> to an outside page and
+ * so cannot be a <button> (MEH-3895 ui/PrepayButton). One owner of the classes.
+ * @param {string} [variant]
+ * @param {string} [size]
+ */
+export function buttonLook(variant = "primary", size = "md") {
+  return [
+    "inline-flex items-center justify-center rounded-full font-medium",
+    "transition-colors duration-fast ease-quart focus-ring",
+    VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary,
+    SIZE_CLASSES[size] || SIZE_CLASSES.md,
+  ].join(" ");
+}
+
+/**
  * Props typed so a `// @ts-check` caller may leave the icons out (they are
  * optional at runtime; without this JSDoc the inferred type requires them).
  * @param {{
@@ -90,11 +105,8 @@ export default function Button({
       aria-busy={loading || undefined}
       aria-label={loading ? "בטעינה…" : undefined}
       className={[
-        "inline-flex items-center justify-center rounded-full font-medium",
-        "transition-colors duration-fast ease-quart focus-ring",
+        buttonLook(variant, size),
         "disabled:opacity-50 disabled:pointer-events-none",
-        VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary,
-        SIZE_CLASSES[size] || SIZE_CLASSES.md,
         className,
       ].join(" ")}
       {...rest}

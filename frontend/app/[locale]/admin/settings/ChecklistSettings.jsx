@@ -32,6 +32,7 @@ import { ArrowDown, ArrowUp, Plus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 
 const ICON = 16;
 
@@ -64,7 +65,24 @@ const labelIsValid = (label) => labelLetterCount(label) >= LABEL_MIN_LETTERS;
 // temporary id that could collide with a real one.
 const blankItem = () => ({ id: null, label: "", hint: "", active: true });
 
-export default function ChecklistSettings() {
+const toItems = (rows) =>
+  rows.map((item) => ({
+    id: item.id,
+    label: item.label,
+    hint: item.hint ?? "",
+    active: item.active,
+  }));
+
+/**
+ * MEH-3818: the settings page reads this list together with its own settings
+ * and shows the page once, so this card no longer opens as a one-line
+ * «טוענת…» and then grows by ~1,600px under the admin.
+ * `preload` undefined → the card loads the list itself (standalone use);
+ * null → the page is still reading it; `{ data }` / `{ error: true }` → the
+ * page's answer.
+ * @param {{ preload?: { data?: any[], error?: boolean } | null }} props
+ */
+export default function ChecklistSettings({ preload } = {}) {
   const t = useTranslations("admin.settings.checklist");
   const [items, setItems] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -73,25 +91,29 @@ export default function ChecklistSettings() {
   const [saveError, setSaveError] = useState(null);
 
   const load = useCallback(() => {
-    setLoadError(false);
     api
       // include_inactive: editing a list you cannot fully see is not editing —
       // a retired item has to stay reachable to be brought back.
       .get("/admin/checklist-items?include_inactive=true")
-      .then((res) =>
-        setItems(
-          res.data.map((item) => ({
-            id: item.id,
-            label: item.label,
-            hint: item.hint ?? "",
-            active: item.active,
-          })),
-        ),
-      )
+      .then((res) => setItems(toItems(res.data)))
       .catch(() => setLoadError(true));
   }, []);
 
-  useEffect(load, [load]);
+  const selfLoad = preload === undefined;
+  useEffect(() => {
+    if (selfLoad) load();
+  }, [load, selfLoad]);
+
+  // The page's answer, adopted once, during render (no effect, no extra
+  // paint): the card's first paint already shows the list.
+  const [adopted, setAdopted] = useState(false);
+  if (preload && !adopted) {
+    setAdopted(true);
+    // A body that is not a list is a failed read, as it was for the
+    // card's own load (toItems throws on it, and .catch showed the error).
+    if (preload.error || !Array.isArray(preload.data)) setLoadError(true);
+    else if (items === null) setItems(toItems(preload.data));
+  }
 
   // Every mutation clears the confirmation. "נשמר" is a claim about the list
   // on screen, not about a save that happened at some point in the past — so
@@ -136,14 +158,7 @@ export default function ChecklistSettings() {
           active: item.active,
         })),
       });
-      setItems(
-        data.map((item) => ({
-          id: item.id,
-          label: item.label,
-          hint: item.hint ?? "",
-          active: item.active,
-        })),
-      );
+      setItems(toItems(data));
       setSaved(true);
     } catch (err) {
       // Surfaced rather than swallowed: a 404 here means another admin retired
@@ -166,7 +181,10 @@ export default function ChecklistSettings() {
         <p className="text-sm text-muted mb-3">{t("load_error")}</p>
         <button
           type="button"
-          onClick={load}
+          onClick={() => {
+            setLoadError(false);
+            load();
+          }}
           className="text-sm text-primary underline"
         >
           {t("retry")}
@@ -199,6 +217,9 @@ export default function ChecklistSettings() {
             }`}
           >
             <div className="flex items-start gap-2">
+              {/* MEH-3832: raw buttons on purpose. The arrows are 16px and 20px apart, so
+                  IconButton's 44px .tap-area zones would overlap and a tap on the lower
+                  part of «up» would run «down». A real fix gives each a 44px cell. */}
               <div className="flex flex-col gap-1 pt-1">
                 <button
                   type="button"
@@ -239,15 +260,13 @@ export default function ChecklistSettings() {
                   onChange={(e) => update(index, { hint: e.target.value })}
                   maxLength={300}
                 />
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={item.active}
-                    onChange={(e) => update(index, { active: e.target.checked })}
-                    className="h-4 w-4 accent-primary"
-                  />
+                <Checkbox
+                  className="flex items-center gap-2 text-xs"
+                  checked={item.active}
+                  onChange={(e) => update(index, { active: e.target.checked })}
+                >
                   <span>{item.active ? t("active") : t("inactive")}</span>
-                </label>
+                </Checkbox>
               </div>
             </div>
           </li>

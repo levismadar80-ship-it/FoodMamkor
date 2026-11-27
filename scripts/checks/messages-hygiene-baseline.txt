@@ -38,6 +38,7 @@ duplicate	2	אינסטגרם (שם משתמש)
 duplicate	2	איסוף
 duplicate	2	איסוף ומשלוח
 duplicate	2	איפוס סיסמה
+duplicate	2	אירועים וסדנאות
 duplicate	2	אירועים קרובים
 duplicate	2	אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף
 duplicate	2	אישור הרשמה
@@ -92,11 +93,9 @@ duplicate	2	המחיר לא יכול להיות שלילי
 duplicate	2	המחיר נפתח!
 duplicate	2	המחירים כוללים מע״מ, אם יחול.
 duplicate	2	המייל לא תקין
-duplicate	2	המייל שלך
 duplicate	2	המיקום זוהה: {location}
 duplicate	2	הנחה באיסוף עצמי
 duplicate	2	הסר ממועדפים
-duplicate	2	הסרה
 duplicate	2	הסרת התמונה
 duplicate	2	העברה בנקאית
 duplicate	2	העלאת תמונה
@@ -133,14 +132,12 @@ duplicate	2	חזרה לדף הראשי
 duplicate	2	חזרה להתחברות
 duplicate	2	חזרה ללוח הבקרה
 duplicate	2	חיוב
-duplicate	2	חייב לסמן לפחות אחד מהשניים
 duplicate	2	חיפוש בגוגל
 duplicate	2	חיפוש בתי עסק
 duplicate	2	חלב וגבינות
 duplicate	2	חנוכה
 duplicate	2	חנות או טופס הזמנות
 duplicate	2	חנות או טופס הזמנות באתר שלכם (קישור)
-duplicate	2	חנות פיזית (קבלת לקוחות)
 duplicate	2	חפשי בגוגל
 duplicate	2	חשבון
 duplicate	2	טוענים…
@@ -206,6 +203,7 @@ duplicate	2	מה חדש במהמקור
 duplicate	2	מה כדאי להכין
 duplicate	2	מה לא לעשות
 duplicate	2	מה מחכה לטיפול
+duplicate	2	מה קורה אם לא אספתי?
 duplicate	2	מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.
 duplicate	2	מהמקור / Mehamakor.
 duplicate	2	מובילת קהילה
@@ -257,7 +255,6 @@ duplicate	2	סבונים טבעיים
 duplicate	2	סוכות
 duplicate	2	סיבה אחרת
 duplicate	2	סיבת הדחייה
-duplicate	2	סיסמתך חייבת להכיל לפחות {min} תווים
 duplicate	2	סיפור
 duplicate	2	סיפור קצר על העסק
 duplicate	2	סננו לפי עיר
@@ -313,6 +310,7 @@ duplicate	2	שיפנו אליכם
 duplicate	2	שישי
 duplicate	2	שיתוף
 duplicate	2	שכפול
+duplicate	2	שליחה מחדש
 duplicate	2	שליחת הודעה בוואטסאפ
 duplicate	2	שליחת קוד חדש
 duplicate	2	שם המוצר
@@ -332,7 +330,6 @@ duplicate	2	תמונה
 duplicate	2	תמונה הבאה
 duplicate	2	תמונה קודמת
 duplicate	2	תמונה ראשית
-duplicate	2	תמונה שלך
 duplicate	2	תסריט שיחה
 duplicate	2	תעודת כשרות
 duplicate	2	✓ נשמר
@@ -362,6 +359,8 @@ duplicate	3	הזמנות
 duplicate	3	החלפת חשבון
 duplicate	3	היי! הגעתי דרך מהמקור — {name}
 duplicate	3	הסטטוס עודכן
+duplicate	3	הסיסמה חייבת להכיל לפחות {min} תווים
+duplicate	3	הסרה
 duplicate	3	הסתירו סיסמה
 duplicate	3	העלאת התמונה נכשלה. נסו שוב.
 duplicate	3	העתקה

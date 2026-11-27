@@ -30,6 +30,7 @@ from app.schemas.catalog import (
 )
 from app.schemas.registration import ProducerOwnerSummary
 from app.schemas.producer import normalize_google_place_id
+from app.schemas.rescue import RescueTodayOut
 
 
 class KashrutCertRef(BaseModel):
@@ -48,6 +49,10 @@ class KashrutCertRef(BaseModel):
 class ProducerListOut(BaseModel):
     id: UUID
     name: str
+    # MEH-3611: the business's logo beside its name; null = no logo.
+    # MEH-3894: on the list too — a card with no photo shows it in the
+    # corner (ProducerCard), so it moved up from ProducerDetailOut.
+    logo_url: str | None = None
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
@@ -102,6 +107,15 @@ class ProducerListOut(BaseModel):
     # public list/detail and favorites routes compute it — admin payloads that
     # reuse this schema carry a constant False, not data.
     rescued_recently: bool = False
+    # MEH-3824: today's next reservable bag, set by attach_rescue_today on the
+    # public list only; None everywhere else and while the pilot is off.
+    rescue_today: RescueTodayOut | None = None
+    # MEH-3824: the map's offer switches are gated on these (a switch shows
+    # only while a business on the map has that kind). Each mirrors its public
+    # list exactly (services/offer_supply.py).
+    has_open_group_buy: bool = False
+    has_upcoming_event: bool = False
+    has_listed_experience: bool = False
     has_delivery: bool = False
     # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
     # this attribute with `offers_pickup` before serialization (same mechanism
@@ -203,6 +217,8 @@ class ProducerListOut(BaseModel):
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
+    # MEH-2447: the owner's «בתיאום מראש» answer (read with has_physical_location).
+    by_arrangement: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
     # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
@@ -452,9 +468,6 @@ class ProducerDetailOut(ProducerListOut):
     # page (MEH-1334, dormant variants). NULL = card stays compact.
     owner_bio: str | None = None
     owner_photo_url: str | None = None
-    # MEH-3611: the business's logo beside its name; null = no logo. Detail
-    # only — the list cards do not show it.
-    logo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-1543: optional weekly order-acceptance window (JSONB). NULL = feature
@@ -465,6 +478,9 @@ class ProducerDetailOut(ProducerListOut):
     # MEH-3035: how the business takes payment ({methods, timing, note}) or
     # None. Detail only (the business page's «איך משלמים?» chip and JSON-LD
     # paymentAccepted); inherited onto ProducerOwnerOut for the editor.
+    # MEH-3895: may also carry "link", the business's own prepay link — public
+    # on purpose: it is the link the business hands its customers, and the
+    # group-buy page reads it from here (shown only on advance / deposit).
     payment_info: dict[str, Any] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
@@ -536,6 +552,16 @@ class _ZonesOut(BaseModel):
         return self
 
 
+class DraftTwinOut(BaseModel):
+    """MEH-3865: one draft-twin match, for the admin producers list."""
+
+    draft_id: UUID
+    target_id: UUID
+    draft_name: str
+    target_name: str
+    reasons: list[str]
+
+
 class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
     # deliberately NOT on ProducerDetailOut/ListOut, matching the
@@ -574,6 +600,10 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # in one query; every other route leaves them False (no badge). Admin-only.
     dup_name: bool = False
     dup_phone: bool = False
+    # MEH-3865: the ownerless draft and the business its owner registered
+    # herself, when they look like one business (services/draft_twins.py), with
+    # the reason codes. Hydrated by GET /admin/producers only; None elsewhere.
+    draft_twin: DraftTwinOut | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
@@ -691,6 +721,12 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # due now (admin_producer_reads.py::recommended_review_due_clause).
     recommended_at: datetime | None = None
     recommended_note: str | None = None
+    # MEH-3912: «הערות פנימיות» — same ADR-006 R2 gap as recommended_note
+    # above. ProducerAdminCreate/Update wrote it and nothing returned it, so the
+    # edit form reopened empty and its next save sent "" over the note.
+    # DO NOT add to ProducerListOut / ProducerDetailOut / ProducerOwnerOut —
+    # internal, asserted by name in tests/test_meh3912_admin_notes_readback.py.
+    admin_notes: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent

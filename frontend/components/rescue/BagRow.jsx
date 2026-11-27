@@ -8,6 +8,7 @@ import { Basket } from "@phosphor-icons/react";
 
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import useImageLoads from "@/lib/use-image-loads";
 import { israelTime, shekels, walkingMinutes, worthAgorot } from "@/lib/rescue";
 import StruckPrice from "@/components/ui/StruckPrice";
 
@@ -36,12 +37,18 @@ function startsSoon(iso, now = Date.now()) {
  *           render this), lib/rescue.js (every unit it formats)
  * History:  MEH-2648 (creation) · rescue-home redesign (events-row language)
  *           · MEH-3586 (opens the bag page, was the business page)
+ *           · MEH-3823 (contents on two lines; worth read aloud with the price)
  *
  * @param {{ offer: import("@/types/entities").RescueOffer, headingTag?: "h2" | "h3" }} props
  */
 export default function BagRow({ offer, headingTag = "h3" }) {
   const t = useTranslations("rescue");
   const producer = offer?.producer;
+  // MEH-3894: a photo that fails to load shows the basket tile, not a grey box.
+  // Called before the early return (rules of hooks).
+  const image = useImageLoads(
+    producer?.image_url ? optimizeCloudinary(producer.image_url, { aspectRatio: "1:1", width: 160 }) : null,
+  );
   if (!producer) return null;
 
   const price = shekels(offer.price_agorot);
@@ -53,7 +60,6 @@ export default function BagRow({ offer, headingTag = "h3" }) {
   const items = (offer.typical_items || []).filter(Boolean).join(", ");
   const hasDistance = offer.distance_km !== null && offer.distance_km !== undefined;
   const where = producer.location_address || producer.location_city || producer.city || "";
-  const image = producer.image_url ? optimizeCloudinary(producer.image_url, { aspectRatio: "1:1", width: 160 }) : null;
 
   // h3 under the home block's h2; h2 on /rescue, whose only heading is the h1.
   const Heading = headingTag;
@@ -93,7 +99,9 @@ export default function BagRow({ offer, headingTag = "h3" }) {
         <Heading className="font-headline-md text-lg font-bold text-text leading-snug truncate" data-testid="rescue-row-name">
           {producer.name}
         </Heading>
-        <p className="text-sm text-fg-muted mt-1 truncate" data-testid="rescue-row-where">
+        {/* MEH-3823: two lines, not one — a single truncated line cut the
+            contents mid-word («בער…»). */}
+        <p className="text-sm text-fg-muted mt-1 line-clamp-2 break-words" data-testid="rescue-row-where">
           {items}
           {items && (hasDistance || where) ? " · " : null}
           {hasDistance ? (
@@ -120,9 +128,21 @@ export default function BagRow({ offer, headingTag = "h3" }) {
                   {t("row.price", { price: worth })}
                 </StruckPrice>
               )}
-              <span dir="ltr" className="font-english italic font-semibold text-primary numeric" data-testid="rescue-row-price">
+              <span
+                dir="ltr"
+                aria-hidden={worth !== null ? "true" : undefined}
+                className="font-english italic font-semibold text-primary numeric"
+                data-testid="rescue-row-price"
+              >
                 {t("row.price", { price })}
               </span>
+              {/* MEH-3823: a screen reader hears «שווי 45 ₪, משלמים 15 ₪», not
+                  two bare prices. */}
+              {worth !== null && (
+                <span className="sr-only" data-testid="rescue-row-worth-sr">
+                  {t("row.worth_and_price", { worth: t("row.price", { price: worth }), price: t("row.price", { price }) })}
+                </span>
+              )}
             </span>
           )}
         </div>

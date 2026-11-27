@@ -157,21 +157,31 @@ test.describe("Map", () => {
     expect(Math.abs(saved.lat - 32.4) + Math.abs(saved.lng - 34.95)).toBeGreaterThan(0.01);
   });
 
-  test("MEH-1414: producer page shows «חזרה למפה» only when reached with ?from=map", async ({
-    page,
-  }) => {
-    test.setTimeout(90_000);
-    // ruach-hasadeh is the flagship demo business (seed_demo_business.py).
-    await page.goto("/ruach-hasadeh?from=map");
-    const back = page.getByTestId("back-to-map");
-    await expect(back).toBeVisible();
-    await expect(back).toHaveAttribute("href", /\/map$/);
-    await expect(back).toHaveText(/חזרה למפה|Back to map/);
+  test.describe("«חזרה למפה»", () => {
+    // MEH-3809 / MEH-3856: a fresh load with ?from=map (a link opened in a new
+    // tab) is guarded in full on both projects. The row is in the server HTML
+    // and the inline flags script shows it before the first paint, so it no
+    // longer pushes the gallery down on a phone.
+    test("MEH-1414: producer page shows «חזרה למפה» only when reached with ?from=map", async ({
+      page,
+    }) => {
+      test.setTimeout(90_000);
+      // ruach-hasadeh is the flagship demo business (seed_demo_business.py).
+      await page.goto("/ruach-hasadeh?from=map");
+      // MEH-3919: the row is in the server HTML (MEH-3856), so while the page
+      // streams React can hold a hidden server copy next to its own for a
+      // moment (the MEH-2323 shape). Read the one visible copy.
+      const back = page.getByTestId("back-to-map").filter({ visible: true });
+      await expect(back).toHaveCount(1);
+      await expect(back).toBeVisible();
+      await expect(back).toHaveAttribute("href", /\/map$/);
+      await expect(back).toHaveText(/חזרה למפה|Back to map/);
 
-    // Control — the same page without the referrer renders NO back link (0-state).
-    await page.goto("/ruach-hasadeh");
-    await expectOneVisibleH1(page);
-    await expect(page.getByTestId("back-to-map")).toHaveCount(0);
+      // Control — the same page without the referrer renders NO back link (0-state).
+      await page.goto("/ruach-hasadeh");
+      await expectOneVisibleH1(page);
+      await expect(page.getByTestId("back-to-map")).toHaveCount(0);
+    });
   });
 
   // MEH-2408: the page is streamed. React leaves the server copy in a hidden

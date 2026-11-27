@@ -37,6 +37,11 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
   Check: () => null, // MEH-3622: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon

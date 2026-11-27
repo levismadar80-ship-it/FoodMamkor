@@ -19,7 +19,8 @@
 * `frontend/components/ui/GoogleButton.jsx` + `frontend/lib/use-google-code-sign-in.js` — הכפתור «להמשיך עם Google» שלנו, בכל כניסה עם Google: `frontend/components/GoogleAuthButton.jsx` (התחברות, הרשמה, החלונית, דף הבעלות והזמנת בעלים), `frontend/components/ProducerOAuthButtons.jsx` (הרשמת עסק) ו-`frontend/components/AccountDeleteCard.jsx` (אימות לפני מחיקת חשבון). הוא מופיע יחד עם הדף, לחיצה פותחת את החלון של Google, והקוד שחוזר מוחלף ב-`POST /auth/google/code` ב-ID token שנשלח לאותה כתובת כמו קודם (`/auth/google`, `/auth/register/producer/oauth`, `/auth/me/delete`). הכפתור המצויר של Google לא נמצא יותר באתר (MEH-3690).
 * `preloadGsiWhenIdle` ב-`frontend/lib/use-google-sign-in.js` טוען את הסקריפט של Google מראש, מ-`frontend/components/LoginPromptModal.jsx`: רק לאורחת שאישרה את כל העוגיות (`hasFullCookieConsent`, כמו האנליטיקס). בלי אישור, הבקשה ל-Google יוצאת רק כשהיא פותחת את החלונית בעצמה (MEH-3744).
 * `frontend/lib/post-auth-return.js` — הדף שממנו לקוחה נרשמה באימייל, כדי שקישור האימות יחזיר אותה אליו (24 שעות, localStorage, MEH-3661).
-* `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
+* `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` / `data-friday-mode` / `data-from-map` (MEH-3856) על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
+* `frontend/lib/stream-settled.js` — ה-`AuthProvider` מפרסם את מצב הכניסה הראשון רק אחרי שכל חלקי הדף שהגיעו בהזרמה נחשפו. עדכון מוקדם יותר גרם ל-React לזרוק את ה-HTML מהשרת ולצייר את הדף שוב בדפדפן, ליד עותק מוסתר (MEH-3718). השומר: `frontend/e2e/flows/52-streamed-page-hydrates.spec.ts`.
 * `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי מייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).
 * **מפתח גישה לחשבון אדמין (MEH-3305).** `backend/app/services/admin_passkey.py` (בדיקות WebAuthn, כרטיס חד-פעמי, קודי שחזור), `backend/app/routers/admin_passkey.py` (‏`/auth/passkey/*`), `frontend/lib/webauthn.js`, `frontend/components/PasskeyRecoveryPanel.jsx` (שלב קוד השחזור ב-`/login`), `frontend/app/[locale]/admin/settings/PasskeySettings.jsx` (הוספה, הסרה, קודים). אדמין עם מפתח לא מקבל סשן מ-`/auth/login` / Google / Apple עד שהמפתח (או קוד) מאשר.
 
@@ -34,11 +35,13 @@
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
 * `frontend/__tests__/LoginPromptModalGoogle.test.jsx` · `frontend/__tests__/VerifyEmailReturnsToOrigin.test.jsx` · `frontend/__tests__/PostAuthReturn.test.js` — Google בחלונית, החזרה לדף אחרי אימות, ואירועי המדידה (MEH-3661). `frontend/__tests__/GroupBuyJoinSignInInPlace.test.jsx` — הצטרפות לקבוצת רכישה אחרי Google בחלונית (MEH-3679).
+* `tests/test_meh3813_google_email_verified.py` — חשבון Google שהמייל שלו לא מאומת נדחה בכל ארבעת הנתיבים (‏`/auth/google`, הרשמת עסק, הזמנת בעלים, מחיקת חשבון), והבדיקה יושבת ב-`verify_google_token` (MEH-3813).
 * `tests/test_meh3690_google_code_exchange.py` — החלפת הקוד: טוקן של אפליקציה אחרת נדחה, מייל לא מאומת נדחה, בלי הסוד 503 (MEH-3690).
 * `frontend/e2e/flows/_google-code-stub.ts` — תחליף ל-Google בבדיקות הדפדפן: החלון מחזיר קוד שהבדיקה בוחרת (MEH-3690).
 * `frontend/__tests__/use-google-sign-in.test.jsx` — טעינת הסקריפט של Google פעם אחת, וטעינה חוזרת אחרי כישלון (MEH-3690).
 * `frontend/__tests__/GoogleCodeSignIn.test.jsx` — הכפתור שלנו מופיע לפני שהסקריפט נטען, לחיצה פותחת את החלון, הקוד מוחלף, וסגירת החלון אינה שגיאה (MEH-3690).
 * `frontend/__tests__/GsiPreload.test.jsx` — טעינה מראש לאורחות בלבד (MEH-3744).
 * `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
+* `frontend/__tests__/AuthHydrationNoFallback.test.jsx` — ההגדרה הראשונה של מצב ההתחברות לא מחזירה דף שעדיין בהידרציה למסך הטעינה (`startTransition` ב-`frontend/lib/auth-context.js`, MEH-3828).
 
 **מזהי רישום שזה מכסה.** `social_signup`.

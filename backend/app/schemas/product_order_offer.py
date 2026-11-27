@@ -12,14 +12,14 @@ History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3216 gaps (the
           owner's product list for the two ordering switches)
 """
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.limits import cap_list
-from app.models.product_orders import PRODUCT_ORDER_MAX_WINDOWS
+from app.limits import MAX_VARIANTS_PER_PRODUCT, cap_list
+from app.models.product_orders import PRODUCT_LEAD_DAYS_MAX, PRODUCT_ORDER_MAX_WINDOWS
 
 TOO_MANY_WINDOWS_DETAIL = f"אפשר להגדיר עד {PRODUCT_ORDER_MAX_WINDOWS} חלונות זמן"
 WINDOW_ENDS_BEFORE_START_DETAIL = "שעת הסיום צריכה להיות אחרי שעת ההתחלה"
@@ -108,6 +108,14 @@ class ProductOrderingIn(BaseModel):
     in_stock: bool
     price_unit: PriceUnit | None = None
     contains_alcohol: bool
+    # Daily stock (27/11): omitted = keep; null = no limit. Same for each
+    # listed variant (an id not of this product is refused by the route).
+    daily_limit: int | None = Field(default=None, ge=1, le=999)
+    variant_limits: list["VariantLimitIn"] | None = Field(
+        default=None, max_length=MAX_VARIANTS_PER_PRODUCT
+    )
+    # MEH-3932: days ahead it must be ordered. Omitted = keep; null = none.
+    lead_days: int | None = Field(default=None, ge=1, le=PRODUCT_LEAD_DAYS_MAX)
 
     @field_validator("price_unit")
     @classmethod
@@ -115,6 +123,21 @@ class ProductOrderingIn(BaseModel):
         if value is None:
             raise ValueError("price_unit cannot be null")
         return value
+
+
+class VariantLimitIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    daily_limit: int | None = Field(default=None, ge=1, le=999)
+
+
+class VariantLimitOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    daily_limit: int | None = None
 
 
 class ProductOrderingOut(BaseModel):
@@ -125,6 +148,9 @@ class ProductOrderingOut(BaseModel):
     in_stock: bool
     price_unit: PriceUnit
     contains_alcohol: bool
+    daily_limit: int | None = None
+    lead_days: int | None = None
+    variants: list[VariantLimitOut] = []
 
 
 class MyProductOrderingOut(ProductOrderingOut):
@@ -164,9 +190,23 @@ class OrderMenuProductOut(BaseModel):
     # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64;
     # NULL = every day. The sheet offers only slots on days every line is made.
     available_weekdays: int | None = None
+    # MEH-3932: the pickup day is at least today + lead_days (Israel clock);
+    # NULL = no product rule. The sheet offers only such slots.
+    lead_days: int | None = None
     # MEH-3617: empty = no choice. One = applied without a choice. Many = the
     # buyer must pick one; `in_stock` above is false when all are out.
     variants: list[OrderMenuVariantOut] = []
+
+
+class OrderMenuStockOut(BaseModel):
+    """Daily stock: units left of a product (variant_id null, counted across
+    its variants) or of one variant, on one offered Israel day. Only limited
+    products and variants have rows; no row = no limit."""
+
+    day: date
+    product_id: UUID
+    variant_id: UUID | None = None
+    left: int
 
 
 class OrderMenuSlotOut(BaseModel):
@@ -188,3 +228,29 @@ class OrderMenuOut(BaseModel):
     business_id_number: str
     products: list[OrderMenuProductOut]
     slots: list[OrderMenuSlotOut]
+    stock: list[OrderMenuStockOut] = []
+
+
+class PrepLineOut(BaseModel):
+    product_id: UUID | None = None
+    variant_id: UUID | None = None
+    name: str
+    variant_name: str | None = None
+    confirmed: int
+    waiting: int
+    limit: int | None = None
+    product_limit: int | None = None
+
+
+class PrepDayOut(BaseModel):
+    day: date
+    lines: list[PrepLineOut]
+
+
+class PrepListOut(BaseModel):
+    """The owner's «מה להכין»: today and the next six Israel days."""
+
+    days: list[PrepDayOut]
+
+
+ProductOrderingIn.model_rebuild()

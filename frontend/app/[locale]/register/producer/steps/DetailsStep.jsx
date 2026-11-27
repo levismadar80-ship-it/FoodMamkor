@@ -9,8 +9,10 @@ import { X } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
+import RegisterIdentityCheck from "@/components/RegisterIdentityCheck";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 import { CROSS_STEP_REQUIRED, FULFILMENT_AXES, STEP, fulfilmentHasAxis, toggleFulfilmentAxis } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
@@ -133,14 +135,10 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
               </legend>
               {/* MEH-2939: two checkboxes, at least one — «גם וגם» is both ticked. */}
               {FULFILMENT_AXES.map((axis) => (
-                <label
+                <Checkbox
                   key={axis}
-                  htmlFor={`fulfilment-${axis}`}
-                  className="flex items-center gap-3 min-h-touch cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    id={`fulfilment-${axis}`}
+                  className="flex items-center gap-3"
+                  id={`fulfilment-${axis}`}
                     name="fulfilment"
                     value={axis}
                     data-testid={`register-fulfilment-${axis}`}
@@ -150,12 +148,11 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                       setFulfilmentError("");
                       setAndSave((prev) => ({ ...prev, fulfilment: toggleFulfilmentAxis(prev.fulfilment, axis) }));
                     }}
-                    className="w-5 h-5 accent-primary shrink-0"
-                  />
+                >
                   <span className="text-sm text-text">
                     {t(`auth.register.producer.fields.fulfilment.${axis}`)}
                   </span>
-                </label>
+                </Checkbox>
               ))}
               {fulfilmentError && (
                 <p className="text-xs text-error" data-testid="register-fulfilment-error">
@@ -211,6 +208,14 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 {t("auth.register.producer.actions.next")}
               </Button>
             </div>
+            {/* MEH-3884: this business already has a page (phone, or the
+                signed-in account's own email). A warning; she may go on.
+                MEH-3918: under «הבא», not under the phone field. The answer
+                lands 600 ms after the last keystroke or later, so a notice
+                inserted above the fields pushed every field below it, and
+                «הבא» itself, while she was using them. Here it pushes
+                nothing on the form. */}
+            <RegisterIdentityCheck phone={form.phone} signedIn={!!isUpgrade} />
           </div>
   );
 }

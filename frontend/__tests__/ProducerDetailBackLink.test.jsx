@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, within, cleanup } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 // MEH-3019: on a phone the business page shows «→ חזרה» instead of the
 // breadcrumb; on a desktop nothing changes. jsdom applies no CSS, so the
@@ -8,7 +9,7 @@ import { render, screen, within, cleanup } from "@testing-library/react";
 // rendered pixels are checked by the 390 / 1280 screenshots and mobile VRT.
 // Cells: arrival (direct / from inside the site / from the map) × (phone / desktop).
 
-const state = { producer: null };
+const state = { producer: null, activitiesReady: true };
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "p1" }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
@@ -28,16 +29,16 @@ vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerData", () => ({
   useProducerData: () => ({
     producer: state.producer,
     loading: false,
-    events: [],
     similarProducers: [],
     nearbyProducers: [],
   }),
 }));
+// MEH-3819: the activity lists are their own hook; answered and empty here.
+vi.mock("@/app/[locale]/producer/[id]/hooks/useProducerActivities", () => ({
+  useProducerActivities: () => ({ events: [], experiences: [], groupBuys: [], ready: state.activitiesReady }),
+}));
 vi.mock("@/app/[locale]/producer/[id]/hooks/useStickyBar", () => ({
   useStickyBar: () => ({ inlineCTARef: { current: null }, isBarVisible: false }),
-}));
-vi.mock("@/app/[locale]/producer/[id]/hooks/useLazyReviews", () => ({
-  useLazyReviews: () => ({ reviewsContainerRef: { current: null }, reviewsVisible: false }),
 }));
 
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
@@ -56,6 +57,7 @@ const desktopOnly = (el) => classesOf(el).includes("hidden") && classesOf(el).in
 
 afterEach(() => {
   cleanup();
+  state.activitiesReady = true;
   delete window.navigation;
 });
 
@@ -98,5 +100,56 @@ describe("business page: breadcrumb on desktop, «→ חזרה» on a phone (MEH
     const block = arrive({ canGoBack: true, hideHistoryBack: true });
     expect(block.queryByTestId("history-back")).toBeNull();
     expect(desktopOnly(block.getByTestId("breadcrumb-nav"))).toBe(true);
+  });
+});
+
+// MEH-3819: the client route (/producer/<id>) paints once its events,
+// experiences and group buys answered, so they never land above the reviews a
+// moment later; a server-rendered page never trades its HTML for the loading line.
+describe("business page waits for its activity lists only on the client route (MEH-3819)", () => {
+  const producer = { id: "p1", name: "מאפיית הגבעה", images: [], categories: [] };
+
+  it("client route: the loading line until the lists answered, then the page", () => {
+    state.producer = producer;
+    state.activitiesReady = false;
+    const { rerender } = render(<ProducerDetail />);
+    expect(screen.getByText("producer.detail.loading_fresh")).toBeTruthy();
+    expect(screen.queryByTestId("producer-breadcrumb-block")).toBeNull();
+    state.activitiesReady = true;
+    rerender(<ProducerDetail />);
+    expect(screen.queryByText("producer.detail.loading_fresh")).toBeNull();
+    expect(screen.getByTestId("producer-breadcrumb-block")).toBeTruthy();
+  });
+
+  it("server-rendered page: painted at once, even before the lists answered", () => {
+    state.producer = producer;
+    state.activitiesReady = false;
+    render(<ProducerDetail initialProducer={producer} />);
+    expect(screen.queryByText("producer.detail.loading_fresh")).toBeNull();
+    expect(screen.getByTestId("producer-breadcrumb-block")).toBeTruthy();
+  });
+});
+
+// MEH-3856: the server cannot read ?from=map, so it paints the «חזרה למפה» row
+// tagged data-from-map-only; the pre-hydration script flags <html> and CSS
+// hides the row when the flag is absent. After hydration React decides.
+describe("«חזרה למפה» is in the server HTML, then React keeps it or drops it (MEH-3856)", () => {
+  it("server render: the row is in the HTML, tagged for the pre-hydration CSS", () => {
+    state.producer = { id: "p1", name: "מאפיית הגבעה", images: [], categories: [] };
+    const html = renderToString(<ProducerDetail />);
+    expect(html).toContain('data-testid="back-to-map"');
+    expect(html).toContain("data-from-map-only");
+  });
+
+  it("after hydration with no ?from=map: no row and no tagged element", () => {
+    arrive({ canGoBack: true });
+    expect(screen.queryByTestId("back-to-map")).toBeNull();
+    expect(document.querySelector("[data-from-map-only]")).toBeNull();
+  });
+
+  it("after hydration with ?from=map: the row stays, untagged", () => {
+    const block = arrive({ canGoBack: true, search: "?from=map" });
+    const toMap = block.getByTestId("back-to-map");
+    expect(toMap.closest("[data-from-map-only]")).toBeNull();
   });
 });

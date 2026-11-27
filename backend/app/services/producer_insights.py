@@ -198,6 +198,25 @@ def metric_count(
     )
 
 
+def metric_count_between(
+    db: Session, producer_id: UUID, metric: str, span: tuple[datetime, datetime]
+) -> int:
+    """One metric over [start, end) — naive UTC, the columns' shape. Raw rows
+    only (no roll-up arm), so `start` must be inside the 90-day raw retention
+    (analytics_rollup.RAW_RETENTION_DAYS); the monthly owner email reads last
+    month, at most 62 days back (MEH-3194)."""
+    model, time_col, kwargs = _metric_specs()[metric]
+    kwargs = {k: v for k, v in kwargs.items() if k != "rollup_col"}
+    start, end = span
+    in_span = (time_col >= start) & (time_col < end)
+    extra = kwargs.pop("extra_filter", None)
+    if extra is not None:
+        in_span = in_span & extra
+    return count_in_window(
+        db, model, time_col, producer_id, WindowFilter(extra_filter=in_span, **kwargs)
+    )
+
+
 def metric_windows(db: Session, producer_id: UUID) -> dict[str, dict[str, int]]:
     """Every metric × {last_7d, last_30d, total} — the analytics endpoint's
     four headline objects, keyed by their response names."""

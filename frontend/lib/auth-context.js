@@ -1,8 +1,9 @@
 // @ts-check
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, startTransition, useContext, useEffect, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
+import { afterStreamSettled } from "@/lib/stream-settled";
 import { useTranslations } from "next-intl";
 import api from "./api";
 import {
@@ -61,6 +62,9 @@ async function replayPostLoginAction(t) {
   }
 }
 
+/** MEH-3718: the bootstrap state waits for the streamed reveal, then lands in a transition. */
+const publish = (/** @type {() => void} */ update) => afterStreamSettled(() => startTransition(update));
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -76,14 +80,33 @@ export function AuthProvider({ children }) {
   // user (derived client-side from user.created_at). Observability only.
   useLaunchCohortTag(user);
 
+  // MEH-3828: every update here lands while the page may still be hydrating
+  // (a dynamic chunk not yet loaded). An urgent context update that reaches a
+  // Suspense boundary still waiting to hydrate makes React drop its server HTML
+  // and show the fallback — the route loader (app/[locale]/loading.js) — then
+  // mount the page again: a full-page flash and ≈ 1.0 CLS about 5 s in on a
+  // slow phone. A transition lets hydration finish first (react.dev/errors/421).
+  // The cost: consumers see `loading` until every boundary under the provider
+  // has been revealed (MEH-3718: lib/stream-settled.js, ~300 ms after the first
+  // paint, 5 s at most) and has hydrated (a chunk that fails rejects to its error boundary, so this
+  // ends). Every gate is `!loading && !user`, so nobody is sent to /login early.
+  // DO NOT set the bootstrap state in loadSession outside startTransition — MEH-3828.
+  // MEH-3718: a transition is not enough while a streamed boundary is still
+  // queued for its reveal (`$~`, up to ~300 ms after the first paint): React
+  // then renders it again in the browser beside the hidden server copy. So the
+  // bootstrap state also waits for the reveal (lib/stream-settled.js).
+  // (`publish`, at module scope so loadSession depends on nothing that changes.)
   const loadSession = () => {
+    // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
     if (token) {
       api
         .get("/auth/me")
         .then((res) => {
-          setUser(res.data);
-          setAuthUnreachable(false);
+          publish(() => {
+            setUser(res.data);
+            setAuthUnreachable(false);
+          });
           // MEH-1485: seed localStorage user_city from the profile city so
           // the personalization stores stop diverging (no-op when
           // localStorage already holds a recent explicit choice).
@@ -103,12 +126,12 @@ export function AuthProvider({ children }) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
           } else {
-            setAuthUnreachable(true);
+            publish(() => setAuthUnreachable(true));
           }
         })
-        .finally(() => setLoading(false));
+        .finally(() => publish(() => setLoading(false)));
     } else {
-      setLoading(false);
+      publish(() => setLoading(false));
     }
   };
 
@@ -299,6 +322,7 @@ export function AuthProvider({ children }) {
   // MEH-143 — after a role upgrade the stored token changes; re-read
   // /auth/me so context reflects the new role immediately.
   const refreshUser = async () => {
+    // eslint-disable-next-line no-restricted-syntax -- the session token, read to send a request or pick a code path; it is never painted
     const token = localStorage.getItem("token");
     if (!token) return;
     try {

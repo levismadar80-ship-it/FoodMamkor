@@ -54,6 +54,8 @@ import {
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
 import { cartSlots, cartWays, removeFromCart } from "@/lib/product-weekdays";
+import { removeShort, shortName, stockSlots, stockShortText } from "@/lib/daily-stock";
+import Checkbox from "@/components/ui/Checkbox";
 
 const QUOTE_DELAY_MS = 400;
 
@@ -145,7 +147,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
 
   // MEH-3618: only days on which every picked product is made.
   const fulfilment = ways.includes(form.fulfilment) ? form.fulfilment : (ways[0] ?? form.fulfilment); // MEH-3618: a way the cart lost
-  const { slots, limiting } = cartSlots(slotsFor(menu, fulfilment, hasAlcohol), picks, byId);
+  const { slots: madeSlots, limiting } = cartSlots(slotsFor(menu, fulfilment, hasAlcohol), picks, byId);
+  // Daily stock: only days with room for every line; else the line to name.
+  const { slots, short } = stockSlots(madeSlots, menu, picks);
   // MEH-3618: a picked slot the cart no longer allows is dropped. MEH-3658: a
   // single slot is picked for her; with more she taps one.
   const slot = slots.some((s) => s.start === form.slot) ? form.slot : slots.length === 1 ? slots[0].start : "";
@@ -187,6 +191,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         <WayChoice ways={ways} value={fulfilment} onChange={(way) => set({ fulfilment: /** @type {typeof form.fulfilment} */ (way), slot: "" })} />
         {limiting ? (
           <OrderSheetDayConflict product={limiting} onRemove={() => removeFromCart(limiting.id, { picks, onChange, onClose })} />
+        ) : short ? (
+          <div className="space-y-2">
+            <InlineMessage tone="info">
+              <span data-testid="order-sheet-stock-short">{stockShortText(short, byId, t)}</span>
+            </InlineMessage>
+            <Button type="button" variant="outlined" size="sm" onClick={() => removeShort(short, { picks, onChange, onClose })} data-testid="order-sheet-stock-remove">
+              {t("day_conflict_remove", { name: shortName(short, byId) })}
+            </Button>
+          </div>
         ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
@@ -202,10 +215,15 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
-          <label className="flex items-start gap-2 text-sm text-text">
-            <input type="checkbox" required checked={form.age} onChange={(e) => set({ age: e.target.checked })} data-testid="order-sheet-age" />
+          <Checkbox
+            className="flex items-start gap-2 text-sm text-text"
+            required
+            checked={form.age}
+            onChange={(e) => set({ age: e.target.checked })}
+            data-testid="order-sheet-age"
+          >
             {t("age")}
-          </label>
+          </Checkbox>
         )}
       </div>
       <Totals quote={quote} delivery={delivery} t={t} />

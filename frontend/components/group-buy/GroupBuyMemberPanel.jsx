@@ -18,12 +18,13 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { cancelUntilText, pickupWindowText } from "@/lib/group-buy-pickup"; // MEH-3610 · MEH-3734
 import { Link } from "@/i18n/navigation";
+import PrepayButton from "@/components/ui/PrepayButton";
 
 const QTY_MIN = 1;
 const QTY_MAX = 100;
 
-/** @param {{ gb: any, joinable: boolean, full: boolean, cancelling: boolean, onCancel: () => void, onChanged: () => Promise<void> | void }} props */
-export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, onCancel, onChanged }) {
+/** @param {{ gb: any, joinable: boolean, full: boolean, cancelling: boolean, onCancel: () => void, onChanged: () => Promise<void> | void, prepay?: { link: string | null, timing: string | null } | null }} props */
+export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, onCancel, onChanged, prepay = null }) {
   const t = useTranslations("group_buys.detail");
   const locale = useLocale();
   // MEH-3610: the join confirmation says until when she can leave.
@@ -79,8 +80,21 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
       {next && (
         <p className="text-sm text-text text-center" data-testid="group-buy-member-next">{next}</p>
       )}
-      {/* MEH-3734: the page's approved pay line, repeated where she now looks. */}
-      {stillOn && <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>}
+      {/* MEH-3735: the code she shows at pickup; the business sees codes, not names. */}
+      {stillOn && gb.user_commit?.pickup_code && (
+        <p className="text-sm text-text text-center" data-testid="group-buy-pickup-code">
+          {t("pickup_code_line", { code: gb.user_commit.pickup_code })}
+        </p>
+      )}
+      {/* MEH-3734: the page's approved pay line, repeated where she now looks.
+          MEH-3895: once the group is funded and the business asked to be paid
+          ahead, «לא משלמים עכשיו» is no longer true — the pay button takes its
+          place, right under the pickup code it asks her to quote. */}
+      {stillOn && prepay?.link ? (
+        <PrepayButton link={prepay.link} timing={prepay.timing} code={gb.user_commit?.pickup_code} testId="group-buy-prepay" />
+      ) : (
+        stillOn && <p className="text-xs text-fg-muted text-center" data-testid="group-buy-member-pay">{t("pay_line")}</p>
+      )}
       {joinable && full && (
         <p className="text-sm text-fg-muted text-center" data-testid="group-buy-full-member">{t("full_member")}</p>
       )}

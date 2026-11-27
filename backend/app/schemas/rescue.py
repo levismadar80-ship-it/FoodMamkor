@@ -148,9 +148,19 @@ class RescueOrderOut(BaseModel):
     status: RescueOrderStatus
     handed_at: UtcDatetimeOut | None = None
     cancelled_at: UtcDatetimeOut | None = None
+    # MEH-3897: the business marked the prepay received; the buyer's screen
+    # then says so instead of showing the pay button.
+    paid_at: UtcDatetimeOut | None = None
     created_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
+
+
+class RescuePaidIn(BaseModel):
+    """MEH-3897: the business marks a reservation paid, or undoes a mistaken
+    mark (`paid: false`)."""
+
+    paid: bool
 
 
 class RescueReviewCreate(BaseModel):
@@ -219,9 +229,9 @@ class RescueProducerSummary(BaseModel):
 
     Deliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a
     town and a pickup point, and nothing on this list should carry the badge
-    block, the rating aggregate or the contact details — chunk 4's row has no
-    place to put them and serializing them would publish more than the screen
-    needs.
+    block or the contact details — serializing them would publish more than
+    the screen needs. The public rating is here since MEH-3704, because the
+    list sorts by it; it is the same number the business page already shows.
     """
 
     id: UUID
@@ -236,8 +246,28 @@ class RescueProducerSummary(BaseModel):
     # offer at all, so there is no case where this leaks a fuzzy address.
     location_city: str | None = None
     location_address: str | None = None
+    # MEH-3704: the list's «דירוג» sort. None = no reviews yet. Optional, so
+    # a row written before this field (a stub, a cached payload) still parses.
+    avg_rating: float | None = None
 
     model_config = {"from_attributes": True}
+
+
+class RescueTodayOut(BaseModel):
+    """The business's next bag today, in its card on the map (MEH-3824).
+
+    Carried on `ProducerListOut.rescue_today` so the map needs no second
+    request. Only today's bags, only ones the list would also show (stock,
+    window still open for reserving, pilot town); the earliest pickup wins.
+    """
+
+    offer_id: UUID
+    location_id: UUID
+    price_agorot: int
+    value_min_agorot: int | None = None
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    qty_left: int
 
 
 class RescueOfferPublicOut(BaseModel):
@@ -274,10 +304,15 @@ class RescueProducerDetail(RescueProducerSummary):
     the pilot metrics (RescueReview's docstring).
     """
 
-    avg_rating: float | None = None
+    # avg_rating comes from RescueProducerSummary (MEH-3704).
     reviews_count: int = 0
     # The business's own one-line description, so the page says who it is.
     short_description: str | None = None
+    # MEH-3895: the business's own prepay link (Bit / PayBox / its clearing),
+    # only when it takes payment before pickup; None = pay at the counter.
+    prepay_link: str | None = None
+    # Which of the two: the whole price before pickup, or a deposit.
+    prepay_timing: Literal["advance", "deposit"] | None = None
 
 
 class RescueOfferDetailOut(RescueOfferPublicOut):
@@ -387,9 +422,13 @@ class RescueOwnerOrderOut(BaseModel):
     status: RescueOrderStatus
     handed_at: UtcDatetimeOut | None = None
     cancelled_at: UtcDatetimeOut | None = None
+    paid_at: UtcDatetimeOut | None = None  # MEH-3897
     created_at: UtcDatetimeOut
     pickup_start: UtcDatetimeOut
     pickup_end: UtcDatetimeOut
+    # MEH-3897: the business shows buyers a prepay link (MEH-3895), so the
+    # row offers «סמן כשולם». Same value on every row of the list.
+    prepay: bool = False
 
     model_config = {"from_attributes": True}
 

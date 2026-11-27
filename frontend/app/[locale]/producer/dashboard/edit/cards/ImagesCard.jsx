@@ -20,6 +20,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { ViewOnPageLink } from "./ViewOnPageLink";
+import IconButton from "@/components/ui/IconButton";
 
 // ============================================================
 // Edit-tab chunk B: producer-facing gallery images editor.
@@ -304,14 +305,13 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
                 alt={`${t("heading")} ${i + 1}`}
                 className="w-full h-24 object-cover rounded-sm border border-border"
               />
-              <button
-                type="button"
+              <IconButton
                 onClick={() => removeImage(i)}
                 className="absolute top-1 start-1 bg-error text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
-                aria-label={t("remove_aria")}
+                label={t("remove_aria")}
               >
                 <X size={14} weight="bold" aria-hidden="true" />
-              </button>
+              </IconButton>
             </div>
           ))}
         </div>

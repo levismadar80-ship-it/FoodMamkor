@@ -335,6 +335,8 @@ def _product(row: Any, groups: dict[str, str] | None = None) -> dict[str, Any]:
             if p.available_weekdays is not None
             else []
         ),
+        # MEH-3932: «צריך להזמין יומיים מראש» — only when the product has one.
+        "order_days_ahead": p.lead_days,
         "allergens_on_page": list(p.allergens or []),
         "may_contain_on_page": list(p.may_contain or []),
         # MEH-3442: a detail counts only while its code is declared.
@@ -456,6 +458,11 @@ def facts(
         or None,
         "now_in_israel": now.strftime("%A %H:%M"),
         "opening_hours": hours,
+        # MEH-2447: the owner said «בתיאום מראש» — visits are arranged first,
+        # whatever the hours say.
+        "visits_by_arrangement": bool(
+            producer.by_arrangement and producer.has_physical_location
+        ),
         "open_now": is_open,
         # MEH-3504: None while open, on vacation or paused (no promise to make).
         "next_opening": None

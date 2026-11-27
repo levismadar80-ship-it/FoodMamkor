@@ -42,7 +42,7 @@ MOUNTED = [
     ("/experiences", 120),
     ("/group-buys", 120),
     ("/events/upcoming", 120),
-    ("/experiences/count", 60),
+    ("/experiences/count", 120),
     ("/categories", 60),
     ("/stats", 60),
     # Six the ORIGINAL file-walking audit never saw. The app-introspecting
@@ -92,6 +92,15 @@ class TestBoundaryPerDistinctLimit:
     def test_120_per_minute_boundary(self, client):
         codes = _statuses(client, "/group-buys", 121)
         assert 429 not in codes[:120], "a request inside the budget was refused"
+        assert codes[120] == 429, "the 121st request was not refused"
+
+    def test_nav_count_read_has_the_nav_budget(self, client):
+        """The nav reads /experiences/count on every page load, and the E2E
+        suite runs from one IP: at 60/minute it answered hundreds of 429s in
+        one shard (#5363). It shares the 120 of the other nav reads. The 61st
+        request is the one the old limit refused."""
+        codes = _statuses(client, "/experiences/count", 121)
+        assert 429 not in codes[:120], "a nav count read inside 120 was refused"
         assert codes[120] == 429, "the 121st request was not refused"
 
     def test_limit_counts_misses_not_just_hits(self, client):

@@ -43,7 +43,7 @@ def provider(monkeypatch):
     ("sent" once it runs out), and records every address it was handed."""
     state = {"script": [], "to": []}
 
-    def _send(to, subject, body, html=None, reply_to=None):
+    def _send(to, subject, body, html=None, reply_to=None, kind=None):
         state["to"].append(to)
         return state["script"].pop(0) if state["script"] else "sent"
 
@@ -311,7 +311,7 @@ def test_approval_queues_the_welcome_email_and_resend_down_does_not_lose_it(
     provider["script"] = ["failed"]
 
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     (row,) = _rows(db)
@@ -360,7 +360,7 @@ def test_a_slug_collision_retry_queues_one_email_with_the_slug_that_won(
 
     monkeypatch.setattr(producer_approval, "_ensure_unique_slug", racing_ensure)
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     assert calls["n"] == 2, "the collision never happened; this test proves nothing"
@@ -377,7 +377,7 @@ def test_approving_a_test_business_queues_nothing(client, db, provider, quiet_wh
     producer = _approvable(db, is_test=True)
     admin = make_user(db, role="admin")
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     assert _rows(db) == []
@@ -515,7 +515,7 @@ def test_an_approval_whose_email_cannot_be_queued_still_answers_200(
 
     monkeypatch.setattr(admin_module, "enqueue_email", _boom)
     r = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert r.status_code == 200, r.text
     db.expire_all()
@@ -622,7 +622,7 @@ def test_a_stop_during_the_email_tick_ends_the_batch_after_the_row_in_flight(
     for n in range(3):
         _queue_one(db, to=f"r{n}@example.com")
 
-    def _send_then_sigterm(to, subject, body, html=None, reply_to=None):
+    def _send_then_sigterm(to, subject, body, html=None, reply_to=None, kind=None):
         provider["to"].append(to)
         outbox.STOP.set()  # what worker._stop does on SIGTERM
         return "sent"

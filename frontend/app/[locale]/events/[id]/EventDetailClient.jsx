@@ -31,6 +31,7 @@ import EntityCover from "@/components/EntityCover";
 import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
+import useIsraelToday from "@/lib/use-israel-today";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { EVENT_CATEGORIES, OTHER_CATEGORY } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
@@ -68,6 +69,9 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
   const t = useTranslations("events.detail");
   const locale = useLocale();
   const { id } = useParams();
+  // MEH-3861: the Israel day «היום» / «מחר» is read against — the server's
+  // while hydrating, the visitor's right after (lib/use-israel-today.js).
+  const today = useIsraelToday();
   const [event, setEvent] = useState(initialEvent);
   const [loading, setLoading] = useState(!initialEvent);
   // MEH-2548: the owner's upcoming events — «עוד אירועים של…» and, on a
@@ -157,7 +161,7 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
 
   // MEH-2548: «היום» / «מחר» / «השבוע» beside the date, or the past-event
   // notice (Israel calendar — lib/event-when.js).
-  const when = eventWhen(event.event_date);
+  const when = eventWhen(event.event_date, today);
   const isPast = when === "past";
   const CatIcon = CATEGORY_ICON[event.category] ?? CalendarBlank;
   const hasCoords = event.lat != null && event.lng != null;

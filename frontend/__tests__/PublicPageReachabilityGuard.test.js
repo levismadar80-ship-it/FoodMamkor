@@ -110,6 +110,9 @@ const ROUTES = {
   "/claim/[token]": { kind: "noindex" },
   "/contact": { kind: "noindex" },
   "/draft-preview/[token]": { kind: "noindex" },
+  // MEH-3896: the short forms of the preview and claim links.
+  "/v/[token]": { kind: "noindex" },
+  "/c/[token]": { kind: "noindex" },
   "/delivery-waitlist/host-confirm": { kind: "noindex" },
   "/delivery-waitlist/unsubscribe": { kind: "noindex" },
   "/favorites": { kind: "noindex" },
@@ -124,6 +127,8 @@ const ROUTES = {
   "/order/[id]": { kind: "noindex" },
   "/owner-invite": { kind: "noindex" },
   "/owner-invite/[token]": { kind: "noindex" },
+  "/staff-invite": { kind: "noindex" }, // MEH-3526
+  "/staff-invite/[token]": { kind: "noindex" },
   "/recommend": { kind: "noindex" },
   "/register": { kind: "noindex" },
   "/register/organizer": { kind: "noindex" },

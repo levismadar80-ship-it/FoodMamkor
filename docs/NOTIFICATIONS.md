@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-92 send sites · 89 on a single channel.
+100 send sites · 97 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -62,12 +62,16 @@
 | `services/content_notifications.py` | `notify_reviewer_reply` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `_notify_cities` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `send_host_confirmation` | מייל | לקוחה |
+| `services/draft_merge_emails.py` | `notify_admin_draft_twin` | מייל | בית עסק / מנהלת |
+| `services/draft_merge_emails.py` | `notify_admin_identity_matches` | מייל | בית עסק / מנהלת |
+| `services/draft_merge_emails.py` | `send_owner_draft_merged` | מייל | בית עסק / מנהלת |
 | `services/email_outbox.py` | `_handle` | מייל | בלי שורת עסק |
 | `services/experience_notifications.py` | `notify_admin_new_submission` | מייל | בית עסק / מנהלת |
 | `services/experience_notifications.py` | `notify_host_approved` | מייל | בעלת העסק |
 | `services/experience_notifications.py` | `notify_host_changes_requested` | מייל | בעלת העסק |
 | `services/experience_notifications.py` | `notify_host_rejected` | מייל | בעלת העסק |
 | `services/group_buy_goal_flap.py` | `send_below_goal_emails` | מייל | לקוחה |
+| `services/group_buy_no_show.py` | `send_group_buy_no_show_email` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_allergens_changed` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled_delisted` | מייל | לקוחה |
@@ -85,23 +89,27 @@
 | `services/page_freshness.py` | `send_freshness_emails` | מייל | בעלת העסק |
 | `services/page_freshness_digest.py` | `send_stale_digest` | מייל | בלי שורת עסק |
 | `services/pending_nudge.py` | `send_pending_nudges` | מייל | בעלת העסק |
+| `services/prepay_refunds.py` | `send_mails` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_mail.send` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_wa.send` | וואטסאפ | בית עסק / מנהלת |
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_owner_cancellation` | מייל | בעלת העסק |
 | `services/registration_emails.py` | `send_owner_new_registration` | מייל | בעלת העסק |
+| `services/registration_emails.py` | `send_registrant_course_changed` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registrant_moved` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registration_reminder` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_visitor_confirmation` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_waitlist_confirmation` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_waitlist_offer` | מייל | לקוחה |
 | `services/report_notifications.py` | `notify_admin_new_report` | מייל | בית עסק / מנהלת |
+| `services/rescue_business_emails.py` | `send_business_refund_email` | מייל | בעלת העסק |
 | `services/rescue_business_emails.py` | `send_business_reservation_email` | מייל | בעלת העסק |
 | `services/rescue_digest.py` | `_digest_one` | וואטסאפ | בעלת העסק |
 | `services/rescue_emails.py` | `_send_bag_cancelled` | מייל | לקוחה |
 | `services/rescue_emails.py` | `send_cancel_email` | מייל | לקוחה |
 | `services/rescue_emails.py` | `send_reservation_email` | מייל | לקוחה |
 | `services/rescue_no_show.py` | `send_no_show_email` | מייל | לקוחה |
+| `services/staff_emails.py` | `send_staff_invite_email` | מייל | בית עסק / מנהלת |
 | `services/submission_confirmation.py` | `send_submission_confirmation` | מייל | בעלת העסק |
 | `services/weekly_owner_summary.py` | `send_weekly_summaries` | מייל | בעלת העסק |
 

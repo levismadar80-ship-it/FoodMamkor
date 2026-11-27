@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 // MEH-731: locale-stripping usePathname so isActive() matches the
 // non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
@@ -35,6 +35,10 @@ import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 import BrandLoader from "@/components/BrandLoader";
 import BackLink from "@/components/ui/BackLink";
+
+// MEH-3818: the longest the phone strip waits for the counts before it shows
+// its tabs anyway (the same 2.5 s cap as the settings page).
+const COUNTS_WAIT_MS = 2500;
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -127,6 +131,21 @@ function AdminShell({ children }) {
   const stats = dashboard?.stats ?? null;
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
   const countsError = loadError;
+  // MEH-3818: the counts have answered (or failed). Until then the phone strip
+  // holds its height with a placeholder and the home's logout button waits:
+  // the queue tabs used to appear in the middle of the strip and push the
+  // others aside, and the button sat under the home's short skeleton and
+  // dropped ~420px when the home filled in (0.09 layout shift on a slow phone).
+  // Latched: a refetch clears loadError while data is still null, so the
+  // raw condition flips back to false on every navigation after one failure
+  // and the strip would lose its tabs each time. Capped at COUNTS_WAIT_MS so
+  // a slow or hanging read never holds the strip empty for the 15 s timeout.
+  const [countsKnown, setCountsKnown] = useState(false);
+  if (!countsKnown && (stats !== null || countsError)) setCountsKnown(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setCountsKnown(true), COUNTS_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   // MEH-1599: same 401/403 split as producer/dashboard/DashboardLayoutClient.jsx:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
@@ -151,8 +170,11 @@ function AdminShell({ children }) {
   // sat off-screen or half-cut. Bring the current tab into view — by scrolling
   // the STRIP only (scrollIntoView would also scroll the page vertically).
   // Re-runs when the counts land, because they decide which queues exist.
+  // MEH-3870: a LAYOUT effect, so the strip is scrolled before the browser
+  // paints the tabs. In a plain effect the tabs were painted at the strip's
+  // start for a frame and then jumped ~1100px sideways (CLS 0.107 on a phone).
   const stripRef = useRef(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const strip = stripRef.current;
     const current = strip?.querySelector('[aria-current="page"]');
     if (!strip || !current) return;
@@ -239,7 +261,7 @@ function AdminShell({ children }) {
         <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
         {badgeCount !== null && (
           <span
-            className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-2 py-0.5 rounded-full leading-none"
+            className="bg-warning-400 text-warning-900 text-2xs font-bold px-2 py-0.5 rounded-full leading-none"
             {...badgeProps(badgeCount)}
           >
             {badgeCount}
@@ -307,9 +329,19 @@ function AdminShell({ children }) {
           header height (`--chrome-top`, published by Header.jsx) — `top-16`
           (64px) parked it under the 82px header, hiding the top 18px of the
           tabs once the page scrolled (Sapir's iPhone screenshot, 29/10). */}
-      <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-[var(--chrome-top,82px)] z-40 overflow-x-auto">
-        <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
-          {navHrefs.map((n) => {
+      <div className="md:hidden w-full bg-primary-dark sticky top-[var(--chrome-top,82px)] z-40">
+        {/* MEH-3870: the nav itself is the scroller, so its own box never moves
+            when the tabs replace the placeholder and the strip scrolls to the
+            current one; only new tab nodes appear inside it. */}
+        <nav ref={stripRef} data-testid="admin-tab-strip" className="flex gap-1 px-3 py-2 whitespace-nowrap overflow-x-auto">
+          {!countsKnown && (
+            // Same box as one tab, so the strip has its final height at once.
+            <span aria-hidden="true" className="invisible flex items-center min-h-touch gap-1.5 px-3 py-1.5 text-xs">
+              <Gauge size={14} />
+              {t("layout.nav.dashboard")}
+            </span>
+          )}
+          {countsKnown && navHrefs.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             // MEH-1701: the same badge the desktop sidebar shows — an admin
@@ -329,7 +361,7 @@ function AdminShell({ children }) {
                 {t(`layout.nav.${n.key}`)}
                 {badgeCount !== null && (
                   <span
-                    className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    className="bg-warning-400 text-warning-900 text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none"
                     {...badgeProps(badgeCount)}
                   >
                     {badgeCount}
@@ -355,7 +387,7 @@ function AdminShell({ children }) {
             logout the 401 branch above sends her to /login. */}
         {/* MEH-2728: only on the panel's home, and muted — same reasoning
             as the owner dashboard (DashboardLayoutClient.jsx). */}
-        {pathname === "/admin" && (
+        {pathname === "/admin" && countsKnown && (
           <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
             <button
               type="button"

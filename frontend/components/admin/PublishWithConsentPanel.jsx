@@ -8,6 +8,8 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import { isLatinSlug, normaliseLatinSlug } from "@/lib/slug";
 
 /**
  * Module:   PublishWithConsentPanel
@@ -38,6 +40,9 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
   const [shotError, setShotError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // MEH-3914: null until the server answers `slug_required`; then the
+  // suggested English address, which the admin confirms or edits here.
+  const [slug, setSlug] = useState(null);
 
   // An upload in flight blocks submit: publishing mid-upload would drop the
   // screenshot the admin believes she attached.
@@ -66,20 +71,34 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
   const publish = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
+    const typed = slug === null ? null : normaliseLatinSlug(slug);
+    if (typed !== null && !isLatinSlug(typed)) {
+      setError(t("slug_invalid"));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
+      const body = {
+        consent_confirmed: true,
+        consent_note: note.trim(),
+        ...(shotUrl ? { consent_screenshot_url: shotUrl } : {}),
+      };
+      // The path is written out once, literally, so unwired-route-guard sees the caller.
       await api.post(
         `/admin/producers/${producerId}/publish-with-consent`,
-        {
-          consent_confirmed: true,
-          consent_note: note.trim(),
-          ...(shotUrl ? { consent_screenshot_url: shotUrl } : {}),
-        },
+        body,
+        ...(typed ? [{ params: { slug: typed } }] : []),
       );
       onPublished?.();
     } catch (err) {
-      setError(detailToMessage(err?.response?.data?.detail) || t("error"));
+      const detail = err?.response?.data?.detail;
+      if (detail?.code === "slug_required" || detail?.code === "slug_taken") {
+        setSlug(detail.suggested || "");
+        setError(detail.code === "slug_taken" ? detail.message : t("slug_needed"));
+      } else {
+        setError(detailToMessage(detail) || t("error"));
+      }
       setBusy(false);
     }
   };
@@ -141,16 +160,27 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
             <InlineMessage data-testid="consent-publish-screenshot-error">{shotError}</InlineMessage>
           )}
         </div>
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid="consent-publish-consent"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          />
+        <Checkbox
+          className="flex items-start gap-2 text-sm"
+          boxClassName="mt-0.5"
+          data-testid="consent-publish-consent"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+        >
           <span className="leading-relaxed text-text">{t("consent")}</span>
-        </label>
+        </Checkbox>
+
+        {slug !== null && (
+          <Input
+            label={t("slug_label")}
+            helperText={t("slug_hint")}
+            dir="ltr"
+            maxLength={60}
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            data-testid="consent-publish-slug"
+          />
+        )}
 
         {error && (
           <InlineMessage data-testid="consent-publish-error">{error}</InlineMessage>

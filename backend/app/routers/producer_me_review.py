@@ -35,6 +35,12 @@ from app.schemas.schemas import (
 from app.services.auth_notifications import notify_admin_new_producer
 from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
+from app.services.draft_merge_emails import notify_admin_draft_twin  # MEH-3865
+from app.services.draft_twins import twins_for  # MEH-3865
+from app.services.business_identity import (  # MEH-3884
+    AlertContext,
+    queue_identity_alerts,
+)
 from app.services.submission_gate import submission_missing_items
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.services.review_invite import review_invite_url
@@ -659,5 +665,34 @@ def submit_for_review(
         p_name,  # type: ignore[arg-type]
         submitted_at,  # type: ignore[arg-type]
         test_cause=p_test,
+    )
+    # MEH-3865: a draft the admin prepared for this same business, with no
+    # owner yet → the admin hears now, with the reasons. The submission itself
+    # is unchanged, and the owner is told nothing about the draft.
+    # The submission is already committed: a failure here never turns it into
+    # a 500, it is logged and the admin finds the twin on the list anyway.
+    try:
+        twins = twins_for(db, p_id)  # type: ignore[arg-type]
+    except Exception:  # noqa: BLE001 — fire-and-forget, logged with context
+        log.exception("[MEH-3865] draft-twin lookup failed for %s", p_id)
+        twins = []
+    for twin in twins:
+        background_tasks.add_task(
+            notify_admin_draft_twin,
+            twin.target_name,
+            twin.draft_name,
+            twin.reasons,
+            test_cause=p_test,
+        )
+    # MEH-3884: every OTHER business that shares a phone, email, Instagram,
+    # website or Facebook with this one, owned ones included (a draft twin
+    # above already has its own email, with the merge link).
+    queue_identity_alerts(
+        db,
+        background_tasks,
+        p_id,  # type: ignore[arg-type]
+        AlertContext(
+            "submit", test_cause=p_test, skip_ids=tuple(t.draft_id for t in twins)
+        ),
     )
     return {"detail": "הפרופיל נשלח לבדיקה"}

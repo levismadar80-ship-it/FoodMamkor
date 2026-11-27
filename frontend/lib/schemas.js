@@ -40,6 +40,9 @@ const OrderWindowRange = z.object({
 export const ProducerListSchema = z.object({
   id: z.union([z.string(), z.number()]),
   name: z.string(),
+  // MEH-3611 / MEH-3894: the logo, shown on a card with no photo.
+  // Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
   lat: z.number().finite().nullable().optional(),
   lng: z.number().finite().nullable().optional(),
   // MEH-1269: server-computed great-circle distance (km) attached in geo
@@ -247,6 +250,22 @@ export const ProducerListSchema = z.object({
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
   reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
   rescued_recently: z.boolean().nullable().optional(),       // → rescue_saving («מצילים מזון», MEH-2716)
+  // MEH-3824: today's next bag (a row in its card on the map).
+  // `.catch(null)`: a malformed bag costs the badge, never the business — the
+  // feed parses all-or-nothing, like the badge inputs above.
+  rescue_today: z
+    .object({
+      offer_id: z.string().min(1),
+      location_id: z.string().nullable().optional(),
+      price_agorot: z.number(),
+      value_min_agorot: z.number().nullable().optional(),
+      pickup_start: z.string(),
+      pickup_end: z.string(),
+      qty_left: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional()
+    .catch(null),
   has_gluten_free_products: z.boolean().nullable().optional(),   // → gluten_free
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
@@ -279,6 +298,11 @@ export const ProducerListSchema = z.object({
   delivers: z.boolean().nullable().optional(),               // → delivery badge + card fulfillment tag
   offers_pickup: z.boolean().nullable().optional(),          // → card fulfillment tag (PR-3)
   sells_on_site: z.boolean().nullable().optional(),          // → card «קנייה במקום» tag (MEH-2598)
+  by_arrangement: z.boolean().nullable().optional(),         // → card «בתיאום מראש» tag (MEH-2447)
+  // MEH-3824: gate the map's offer switches (one business with one ⇒ the switch shows).
+  has_open_group_buy: z.boolean().nullable().optional(),
+  has_upcoming_event: z.boolean().nullable().optional(),
+  has_listed_experience: z.boolean().nullable().optional(),
   products_count: z.number().nullable().optional(),          // → products
   // MEH-1719: the SEVENTH recurrence, and the first one that is not about
   // badges at all. MEH-1704 declared what `badges.js::earnsBadge` reads and
@@ -432,8 +456,6 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-2952 chunk 3: true only for a seeded test business — the page then
   // carries robots noindex and no JSON-LD. Declared because z.object strips.
   noindex: z.boolean().optional(),
-  // MEH-3611: the business logo beside its name. Declared because z.object strips.
-  logo_url: z.string().nullable().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),
@@ -611,6 +633,9 @@ export const ExperienceMetadataSchema = z.object({
   title: z.string(),
   description: z.string(),
   image_url: z.string().nullable().optional(),
+  // MEH-3894: the host business's photo — the share image when the
+  // experience has none (generateMetadata, as events).
+  owner_image_url: z.string().nullable().optional(),
 });
 
 // Geo search params sent to GET /producers.

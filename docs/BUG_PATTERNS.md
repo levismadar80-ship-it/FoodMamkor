@@ -286,3 +286,46 @@ that fills the screen with something that eats every touch (a map, a canvas,
 an image viewer) uses the hook.
 
 **Regression spec:** `frontend/__tests__/MiniMap.test.jsx` «MEH-3509».
+
+## A root provider's update during hydration throws the page back to the loader (MEH-3828)
+
+**Symptom:** on a slow phone the whole page turns into the route loader
+(`app/[locale]/loading.js`) about 5 s after load, then mounts again. The
+footer jumps by about a screen (≈ 1.0 CLS) and data the page read is read
+twice. No console error.
+
+**Root cause:** a context provider above the page (here `AuthProvider`) sets
+state from its mount effect as an urgent update. When it reaches a Suspense
+boundary still waiting to hydrate (a `next/dynamic` chunk not loaded yet),
+React drops that boundary's server HTML and shows its fallback
+(https://react.dev/errors/421; React 18 logs it only in development).
+
+**Fix:** set that state inside `startTransition`, so hydration finishes first.
+The cost: consumers see the old value until the page has hydrated.
+
+**Siblings:** a new provider in `app/[locale]/layout.js` that sets state on
+mount does the same.
+
+**Regression spec:** `frontend/__tests__/AuthHydrationNoFallback.test.jsx`.
+
+---
+
+## A bottom layer without `vv-pin` floats up the screen on iOS 26 (MEH-3889)
+
+**Pattern:** iOS 26 Safari can lay out `position: fixed` layers against a stale
+viewport (after the keyboard closes, or after a fast scroll), so anything with
+`bottom: …` sits hundreds of px above the real bottom. Sapir's 26/11 iPhone
+screenshot: the BottomNav pill and the chat launcher mid-screen over the home
+feed.
+
+**Root cause, two parts:** (1) `IosViewportPin.jsx` inferred the gap from
+`innerHeight`, which read healthy while the layers were drifted; it now measures
+a 0-height `fixed; bottom: 0` probe. (2) Only layers carrying `vv-pin` are
+re-seated, and eight bottom sheets did not (filters, product, city, support,
+popover, both alert sheets, the map sheet).
+
+**Held by:** `scripts/checks/vv-pin-guard.sh` (Repo guards) fails a new
+bottom-anchored fixed layer without `vv-pin` or a `vv-pin-exempt: <reason>`.
+`MapBottomSheet.jsx` is the one exemption: the map controls ride its edge.
+A real-device signal: the `ios_viewport_drift` PostHog event (once per mount).
+

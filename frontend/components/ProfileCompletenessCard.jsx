@@ -305,7 +305,8 @@ const SHARED_GATE_LABELS = new Set(["phone_verified", "email_verified"]);
  * One list for both modes. Done rows: ✓ + label (still a link, so she can
  * edit). The FIRST row not done is the open one — tinted, with one button
  * (or, for the WhatsApp row, the OTP card itself). Every other row not done is
- * a plain label link. One open row at a time is the Shopify setup-guide shape.
+ * a plain label link. One open row at a time is the Shopify setup-guide shape; the
+ * WhatsApp code row is the exception and stays open while undone (MEH-3886).
  */
 function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
   const openKey = rows.find((r) => !r.done)?.key;
@@ -314,7 +315,12 @@ function Checklist({ rows, label, labelOf, t, openContent = undefined }) {
       {rows.map((r) => {
         const text = labelOf(r);
         const status = <span className="sr-only">{r.done ? t("checklist_done") : t("checklist_todo")}</span>;
-        if (r.key === openKey) {
+        // MEH-3886: the WhatsApp code row is always open while undone. It
+        // depends on no other step, and as a grey line behind «מוצר» it left an
+        // owner with no button to press (Farmerim, 26/11). Google Business
+        // Profile and Airbnb keep their verify action reachable at any point.
+        const alwaysOpen = Boolean(openContent) && r.key === "phone_verified" && !r.done;
+        if (r.key === openKey || alwaysOpen) {
           return (
             <li
               key={r.key}
@@ -421,7 +427,7 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
           openContent={(r) =>
             r.key === "phone_verified" ? (
               <div data-testid="draft-phone-verify">
-                <PhoneVerifyCard variant="inline" onVerified={() => onPhoneVerified?.()} />
+                <PhoneVerifyCard variant="inline" phone={producer.phone} onVerified={() => onPhoneVerified?.()} />
               </div>
             ) : r.key === "email_verified" ? (
               <EmailResend t={t} />

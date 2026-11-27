@@ -163,8 +163,17 @@ def _loud(caplog):
     ]
 
 
+def _identity_match():
+    import uuid
+
+    from app.services.business_identity import IdentityMatch
+
+    return IdentityMatch(uuid.uuid4(), "y", "draft", None, ["phone"])
+
+
 def _notifier_calls():
     from app.services import auth_notifications as an
+    from app.services import draft_merge_emails as dm
 
     return [
         ("registered", lambda tc: an.notify_producer_registered("x", "0521234567", tc)),
@@ -206,6 +215,22 @@ def _notifier_calls():
         (
             "new_producer",
             lambda tc: an.notify_admin_new_producer("x", "c", test_cause=tc),
+        ),
+        (
+            "draft_twin",
+            lambda tc: dm.notify_admin_draft_twin("x", "y", ["phone"], test_cause=tc),
+        ),
+        (
+            "identity_matches",
+            lambda tc: dm.notify_admin_identity_matches(
+                "x", [_identity_match()], "signup", test_cause=tc
+            ),
+        ),
+        (
+            "draft_merged",
+            lambda tc: dm.send_owner_draft_merged(
+                "o@example.com", "x", "y", test_cause=tc
+            ),
         ),
     ]
 
@@ -687,6 +712,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "wrapper param ← producer.is_test (no account exists until acceptance)",
     ),
+    # MEH-3526: a business invites someone to handle its orders. The invited
+    # address may have no account, so the signal is the BUSINESS's is_test.
+    ("services/staff_emails.py", "send_staff_invite_email", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test (routers/producer_staff.py invite)",
+    ),
     # MEH-2974 v3: the 6-digit code that proves the address typed on the
     # acceptance page. Same position as the invite itself — no account yet.
     ("services/auth_emails.py", "send_owner_invite_code_email", "send_email"): (
@@ -766,6 +798,24 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_admin_new_business_suggestion",
         "send_email",
     ): (1, NONE, "same"),
+    # MEH-3865: a draft looks like a business sent for review — admin email;
+    # the owner's email after the admin moved the draft to her account.
+    ("services/draft_merge_emails.py", "notify_admin_draft_twin", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
+    # MEH-3884: a new business looks like one we already have — one admin email.
+    ("services/draft_merge_emails.py", "notify_admin_identity_matches", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
+    ("services/draft_merge_emails.py", "send_owner_draft_merged", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
     # MEH-3410: an owner claimed a draft — admin email (MEH-3589: no WhatsApp).
     ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_email"): (
         1,
@@ -996,6 +1046,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_email",
     ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
     (
+        "services/rescue_business_emails.py",
+        "send_business_refund_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3895)"),
+    (
+        "services/prepay_refunds.py",
+        "send_mails",
+        "send_email",
+    ): (1, OWN, "Mail tuple ← producer.is_test (MEH-3897)"),
+    (
         "services/group_buy_goal_flap.py",
         "send_below_goal_emails",
         "send_email",
@@ -1043,6 +1103,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test or user.is_test",
     ),
+    # MEH-3735: the buyer's mail on each group-buy no-show.
+    ("services/group_buy_no_show.py", "send_group_buy_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
     # MEH-3702: the morning-of reminder, queued to the email outbox.
     ("services/rescue_reminders.py", "_queue", "enqueue_email"): (
         1,
@@ -1074,6 +1140,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         CON,
         "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    # MEH-3904: a course's later meetings changed — same caller as «moved».
+    ("services/registration_emails.py", "send_registrant_course_changed", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← is_test_item(item) via notify_item_moved",
     ),
     ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
         1,

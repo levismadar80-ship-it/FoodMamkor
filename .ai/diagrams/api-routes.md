@@ -14,13 +14,14 @@
 >   - 👤 = producer role (`require_producer`). Includes `GET /producers/me/group-buys` (MEH-2437: the business's own group buys, every status, newest first; no business linked → 403).
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
 >   - Paid-tool gate (MEH-3180, switched off: `app.pricing.BILLING_PHASE = "launch"`): once billing is on, a business in `page_only` / `unpaid` gets 403 from `services/capabilities.py` when it opens a NEW paid booking on `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` (priced + `site_form` only), `POST /group-buys`, and `POST /rescue/offers` (route dependency `capabilities.bags_open`, after `require_rescue_enabled`). No new route.
->   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated. MEH-3691: `POST …/commit` and `POST …/waitlist` answer 403 to the group's own business account.
+>   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated. MEH-3691: `POST …/commit` and `POST …/waitlist` answer 403 to the group's own business account. MEH-3735: `POST …/commit` also answers 403 after two group-buy no-shows in 30 days; the owner's pickup list and marks live in `routers/group_buy_pickup.py` (`GET /producers/me/group-buys/{id}/pickups`, `POST /group-buys/{id}/commits/{commit_id}/handed|no-show`, admin `POST /admin/group-buys/users/{user_id}/clear-block`).
 >   - 🛡️ = admin role (`require_admin`)
 >   - MEH-3137: `PUT /producers/me`, claim, owner-invite accept and `POST /producers` take `farmer_declaration_accepted`; moving into ירקות/פירות with no recorded grower line and no flag → 422 Hebrew. Details: `docs/DATA.md` → MEH-3137.
 >   - MEH-3261: owner `PUT /producers/me` and `POST`/`PUT /producers/me/products[/{id}]` of an APPROVED business run changed text through the AI check (REJECTED → 422, nothing saved) and ping the admin once per content save — no route or response shape change.
 >   - MEH-3660: `GET`/`PUT /producers/me` carry `owner_email_verified` (businesses), and the business submit gate (`POST /producers/me/submit-for-review`, `POST /producers/me/request-review`) adds `email_verified` to the 422 `missing` list when the owner has not confirmed her email. Details: `docs/DATA.md` → MEH-3660.
 >   - MEH-2852: the write routes that make a public page appear, change or disappear (business approve / edit / hide / reject / delete, owner `PUT /producers/me`, events, group buys, admin experience + recipe moderation) queue an IndexNow ping after the commit — production only, no response change. Full list: `docs/DATA.md` → "IndexNow".
 >   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
+>   - MEH-3824: `GET /producers` takes `rescue_today` / `group_buy` / `event` / `experience` (OR between them) and returns `has_open_group_buy` / `has_upcoming_event` / `has_listed_experience`, each read from the query that kind's public list runs (`services/offer_supply.py`). Feeds the map's offer switches in «סינון».
 
 ## 1. Registered routers at a glance
 
@@ -37,13 +38,14 @@ graph LR
     App --> FormFill[form_fill.router<br/>/producers/me/ai-fill/:form POST<br/>MEH-3740 Claude drafts a dashboard form from the owner's text, one field map per form, nothing saved]
     App --> ReviewReplySuggest[review_reply_suggest.router<br/>/reviews/:id/reply/suggest POST<br/>MEH-3480 Claude drafts the owner's reply to a review, nothing saved]
     App --> Billing[billing.router<br/>/producers/me/billing/summary · /admin/billing/overview<br/>MEH-3181 read-only monthly count of bookings — nothing is charged]
-    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft; MEH-3410 alerts the admin]
-    App --> DraftPreview[producer_draft_preview.router<br/>/admin/producers/:id/preview-link · /producer-preview/:token · /admin/producers/:id/publish-with-consent<br/>MEH-3377: read-only 14-day HS256 scope=producer_draft_preview for an ownerless draft;<br/>publish-with-consent = draft → approved with a recorded consent note, approval gates kept]
+    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day scope=producer_claim (MEH-3896: short /c/&lt;code&gt;, a share_links row; old HS256 links still read), draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft; MEH-3410 alerts the admin]
+    App --> DraftPreview[producer_draft_preview.router<br/>/admin/producers/:id/preview-link · /producer-preview/:token · /admin/producers/:id/publish-with-consent<br/>MEH-3377: read-only 14-day scope=producer_draft_preview (MEH-3896: short /v/&lt;code&gt;; old HS256 links still read) for an ownerless draft;<br/>publish-with-consent = draft → approved with a recorded consent note, approval gates kept]
     App --> OwnerInvite[producer_owner_invite.router · .public_router<br/>/admin/producers/:id/owner-invite[/resend] · /auth/owner-invite/:token · …/email-code · …/accept<br/>MEH-2974 owner invite: APPROVED or INACTIVE + ownerless, sha256 of a token_urlsafe on the producer row,<br/>7 days, single-use, revoked by resend / cancel / suspension. NO users row until acceptance;<br/>v3 the address is optional on the invite and proved by a 6-digit code sha256 on the row 10 min 5 attempts;<br/>acceptance creates the user, stamps her declaration + terms, PUBLISHES a hidden page (MEH-3268: unless it lost its photo / required licence — then held hidden, owner still linked), and logs her in;<br/>MEH-3256 …/email-code-existing · …/accept-existing (producer_owner_invite_existing.router): a SIGNED-IN<br/>verified account accepts instead — code to her own address (MEH-3675: or a Google sign-in ≤ 5 min old of the same linked Google identity), no admin, one business per account, token_version bumped]
+    App --> ProducerStaff[producer_staff.owner_router · .invite_router · .member_router<br/>GET·POST /producers/me/staff · DELETE /producers/me/staff/:id · POST /staff-invites/accept · DELETE /users/me/staff-membership<br/>MEH-3526 orders-only staff: owner invites up to 5 by email (same answer with or without an account), sha256 of a token_urlsafe, 7 days, single-use conditional UPDATE;<br/>accept needs the invited address verified on a plain consumer account; staff reach only the 8 routes of product_order_business.py via require_order_access]
     App --> Rescue[rescue.router · rescue.admin_router<br/>/rescue/* · /admin/rescue/*<br/>MEH-2646 rescue-bags pilot — EVERY route 404s while RESCUE_BAGS_ENABLED is off (its default).<br/>No payment anywhere: the buyer pays at the counter]
     App --> ProductOrders[product_orders.me_router · .admin_router<br/>/producers/me/order-settings GET·PUT · /admin/producers/:id/order-settings/alcohol · GET /admin/producers/:id/order-settings (MEH-3524, the edit page's alcohol switch)<br/>MEH-3218 on-site ordering, stage 1 — settings only, no order route yet.<br/>EVERY route 404s while PRODUCT_ORDERS_ENABLED is off (its default)]
     App --> ProductVariants[product_variants.router<br/>PUT /products/:id/variants 👤 owner or admin, 60/hour<br/>MEH-3617 sizes or flavours, whole list, max 10 (409). Not behind the ordering flag]
-    App --> ProductOrderOffer[product_order_offer.me_router · .public_router<br/>/producers/me/order-windows GET·PUT · /producers/me/products/ordering GET · /producers/me/products/:id/ordering PUT · /producers/:id/order-menu GET · /producers/me/order-menu/preview GET (MEH-3746, the owner's own menu before ordering is on)<br/>MEH-3262 stage 2a — what a business offers: weekly windows, product ordering fields, the public menu with slots.<br/>Same flag, same 404 while off]
+    App --> ProductOrderOffer[product_order_offer.me_router · .public_router<br/>/producers/me/order-windows GET·PUT · /producers/me/products/ordering GET · /producers/me/products/:id/ordering PUT · /producers/:id/order-menu GET · /producers/me/order-menu/preview GET (MEH-3746, the owner's own menu before ordering is on) · /producers/me/orders/prep GET (daily stock 27/11: «מה להכין» for a week, owner or orders staff; daily_limit / variant_limits on the ordering PUT, stock rows on the menu; MEH-3932 lead_days on the ordering PUT and each menu product)<br/>MEH-3262 stage 2a — what a business offers: weekly windows, product ordering fields, the public menu with slots.<br/>Same flag, same 404 while off]
     App --> ProductOrderBuyer[product_order_buyer.router<br/>/product-orders/phone-code · /product-orders/quote (MEH-3216 5c, writes nothing) · /product-orders POST · /product-orders/status · …/status/cancel · …/status/accept-change · /users/me/product-orders<br/>MEH-3263 the buyer: phone proved by a WhatsApp code (MEH-3680: no code for a logged-in buyer's own verified phone); MEH-3691: 403 when the logged-in buyer's producer_id is the order's business, before the code, server-side prices, token in the POST body, no-store. 404 while the flag is off]
     App --> ProductOrderBusiness[product_order_business.router<br/>/producers/me/product-orders GET · …/:id/confirm · decline · propose-change · ready · handed · no-show · cancel<br/>MEH-3263 the business acts on its own orders only; every move through product_order_state. 404 while the flag is off]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
@@ -59,6 +61,7 @@ graph LR
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
+    App --> AdminBusinessContent[admin_business_content.router<br/>/admin/producers/:producer_id/events + /experiences (GET lists both, MEH-3876), /admin/events/:id, /admin/experiences/:id (MEH-3873, owner_consent on every save; writes through events/experiences shared writers)]
     App --> AdminTestBusiness[admin_test_business.router<br/>/admin/test-businesses (MEH-2952 chunk 4: «עסק בדיקה — מוסתר מהאתר», writes producers.is_test)]
     App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner) + products/:id/price (MEH-3942)]
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
@@ -81,6 +84,7 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
+    GCities -.same fold.-> PCitiesMatch[POST /cities/match<br/>🌐 MEH-3867 pasted list → matched / unmatched<br/>read-only, 30/min, ≤300 names]
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
@@ -107,6 +111,7 @@ graph TD
 graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
     SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 10/hour (MEH-1635)<br/>routers/auth_register_producer.py (MEH-3293)<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
+    SignUp --> IdentityCheck[POST /producer-identity-check<br/>🌐 MEH-3884 phone / own account email vs every business, any status, owned or not<br/>returns one masked owner email, never reads an email from the body;<br/>register + submit-for-review also email the admin per suspected pair]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
     SignUp --> OAuthGC[POST /auth/google/code<br/>🌐 code → id_token, MEH-3690]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
@@ -134,12 +139,12 @@ graph TD
 ```mermaid
 graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
-    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week +<br/>attention «מה מחכה לך» (incl. live_rescue_offers, MEH-3767)]
+    Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week +<br/>attention «מה ממתין לטיפול» (incl. live_rescue_offers, MEH-3767)]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>30d chart, top cities,<br/>share_visits (MEH-3331, referrer=share)]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
     Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
-    Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
+    Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated<br/>20/hour per IP · admin 200/hour per user MEH-3906]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     AdminEdit[/admin/producers/:id/edit] --> UploadProductImg[POST /upload/product-image/:product_id<br/>🛡️ MEH-3456 admin-only product photo, any business;<br/>same size cap + magic-byte sniff, writes products.image_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending: notification-only, no DB write;<br/>MEH-2210 rejected: cap 3 → 409, completeness gate → 422, else → pending + resubmission_count+1; other statuses 409; 3/hr]
@@ -167,12 +172,13 @@ graph TD
     Dashboard[/admin «מה מחכה לטיפול» page + admin layout] --> AdminDash[GET /admin/dashboard<br/>🛡️ stats + pending_producers preview +<br/>monthly_producers + daily_active_users +<br/>top_cities + server_health + pending_moderation_count;<br/>MEH-2359 per-queue keys: pending_category_requests,<br/>pending_name_change_requests, undelivered_whatsapp_7d,<br/>experiences_awaiting_review, recipes_awaiting_review —<br/>the page reads stats + pending_producers only;<br/>the layout reads stats for the sidebar pills + queue filter]
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
-    Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
+    Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️ ?slug= — 422 slug_required when no English address exists yet (MEH-3914)]
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email;<br/>MEH-3227 + live rescue bags and upcoming event/experience sign-ups cancelled, holders mailed]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email<br/>🛡️ MEH-3227 + live rescue bags and upcoming sign-ups, holders mailed, owner mailed<br/>🛡️ MEH-2945 inactive→approved runs the approval gates (422)]
     Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft;<br/>MEH-2495 also minted from the drafts-list row «העתקת הודעה עם קישור»;<br/>MEH-2496 locks the draft FOR UPDATE and stamps producers.claim_link_sent_at on success only]
+    Producers --> MergeOwner[POST /admin/producers/{draft_id}/merge-owner<br/>🛡️ MEH-3865 moves an ownerless draft to the owner who registered the same business herself;<br/>her name, contacts and images win, her duplicate row is deleted in the same transaction]
     Producers --> AdminPListAll[GET /admin/producers<br/>🛡️ ProducerAdminOut rows; MEH-2495 has_owner derived per row in ONE batched query; MEH-3409 draft_missing for claimed drafts]
     Producers --> OwnerInviteAdmin[POST /admin/producers/{id}/owner-invite · …/resend · DELETE …<br/>🛡️ MEH-2974 invite the owner of an APPROVED or INACTIVE ownerless business, 10/hour;<br/>422 without the recorded written consent · 409 wrong status / already owned / email already a user;<br/>v3 the email is OPTIONAL — with none nothing is mailed and the admin copies the link;<br/>a resend drops a taken address rather than refusing; the raw link is returned ONCE — the DB keeps only its sha256]
     Producers --> OwnerDetach[POST /admin/producers/{id}/detach-owner<br/>🛡️ MEH-3256 D9 «ניתוק בעלים», 10/hour: typed name + expected owner id;<br/>owner → consumer, token_version bumped, accepted_at cleared → invitable again; never an admin]
@@ -192,8 +198,8 @@ graph TD
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first, with actor_email; keyset cursor before+before_id — the row is scheduled in get_current_user for every change by an admin account]
 
-    Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
-    Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]
+    Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD; POST takes an English slug, 400 if taken or reserved (MEH-3911)]
+    Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor; slug must be English (MEH-3911)]
 
     Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
     Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
@@ -223,6 +229,7 @@ graph TD
 
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
+    Resend[Resend via Svix] --> ResendHook[POST /webhook/resend<br/>🌐 MEH-3839 delivery events<br/>svix signature gate, 503 until the secret is set<br/>writes email_events]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired, or accepted &gt;1 day<br/>with no receipt (stuck, MEH-2122 E) · last 7d<br/>list-only, no resend/retry]
     AdminWhatsapp --> AdminWaBlocked[GET /admin/whatsapp/blocked<br/>🛡️ MEH-3402 staging-only capture<br/>status = blocked_nonprod, with content · last 7d · max 200]
 ```
@@ -248,6 +255,8 @@ graph LR
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]
     ChatRouter -->|db_query, 5/min per IP| ChatTools[chat_db_tools<br/>4 bounded SELECTs as mcp_reader<br/>READ ONLY · 5s timeout · fail-open]
+    Owner[OwnerAssistant.jsx in the dashboard tab row] --> ChatOwner[POST /chat/owner<br/>👤 owner · MEH-3902<br/>her status + missing items + screen]
+    ChatOwner -->|fill_page_from_chat| PageFiller[page_filler.read_page<br/>draft only, she ticks what to save<br/>PUT /producers/me]
     ChatQA -->|names one business| ChatBiz[chat_business_context<br/>MEH-3481: whitelisted page facts<br/>no phone/email/address · fail-open]
 ```
 
@@ -267,18 +276,20 @@ graph LR
     BagPage[/rescue/:offerId bag page · MEH-3586] --> One[GET /rescue/offers/:id<br/>🌐 one of today's bags + state available/sold_out/cancelled/ended<br/>+ pickup lat/lng + business avg_rating/reviews_count<br/>404 for another day, test/unapproved business, town outside the pilot]
 
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
-    Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
+    Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation · MEH-3895: and the owners «להחזיר X ₪» when the business shows a prepay link]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
     Buyer --> History[GET /rescue/orders/history<br/>🔑 own reservations, any day, newest first, max 50<br/>+ producer_name, no pickup_code — «ההזמנות שלי» MEH-3698]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
     Counter --> NoShow[POST /rescue/orders/:id/no-show<br/>👤 owner or admin, only after pickup_end<br/>increments users.rescue_no_show_count<br/>MEH-3226: mails the buyer each time (warning / block on)]
+    Counter --> Paid[POST /rescue/orders/:id/paid<br/>👤 owner or admin · body paid: bool<br/>reserved or handed only, else 409<br/>MEH-3897 stamps or clears rescue_orders.paid_at]
 
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics<br/>MEH-3226: /admin/users row menu «שחרור חסימת סלים»]
 
     Dash --> MyOrders[GET /producers/me/rescue/orders<br/>👤 today's codes for this business, Israel clock<br/>NO buyer identity — four digits is the whole job<br/>carries pickup_end so «לא הגיע» can be gated client-side]
     Dash --> Pilot[GET /producers/me/rescue/pilot-locations<br/>👤 MEH-2921: own pickup points in a pilot town, ids only]
+    Dash --> Schedule[GET /producers/me/rescue/schedules · PUT · DELETE /producers/me/rescue/locations/:id/schedule<br/>PUT · DELETE …/schedule/skips/:day<br/>👤 owner of the point · save and unskip: verified email + paid tool open · 422 without an exact address · 403 outside the pilot<br/>MEH-3703: a save or an unskip publishes at once; the hourly job does the rest<br/>a skip of a day whose bag is up cancels it in the same transaction (409 first if it has reservations; ?cancel_reserved=true confirms)]
     Dash --> Typical[GET · PUT /producers/me/rescue/typical-items<br/>👤 «בדרך כלל: …», one row per business, upsert in place<br/>bounded at 12 so the line stays one line on a phone]
     Admin --> Metrics[GET /admin/rescue/metrics?days=<br/>🛡️ offers/day · sell-through · no-show rate · repeat buyers · bags_donated MEH-2703<br/>rates are NULL not 0 when the denominator is zero]
     Dash --> MyOffers[GET /producers/me/rescue/offers<br/>👤 today's bags + leftover MEH-2703<br/>leftover = qty_left + no_show bags, 0 before pickup_end or when cancelled]

@@ -44,6 +44,10 @@ from app.services.auth_notifications import (
 )
 from app.services.verify_session import set_signup_marker
 from app.services.producer_risk import score_producer
+from app.services.business_identity import (  # MEH-3884
+    AlertContext,
+    queue_identity_alerts,
+)
 from app.services.oauth_verifiers import (
     # Same underscore aliases as routers/auth.py, so the moved code is
     # byte-identical. Tests that patch these for the two business-signup
@@ -79,6 +83,7 @@ from app.routers.auth import (
     _set_fingerprint_cookie,
     _set_refresh_cookie,
 )
+from app.services.staff_membership import end_staff_membership
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +322,7 @@ async def register_producer(
             kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
+            by_arrangement=data.by_arrangement,  # MEH-2447
             delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
@@ -359,6 +365,8 @@ async def register_producer(
         user.producer_id = producer.id
         user.role = "producer"  # type: ignore[assignment]
         user.is_producer = True  # type: ignore[assignment]
+        # MEH-3526: an owner is no longer someone else's order staff.
+        end_staff_membership(db, user.id)
         # MEH-1995: the upgrade path collects ToS consent exactly like the two
         # account-creation paths — the checkbox renders in the STORY step with
         # no isUpgrade condition and hard-gates submit
@@ -415,6 +423,15 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
+        # MEH-3884: the admin hears about every existing business that shares a
+        # phone or an email with this one (owned or not, any status). The
+        # business is already created; this never blocks or fails signup.
+        queue_identity_alerts(
+            db,
+            background_tasks,
+            p_id,  # type: ignore[arg-type]
+            AlertContext("signup", test_cause=p_test),
+        )
         # MEH-1553: no VERIFY email on the upgrade path. Verification is NOT
         # enforced here — a logged-in but *unverified* consumer can still add
         # producer capability (the guard above only requires a valid JWT).
@@ -539,6 +556,7 @@ async def register_producer(
             kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
+            by_arrangement=data.by_arrangement,  # MEH-2447
             delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
@@ -624,6 +642,15 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
+        # MEH-3884: the admin hears about every existing business that shares a
+        # phone or an email with this one (owned or not, any status). The
+        # business is already created; this never blocks or fails signup.
+        queue_identity_alerts(
+            db,
+            background_tasks,
+            p_id,  # type: ignore[arg-type]
+            AlertContext("signup", test_cause=p_test),
+        )
         background_tasks.add_task(
             _send_verify_email,
             user.email,  # type: ignore[arg-type]

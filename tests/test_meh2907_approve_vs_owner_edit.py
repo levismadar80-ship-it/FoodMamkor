@@ -96,7 +96,7 @@ from fastapi.testclient import TestClient
 
 import app.cloudinary_utils as cloudinary_utils
 import app.routers.admin_decisions as admin_mod
-import app.routers.producer_me as pm
+import app.services.producer_owner_update as pm  # MEH-3841: the save moved here
 from app.database import SessionLocal
 from app.models.models import Producer
 
@@ -206,7 +206,7 @@ def _run_the_race(client, db, monkeypatch, *, prepare=None, mutate=None) -> dict
     def approve():
         results["approve"] = (
             TestClient(client.app)
-            .post(f"/admin/producers/{producer_id}/approve", headers=auth_header(admin))
+            .post(f"/admin/producers/{producer_id}/approve?slug=test-farm", headers=auth_header(admin))
             .status_code
         )
 
@@ -438,7 +438,7 @@ def test_owner_put_committed_after_approval_does_not_revert_it(client, db, monke
 
     results["approve"] = (
         TestClient(client.app)
-        .post(f"/admin/producers/{producer_id}/approve", headers=auth_header(admin))
+        .post(f"/admin/producers/{producer_id}/approve?slug=test-farm", headers=auth_header(admin))
         .status_code
     )
     approve_done.set()

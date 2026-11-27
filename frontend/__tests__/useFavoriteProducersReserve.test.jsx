@@ -24,6 +24,7 @@ describe("useFavoriteProducers reserve", () => {
     apiGet.mockReset();
     auth.user = null;
     auth.loading = true;
+    localStorage.setItem("token", "t"); // a stored session, as on every sign-in path
   });
 
   it("no hint → never reserves, even while auth loads", () => {
@@ -31,10 +32,21 @@ describe("useFavoriteProducers reserve", () => {
     expect(result.current.reserve).toBe(false);
   });
 
-  it("hint + auth loading → reserves", () => {
+  it("hint + session token + auth loading → reserves", () => {
     localStorage.setItem("fav_strip_hint", "1");
     const { result } = renderHook(() => useFavoriteProducers());
     expect(result.current.reserve).toBe(true);
+  });
+
+  // MEH-3858: a hint with no session token (the session ended in api.js,
+  // which removes the token and keeps the hint) must not reserve: the
+  // pre-paint script does not reveal the strip without a token, so reserving
+  // after mount opened it and the signed-out answer collapsed it (CLS 0.14).
+  it("hint without a session token → never reserves", () => {
+    localStorage.removeItem("token");
+    localStorage.setItem("fav_strip_hint", "1");
+    const { result } = renderHook(() => useFavoriteProducers());
+    expect(result.current.reserve).toBe(false);
   });
 
   it("hint + signed in + list loading → reserves; list arrives → cards, no reserve", async () => {

@@ -29,6 +29,7 @@ History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants);
 from __future__ import annotations
 
 from datetime import date, time
+from functools import partial
 from typing import Any
 
 from fastapi import BackgroundTasks
@@ -52,6 +53,7 @@ from app.services.group_buy_delist import cancel_live_group_buys, count_live_com
 from app.services.registration_emails import (
     RegistrantEmail,
     send_registrant_cancelled,
+    send_registrant_course_changed,
     send_registrant_delisted,
     send_registrant_method_changed,
     send_registrant_moved,
@@ -277,6 +279,17 @@ def _cancel_live_bags(
         .filter(_not_own(producer))
         if email
     }
+    # MEH-3897: reservations the business marked paid, read under the same
+    # lock before the cancel — each one's owners get the refund email.
+    paid: list[RescueOrder] = (
+        db.query(RescueOrder)
+        .filter(
+            RescueOrder.offer_id.in_(offer_ids),
+            RescueOrder.status == "reserved",
+            RescueOrder.paid_at.isnot(None),
+        )
+        .all()
+    )
     cancelled = (
         db.query(RescueOrder)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
@@ -284,6 +297,12 @@ def _cancel_live_bags(
     )
     for offer in offers:
         offer.status = "cancelled"  # type: ignore[assignment]
+    if paid:
+        # Imported here: rescue_payment -> rescue_writes, kept off this
+        # module's import graph.
+        from app.services.rescue_payment import queue_paid_refunds
+
+        queue_paid_refunds(background_tasks, db, {o.id: o for o in offers}, paid)
     for email in sorted(emails):
         background_tasks.add_task(
             send_delisted_cancel_email,
@@ -378,7 +397,7 @@ def send_owner_delisted(  # noqa: PLR0913 — one flag per line of the email (ME
         )
     lines.append(f"לשאלות אפשר לכתוב לנו: {contact}")
     body = "שלום,\n\n" + "\n".join(lines) + "\n\nבברכה,\nצוות מהמקור"
-    send_email(to, subject, body, test_cause=test_cause)
+    send_email(to, subject, body, test_cause=test_cause, kind="booking_cancelled")
 
 
 def queue_owner_delisted(  # noqa: PLR0913 — the email's flags, passed through (MEH-3768)
@@ -571,6 +590,31 @@ def notify_item_moved(
                 test_cause=test_cause,
             )
     return len(regs)
+
+
+def notify_course_changed(
+    db: Session,
+    item: Experience,
+    old_meetings: list[dict[str, Any]] | None,
+    background_tasks: BackgroundTasks,
+    test_cause: bool,
+) -> int:
+    """MEH-3898: a course's meetings changed but its first one did not (a
+    moved first meeting is mailed by ``after_item_edit``): each registrant
+    gets the new list. Call only when that call sent nothing."""
+    new: list[dict[str, Any]] = item.course_meetings or []  # type: ignore[assignment]
+    if not (item.is_active and old_meetings and new) or new == old_meetings:
+        return 0
+    lines = tuple(
+        f"{_date_text(date.fromisoformat(str(m['date'])))}, {m['time']}" for m in new
+    )
+    return notify_item_moved(
+        db,
+        item,
+        background_tasks,
+        test_cause,
+        partial(send_registrant_course_changed, meetings=lines),
+    )
 
 
 def registrant_message(reg: Registration, item: Event | Experience) -> RegistrantEmail:

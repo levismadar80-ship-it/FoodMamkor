@@ -19,10 +19,10 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
-import { useEventsNavGate } from "@/lib/use-events-nav-gate";
-import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { useEventsNavGateState } from "@/lib/use-events-nav-gate";
+import { useExperiencesNavGateState } from "@/lib/use-experiences-nav-gate";
 import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
-import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import { useHubNavGateState } from "@/lib/use-hub-nav-gate";
 import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -52,6 +52,7 @@ const HUB_GROUP_BY_GATE = {
 };
 const HEADER_MENU_ORDER = [
   "producerDashboard",
+  "staffOrders", // MEH-3526
   "producerPublicPage",
   "favorites",
   "myOrders", // MEH-3698: group buys and bags are in it too
@@ -242,16 +243,28 @@ export default function Header() {
   // has supply, not only experiences. Each hook owns one endpoint and fails
   // closed, so an unreachable backend hides the link rather than offering an
   // empty hub. The four reads are cached per session by the hooks themselves.
-  const showEvents = useEventsNavGate();
-  const showExperiences = useExperiencesNavGate();
-  const showGroupBuys = useHubNavGate("groupBuys");
-  const showRescue = useHubNavGate("rescue");
+  const events = useEventsNavGateState();
+  const experiences = useExperiencesNavGateState();
+  const groupBuys = useHubNavGateState("groupBuys");
+  const rescue = useHubNavGateState("rescue");
+  const showEvents = events.visible;
+  const showExperiences = experiences.visible;
+  const showGroupBuys = groupBuys.visible;
+  const showRescue = rescue.visible;
   // MEH-3125: one gate per group — «אירועים» answers to events + experiences,
   // «הזדמנויות» to group buys + rescue bags.
   const supply = { events: showEvents, experiences: showExperiences, groupBuys: showGroupBuys, rescue: showRescue };
   const gateOpen = {
     "listing-supply": showEvents || showExperiences,
     "opportunity-supply": showGroupBuys || showRescue,
+  };
+  // MEH-3809: a gated link whose answer is still on its way holds its place
+  // (invisible), so its late arrival does not wrap the row at 768 px and push
+  // the whole page down 48 px (CLS 0.40 on every page, staging 25/11). A gate
+  // that answers «no» drops the link as before.
+  const gatePending = {
+    "listing-supply": !gateOpen["listing-supply"] && !(events.settled && experiences.settled),
+    "opportunity-supply": !gateOpen["opportunity-supply"] && !(groupBuys.settled && rescue.settled),
   };
   const NAV_ITEMS = orderedForSurface(
     "header",
@@ -260,7 +273,7 @@ export default function Header() {
   )
     // The data gate stays here: the registry records THAT the item is gated on
     // supply, not what the current supply is.
-    .filter(({ item }) => !(item.dataGate in HUB_GROUP_BY_GATE) || gateOpen[item.dataGate])
+    .filter(({ item }) => !(item.dataGate in HUB_GROUP_BY_GATE) || gateOpen[item.dataGate] || gatePending[item.dataGate])
     .map(({ item, surface }) => ({
       // Stable across a href change: the hub link's href can move after mount
       // as the four gates answer, and a key that moved with it would remount
@@ -273,6 +286,7 @@ export default function Header() {
           ? hubLandingHref(supply, HUB_GROUP_BY_GATE[item.dataGate])
           : item.href,
       label: t(surface.labelKey),
+      pending: !!gatePending[item.dataGate],
     }));
 
   const isHomepage = pathname === "/";
@@ -507,6 +521,7 @@ export default function Header() {
                   key={item.id}
                   href={item.href}
                   label={item.label}
+                  pending={item.pending}
                   active={isActive(item.href)}
                   // MEH-900: only the home item needs the same-route scroll-reset.
                   onClick={item.href === "/" ? handleHomeClick : undefined}
@@ -607,9 +622,18 @@ export default function Header() {
  * Inactive = plain text-text with primary-ink hover. min-h-touch keeps each
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
-function NavLink({ href, label, active, onClick }) {
+function NavLink({ href, label, active, onClick, pending = false }) {
   // MEH-3628: load the page from the first touch / hover (Sapir 21/11).
   const intent = useIntentPrefetch();
+  // MEH-3809: a link whose gate has not answered yet only holds its place —
+  // `invisible` keeps it out of the tab order and the accessibility tree.
+  if (pending) {
+    return (
+      <span aria-hidden="true" data-testid="nav-link-pending" className={`invisible inline-flex items-center min-h-touch px-3 text-base ${active ? "font-semibold" : "font-medium"}`}>
+        {label}
+      </span>
+    );
+  }
   return (
     <Link prefetch={false}
       href={href}
@@ -721,6 +745,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
     )
     .filter(({ item }) => item.dataGate !== "orders-on" || ordersOn)
+    .filter(({ item }) => item.dataGate !== "staff-of" || Boolean(user.staff_of))
     .map(({ item, surface }) => ({
       // MEH-3024: an unapproved business's /producer/<id> is a real 404, so
       // its owner's «צפייה בדף» goes to the dashboard preview — the same rule

@@ -22,6 +22,7 @@ import {
   FILTER_AXES,
   LISTING_CHIP_ORDER,
   MAP_CHIP_ORDER,
+  MAP_ONLY_GROUPS,
   axisKeysFor,
 } from "@/lib/filter-taxonomy";
 import {
@@ -67,13 +68,22 @@ const CATALOGS = {
 
 describe("MEH-2767 — 1. membership: every surface declares the same axes", () => {
   it("home, /producers and /map offer one axis set", () => {
-    const map = axisKeysFor("map", MAP_CHIP_ORDER).sort();
+    // MEH-3824: the map-only offer groups are held separately, below.
+    const shared = (k) => !MAP_ONLY_GROUPS.includes(FILTER_AXES[k].group);
+    const map = axisKeysFor("map", MAP_CHIP_ORDER).filter(shared).sort();
     expect(axisKeysFor("producers", LISTING_CHIP_ORDER).sort()).toEqual(map);
     expect(axisKeysFor("home", LISTING_CHIP_ORDER).sort()).toEqual(map);
     // And the configs the components actually mount are those sets.
-    expect(sorted(TOGGLE_CHIPS)).toEqual(map);
+    expect(sorted(TOGGLE_CHIPS.filter((c) => shared(c.key)))).toEqual(map);
     expect(sorted(PRODUCERS_CHIPS_CONFIG)).toEqual(map);
     expect(sorted(CHIPS_CONFIG)).toEqual(map);
+  });
+
+  it("MEH-3824: the offer switches are on /map and nowhere else", () => {
+    const offer = Object.keys(FILTER_AXES).filter((k) => MAP_ONLY_GROUPS.includes(FILTER_AXES[k].group));
+    expect(offer.sort()).toEqual(["event", "experience", "group_buy", "rescue_today"]);
+    for (const k of offer) expect(FILTER_AXES[k].surfaces).toEqual(["map"]);
+    expect(sorted(TOGGLE_CHIPS.filter((c) => offer.includes(c.key)))).toEqual(offer.sort());
   });
 
   it("grass_fed — the axis Sapir saw on the map only — is on all three", () => {

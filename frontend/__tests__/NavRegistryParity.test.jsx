@@ -57,6 +57,7 @@ const experiencesGateRef = { current: false };
 const eventsGateRef = { current: false };
 const hubGateRefs = { groupBuys: false, rescue: false };
 const ordersGateRef = { current: false }; // MEH-3525
+const gatesSettledRef = { current: true }; // MEH-3809: false = no gate has answered yet
 
 vi.mock("@/i18n/navigation", () => ({
   // MEH-2578: the chrome now takes Link from here, not next/link.
@@ -147,10 +148,12 @@ vi.mock("@/components/LanguageToggle", () => ({
 
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
+  useExperiencesNavGateState: () => ({ visible: !!(experiencesGateRef.current), settled: gatesSettledRef.current }),
 }));
 
 vi.mock("@/lib/use-events-nav-gate", () => ({
   useEventsNavGate: () => eventsGateRef.current,
+  useEventsNavGateState: () => ({ visible: !!(eventsGateRef.current), settled: gatesSettledRef.current }),
 }));
 
 vi.mock("@/lib/use-my-orders-nav-gate", () => ({
@@ -159,6 +162,7 @@ vi.mock("@/lib/use-my-orders-nav-gate", () => ({
 
 vi.mock("@/lib/use-hub-nav-gate", () => ({
   useHubNavGate: (hub) => hubGateRefs[hub] ?? false,
+  useHubNavGateState: (hub) => ({ visible: !!(hubGateRefs[hub] ?? false), settled: gatesSettledRef.current }),
 }));
 
 const STATES = {
@@ -185,6 +189,13 @@ const STATES = {
     user: { name: "שמדר", role: "admin" },
     signedIn: true,
     role: "admin",
+  },
+  // MEH-3526: order staff — a consumer account with `staff_of`.
+  staff: {
+    user: { name: "נועה", role: "consumer", staff_of: { producer_id: "p-42", name: "מאפיית הגבעה" } },
+    signedIn: true,
+    role: "consumer",
+    staffOf: true,
   },
 };
 
@@ -262,6 +273,7 @@ beforeEach(() => {
   eventsGateRef.current = false;
   hubGateRefs.groupBuys = false;
   hubGateRefs.rescue = false;
+  gatesSettledRef.current = true;
 });
 
 // ──────────────────────────── the control ────────────────────────────
@@ -421,6 +433,26 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     expect(renderedLinks(container).map((l) => l.href)).not.toContain("/events");
   });
 
+  // MEH-3809: a hub link arriving after the first paint wrapped the row at
+  // 768 px and pushed the page down (CLS 0.40). Until the gates answer, the
+  // link holds its place, invisible and out of the tab order.
+  it("before the gates answer, the hub links hold their place, invisible and not links", () => {
+    gatesSettledRef.current = false;
+    const { container } = render(<Header />);
+    const held = screen.getAllByTestId("nav-link-pending");
+    expect(held).toHaveLength(2);
+    for (const el of held) {
+      expect(el).toHaveClass("invisible");
+      expect(el).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(renderedLinks(container).map((l) => l.href)).not.toContain("/events");
+  });
+
+  it("once the gates answer «none», the held places are gone", () => {
+    const { container } = render(<Header />);
+    expect(container.querySelectorAll('[data-testid="nav-link-pending"]')).toHaveLength(0);
+  });
+
   it("suppresses the login link on /login, per suppressOnRoute", () => {
     pathnameRef.current = "/login";
     userRef.current = null;
@@ -486,7 +518,7 @@ describe("MEH-1703 — Header link row matches the registry", () => {
 
 describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
   afterEach(() => { ordersGateRef.current = false; });
-  for (const [name, ordersOn] of [["consumer", false], ["consumer", true], ["producer", false], ["producer", true], ["producerNoId", false], ["admin", false]]) {
+  for (const [name, ordersOn] of [["consumer", false], ["consumer", true], ["producer", false], ["producer", true], ["producerNoId", false], ["admin", false], ["staff", false]]) {
     it(`headerMenu surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
       ordersGateRef.current = ordersOn;
@@ -499,6 +531,7 @@ describe("MEH-1703 — Header avatar dropdown matches the registry", () => {
         ...expectedLinks("headerMenu", state, {
           "producer-id-present": Boolean(state.producerId),
           "orders-on": ordersOn,
+          "staff-of": Boolean(state.staffOf),
         }),
       ];
       expect(sortLinks(renderedLinks(container))).toEqual(sortLinks(expected));
@@ -573,7 +606,7 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
 
 describe("MEH-1703 — AccountSheet matches the registry", () => {
   afterEach(() => { ordersGateRef.current = false; });
-  for (const [name, ordersOn] of [["guest", false], ["guest", true], ["consumer", false], ["consumer", true], ["producer", false], ["admin", false]]) {
+  for (const [name, ordersOn] of [["guest", false], ["guest", true], ["consumer", false], ["consumer", true], ["producer", false], ["admin", false], ["staff", false]]) {
     it(`accountSheet surface, ${name}, ordering ${ordersOn ? "on" : "off"}`, () => {
       const state = STATES[name];
       ordersGateRef.current = ordersOn;
@@ -590,7 +623,7 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
         />,
       );
       expect(sortLinks(renderedLinks(container))).toEqual(
-        sortLinks(expectedLinks("accountSheet", state, { "orders-on": ordersOn })),
+        sortLinks(expectedLinks("accountSheet", state, { "orders-on": ordersOn, "staff-of": Boolean(state.staffOf) })),
       );
     });
   }

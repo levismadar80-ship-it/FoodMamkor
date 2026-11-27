@@ -56,8 +56,12 @@ import {
   box,
   overlaps,
   noHorizontalOverflow,
+  pinWeekdayNoon,
 } from "./_home-shared";
 
+
+// MEH-3905: not Friday mode unless a test forces it (_home-shared.ts).
+test.beforeEach(({ page }) => pinWeekdayNoon(page));
 
 test.beforeAll(() => {
   // A schema change reds the spec HERE, loudly, instead of letting the fixture
@@ -115,11 +119,25 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
     await gotoHome(page);
     const layer = scope(page).getByTestId("hero-image-layer");
     await expect(layer).toHaveCount(1, FIRST_PAINT);
-    const style = await layer.evaluate((el) => {
-      const cs = getComputedStyle(el as HTMLElement);
-      return { image: cs.backgroundImage, animation: cs.animationName, size: cs.backgroundSize };
-    });
-    expect(style.image, "the hero photo is served from Cloudinary").toContain("res.cloudinary.com");
+    // MEH-3838: the first try read backgroundImage "" — what a DETACHED node
+    // reports (an unset image reads "none"; probe-measured). Probable cause,
+    // not proven on CI: one read landed on the node React was replacing (the
+    // hidden server copy of MEH-3834). So the read is one atomic snapshot,
+    // retried until the layer in the page reports its photo; every assert
+    // below reads that same snapshot. A layer that never gets the photo fails.
+    let style = { image: "", animation: "", size: "" };
+    await expect
+      .poll(
+        async () => {
+          style = await layer.evaluate((el) => {
+            const cs = getComputedStyle(el as HTMLElement);
+            return { image: cs.backgroundImage, animation: cs.animationName, size: cs.backgroundSize };
+          });
+          return style.image;
+        },
+        { message: "the hero photo is served from Cloudinary", timeout: 10_000 },
+      )
+      .toContain("res.cloudinary.com");
     expect(style.image, "…and is the produce hero, not the old stock frame").toContain("home/hero-produce");
     expect(style.size).toBe("cover");
     expect(style.animation, "the Ken Burns drift is running").toBe("kenburns-right");

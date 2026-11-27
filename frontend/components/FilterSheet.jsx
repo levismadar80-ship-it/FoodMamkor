@@ -56,7 +56,12 @@ import { SwitchTrack } from "@/components/ui/Switch";
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
-const GROUP_ORDER = ["diet", "quality", "service"];
+// MEH-3824: the offer switches lead (Sapir 25/11, the mock she picked). On
+// /producers these groups have no chips, so they render nothing there.
+const GROUP_ORDER = ["offers", "happenings", "diet", "quality", "service"];
+// A heading that is already a section name of the site reads that key
+// (MEH-3824: «הזדמנויות» is the nav tab), so the two cannot drift apart.
+const GROUP_HEADING_KEYS = { offers: "nav.opportunities" };
 
 // MEH-1507 — Label Scope Contract: each chip carries its own scope-explicit
 // `subtext` (lib/filter-taxonomy.js FILTER_AXES). grass_fed reads "לפי הצהרת בית
@@ -307,7 +312,7 @@ export default function FilterSheet({
         // the footer's own pb, where it sits UNDER the footer instead of under
         // a scrolling body. lg: restores the container pad: the anchored
         // desktop panel has no safe-area to clear and no notch to sit in.
-        className={`fixed inset-x-0 bottom-0 z-filter-sheet rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
+        className={`vv-pin fixed inset-x-0 bottom-0 z-filter-sheet rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -359,7 +364,7 @@ export default function FilterSheet({
             {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
                 (mobile mt-4/mb-1 byte-identical). */}
             <h3 className="text-sm font-medium text-fg-muted mt-2 mb-1 lg:mt-2 lg:mb-0.5">
-              {t(`filters.sheet.group_${group}`)}
+              {t(GROUP_HEADING_KEYS[group] ?? `filters.sheet.group_${group}`)}
             </h3>
             {/* MEH-2169 — the diet group's ONE scope line, replacing five per-row
                 paragraphs. MEH-1507 gave each diet axis a subtext of the form

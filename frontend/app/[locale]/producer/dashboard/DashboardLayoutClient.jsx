@@ -16,7 +16,9 @@
  * Related:  app/[locale]/producer/dashboard/page.js (Overview index);
  *           edit/page.js (Edit); insights/page.js (Insights);
  *           tools/page.js (Tools).
- * History:  MEH-964 (creation, chunk 1A); MEH-964 1B (Insights tab added).
+ * History:  MEH-964 (creation, chunk 1A); MEH-964 1B (Insights tab added);
+ *           MEH-3526 (order staff: the «הזמנות» tab alone, every other path
+ *           sent to it — the server refuses them anyway, order_access.py).
  *
  * RTL: logical properties only (.claude/rules/rtl.md). Phosphor glyphs only.
  */
@@ -46,6 +48,7 @@ import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { useNewTools } from "@/hooks/useWhatsNew";
 import { dashboardTabForHref } from "@/lib/business-features";
+import OwnerAssistant from "@/components/owner-assistant/OwnerAssistant";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -95,8 +98,14 @@ function tabIsActive(tab, pathname) {
 // (its settings route answers 404 otherwise). Placement approved 14/11.
 const ORDERS_TAB = { key: "orders", href: "/producer/dashboard/orders", Icon: Basket };
 
+/** MEH-3526: order staff of a business (`/auth/me` staff_of), not its owner. */
+function isOrderStaff(user) {
+  return !!user && user.role !== "producer" && !!user.staff_of;
+}
+
 /** The tab set for this owner. `/auth/me` carries producer_kind (MEH-2460). */
 function tabsFor(user, withOrders = false) {
+  if (isOrderStaff(user)) return [ORDERS_TAB];
   if (user?.producer_kind === "organizer") return ORGANIZER_TABS;
   return withOrders ? [TABS[0], ORDERS_TAB, ...TABS.slice(1)] : TABS;
 }
@@ -181,9 +190,11 @@ export default function ProducerDashboardLayout({ children }) {
   const { user, loading: authLoading, logout, authUnreachable } = useAuth();
   // MEH-3191: each screen gets its own <title> — the active tab's label.
   const locale = useLocale();
+  const staff = isOrderStaff(user);
   const orders = useOrdersTab({
-    enabled: user?.role === "producer" && !!user?.producer_id && user?.producer_kind !== "organizer",
+    enabled: staff || (user?.role === "producer" && !!user?.producer_id && user?.producer_kind !== "organizer"),
     refreshKey: pathname,
+    staff,
   });
   const titleTab = tabsFor(user, orders.visible).find((tab) => tabIsActive(tab, pathname));
   useDashboardTitle(titleTab ? t(titleTab.key) : null, locale, pathname);
@@ -203,7 +214,9 @@ export default function ProducerDashboardLayout({ children }) {
   // out" — it renders a retry below instead of the /login push.
   const isUnreachable = !authLoading && !user && authUnreachable;
   const isUnauthenticated = !authLoading && !user && !authUnreachable;
-  const isDenied = !authLoading && !!user && user.role !== "producer";
+  const isDenied = !authLoading && !!user && user.role !== "producer" && !staff;
+  // MEH-3526: staff have one screen; any other dashboard path goes there.
+  const staffElsewhere = staff && pathname !== ORDERS_TAB.href;
 
   // The single UX gate for the whole dashboard subtree. Real auth is enforced
   // server-side (require_producer); this only keeps non-producers off the UI.
@@ -211,6 +224,9 @@ export default function ProducerDashboardLayout({ children }) {
     if (!isUnauthenticated) return;
     router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
   }, [isUnauthenticated, pathname, router]);
+  useEffect(() => {
+    if (staffElsewhere) router.replace(ORDERS_TAB.href);
+  }, [staffElsewhere, router]);
 
   // MEH-1638: these two were one branch returning null. They are different
   // states and must not share it.
@@ -220,7 +236,7 @@ export default function ProducerDashboardLayout({ children }) {
   //     null is deliberate and UNCHANGED.
   if (authLoading) return <DashboardChromeSkeleton label={tA11y("loading")} />;
   if (isUnreachable) return <AuthUnreachableState />;
-  if (isUnauthenticated) return null;
+  if (isUnauthenticated || staffElsewhere) return null;
 
   // 403 — in-app denied state with a route forward, not a browser redirect.
   // The subtree's child pages carry their own duplicate role guards, but this
@@ -333,6 +349,12 @@ export default function ProducerDashboardLayout({ children }) {
               <span data-testid="dashboard-view-page-label">{t("view_page")}</span>
             </Link>
           )}
+          {/* MEH-3902: the dashboard assistant — the owner only (staff see one
+              screen, and the route is require_producer). After «צפייה בעמוד»
+              so the tabs keep their places. */}
+          {user.role === "producer" && user.producer_id && (
+            <OwnerAssistant className={isOrganizer ? "sm:ms-auto" : ""} />
+          )}
         </div>
       </nav>
       {children}
@@ -346,7 +368,8 @@ export default function ProducerDashboardLayout({ children }) {
           at the end of the account surface (Airbnb: last row of Profile); a
           red button beside working controls invites a mis-tap. Every tab is
           one tap from the overview, so it stays reachable. */}
-      {pathname === "/producer/dashboard" && (
+      {/* MEH-3526: staff never see «סקירה», so theirs sits under the orders. */}
+      {(pathname === "/producer/dashboard" || staff) && (
         <div className="md:hidden flex justify-center px-4 pt-2 pb-6">
           <button
             type="button"

@@ -12,11 +12,13 @@
  *           backend/app/models/product_orders.py (the two caps mirrored here)
  * History:  MEH-3216 stage 5b (creation); MEH-3617 (a pick is a product or
  *           one of its variants: the key is lib/product-variants.js::lineKey);
- *           MEH-3746 (the owner's preview reads her own menu)
+ *           MEH-3746 (the owner's preview reads her own menu); daily stock
+ *           (27/11: `left` on each product and variant)
  */
 
 import api from "@/lib/api";
 import { GetOrderMenuProducersProducerIdOrderMenuGetResponse } from "@/lib/generated/api.zod";
+import { mostLeft } from "@/lib/daily-stock";
 import { splitKey, variantFor, variantsOf } from "@/lib/product-variants";
 
 // Mirrors PRODUCT_ORDER_MAX_QTY_PER_ITEM / PRODUCT_ORDER_MAX_LINES
@@ -59,10 +61,27 @@ async function readMenu(read) {
   try {
     const { data } = await read();
     const parsed = GetOrderMenuProducersProducerIdOrderMenuGetResponse.safeParse(data);
-    return parsed.success ? parsed.data : null;
+    return parsed.success ? withLeft(parsed.data) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Daily stock: each product and variant carries `left`, the most a buyer can
+ * pick on any offered day (null = no limit), for the stepper.
+ * @param {OrderMenu} menu
+ * @returns {OrderMenu}
+ */
+function withLeft(menu) {
+  return {
+    ...menu,
+    products: menu.products.map((p) => ({
+      ...p,
+      left: mostLeft(menu, p.id),
+      variants: (p.variants ?? []).map((v) => ({ ...v, left: mostLeft(menu, p.id, v.id) })),
+    })),
+  };
 }
 
 /**

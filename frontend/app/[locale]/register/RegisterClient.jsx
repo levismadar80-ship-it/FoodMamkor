@@ -25,6 +25,7 @@ import { rememberReturnPath } from "@/lib/post-auth-return";
 import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
 import { trackEvent } from "@/lib/analytics";
 import SeedMark from "@/components/brand/SeedMark";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-3676: display-scale size (DESIGN.md Icons), same as /login.
 const HERO_MARK_PX = 40;
@@ -229,9 +230,13 @@ function RegisterPageBody() {
   // so the signup form never flashes for an authenticated visitor. Placed above
   // the emailSent branch: the register flow keeps user null, so a post-signup
   // inbox screen is never gated by this.
+  // MEH-3836: each screen has its own key. Without them React reused this
+  // wait screen's box for the form, changed its classes, and the form slid
+  // 64px up and 16px sideways a moment after it appeared on a phone (CLS
+  // 0.11–0.35, load guard); a new box is drawn in place and is not a shift.
   if (authLoading || user) {
     return (
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+      <div key="auth-wait" className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <ButtonSpinner />
       </div>
     );
@@ -266,7 +271,7 @@ function RegisterPageBody() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
+    <div key="form" className="min-h-[calc(100vh-200px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
       {/* Image pane — END (left) on desktop only. MEH-2568: the 30vh top band
           on phones is gone, as on /login since MEH-2397 — it pushed the first
@@ -448,15 +453,14 @@ function RegisterPageBody() {
               ariaLabel={t("auth.register.consumer.fields.password_aria")}
             />
           </div>
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="register-terms"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
-              required
-            />
+          <Checkbox
+            className="flex items-start gap-2 text-sm"
+            boxClassName="mt-0.5"
+            data-testid="register-terms"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            required
+          >
             <span className="leading-relaxed">
               {t("auth.register.consumer.terms.intro")}{" "}
               <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
@@ -467,7 +471,7 @@ function RegisterPageBody() {
                 {t("auth.register.consumer.terms.privacy_link")}
               </Link>
             </span>
-          </label>
+          </Checkbox>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
           {error && <InlineMessage data-testid="register-error">{error}</InlineMessage>}

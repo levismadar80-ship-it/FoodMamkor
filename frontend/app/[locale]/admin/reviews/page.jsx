@@ -13,6 +13,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AdminReviewReply from "@/components/admin/AdminReviewReply";
+import Checkbox from "@/components/ui/Checkbox";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -277,23 +278,21 @@ export default function AdminReviewsPage() {
           <option value="4">★ 4</option>
           <option value="5">★ 5</option>
         </select>
-        <label className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={flaggedOnly}
-            onChange={(e) => setFlaggedOnly(e.target.checked)}
-            data-testid="review-ai-flag-filter"
-            className="accent-primary"
-          />
+        <Checkbox
+          className="inline-flex items-center gap-2 text-sm text-muted whitespace-nowrap"
+          checked={flaggedOnly}
+          onChange={(e) => setFlaggedOnly(e.target.checked)}
+          data-testid="review-ai-flag-filter"
+        >
           {t("reviews.ai_flagged_only")}
-        </label>
+        </Checkbox>
       </div>
 
       <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
                 <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
                 <th className="text-start px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
@@ -340,7 +339,7 @@ export default function AdminReviewsPage() {
                         className="inline-flex items-center gap-1"
                         aria-label={t("reviews.stars_aria", { stars: r.stars })}
                       >
-                        <Star size={14} weight="fill" className="text-yellow-500" />
+                        <Star size={14} weight="fill" className="text-warning-500" />
                         {r.stars}
                       </span>
                     </td>
@@ -374,7 +373,7 @@ export default function AdminReviewsPage() {
                       {r.ai_moderation_status === "FLAGGED" && (
                         <span
                           data-testid="review-ai-flag"
-                          className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800"
+                          className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs bg-warning-100 text-warning-800"
                         >
                           {t("reviews.ai_flagged")}
                         </span>
@@ -477,7 +476,7 @@ export default function AdminReviewsPage() {
               <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

@@ -36,6 +36,7 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Icon, Globe: Icon, EnvelopeSimple: Icon, InstagramLogo: Icon, FacebookLogo: Icon,
     Receipt: Icon, CalendarCheck: Icon, CaretDown: Icon, CaretUp: Icon,
     Info: Icon, // MEH-2999: fine-print icon
+    Basket: Icon, UsersThree: Icon, CalendarBlank: Icon, CookingPot: Icon, // MEH-3824: offer-switch icons (lib/chip-icons.js)
   };
 });
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
@@ -159,6 +160,20 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
     expect(within(location).getByTestId("minimap")).toBeTruthy();
     expect(within(location).getByText("חיפה")).toBeTruthy();
     expect(within(location).queryByTestId("hours-toggle")).toBeNull();
+    expect(within(location).queryByTestId("location-no-hours")).toBeNull();
+  });
+
+  it("MEH-2447: by arrangement with hours → «ביקור בתיאום מראש» set + the arrangement line", () => {
+    renderPage({
+      opening_hours: EVERY_DAY_STORE,
+      has_physical_location: true,
+      by_arrangement: true,
+      city: "חיפה",
+      locations: [PIN],
+    });
+    expect(sets().map(labelOf)).toEqual([HOURS.label_visit_arranged]);
+    const location = document.querySelector("#section-location");
+    expect(within(location).getByTestId("location-by-arrangement")).toBeTruthy();
     expect(within(location).queryByTestId("location-no-hours")).toBeNull();
   });
 
@@ -288,12 +303,15 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
       heading: "שעות",
       label_orders: "מקבלים הזמנות",
       label_visit: "פתוח למבקרים",
+      // MEH-2447: the visit set's header when the owner answered «בתיאום מראש».
+      label_visit_arranged: "ביקור בתיאום מראש",
       label_both: "הזמנות וביקור במקום",
     });
     expect(en.producer.detail.hours).toEqual({
       heading: "Hours",
       label_orders: "Taking orders",
       label_visit: "Open to visitors",
+      label_visit_arranged: "Visits by arrangement",
       label_both: "Orders and visits",
     });
   });

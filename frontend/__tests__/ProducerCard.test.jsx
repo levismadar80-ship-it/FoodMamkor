@@ -1,7 +1,7 @@
 import { heBadgeCopy } from "./helpers/he-badge-copy";
 import heMessages from "../messages/he.json";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
 // MEH-1847: the overflow explanation lines are asserted against the config
 // itself, never against copied literals — a paraphrase in the component would
@@ -138,6 +138,11 @@ vi.mock("@/i18n/navigation", () => ({
 
 // Phosphor icons — render as identifiable spans
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-3824: offer-switch icons (lib/chip-icons.js)
+  Basket: () => null,
+  UsersThree: () => null,
+  CalendarBlank: () => null,
+  CookingPot: () => null,
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,
   HeartStraight: ({ weight, ...props }) => (
     <span data-testid="icon-heart" data-weight={weight} {...props} />
@@ -233,6 +238,59 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(plate.textContent).toBe("חנות פשוטה");
     expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+  });
+
+  // MEH-3894 (Sapir 26/11): no photo but a logo → the logo in the seed's
+  // corner, no seed; the name stays on the plate. No logo → the seed (above).
+  it("no photo + a logo: the logo replaces the seed on the name plate", () => {
+    render(<ProducerCard producer={{ ...minimalProducer, logo_url: "https://res.cloudinary.com/x/logo.png" }} />);
+    const logo = screen.getByTestId("card-logo");
+    expect(logo.querySelector("img").getAttribute("src")).toContain("logo.png");
+    expect(screen.getByTestId("card-name-plate").textContent).toBe("חנות פשוטה");
+    expect(document.querySelector("[data-seed-color]")).toBeNull();
+  });
+
+  // Moved from ScanSmallFixes (source text) as a render check: the plate's top
+  // padding clears the heart (34px at 8px → 42; 44px at 12px → 56), and the
+  // 56px logo at top-3 (12 + 56 = 68 → pt-20, 80px) when there is one.
+  it("the no-photo plate's top padding clears the heart, and the logo when shown", () => {
+    const { unmount } = render(<ProducerCard producer={minimalProducer} />);
+    const plain = screen.getByTestId("card-name-plate").parentElement.className;
+    expect(plain).toMatch(/\bpt-12\b/);
+    expect(plain).toMatch(/\bsm:pt-16\b/);
+    expect(plain).toMatch(/\bpb-12\b.*\bsm:pb-14\b|\bsm:pb-14\b.*\bpb-12\b/);
+    unmount();
+    render(<ProducerCard producer={{ ...minimalProducer, logo_url: "https://res.cloudinary.com/x/logo.png" }} />);
+    const withLogo = screen.getByTestId("card-name-plate").parentElement.className;
+    expect(withLogo).toMatch(/\bpt-20\b/);
+    expect(withLogo).toMatch(/\bsm:pt-20\b/);
+  });
+
+  it("a logo that fails to load gives the seed back, not a broken image", () => {
+    const made = [];
+    vi.stubGlobal(
+      "Image",
+      class {
+        set src(v) {
+          made.push(this);
+        }
+      },
+    );
+    try {
+      render(<ProducerCard producer={{ ...minimalProducer, logo_url: "https://res.cloudinary.com/x/dead-logo.png" }} />);
+      expect(screen.getByTestId("card-logo")).toBeInTheDocument();
+      act(() => made.forEach((i) => i.onerror?.()));
+      expect(screen.queryByTestId("card-logo")).toBeNull();
+      expect(document.querySelector("[data-seed-color]")).not.toBeNull();
+      expect(screen.getByTestId("card-name-plate").parentElement.className).toMatch(/\bpt-12\b/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("a photo wins over the logo", () => {
+    render(<ProducerCard producer={{ ...fullProducer, logo_url: "https://res.cloudinary.com/x/logo.png" }} />);
+    expect(screen.queryByTestId("card-logo")).toBeNull();
   });
 
   // MEH-2833 (seed layer, board 7): the plate gains one seed in the business's
@@ -940,7 +998,7 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
       // Asserted against the config rather than a copied literal: a paraphrase
       // in the component would pass a hardcoded string but not this.
-      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלכם.");
     });
 
     it("renders label only — no empty line — for a badge with no tooltip", () => {

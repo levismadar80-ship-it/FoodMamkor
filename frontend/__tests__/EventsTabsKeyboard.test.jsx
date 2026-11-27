@@ -86,7 +86,7 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 // keeps exercising the original events/experiences pair unchanged. The
 // four-tab row — order, gating, where each tab goes — is
 // __tests__/ListingHubTabs.test.jsx.
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false, useHubNavGateState: () => ({ visible: !!(false), settled: true }) }));
 
 const TAB_EVENTS = "events.list.tab_events";
 const TAB_EXPERIENCES = "events.list.tab_experiences_short";

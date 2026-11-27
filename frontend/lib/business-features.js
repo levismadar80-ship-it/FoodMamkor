@@ -68,6 +68,8 @@ export const BUSINESS_FEATURES = [
   { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/LogoCard.jsx"] },
   // MEH-3483: «ספרו לנו על העסק» — the page drafted from the owner's own text, on the edit hub.
   { id: "page_fill", group: "page", status: "live", codeRef: ["frontend/components/PageFillPanel.jsx", "frontend/lib/page-fill.js"] },
+  // MEH-3902: the dashboard assistant — answers, fills the page, adds products, sends for review from the chat.
+  { id: "owner_assistant", group: "page", status: "live", codeRef: ["frontend/components/owner-assistant/OwnerAssistant.jsx", "frontend/components/owner-assistant/OwnerAssistantPanel.jsx"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx", "frontend/components/MenuImport.jsx"] },
   { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/PricingCard.jsx"] },
   { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/HoursCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
@@ -106,7 +108,7 @@ export const BUSINESS_FEATURES = [
   // by Sapir 19/11. Live: she approved turning PRODUCT_ORDERS_ENABLED on in
   // production (19/11 11:37Z); the flag is set right after the release that
   // carries this entry. Each business still opts in from its dashboard.
-  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "frontend/components/dashboard/orders/OrderCustomersCard.jsx", "backend/app/routers/product_order_buyer.py"] },
+  { id: "product_orders", group: "contact", status: "live", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "frontend/components/dashboard/orders/OrderCustomersCard.jsx", "backend/app/routers/product_order_buyer.py", "frontend/components/dashboard/staff/StaffCard.jsx", "frontend/components/dashboard/orders/LeadDaysField.jsx"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "nav_buttons", group: "contact", status: "live", tile: { icon: "NavigationArrow" }, codeRef: ["frontend/components/NavAppGlyphs.jsx"] },
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },
@@ -122,6 +124,8 @@ export const BUSINESS_FEATURES = [
   { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"], dashboard: { home: "insights", href: "/producer/dashboard/insights" } },
   { id: "waitlist", group: "return", status: "live", codeRef: ["backend/app/services/delivery_waitlist.py", "frontend/components/DeliveryWaitlistForm.jsx"] },
   { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"], dashboard: { home: "tools", href: "/producer/dashboard/rescue" } },
+  // MEH-3703: a sub-page of the rescue tab (DASHBOARD_SUBPAGES), so no `dashboard` of its own.
+  { id: "rescue_schedule", group: "return", status: "live", tip: true, flag: () => rescueBagsEnabled(), codeRef: ["frontend/components/dashboard/RescueScheduleForm.jsx", "backend/app/services/rescue_schedule.py"] },
 
   // ── trust ───────────────────────────────────────────────────────────────
   { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/cards/LicenseCard.jsx"] },
@@ -175,6 +179,8 @@ export const DASHBOARD_SUBPAGES = {
   "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
   "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
   "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+  // MEH-3703: the weekly bag routine, from the publish card and the strip.
+  "/producer/dashboard/rescue/schedule": "/producer/dashboard/rescue",
   // MEH-3749: the print view of the QR card, opened from the «שיתוף» page
   // (that page is the qr_code tool's landing page now).
   "/producer/dashboard/qr-card": "/producer/dashboard/share",

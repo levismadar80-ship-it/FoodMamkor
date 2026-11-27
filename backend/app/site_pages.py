@@ -88,6 +88,7 @@ NOT_FOR_ASSISTANT: Final[dict[str, str]] = {
     "/register/organizer": "event organizers are outside the assistant's knowledge",
     "/reset-password": _FLOW,
     "/settings": "the signed-in visitor's own settings, reached from the header",
+    "/staff-invite": _FLOW,
     "/unsubscribe/weekly": _FLOW,
     "/verify-email": _FLOW,
 }

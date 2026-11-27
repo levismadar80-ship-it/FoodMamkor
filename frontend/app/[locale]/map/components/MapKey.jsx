@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check, Question, X } from "@phosphor-icons/react";
 
 import { styleForProducer } from "@/lib/category-registry";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * MapKey — "מה רואים במפה?" (MEH-2424).
@@ -50,7 +51,7 @@ function SampleVerified() {
     <span className={`${PIN} bg-gradient-to-br from-[#c9b48a] via-[#8aa37b] to-[#4f7a5f]`} aria-hidden="true">
       {/* rtl-ok: mirrors the marker's physical bottom-right badge */}
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: the map badge is physically bottom-right in every locale */}
-      <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-white flex items-center justify-center">
+      <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-surface flex items-center justify-center">
         {/* icon-ok: an 8px tick inside the 14px legend copy of the marker's verified badge — a scale step would fill it */}
         <Check size={8} weight="bold" className="text-white" />
       </span>
@@ -61,7 +62,7 @@ function SampleVerified() {
 function SampleCluster() {
   return (
     <span
-      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-lg flex items-center justify-center text-2xs font-semibold numeric"
+      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-surface shadow-lg flex items-center justify-center text-2xs font-semibold numeric"
       aria-hidden="true"
     >
       5
@@ -184,19 +185,18 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
 
   return (
     <>
-      <button
+      <IconButton
         ref={toggleRef}
-        type="button"
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={t("map.pane.key.title")}
+        label={t("map.pane.key.title")}
         data-testid={`map-key-toggle${testIdSuffix}`}
         style={buttonStyle}
         className={`${buttonClassName} ${CONTROL_CLASS} ${open ? CONTROL_ON : CONTROL_OFF}`}
       >
         <Question size={20} weight={open ? "bold" : "regular"} aria-hidden="true" />
-      </button>
+      </IconButton>
       {open && (
         <section
           id={panelId}
@@ -208,15 +208,14 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
             <h2 id={`${panelId}-title`} className="font-headline-md text-base font-bold text-text">
               {t("map.pane.key.title")}
             </h2>
-            <button
+            <IconButton
               ref={closeRef}
-              type="button"
               onClick={close}
-              aria-label={t("common.aria.close")}
+              label={t("common.aria.close")}
               className="-m-2 inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"
             >
               <X size={16} weight="bold" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
           <ul className="space-y-2.5">
             {rows.map(([Sample, label]) => (

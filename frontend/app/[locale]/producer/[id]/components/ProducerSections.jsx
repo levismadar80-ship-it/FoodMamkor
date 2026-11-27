@@ -7,7 +7,6 @@ import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
 import { useTranslations, useLocale } from "next-intl";
-import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPriceRange, isPriceLabel, priceLabelText } from "@/lib/utils";
@@ -162,16 +161,17 @@ function ProductDietPills({ product, t }) {
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * The events list (and its show-all state) moved to ProducerActivities
- * (MEH #2659), merged with experiences. The reviews wrapper accepts
- * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
- * observation point remains identical to the source.
+ * (MEH #2659), merged with experiences. The reviews section mounts with the
+ * page and fetches once in view (MEH-3819; it used to mount only near the
+ * screen, via the retired useLazyReviews).
  */
 export default function ProducerSections({
   producer,
   events,
+  experiences,
+  groupBuys,
+  recipes = [],
   sectionRefs,
-  reviewsContainerRef,
-  reviewsVisible,
   isOwner = false,
   onReviewsTotalChange,
   orderCart = null,
@@ -202,26 +202,11 @@ export default function ProducerSections({
   const [showAllProducts, setShowAllProducts] = useState(false);
   // MEH-3055: the visitor's group filter — null = «הכל».
   const [activeGroup, setActiveGroup] = useState(null);
-  // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
-  // public read endpoint added in chunk 2 — backend already filters to
-  // published+approved, so an empty array means "no recipes to show"
-  // and the section hides entirely (silent empty, per spec).
-  const [recipes, setRecipes] = useState([]);
-  useEffect(() => {
-    if (!producer?.slug) return;
-    let cancelled = false;
-    api
-      .get(`/producers/${encodeURIComponent(producer.slug)}/recipes`)
-      .then((r) => {
-        if (!cancelled) setRecipes(r.data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setRecipes([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [producer?.slug]);
+  // MEH-591: producer recipes (chunk 4/4). The backend already filters to
+  // published+approved, so an empty array means "no recipes to show" and the
+  // section hides entirely (silent empty, per spec). MEH-3836: read with the
+  // page's other lists (hooks/useProducerActivities.js) and passed in, so the
+  // section is there in the first paint instead of landing above the reviews.
 
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
@@ -761,7 +746,14 @@ export default function ProducerSections({
 
       {/* Events + experiences (one list) and open group buys — MEH-2602,
           reshaped under MEH #2659. */}
-      <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
+      <ProducerActivities
+        producerId={producer.id}
+        images={producer.images}
+        events={events}
+        experiences={experiences}
+        groupBuys={groupBuys}
+        sectionRefs={sectionRefs}
+      />
 
       {/* MEH-3585 (Sapir 21/11): the rescue bag moved here from above
           «מוצרים». The catalogue — what this business always makes — comes
@@ -791,19 +783,22 @@ export default function ProducerSections({
         className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
-          reviewsContainerRef.current = el;
         }}
       >
-        {reviewsVisible && (
-          <ReviewsSection
-            producerId={producer.id}
-            avgRating={producer.avg_rating ?? 0}
-            reviewCount={producer.reviews_count ?? 0}
-            isOwner={isOwner}
-            onTotalChange={onReviewsTotalChange}
-            producerName={producer.name}
-          />
-        )}
+        {/* MEH-3819: mounted with the page, so its heading, summary and
+            loading rows hold their place; it was mounted only near the screen
+            (useLazyReviews), growing from nothing under a reader who landed
+            on #reviews (≈ 0.4 CLS on a phone). MEH-3836: a business with
+            reviews reads page 1 at mount, shared with the header quote; one
+            with none reads only once the section is in view. */}
+        <ReviewsSection
+          producerId={producer.id}
+          avgRating={producer.avg_rating ?? 0}
+          reviewCount={producer.reviews_count ?? 0}
+          isOwner={isOwner}
+          onTotalChange={onReviewsTotalChange}
+          producerName={producer.name}
+        />
       </div>
 
       {/* MEH-1490: quiet Google-rating trust line — detached from the native
@@ -907,7 +902,13 @@ export default function ProducerSections({
               turn up unannounced at a home producer. */}
           {/* MEH-3028: a fact line like the city above it, so it leads with
               its kind's icon (clock) — the city had a pin and this had none. */}
-          {!storeHours && (
+          {/* MEH-2447: the owner's own «בתיאום מראש» answer wins over the
+              hours guess — said even when hours are listed. */}
+          {producer.by_arrangement && producer.has_physical_location !== false ? (
+            <FactLine icon={Clock} data-testid="location-by-arrangement" className="text-sm text-fg-muted mb-3">
+              {t("producer.detail.sections.location_by_arrangement")}
+            </FactLine>
+          ) : !storeHours && (
             <FactLine icon={Clock} data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
             </FactLine>

@@ -39,12 +39,73 @@
 #   licensed-term · מורשים     (backend/app/services/experience_moderation.py)
 #     The Hebrew SYSTEM PROMPTS of the moderation models, same reason as the
 #     producer_risk.py line above: a model instruction, not copy anyone reads.
+#
+# ADDED BY MEH-3808 (24/11/2026) — the singular-address rule.
+#
+#   singular-address · שלך · לך · אותך · …   (every file)
+#     Copy written before BRAND.md §9 (ADR-037) addressed the reader in the
+#     singular. §9 says neutral by default, a generic plural only on consumer
+#     surfaces when a pronoun cannot be avoided, never the singular. Rewording
+#     ~250 strings is new copy and needs Sapir's word-for-word approval
+#     (workflow rule 22), so they are frozen here and reworded in batches from
+#     an approved table; each batch deletes its lines with --update-baseline.
+#     Admin copy and the outreach scripts to a named owner (he.json admin.*)
+#     may stay as they are: ADR-037 keeps admin copy and named people as is.
+#     backend/app/routers/chat.py SYSTEM_PROMPT lines («המשימה שלך: …») speak
+#     to the model, not the reader — same as the producer_risk.py note above;
+#     a reword batch leaves them alone.
+#
+#   24/11/2026: the reword batches landed (MEH-3807, MEH-3812, MEH-3815; Sapir
+#   approved «מאשרת הכל») and --update-baseline dropped their 230 lines. What
+#   is left is kept on purpose:
+#     - nav.footer.brand_tagline — the slogan is locked by ADR-011.
+#     - admin.* and admin_extra.py (since MEH-3537 services/admin_user_writes.py)
+#       — admin copy and scripts to a named owner.
+#     - guides.customer_messages.* and onboarding_followup.py — sample
+#       messages a business sends to one named customer, quoted as examples
+#       (§9 exempts a message to a named person).
+#     - privacy.sections.data.items.ugc.label «על ידך» — privacy-policy text,
+#       left for a legal-text pass rather than a copy batch.
+#     - dev/components/page.jsx — the internal component gallery.
+backend/app/services/admin_user_writes.py	singular-address	 שלך
+backend/app/routers/chat.py	singular-address	 שלך
+backend/app/routers/chat.py	singular-address	 שלך
+backend/app/routers/chat.py	singular-address	 שלך
+backend/app/routers/chat.py	singular-address	 שלך
 backend/app/services/experience_moderation.py	licensed-term	מורשים
+backend/app/services/onboarding_followup.py	singular-address	 לך
+backend/app/services/onboarding_followup.py	singular-address	 שלך
+backend/app/services/onboarding_followup.py	singular-address	 שלך
 backend/app/services/producer_recipe_moderation.py	yatzran	יצרנית
 backend/app/services/producer_recipe_moderation.py	yatzran	יצרנית
 backend/app/services/producer_risk.py	marketplace	marketplace
+frontend/app/[locale]/dev/components/page.jsx	singular-address	 לך
 frontend/messages/en.json	marketplace	marketplace
 frontend/messages/he.json	feminine-address	אלייך
 frontend/messages/he.json	licensed-term	מורשים
 frontend/messages/he.json	marketplace	marketplace
 frontend/messages/he.json	marketplace	פלטפורמת מסחר
+frontend/messages/he.json	singular-address	 אותך
+frontend/messages/he.json	singular-address	 אותך
+frontend/messages/he.json	singular-address	 אליך
+frontend/messages/he.json	singular-address	 אליך
+frontend/messages/he.json	singular-address	 ידך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 לך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך
+frontend/messages/he.json	singular-address	 שלך

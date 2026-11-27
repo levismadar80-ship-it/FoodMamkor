@@ -16,7 +16,9 @@ Related:  app/routers/product_orders.py (the flag gate and the settings
 History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3263 (the two
           shared reads moved to services/product_order_menu.py); MEH-3216
           gaps (GET of the owner's products with their ordering fields);
-          MEH-3746 (the owner's preview of her own order menu)
+          MEH-3746 (the owner's preview of her own order menu); daily stock
+          (27/11: a product's and its variants' day limits, units left per
+          offered day in the menu, the prep list «מה להכין»)
 
 A file of its own because producer_me.py is on the file-size baseline and
 does not grow (code-execution.md §16).
@@ -31,6 +33,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_producer
 from app.database import get_db
+from app.models.catalog import ProductVariant
 from app.models.models import Producer, Product, User
 from app.models.product_orders import (
     WEIGHED_PRICE_UNITS,
@@ -46,14 +49,17 @@ from app.routers.product_orders import (
 from app.schemas.product_order_offer import (
     MyProductsOrderingOut,
     OrderMenuOut,
+    PrepListOut,
     OrderWindowsIn,
     OrderWindowsOut,
     ProductOrderingIn,
     ProductOrderingOut,
 )
+from app.services import product_daily_stock  # daily stock (27/11)
 from app.services import product_variants  # MEH-3617
+from app.services.order_access import OrderAccess, require_order_access
 from app.services.product_order_menu import offered_slots, takes_orders, windows
-from app.utils.clock import utc_now
+from app.utils.clock import israel_today, utc_now
 from app.utils.money import agorot_from_shekels as _agorot
 
 me_router = APIRouter(tags=["product-orders"])
@@ -62,6 +68,7 @@ public_router = APIRouter(tags=["product-orders"])
 NOT_FOUND_DETAIL = "לא נמצא"
 PRODUCT_NOT_FOUND_DETAIL = "המוצר לא נמצא"
 ORDERABLE_NEEDS_PRICE_DETAIL = "כדי לאפשר הזמנה של המוצר צריך לקבוע לו מחיר"
+VARIANT_NOT_FOUND_DETAIL = "האפשרות לא נמצאה במוצר הזה"
 
 
 def _own_producer_id(user: User) -> Any:
@@ -143,6 +150,9 @@ def get_my_products_ordering(
                 "in_stock": p.in_stock,
                 "price_unit": p.price_unit,
                 "contains_alcohol": p.contains_alcohol,
+                "daily_limit": p.daily_limit,
+                "lead_days": p.lead_days,
+                "variants": p.variants,
             }
             for p in rows
         ]
@@ -183,11 +193,28 @@ def put_product_ordering(
             detail=ORDERABLE_NEEDS_PRICE_DETAIL,
         )
     # MEH-2936: exclude_unset — an omitted price_unit keeps the stored one.
-    for field, value in body.model_dump(exclude_unset=True).items():
+    fields = body.model_dump(exclude_unset=True)
+    _set_variant_limits(product, body)
+    fields.pop("variant_limits", None)
+    for field, value in fields.items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)
     return product
+
+
+def _set_variant_limits(product: Product, body: ProductOrderingIn) -> None:
+    """Daily stock: each listed variant's own limit. A variant of another
+    product is a 404, so nothing is written for any of them."""
+    if body.variant_limits is None:
+        return
+    own: dict[Any, ProductVariant] = {v.id: v for v in product.variants}
+    if any(item.id not in own for item in body.variant_limits):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=VARIANT_NOT_FOUND_DETAIL
+        )
+    for item in body.variant_limits:
+        own[item.id].daily_limit = item.daily_limit  # type: ignore[assignment]
 
 
 def _menu_product(product: Product) -> dict[str, Any]:
@@ -208,13 +235,14 @@ def _menu_product(product: Product) -> dict[str, Any]:
         "in_stock": product_variants.has_stock(product),
         "contains_alcohol": product.contains_alcohol,
         "available_weekdays": product.available_weekdays,  # MEH-3618
+        "lead_days": product.lead_days,  # MEH-3932
         "variants": product_variants.menu_variants(product, low, high, weighed),
     }
 
 
 def _menu_products(
     db: Session, producer_id: Any, alcohol_licensed: bool
-) -> list[dict[str, Any]]:
+) -> list[Product]:
     query = db.query(Product).filter(
         Product.producer_id == producer_id,
         Product.is_draft.is_(False),  # MEH-2312: an unapproved draft is not public
@@ -223,8 +251,7 @@ def _menu_products(
     )
     if not alcohol_licensed:
         query = query.filter(Product.contains_alcohol.is_(False))
-    rows = query.order_by(Product.position.asc().nullslast(), Product.name).all()
-    return [_menu_product(product) for product in rows]
+    return query.order_by(Product.position.asc().nullslast(), Product.name).all()
 
 
 @public_router.get(
@@ -263,13 +290,17 @@ def _menu_body(
     """The order menu as a buyer reads it. One shape for the public route and
     the owner's preview, so the preview cannot drift from what buyers see."""
     slots = offered_slots(db, producer, row, utc_now())
+    products = _menu_products(db, producer.id, bool(row.alcohol_licensed))
+    days = {product_daily_stock.israel_day(slot.start) for slot in slots}
     return {
         "producer_id": producer.id,
         "min_order_agorot": row.min_order_agorot,
         "cancel_cutoff_hours": row.cancel_cutoff_hours,
         "lead_time_hours": row.lead_time_hours,
         "business_id_number": row.business_id_number,
-        "products": _menu_products(db, producer.id, bool(row.alcohol_licensed)),
+        "products": [_menu_product(product) for product in products],
+        # Daily stock: units left per offered day of each limited line.
+        "stock": product_daily_stock.menu_stock(db, producer.id, products, days),
         "slots": [
             {
                 "start": slot.start.replace(tzinfo=UTC),
@@ -318,3 +349,22 @@ def get_my_order_menu_preview(
     # preview shows the seller line without it, which is what is missing.
     body["business_id_number"] = body["business_id_number"] or ""
     return body
+
+
+@me_router.get(
+    "/producers/me/orders/prep",
+    response_model=PrepListOut,
+    dependencies=[Depends(require_product_orders_enabled)],
+)
+@limiter.limit("120/minute")
+def get_my_prep_list(
+    request: Request,
+    access: OrderAccess = Depends(require_order_access),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Daily stock: «מה להכין» — per Israel day from today for a week, how
+    many of each product and variant are ordered (confirmed / still waiting),
+    with the limit. Counts only, no customer: staff read it too."""
+    return {
+        "days": product_daily_stock.prep_list(db, access.producer_id, israel_today())
+    }

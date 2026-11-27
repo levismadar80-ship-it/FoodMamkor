@@ -1,5 +1,6 @@
 import type { Locator, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { stableCatalog } from "../_stable-catalog";
 import he from "../../../messages/he.json";
 
 /**
@@ -204,7 +205,8 @@ async function catalog(page: Page): Promise<Producer[]> {
   expect(res.ok(), `GET /producers must respond 2xx — got ${res.status()}`).toBeTruthy();
   const body = (await res.json()) as unknown;
   expect(Array.isArray(body), "GET /producers must return an array").toBe(true);
-  const list = body as Producer[];
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  const list = stableCatalog(body as Producer[]);
   expect(list.length, "the catalog must hold at least one business").toBeGreaterThan(0);
   return list;
 }
@@ -235,11 +237,38 @@ async function openProducer(page: Page, id: string): Promise<Locator> {
   // MEH-3708: an id with a slug 308s to /{slug}, which SSR-seeds the page;
   // ?preview=1 keeps the id page and its client detail fetch, which the
   // request recorders below count.
-  await page.goto(`/producer/${id}?preview=1`);
+  // MEH-3845: on WebKit the root has twice stayed at 0 for 20 s on the SECOND
+  // business a test opens (:419, :807), and the CI artifact cannot be read
+  // from the sandbox. So a red here names what the page showed instead
+  // (loading line, not-found line, error boundary, blank) and the page errors
+  // and failed API reads of this load.
+  const seen: string[] = [];
+  const onError = (err: Error) => seen.push(`pageerror: ${err.message.slice(0, 200)}`);
+  const onResponse = (res: { url(): string; status(): number }) => {
+    if (res.url().includes("/api/") && res.status() >= 400) seen.push(`${res.status()} ${res.url()}`);
+  };
+  const onFailed = (req: { url(): string; failure(): { errorText: string } | null }) =>
+    seen.push(`requestfailed: ${req.failure()?.errorText ?? "?"} ${req.url()}`);
+  page.on("pageerror", onError);
+  page.on("response", onResponse);
+  page.on("requestfailed", onFailed);
   const root = scope(page).getByTestId("producer-detail-root");
-  // Count gate first: the strict checks below would throw rather than wait if a
-  // transition copy ever landed inside the landmark.
-  await expect(root).toHaveCount(1, CLIENT_FETCH);
+  try {
+    await page.goto(`/producer/${id}?preview=1`);
+    // Count gate first: the strict checks below would throw rather than wait if a
+    // transition copy ever landed inside the landmark.
+    await expect(root).toHaveCount(1, CLIENT_FETCH);
+  } catch (err) {
+    const shown = (await scope(page).innerText({ timeout: 1_000 }).catch(() => "(no #main-content)")).trim();
+    throw new Error(
+      `${(err as Error).message}\n\nMEH-3845 — ${page.url()} showed: ${JSON.stringify(shown.slice(0, 300))}\n` +
+        `this load: ${seen.length ? seen.join(" · ") : "no page error, no failed request, no API status >= 400"}`,
+    );
+  } finally {
+    page.off("pageerror", onError);
+    page.off("response", onResponse);
+    page.off("requestfailed", onFailed);
+  }
   await expect(root).toBeVisible(CLIENT_FETCH);
   return root;
 }
@@ -823,9 +852,11 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
     ).toBeGreaterThan(0);
 
     // SECOND precondition, and it selects the fixture rather than merely
-    // asserting it afterwards: `useLazyReviews` observes with
-    // `rootMargin: "300px"`, so on a page where `#reviews` starts inside that
-    // band the section is SUPPOSED to load at once and the row cannot be
+    // asserting it afterwards: the reviews gate used to observe with
+    // `rootMargin: "300px"` (useLazyReviews, retired by MEH-3819; the 300px
+    // margin is kept as a safe band over the inner IO's threshold), so on a
+    // page where `#reviews` starts inside that band the section is SUPPOSED
+    // to load at once and the row cannot be
     // measured at all. Zero reviews does not imply a tall page — measured
     // 04/09 on the CI catalog, the first zero-review business put `#reviews`
     // at 935 on a 900px desktop fold, i.e. inside the band, and the assertion
@@ -901,32 +932,23 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
       `this row can only be measured when #reviews starts beyond the 300px rootMargin; it is at ${Math.round(reviewsTop)} on a ${viewportHeight}px fold, so the page is too short to tell a lazy gate from an eager one`,
     ).toBeGreaterThan(viewportHeight + 300);
 
-    // TWO named checks, not one — because the reviews request is protected by
-    // TWO independent gates and either one alone would keep the network quiet:
-    //   outer: useLazyReviews (rootMargin 300px) decides whether ReviewsSection
-    //          MOUNTS at all — its observable is the DOM.
-    //   inner: ReviewsSection's own IO (ReviewsSection.jsx:301, threshold 0.1)
-    //          decides whether it FETCHES — its observable is the network.
-    // Measured 04/09: with the outer gate defeated (`useState(true)`) the
-    // network assertion alone still passed, because the inner IO held the
-    // fetch. That is the `||`-shaped pass condition testing.md warns about —
-    // one cue silently carrying the whole assertion — so each gate gets its
-    // own check and its own failure message.
+    // MEH-3819: the section MOUNTS with the page (it holds its place, so a
+    // reader landing on #reviews is not pushed around while it grows); only the
+    // FETCH is lazy — ReviewsSection's own IO (threshold 0.1). Until then there
+    // were two gates (useLazyReviews mounted it near the screen), and each had
+    // its own check; the mount check now asserts the opposite, on purpose.
     expect(
       await root.locator("#reviews").evaluate((el) => el.childElementCount),
-      "outer gate: the reviews section must not be MOUNTED while it is below the fold",
-    ).toBe(0);
+      "the reviews section is mounted with the page, below the fold, holding its place",
+    ).toBeGreaterThan(0);
     expect(
       reviewRequests,
-      "inner gate: reviews must not be FETCHED while the section is below the fold",
+      "reviews must not be FETCHED while the section is below the fold",
     ).toEqual([]);
 
-    // NOT `scrollIntoViewIfNeeded()`: `#reviews` is a ZERO-HEIGHT wrapper until
-    // ReviewsSection mounts (it is the IO observation point), and on a
-    // zero-height target that call returns having scrolled nothing — measured
-    // 04/09, `scrollY: 0` after it on both projects, so the section never
-    // mounted and the test read as "reviews never loaded". A real scroll is
-    // the only instrument that moves this page.
+    // A real scroll, not `scrollIntoViewIfNeeded()`: until MEH-3819 `#reviews`
+    // was a zero-height wrapper and that call scrolled nothing (measured 04/09).
+    // The plain scroll is kept: it does not depend on the wrapper's height.
     await page.evaluate((y) => window.scrollTo(0, y), reviewsTop - 100);
     await expect
       .poll(() => reviewRequests.length, {
@@ -993,9 +1015,10 @@ test.describe("manual › /producer/[id] — main-column content", () => {
     );
     const root = await openProducer(page, target.id);
 
-    // Real scroll, not `scrollIntoViewIfNeeded()` — `#reviews` is zero-height
-    // until ReviewsSection mounts, and that call no-ops on a zero-height
+    // Real scroll, not `scrollIntoViewIfNeeded()` — `#reviews` was zero-height
+    // until ReviewsSection mounted, and that call no-ops on a zero-height
     // target (measured 04/09: `scrollY: 0` after it, section never mounted).
+    // Since MEH-3819 the section mounts with the page; the real scroll stays.
     //
     // MEH-2323 (02/11): measured ONCE, the top went stale — sections that
     // mount after first paint (ProducerActivities above #reviews) push the

@@ -150,6 +150,11 @@ class Experience(Base):
     # the 12-date cap are the API's (a column, not a table — see revision
     # f2c8a4d6e9b1 for why).
     sessions = Column(JSONB, nullable=True)
+    # MEH-3898: a course — the meetings of ONE sign-up, [{"date", "time"}],
+    # soonest first. NULL = not a course. event_date / event_time are the
+    # first meeting, so sign-ups close when it starts. Never together with
+    # is_recurring (the API refuses it, services/course_meetings.py).
+    course_meetings = Column(JSONB, nullable=True)
 
     # Location — producer_farm is explicitly NOT an option; that's what Event is for
     location_type = Column(String(20), default="home")  # home | public
@@ -413,9 +418,35 @@ class GroupBuyCommit(Base):
     quantity = Column(Integer, default=1, nullable=False)
     phone = Column(String(30), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
+    # MEH-3735: four digits she shows at pickup, as a rescue bag's code. The
+    # business sees codes, never names (MEH-1651). Nullable only for the
+    # expand step; the revision gives every existing row one.
+    pickup_code = Column(String(4), nullable=True)
+    # MEH-3735: at most one of these is set, by the business after pickup
+    # (services/group_buy_no_show.py). Both NULL = not marked yet.
+    handed_at = Column(DateTime, nullable=True)
+    no_show_at = Column(DateTime, nullable=True)
+    # MEH-3897: how this join is paid, as the business set it at join time
+    # (models/rescue.RESERVATION_TIMINGS). NULL = before the column.
+    prepay_timing = Column(String(10), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
+        UniqueConstraint(
+            "group_buy_id", "pickup_code", name="uq_group_buy_commits_code"
+        ),
+        CheckConstraint(
+            "pickup_code IS NULL OR pickup_code ~ '^[0-9]{4}$'",
+            name="group_buy_commits_pickup_code_check",
+        ),
+        CheckConstraint(
+            "handed_at IS NULL OR no_show_at IS NULL",
+            name="group_buy_commits_one_outcome_check",
+        ),
+        CheckConstraint(
+            "prepay_timing IS NULL OR prepay_timing IN ('advance', 'deposit', 'counter')",
+            name="group_buy_commits_prepay_timing_check",
+        ),
     )
 
     group_buy = relationship("GroupBuy", back_populates="commits")

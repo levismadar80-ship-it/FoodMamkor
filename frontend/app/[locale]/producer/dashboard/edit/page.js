@@ -88,7 +88,7 @@ import ReservistOwnedCard from "./ReservistOwnedCard";
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import HoursCard from "./HoursCard";
 // MEH-2264: per-date overrides above the weekly window (own file, same reason).
-// MEH-3035 chunk 2: «איך משלמים לך?» (producers.payment_info).
+// MEH-3035 chunk 2: «איך משלמים לעסק?» (producers.payment_info).
 import PaymentInfoEditor from "./PaymentInfoEditor";
 import { paymentAnswer } from "@/lib/payment-info";
 import { upcomingSpecialCount } from "@/lib/special-hours";
@@ -111,6 +111,7 @@ import {
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
 import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
+import { useOwnerPageUpdated } from "@/lib/owner-page-updated"; // MEH-3902
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -337,6 +338,12 @@ function EditPageInner() {
     },
     [group, enterGroup]
   );
+
+  // MEH-3902: the dashboard assistant saved fields — read the business again,
+  // as the «ספרו לנו על העסק» panel's onSaved does below.
+  useOwnerPageUpdated(() => {
+    api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); }, () => {});
+  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -594,6 +601,7 @@ function EditPageInner() {
     // MEH-2264: "filled" = at least one override still ahead. Clock-derived,
     // but this page is client-only (the profile is fetched in the browser),
     // so there is no server pass to disagree with.
+    // eslint-disable-next-line no-restricted-syntax -- MEH-3861: client-only, see the comment above
     specialHours: upcomingSpecialCount(profile.special_hours) > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
@@ -1058,7 +1066,10 @@ function EditPageInner() {
           title={t("delivery.heading")}
           summary={
             [
-              profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+              // MEH-2447: her own «בתיאום מראש» answer, not «חנות פיזית».
+              profile.has_physical_location !== false
+                ? tAcc(profile.by_arrangement ? "delivery_mode_arranged" : "delivery_mode_store")
+                : null,
               profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
             ]
               .filter(Boolean)

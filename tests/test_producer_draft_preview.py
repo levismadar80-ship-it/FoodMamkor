@@ -22,6 +22,7 @@ from app.auth import _jwt_key, create_producer_claim_token
 from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.models import Producer
+from app.services.share_links import resolve_share_code
 from app.services.draft_preview import (
     DRAFT_PREVIEW_SCOPE,
     create_draft_preview_token,
@@ -40,7 +41,7 @@ def _read(token):
 
 
 def _publish(pid):
-    return f"/admin/producers/{pid}/publish-with-consent"
+    return f"/admin/producers/{pid}/publish-with-consent?slug=test-farm"
 
 
 def _draft(db, **kw):
@@ -86,8 +87,9 @@ def test_admin_mints_a_link_for_an_ownerless_draft(client, db):
     r = client.post(_link(p.id), headers=auth_header(admin))
     assert r.status_code == 200, r.text
     body = r.json()
-    token = body["url"].rsplit("/draft-preview/", 1)[1]
-    assert decode_draft_preview_token(token) == p.id
+    # MEH-3896: the short /v/<code> link, not the JWT.
+    code = body["url"].rsplit("/v/", 1)[1]
+    assert resolve_share_code(db, code, "draft_preview") == p.id
     assert body["url"].startswith(settings.frontend_url)
 
 
@@ -294,7 +296,7 @@ def test_plain_approve_still_refuses_a_draft(client, db):
     """This card adds a route; it does not loosen approve_producer (MEH-2121)."""
     admin = make_user(db, role="admin")
     p = _draft(db)
-    r = client.post(f"/admin/producers/{p.id}/approve", headers=auth_header(admin))
+    r = client.post(f"/admin/producers/{p.id}/approve?slug=test-farm", headers=auth_header(admin))
     assert r.status_code == 409
 
 

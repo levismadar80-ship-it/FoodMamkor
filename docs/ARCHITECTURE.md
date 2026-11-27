@@ -45,7 +45,8 @@ mehamakor/
 | Add a client utility | `frontend/lib/<name>.js` |
 | Tweak design tokens or copy | `docs/DESIGN.md` |
 | Read auth flow | `.ai/diagrams/auth-flow.md` |
-| Read DB schema diagram | `.ai/diagrams/db-schema.md` |
+| Read every table, column, type, constraint (generated from models) | `docs/DB_SCHEMA.md` |
+| Read DB schema diagram (relationships only) | `.ai/diagrams/db-schema.md` |
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
 | See every scheduled job and when it runs (generated from code) | `docs/JOBS.md` |
@@ -113,6 +114,7 @@ cause was that the existing thing could not be found.
 | API path | `docs/DATA.md` «API Endpoints» | `scripts/checks/api-docs-route-guard.sh` |
 | API path with no caller on the site | `scripts/checks/unwired-route-baseline.txt` | `scripts/checks/unwired-route-guard.sh` |
 | DB table | `docs/DATA.md` «DB Schema» | `tests/test_meh3604_map_of_maps.py` |
+| DB column, type, CHECK, index, privacy category | `docs/DB_SCHEMA.md` — generated (MEH-3929) | `tests/test_db_schema_doc.py` |
 | Status column and its values | `docs/STATE_MACHINES.md` | `tests/test_state_machines_doc_sync.py` (columns only, not transitions) |
 | Per-business cap on a table | `backend/app/limits.py` | `tests/test_meh3022_resource_caps.py` |
 | Env var / feature flag (`*_ENABLED`) | `docs/ENVIRONMENT.md` — generated (MEH-3598, PR #5056) | `tests/test_meh3598_env_map.py`; `scripts/check_env_drift.sh` (`.env.example`) |
@@ -134,6 +136,7 @@ FEATURES.md; other files → code index) · `frontend/components/`,
 `docs/COPY_BANK.md`) · `frontend/i18n/` (locale routing) · `frontend/data/`
 (static data files) · `frontend/types/` (JSDoc types) · `frontend/public/`
 (static assets) · `frontend/scripts/` (build helpers) · `frontend/__tests__/`,
-`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/qa-artifacts/` (QA text
+`frontend/e2e/` (tests, `docs/TESTING.md`) · `frontend/eslint-rules/` (house lint
+rules, `frontend/components/CLAUDE.md`) · `frontend/qa-artifacts/` (QA text
 evidence, never images) · `frontend/.ds-sync-css/` (Tailwind input for the
 design-system sync).

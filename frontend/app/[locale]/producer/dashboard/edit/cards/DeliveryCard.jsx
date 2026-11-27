@@ -17,7 +17,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
-import { fulfillmentTags, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
+import { fulfillmentTags, placeChecks, togglePlace, FULFILLMENT_WASH_GREEN, FULFILLMENT_WASH_NEUTRAL, FULFILLMENT_ICON_PX } from "@/lib/fulfillment-tags";
 import { resolveStoreHours } from "@/lib/hours";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -27,6 +27,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import DeliveryBulkDay from "./DeliveryBulkDay";
 import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
 import DeliveryDefaultTerms from "./DeliveryDefaultTerms";
+import Checkbox from "@/components/ui/Checkbox";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -65,6 +66,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
   const tMap = useTranslations("map.producer_card");
   const initial = {
     hasPhysical: profile?.has_physical_location ?? true,
+    // MEH-2447: the owner's «בתיאום מראש» answer.
+    byArrangement: profile?.by_arrangement ?? false,
     offersDelivery: profile?.offers_delivery ?? false,
     nationwide: profile?.delivery_nationwide ?? false,
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
@@ -130,6 +133,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
 
   const dirty =
     form.hasPhysical !== baseline.hasPhysical ||
+    form.byArrangement !== baseline.byArrangement ||
     form.offersDelivery !== baseline.offersDelivery ||
     form.nationwide !== baseline.nationwide ||
     form.cities.length !== baseline.cities.length ||
@@ -173,11 +177,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       offersPickup: (profile?.locations ?? []).some(
         (loc) => loc?.kind === "pickup" || loc?.kind === "market_stand",
       ),
-      storeWithHours: form.hasPhysical && !!resolveStoreHours(profile),
+      storeWithHours: form.hasPhysical && !form.byArrangement && !!resolveStoreHours(profile),
+      byArrangement: form.hasPhysical && form.byArrangement,
     },
     tMap,
   );
-  const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged";
+  // The hint explains how to earn a green tag — not shown to an owner who
+  // chose «בתיאום מראש» herself.
+  const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged" && !form.byArrangement;
+  const place = placeChecks(form.hasPhysical, form.byArrangement);
   const citiesMissing =
     form.offersDelivery && !form.nationwide && form.cities.length === 0;
   const blocked = neitherType || citiesMissing;
@@ -199,6 +207,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     const toNullableInt = (v) => (v === "" || v == null ? null : Number(v));
     const normalized = {
       hasPhysical: form.hasPhysical,
+      byArrangement: form.hasPhysical && form.byArrangement,
       offersDelivery: form.offersDelivery,
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
@@ -241,6 +250,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     try {
       await api.put(saveUrl, {
         has_physical_location: normalized.hasPhysical,
+        by_arrangement: normalized.byArrangement,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
@@ -255,6 +265,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
         has_physical_location: normalized.hasPhysical,
+        by_arrangement: normalized.byArrangement,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
@@ -351,43 +362,43 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       </div>
 
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.hasPhysical}
-            onChange={(e) => set({ hasPhysical: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
-          {t("has_physical_location")}
-        </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.offersDelivery}
-            onChange={(e) => set({ offersDelivery: e.target.checked })}
-            className="w-4 h-4 accent-primary"
-          />
+        {/* MEH-2447: the place as two exclusive answers — fixed hours, or by
+            arrangement — instead of one «חנות פיזית» box farms ticked to save. */}
+        {/** @type {("onsite"|"arranged")[]} */ (["onsite", "arranged"]).map((axis) => (
+          <Checkbox
+            key={axis}
+            className="flex items-center gap-2 text-sm"
+            data-testid={`delivery-place-${axis}`}
+            checked={place[axis]}
+            onChange={(e) => set(togglePlace(axis, e.target.checked))}
+          >
+            {t(`place_${axis}`)}
+          </Checkbox>
+        ))}
+        <Checkbox
+          className="flex items-center gap-2 text-sm"
+          checked={form.offersDelivery}
+          onChange={(e) => set({ offersDelivery: e.target.checked })}
+        >
           {t("offers_delivery")}
-        </label>
+        </Checkbox>
         {neitherType && (
           <p className="text-xs text-danger-600">{t("type_validation")}</p>
         )}
         {form.offersDelivery && (
           <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.nationwide}
-                onChange={(e) =>
+            <Checkbox
+              className="flex items-center gap-2 text-sm"
+              checked={form.nationwide}
+              onChange={(e) =>
                   set({
                     nationwide: e.target.checked,
                     ...(e.target.checked ? { cities: [] } : {}),
                   })
                 }
-                className="w-4 h-4 accent-primary"
-              />
+            >
               {t("delivery_nationwide")}
-            </label>
+            </Checkbox>
             {/* MEH-1577: structured delivery cost. Both optional — leaving them
                 empty keeps the public page exactly as it is today. Each field
                 carries a "where it appears" line + an example placeholder per

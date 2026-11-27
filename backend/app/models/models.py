@@ -531,6 +531,14 @@ class Producer(Base):
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
     has_physical_location = Column(Boolean, nullable=False, default=True)
     offers_delivery = Column(Boolean, nullable=False, default=False)
+    # MEH-2447: the owner's own answer «איסוף או ביקור בתיאום מראש». Read only
+    # AND has_physical_location (producer_queries.attach_badge_fields,
+    # producer_listing._on_site_condition): True = no walk-in, so the card says
+    # «בתיאום מראש» and never «קנייה במקום». No CHECK on purpose (migration
+    # b8ee10dc69a9): a partial update that turns the place off must not 500.
+    by_arrangement = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
     delivery_cities: Column[list[str]] = Column(ARRAY(Text), nullable=False, default=[])
@@ -1063,6 +1071,9 @@ class User(Base):
     # moment, so one write releases a buyer without deleting the no-show
     # history the chunk-5 metrics read. NULL = never cleared.
     rescue_block_cleared_at = Column(DateTime, nullable=True)
+    # MEH-3735: the same release, for the group-buy no-show count, which is
+    # separate from the rescue one (services/group_buy_no_show.py).
+    group_buy_block_cleared_at = Column(DateTime, nullable=True)
 
     # MEH-2974: `foreign_keys` is REQUIRED here, and the requirement arrived
     # with `producers.owner_invite_created_by`. There are now two foreign-key
@@ -1323,5 +1334,14 @@ import app.models.product_orders  # noqa: E402,F401
 # MEH-3305: an admin's passkeys and recovery codes (own module, same reason).
 import app.models.admin_passkeys  # noqa: E402,F401
 
+# MEH-3526: staff who handle a business's orders (own module, same reason).
+import app.models.producer_staff  # noqa: E402,F401
+
 # MEH-3535: the durable email queue (own module, same reason).
 import app.models.email_outbox  # noqa: E402,F401
+
+# MEH-3839: Resend delivery events (own module, same reason).
+import app.models.email_events  # noqa: E402,F401
+
+# MEH-3896: short preview / claim links (own module, same reason).
+import app.models.share_links  # noqa: E402,F401

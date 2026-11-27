@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
+import IconButton from "@/components/ui/IconButton";
 
 /**
  * MEH-58 Phase 3: city picker overlay shown when the user toggles
@@ -41,9 +42,9 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
   if (!open) return null;
   return (
     <Dialog labelledBy="city-picker-title" size="sm" onClose={onClose} className="relative">
-        <button type="button" onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
+        <IconButton onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" label={t("common.aria.close")}>
           <X size={20} weight="bold" />
-        </button>
+        </IconButton>
         <h3 id="city-picker-title" className="font-headline-md text-lg font-bold text-text mb-1 pe-14">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was

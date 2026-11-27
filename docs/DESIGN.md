@@ -261,6 +261,11 @@ genuinely fixed colour (a third-party brand colour, an SVG fill) is
 `--update-baseline` plus a reason in the PR body. Why it matters: a future theme
 switch (dark mode) can only re-colour what goes through the tokens.
 
+The site has no dark mode today, and says so: `:root { color-scheme: only light; }`
+in `frontend/app/globals.css` (MEH-3927) stops Chrome's Auto Dark Theme from
+inverting the cream page on a phone in dark mode. A real dark theme, when it
+comes, replaces that line. Guard: `frontend/e2e/flows/44-light-only-color-scheme.spec.ts`.
+
 ### Address/city fields must use the canonical component
 
 A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /
@@ -566,6 +571,9 @@ count only go down. The owner table is `frontend/components/CLAUDE.md`.
     category sits in the muted line under the name. No city → no place line.
   - **No photo (MEH-2440):** a typographic name plate — the business name in
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
+    With a logo (MEH-3894, Sapir 26/11/2026) the logo sits in the seed's
+    start-top corner (56px circle, `contain`) instead of the seed, and the
+    plate's top padding grows to clear it.
   - **Badges on the photo, one line (MEH-3508, Sapir 20/11/2026):** the badge
     row (max 2 + «+N») sits bottom-start on the photo (`bottom-3 start-3`) and
     never wraps. TrustBadge sits in the card body under the category line
@@ -621,10 +629,22 @@ count only go down. The owner table is `frontend/components/CLAUDE.md`.
   page renders the same card as the business page — the preferred channel as the
   big button, the others as the named circles. No ready-made questions: they
   live in the business page's own «שאלות נפוצות» section (MEH-3460), not the card. No card at all when the organizer filled no channel.
+- **Which photo, everywhere (MEH-3894):** an item's own photo, else its
+  business's first non-blank photo — picked in the API by `first_image`
+  (`backend/app/services/producer_images.py`, held by
+  `scripts/checks/first-image-guard.sh`) — else the surface's no-photo tile.
+  Experiences follow it too (`owner_image_url`). A photo the browser cannot
+  load drops to the same tile (`frontend/lib/use-image-loads.js` on the rows
+  and covers drawn as a CSS background), never an empty box.
 - **Event cover fallback (MEH-3459):** an event without its own photo opens on
   its owner's first photo (`owner_image_url`), the photo its card and list row
   already show (MEH-2546); the green band only when neither exists. The share
   preview (OG / Twitter) follows the same order.
+- **Event rows on the owner's own page (MEH-3892):** on the business page and
+  the organizer page a row without its own photo takes one of the owner's
+  gallery photos (`withOwnGallery`, `frontend/lib/event-entry.js`): the
+  non-cover photos first, in turn by date; the cover only when it is the only
+  one; the category tile only when there are none. No owner initial there.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
@@ -875,8 +895,13 @@ only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
 are tokens, at exactly Tailwind's `red` / `amber` values, so `red-N → danger-N` and
 `amber-N → warning-N` was a pixel-identical codemod. Use them for status surfaces,
 borders and destructive buttons; keep `error` for error text on cream. Success
-stays `primary` / `green-*`. `yellow-*`, `gray-*` and `blue-*` are still raw debt —
-moving them changes colour and needs a mock first.
+stays `primary` / `green-*`. `yellow-N → warning-N` followed in MEH-3928 (a small
+hue shift to amber; the before/after swatch sheet and contrast table are in the
+PR), and so did `bg-gray-50`: `bg-background` for admin table heads and row
+hovers on a `bg-surface` card, `hover:bg-background-alt` for button hovers (visible
+on cream and on white). The gray status chips (draft / inactive / unknown,
+told apart by colour, MEH-2126) and `blue-*` are still raw debt — moving them
+changes colour and needs a mock first.
 
 ## S4 design tokens (MEH-136)
 
@@ -1030,7 +1055,20 @@ arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
 `flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
-patterns.
+patterns. A checkbox is `ui/Checkbox.jsx`, whose whole label row is the hit area
+(`min-h-touch md:min-h-8`, MEH-3830).
+
+When the control must keep its drawn size (an «i» button, a badge chip, a
+crumb, a back link: growing the box would move the line), give it the
+`.tap-area` utility (`app/globals.css`, MEH-3827): an invisible `::before`
+whose insets grow the hit area to 44 × 44 around the control and leave a
+bigger control alone. Used by `ui/BackLink`, `InfoTooltip`, `BadgeRow` and
+`Breadcrumb`. It does not work inside a scroller with `overflow` (the pseudo
+is clipped): use `min-h-touch` there, as the admin phone nav does.
+Neighbouring hit areas may overlap; the later element in the DOM takes the tap.
+A button that is only an icon is `ui/IconButton.jsx` (MEH-3832): `label` is
+required and becomes its name, and it carries `.tap-area`, so a 24px «×» keeps
+its look and still takes a 44px tap. Its look stays the caller's `className`.
 
 When the control must keep its drawn size (an «i» button, a badge chip, a
 crumb, a back link: growing the box would move the line), give it the
@@ -1166,9 +1204,12 @@ audible once, never announced as "star".
 A time-limited offer on a business page (a group buy, a surprise bag) is drawn
 by one component, `frontend/components/ui/OfferCard.jsx`: optional icon tile,
 title + «where» lines, the price with the regular price struck, a gold saving
-line, a beige status band (progress in the logo seeds + a time), then any
-actions. Both offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so
-they are the same size. A new kind of offer uses this card, never its own copy
+line, a beige status band (progress in the logo seeds + a time). On the business
+page the whole card is one link to the offer's own page, with the forward caret
+beside the title, and holds no button, link or fold of its own: reserving,
+joining and cancelling happen on that page (Sapir 22/11, MEH-3586). Both
+offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so they are the
+same size. A new kind of offer uses this card, never its own copy
 (`OfferCardOneOwnerGuard.test.jsx`).
 
 ## In-place messages (MEH-3072)
