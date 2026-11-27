@@ -22,18 +22,30 @@ function strings(node, path = "") {
 
 const all = strings(he);
 
+/** @param {[string, string]} entry */
+const shortSpelling = ([, s]) => /ווטסאפ|וו?אצאפ/.test(s);
+/** @param {[string, string]} entry */
+const strayLatin = ([k, s]) => !LEGAL_AS_WRITTEN.has(k) && s.replace(PRODUCT_NAMES, "").includes("WhatsApp");
+
 describe("WhatsApp in Hebrew copy (MEH-3979)", () => {
   it("reads a real number of strings", () => {
     expect(all.length).toBeGreaterThan(1000);
     expect(all.filter(([, s]) => s.includes("וואטסאפ")).length).toBeGreaterThan(100);
   });
 
-  it("never spells it «ווטסאפ»", () => {
-    expect(all.filter(([, s]) => s.includes("ווטסאפ")).map(([k]) => k)).toEqual([]);
+  it("the matchers catch a known-bad string and pass a good one", () => {
+    expect(shortSpelling(["x", "שליחה בווטסאפ"])).toBe(true);
+    expect(shortSpelling(["x", "שליחה בוואצאפ"])).toBe(true);
+    expect(shortSpelling(["x", "שליחה בוואטסאפ"])).toBe(false);
+    expect(strayLatin(["x", "שליחה ב-WhatsApp"])).toBe(true);
+    expect(strayLatin(["x", "ב-WhatsApp Business"])).toBe(false);
+  });
+
+  it("never spells it «ווטסאפ» or with a tsadi", () => {
+    expect(all.filter(shortSpelling).map(([k]) => k)).toEqual([]);
   });
 
   it("writes Latin «WhatsApp» only inside a product name", () => {
-    const latin = all.filter(([k, s]) => !LEGAL_AS_WRITTEN.has(k) && s.replace(PRODUCT_NAMES, "").includes("WhatsApp"));
-    expect(latin.map(([k]) => k)).toEqual([]);
+    expect(all.filter(strayLatin).map(([k]) => k)).toEqual([]);
   });
 });
