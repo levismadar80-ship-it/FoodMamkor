@@ -18,13 +18,14 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import { serializeJsonLd } from "@/lib/seo";
 import { urlForLocalePath } from "@/lib/i18n-seo";
 import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
+import { HUB_FAQ_ANCHOR } from "@/lib/hub-faq";
 
 /**
  * @param {{ faq: { namespace: string, keys: readonly string[], path: string }, locale: string, anchor?: string }} props
  *   namespace: messages root holding `items.<key>.q|a`. The heading is the
  *   shared «שאלות נפוצות» (diet_pages.faq_heading), not a copy of it.
  */
-export default async function HubFaq({ faq, locale, anchor = "faq" }) {
+export default async function HubFaq({ faq, locale, anchor = HUB_FAQ_ANCHOR }) {
   const { namespace, keys, path } = faq;
   // DO NOT drop `locale` — without it next-intl reads headers() and the hub
   // page turns per-request (MEH-3049, HubRoutesStaticGuard).
@@ -38,7 +39,7 @@ export default async function HubFaq({ faq, locale, anchor = "faq" }) {
     mainEntity: items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: i.a } })),
   };
   return (
-    <section id={anchor} aria-labelledby={`${anchor}-title`} className={`${HUB_CONTENT_CLASS} pb-16`} data-testid="hub-faq">
+    <section id={anchor} aria-labelledby={`${anchor}-title`} className={`${HUB_CONTENT_CLASS} pb-16 scroll-mt-24`} data-testid="hub-faq">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <SectionHeading id={`${anchor}-title`} size="content" className="mb-3">
         {tHeading("faq_heading")}
