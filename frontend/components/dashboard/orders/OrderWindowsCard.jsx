@@ -23,8 +23,8 @@ import { CaretDown, Plus, X } from "@phosphor-icons/react";
 import FieldHelpLabel from "@/components/FieldHelpLabel";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
-import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import { detailToMessage } from "@/lib/errors";
 import { DAY_KEYS } from "@/lib/hours";
 import { daysFromOrderWindow } from "@/lib/order-window-editor";
@@ -70,8 +70,9 @@ function WindowRow({ row, onChange, onRemove }) {
         <option value="pickup">{t("pickup")}</option>
         <option value="delivery">{t("delivery")}</option>
       </Select>
-      <Input size="sm" type="time" dir="ltr" label={tHours("from_label")} value={row.start_time} onChange={(e) => set("start_time", e.target.value)} />
-      <Input size="sm" type="time" dir="ltr" label={tHours("to_label")} value={row.end_time} onChange={(e) => set("end_time", e.target.value)} />
+      {/* MEH-3955: 24-hour selects, not <input type="time"> (AM/PM on an English phone). */}
+      <TimeOfDaySelect label={tHours("from_label")} ariaLabel={tHours("from_label")} value={row.start_time} onChange={(v) => set("start_time", v)} testId="order-window-from" />
+      <TimeOfDaySelect label={tHours("to_label")} ariaLabel={tHours("to_label")} value={row.end_time} onChange={(v) => set("end_time", v)} testId="order-window-to" />
       <Button variant="ghost" size="sm" onClick={onRemove} aria-label={tHours("remove_range")}>
         <X size={18} aria-hidden="true" />
       </Button>

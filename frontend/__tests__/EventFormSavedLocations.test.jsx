@@ -18,6 +18,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import EventForm from "@/components/EventForm";
+import { setTime } from "./helpers/time-of-day";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => (
@@ -161,7 +162,7 @@ describe("MEH-2932 · selection axis", () => {
 
     fireEvent.change(document.getElementById("title"), { target: { value: "שוק גלם" } });
     fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-12-07" } });
-    fireEvent.change(document.getElementById("event_time"), { target: { value: "09:30" } });
+    setTime(document.getElementById("event_time").closest("[data-time-value]"), "09:30");
     fireEvent.change(document.getElementById("category"), { target: { value: "שוק" } });
     fireEvent.click(screen.getByText(he.sweep_tail.event_new.submit));
 
@@ -185,7 +186,7 @@ describe("MEH-2932 · selection axis", () => {
 
     fireEvent.change(document.getElementById("title"), { target: { value: "שוק גלם" } });
     fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-12-07" } });
-    fireEvent.change(document.getElementById("event_time"), { target: { value: "09:30" } });
+    setTime(document.getElementById("event_time").closest("[data-time-value]"), "09:30");
     fireEvent.change(document.getElementById("category"), { target: { value: "שוק" } });
     fireEvent.click(screen.getByText(he.sweep_tail.event_new.submit));
 

@@ -17,6 +17,7 @@ import LocationHoursField, { WHERE_KEY_BY_KIND } from "@/app/[locale]/producer/d
 import { LocationInputSchema } from "@/lib/schemas";
 import he from "@/messages/he.json";
 import en from "@/messages/en.json";
+import { setTime, timeFields, timeValue } from "./helpers/time-of-day";
 import LocationsEditor from "@/app/[locale]/producer/dashboard/edit/LocationsEditor";
 
 // Same harness as __tests__/LocationsEditor.test.jsx (URL-aware api, echoing
@@ -48,8 +49,7 @@ vi.mock("@/components/AddressSearch", () => ({
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="mini-map" /> }));
 
 const openBox = (i) => screen.getByTestId(`location-hours-open-${i}`);
-const timesOf = (i) =>
-  Array.from(screen.getByTestId(`location-hours-day-${i}`).querySelectorAll('input[type="time"]')).map((el) => el.value);
+const timesOf = (i) => timeFields(screen.getByTestId(`location-hours-day-${i}`)).map(timeValue);
 const openDays = () => [0, 1, 2, 3, 4, 5, 6].filter((i) => openBox(i).checked);
 
 function renderField(value) {
@@ -181,20 +181,23 @@ describe("LocationHoursField — what it saves (MEH-2805 AC 2)", () => {
 describe("LocationHoursField — validation (MEH-2805 AC 4)", () => {
   it("a close-before-open range shows the row's error and reports invalid; fixing it reports valid", () => {
     const { onValidityChange } = renderField("Sun 09:00-17:00");
-    const [, to] = screen.getByTestId("location-hours-day-0").querySelectorAll('input[type="time"]');
-    fireEvent.change(to, { target: { value: "08:00" } });
+    const [, to] = timeFields(screen.getByTestId("location-hours-day-0"));
+    setTime(to, "08:00");
     expect(screen.getByTestId("location-hours-error-0").textContent).toBe(
       "dashboard.producer.order_window.invalid_range",
     );
     expect(onValidityChange).toHaveBeenLastCalledWith(false);
-    fireEvent.change(to, { target: { value: "18:00" } });
+    setTime(to, "18:00");
     expect(screen.queryByTestId("location-hours-error-0")).toBeNull();
     expect(onValidityChange).toHaveBeenLastCalledWith(true);
   });
 
   it("time inputs carry the 44px touch floor (AC 6)", () => {
     renderField("Sun 09:00-17:00");
-    for (const el of screen.getByTestId("location-hours-day-0").querySelectorAll('input[type="time"]')) {
+    // MEH-3955: each time is an hour and a minute select; each one is a target.
+    const selects = screen.getByTestId("location-hours-day-0").querySelectorAll("[data-time-value] select");
+    expect(selects.length).toBe(4);
+    for (const el of selects) {
       expect(el.className).toContain("min-h-touch");
     }
   });
@@ -231,8 +234,8 @@ describe("LocationsEditor + LocationHoursField (MEH-2805 AC 3 + AC 4)", () => {
 
   it("an invalid row blocks the save — no request, the save button disabled", async () => {
     await openEditForm({ ...ROW, opening_hours: "Sun 09:00-17:00" });
-    const [, to] = screen.getByTestId("location-hours-day-0").querySelectorAll('input[type="time"]');
-    fireEvent.change(to, { target: { value: "08:00" } });
+    const [, to] = timeFields(screen.getByTestId("location-hours-day-0"));
+    setTime(to, "08:00");
     expect(screen.getByTestId("location-save").disabled).toBe(true);
     fireEvent.submit(screen.getByTestId("location-form"));
     await new Promise((r) => setTimeout(r, 0));
