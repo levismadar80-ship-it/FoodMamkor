@@ -114,7 +114,7 @@ type KnownCls = { path: RegExp; query?: RegExp; ceiling: number; reason: string;
 export const KNOWN_CLS: readonly KnownCls[] = [
   {
     // MEH-3817: #5292 fixed the dashboard home; the edit groups are still open
-    // on the card. The other rows (MEH-3818 admin #5302, MEH-3819 business
+    // on the card. The other rows (MEH-3872 admin business edit, MEH-3818 admin #5302, MEH-3819 business
     // page #5294, MEH-3820 map #5301, MEH-3821 home with a city #5298) were
     // removed when their fixes merged.
     path: /^\/producer\/dashboard\/edit$/,
@@ -128,13 +128,6 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     ceiling: 0.18,
     reason: "Admin users: the dashboard footer moves at ~1.8 s (largest 0.122, desktop, staging f08f421).",
     card: "MEH-3875",
-  },
-  {
-    // MEH-3872: PR #5280 head a7e7572, mobile, flaky.
-    path: /^\/admin\/producers\/[^/]+\/edit$/,
-    ceiling: 0.23,
-    reason: "Admin business edit: the form moves once at ~0.6 s (largest 0.151, mobile, PR #5280).",
-    card: "MEH-3872",
   },
   {
     // MEH-3871: a late block above the delivery / reviews section. Only the
