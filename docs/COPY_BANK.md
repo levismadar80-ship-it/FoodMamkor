@@ -213,13 +213,13 @@
 ### /about — Founder story (greeting + 6 paragraphs)
 | Field | Value |
 |---|---|
-| **Current** | `greeting` `למה הקמנו את מהמקור` · `p1` `אנחנו אוהבות אוכל טוב, ועוד יותר את האנשים שעומדים מאחוריו. תמיד היה לנו חשוב לדעת מאיפה האוכל שלנו מגיע, ורצינו לאכול יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גילינו שזה לא נגיש. כדי למצוא אוכל איכותי באמת, היינו צריכות לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנו: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `כמה דקות מהבית יש חקלאית שקוטפת ירקות בבוקר. בשכונה ליד יש מאפייה קטנה שאופה מחמצת. מאחורי כל אחד מהם יש סיפור, ורוב האנשים בכלל לא מכירים אותו. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. המטרה שלנו פשוטה: לתת לסיפורים האלה מקום. מקום אחד להכיר את מי שעומד מאחוריהם ולמצוא אוכל מקומי קרוב לבית. בלי לחפש שעות.` · `p6` `אנחנו מזמינות אותך להכיר אותם איתנו.` |
+| **Current** | `greeting` `למה הקמנו את מהמקור` · `p1` `אנחנו אוהבות אוכל טוב, ועוד יותר את האנשים שעומדים מאחוריו. תמיד היה לנו חשוב לדעת מאיפה האוכל שלנו מגיע, ורצינו לאכול יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גילינו שזה לא נגיש. כדי למצוא אוכל איכותי באמת, היינו צריכות לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנו: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `כמה דקות מהבית יש חקלאית שקוטפת ירקות בבוקר. בשכונה ליד יש מאפייה קטנה שאופה מחמצת. מאחורי כל אחד מהם יש סיפור, ורוב האנשים בכלל לא מכירים אותו. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. המטרה שלנו פשוטה: לתת לסיפורים האלה מקום. מקום אחד להכיר את מי שעומד מאחוריהם ולמצוא אוכל מקומי קרוב לבית. בלי לחפש שעות.` · `p6` `אנחנו מזמינות אתכם להכיר אותם איתנו.` |
 | **Previous** | (MEH-757, then plural voice) `p1` `תמיד היה לנו חשוב לדעת מאיפה האוכל שלנו מגיע. רצינו לקנות יותר טוב…` · `p4` `יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית…` · `p5` `וכאן נולדה מהמקור. מקום אחד שמרכז אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.` |
 | **Anchor phrase** | `בלי לחפש שעות` (canonical, MEH-719) — still closes `p5` |
 | **i18n keys** | `about.consumer.story.greeting` / `.p1`–`.p6` (he + en) |
 | **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (chapter 01) |
 | **Status** | ✅ (MEH-3988) |
-| **Why** | Sapir 28/11: open with love for food and the people behind it, short lines, end on an invitation; «לתת לסיפורים האלה מקום» is the stated goal. Voice inspiration: Soul to Table (ideas, not text). Plural voice kept (two founders since MEH-3323). No «אמיתי» in the new copy (Sapir); «יותר בריא, יותר מקומי» and the supermarket line kept from the old copy (Sapir 28/11; «לקנות» → «לאכול» in p1). |
+| **Why** | Sapir 28/11: open with love for food and the people behind it, short lines, end on an invitation; «לתת לסיפורים האלה מקום» is the stated goal. Voice inspiration: Soul to Table (ideas, not text). Plural voice kept (two founders since MEH-3323). Reader address follows BRAND.md §9 (neutral, generic plural when a pronoun is needed; the approved draft's singular-feminine «אותך/שלך/את בוחרת» normalised, MEH-3808 guard). No «אמיתי» in the new copy (Sapir); «יותר בריא, יותר מקומי» and the supermarket line kept from the old copy (Sapir 28/11; «לקנות» → «לאכול» in p1). |
 | **MEH** | MEH-3988 (previous: MEH-757) |
 
 ### /about — Sub copy paragraph 1
@@ -238,7 +238,7 @@
 | **Heading** | `למה מהמקור` (NEW — `about.consumer.benefits.heading`) |
 | **Pillar 1** | `קרוב אלייך` · body `בתי עסק מהאזור שלך, עם שרשרת קצרה ככל האפשר. פחות דרך, יותר טריות.` |
 | **Pillar 2** | `אפשר לסמוך` · body `כל בית עסק נבדק אישית לפני שהוא עולה לאתר. אנחנו שואלות, מבררות, ולפעמים גם מבקרות — לפני שאומרות כן.` |
-| **Pillar 3** | `בחירה שתומכת` · body `כל בחירה שלך הולכת ישירות לבתי העסק — לא לרשת גדולה, אלא לאדם מהסביבה.` (MEH-3988: «קנייה» → «בחירה», less commerce register; was `קנייה שתומכת`) |
+| **Pillar 3** | `בחירה שתומכת` · body `כל בחירה הולכת ישירות לבתי העסק — לא לרשת גדולה, אלא לאדם מהסביבה.` (MEH-3988: «קנייה» → «בחירה», less commerce register; was `קנייה שתומכת`) |
 | **Previous** | titles `אוכל אמיתי קרוב אלייך` / `לסמוך על מה שאת אוכלת` / `לעזור לעסקים הקטנים`; trust body said `רק בתי עסק מאומתים. אנחנו בודקות כל אחת...` |
 | **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Section 3) |
 | **Status** | ✅ (MEH-750 — swallows MEH-746) |
@@ -248,7 +248,7 @@
 ### /about — About the logo (MEH-3988)
 | Field | Value |
 |---|---|
-| **Current** | `eyebrow` `הסיפור מאחורי הסמל` · `heading` `על הלוגו` · `body1` `חמישה גרגירי רימון, כל אחד בצבע משלו, שנוגעים זה בזה ויוצרים פרח אחד. הרימון הוא אחד משבעת המינים, פרי של הארץ הזאת. כל גרגיר עומד בפני עצמו, ויחד הם שלם.` · `body2` `ככה גם בתי העסק שכאן: לכל אחד הסיפור שלו.` · `closing` `וכל פעם שאת בוחרת באחד מהם, את עוזרת לפרח הזה לגדול.` · `image_alt` `הלוגו של מהמקור: חמישה גרגירי רימון` · `wordmark` `מהמקור` |
+| **Current** | `eyebrow` `הסיפור מאחורי הסמל` · `heading` `על הלוגו` · `body1` `חמישה גרגירי רימון, כל אחד בצבע משלו, שנוגעים זה בזה ויוצרים פרח אחד. הרימון הוא אחד משבעת המינים, פרי של הארץ הזאת. כל גרגיר עומד בפני עצמו, ויחד הם שלם.` · `body2` `ככה גם בתי העסק שכאן: לכל אחד הסיפור שלו.` · `closing` `וכל בחירה באחד מהם עוזרת לפרח הזה לגדול.` · `image_alt` `הלוגו של מהמקור: חמישה גרגירי רימון` · wordmark reuses `about.comparison.col_brand` (messages-hygiene) |
 | **i18n keys** | `about.consumer.logo.*` (he + en) |
 | **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (`data-testid="about-logo"`, after Benefits) |
 | **Status** | ✅ (MEH-3988) |
@@ -258,7 +258,7 @@
 | Field | Value |
 |---|---|
 | **values.intro** | prepended `מאחורי כל מוצר יש אדם, משפחה, עסק קטן וסיפור. ` — rest unchanged. Taken almost verbatim from Soul to Table at Sapir's explicit request (one sentence). |
-| **contact.subtitle** | `מכירה בית עסק שאת אוהבת? יש לך שאלה או רעיון? נשמח לשמוע.` (was `שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם`). Instead of a WhatsApp button, which MEH-2832 (one contact form) rules out. |
+| **contact.subtitle** | `מכירים בית עסק שאתם אוהבים? יש לכם שאלה או רעיון? נשמח לשמוע.` (was `שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם`). Instead of a WhatsApp button, which MEH-2832 (one contact form) rules out. |
 | **values.quality.body** | `חומרי גלם שאפשר לזהות…` (was `חומרי גלם אמיתיים שאפשר לזהות…`; Sapir 28/11, no «אמיתי» on /about) |
 | **Status** | ✅ (MEH-3988) |
 

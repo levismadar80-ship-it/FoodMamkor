@@ -513,7 +513,7 @@ export default function AboutPage() {
               className="w-[140px] h-[140px] md:w-[220px] md:h-[220px]"
             />
             <figcaption className="font-headline-display font-black text-primary text-3xl md:text-4xl leading-none">
-              {t("logo.wordmark")}
+              {tCompare("col_brand")}
             </figcaption>
           </figure>
           <div className="md:flex-[1.3] min-w-0">
