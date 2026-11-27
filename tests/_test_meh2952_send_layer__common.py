@@ -163,6 +163,14 @@ def _loud(caplog):
     ]
 
 
+def _identity_match():
+    import uuid
+
+    from app.services.business_identity import IdentityMatch
+
+    return IdentityMatch(uuid.uuid4(), "y", "draft", None, ["phone"])
+
+
 def _notifier_calls():
     from app.services import auth_notifications as an
     from app.services import draft_merge_emails as dm
@@ -211,6 +219,12 @@ def _notifier_calls():
         (
             "draft_twin",
             lambda tc: dm.notify_admin_draft_twin("x", "y", ["phone"], test_cause=tc),
+        ),
+        (
+            "identity_matches",
+            lambda tc: dm.notify_admin_identity_matches(
+                "x", [_identity_match()], "signup", test_cause=tc
+            ),
         ),
         (
             "draft_merged",
@@ -791,6 +805,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "same",
     ),
+    # MEH-3884: a new business looks like one we already have — one admin email.
+    ("services/draft_merge_emails.py", "notify_admin_identity_matches", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
     ("services/draft_merge_emails.py", "send_owner_draft_merged", "send_email"): (
         1,
         BUS,
@@ -1026,6 +1046,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_email",
     ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
     (
+        "services/rescue_business_emails.py",
+        "send_business_refund_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3895)"),
+    (
         "services/group_buy_goal_flap.py",
         "send_below_goal_emails",
         "send_email",
@@ -1110,6 +1135,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         CON,
         "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    # MEH-3904: a course's later meetings changed — same caller as «moved».
+    ("services/registration_emails.py", "send_registrant_course_changed", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← is_test_item(item) via notify_item_moved",
     ),
     ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
         1,

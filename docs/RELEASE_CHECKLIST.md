@@ -58,7 +58,7 @@
 
 **סיכון שנותר — לא נבדק בשום כלי** (נכתב ב-PR הגרסה כ«לא נבדק», ולא חוסם):
 
-- מקלדת iOS אמיתית והסרגל התחתון (MEH-2652). הלוגיקה מכוסה ב-`IosViewportPin.test.jsx`; המקלדת עצמה לא קיימת בשום סימולציה בלי Xcode
+- מקלדת iOS אמיתית והסרגל התחתון (MEH-2652). הלוגיקה מכוסה ב-`IosViewportPin.test.jsx`; המקלדת עצמה לא קיימת בשום סימולציה בלי Xcode. ראיה ממכשיר אמיתי: אירוע `ios_viewport_drift` ב-PostHog (MEH-3889)
 - «מרגיש חלק» באנימציה ובגלילה במכשיר אמיתי. המדד האוטומטי: Lighthouse ב-«Post-deploy checks»
 - חלון השיתוף של iOS/Android עצמו. הקריאה ל-`navigator.share` מכוסה ב-`share.spec.ts`
 - התחברות Apple: קוד ה-2FA נשלח למכשיר Apple. רלוונטי רק אם `NEXT_PUBLIC_APPLE_CLIENT_ID` מוגדר (ה-thread בודק ב-Vercel connector)

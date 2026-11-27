@@ -65,6 +65,7 @@ NOT_FOR_CHAT: dict[str, str] = {
     "product_orders": _DASHBOARD,
     "gallery_story": _DASHBOARD,
     "page_fill": _DASHBOARD,
+    "owner_assistant": _DASHBOARD,
     "product_details": _DASHBOARD,
     "top_product": _DASHBOARD,
     "map_precision": _DASHBOARD,

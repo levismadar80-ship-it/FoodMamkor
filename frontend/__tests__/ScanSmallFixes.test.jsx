@@ -45,9 +45,8 @@ describe("FilterSheet — scrolling the sheet does not move the page", () => {
 
 describe("class fixes (source)", () => {
   const card = src("components/ProducerCard.jsx");
-  it("the no-photo name plate's top padding clears the heart (34px at 8px → 42; 44px at 12px → 56)", () => {
-    expect(card).toMatch(/bg-background-alt p-4 pt-12 pb-12 sm:p-5 sm:pt-16 sm:pb-14/);
-  });
+  // The name-plate padding check moved to ProducerCard.test.jsx as a render
+  // test (MEH-3894, MEH-3531: a broken source-text test is replaced).
   it("the heart has a border + small shadow; size and position unchanged", () => {
     expect(card).toMatch(/absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-\[34px\] h-\[34px\] sm:w-11 sm:h-11 bg-background\/90 hover:bg-background border border-border shadow-sm rounded-full/);
   });

@@ -278,6 +278,7 @@ export const AdminUpdateBusinessEventAdminEventsEventIdPutResponse = /*#__PURE__
 /**
  * @summary Admin List Experiences
  */
+export const adminListExperiencesAdminExperiencesGetResponseCourseMeetingsDefault = [];
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
 export const adminListExperiencesAdminExperiencesGetResponseIsRecurringDefault = false;
 export const adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault = 0;
@@ -290,6 +291,10 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminListExperiencesAdminExperiencesGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -315,6 +320,7 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -340,6 +346,7 @@ export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod
 /**
  * @summary Admin Update Business Experience
  */
+export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseCourseMeetingsDefault = [];
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
@@ -352,6 +359,10 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -377,6 +388,7 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateBusinessExperienceAdminExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -401,6 +413,7 @@ export const AdminUpdateBusinessExperienceAdminExperiencesExperienceIdPutRespons
 /**
  * @summary Approve Experience
  */
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseCourseMeetingsDefault = [];
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsActiveDefault = true;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsRecurringDefault = false;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault = 0;
@@ -413,6 +426,10 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), approveExperienceAdminExperiencesExperienceIdApprovePostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -438,6 +455,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -462,6 +480,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
 /**
  * @summary Reject Experience
  */
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseCourseMeetingsDefault = [];
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsActiveDefault = true;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsRecurringDefault = false;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault = 0;
@@ -474,6 +493,10 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -499,6 +522,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -523,6 +547,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
 /**
  * @summary Request Changes
  */
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseCourseMeetingsDefault = [];
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsActiveDefault = true;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsRecurringDefault = false;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault = 0;
@@ -535,6 +560,10 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -560,6 +589,7 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1048,6 +1078,7 @@ export const listProducersAdminProducersGetResponseAmbassadorDefault = false;
 export const listProducersAdminProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const listProducersAdminProducersGetResponseAvgRatingDefault = 0;
 export const listProducersAdminProducersGetResponseBusinessDaysWaitingDefault = 0;
+export const listProducersAdminProducersGetResponseByArrangementDefault = false;
 export const listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersAdminProducersGetResponseCategoriesDefault = [];
 export const listProducersAdminProducersGetResponseCoverageCtaEnabledDefault = true;
@@ -1136,6 +1167,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersAdminProducersGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1383,6 +1415,7 @@ export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = fa
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminCreateProducerAdminProducersPostResponseAvgRatingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault = 0;
+export const adminCreateProducerAdminProducersPostResponseByArrangementDefault = false;
 export const adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const adminCreateProducerAdminProducersPostResponseCategoriesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseCoverageCtaEnabledDefault = true;
@@ -1471,6 +1504,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminCreateProducerAdminProducersPostResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -1715,6 +1749,7 @@ export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault =
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const pendingProducersAdminProducersPendingGetResponseAvgRatingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault = 0;
+export const pendingProducersAdminProducersPendingGetResponseByArrangementDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseCoverageCtaEnabledDefault = true;
@@ -1803,6 +1838,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), pendingProducersAdminProducersPendingGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -2120,6 +2156,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefaul
 export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseByArrangementDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
@@ -2208,6 +2245,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -2452,6 +2490,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDef
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault = `accepting_orders`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault = 0;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseByArrangementDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCoverageCtaEnabledDefault = true;
@@ -2540,6 +2579,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -2876,8 +2916,81 @@ export const AdminCreateBusinessEventAdminProducersProducerIdEventsPostResponse 
 
 
 /**
+ * MEH-3876: every experience hosted by an account of the business, in
+ * every status (pending, approved, rejected, cancelled), newest first — the
+ * list the owner sees (experiences.py list_my_experiences), widened from one
+ * host to the business's accounts. A business with no account has none.
+ * @summary Admin List Business Experiences
+ */
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseCourseMeetingsDefault = [];
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseIsActiveDefault = true;
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseIsRecurringDefault = false;
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseParticipantsCountDefault = 0;
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseRegisteredCountDefault = 0;
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseRegistrationMethodDefault = `site_form`;
+export const adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseSessionsDefault = [];
+
+export const AdminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseCourseMeetingsDefault),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "description": /*#__PURE__*/ zod.string(),
+  "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "host": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseIsActiveDefault),
+  "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseIsRecurringDefault),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_type": /*#__PURE__*/ zod.string(),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseParticipantsCountDefault),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), adminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseSessionsDefault),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
+export const AdminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponse = /*#__PURE__*/ zod.array(AdminListBusinessExperiencesAdminProducersProducerIdExperiencesGetResponseItem)
+
+
+/**
  * @summary Admin Create Business Experience
  */
+export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseCourseMeetingsDefault = [];
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsActiveDefault = true;
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseIsRecurringDefault = false;
 export const adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault = 0;
@@ -2890,6 +3003,10 @@ export const AdminCreateBusinessExperienceAdminProducersProducerIdExperiencesPos
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -2915,6 +3032,7 @@ export const AdminCreateBusinessExperienceAdminProducersProducerIdExperiencesPos
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateBusinessExperienceAdminProducersProducerIdExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3175,9 +3293,10 @@ export const AdminReadPageTextAdminProducersProducerIdPageFillReadPostResponse =
 
 
 /**
- * Mint a 14-day read-only link to the draft's full page. Stateless: no
- * write, and a new link does not cancel an earlier one. Every link dies
- * when the draft is published, claimed or deleted (the read checks the row).
+ * Mint a 14-day read-only link to the draft's full page. MEH-3896: a
+ * short /v/<code> link backed by a share_links row (the only write here); a
+ * new link does not cancel an earlier one. Every link dies when the draft
+ * is published, claimed or deleted (the read checks the row).
  * @summary Create Preview Link
  */
 export const CreatePreviewLinkAdminProducersProducerIdPreviewLinkPostResponse = /*#__PURE__*/ zod.object({
@@ -4564,6 +4683,44 @@ export const ChatChatPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * Answer the owner inside her dashboard, or hand back a page draft.
+ * @summary Owner Chat
+ */
+export const ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax = 20;
+
+export const ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax = 300;
+
+export const ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault = `unit`;
+
+export const OwnerChatChatOwnerPostResponse = /*#__PURE__*/ zod.object({
+  "action": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['add_products', 'upload_photos', 'send_for_review']),/*#__PURE__*/ zod.null()])),
+  "draft": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "category_ids": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.int()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneCategoryIdsMax))),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_cities": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(ownerChatChatOwnerPostResponseDraftOneDeliveryCitiesMax))),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Every field is optional: what the text does not say stays None.')),/*#__PURE__*/ zod.null()])),
+  "products": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']), ownerChatChatOwnerPostResponseProductsOneItemPriceUnitDefault),
+  "section": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "uncertain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.enum(['name', 'description', 'price', 'unit'])))
+}).check(/*#__PURE__*/ zod.describe('One product as read from the menu. Nothing is saved yet.'))),/*#__PURE__*/ zod.null()])),
+  "reply": /*#__PURE__*/ zod.string(),
+  "unanswered": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
  * Autocomplete: cities table (canonical) ∪ live business cities,
  * with the static list as the unseeded-env fallback (MEH-1349).
  *
@@ -4891,6 +5048,7 @@ export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE_
  * experiences drop out of the public feed automatically.
  * @summary List Experiences
  */
+export const listExperiencesExperiencesGetResponseCourseMeetingsDefault = [];
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
 export const listExperiencesExperiencesGetResponseParticipantsCountDefault = 0;
 export const listExperiencesExperiencesGetResponseRegisteredCountDefault = 0;
@@ -4900,6 +5058,10 @@ export const listExperiencesExperiencesGetResponseSessionsDefault = [];
 export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), listExperiencesExperiencesGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -4919,6 +5081,7 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4942,6 +5105,7 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 /**
  * @summary Submit Experience
  */
+export const submitExperienceExperiencesPostResponseCourseMeetingsDefault = [];
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
 export const submitExperienceExperiencesPostResponseIsRecurringDefault = false;
 export const submitExperienceExperiencesPostResponseParticipantsCountDefault = 0;
@@ -4954,6 +5118,10 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), submitExperienceExperiencesPostResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -4979,6 +5147,7 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5022,6 +5191,7 @@ export const CountExperiencesExperiencesCountGetResponse = /*#__PURE__*/ zod.obj
 /**
  * @summary List My Experiences
  */
+export const listMyExperiencesExperiencesMineGetResponseCourseMeetingsDefault = [];
 export const listMyExperiencesExperiencesMineGetResponseIsActiveDefault = true;
 export const listMyExperiencesExperiencesMineGetResponseIsRecurringDefault = false;
 export const listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault = 0;
@@ -5034,6 +5204,10 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), listMyExperiencesExperiencesMineGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5059,6 +5233,7 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5103,6 +5278,7 @@ export const DeleteExperienceExperiencesExperienceIdDeleteResponse = /*#__PURE__
 /**
  * @summary Get Experience
  */
+export const getExperienceExperiencesExperienceIdGetResponseCourseMeetingsDefault = [];
 export const getExperienceExperiencesExperienceIdGetResponseIsActiveDefault = true;
 export const getExperienceExperiencesExperienceIdGetResponseIsRecurringDefault = false;
 export const getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault = 0;
@@ -5115,6 +5291,10 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), getExperienceExperiencesExperienceIdGetResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5140,6 +5320,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5164,6 +5345,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
 /**
  * @summary Update Experience
  */
+export const updateExperienceExperiencesExperienceIdPutResponseCourseMeetingsDefault = [];
 export const updateExperienceExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const updateExperienceExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
@@ -5176,6 +5358,10 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "admin_feedback": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), updateExperienceExperiencesExperienceIdPutResponseCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5201,6 +5387,7 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5697,6 +5884,16 @@ export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.ob
 
 
 /**
+ * @summary Producer Identity Check
+ */
+export const ProducerIdentityCheckProducerIdentityCheckPostResponse = /*#__PURE__*/ zod.object({
+  "match": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "owner_email": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])
+}).check(/*#__PURE__*/ zod.describe('`owner_email` is masked (`o***@farmerim.com`); None = a page with no account.')),/*#__PURE__*/ zod.null()])
+})
+
+
+/**
  * Live businesses whose name equals `name` (exact, after `name_key`).
  *
  * Exact match only — DO NOT turn this into a prefix or substring match:
@@ -5725,6 +5922,7 @@ export const ProducerNameCheckProducerNameCheckGetResponse = /*#__PURE__*/ zod.o
 export const readDraftPreviewProducerPreviewTokenGetResponseAmbassadorDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const readDraftPreviewProducerPreviewTokenGetResponseAvgRatingDefault = 0;
+export const readDraftPreviewProducerPreviewTokenGetResponseByArrangementDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesItemIsSystemDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseCoverageCtaEnabledDefault = true;
@@ -5804,6 +6002,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), readDraftPreviewProducerPreviewTokenGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -5991,6 +6190,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
 export const listProducersProducersGetResponseAmbassadorDefault = false;
 export const listProducersProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const listProducersProducersGetResponseAvgRatingDefault = 0;
+export const listProducersProducersGetResponseByArrangementDefault = false;
 export const listProducersProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersProducersGetResponseCategoriesDefault = [];
 export const listProducersProducersGetResponseDeliversDefault = false;
@@ -6055,6 +6255,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersProducersGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6136,6 +6337,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), listProducersProducersGetResponseLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseOffersPickupDefault),
@@ -6199,6 +6401,7 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
 export const createProducerProducersPostResponseAmbassadorDefault = false;
 export const createProducerProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
 export const createProducerProducersPostResponseAvgRatingDefault = 0;
+export const createProducerProducersPostResponseByArrangementDefault = false;
 export const createProducerProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const createProducerProducersPostResponseCategoriesDefault = [];
 export const createProducerProducersPostResponseCoverageCtaEnabledDefault = true;
@@ -6278,6 +6481,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), createProducerProducersPostResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6465,6 +6669,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 export const getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault = 0;
+export const getProducerBySlugProducersBySlugSlugGetResponseByArrangementDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseCoverageCtaEnabledDefault = true;
@@ -6544,6 +6749,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -6743,6 +6949,7 @@ export const ProducersCountProducersCountGetResponse = /*#__PURE__*/ zod.unknown
 export const getMyProducerProducersMeGetResponseAmbassadorDefault = false;
 export const getMyProducerProducersMeGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getMyProducerProducersMeGetResponseAvgRatingDefault = 0;
+export const getMyProducerProducersMeGetResponseByArrangementDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesDefault = [];
 export const getMyProducerProducersMeGetResponseCoverageCtaEnabledDefault = true;
@@ -6829,6 +7036,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getMyProducerProducersMeGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -7038,6 +7246,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
 export const updateMyProducerProducersMePutResponseAmbassadorDefault = false;
 export const updateMyProducerProducersMePutResponseAvailabilityStateDefault = `accepting_orders`;
 export const updateMyProducerProducersMePutResponseAvgRatingDefault = 0;
+export const updateMyProducerProducersMePutResponseByArrangementDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesDefault = [];
 export const updateMyProducerProducersMePutResponseCoverageCtaEnabledDefault = true;
@@ -7124,6 +7333,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), updateMyProducerProducersMePutResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -8979,6 +9189,8 @@ export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__P
  * No buyer identity is returned; see RescueOwnerOrderOut for why.
  * @summary List My Orders
  */
+export const listMyOrdersProducersMeRescueOrdersGetResponsePrepayDefault = false;
+
 export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8986,9 +9198,11 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ 
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string(),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "prepay": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyOrdersProducersMeRescueOrdersGetResponsePrepayDefault),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
 }).check(/*#__PURE__*/ zod.describe('One of today\'s reservations, as the business\'s own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer\'s `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer\'s name, email or phone: handing over a bag\nneeds four digits, and a list of today\'s customers on a dashboard screen\nis more personal data than the job requires.'))
@@ -9235,6 +9449,7 @@ export const RandomProducerProducersRandomGetResponse = /*#__PURE__*/ zod.object
 export const getProducerProducersProducerIdGetResponseAmbassadorDefault = false;
 export const getProducerProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
 export const getProducerProducersProducerIdGetResponseAvgRatingDefault = 0;
+export const getProducerProducersProducerIdGetResponseByArrangementDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesDefault = [];
 export const getProducerProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
@@ -9314,6 +9529,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerProducersProducerIdGetResponseAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -10158,6 +10374,8 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
   "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "prepay_link": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prepay_timing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['advance', 'deposit']),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -10175,7 +10393,8 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
  * The business pulls the whole bag offer. Every open reservation on it is
  * cancelled with it; a bag already handed over stays handed.
  *
- * No refund, because nothing was paid. MEH-2738: each buyer whose
+ * MEH-3897: a reservation the business marked paid gets the owners' refund
+ * email too (the money went to its own link). MEH-2738: each buyer whose
  * reservation went with it gets one email after the commit (fail-open), and
  * their page says the business cancelled (`list_my_reservations`). A window
  * that already closed is refused: by then every bag is collected or a
@@ -10218,6 +10437,7 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(createOrderRescueOrdersPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(createOrderRescueOrdersPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(createOrderRescueOrdersPostResponsePickupCodeRegExp)),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10282,6 +10502,7 @@ export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ z
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp)),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -10312,6 +10533,7 @@ export const CancelOrderRescueOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zo
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
@@ -10340,6 +10562,7 @@ export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
@@ -10366,7 +10589,34 @@ export const MarkNoShowRescueOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * MEH-3897: the business marks the prepay received (its own Bit / PayBox,
+ * MEH-3895), or undoes a mistaken mark with `paid: false`.
+ * @summary Mark Paid
+ */
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMin = 4;
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMax = 4;
+
+
+export const markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkPaidRescueOrdersOrderIdPaidPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markPaidRescueOrdersOrderIdPaidPostResponsePickupCodeRegExp)),
   "qty": /*#__PURE__*/ zod.int(),
   "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
   "user_id": /*#__PURE__*/ zod.uuid()
@@ -10648,6 +10898,7 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
 export const getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault = `accepting_orders`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault = 0;
+export const getFavoritesUsersMeFavoritesGetResponseProducerByArrangementDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliversDefault = false;
@@ -10714,6 +10965,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "availability_confirmed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault),
+  "by_arrangement": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerByArrangementDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.int(),
@@ -10795,6 +11047,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getFavoritesUsersMeFavoritesGetResponseProducerLocationsDefault),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerOffersPickupDefault),
@@ -10991,6 +11244,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
 export const getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault = 0;
 export const getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault = `site_form`;
+export const getSavedUsersMeSavedGetResponseExperiencesItemCourseMeetingsDefault = [];
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
 export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
@@ -11031,6 +11285,10 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "experiences": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "course_meetings": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "time": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3898: one meeting of a course, as the page shows it.'))), getSavedUsersMeSavedGetResponseExperiencesItemCourseMeetingsDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "description": /*#__PURE__*/ zod.string(),
   "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -11051,6 +11309,7 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

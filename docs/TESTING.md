@@ -68,8 +68,14 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 - threw an uncaught error (`pageerror`) or logged a `console.error` that is not
   in `CONSOLE_ALLOW` (each entry carries a reason and a card);
 - logged a React hydration mismatch (never allowlistable);
+- logged a `ChunkLoadError`, unless that same chunk's request failed with no
+  response or mid-way through a 2xx body: WebKit cancels the chunks of a page
+  the test leaves while it loads (MEH-3907). A chunk that got a 404 still fails;
 - shifted its layout by more than CLS 0.1 (web-vitals session window, shifts
   right after a click or key press excluded; same limit as `lighthouserc.cjs`).
+  The failure names each shifted element with its old and new box
+  (`y h w → y h w`) plus the viewport and scroll offset (MEH-3893), so the CI
+  log alone tells a late block above it from the element resizing.
 
 CLS runs on Chromium only: WebKit has no `layout-shift` entries. On Chromium a
 page whose observer never reported fails the test, so a dead probe cannot read
@@ -78,11 +84,12 @@ green. A spec that provokes errors on purpose opts out with
 layout itself (enlarges text, taps with `dispatchEvent`, which is not counted
 as input) uses `"errors"`, which keeps the error checks and drops CLS.
 A spec that measures timing itself under a CPU throttle (`flows/manual/nav-throttled.spec.ts`)
-is `"off"` too: the guard's probe changes the frames it counts (MEH-3809).
+is `"off"` too: the guard's probe adds work to every frame it counts (MEH-3809).
 
 Pages that already shift are in `KNOWN_CLS`, one card each, with a ceiling of
 1.5 × the largest value measured. A listed page passes under its ceiling and
-fails above it; every other page fails at 0.1. The list only shrinks: a fix
+fails above it; every other page fails at 0.1. A row can also take a `query`
+pattern, so it covers one state of a page (home with `?city=`) and not every load. The list only shrinks: a fix
 removes its row, and a new shift gets a fix, not a row. The guard's own
 self-test is `flows/00-load-guard-selftest.spec.ts`.
 
@@ -94,11 +101,14 @@ wrong around it is never seen. This spec throttles Chromium (CDP: 400 ms RTT,
 /group-buys (one test each, mobile project only): scrolls to the last card,
 opens it, and checks in every animation frame that the footer is never in view
 under the loader; then Back must return to the same offset (±100 px, including
-a list too short to scroll, which must come back to the top). Control, per
-list: where the loader appears (home, /producers, /events) it must paint, or
-the throttle did not take effect; where it never appeared when measured
-(/experiences, /group-buys), 0 loader frames is asserted, so a change there
-turns the row red.
+a list too short to scroll, which must come back to the top). The click
+waits until Next has prefetched the card's detail route: the loader can paint
+only if that prefetch finished first, so without the wait it was a race (on
+/experiences 0 frames on a click made at once, 21–26 on one made 8 s later,
+MEH-3877). Control, per list: where the loader appears (home, /producers,
+/events, /experiences) it must paint, or the throttle did not take effect;
+where it never appeared when measured (/group-buys), 0 loader frames is
+asserted, so a change there turns the row red.
 
 ### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
 

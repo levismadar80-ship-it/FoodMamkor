@@ -228,7 +228,7 @@ describe("MEH-2461 organizer page", () => {
     expect(captureMessage).not.toHaveBeenCalled();
   });
 
-  it("MEH-2468/2546: a row shows the event's own photo, else a category tile — never the organizer's photo", async () => {
+  it("MEH-2468/3892: a row shows the event's own photo, else the organizer's photo (cover only when it is the only one)", async () => {
     respond(200, {
       ...ORG,
       images: ["https://res.cloudinary.com/x/image/upload/org.jpg"],
@@ -239,8 +239,27 @@ describe("MEH-2461 organizer page", () => {
     });
     await renderPage();
     const thumbs = screen.getAllByTestId("event-row-image");
-    expect(thumbs.map((el) => el.getAttribute("data-kind"))).toEqual(["event", "category"]);
+    expect(thumbs.map((el) => el.getAttribute("data-kind"))).toEqual(["event", "owner"]);
     expect(thumbs[0].style.backgroundImage).toContain("a.jpg");
+    expect(thumbs[1].style.backgroundImage).toContain("org.jpg");
+    expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
+  });
+
+  it("MEH-3892: with several photos, photo-less rows skip the cover and take the others in turn", async () => {
+    respond(200, {
+      ...ORG,
+      images: ["https://res.cloudinary.com/x/image/upload/cover.jpg", "https://res.cloudinary.com/x/image/upload/p2.jpg"],
+      upcoming_events: [ev("e1", "2026-11-01"), ev("e2", "2026-11-08")],
+    });
+    await renderPage();
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs.map((el) => el.style.backgroundImage.includes("p2.jpg"))).toEqual([true, true]);
+  });
+
+  it("MEH-3892: an organizer with no photos keeps the category tile", async () => {
+    respond(200, { ...ORG, images: [], upcoming_events: [ev("e1", "2026-11-01")] });
+    await renderPage();
+    expect(screen.getByTestId("event-row-image")).toHaveAttribute("data-kind", "category");
   });
 
   it("MEH-2547: masthead — the first photo as a cover, the initial in a round avatar", async () => {

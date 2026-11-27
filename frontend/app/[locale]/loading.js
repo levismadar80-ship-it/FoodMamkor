@@ -33,8 +33,10 @@ export default function Loading() {
   // page (Lighthouse, Moto G profile, 06/11). With the footer starting below
   // the fold the swap moves nothing the visitor can see. The mark itself stays
   // where it was (top 40vh band).
+  // MEH-3878: `data-route-loader` hides the footer while this is on screen
+  // (app/globals.css), for the scrolled case the min-height cannot cover.
   return (
-    <div className="min-h-screen" data-testid="route-loading">
+    <div className="min-h-screen" data-testid="route-loading" data-route-loader="">
       <BrandLoader label={t("loading")} className="max-w-7xl mx-auto px-4 py-8" />
     </div>
   );

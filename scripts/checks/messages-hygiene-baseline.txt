@@ -132,14 +132,12 @@ duplicate	2	חזרה לדף הראשי
 duplicate	2	חזרה להתחברות
 duplicate	2	חזרה ללוח הבקרה
 duplicate	2	חיוב
-duplicate	2	חייב לסמן לפחות אחד מהשניים
 duplicate	2	חיפוש בגוגל
 duplicate	2	חיפוש בתי עסק
 duplicate	2	חלב וגבינות
 duplicate	2	חנוכה
 duplicate	2	חנות או טופס הזמנות
 duplicate	2	חנות או טופס הזמנות באתר שלכם (קישור)
-duplicate	2	חנות פיזית (קבלת לקוחות)
 duplicate	2	חפשי בגוגל
 duplicate	2	חשבון
 duplicate	2	טוענים…

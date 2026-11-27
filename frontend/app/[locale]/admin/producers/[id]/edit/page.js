@@ -14,7 +14,9 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
-import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPanel";
+import AdminDeliveryPaymentPanel, {
+  useUnsavedSections,
+} from "@/components/admin/AdminDeliveryPaymentPanel";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
@@ -30,6 +32,7 @@ import BackLink from "@/components/ui/BackLink";
 import AdminVerifiedPanel from "@/components/admin/AdminVerifiedPanel"; // MEH-3524
 import AdminAlcoholPanel from "@/components/admin/AdminAlcoholPanel"; // MEH-3524
 import AdminBusinessEventsPanel from "@/components/admin/AdminBusinessEventsPanel"; // MEH-3873
+import AdminBusinessExperiencesPanel from "@/components/admin/AdminBusinessExperiencesPanel"; // MEH-3876
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -56,6 +59,10 @@ export default function EditProducerPage() {
   const [groupsVersion, setGroupsVersion] = useState(0);
   const t = useTranslations("admin");
   const locale = useLocale();
+  // MEH-3915: which sections with their own «שמירה» hold unsaved edits. The
+  // form's «שמרו שינויים» saves only its own fields and then leaves the page,
+  // which threw away a delivery fee typed into «משלוחים ואיסוף» unseen.
+  const { reportDirty, unsavedSections } = useUnsavedSections();
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) router.push("/login");
@@ -257,19 +264,31 @@ export default function EditProducerPage() {
       )}
       {/* MEH-3483: the owner's «ספרו לנו על העסק», saved through the admin PUT;
           a save reloads the business and remounts the forms below. */}
+      {/* MEH-3915: `blocked` — its save remounts the panels below, which would
+          drop their unsaved edits. */}
       <PageFillPanel profile={producer} owner={false} readUrl={`/admin/producers/${id}/page-fill/read`}
+        blocked={unsavedSections.length > 0}
         saveUrl={`/admin/producers/${id}`}
         onSaved={() => api.get(`/admin/producers/${id}`).then((r) => { setProducer(r.data); setFillKey((k) => k + 1); })} />
-      <ProducerForm key={`form-${fillKey}`} initial={producer} producerId={id} />
+      <ProducerForm
+        key={`form-${fillKey}`}
+        initial={producer}
+        producerId={id}
+        unsavedSections={unsavedSections}
+        reportDirty={reportDirty}
+      />
       {/* MEH-3475: delivery day + minimum per city, order window, payment —
           the owner's own editors, saved through the admin PUT. */}
       <AdminDeliveryPaymentPanel
         key={`delivery-${fillKey}`}
         producerId={String(id)}
         producer={producer}
+        reportDirty={reportDirty}
       />
       {/* MEH-3873: the business's events, written on its behalf with consent. */}
       <AdminBusinessEventsPanel producerId={String(id)} />
+      {/* MEH-3876: its experiences, same shape; needs an owner account (the host). */}
+      <AdminBusinessExperiencesPanel producerId={String(id)} hasOwner={producer.has_owner} />
     </div>
   );
 }

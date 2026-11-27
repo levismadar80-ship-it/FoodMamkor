@@ -38,7 +38,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
@@ -57,15 +57,17 @@ from app.schemas.registration import (
 from app.schemas.schemas import KashrutCertRef, ProducerDetailOut
 from app.services import indexnow
 from app.services.draft_preview import (
-    create_draft_preview_token,
+    DRAFT_PREVIEW_TTL_DAYS,
     decode_draft_preview_token,
 )
 from app.services.producer_approval import (
     ApprovalOverrides,
     _apply_approval_state,
+    assert_slug_decided,
     _assert_approvable,
     _persist_approval,
 )
+from app.services.share_links import link_producer_id, mint_share_code
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_count,
@@ -110,26 +112,40 @@ def create_preview_link(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> DraftPreviewLinkOut:
-    """Mint a 14-day read-only link to the draft's full page. Stateless: no
-    write, and a new link does not cancel an earlier one. Every link dies
-    when the draft is published, claimed or deleted (the read checks the row).
+    """Mint a 14-day read-only link to the draft's full page. MEH-3896: a
+    short /v/<code> link backed by a share_links row (the only write here); a
+    new link does not cancel an earlier one. Every link dies when the draft
+    is published, claimed or deleted (the read checks the row).
     """
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    # MEH-3896: FOR UPDATE now that this route writes — a delete committing
+    # between the check and our commit would otherwise fail the share_links
+    # FK as a 500. Same one-row lock as create_claim_link.
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     if not _ownerless_draft(db, producer):
         raise HTTPException(status_code=409, detail=_NOT_OWNERLESS_DRAFT)
-    token, expires_at = create_draft_preview_token(producer.id)  # type: ignore[arg-type]
-    # Ids only — never the token (the log stream is not a place for a link
+    code, expires_at = mint_share_code(
+        db,
+        producer_id=producer.id,  # type: ignore[arg-type]
+        scope="draft_preview",
+        ttl_days=DRAFT_PREVIEW_TTL_DAYS,
+        created_by=user.id,  # type: ignore[arg-type]
+    )
+    admin_id = str(user.id)  # read before the commit expires `user`
+    db.commit()
+    # Ids only — never the code (the log stream is not a place for a link
     # that shows an unpublished page).
     logger.info(
         "draft_preview.link_created",
         producer_id=str(producer_id),
-        admin_id=str(user.id),
+        admin_id=admin_id,
         expires_at=expires_at.isoformat(),
     )
     return DraftPreviewLinkOut(
-        url=f"{settings.frontend_url}/draft-preview/{token}", expires_at=expires_at
+        url=f"{settings.frontend_url}/v/{code}", expires_at=expires_at
     )
 
 
@@ -148,7 +164,12 @@ def read_draft_preview(
     """
     # 2048 mirrors ProducerClaimRequest.token: far above a real token, and it
     # stops a huge path segment from reaching the decoder.
-    producer_id = decode_draft_preview_token(token) if len(token) <= 2048 else None
+    # MEH-3896: a short code or, for a link sent before it, the old JWT.
+    producer_id = (
+        link_producer_id(db, token, "draft_preview", decode_draft_preview_token)
+        if len(token) <= 2048
+        else None
+    )
     producer = (
         db.query(Producer)
         .options(
@@ -192,6 +213,8 @@ def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parame
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
+    # MEH-3914: the English address the admin confirmed (assert_slug_decided).
+    slug: str | None = Query(default=None, max_length=60),
 ) -> dict[str, Any]:
     # FOR UPDATE: serialises with a claim committing on the same draft
     # (claim_producer locks this row), so "ownerless" is still true when we
@@ -219,6 +242,8 @@ def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parame
     # after the owner invite.
     overrides = ApprovalOverrides(unverified_phone=True)
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
+    # MEH-3914: after the content gates, so a missing photo is reported first.
+    overrides = overrides._replace(slug=assert_slug_decided(db, producer, slug))
     _apply_approval_state(producer)
     # The audit record, in the column the owner invite also writes: one
     # business, one statement of what its owner agreed to and where.

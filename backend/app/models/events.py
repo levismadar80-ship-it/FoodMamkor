@@ -150,6 +150,11 @@ class Experience(Base):
     # the 12-date cap are the API's (a column, not a table — see revision
     # f2c8a4d6e9b1 for why).
     sessions = Column(JSONB, nullable=True)
+    # MEH-3898: a course — the meetings of ONE sign-up, [{"date", "time"}],
+    # soonest first. NULL = not a course. event_date / event_time are the
+    # first meeting, so sign-ups close when it starts. Never together with
+    # is_recurring (the API refuses it, services/course_meetings.py).
+    course_meetings = Column(JSONB, nullable=True)
 
     # Location — producer_farm is explicitly NOT an option; that's what Event is for
     location_type = Column(String(20), default="home")  # home | public

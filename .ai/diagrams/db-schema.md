@@ -22,6 +22,7 @@ erDiagram
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
+    producers ||--o{ share_links : "short preview / claim links (MEH-3896)"
     producers ||--o| products : "features (top_product_id, ON DELETE SET NULL — MEH-2137)"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
@@ -76,7 +77,7 @@ erDiagram
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
-        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
+        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80, link = optional https prepay link (MEH-3895, shown only on advance/deposit)}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
         json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above, + MEH-3511 delivery_days_min/max, order_cutoff_day/time}] ≤20; nationwide may hold zones since MEH-3511"
         string plan "free|premium"
@@ -301,6 +302,16 @@ erDiagram
         string resend_email_id
         string detail "bounce type/subType; never server text"
         timestamp created_at "deleted after 30 days"
+    }
+
+    share_links {
+        uuid id PK
+        string code_hash UK "sha256 of the 12-char code, never the code (MEH-3896)"
+        string scope "draft_preview or producer_claim (CHECK)"
+        uuid producer_id FK "CASCADE"
+        timestamp expires_at "14 days; deleted 90 days after"
+        timestamp created_at
+        uuid created_by FK "nullable, SET NULL"
     }
 
     product_order_items {
@@ -567,6 +578,7 @@ erDiagram
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
         jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
+        jsonb course_meetings "MEH-3898 course meetings [{date,time}], one sign-up; NULL = not a course"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
@@ -617,6 +629,10 @@ erDiagram
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
+
+> **MEH-2447 `producers.by_arrangement` (migration `b8ee10dc69a9`):** bool, NOT
+> NULL, default false — the owner's «בתיאום מראש» answer. No CHECK: readers AND it
+> with `has_physical_location`.
 
 > **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
 > `__table_args__`):** `producers` carries two CHECK constraints — a producer
@@ -802,6 +818,7 @@ erDiagram
         timestamp handed_at
         uuid handed_by FK "SET NULL — keep the record, lose the account"
         timestamp cancelled_at
+        timestamp paid_at "MEH-3897 nullable — the business marked the prepay received"
         timestamp created_at
     }
 

@@ -413,7 +413,7 @@ def test_ticks_do_not_gate_approval(client, db):
     )
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+        f"/admin/producers/{producer.id}/approve?slug=test-farm", headers=auth_header(admin)
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)

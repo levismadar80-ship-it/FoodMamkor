@@ -77,6 +77,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
       // MEH-1644: the card saves structured delivery_areas rows now.
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         has_physical_location: true,
+        by_arrangement: false,
         offers_delivery: true,
         delivery_nationwide: true,
         delivery_areas: [],
@@ -112,7 +113,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
     // Seeded + not dirty → save disabled. Make a real change (add a physical
     // location) so the seeded exclusion list round-trips through the payload.
     expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox", { name: D.has_physical_location }));
+    fireEvent.click(screen.getByRole("checkbox", { name: D.place_onsite }));
     const saveBtn = screen.getByRole("button", { name: D.save_cta });
     expect(saveBtn).not.toBeDisabled();
 
@@ -121,6 +122,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
       // MEH-1644: the card saves structured delivery_areas rows now.
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         has_physical_location: true,
+        by_arrangement: false,
         offers_delivery: true,
         delivery_nationwide: true,
         delivery_areas: [],
@@ -211,6 +213,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         has_physical_location: true,
+        by_arrangement: false,
         offers_delivery: true,
         delivery_nationwide: false,
         delivery_areas: [
@@ -302,11 +305,33 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
     expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
   });
 
+  it("MEH-2447: «בתיאום מראש» unticks «בשעות קבועות» and saves by_arrangement", async () => {
+    renderCard(DeliveryCard, {
+      profile: { has_physical_location: true, offers_delivery: false, delivery_areas: [] },
+    });
+    const onsite = screen.getByRole("checkbox", { name: D.place_onsite });
+    const arranged = screen.getByRole("checkbox", { name: D.place_arranged });
+    expect(onsite).toBeChecked();
+    expect(arranged).not.toBeChecked();
+    fireEvent.click(arranged);
+    expect(arranged).toBeChecked();
+    expect(onsite).not.toBeChecked();
+    // Her own answer — the "how to earn a green tag" hint is not for her.
+    expect(screen.queryByTestId("delivery-map-preview-hint")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: D.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith(
+        "/producers/me",
+        expect.objectContaining({ has_physical_location: true, by_arrangement: true }),
+      ),
+    );
+  });
+
   it("clearing both physical + delivery blocks save with the type-validation hint", () => {
     renderCard(DeliveryCard, {
       profile: { has_physical_location: true, offers_delivery: false },
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: D.has_physical_location }));
+    fireEvent.click(screen.getByRole("checkbox", { name: D.place_onsite }));
     expect(screen.getByText(D.type_validation)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
   });
@@ -405,6 +430,7 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         has_physical_location: true,
+        by_arrangement: false,
         offers_delivery: true,
         delivery_nationwide: false,
         // min_order rides every row (cards.jsx:1745) — registration captures it

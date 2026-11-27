@@ -529,6 +529,21 @@
             "title": "City",
             "type": "string"
           },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
+          },
           "description": {
             "minLength": 20,
             "title": "Description",
@@ -764,6 +779,21 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
           },
           "description": {
             "anyOf": [
@@ -2439,6 +2469,20 @@
           "requires_license": {
             "title": "Requires License",
             "type": "boolean"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "minLength": 2,
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
           }
         },
         "required": [
@@ -2930,6 +2974,47 @@
           "message"
         ],
         "title": "ContactIn",
+        "type": "object"
+      },
+      "CourseMeetingIn": {
+        "description": "MEH-3898: one meeting of a course, as the owner's form sends it. The\nfuture, uniqueness and 2..20 are checked on save\n(services/course_meetings.normalise_meetings).",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "time": {
+            "format": "time",
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "CourseMeetingIn",
+        "type": "object"
+      },
+      "CourseMeetingOut": {
+        "description": "MEH-3898: one meeting of a course, as the page shows it.",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "CourseMeetingOut",
         "type": "object"
       },
       "DeliveryAreaCreate": {
@@ -4228,6 +4313,21 @@
             "title": "City",
             "type": "string"
           },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
+          },
           "description": {
             "minLength": 20,
             "title": "Description",
@@ -4470,6 +4570,14 @@
             ],
             "title": "City"
           },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -4623,6 +4731,17 @@
               }
             ],
             "title": "Moderation Suggestion"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,
@@ -4823,6 +4942,14 @@
             ],
             "title": "City"
           },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -4916,6 +5043,17 @@
               }
             ],
             "title": "Min Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,
@@ -5135,6 +5273,21 @@
               }
             ],
             "title": "City"
+          },
+          "course_meetings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseMeetingIn"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Meetings"
           },
           "description": {
             "anyOf": [
@@ -7232,6 +7385,65 @@
           }
         },
         "title": "HandedIn",
+        "type": "object"
+      },
+      "IdentityCheckIn": {
+        "description": "What the form has typed so far. A signed-in user's own account email\nand phone are added by the server; nothing else is read from the body.",
+        "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "title": "IdentityCheckIn",
+        "type": "object"
+      },
+      "IdentityCheckMatch": {
+        "description": "`owner_email` is masked (`o***@farmerim.com`); None = a page with no account.",
+        "properties": {
+          "owner_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Email"
+          }
+        },
+        "required": [
+          "owner_email"
+        ],
+        "title": "IdentityCheckMatch",
+        "type": "object"
+      },
+      "IdentityCheckOut": {
+        "properties": {
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityCheckMatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "match"
+        ],
+        "title": "IdentityCheckOut",
         "type": "object"
       },
       "KashrutApproveIn": {
@@ -9831,6 +10043,109 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerChatRequest": {
+        "properties": {
+          "locale": {
+            "default": "he",
+            "enum": [
+              "he",
+              "en"
+            ],
+            "title": "Locale",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "title": "OwnerChatRequest",
+        "type": "object"
+      },
+      "OwnerChatResponse": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "enum": [
+                  "add_products",
+                  "upload_photos",
+                  "send_for_review"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "products": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MenuRow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Products"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "unanswered": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unanswered"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "OwnerChatResponse",
+        "type": "object"
+      },
       "OwnerDetachIn": {
         "properties": {
           "confirm_name": {
@@ -10462,9 +10777,19 @@
             ],
             "title": "Admin Notes"
           },
+          "allow_duplicate": {
+            "default": false,
+            "title": "Allow Duplicate",
+            "type": "boolean"
+          },
           "as_draft": {
             "default": false,
             "title": "As Draft",
+            "type": "boolean"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
             "type": "boolean"
           },
           "category_ids": {
@@ -10853,6 +11178,11 @@
             "default": 0,
             "title": "Business Days Waiting",
             "type": "integer"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
           },
           "categories": {
             "default": [],
@@ -12102,6 +12432,17 @@
             ],
             "title": "Availability State"
           },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
+          },
           "category_ids": {
             "anyOf": [
               {
@@ -13196,6 +13537,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -14160,6 +14506,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -14489,6 +14840,17 @@
             },
             "title": "Locations",
             "type": "array"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
           },
           "name": {
             "title": "Name",
@@ -15952,6 +16314,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -17324,6 +17691,11 @@
             ],
             "title": "Address"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "category_ids": {
             "items": {
               "type": "integer"
@@ -17754,6 +18126,17 @@
               }
             ],
             "title": "Availability State"
+          },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
           },
           "category_ids": {
             "anyOf": [
@@ -20747,6 +21130,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "maxLength": 4,
             "minLength": 4,
@@ -21374,6 +21769,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "maxLength": 4,
             "minLength": 4,
@@ -21473,6 +21880,18 @@
             "format": "uuid",
             "title": "Offer Id",
             "type": "string"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
           },
           "pickup_code": {
             "maxLength": 4,
@@ -21618,6 +22037,18 @@
             "title": "Offer Id",
             "type": "string"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
           "pickup_code": {
             "title": "Pickup Code",
             "type": "string"
@@ -21631,6 +22062,11 @@
             "format": "date-time",
             "title": "Pickup Start",
             "type": "string"
+          },
+          "prepay": {
+            "default": false,
+            "title": "Prepay",
+            "type": "boolean"
           },
           "qty": {
             "title": "Qty",
@@ -21659,6 +22095,20 @@
           "pickup_end"
         ],
         "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescuePaidIn": {
+        "description": "MEH-3897: the business marks a reservation paid, or undoes a mistaken\nmark (`paid: false`).",
+        "properties": {
+          "paid": {
+            "title": "Paid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paid"
+        ],
+        "title": "RescuePaidIn",
         "type": "object"
       },
       "RescuePilotLocationsOut": {
@@ -21756,6 +22206,32 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "prepay_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepay Link"
+          },
+          "prepay_timing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "advance",
+                  "deposit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepay Timing"
           },
           "reviews_count": {
             "default": 0,
@@ -22947,6 +23423,14 @@
             ],
             "title": "City"
           },
+          "course_meetings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CourseMeetingOut"
+            },
+            "title": "Course Meetings",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -23045,6 +23529,17 @@
               }
             ],
             "title": "Min Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "participants_count": {
             "default": 0,
@@ -26029,6 +26524,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
@@ -26074,6 +26571,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
@@ -26553,6 +27052,23 @@
               "title": "Allow Unverified Phone",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
+            }
           }
         ],
         "responses": {
@@ -26800,6 +27316,57 @@
       }
     },
     "/admin/producers/{producer_id}/experiences": {
+      "get": {
+        "description": "MEH-3876: every experience hosted by an account of the business, in\nevery status (pending, approved, rejected, cancelled), newest first — the\nlist the owner sees (experiences.py list_my_experiences), widened from one\nhost to the business's accounts. A business with no account has none.",
+        "operationId": "admin_list_business_experiences_admin_producers__producer_id__experiences_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExperienceDetailOut"
+                  },
+                  "title": "Response Admin List Business Experiences Admin Producers  Producer Id  Experiences Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Business Experiences",
+        "tags": [
+          "admin-business-content"
+        ]
+      },
       "post": {
         "operationId": "admin_create_business_experience_admin_producers__producer_id__experiences_post",
         "parameters": [
@@ -27583,7 +28150,7 @@
     },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
-        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "description": "Mint a 14-day read-only link to the draft's full page. MEH-3896: a\nshort /v/<code> link backed by a share_links row (the only write here); a\nnew link does not cancel an earlier one. Every link dies when the draft\nis published, claimed or deleted (the read checks the row).",
         "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
         "parameters": [
           {
@@ -28382,6 +28949,23 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
             }
           }
         ],
@@ -31533,6 +32117,53 @@
         ]
       }
     },
+    "/chat/owner": {
+      "post": {
+        "description": "Answer the owner inside her dashboard, or hand back a page draft.",
+        "operationId": "owner_chat_chat_owner_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerChatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Owner Chat",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
     "/cities": {
       "get": {
         "description": "Autocomplete: cities table (canonical) ∪ live business cities,\nwith the static list as the unseeded-env fallback (MEH-1349).\n\n\"Seeded\" == any row exists: the only writers of the cities table are the\nfull-dataset seeders (scripts/seed_cities.py / POST /admin/seed-cities),\nso a non-empty table means the official dataset is present.",
@@ -33945,6 +34576,52 @@
         "summary": "Preview Claim",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/producer-identity-check": {
+      "post": {
+        "operationId": "producer_identity_check_producer_identity_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Producer Identity Check",
+        "tags": [
+          "producers"
         ]
       }
     },
@@ -39614,7 +40291,7 @@
     },
     "/rescue/offers/{offer_id}/cancel": {
       "post": {
-        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nNo refund, because nothing was paid. MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nMEH-3897: a reservation the business marked paid gets the owners' refund\nemail too (the money went to its own link). MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
         "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
         "parameters": [
           {
@@ -39912,6 +40589,65 @@
           }
         ],
         "summary": "Mark No Show",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/paid": {
+      "post": {
+        "description": "MEH-3897: the business marks the prepay received (its own Bit / PayBox,\nMEH-3895), or undoes a mistaken mark with `paid: false`.",
+        "operationId": "mark_paid_rescue_orders__order_id__paid_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescuePaidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Paid",
         "tags": [
           "rescue"
         ]

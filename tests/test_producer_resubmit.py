@@ -281,7 +281,7 @@ class TestApproveClearsRejectionTrail:
         assert resp.status_code == 200  # rejected → pending, count 3
 
         approve = client.post(
-            f"/admin/producers/{producer.id}/approve",
+            f"/admin/producers/{producer.id}/approve?slug=test-farm",
             headers=auth_header(_admin(db)),
         )
         assert approve.status_code == 200, approve.json()

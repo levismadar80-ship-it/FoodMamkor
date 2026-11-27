@@ -566,6 +566,9 @@ count only go down. The owner table is `frontend/components/CLAUDE.md`.
     category sits in the muted line under the name. No city → no place line.
   - **No photo (MEH-2440):** a typographic name plate — the business name in
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
+    With a logo (MEH-3894, Sapir 26/11/2026) the logo sits in the seed's
+    start-top corner (56px circle, `contain`) instead of the seed, and the
+    plate's top padding grows to clear it.
   - **Badges on the photo, one line (MEH-3508, Sapir 20/11/2026):** the badge
     row (max 2 + «+N») sits bottom-start on the photo (`bottom-3 start-3`) and
     never wraps. TrustBadge sits in the card body under the category line
@@ -621,10 +624,22 @@ count only go down. The owner table is `frontend/components/CLAUDE.md`.
   page renders the same card as the business page — the preferred channel as the
   big button, the others as the named circles. No ready-made questions: they
   live in the business page's own «שאלות נפוצות» section (MEH-3460), not the card. No card at all when the organizer filled no channel.
+- **Which photo, everywhere (MEH-3894):** an item's own photo, else its
+  business's first non-blank photo — picked in the API by `first_image`
+  (`backend/app/services/producer_images.py`, held by
+  `scripts/checks/first-image-guard.sh`) — else the surface's no-photo tile.
+  Experiences follow it too (`owner_image_url`). A photo the browser cannot
+  load drops to the same tile (`frontend/lib/use-image-loads.js` on the rows
+  and covers drawn as a CSS background), never an empty box.
 - **Event cover fallback (MEH-3459):** an event without its own photo opens on
   its owner's first photo (`owner_image_url`), the photo its card and list row
   already show (MEH-2546); the green band only when neither exists. The share
   preview (OG / Twitter) follows the same order.
+- **Event rows on the owner's own page (MEH-3892):** on the business page and
+  the organizer page a row without its own photo takes one of the owner's
+  gallery photos (`withOwnGallery`, `frontend/lib/event-entry.js`): the
+  non-cover photos first, in turn by date; the cover only when it is the only
+  one; the category tile only when there are none. No owner initial there.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single

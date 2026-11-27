@@ -125,7 +125,11 @@ DELIVERY_COLUMNS = (
     "free_delivery_above",
 )
 # Pickup settings go with the pickup points (producer_locations).
-PICKUP_COLUMNS = ("has_physical_location", "pickup_points")
+PICKUP_COLUMNS = (
+    "has_physical_location",
+    "by_arrangement",
+    "pickup_points",
+)  # MEH-2447: goes with the place
 # Cloudinary URLs: hers wins, the losing one is parked on her row and destroyed
 # with it (admin_delete_producer reads logo_url, owner_photo_url and images).
 IMAGE_OWNER_WINS = ("logo_url", "owner_photo_url")
@@ -209,9 +213,10 @@ REPLACE_TABLES = frozenset(
         "producer_whatsapp_clicks",
     }
 )
-# Die with her row on purpose: a code sent to her old row, and the tombstone
-# admin_delete_producer writes for her never-public slug.
-LEFT_TABLES = frozenset({"phone_otp_tokens", "retired_slugs"})
+# Die with her row on purpose: a code sent to her old row, the tombstone
+# admin_delete_producer writes for her never-public slug, and the short
+# preview/claim links minted for her old row (MEH-3896; CASCADE).
+LEFT_TABLES = frozenset({"phone_otp_tokens", "retired_slugs", "share_links"})
 
 
 def producer_child_tables() -> dict[str, Any]:

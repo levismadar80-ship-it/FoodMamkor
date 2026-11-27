@@ -334,6 +334,31 @@ h1, h2, h3 {
   font-style: italic;
 }
 
+/* MEH-3856: the business page renders «חזרה למפה» in its server HTML, marked
+   data-from-map-only, and the inline flags script (lib/prehydration-flags-inline.js)
+   sets html[data-from-map] when the URL says ?from=map. So the row is there
+   from the first paint on such a link, and absent otherwise, instead of being
+   added after hydration above the gallery (it pushed the page down on a phone).
+   Only the hide is written here: the row keeps its own display classes. */
+html:not([data-from-map]) [data-from-map-only] {
+  display: none;
+}
+
+/* MEH-3878: while the route loader is on screen the site footer waits. On a
+   first load the page itself arrives after the loader (React sends a large
+   page as a later chunk and swaps it in at least 300ms after the first paint),
+   so a footer in view at that moment was pushed down by the whole page: CLS
+   0.41 on /recommend#share, where the browser had already scrolled to the
+   bottom. The loader's min-h-screen (MEH-2754) only helps at scroll 0; a hash
+   link, a reload that restores the scroll, or a short page still showed it.
+   A footer that is not drawn yet cannot move; it appears with the page.
+   Without :has() (Safari < 15.4) the footer stays as before. */
+@supports selector(:has(*)) {
+  body:has([data-route-loader]) footer[data-site-footer] {
+    display: none;
+  }
+}
+
 /* MEH-2487: a page whose last band is full colour (marked data-meets-footer)
    runs straight into the footer, without the footer's 64px cream top margin.
    Kept here rather than in Footer.jsx (central component) and keyed on the

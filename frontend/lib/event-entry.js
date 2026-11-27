@@ -30,7 +30,12 @@ export function toEventEntry(row, tab, t) {
     city: row.city,
     // MEH-2476: a recurring experience names its schedule in the meta line,
     // so the date rail reads as the first occasion, not the only one.
-    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
+    // MEH-3898: a course says so, with its number of meetings.
+    schedule: isExp && row.is_recurring
+      ? row.recurring_schedule?.trim() || null
+      : isExp && row.course_meetings?.length
+        ? t("course_meetings", { count: row.course_meetings.length }) || null
+        : null,
     // an older experience row stores the English key («workshop»);
     // the row chip shows the Hebrew value the other rows carry.
     category: isExp ? findExperienceCategory(row.category)?.key ?? row.category : row.category,
@@ -42,11 +47,40 @@ export function toEventEntry(row, tab, t) {
     // until now it showed only on the event page itself.
     image: row.image_url || null,
     // MEH-2546: the owner's first photo — the row's fallback when the event
-    // has none (Meetup shows the group cover the same way). Events only.
-    ownerImage: isExp ? null : row.owner_image_url || null,
+    // has none (Meetup shows the group cover the same way). MEH-3894: the
+    // experience API sends the host business's photo too.
+    ownerImage: row.owner_image_url || null,
     // MEH-3009: experiences carry the host's initial too, so every row with a
     // picture is marked the same way.
     ownerInitial:
       Array.from(((isExp ? row.host?.producer_name || row.host?.name : row.producer_name) || "").trim())[0] ?? "",
   };
+}
+
+/**
+ * MEH-3892: on the owner's OWN page (business page, organizer page) a row with
+ * no photo of its own takes one from that owner's gallery. The cover
+ * (images[0]) already heads the page, so the other photos come first, in turn
+ * by row order — a weekly event reads as four rows, not one row four times.
+ * Only one photo → that one. None → unchanged (the category tile).
+ * Rows keep their own photo, and no owner initial is added (the caller clears
+ * it: every row here is this owner's).
+ *
+ * @template {Record<string, any>} E
+ * @param {E[]} entries rows in display order (each may carry `image`)
+ * @param {unknown} images the owner's `images` array from the API
+ * @returns {(E & { ownerImage: string | null })[]}
+ */
+export function withOwnGallery(entries, images) {
+  const all = (Array.isArray(images) ? images : [])
+    .filter((u) => typeof u === "string" && u.trim())
+    .map((u) => u.trim());
+  const pool = all.length > 1 ? all.slice(1) : all;
+  let next = 0;
+  return entries.map((e) => {
+    if (e.image || pool.length === 0) return { ...e, ownerImage: null };
+    const ownerImage = pool[next % pool.length];
+    next += 1;
+    return { ...e, ownerImage };
+  });
 }

@@ -91,6 +91,7 @@ from app.schemas.rescue import (
     RescueDonatedIn,
     RescueOwnerOfferOut,
     RescueOwnerOrderOut,
+    RescuePaidIn,
     RescueReviewCreate,
     RescueReviewOut,
     RescueTypicalItemsIn,
@@ -101,7 +102,10 @@ from app.schemas.rescue_schedule import (  # MEH-3703
     RescueScheduleRow,
 )
 from app.sentry import capture_background_exception
-from app.services.rescue_business_emails import queue_business_reservation_email
+from app.services.rescue_business_emails import (
+    queue_business_refund_email,
+    queue_business_reservation_email,
+)
 from app.services.rescue_notify import (  # MEH-3537
     RescueClock,
     queue_business_cancel_emails,
@@ -127,6 +131,11 @@ from app.services.rescue_no_show import (  # MEH-3226
 )
 from app.utils.clock import israel_today, utc_now
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
+from app.services.rescue_payment import (  # MEH-3897
+    paid_open_order_ids,
+    queue_paid_refunds,
+    set_paid,
+)
 from app.services.rescue_writes import (  # MEH-3554
     active_no_shows,
     add_review,
@@ -353,12 +362,14 @@ def cancel_offer(
     """The business pulls the whole bag offer. Every open reservation on it is
     cancelled with it; a bag already handed over stays handed.
 
-    No refund, because nothing was paid. MEH-2738: each buyer whose
+    MEH-3897: a reservation the business marked paid gets the owners' refund
+    email too (the money went to its own link). MEH-2738: each buyer whose
     reservation went with it gets one email after the commit (fail-open), and
     their page says the business cancelled (`list_my_reservations`). A window
     that already closed is refused: by then every bag is collected or a
     no-show, and cancelling would only rewrite the record.
     """
+    paid_ids = paid_open_order_ids(db, offer_id)
     offer, buyer_ids = cancel_whole_offer(
         db, user=current_user, offer_id=offer_id, lock=_offer_for_update
     )
@@ -368,7 +379,23 @@ def cancel_offer(
         )
     except Exception as exc:  # the cancel is committed; a mail never undoes it
         capture_background_exception(exc, task="rescue_business_cancel_email")
+    _refund_paid_after_cancel(background_tasks, db, offer, paid_ids)
     return offer
+
+
+def _refund_paid_after_cancel(
+    background_tasks: BackgroundTasks, db: Session, offer: RescueOffer, ids: list[UUID]
+) -> None:
+    """MEH-3897: the orders read as paid before a whole-offer cancel that are
+    now cancelled get the owners' refund email (queue_paid_refunds)."""
+    if not ids:
+        return
+    orders = (
+        db.query(RescueOrder)
+        .filter(RescueOrder.id.in_(ids), RescueOrder.status == "cancelled")
+        .all()
+    )
+    queue_paid_refunds(background_tasks, db, {offer.id: offer}, orders)
 
 
 @router.get(
@@ -476,6 +503,26 @@ def mark_handed(
 
 
 @router.post(
+    "/orders/{order_id}/paid",
+    response_model=RescueOrderOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("60/minute")
+def mark_paid(
+    request: Request,
+    order_id: UUID,
+    body: RescuePaidIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RescueOrderOut | RescueOrder:
+    """MEH-3897: the business marks the prepay received (its own Bit / PayBox,
+    MEH-3895), or undoes a mistaken mark with `paid: false`."""
+    return set_paid(
+        db, user=current_user, order_id=order_id, paid=body.paid, lock=_offer_for_update
+    )
+
+
+@router.post(
     "/orders/{order_id}/no-show",
     response_model=RescueOrderOut,
     dependencies=[Depends(require_rescue_enabled)],
@@ -536,6 +583,12 @@ def cancel_order(
     except Exception as exc:  # noqa: BLE001 — fail-open, as the reservation email
         capture_background_exception(exc, task="rescue_cancel_email")
         logger.error("rescue cancel email not queued: %s", type(exc).__name__)
+    # MEH-3895: a prepaid bag — the business is told what to return.
+    try:
+        queue_business_refund_email(background_tasks, db, offer, order)
+    except Exception as exc:  # noqa: BLE001 — fail-open, same reason as above
+        capture_background_exception(exc, task="rescue_refund_email")
+        logger.error("rescue refund email not queued: %s", type(exc).__name__)
     return order
 
 
@@ -827,6 +880,7 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
         db.commit()
     else:
         # Commits the skip together with the cancel.
+        paid_ids = paid_open_order_ids(db, bag.id)  # type: ignore[arg-type]
         offer, buyer_ids = cancel_whole_offer(
             db,
             user=current_user,
@@ -839,6 +893,7 @@ def skip_my_day(  # noqa: PLR0913 — FastAPI-injected; the cancel needs backgro
             )
         except Exception as exc:  # the cancel is committed; a mail never undoes it
             capture_background_exception(exc, task="rescue_business_cancel_email")
+        _refund_paid_after_cancel(background_tasks, db, offer, paid_ids)
     db.refresh(location)
     return schedule_row(db, location, call)
 

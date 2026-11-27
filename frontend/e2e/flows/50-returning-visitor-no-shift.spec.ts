@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { stableCatalog } from "./_stable-catalog";
 
 /**
  * MEH-3858 — what a returning visitor has stored in this browser never moves
@@ -139,7 +140,8 @@ test.describe("MEH-3858 a returning visitor's stored state does not move the pag
   test.beforeAll(async ({ request }) => {
     const res = await request.get("/api/producers");
     expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
-    const rows = (await res.json()) as Array<{ id: string }>;
+    // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+    const rows = stableCatalog((await res.json()) as Array<{ id: string; name?: string }>);
     ids = rows.slice(0, 3).map((r) => String(r.id));
     expect(ids.length, "the seeded backend must list businesses").toBeGreaterThan(0);
   });

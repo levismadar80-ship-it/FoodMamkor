@@ -504,7 +504,8 @@ jobs:
           # MEH-3592: group_buy_waitlist (a full group buy's waitlist) — 66 -> 67.
           # MEH-3839: email_events (what Resend reports for each email) — 67 -> 68.
           # MEH-3526: producer_staff (who handles a business's orders) — 68 -> 69.
-          EXPECTED_TABLES=69
+          # MEH-3896: share_links (short preview / claim links) — 69 -> 70.
+          EXPECTED_TABLES=70
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables

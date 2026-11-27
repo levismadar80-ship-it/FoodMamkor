@@ -167,6 +167,9 @@ plugins = ["pydantic.mypy"]
 # STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
 files = [
+    "app/schemas/payment_link.py",
+    "app/services/rescue_payment.py",
+    "app/services/producer_images.py",  # MEH-3894
     "app/utils/money.py",
     "app/services/email_layout.py",
     "app/site_pages.py",
@@ -191,6 +194,8 @@ files = [
     "app/models/billing.py",
     "app/models/catalog.py",
     "app/models/email_events.py",
+    "app/models/share_links.py",
+    "app/services/share_links.py",
     "app/models/engagement.py",
     "app/models/events.py",
     "app/models/home_products.py",
@@ -219,6 +224,7 @@ files = [
     "app/routers/category_requests.py",
     "app/routers/chat.py",
     "app/routers/cities.py",
+    "app/routers/producer_identity_check.py",  # MEH-3884
     "app/routers/events.py",
     "app/routers/experiences.py",
     "app/routers/favorites.py",
@@ -282,6 +288,7 @@ files = [
     "app/schemas/experiences.py",
     "app/schemas/group_buy_counts.py",
     "app/schemas/cities_match.py",
+    "app/schemas/identity_check.py",  # MEH-3884
     "app/schemas/group_buys_requests.py",
     "app/schemas/owner_detach.py",
     "app/schemas/owner_invite_existing.py",
@@ -339,6 +346,7 @@ files = [
     "app/services/email.py",
     "app/services/email_branding.py",
     "app/services/experience_moderation.py",
+    "app/services/course_meetings.py",
     "app/services/experience_sessions.py",
     "app/services/experience_notifications.py",
     "app/services/farmer_declaration.py",
@@ -376,6 +384,7 @@ files = [
     "app/routers/auth_google_code.py",  # MEH-3690
     "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
+    "app/services/onboarding_day30_numbers.py",
     "app/services/ops_alert.py",
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
@@ -390,6 +399,7 @@ files = [
     "app/services/producer_duplicates.py",
     "app/services/business_name_key.py",  # MEH-3865
     "app/services/draft_twins.py",  # MEH-3865
+    "app/services/business_identity.py",  # MEH-3884
     "app/services/draft_merge_emails.py",  # MEH-3865
     "app/routers/admin_draft_merge.py",  # MEH-3865
     "app/services/draft_merge_policy.py",  # MEH-3865
@@ -473,6 +483,7 @@ files = [
     "app/schemas/form_fill.py",
     "app/services/producer_owner_update.py",  # MEH-3841
     "app/services/admin_producer_writes.py",  # MEH-3843
+    "app/services/admin_create_duplicates.py",  # MEH-3883
     "app/services/admin_user_writes.py",  # MEH-3537
     "app/services/admin_category_writes.py",  # MEH-3537
     "app/services/rescue_notify.py",  # MEH-3537

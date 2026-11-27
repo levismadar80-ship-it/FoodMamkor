@@ -34,7 +34,7 @@
  *   lands at 1 s for that reason.
  * - Hydration mismatches are never allowlisted (HYDRATION below).
  */
-import type { Page, TestInfo } from "@playwright/test";
+import type { Page, Request, TestInfo } from "@playwright/test";
 
 export type LoadGuardMode = "on" | "errors" | "off";
 
@@ -85,6 +85,13 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
     card: "MEH-3809",
   },
   {
+    pattern: /^Refused to load https:\/\/bread\.jpg\/ because it does not appear in the img-src directive of the Content Security Policy\.$/,
+    browser: "webkit",
+    reason:
+      "The same bread.jpg fixture as the entry above, in WebKit's wording of a CSP refusal. Only that fake host, and only on WebKit; a CSP refusal of any other image still fails. Measured: WebKit nightly 26/11, job 139631217906, admin-producers-queue.spec.ts:407.",
+    card: "MEH-3909",
+  },
+  {
     pattern: /due to access control checks\.$/,
     kind: "pageerror",
     browser: "webkit",
@@ -94,11 +101,14 @@ export const CONSOLE_ALLOW: readonly Allow[] = [
   },
 ];
 
-type KnownCls = { path: RegExp; ceiling: number; reason: string; card: string };
+/** `query`, when set, must also match the URL's query string ("?city=x"), so a
+ *  row can cover one state of a page without loosening every load of it. */
+type KnownCls = { path: RegExp; query?: RegExp; ceiling: number; reason: string; card: string };
 
 /** Pages that already shift above CLS_LIMIT, measured on PR #5280's E2E runs
  *  and the first staging runs after it (Chromium, desktop + mobile). `path` is matched against the pathname with
- *  no locale prefix and no query. `ceiling` is 1.5 × the largest value seen,
+ *  no locale prefix and no query (`query`, when set, is matched against the
+ *  query string). `ceiling` is 1.5 × the largest value seen,
  *  so a page that gets worse still fails. Remove a row when its card is fixed;
  *  never add one to get a new shift green — a new shift gets a fix. */
 export const KNOWN_CLS: readonly KnownCls[] = [
@@ -111,14 +121,6 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     ceiling: 1.5,
     reason: "Owner dashboard edit groups: late cards push the page down (largest 0.981, mobile, measured before #5292).",
     card: "MEH-3817",
-  },
-  {
-    // MEH-3870: measured on #5280's run at 6f45c4c (mobile, both tries); not
-    // reproduced on the preview with a real admin login, so not yet fixed.
-    path: /^\/admin\/outreach$/,
-    ceiling: 0.16,
-    reason: "Admin outreach, mobile: the admin tab strip moves once at ~0.7 s (largest 0.107, mobile, PR #5280 head 6f45c4c).",
-    card: "MEH-3870",
   },
   {
     // MEH-3875: staging f08f421 (run 45701938236), desktop, hard fail on both tries.
@@ -165,6 +167,24 @@ export const KNOWN_CLS: readonly KnownCls[] = [
     reason: "Register: the page grows at ~2 s and pushes the footer (largest 0.130, mobile, staging 2b777a0).",
     card: "MEH-3863",
   },
+  {
+    // MEH-3878: /recommend, the footer moves at load. Release PR run
+    // 45826156160 (staging c8ea4a4), share.spec.ts:115, flaky.
+    path: /^\/recommend$/,
+    ceiling: 0.62,
+    reason: "Recommend: the page grows at load and pushes the footer (largest 0.410, staging c8ea4a4).",
+    card: "MEH-3878",
+  },
+  {
+    // MEH-3887: home with ?city= only; home without a city still fails at 0.1.
+    // A fixed vv-pin element moves once; run 45826156160 (staging c8ea4a4),
+    // 27-delivery-day-discoverability.spec.ts:150, mobile, flaky.
+    path: /^\/$/,
+    query: /[?&]city=/,
+    ceiling: 0.16,
+    reason: "Home with a city, mobile: a fixed vv-pin element moves once (largest 0.105, staging c8ea4a4).",
+    card: "MEH-3887",
+  },
 ];
 
 /** "/en/producer/dashboard/edit?group=x" → "/producer/dashboard/edit". */
@@ -172,18 +192,44 @@ function barePath(url: string): string {
   return url.replace(/[?#].*$/, "").replace(/^\/en(?=\/|$)/, "") || "/";
 }
 
+/** "/?city=x#y" → "?city=x". */
+function queryOf(url: string): string {
+  return url.replace(/#.*$/, "").replace(/^[^?]*/, "");
+}
+
 type Shift = { doc: number; url: string; t: number; v: number; src: string };
 type Ready = { doc: number; supported: boolean };
 
-type LoadGuardState = {
+export type LoadGuardState = {
   errors: string[];
+  /** MEH-3879: every request that ended in `requestfailed`, with the
+   *  browser's reason and the HTTP status it got first (null = none).
+   *  Chromium also fires `requestfailed` (net::ERR_ABORTED) for a script that
+   *  got a 404, so the status is what tells a cancelled load from a missing
+   *  file. Optional so a hand-built state in the self-test still type-checks. */
+  failedRequests?: { path: string; errorText: string; status: number | null }[];
+  /** The `requestfailed` handlers still awaiting their response; teardown
+   *  waits for them so a late push cannot turn an excused error into a fail. */
+  pending?: Promise<void>[];
   shifts: Shift[];
   ready: Ready[];
 };
 
 /** Install the probes on a page. Call before the first navigation. */
 export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
-  const state: LoadGuardState = { errors: [], shifts: [], ready: [] };
+  const state: LoadGuardState = { errors: [], shifts: [], ready: [], failedRequests: [], pending: [] };
+  page.on("requestfailed", (r) => state.pending?.push(recordFailed(r)));
+  const recordFailed = async (r: Request) => {
+    let path = r.url();
+    try {
+      path = new URL(r.url()).pathname;
+    } catch {
+      /* keep the raw url */
+    }
+    const errorText = r.failure()?.errorText ?? "";
+    const status = (await r.response().catch(() => null))?.status() ?? null;
+    state.failedRequests?.push({ path, errorText, status });
+  };
   page.on("pageerror", (e) => state.errors.push(`pageerror: ${e?.message ?? String(e)}`));
   page.on("console", (m) => {
     if (m.type() === "error") state.errors.push(`console.error: ${m.text()}`);
@@ -215,10 +261,23 @@ export async function installLoadGuard(page: Page): Promise<LoadGuardState> {
           hadRecentInput: boolean;
           startTime: number;
           value: number;
-          sources?: Array<{ node?: Node | null }>;
+          sources?: Array<{ node?: Node | null; previousRect?: DOMRectReadOnly; currentRect?: DOMRectReadOnly }>;
         }>) {
           if (e.hadRecentInput) continue;
-          const src = (e.sources || []).map((s) => describe(s.node)).find(Boolean) || "";
+          // MEH-3893: name WHERE each moved element went, not just which one.
+          // "div.vv-pin moved" alone cannot tell a late block above it from the
+          // element itself resizing; its old and new box can. Up to 3 sources,
+          // the first named one stays first, then the viewport and scroll.
+          const rect = (r?: DOMRectReadOnly) =>
+            r ? `y${Math.round(r.y)} h${Math.round(r.height)} w${Math.round(r.width)}` : "?";
+          const named = (e.sources || [])
+            .map((s) => ({ name: describe(s.node), from: rect(s.previousRect), to: rect(s.currentRect) }))
+            .filter((s) => s.name)
+            .slice(0, 3);
+          const src = named.length
+            ? named.map((s) => `${s.name} (${s.from} → ${s.to})`).join("; ") +
+              ` · viewport ${window.innerWidth}x${window.innerHeight} scrollY ${Math.round(window.scrollY)}`
+            : "";
           w.__loadGuardShift?.({ doc, url: location.pathname + location.search, t: e.startTime, v: e.value, src });
         }
       }).observe({ type: "layout-shift", buffered: true });
@@ -251,6 +310,25 @@ function maxSessionCls(shifts: readonly Shift[]): { value: number; worst: Shift[
   return best;
 }
 
+/** MEH-3879: a ChunkLoadError (Turbopack's wording, the one this build
+ *  emits) for a chunk whose request the browser cancelled. WebKit cancels the
+ *  in-flight chunk scripts of a page the test navigates away from (a `goto`
+ *  right after an assertion, a tap on a link), fires the script's error event,
+ *  and the old page logs ChunkLoadError on its way out. Excused only when the
+ *  chunk's request failed with no response or mid-way through a 2xx body. A
+ *  chunk that is really missing (stale build, wrong path) got a 404 first, and
+ *  one that never failed a request at all is not excused either. Deliberately
+ *  not gated on the engine or on the reason text: a chunk request that never
+ *  got an answer from the local server is not an application error on either
+ *  engine, and WebKit's cancel wording is not measured. */
+const CHUNK_LOAD_ERROR = /^ChunkLoadError: Failed to load chunk (\/\S+) from module \d+$/;
+
+function isCancelledChunk(text: string, state: LoadGuardState): boolean {
+  const m = CHUNK_LOAD_ERROR.exec(text);
+  if (!m) return false;
+  return (state.failedRequests ?? []).some((f) => f.path === m[1] && (f.status === null || (f.status >= 200 && f.status < 300)));
+}
+
 /** Every reason this test's pages fail the guard. Empty = clean. */
 export function loadGuardFailures(
   state: LoadGuardState,
@@ -266,6 +344,7 @@ export function loadGuardFailures(
       out.push(`hydration mismatch — ${e}`);
       continue;
     }
+    if (isCancelledChunk(text, state)) continue;
     const kind = e.startsWith("pageerror: ") ? "pageerror" : "console";
     if (allow.some((a) => (a.kind ?? "console") === kind && (!a.browser || a.browser === opts.browserName) && a.pattern.test(text))) continue;
     out.push(e);
@@ -283,7 +362,7 @@ export function loadGuardFailures(
       const { value, worst } = maxSessionCls(list);
       if (value > CLS_LIMIT) {
         const top = [...worst].sort((a, b) => b.v - a.v)[0];
-        const k = known.find((x) => x.path.test(barePath(top.url)));
+        const k = known.find((x) => x.path.test(barePath(top.url)) && (!x.query || x.query.test(queryOf(top.url))));
         if (k && value <= k.ceiling) continue;
         if (k) {
           out.push(
@@ -308,11 +387,16 @@ export async function enforceLoadGuard(
   opts: { browserName: string; mode: LoadGuardMode },
 ): Promise<void> {
   const { browserName } = opts;
+  await Promise.all(state.pending ?? []);
   const navigated = state.ready.length > 0 || !/^about:blank$/.test(page.url());
   const failures = loadGuardFailures(state, { browserName, navigated, cls: opts.mode === "on" });
   if (failures.length === 0) return;
   await testInfo.attach("load-guard.json", {
-    body: JSON.stringify({ failures, errors: state.errors, shifts: state.shifts }, null, 2),
+    body: JSON.stringify(
+      { failures, errors: state.errors, failedRequests: state.failedRequests, shifts: state.shifts },
+      null,
+      2,
+    ),
     contentType: "application/json",
   });
   // A test that already failed keeps its own error as the headline.

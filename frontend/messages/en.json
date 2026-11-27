@@ -300,6 +300,12 @@
           "body": "If this is your business, we will connect you to the existing page. If it is a different business, carry on as usual.",
           "contact_cta": "Write to us"
         },
+        "identity_check": {
+          "title": "It looks like this business already has a page",
+          "body_owned": "The page is in the account <addr>{email}</addr>. Log in to it instead of opening a new page.",
+          "body_unowned": "We prepared a page for this business. Write to us and we will connect it to your account.",
+          "staff_hint": "Work at the business? Ask the account owner to add you to the team."
+        },
         "fields": {
           "name": "e.g. Ruth Levi",
           "name_label": "Full name",
@@ -312,7 +318,8 @@
           "city": "e.g. Zikhron Ya'akov",
           "fulfilment": {
             "legend": "How do customers get their order?",
-            "onsite": "Pickup or visit",
+            "onsite": "Buy or pick up here, at set hours",
+            "arranged": "Pickup or visit, by arrangement",
             "delivery": "Delivery",
             "required": "Tick at least one option",
             "multi_hint": "You can tick both",
@@ -636,8 +643,9 @@
     "chocolate": "Artisan Chocolate & Sweets",
     "honey": "Honey",
     "fish": "Fish",
-    "kph": "Coffee",
-    "byshvl-lpy-hzmnh": "Cooked to order"
+    "coffee": "Coffee",
+    "cooked-to-order": "Cooked to order",
+    "cakes-desserts": "Cakes & desserts"
   },
   "seo": {
     "home": {
@@ -863,6 +871,7 @@
         "about": "About",
         "location": "Getting there",
         "location_no_hours": "No fixed hours — arrange before you come",
+        "location_by_arrangement": "Pickup or visit by arrangement. Get in touch before you come.",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -990,6 +999,7 @@
         "heading": "Hours",
         "label_orders": "Taking orders",
         "label_visit": "Open to visitors",
+        "label_visit_arranged": "Visits by arrangement",
         "label_both": "Orders and visits"
       },
       "order_window": {
@@ -1739,6 +1749,17 @@
     }
   },
   "admin": {
+    "business_experiences": {
+      "title": "The business's experiences",
+      "intro": "Add and update experiences here on the business's behalf, once it has agreed in writing. A new experience, and any change to an experience's content, goes to the approval queue and shows on the business page once approved.",
+      "empty": "This business has no experiences yet. Add the first one.",
+      "no_owner": "This business has no owner account yet, so an experience can't be added. You can add an event.",
+      "add": "Add an experience",
+      "consent_label": "The business agreed in writing to this experience and its details",
+      "updated": "Changes saved. The experience went back to the approval queue",
+      "created": "The experience was sent to the approval queue",
+      "load_error": "We couldn't load the experiences. Try refreshing the page."
+    },
     "business_events": {
       "title": "The business's events",
       "intro": "Add and update events here on the business's behalf, after it agreed in writing. The event shows on the business's page.",
@@ -1985,6 +2006,8 @@
       "form": {
         "errors": {
           "image_upload": "Image upload error",
+          "images_failed": "{failed, plural, one {1 of {total} photos was not uploaded} other {# of {total} photos were not uploaded}}: {reason}",
+          "unsaved_sections": "Unsaved changes: {sections}. Save each section with its own Save button, then save here.",
           "save": "Save error"
         },
         "submit_create": "Create business",
@@ -2070,9 +2093,10 @@
           "license_expires_at_hint": "The date printed on the license document. Businesses whose license expires within 30 days appear in the reminder list.",
           "in_season_until": "In season until",
           "in_season_until_hint": "The last day this business appears in the \"In season now\" module on the homepage. Empty means not marked. The module only shows when three or more businesses are marked.",
-          "has_physical_location": "Physical store (welcomes customers)",
+          "place_onsite": "Buy or pick up on site, at set hours",
+          "place_arranged": "Pickup or visit by arrangement",
           "offers_delivery": "Delivery",
-          "type_validation": "Must select at least one of the two",
+          "type_validation": "Select at least one option",
           "delivery_nationwide": "Delivery nationwide",
           "delivery_cities_label": "Cities delivered to",
           "delivery_excluded_label": "Except:",
@@ -2102,6 +2126,15 @@
           "owner_photo_remove": "Remove photo",
           "secondary_phone": "Second phone (optional)",
           "secondary_phone_label": "What is this number for? (e.g. orders)"
+        },
+        "duplicate": {
+          "title": "This business may already have a page",
+          "intro": "The new page was not created. Open the existing page and complete it there.",
+          "no_owner": "No owner",
+          "open": "Open the existing page",
+          "create_anyway": "It's a different business, create anyway",
+          "owner_prefix": "Account",
+          "more": "And {count} more similar businesses in the businesses list."
         }
       },
       "toast_approved": "Business approved",
@@ -2165,7 +2198,11 @@
         "screenshot_attached": "Screenshot attached. View",
         "screenshot_remove": "Remove",
         "screenshot_error": "Could not upload the screenshot",
-        "screenshot_view": "Screenshot of the approval"
+        "screenshot_view": "Screenshot of the approval",
+        "slug_needed": "This business has no English address yet. Check the suggestion below, edit it if needed, and publish again.",
+        "slug_label": "Page address in English",
+        "slug_hint": "English letters, numbers and hyphens, up to 40 characters",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -2326,6 +2363,11 @@
         "saved": "Saved.",
         "error": "We couldn't save. Please try again.",
         "load_error": "We couldn't load the mark. Refresh the page."
+      },
+      "slug_confirm": {
+        "title": "English address for the page",
+        "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
+        "confirm": "Approve and publish"
       }
     },
     "users": {
@@ -2830,6 +2872,9 @@
       },
       "categories": {
         "name_placeholder": "Category name",
+        "slug_label": "English address",
+        "slug_placeholder": "English address, e.g. cakes-desserts",
+        "slug_invalid": "Use an English address: lowercase letters, numbers and hyphens",
         "add": "+ Add",
         "empty": "No data yet",
         "save": "Save",
@@ -3341,7 +3386,8 @@
       "organizer_line": "Organizer: {name}",
       "tab_experiences_short": "Experiences",
       "tab_group_buys": "Group buys",
-      "tab_rescue": "Surprise bags"
+      "tab_rescue": "Surprise bags",
+      "course_meetings": "Course · {count} meetings"
     },
     "categories": {
       "all": "All",
@@ -3463,7 +3509,9 @@
       "duration_mixed": "{hours} {minutes} min",
       "recurring": "Recurring: {schedule}",
       "recurring_bare": "Recurring",
-      "starts_from": "Starting {date}"
+      "starts_from": "Starting {date}",
+      "course_meeting": "Meeting {n}",
+      "course_starts": "The course starts {date}"
     },
     "new": {
       "crumb_current": "New experience",
@@ -3527,7 +3575,14 @@
       "error_generic": "Error submitting the experience. Please try again.",
       "error_whole_number": "Please enter a whole number",
       "error_image_upload": "Image upload failed. Please try again.",
-      "save_cta": "Save"
+      "save_cta": "Save",
+      "is_course": "A course with several meetings (one sign-up for all)",
+      "course_title": "Course meetings",
+      "course_hint": "Add every meeting. People sign up once for the whole course, and sign-up closes when the first meeting starts.",
+      "course_add": "Add a meeting",
+      "course_max": "You can add up to 20 meetings.",
+      "course_remove": "Remove meeting",
+      "course_error": "Add at least 2 meetings, each with a date and a time."
     }
   },
   "errors": {
@@ -3910,8 +3965,9 @@
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
         "fish": "Fresh and smoked fish",
-        "kph": "Coffee beans",
-        "byshvl-lpy-hzmnh": "Platters, salads, Shabbat meals"
+        "coffee": "Coffee beans",
+        "cooked-to-order": "Platters, salads, Shabbat meals",
+        "cakes-desserts": "Celebration cakes, cookies, tarts"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -5270,6 +5326,12 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_17": {
+            "i0": "Courses: an experience can now be several meetings, with one sign-up for all of them.",
+            "i1": "Your dashboard now has an assistant that answers questions, fills in your page details and adds products from the chat.",
+            "i2": "If customers can come only by arrangement, tick «Pickup or visit, by arrangement». Customers see it on your card and your page.",
+            "i3": "Surprise bags and group buys can carry your own payment link, and you tap «Mark as paid» once the payment comes in."
+          },
           "v1_5_15": {
             "i0": "Order staff: add up to 5 people to handle your orders. They see only the orders tab. Add them from the «Tools» tab."
           },
@@ -5652,6 +5714,7 @@
         "location_missing": "No location set yet",
         "pricing_summary_empty": "Optional — price and signature product appear on your page once set",
         "delivery_mode_store": "Physical store",
+        "delivery_mode_arranged": "By arrangement",
         "delivery_mode_delivery": "Delivery",
         "delivery_none": "Not set yet",
         "hours_empty": "No hours set yet",
@@ -5819,13 +5882,14 @@
       },
       "delivery": {
         "heading": "Delivery & pickup",
-        "subtitle": "How customers get your products — physical store, delivery, or both.",
+        "subtitle": "How customers get your products: buy or pick up from you, delivery, or both.",
         "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
         "map_preview_label": "Your map card will show:",
         "map_preview_arranged_hint": "To show \"Delivery\", \"Pickup\" or \"Buy on site\" instead, add delivery areas, a pickup point or opening hours.",
-        "has_physical_location": "Physical store (welcomes customers)",
+        "place_onsite": "Buy or pick up from you, at set hours",
+        "place_arranged": "Pickup or visit, by arrangement",
         "offers_delivery": "Delivery",
-        "type_validation": "Must select at least one of the two",
+        "type_validation": "Select at least one option",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
@@ -5951,7 +6015,9 @@
         "save_success": "Saved",
         "save_error": "Save failed. Please try again.",
         "revert_cta": "Discard changes",
-        "summary_empty": "Not set"
+        "summary_empty": "Not set",
+        "link_label": "Prepayment link (optional)",
+        "link_help": "A link from Bit, PayBox or your own clearing. Customers see it after they reserve a surprise bag, and in a group buy only once the group has reached its minimum. The money comes straight to you, and customers write their pickup code in the payment note."
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -7328,6 +7394,7 @@
     },
     "confirm": {
       "title": "Your bag is reserved",
+      "paid_confirmed": "The business confirmed your payment arrived",
       "say_at_counter": "Say the code at the counter",
       "pay": "Pay at the counter: {price} ₪",
       "terms": "Free cancellation until {cancel_until} · after two bags not collected, new reservations are paused",
@@ -7339,7 +7406,10 @@
       "cancel_ask_title": "Cancel the reservation?",
       "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
       "cancel_yes": "Yes, cancel",
-      "cancel_no": "No, keep it"
+      "cancel_no": "No, keep it",
+      "paid_ahead": "Paid ahead: {price} ₪",
+      "pay_ahead": "Pay in advance: {price} ₪",
+      "pay_deposit": "Bag price: {price} ₪ · the rest is paid at the counter"
     },
     "review": {
       "title": "How was the bag?",
@@ -7389,6 +7459,9 @@
       "code_label": "Pickup code",
       "code_placeholder": "0000",
       "code_not_found": "No active reservation with that code.",
+      "mark_paid": "Mark as paid",
+      "paid": "✓ Paid",
+      "unmark_paid": "Undo mark",
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",
@@ -7897,6 +7970,9 @@
       },
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
+      },
+      "owner_assistant": {
+        "label": "Dashboard assistant: answers questions, fills in details and adds products from the chat"
       },
       "product_details": {
         "label": "Products with price, ingredients and allergens",
@@ -8475,5 +8551,49 @@
     "invalid_title": "This link is not valid",
     "invalid_body": "You can ask the business to send a new link.",
     "error": "We couldn't add you. You can try again."
+  },
+  "prepay": {
+    "cta": "Pay",
+    "via": "Payment goes straight to the business, via {host}",
+    "note": "In the payment note, write the code {code} so the business knows who paid",
+    "ask_advance": "The business asks you to pay in advance",
+    "ask_deposit": "The business asks for a deposit"
+  },
+  "owner_assistant": {
+    "button": "Assistant",
+    "title": "Mehamakor assistant",
+    "close": "Close the assistant",
+    "log_label": "Conversation with the assistant",
+    "opening": "Hi, I'm the dashboard assistant. Ask me anything about your page and signing up. I'll tell you the next step, and you can do it all here with me: fill in your details, add products and photos, and send your page for review.",
+    "prompts": {
+      "next_step": "What's my next step?",
+      "fill": "Can you help me fill in my business details?",
+      "this_screen": "What do I do on this screen?",
+      "add_products": "How do I add products?"
+    },
+    "typing": "Typing…",
+    "input_label": "Question for the assistant",
+    "input_placeholder": "Ask a question or tell me about your business",
+    "new_chat": "New chat",
+    "fallback": "I couldn't understand the question. Could you rephrase it?",
+    "error_rate_limit": "Too many messages in a row. Try again in a minute.",
+    "error_generic": "The message wasn't sent. Try again in a moment.",
+    "pages": {
+      "edit": "Edit page",
+      "google_profile": "Business on Google",
+      "share": "Share your page",
+      "followers": "Followers",
+      "whats_new": "What's new"
+    },
+    "done": {
+      "fields": "The details were saved to your page.",
+      "products": "The products were added to your page.",
+      "photos": "The photos were saved to your page.",
+      "submitted": "Your page was sent for review."
+    },
+    "nudge": {
+      "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can help with that, right here.",
+      "cta": "Finish with the assistant"
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
-import { installLoadGuard, loadGuardFailures, CONSOLE_ALLOW, CLS_LIMIT, KNOWN_CLS } from "./_load-guard";
+import { installLoadGuard, loadGuardFailures, CONSOLE_ALLOW, CLS_LIMIT, KNOWN_CLS, type LoadGuardState } from "./_load-guard";
 
 /**
  * MEH-3809 self-test for the load guard (testing.md «A classifier ships a
@@ -57,6 +57,10 @@ test.describe("load guard self-test (MEH-3809)", () => {
     expect(cls, failures.join("\n")).toHaveLength(1);
     expect(cls[0]).toContain(SELFTEST);
     expect(cls[0]).toContain(`> ${CLS_LIMIT}`);
+    // MEH-3893: the moved element's old and new box, so a CI log alone tells
+    // a block pushed down (y grows, h same) from an element that resized.
+    expect(cls[0]).toMatch(/div#content \(y-?\d+ h\d+ w\d+ → y-?\d+ h\d+ w\d+\)/);
+    expect(cls[0]).toMatch(/viewport \d+x\d+ scrollY \d+/);
   });
 
   test("the same page without the late block is clean", async ({ page, browserName }) => {
@@ -146,6 +150,16 @@ test.describe("load guard self-test (MEH-3809)", () => {
     // A page that is not listed fails at the plain limit, a lookalike path too.
     expect(run(shifted("/producers", CLS_LIMIT + 0.05))).toHaveLength(1);
     expect(run(shifted("/producer/dashboard/editx", 0.3))).toHaveLength(1);
+    // MEH-3878: /recommend passes under 0.62, fails above it; a lookalike fails.
+    expect(run(shifted("/recommend", 0.41))).toEqual([]);
+    expect(run(shifted("/recommend", 0.7))).toHaveLength(1);
+    expect(run(shifted("/recommendx", 0.41))).toHaveLength(1);
+    // A row with a query covers that state only (MEH-3887: home with a city).
+    expect(KNOWN_CLS.some((k) => k.card === "MEH-3887" && k.query)).toBe(true);
+    expect(run(shifted("/?city=haifa", 0.105))).toEqual([]);
+    expect(run(shifted("/en?view=list&city=haifa", 0.105))).toEqual([]);
+    expect(run(shifted("/", 0.105))).toHaveLength(1);
+    expect(run(shifted("/?view=list", 0.105))).toHaveLength(1);
     // A listed page never hides an error.
     expect(run(shifted("/producer/dashboard/edit", 0.3, ["pageerror: boom"]))).toEqual(["pageerror: boom"]);
     // "errors" mode (cls: false) drops CLS only.
@@ -166,6 +180,60 @@ test.describe("load guard self-test (MEH-3809)", () => {
       "console.error: Loading the image 'https://bread.jpg/' violates the following Content Security Policy directive: \"img-src 'self' https://res.cloudinary.com\".";
     expect(fails(bread)).toBe(0);
     expect(fails(bread.replace("https://bread.jpg/", "https://evil.example.com/x.png"))).toBe(1);
+    // MEH-3909: WebKit's wording of the same refusal, real text from the nightly.
+    const breadWebkit =
+      "console.error: Refused to load https://bread.jpg/ because it does not appear in the img-src directive of the Content Security Policy.";
+    const failsOn = (browserName: string, e: string) =>
+      loadGuardFailures(state(e), { browserName, navigated: false }).length;
+    expect(failsOn("webkit", breadWebkit)).toBe(0);
+    expect(failsOn("chromium", breadWebkit)).toBe(1);
+    expect(failsOn("webkit", breadWebkit.replace("https://bread.jpg/", "https://evil.example.com/x.png"))).toBe(1);
+  });
+
+  // MEH-3879: WebKit cancels the chunk scripts of a page a test leaves while it
+  // is still loading, and the old page logs ChunkLoadError. Real cases: CI job
+  // 140093540361 (05-map-navigation.spec.ts:169, `goto` right after an
+  // assertion) and the nightly of MEH-3879 (35-archetype-channel-smoke).
+  test("a ChunkLoadError is excused only for a chunk whose request was cancelled, not one that got a 404", () => {
+    const chunk = "/_next/static/chunks/3q7c6_-lg_fwp.js";
+    const err = `console.error: ChunkLoadError: Failed to load chunk ${chunk} from module 760753`;
+    const fails = (failedRequests: { path: string; errorText: string; status: number | null }[]) =>
+      loadGuardFailures({ errors: [err], shifts: [], ready: [], failedRequests }, { browserName: "webkit", navigated: true }).length;
+    // Cancelled before any response, or mid-way through its 200 body: noise.
+    expect(fails([{ path: chunk, errorText: "Load request cancelled", status: null }])).toBe(0);
+    expect(fails([{ path: chunk, errorText: "cancelled", status: 200 }])).toBe(0);
+    // Really missing: it got a 404 first (Chromium then also fires requestfailed).
+    expect(fails([{ path: chunk, errorText: "net::ERR_ABORTED", status: 404 }])).toBe(1);
+    // No failed request at all, or a different chunk cancelled: not excused.
+    expect(fails([])).toBe(1);
+    expect(fails([{ path: "/_next/static/chunks/other.js", errorText: "cancelled", status: null }])).toBe(1);
+  });
+
+  const ABORTED_CHUNK = "/_next/static/chunks/__selftest-aborted.js";
+  const MISSING_CHUNK = "/_next/static/chunks/__selftest-missing.js";
+  async function loadChunks(page: import("@playwright/test").Page) {
+    await page.route(`**${ABORTED_CHUNK}`, (r) => r.abort("aborted"));
+    await page.route(`**${MISSING_CHUNK}`, (r) => r.fulfill({ status: 404, contentType: "text/plain", body: "nope" }));
+    await servePage(`<script src="${ABORTED_CHUNK}"></script><script src="${MISSING_CHUNK}"></script>`)({ page });
+    const state = await installLoadGuard(page);
+    await page.goto(SELFTEST);
+    return state;
+  }
+  const failed = (state: LoadGuardState, path: string) =>
+    (state.failedRequests ?? []).filter((f) => f.path === path);
+
+  test("the recorder marks a cancelled chunk request as having no response", async ({ page }) => {
+    const state = await loadChunks(page);
+    await expect.poll(() => failed(state, ABORTED_CHUNK).length).toBeGreaterThan(0);
+    expect(failed(state, ABORTED_CHUNK).every((f) => f.status === null)).toBe(true);
+  });
+
+  test("the recorder keeps the 404 of a missing chunk that Chromium also reports as failed", async ({ page, browserName }) => {
+    // eslint-disable-next-line playwright/no-skipped-test -- gated on the browser engine, which the product cannot move: only Chromium fires requestfailed for a script that got a 404
+    test.skip(browserName !== "chromium", "only Chromium reports a 404 script as requestfailed");
+    const state = await loadChunks(page);
+    await expect.poll(() => failed(state, MISSING_CHUNK).map((f) => f.status)).toContain(404);
+    expect(failed(state, MISSING_CHUNK).every((f) => f.status === 404)).toBe(true);
   });
 
   test("on Chromium, a probe that never reported fails instead of reading green", () => {

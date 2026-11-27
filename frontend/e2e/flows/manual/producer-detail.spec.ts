@@ -1,5 +1,6 @@
 import type { Locator, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { stableCatalog } from "../_stable-catalog";
 import he from "../../../messages/he.json";
 
 /**
@@ -204,7 +205,8 @@ async function catalog(page: Page): Promise<Producer[]> {
   expect(res.ok(), `GET /producers must respond 2xx — got ${res.status()}`).toBeTruthy();
   const body = (await res.json()) as unknown;
   expect(Array.isArray(body), "GET /producers must return an array").toBe(true);
-  const list = body as Producer[];
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  const list = stableCatalog(body as Producer[]);
   expect(list.length, "the catalog must hold at least one business").toBeGreaterThan(0);
   return list;
 }
@@ -235,11 +237,38 @@ async function openProducer(page: Page, id: string): Promise<Locator> {
   // MEH-3708: an id with a slug 308s to /{slug}, which SSR-seeds the page;
   // ?preview=1 keeps the id page and its client detail fetch, which the
   // request recorders below count.
-  await page.goto(`/producer/${id}?preview=1`);
+  // MEH-3845: on WebKit the root has twice stayed at 0 for 20 s on the SECOND
+  // business a test opens (:419, :807), and the CI artifact cannot be read
+  // from the sandbox. So a red here names what the page showed instead
+  // (loading line, not-found line, error boundary, blank) and the page errors
+  // and failed API reads of this load.
+  const seen: string[] = [];
+  const onError = (err: Error) => seen.push(`pageerror: ${err.message.slice(0, 200)}`);
+  const onResponse = (res: { url(): string; status(): number }) => {
+    if (res.url().includes("/api/") && res.status() >= 400) seen.push(`${res.status()} ${res.url()}`);
+  };
+  const onFailed = (req: { url(): string; failure(): { errorText: string } | null }) =>
+    seen.push(`requestfailed: ${req.failure()?.errorText ?? "?"} ${req.url()}`);
+  page.on("pageerror", onError);
+  page.on("response", onResponse);
+  page.on("requestfailed", onFailed);
   const root = scope(page).getByTestId("producer-detail-root");
-  // Count gate first: the strict checks below would throw rather than wait if a
-  // transition copy ever landed inside the landmark.
-  await expect(root).toHaveCount(1, CLIENT_FETCH);
+  try {
+    await page.goto(`/producer/${id}?preview=1`);
+    // Count gate first: the strict checks below would throw rather than wait if a
+    // transition copy ever landed inside the landmark.
+    await expect(root).toHaveCount(1, CLIENT_FETCH);
+  } catch (err) {
+    const shown = (await scope(page).innerText({ timeout: 1_000 }).catch(() => "(no #main-content)")).trim();
+    throw new Error(
+      `${(err as Error).message}\n\nMEH-3845 — ${page.url()} showed: ${JSON.stringify(shown.slice(0, 300))}\n` +
+        `this load: ${seen.length ? seen.join(" · ") : "no page error, no failed request, no API status >= 400"}`,
+    );
+  } finally {
+    page.off("pageerror", onError);
+    page.off("response", onResponse);
+    page.off("requestfailed", onFailed);
+  }
   await expect(root).toBeVisible(CLIENT_FETCH);
   return root;
 }

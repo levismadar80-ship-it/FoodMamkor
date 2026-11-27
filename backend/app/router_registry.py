@@ -24,6 +24,7 @@ from app.routers import (
     business_suggestions,
     category_requests,
     chat,
+    chat_owner,
     cities,
     events,
     experiences,
@@ -46,6 +47,7 @@ from app.routers import (
     producer_me_review,
     producer_me_weekly_summary,
     producer_name_check,
+    producer_identity_check,
     producer_name_requests,
     producer_owner_invite,
     producer_owner_invite_existing,
@@ -98,6 +100,8 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(review_reply_suggest.router)
     # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
     app.include_router(page_fill.router)
+    # owner assistant (26/11): POST /chat/owner, the dashboard's own assistant
+    app.include_router(chat_owner.router)
     # MEH-3740: «יש לכם מתכון כתוב?» — one draft route for every dashboard form
     app.include_router(form_fill.router)
     # MEH-3641: «הפרופיל שלכם בגוגל» — /producers/me/google-profile
@@ -210,6 +214,13 @@ def _register_admin_on_behalf(app: FastAPI) -> None:
     app.include_router(admin_business_content.router)
 
 
+def _include_signup_checks(app: FastAPI) -> None:
+    """The sign-up form's read-only «already on the site?» lookups. Their own
+    function because register_routers sits at ruff's 50-statement cap."""
+    app.include_router(producer_name_check.router)  # MEH-3086
+    app.include_router(producer_identity_check.router)  # MEH-3884
+
+
 def register_routers(app: FastAPI) -> None:
     """Register every router in the same order they appeared in main.py.
 
@@ -224,7 +235,7 @@ def register_routers(app: FastAPI) -> None:
     # MEH-3305: /auth/passkey/* — the admin second factor.
     app.include_router(admin_passkey.router)
     app.include_router(cities.router)
-    app.include_router(producer_name_check.router)  # MEH-3086
+    _include_signup_checks(app)
     _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
     app.include_router(billing.router)  # MEH-3181

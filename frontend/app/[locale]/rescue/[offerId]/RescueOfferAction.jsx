@@ -67,6 +67,7 @@ export default function RescueOfferAction({ offer, reservation }) {
           onCancel={cancel}
           cancelling={busy}
           place={{ name: offer.producer?.name, address: pickupLine }} // MEH-3704
+          prepay={{ link: offer.producer?.prepay_link ?? null, timing: offer.producer?.prepay_timing ?? null }} // MEH-3895
         />
         {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
           <AddToCalendarButton

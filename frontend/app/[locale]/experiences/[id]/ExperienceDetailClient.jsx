@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import {
   ArrowsClockwise,
+  GraduationCap,
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
@@ -20,6 +21,7 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
+import CourseMeetingsList from "@/components/CourseMeetingsList";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { contactHref } from "@/lib/contact-method";
@@ -91,6 +93,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
   const tForm = useTranslations("experiences.new");
   // MEH-2549: the event page's shared strings (time chip, calendar).
   const tEv = useTranslations("events.detail");
+  const tList = useTranslations("events.list");
   const tCat = useTranslations("experiences.categories");
   const locale = useLocale();
   const { id } = useParams();
@@ -189,6 +192,11 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
   // A recurring experience's date is its first occasion — no «מחר» chip, and
   // no single-date calendar entry that would read as the only one.
   const when = ex.is_recurring ? null : eventWhen(ex.event_date, today);
+  // MEH-3898: a course meets several times on one sign-up; its date is the
+  // first meeting, so the date row reads «starts from» and the meetings list
+  // comes under it.
+  const meetings = Array.isArray(ex.course_meetings) ? ex.course_meetings : [];
+  const isCourse = meetings.length > 0;
   const isPast = when === "past";
   const hasCoords = ex.lat != null && ex.lng != null;
   // Address-built Waze / Google only for a public venue: a home address is
@@ -209,7 +217,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
   // MEH-2768: the host's own tally plus the on-site sign-ups.
   const signedUp = (ex.participants_count ?? 0) + (ex.registered_count ?? 0);
   const minReached = showMin && signedUp >= ex.min_participants;
-  const canCalendar = isApproved && !ex.is_recurring && !isPast;
+  const canCalendar = isApproved && !ex.is_recurring && !isCourse && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
     title: ex.title,
@@ -230,7 +238,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
       {/* MEH-2992: one shared masthead (was a byte-identical copy per page).
           MEH-2989: no date tile on the cover — the date row carries it. */}
       <EntityCover
-        imageUrl={ex.image_url}
+        imageUrl={ex.image_url || ex.owner_image_url /* MEH-3894, as events */}
         alt={ex.title}
         tone="accent"
         Icon={CatIcon}
@@ -338,7 +346,15 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
                 </p>
               </div>
             )}
-            <div className={`${infoRow} ${ex.is_recurring ? "border-t border-border" : ""}`}>
+            {isCourse && (
+              <div className={infoRow}>
+                <span className={infoIcon}><GraduationCap size={18} aria-hidden="true" /></span>
+                <p className="text-text font-semibold" data-testid="experience-course">
+                  {tList("course_meetings", { count: meetings.length })}
+                </p>
+              </div>
+            )}
+            <div className={`${infoRow} ${ex.is_recurring || isCourse ? "border-t border-border" : ""}`}>
               {/* MEH-2989: the date tile is this row's icon (Luma) — the
                   date used to repeat on the cover and in a desktop header. */}
               <DateTile month={month} day={day} bandClass="bg-accent" testId="experience-date-tile" />
@@ -346,9 +362,12 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
                 {/* MEH-3057: the tile already says month + day — a one-off
                     row shows the weekday only; «starts from» keeps the full
                     date, which is its content. */}
-                {ex.is_recurring
-                  ? t("starts_from", { date: longDate(ex.event_date, locale) })
-                  : formatEventDate(ex.event_date, locale, { weekday: "long" })}
+                {/* MEH-3898: a course names its start; «החל מ-» reads as a series. */}
+                {isCourse
+                  ? t("course_starts", { date: longDate(ex.event_date, locale) })
+                  : ex.is_recurring
+                    ? t("starts_from", { date: longDate(ex.event_date, locale) })
+                    : formatEventDate(ex.event_date, locale, { weekday: "long" })}
                 {ex.event_time && ` · ${formatTime(ex.event_time)}`}
               </p>
               {when && when !== "past" && (
@@ -357,6 +376,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
                 </span>
               )}
             </div>
+            <CourseMeetingsList meetings={meetings} />
             {duration && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Clock size={18} aria-hidden="true" /></span>

@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-96 send sites · 93 on a single channel.
+99 send sites · 96 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -63,6 +63,7 @@
 | `services/delivery_waitlist.py` | `_notify_cities` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `send_host_confirmation` | מייל | לקוחה |
 | `services/draft_merge_emails.py` | `notify_admin_draft_twin` | מייל | בית עסק / מנהלת |
+| `services/draft_merge_emails.py` | `notify_admin_identity_matches` | מייל | בית עסק / מנהלת |
 | `services/draft_merge_emails.py` | `send_owner_draft_merged` | מייל | בית עסק / מנהלת |
 | `services/email_outbox.py` | `_handle` | מייל | בלי שורת עסק |
 | `services/experience_notifications.py` | `notify_admin_new_submission` | מייל | בית עסק / מנהלת |
@@ -93,12 +94,14 @@
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_owner_cancellation` | מייל | בעלת העסק |
 | `services/registration_emails.py` | `send_owner_new_registration` | מייל | בעלת העסק |
+| `services/registration_emails.py` | `send_registrant_course_changed` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registrant_moved` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_registration_reminder` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_visitor_confirmation` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_waitlist_confirmation` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_waitlist_offer` | מייל | לקוחה |
 | `services/report_notifications.py` | `notify_admin_new_report` | מייל | בית עסק / מנהלת |
+| `services/rescue_business_emails.py` | `send_business_refund_email` | מייל | בעלת העסק |
 | `services/rescue_business_emails.py` | `send_business_reservation_email` | מייל | בעלת העסק |
 | `services/rescue_digest.py` | `_digest_one` | וואטסאפ | בעלת העסק |
 | `services/rescue_emails.py` | `_send_bag_cancelled` | מייל | לקוחה |

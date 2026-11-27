@@ -86,10 +86,10 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | → draft | owner registers | `routers/auth.py` | — |
 | → approved | admin creates | `routers/admin.py` | pre-approved unless `as_draft` |
 | draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
-| draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden; a missing licence does not block, MEH-3026) |
+| draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden; a missing licence does not block, MEH-3026); `assert_slug_decided` (an English address, MEH-3914) |
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
 | draft (ownerless) → pending or stays draft, and her own draft/pending row → deleted | admin moves a prepared draft to the owner who registered herself (MEH-3865) | `routers/admin_draft_merge.py` `merge_draft_into_owner` | draft ownerless, target draft/pending with one owner, no open orders; pending only if hers was pending and the merged page passes `submission_missing_items` |
-| non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
+| non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable`; `assert_slug_decided` (an English address, MEH-3914) |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
 | inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo keeps it `inactive` (MEH-3026: the licence is not checked), owner still linked (MEH-3268) |
@@ -145,6 +145,7 @@ and every transition re-reads the row under a lock.
 
 - Offer: active · cancelled, with `qty_left ≥ 0`.
 - Order: reserved → handed · no_show · cancelled. All three are terminal.
+- Paid mark (MEH-3897): `rescue_orders.paid_at`, a timestamp beside the status, not a status. The business (or an admin) sets or clears it on a `reserved` or `handed` order (`POST /rescue/orders/{id}/paid`, `services/rescue_payment.py`, offer locked and status re-read); setting needs a prepay link today. A marked order that is then cancelled, by the buyer or with the whole offer, sends the owners the refund email.
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|

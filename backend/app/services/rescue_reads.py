@@ -22,6 +22,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
+from app.schemas.payment_link import prepay_link
 from app.data.cities import canonical_city
 from app.models.models import (
     Producer,
@@ -30,6 +31,7 @@ from app.models.models import (
     RescueOrder,
     RescueTypicalItems,
 )
+from app.services.producer_images import first_image  # MEH-3894
 from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.utils.clock import utc_now
 from app.utils.pii import round_coord
@@ -194,7 +196,7 @@ def _public_row(
             "name": producer.name,
             "slug": producer.slug,
             "city": producer.city,
-            "image_url": (producer.images or [None])[0],
+            "image_url": first_image(producer.images),  # MEH-3894
             "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
@@ -268,6 +270,11 @@ def offer_detail(
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None
+    link = prepay_link(producer.payment_info)  # MEH-3895
+    out["producer"]["prepay_link"] = link
+    out["producer"]["prepay_timing"] = (
+        (producer.payment_info or {}).get("timing") if link else None
+    )
     return out
 
 
@@ -320,6 +327,7 @@ def my_reservations(db: Session, *, user_id: Any, today: date) -> list[dict[str,
             "status": o.status,
             "handed_at": o.handed_at,
             "cancelled_at": o.cancelled_at,
+            "paid_at": o.paid_at,
             "created_at": o.created_at,
             "price_agorot": o.offer.price_agorot,
             "cancel_until": o.offer.cancel_until,
@@ -432,6 +440,8 @@ def business_orders_today(
 
     No buyer identity is returned; see RescueOwnerOrderOut for why.
     """
+    producer = db.get(Producer, producer_id)
+    prepay = bool(producer and prepay_link(producer.payment_info))
     rows = (
         db.query(RescueOrder, RescueOffer)
         .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
@@ -456,9 +466,13 @@ def business_orders_today(
             "status": order.status,
             "handed_at": order.handed_at,
             "cancelled_at": order.cancelled_at,
+            "paid_at": order.paid_at,
             "created_at": order.created_at,
             "pickup_start": offer.pickup_start,
             "pickup_end": offer.pickup_end,
+            # MEH-3897: the dashboard offers «סמן כשולם» only to a business
+            # that asks buyers to pay ahead through its own link.
+            "prepay": prepay,
         }
         for order, offer in rows
     ]

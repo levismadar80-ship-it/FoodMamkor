@@ -111,6 +111,7 @@ import {
 import { CustomQuestionsCard } from "./cards/CustomQuestionsCard";
 import { autoOpenKeyFor } from "@/lib/edit-auto-open"; // MEH-3762
 import { ContactChannelsCard, METHOD_FIELD } from "./cards/ContactChannelsCard";
+import { useOwnerPageUpdated } from "@/lib/owner-page-updated"; // MEH-3902
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -337,6 +338,12 @@ function EditPageInner() {
     },
     [group, enterGroup]
   );
+
+  // MEH-3902: the dashboard assistant saved fields — read the business again,
+  // as the «ספרו לנו על העסק» panel's onSaved does below.
+  useOwnerPageUpdated(() => {
+    api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); }, () => {});
+  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -1059,7 +1066,10 @@ function EditPageInner() {
           title={t("delivery.heading")}
           summary={
             [
-              profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+              // MEH-2447: her own «בתיאום מראש» answer, not «חנות פיזית».
+              profile.has_physical_location !== false
+                ? tAcc(profile.by_arrangement ? "delivery_mode_arranged" : "delivery_mode_store")
+                : null,
               profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
             ]
               .filter(Boolean)
