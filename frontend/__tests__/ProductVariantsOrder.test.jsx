@@ -260,6 +260,15 @@ describe("cart sums and lines with variants (MEH-3617)", () => {
     expect(variantPrice(pageProduct([pv(S, "a", 3000, false), pv(L, "b", 5000, false)]))).toEqual({ shekels: 30, from: true });
   });
 
+  // MEH-3968: a size with no price of its own, on a product with no price,
+  // has no number. Pre-fix it was dropped and the one priced size read as
+  // THE price («40₪» flat) for every size.
+  it("a variant with no price at all is not dropped: the priced one reads «מ-», never flat", () => {
+    const noBase = (variants) => ({ ...pageProduct(variants), price_min: null, price_max: null });
+    expect(variantPrice(noBase([pv(S, "a", 4000), pv(L, "b", null)]))).toEqual({ shekels: 40, from: true });
+    expect(variantPrice(noBase([pv(S, "a", 4000)]))).toEqual({ shekels: 40, from: false });
+  });
+
   it("a bare key on a product that has variants is dropped, so no twin line is sent", () => {
     const one = menuProduct([mv(S, "x", 4500)]);
     const byId = new Map([[one.id, one]]);

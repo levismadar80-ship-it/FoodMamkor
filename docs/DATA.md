@@ -412,6 +412,9 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
   -- coalesce (schemas.py:849-855), because an already-resolved value cannot
   -- distinguish "overrides with the same number" from "inherits", and that
   -- distinction is exactly what the "משלוח מ-X₪" variance line consumes.
+  -- MEH-3968: a city that resolves to NULL (no override, no business fee) is
+  -- "not stated", never 0. Beside a stated city it is variance: the page top
+  -- line and the card show no single fee, each row shows its own (or none).
   -- App-validated on DeliveryAreaCreate only — no DB CHECK, same reasoning as
   -- the producer-level pair above (bad payload → clean 422, not a 500).
 favorites      (user_id FK, producer_id FK, PK(both), created_at)

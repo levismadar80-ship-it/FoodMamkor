@@ -346,6 +346,10 @@ export const ProducerListSchema = z.object({
   // «אושר ע״י בית העסק» tag that reads it ships.
   availability_confirmed_at: z.string().nullable().optional(),
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
+  // MEH-3968: the card reads it to leave a nationwide business's zones out of
+  // its fee, as DeliveryBlock's top line does (MEH-3511). Undeclared, it was
+  // stripped and a free zone read as «משלוח חינם» for the whole country.
+  delivery_nationwide: z.boolean().nullable().optional(),
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   partner_stores: z.array(z.string()).nullable().optional(), // → MEH-3977 «נמכר בחנויות» tag, MapProducerCard.jsx
   // NOT read by ProducerCard today, so the card-derived guard below cannot
