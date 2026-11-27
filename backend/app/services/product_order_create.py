@@ -61,7 +61,7 @@ from app.services import product_weekdays  # MEH-3618
 from app.services import product_lead_days  # MEH-3932
 from app.services import product_daily_stock  # daily stock (27/11)
 from app.services.product_order_actions import assign_pickup_code
-from app.services.product_order_clock import active_deadline, rest_end_if_inside
+from app.services.product_order_clock import answer_deadline, rest_end_if_inside
 from app.services.product_order_menu import offered_slots, takes_orders
 from app.services.product_order_slots import Slot
 from app.services.product_order_state import (
@@ -475,7 +475,10 @@ def create_order(
         delivery_fee_agorot=fee,
         age_declared=bool(has_alcohol and body.age_declared),
         # MEH-3296: 24 hours counted outside Shabbat and the festivals.
-        expires_at=active_deadline(now, ANSWER_WINDOW.total_seconds() / 3600),
+        # MEH-3956: and never after the slot starts.
+        expires_at=answer_deadline(
+            now, ANSWER_WINDOW.total_seconds() / 3600, slot.start
+        ),
         status_token_hash=token_hash(token),
         idempotency_key=key,
         items=lines,
