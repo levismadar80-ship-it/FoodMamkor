@@ -13,22 +13,12 @@
  */
 import { SITE_DESCRIPTION } from "@/lib/constants";
 import { SITE_URL } from "@/lib/env";
+import { producerPath } from "@/lib/producer-path";
+// The Hebrew text that public/llms.txt carried, unchanged. It lives in a data
+// file, not here: /llms.txt is Hebrew-only by design (no en version), and
+// copy in code is held at zero by HebrewLiteralRatchet.test.js.
+import COPY from "@/lib/llms-txt.json";
 
-// The page list that public/llms.txt carried, unchanged.
-const PAGES = `
-## עמודים
-
-- [אודות](https://mehamakor.co.il/about): מי מפעילה את מהמקור, למה היא נבנתה, ואיך אנחנו מאמתות בית עסק.
-- [תהליך האישור](https://mehamakor.co.il/about/process): הקריטריונים שכל בית עסק עובר לפני שהוא מתפרסם באתר.
-- [מפה](https://mehamakor.co.il/map): בתי העסק המאושרים על גבי מפה, לפי מיקום ותחום.
-- [בתי עסק](https://mehamakor.co.il/producers): הקטלוג המלא של בתי העסק המאושרים, עם סינון לפי קטגוריה ותזונה.
-- [הצטרפות בית עסק](https://mehamakor.co.il/join): איך בית עסק מקומי מצטרף למהמקור, מה הוא מקבל, ומה התהליך.
-- [שאלות נפוצות לבתי עסק](https://mehamakor.co.il/about/for-businesses): עלות, ערך, זמן, אמון ושליטה בלקוחות — התשובות שבית עסק שואל לפני שהוא מצטרף.
-- [מה אומרים התגים](https://mehamakor.co.il/about/badges): מה כל תג באתר אומר, ומי עומד מאחוריו.
-- [אירועים](https://mehamakor.co.il/events): שווקים, ימי חווה וסדנאות של בתי העסק, לפי תאריך ועיר.
-- [חוויות וסדנאות](https://mehamakor.co.il/experiences): חוויות אוכל שבתי עסק ומארחים מקומיים מציעים.
-- [קבוצות רכישה](https://mehamakor.co.il/group-buys): הזמנה משותפת מבית עסק, שנפתחת כשמגיעים ליעד.
-- [למה לקנות מקומי](https://mehamakor.co.il/about/why-local): למה כדאי לקנות ישירות מבתי עסק מקומיים.`;
 
 /** One line of free text: collapse whitespace, so a description never breaks the list. */
 const oneLine = (s) => String(s || "").replace(/\s+/g, " ").trim();
@@ -39,14 +29,14 @@ const oneLine = (s) => String(s || "").replace(/\s+/g, " ").trim();
  * @returns {string}
  */
 export function buildLlmsTxt(producers) {
-  const parts = [`# מהמקור`, "", SITE_DESCRIPTION, PAGES];
+  const parts = [COPY.title, "", SITE_DESCRIPTION, `\n${COPY.pages}`];
   const rows = (producers || [])
     .filter((p) => p && p.name && (p.slug || p.id))
     .map((p) => {
-      const path = p.slug ? `/${encodeURIComponent(p.slug)}` : `/producer/${p.id}`;
+      const path = encodeURI(producerPath(p) || "");
       const what = [oneLine(p.short_description), oneLine(p.city)].filter(Boolean).join(" · ");
       return `- [${oneLine(p.name).replace(/[[\]]/g, "")}](${SITE_URL}${path})${what ? `: ${what}` : ""}`;
     });
-  if (rows.length) parts.push("", "## בתי עסק", "", ...rows);
+  if (rows.length) parts.push("", COPY.businessesHeading, "", ...rows);
   return `${parts.join("\n")}\n`;
 }
