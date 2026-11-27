@@ -44,14 +44,15 @@ export default function useOrdersLive(orders, onFresh) {
   // Bumped whenever the board's list changes (her own confirm, a dialog's
   // answer): a reload that started before it is older than the screen.
   const epoch = useRef(0);
-  const seen = useRef(orders);
-  fresh.current = onFresh;
-  if (orders !== seen.current) {
-    seen.current = orders;
-    epoch.current += 1;
-  }
   const loaded = orders !== null;
-  known.current = loaded ? pendingIds(orders) : new Set();
+  // Refs are written after the render commits, never during it (react-hooks/refs).
+  useEffect(() => {
+    fresh.current = onFresh;
+  }, [onFresh]);
+  useEffect(() => {
+    epoch.current += 1;
+    known.current = orders === null ? new Set() : pendingIds(orders);
+  }, [orders]);
 
   useEffect(() => {
     if (!loaded) return undefined;
