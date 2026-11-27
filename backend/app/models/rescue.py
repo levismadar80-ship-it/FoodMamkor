@@ -43,6 +43,10 @@ RESCUE_ORDER_STATUSES = ("reserved", "handed", "no_show", "cancelled")
 # chunk-2 validators: at most 20 bags in one offer, at most 2 per buyer.
 RESCUE_MAX_QTY_PER_OFFER = 20
 RESCUE_MAX_QTY_PER_ORDER = 2
+# MEH-3897: how a reservation (a bag or a group-buy join) is paid, stored when
+# it is made. "advance" / "deposit" = through the business's own link,
+# "counter" = at pickup. Read by schemas/payment_link.py.
+RESERVATION_TIMINGS = ("advance", "deposit", "counter")
 
 
 def _check_in(column: str, values: tuple[str, ...]) -> str:
@@ -211,6 +215,11 @@ class RescueOrder(Base):
         CheckConstraint(
             "pickup_code ~ '^[0-9]{4}$'", name="rescue_orders_pickup_code_check"
         ),
+        CheckConstraint(
+            "prepay_timing IS NULL OR "
+            + _check_in("prepay_timing", RESERVATION_TIMINGS),
+            name="rescue_orders_prepay_timing_check",
+        ),
         Index("ix_rescue_orders_user_id", "user_id"),
     )
 
@@ -238,6 +247,11 @@ class RescueOrder(Base):
     # MEH-3897: the business marked the prepay as received (its own Bit /
     # PayBox, MEH-3895 — we never see the money). NULL = not marked.
     paid_at = Column(DateTime, nullable=True)
+    # MEH-3897: how this reservation is paid, as the business set it when it
+    # was made (schemas/payment_link.RESERVATION_TIMINGS). NULL = before the
+    # column. DO NOT read the business's current payment_info for a refund
+    # when this is set — it is the reservation's own terms.
+    prepay_timing = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     offer = relationship("RescueOffer", back_populates="orders")

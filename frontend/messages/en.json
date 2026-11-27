@@ -5330,6 +5330,9 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_18": {
+            "i0": "Daily stock: set how many of each product can be ordered per day, and customers see «2 left» as it runs out. Above your orders there is now «What to prepare» for each day of the coming week."
+          },
           "v1_5_17": {
             "i0": "Courses: an experience can now be several meetings, with one sign-up for all of them.",
             "i1": "Your dashboard now has an assistant that answers questions, fills in your page details and adds products from the chat.",
