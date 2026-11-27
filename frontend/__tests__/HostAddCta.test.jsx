@@ -106,10 +106,28 @@ describe("HostAddCta (MEH-3969)", () => {
     expect(screen.queryByTestId("host-gate")).toBeNull();
   });
 
-  it("while auth resolves: the link (the dashboard gate still decides)", () => {
+  it("while auth resolves: the dialog button, never the link to the old /login dead end", () => {
     authState.loading = true;
     renderCta();
-    expect(screen.getByTestId("add-cta")).toHaveAttribute("href", FORM);
+    const cta = screen.getByTestId("add-cta");
+    expect(cta.tagName).toBe("BUTTON");
+    expect(cta).not.toHaveAttribute("href");
+  });
+
+  it("order staff (signed in, not the owner): the dialog, sign-up only", () => {
+    authState.user = { role: "consumer", staff_of: "b1" };
+    renderCta();
+    expect(screen.getByTestId("add-cta").tagName).toBe("BUTTON");
+    fireEvent.click(screen.getByTestId("add-cta"));
+    expect(screen.getByTestId("host-gate-register")).toBeInTheDocument();
+    expect(screen.queryByTestId("host-gate-login")).toBeNull();
+  });
+
+  it("Escape closes the dialog", () => {
+    renderCta();
+    fireEvent.click(screen.getByTestId("add-cta"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("host-gate")).toBeNull();
   });
 
   it("admin: no CTA at all", () => {

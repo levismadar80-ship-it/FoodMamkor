@@ -47,9 +47,11 @@ export default function HostAddCta({ href, kind, variant = "primary", size = "md
   // Admin: no add CTA — admins work from a separate account (BusinessCtaLink).
   if (!loading && user?.role === "admin") return null;
 
-  // A business owner (or while auth resolves — the dashboard gate still holds)
-  // goes straight to the form, as before.
-  if (loading || user?.role === "producer") {
+  // A business owner goes straight to the form, as before. While the session
+  // is still resolving the dialog button renders (review of MEH-3969): a guest
+  // who taps in that window must not be sent to the old /login dead end, and
+  // the dialog only opens on a tap, by when an owner has swapped to the link.
+  if (!loading && user?.role === "producer") {
     return (
       <Link href={href} data-testid={testId} className={`${buttonLook(variant, size)} ${className}`.trim()}>
         {leadingIcon}
@@ -90,7 +92,7 @@ function HostGateDialog({ href, kind, signedIn, onClose }) {
   const locale = useLocale();
   const titleId = useId();
   return (
-    <Dialog labelledBy={titleId} onClose={onClose} testId="host-gate" size="sm" className="relative text-center">
+    <Dialog labelledBy={titleId} onClose={onClose} testId="host-gate" size="sm" className="relative">
       {/* MEH-2038: X at end-3, symmetric px on a centred panel. */}
       <IconButton
         label={tCommon("close")}
