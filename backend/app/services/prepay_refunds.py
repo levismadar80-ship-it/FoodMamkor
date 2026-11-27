@@ -190,9 +190,16 @@ def queue_mails(background_tasks: BackgroundTasks, mails: list[Mail]) -> int:
     return len(mails)
 
 
+BAG_CANCEL_INTRO = {
+    "owner": "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה, שלא סימנתם «שולם».",
+    "delisted": "בית העסק כבר לא מופיע במהמקור, ולכן סל ההפתעה בוטל, ואיתו השריונים "
+    "האלה, שלא סומנו «שולם».",
+}
+
+
 @_fail_open
 def bag_business_cancel_mails(
-    db: Session, offer: RescueOffer, buyer_ids: set[Any]
+    db: Session, offer: RescueOffer, buyer_ids: set[Any], why: str = "owner"
 ) -> list[Mail]:
     """After cancel_whole_offer's commit: the reservations it cancelled are
     the offer's cancelled orders stamped at its one `now` (an earlier buyer's
@@ -235,7 +242,7 @@ def bag_business_cancel_mails(
         return []
     name = " ".join(str(producer.name or "").split())
     body = _refund_body(
-        "ביטלתם את סל ההפתעה, ואיתו בוטלו השריונים האלה, שלא סימנתם «שולם».",
+        BAG_CANCEL_INTRO[why],
         items,
         "/producer/dashboard/rescue",
     )

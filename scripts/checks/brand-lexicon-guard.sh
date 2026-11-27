@@ -84,8 +84,9 @@ RULES=(
   # option A: legal precision keeps the Ministry of Health licence NAME, so
   # «רישיון יצרן» / «מספר רישיון יצרן» are allowed wherever they appear.
   $'yatzran\tיצרן|יצרנית|יצרנים|יצרניות\tרישיון[[:space:]]+יצרן\t'
-  # «שכנות מבשלות» / «מהמטבח של השכן» / «אוכל ביתי» — illegal-in-Israel framing.
-  $'home-cooking\tשכנות[[:space:]]+מבשלות|מהמטבח[[:space:]]+של[[:space:]]+השכן|אוכל[[:space:]]+ביתי\t-\t'
+  # «שכנות מבשלות» / «מהמטבח של השכן» — illegal-in-Israel framing.
+  # «אוכל ביתי» left this rule 27/11/2026: Sapir allowed the phrase (MEH-3951).
+  $'home-cooking\tשכנות[[:space:]]+מבשלות|מהמטבח[[:space:]]+של[[:space:]]+השכן\t-\t'
   # «marketplace» / «פלטפורמת מסחר» — DNA violation (magazine, not marketplace).
   # Case-insensitive: a capitalised «Marketplace» in a heading is exactly what
   # ships, and the first draft of this rule missed it (rule-5a reviewer, #4686).
