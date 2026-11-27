@@ -5,7 +5,7 @@
 // existing empty/error state on failure).
 import { describe, it, expect } from "vitest";
 import { CategoriesResponseSchema, StatsSchema, FavoritesResponseSchema } from "@/lib/api-responses";
-import { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
+import { ProducerSchema, ProducersResponseSchema, ProducersFeedSchema } from "@/lib/schemas";
 
 describe("CategoriesResponseSchema", () => {
   it("accepts a valid category list", () => {
@@ -122,6 +122,30 @@ describe("re-exported producer schemas", () => {
     expect(parsed.data?.slug).toBe("tases-ferments");
     expect(parsed.data?.avg_rating).toBe(4.7);
     expect(parsed.data?.primary_contact_method).toBe("whatsapp");
+  });
+
+  // MEH-3198: the runtime feed drops one bad business and keeps the rest, so a
+  // single broken row can no longer empty /map and the home grid.
+  describe("ProducersFeedSchema (runtime feed, per row)", () => {
+    const good = { id: 1, name: "טוב" };
+    const bad = { id: 2 }; // name missing
+    it("keeps the valid rows and drops the broken one", () => {
+      const r = ProducersFeedSchema.safeParse([good, bad, { id: 3, name: "גם טוב" }]);
+      expect(r.success).toBe(true);
+      expect(r.data?.map((p) => p.id)).toEqual([1, 3]);
+    });
+    it("fails when no row parses (contract break, not one bad record)", () => {
+      expect(ProducersFeedSchema.safeParse([bad]).success).toBe(false);
+    });
+    it("accepts an empty list", () => {
+      expect(ProducersFeedSchema.safeParse([]).data).toEqual([]);
+    });
+    it("fails on a payload that is not an array", () => {
+      expect(ProducersFeedSchema.safeParse({ items: [] }).success).toBe(false);
+    });
+    it("the strict schema still rejects the mixed list (fixtures stay checked)", () => {
+      expect(ProducersResponseSchema.safeParse([good, bad]).success).toBe(false);
+    });
   });
 
   // MEH-3198 hotfix (27/11 prod): a category with emoji null (an admin-created

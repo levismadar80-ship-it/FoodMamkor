@@ -42,10 +42,10 @@ ProducerSchema ⊆ ListOut ........... False   (בגלל 4 שדות detail-only)
 
 | # | file:line | endpoint | סכימה | חוזה backend |
 |---|---|---|---|---|
-| 1 | `lib/use-home-page.js:326` | `GET /producers` (`loadProducers`, `:318`) | `ProducersResponseSchema` | `ProducerListOut` |
-| 2 | `lib/use-home-page.js:360` | `GET /producers` (`delivery_cities`) | `ProducersResponseSchema` | `ProducerListOut` |
-| 3 | `lib/use-home-page.js:430` | `GET /producers` (geo `radius_km`) | `ProducersResponseSchema` | `ProducerListOut` |
-| 4 | `app/[locale]/map/state/useProducersFeed.js:49` | `GET /producers` (`:45`) | `ProducersResponseSchema` | `ProducerListOut` |
+| 1 | `lib/use-home-page.js:463` | `GET /producers` (`loadProducers`) | `ProducersFeedSchema` (MEH-3198, per row) | `ProducerListOut` |
+| 2 | `lib/use-home-page.js:477` | `GET /producers` (`delivery_cities`) | `ProducersFeedSchema` (MEH-3198, per row) | `ProducerListOut` |
+| 3 | `lib/use-home-page.js:634` | `GET /producers` (geo `radius_km`) | `ProducersFeedSchema` (MEH-3198, per row) | `ProducerListOut` |
+| 4 | `app/[locale]/map/state/useProducersFeed.js:101`, `:164` | `GET /producers` | `ProducersFeedSchema` (MEH-3198, per row) | `ProducerListOut` |
 | 5 | `app/[locale]/favorites/FavoritesClient.jsx:140` | `GET /users/me/favorites` | `FavoriteWithProducerSchema` → `ProducerSchema.loose()` | `FavoriteOut.producer` = `ProducerListOut` |
 | 6 | **`lib/use-home-page.js:236`** | **`GET /producers/{id}`** (`:232`) | **`ProducerSchema`** | **`ProducerDetailOut`** |
 | 7 | `lib/use-home-page.js:607` | `GET /producers/random` (`:606`) | `RandomProducerSchema` | `ProducerRandomOut` (`{id, slug}`) |
