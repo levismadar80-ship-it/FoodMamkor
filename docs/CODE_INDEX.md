@@ -833,6 +833,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/TestBusinessTag.jsx` | — אין כותרת — |
 | `admin/TestBusinessToggle.jsx` | — אין כותרת — |
 | `admin/WhatsappBlockedSection.jsx` | Admin: WhatsApp messages the outbound guard dropped outside production (MEH-3402 follow-up). … |
+| `admin/useGalleryUpload.js` | Uploads the admin's picked gallery photos one by one and keeps every photo that made it, even when a later one fails; … |
 | `auth/AuthSplitLayout.jsx` | — אין כותרת — |
 | `brand/Seed.jsx` | Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single seed may be rotated, scaled and given any seed colour. … |
 | `brand/SeedBurst.jsx` | The seed layer's success moment (MEH-2833, board 5 v2): the logo bloom and two rings of single seeds pointing outward, left open below the bloom (as on the … |
@@ -988,6 +989,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/admin/producers/ProducerDecisionModal.jsx` | ONE admin decision composer for a business awaiting review. The chosen REASON decides the outcome, not the button the admin happened to click: a fixable … |
 | `[locale]/admin/producers/QueueSlaSummary.jsx` | One line above the admin producers table — how many businesses are waiting for review, and how long the oldest has waited. … |
 | `[locale]/admin/producers/ReviewEvidence.jsx` | ReviewEvidence — MEH-1399 chunk 4, the «תיק בדיקה»: the links an admin needs while working a business, gathered next to the checklist instead of hunted for in … |
+| `[locale]/admin/producers/SlugConfirmDialog.jsx` | Before a business with no English address goes live, the admin sees the suggested address, edits it if it reads badly, and confirms (MEH-3914). … |
 | `[locale]/admin/producers/sla-statuses.js` | The one answer to "is this row waiting on the admin, and therefore accruing the «עד 3 ימי עסקים» clock". … |
 | `[locale]/admin/producers/use-admin-producers.js` | — אין כותרת — |
 | `[locale]/admin/producers/use-reject-flow.js` | Controller for the admin decision composer — fetches the canonical reason labels, holds the modal's state, and routes the submit to ONE of two existing … |
