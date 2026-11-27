@@ -24,6 +24,7 @@ from uuid import UUID
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api_errors import api_error_detail
 from app.models import Producer, User
 from app.schemas.admin_block import BlockImpactOut  # MEH-3375
 from app.schemas.schemas import UserRoleUpdate
@@ -73,7 +74,10 @@ def change_user_role(
     if data.role == "producer":
         raise HTTPException(
             status_code=422,
-            detail="לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד.",
+            detail=api_error_detail(  # MEH-1943: names the «בעלת עסק» role label
+                "role_producer_by_hand_refused",
+                "לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד.",
+            ),
         )
     if is_super_admin(target):
         raise HTTPException(

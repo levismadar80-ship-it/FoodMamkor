@@ -131,7 +131,7 @@ def test_a_cancelled_reservation_cannot_be_marked(client, db, shop, rescue_on):
     )
     r = _paid(client, shop["owner"], oid)
     assert r.status_code == 409
-    assert "שריון פעיל" in r.json()["detail"]
+    assert "שריון פעיל" in r.json()["detail"]["message"]  # MEH-1943
 
 
 def test_a_no_show_cannot_be_marked(client, db, shop, rescue_on):
@@ -178,7 +178,7 @@ def test_a_business_paid_at_the_counter_cannot_mark(client, db, shop, rescue_on)
     _, oid = _reserve(client, db, shop)
     r = _paid(client, shop["owner"], oid)
     assert r.status_code == 409
-    assert "תשלום מראש" in r.json()["detail"]
+    assert "תשלום מראש" in r.json()["detail"]["message"]  # MEH-1943
 
 
 def test_a_mark_survives_the_link_being_removed_and_can_still_be_undone(

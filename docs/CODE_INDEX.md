@@ -19,6 +19,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | קובץ | מה הוא עושה (מהכותרת) |
 |---|---|
 | `allergens.py` | Product allergen codes (MEH-2662). |
+| `api_errors.py` | Build the '{code, message, params}' error detail (MEH-1943) that an HTTPException carries, so the copy a person reads lives in frontend/messages/*.json under … |
 | `auth.py` | — אין כותרת — |
 | `body_limit.py` | No request body above MAX_BODY_BYTES enters the app. A declared Content-Length above the cap is answered 413 before a byte is read; … |
 | `cloudinary_utils.py` | Cloudinary helpers for orphan-image cleanup (MEH-375). |

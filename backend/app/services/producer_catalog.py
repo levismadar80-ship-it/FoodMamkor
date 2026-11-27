@@ -20,6 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.api_errors import api_error_detail
 from app.models import Producer
 from app.schemas.schemas import DELIVERY_DAYS, ProducerRandomOut
 from app.services.producer_listing import (
@@ -44,7 +45,11 @@ def validate_listing_sort(
     # and the API agree on what "sort by distance" requires.
     if sort == "distance" and (lat is None or lng is None):
         raise HTTPException(
-            status_code=422, detail="מיון לפי מרחק דורש מיקום — lat ו-lng חובה"
+            status_code=422,
+            # MEH-1943: was «… lat ו-lng חובה» — query-parameter names at a visitor.
+            detail=api_error_detail(
+                "distance_sort_needs_location", "כדי למיין לפי מרחק צריך לשתף את המיקום"
+            ),
         )
 
 

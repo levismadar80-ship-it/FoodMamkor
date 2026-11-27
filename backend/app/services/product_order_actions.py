@@ -27,6 +27,7 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api_errors import api_error_detail
 from app.models.models import Producer
 from app.models.product_orders import (
     PRODUCT_ORDER_CODE_STATUSES,
@@ -55,7 +56,10 @@ NEEDS_FINAL_TOTAL_DETAIL = (
 )
 NO_CODES_DETAIL = "אי אפשר לאשר הזמנות נוספות כרגע. צריך לסגור קודם הזמנות שכבר נמסרו"
 WRONG_PICKUP_CODE_DETAIL = "הקוד לא תואם להזמנה הזאת"
-TOO_EARLY_NO_SHOW_DETAIL = "אפשר לסמן «לא הגיעו» רק אחרי שעבר מועד ההזמנה"
+# MEH-1943: names the «לא הגיעו» button, so the copy lives in he.json.
+TOO_EARLY_NO_SHOW_DETAIL = api_error_detail(
+    "order_no_show_too_early", "אפשר לסמן «לא הגיעו» רק אחרי שעבר מועד ההזמנה"
+)
 PROPOSED_SLOT_DETAIL = "המועד המוצע לא נמצא בחלונות הזמן של בית העסק"
 SLOT_PASSED_DETAIL = "מועד ההזמנה כבר עבר, ולכן אי אפשר לאשר אותה"
 PROPOSAL_PASSED_DETAIL = "המועד שהוצע כבר עבר. צריך לפנות ישירות לבית העסק"

@@ -288,7 +288,7 @@ test.describe("kashrut card", () => {
 
   // MT:MEH-1167:3 — a 409 renders inline with the server's Hebrew.
   test("a duplicate request's 409 renders inline, and no success line appears", async ({ page }) => {
-    const DETAIL = "בקשה לbadge זה כבר ממתינה לאישור";
+    const DETAIL = "בקשה לתג הזה כבר ממתינה לאישור";
     await stubEdit(page, { kashrutPostAnswer: { status: 409, body: { detail: DETAIL } } });
     await openAt(page, "kashrut");
     await select(page).selectOption(await firstCode(page));

@@ -486,6 +486,19 @@
       "not_found": "Item not found.",
       "rate_limited": "Too many attempts. Try again in a few minutes.",
       "server": "The server is unavailable right now. Try again in a moment."
+    },
+    "api": {
+      "badge_request_pending": "A request for this badge is already waiting for approval",
+      "distance_sort_needs_location": "To sort by distance, share your location",
+      "email_change_needs_password": "This account has no password yet. To change the email, first set a password through «Forgot password?» on the login page.",
+      "order_no_show_too_early": "You can mark «Didn't show» only after the order time has passed",
+      "product_price_max_below_min": "«Price to» must be equal to or higher than «Price from»",
+      "product_price_max_needs_min": "«Price to» needs «Price from» too",
+      "rejection_other_needs_reason": "Write the rejection reason when «Other» is selected",
+      "rescue_no_show_too_early": "You can mark «Didn't come» only once the pickup time is over",
+      "rescue_paid_mark_needs_prepay": "A payment can be marked only when the business takes prepayment by link",
+      "rescue_paid_mark_wrong_status": "A payment can be marked only on an active reservation or a handed-over bag",
+      "role_producer_by_hand_refused": "A user can't be made a business owner by hand. A business signs up through the signup form only."
     }
   },
   "home": {

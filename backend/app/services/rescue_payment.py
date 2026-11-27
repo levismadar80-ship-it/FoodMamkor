@@ -21,6 +21,7 @@ from uuid import UUID
 from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api_errors import api_error_detail
 from app.models.models import User
 from app.models.rescue import RescueOffer, RescueOrder
 from app.sentry import capture_background_exception
@@ -48,7 +49,10 @@ def set_paid(
     if order.status not in MARKABLE:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לסמן תשלום רק על שריון פעיל או על סל שנמסר",
+            detail=api_error_detail(  # MEH-1943
+                "rescue_paid_mark_wrong_status",
+                "אפשר לסמן תשלום רק על שריון פעיל או על סל שנמסר",
+            ),
         )
     location = order.offer.location
     producer = location.producer if location else None
@@ -62,7 +66,10 @@ def set_paid(
     ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לסמן תשלום רק כשבית העסק מקבל תשלום מראש בקישור",
+            detail=api_error_detail(  # MEH-1943
+                "rescue_paid_mark_needs_prepay",
+                "אפשר לסמן תשלום רק כשבית העסק מקבל תשלום מראש בקישור",
+            ),
         )
     if paid and order.paid_at is None:
         order.paid_at = utc_now()

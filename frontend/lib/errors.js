@@ -204,6 +204,26 @@ export function detailToMessage(detail, resolveCode) {
 }
 
 /**
+ * MEH-1943: the resolver `errorMessage` uses when its caller passes none. A
+ * backend detail built with `api_error_detail()` (backend/app/api_errors.py)
+ * carries a `code` whose copy lives at `error.api.<code>` — the same
+ * `error`-scoped translator every `errorMessage` caller already passes — so
+ * every caller renders the localized copy without its own mapper. A code with
+ * no key (or a translator without `has`, e.g. a test stub) falls through to
+ * the backend's `message`, which is the same sentence in Hebrew.
+ *
+ * @param {any} t  translator scoped to the `error` namespace
+ * @returns {((code: string, params: object) => (string | null)) | undefined}
+ */
+export function defaultCodeResolver(t) {
+  if (typeof t?.has !== "function") return undefined;
+  return (code, params) => {
+    const key = `api.${code}`;
+    return t.has(key) ? t(key, params) : null;
+  };
+}
+
+/**
  * Given an axios-shaped error (or any Error), return the best localized
  * sentence to show the user. Falls back to the shared generic message —
  * never returns undefined / empty string.
@@ -214,16 +234,16 @@ export function detailToMessage(detail, resolveCode) {
  *
  * MEH-1943 chunk A: `resolveCode` is forwarded to `detailToMessage`, so a
  * caller that knows how to render a `{code, params}` detail gets that
- * rendering here too. Omitted, the object's `message` is used — which is
- * already an improvement on the pre-chunk-A behaviour, where an object detail
- * collapsed to the generic copy.
+ * rendering here too. Omitted, `defaultCodeResolver(t)` reads
+ * `error.api.<code>` (MEH-1943), and a code with no key falls back to the
+ * object's `message`. `showErrorToast` gets the same default.
  *
  * @param {any} err
  * @param {(key: string) => string} t  translator scoped to the `error` namespace
  * @param {(code: string, params: object) => (string | null | undefined)} [resolveCode]
  * @returns {string}
  */
-export function errorMessage(err, t, resolveCode) {
+export function errorMessage(err, t, resolveCode = defaultCodeResolver(t)) {
   // Offline / network unreachable — axios sets no `response`
   if (!err?.response) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {

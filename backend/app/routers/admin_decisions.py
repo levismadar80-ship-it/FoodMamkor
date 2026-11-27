@@ -17,6 +17,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.api_errors import api_error_detail
 from app.auth import require_admin
 from app.config import settings
 from app.database import get_db
@@ -253,7 +254,11 @@ def reject_producer(
     reason = (body.reason or "").strip()
     if preset_key == "other" and not reason:
         raise HTTPException(
-            status_code=400, detail="יש לפרט את סיבת הדחייה כשנבחר 'אחר'"
+            status_code=400,
+            detail=api_error_detail(  # MEH-1943: names the «אחר» preset label
+                "rejection_other_needs_reason",
+                "יש לפרט את סיבת הדחייה כשנבחר 'אחר'",
+            ),
         )
 
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
