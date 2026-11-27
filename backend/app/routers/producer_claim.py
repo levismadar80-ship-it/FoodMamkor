@@ -116,6 +116,46 @@ def _claimable(db: Session, producer: Producer) -> bool:
     return producer.status == "draft" and not _has_owner(db, producer.id)  # type: ignore[arg-type,return-value]
 
 
+def _claim_link_usable(db: Session, producer: Producer) -> bool:
+    """Whether a /c/ link (preview + claim) may still hand this page over.
+
+    MEH-3945: an ownerless draft, as before, OR the same page after the admin
+    published it with the owner's recorded consent («פרסום בהסכמה»). Every
+    claim token was minted while the page was a draft (create_claim_link
+    refuses anything else), so this does not reach a page that went live any
+    other way; that page keeps the 409 of MEH-2321 D2. Before this, the
+    consented publish killed the link the business had just been sent, and
+    she saw «כבר שויך» on a page nobody owned (27/11/2026, three businesses).
+    DO NOT use this for _editable_draft: once live, products are the owner's.
+    """
+    if _claimable(db, producer):
+        return True
+    return bool(
+        producer.status == "approved"
+        and producer.owner_invite_consent_note
+        and producer.claim_link_sent_at is not None
+        and not _has_owner(db, producer.id)  # type: ignore[arg-type]
+    )
+
+
+def _spend_owner_invite(producer: Producer) -> None:
+    """MEH-3945: a page claimed through /c/ has its owner, so a second
+    hand-over link for it (the owner invite) dies in the same commit. Same
+    columns as producer_owner_invite.cancel_owner_invite."""
+    # REUSES: backend/app/routers/producer_owner_invite.py cancel_owner_invite
+    for col in (
+        "owner_invite_token_hash",
+        "owner_invite_expires_at",
+        "owner_invite_sent_at",
+        "owner_invite_email",
+        "owner_invite_name",
+        "owner_invite_code_hash",
+        "owner_invite_code_expires_at",
+        "owner_invite_code_attempts",
+    ):
+        setattr(producer, col, None)
+
+
 @router.post(
     "/admin/producers/{producer_id}/claim-link",
     response_model=ProducerClaimLinkOut,
@@ -191,7 +231,7 @@ def preview_claim(
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
-    if not _claimable(db, producer):
+    if not _claim_link_usable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     return ProducerClaimPreviewOut(
         name=producer.name,
@@ -335,7 +375,7 @@ def claim_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
-    if not _claimable(db, producer):
+    if not _claim_link_usable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     # MEH-3137: the grower line is recorded apart, like registration (MEH-2923).
     # Raised before any write, so a 422 leaves the link claimable.
@@ -358,6 +398,7 @@ def claim_producer(
     end_staff_membership(db, user.id)
     user.terms_accepted_at = now  # type: ignore[assignment]
     user.terms_version = TERMS_VERSION  # type: ignore[assignment]
+    _spend_owner_invite(producer)
     db.commit()
     # MEH-3258: reviews she wrote (on this business, or on a competitor) leave
     # the rating now that she owns one.
