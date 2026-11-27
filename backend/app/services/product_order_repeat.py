@@ -13,7 +13,7 @@ Touches:  DB tables product_order_repeats, product_orders (through
 Does NOT: price, check or write an order itself — every week goes through
           services/product_order_create.create_order like any order, so a
           week the business cannot take is refused there and skipped here.
-          Does NOT schedule itself: product_order_repeat_job.register does.
+          Does NOT schedule itself: product_order_repeat_job.register_order_repeats does.
 Related:  app/models/product_order_repeats.py, app/routers/product_order_buyer.py
           (the buyer's stop), app/routers/product_order_business.py (the
           business's stop), app/services/product_order_outbox.py (_day, _hhmm)
@@ -40,6 +40,7 @@ from app.models.product_orders import ProductOrder
 from app.schemas.product_order_buy import OrderCreateIn
 from app.sentry import capture_background_exception
 from app.services.email_outbox import enqueue_email
+from app.services.product_order_outbox import _local  # one Israel-clock owner
 from app.utils.clock import ISRAEL_TZ, utc_now
 
 log = logging.getLogger(__name__)
@@ -63,10 +64,6 @@ ALCOHOL_DETAIL = (
 # A week the business declined or let expire did not work either (review M3).
 _FAILED_WEEK_STATUSES = ("declined", "expired")
 _NOT_TAKING_REASON = "בית העסק לא מקבל כרגע הזמנות באתר"
-
-
-def _local(at: datetime) -> datetime:
-    return at.replace(tzinfo=UTC).astimezone(ISRAEL_TZ)
 
 
 def next_slot_start(last: datetime) -> datetime:
@@ -166,7 +163,7 @@ def _stop(db: Session, repeat: ProductOrderRepeat, by: str, now: datetime) -> No
 # ---- emails -----------------------------------------------------------------------
 
 
-def _owner_email(db: Session, producer_id: Any) -> str | None:
+def _business_owner_email(db: Session, producer_id: Any) -> str | None:
     owner = db.query(User).filter(User.producer_id == producer_id).first()
     return str(owner.email) if owner is not None and owner.email else None
 
@@ -212,7 +209,7 @@ def _mail_skipped(
     enqueue_email(
         db,
         "order_repeat_skipped_business",
-        _owner_email(db, repeat.producer_id),
+        _business_owner_email(db, repeat.producer_id),
         f"הזמנה קבועה לא נוצרה השבוע: {repeat.customer_name}",
         f"ההזמנה הקבועה של {repeat.customer_name} ל{when} לא נוצרה.\n"
         f"הסיבה: {reason}\n\n{warning}\n\nההזמנות: {business_link()}",
@@ -239,7 +236,7 @@ def _mail_stopped(db: Session, repeat: ProductOrderRepeat, by: str) -> None:
         enqueue_email(
             db,
             "order_repeat_stopped_business",
-            _owner_email(db, repeat.producer_id),
+            _business_owner_email(db, repeat.producer_id),
             f"{subject}: {repeat.customer_name}",
             f"ההזמנה הקבועה של {repeat.customer_name} נעצרה, כי {why}. "
             "מעכשיו לא תיווצר ממנה הזמנה חדשה כל שבוע.",
@@ -258,7 +255,7 @@ def _mail_stopped(db: Session, repeat: ProductOrderRepeat, by: str) -> None:
         enqueue_email(
             db,
             "order_repeat_stopped_business",
-            _owner_email(db, repeat.producer_id),
+            _business_owner_email(db, repeat.producer_id),
             f"הזמנה קבועה בוטלה: {repeat.customer_name}",
             f"{repeat.customer_name} ביטלו את ההזמנה הקבועה. "
             "מעכשיו לא תיווצר ממנה הזמנה חדשה כל שבוע. "
@@ -291,7 +288,7 @@ class RunCounters:
     errors: list[str] = field(default_factory=list)
 
 
-def _body(repeat: ProductOrderRepeat, start: datetime) -> OrderCreateIn:
+def _week_body(repeat: ProductOrderRepeat, start: datetime) -> OrderCreateIn:
     return OrderCreateIn(
         producer_id=repeat.producer_id,
         items=repeat.items,
@@ -329,7 +326,7 @@ def _make_week(db: Session, repeat_id: Any, start: datetime) -> str:
     if done.first() is None:
         user = db.get(User, repeat.user_id) if repeat.user_id else None
         try:
-            create_order(db, _body(repeat, start), user, repeat_id=repeat.id)
+            create_order(db, _week_body(repeat, start), user, repeat_id=repeat.id)
         except HTTPException as exc:
             db.rollback()
             if exc.detail == RESTING_DETAIL:

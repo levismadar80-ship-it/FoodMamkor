@@ -356,10 +356,10 @@ def test_the_job_follows_the_ordering_flag(monkeypatch):
 
     monkeypatch.setattr(product_orders, "product_orders_enabled", lambda: False)
     off = _Scheduler()
-    assert job.register(off) is False and off.ids == []
+    assert job.register_order_repeats(off) is False and off.ids == []
     monkeypatch.setattr(product_orders, "product_orders_enabled", lambda: True)
     on = _Scheduler()
-    assert job.register(on) is True and on.ids == [job.JOB_ID]
+    assert job.register_order_repeats(on) is True and on.ids == [job.JOB_ID]
 
 
 def test_deleting_her_account_deletes_her_repeats(client, db, flag_on, sent):

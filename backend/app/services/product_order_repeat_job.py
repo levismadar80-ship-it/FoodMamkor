@@ -5,7 +5,7 @@ Purpose:  Run the weekly-repeat orders (MEH-3933) every hour from 09:00 to
           email about a repeat goes out at night.
 Touches:  everything services/product_order_repeat.run_due touches.
 Does NOT: decide what is due: run_due does, from each repeat's last week.
-Related:  app/startup.py (register_scheduler_jobs calls register),
+Related:  app/startup.py (register_scheduler_jobs calls register_order_repeats),
           app/services/job_heartbeat.py (the Sentry check-in)
 History:  MEH-3933 (creation, 27/11/2026)
 """
@@ -24,7 +24,7 @@ REPEAT_TZ = "Asia/Jerusalem"
 
 
 @heartbeat("order-repeats-hourly", cron_monitor_config(REPEAT_CRON, timezone=REPEAT_TZ))
-def run() -> None:
+def run_order_repeats() -> None:
     """One pass. Never raises: the scheduler thread must not die."""
     from app.database import SessionLocal
     from app.services.product_order_repeat import run_due
@@ -40,7 +40,7 @@ def run() -> None:
         db.close()
 
 
-def register(scheduler: Any) -> bool:
+def register_order_repeats(scheduler: Any) -> bool:
     """Add the job while on-site ordering is on (PRODUCT_ORDERS_ENABLED)."""
     from apscheduler.triggers.cron import CronTrigger
 
@@ -49,7 +49,7 @@ def register(scheduler: Any) -> bool:
     if not product_orders_enabled():
         return False
     scheduler.add_job(
-        run,
+        run_order_repeats,
         CronTrigger.from_crontab(REPEAT_CRON, timezone=REPEAT_TZ),
         id=JOB_ID,
         replace_existing=True,

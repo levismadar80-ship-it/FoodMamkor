@@ -13,29 +13,27 @@ Related:  app/models/product_orders.py (ProductOrder.repeat_id), alembic
 History:  MEH-3933 (creation, 27/11/2026)
 """
 
-import uuid
-
 from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
-    ForeignKey,
     Index,
     SmallInteger,
     String,
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.database import Base
+from app.models.product_orders import OrderBuyerColumns
 from app.utils.clock import utc_now
 
 PRODUCT_ORDER_REPEAT_STATES = ("active", "stopped")
 PRODUCT_ORDER_REPEAT_STOPPED_BY = ("customer", "business", "system")
 
 
-class ProductOrderRepeat(Base):
+class ProductOrderRepeat(OrderBuyerColumns, Base):
     """One weekly repeat. `last_slot_start` is the slot of the latest week it
     made or skipped (naive UTC); the next week is 7 Israel days after it, at
     the same Israel time. `skipped_in_row` counts weeks that could not be made
@@ -61,20 +59,8 @@ class ProductOrderRepeat(Base):
         Index("ix_product_order_repeats_phone", "customer_phone"),
     )
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    customer_name = Column(String(120), nullable=False)
-    customer_phone = Column(String(20), nullable=False)
-    fulfilment = Column(String(10), nullable=False)
+    # id, producer_id, user_id, customer_name, customer_phone, fulfilment:
+    # OrderBuyerColumns, the same as the order's.
     delivery_city = Column(String(100), nullable=True)
     delivery_address = Column(Text, nullable=True)
     note = Column(Text, nullable=True)

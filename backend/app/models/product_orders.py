@@ -42,7 +42,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declared_attr, relationship
 
 from app.database import Base
 from app.utils.clock import utc_now
@@ -261,7 +261,35 @@ class ProducerOrderWindow(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
 
-class ProductOrder(Base):
+class OrderBuyerColumns:
+    """MEH-3933: the columns an order and its weekly repeat share (who it is
+    for and how it is handed over), declared once. Mixed into ProductOrder
+    and ProductOrderRepeat; the DDL of both tables is unchanged."""
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    @declared_attr
+    def producer_id(cls):  # type: ignore[no-untyped-def]  # noqa: N805
+        return Column(
+            UUID(as_uuid=True),
+            ForeignKey("producers.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+
+    @declared_attr
+    def user_id(cls):  # type: ignore[no-untyped-def]  # noqa: N805
+        return Column(
+            UUID(as_uuid=True),
+            ForeignKey("users.id", ondelete="SET NULL"),
+            nullable=True,
+        )
+
+    customer_name = Column(String(120), nullable=False)
+    customer_phone = Column(String(20), nullable=False)
+    fulfilment = Column(String(10), nullable=False)
+
+
+class ProductOrder(OrderBuyerColumns, Base):
     """One buyer's order request to one business.
 
     Money is integers in agorot. `estimated_total_agorot` is what the buyer saw
@@ -326,20 +354,8 @@ class ProductOrder(Base):
         ),
     )
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    customer_name = Column(String(120), nullable=False)
-    customer_phone = Column(String(20), nullable=False)
-    fulfilment = Column(String(10), nullable=False)
+    # id, producer_id, user_id, customer_name, customer_phone, fulfilment:
+    # OrderBuyerColumns.
     delivery_address = Column(Text, nullable=True)
     slot_start = Column(DateTime, nullable=False)
     slot_end = Column(DateTime, nullable=False)
@@ -391,7 +407,7 @@ class ProductOrder(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys="ProductOrder.user_id")
     repeat = relationship("ProductOrderRepeat")  # MEH-3933
     items = relationship(
         "ProductOrderItem",

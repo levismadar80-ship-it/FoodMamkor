@@ -184,7 +184,7 @@ def _own_order(db: Session, body: BuyerRefIn, user: User | None) -> ProductOrder
 
 
 def _buyer(order: ProductOrder) -> Actor:
-    return Actor("customer", order.user_id)  # type: ignore[arg-type]
+    return Actor("customer", order.user_id)
 
 
 @router.post("/product-orders/status", response_model=BuyerOrderOut, dependencies=_GATE)
