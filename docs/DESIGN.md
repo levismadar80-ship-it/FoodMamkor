@@ -261,6 +261,11 @@ genuinely fixed colour (a third-party brand colour, an SVG fill) is
 `--update-baseline` plus a reason in the PR body. Why it matters: a future theme
 switch (dark mode) can only re-colour what goes through the tokens.
 
+The site has no dark mode today, and says so: `:root { color-scheme: only light; }`
+in `frontend/app/globals.css` (MEH-3927) stops Chrome's Auto Dark Theme from
+inverting the cream page on a phone in dark mode. A real dark theme, when it
+comes, replaces that line. Guard: `frontend/e2e/flows/44-light-only-color-scheme.spec.ts`.
+
 ### Address/city fields must use the canonical component
 
 A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /
@@ -890,8 +895,13 @@ only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
 are tokens, at exactly Tailwind's `red` / `amber` values, so `red-N → danger-N` and
 `amber-N → warning-N` was a pixel-identical codemod. Use them for status surfaces,
 borders and destructive buttons; keep `error` for error text on cream. Success
-stays `primary` / `green-*`. `yellow-*`, `gray-*` and `blue-*` are still raw debt —
-moving them changes colour and needs a mock first.
+stays `primary` / `green-*`. `yellow-N → warning-N` followed in MEH-3928 (a small
+hue shift to amber; the before/after swatch sheet and contrast table are in the
+PR), and so did `bg-gray-50`: `bg-background` for admin table heads and row
+hovers on a `bg-surface` card, `hover:bg-background-alt` for button hovers (visible
+on cream and on white). The gray status chips (draft / inactive / unknown,
+told apart by colour, MEH-2126) and `blue-*` are still raw debt — moving them
+changes colour and needs a mock first.
 
 ## S4 design tokens (MEH-136)
 

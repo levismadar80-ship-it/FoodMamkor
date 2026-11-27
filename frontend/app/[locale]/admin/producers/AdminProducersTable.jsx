@@ -175,7 +175,7 @@ function RiskBadge({ score, reasoning }) {
       cls = "bg-primary/20 text-primary";
       label = t("producers.table.risk.low");
     } else if (score <= RISK_MED_MAX) {
-      cls = "bg-yellow-100 text-yellow-800";
+      cls = "bg-warning-100 text-warning-800";
       label = t("producers.table.risk.medium");
     } else {
       cls = "bg-danger-100 text-danger-700";
@@ -624,7 +624,7 @@ function TableHead() {
     </>
   );
   return (
-    <thead className="bg-gray-50">
+    <thead className="bg-background">
       <tr>
         {/* MEH-3818: below md the name column takes all the width the other two
             leave, and they keep their own content's width. Shared out by the

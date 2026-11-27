@@ -23,7 +23,7 @@ export default function AdminCategoryRequestsPage() {
   };
 
   const STATUS_COLORS = {
-    pending: "bg-yellow-100 text-yellow-800",
+    pending: "bg-warning-100 text-warning-800",
     approved: "bg-green-100 text-green-700",
     rejected: "bg-danger-100 text-danger-800",
     merged: "bg-blue-100 text-blue-800",
@@ -98,7 +98,7 @@ export default function AdminCategoryRequestsPage() {
               the wrapper was overflow-hidden and clipped the actions at 375. */}
           <table className="table-stack w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-fg-muted text-xs">
+              <tr className="bg-background text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.id")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.business")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.date")}</th>
@@ -108,7 +108,7 @@ export default function AdminCategoryRequestsPage() {
             </thead>
             <tbody>
               {group.requests.map((req) => (
-                <tr key={req.id} className="border-t border-border hover:bg-gray-50/50">
+                <tr key={req.id} className="border-t border-border hover:bg-background/50">
                   <td className="px-5 py-3 text-xs text-fg-muted font-mono" data-label={t("category_requests.columns.id")}>
                     {req.id.slice(0, 8)}…
                   </td>

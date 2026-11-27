@@ -17,14 +17,17 @@ import { setTestBusinessId, useTestBusinessIds } from "@/lib/use-test-business-i
  * Touches:  PUT /admin/test-businesses/{id} with `{ hidden }`.
  * Does NOT: Send the column name — the body key is `hidden`
  *           (tests/test_meh2952_is_test_guards.py guard 2, frontend).
- * History:  MEH-2952 chunk 4 (creation).
+ * History:  MEH-2952 chunk 4 (creation); MEH-3872 (row height held while
+ *           the ids load).
  * @param {{ producerId: string }} props
  */
 export default function TestBusinessToggle({ producerId }) {
   const t = useTranslations("admin");
   const ids = useTestBusinessIds();
   const [saving, setSaving] = useState(false);
-  if (!ids) return null;
+  // MEH-3872: until the ids answer, hold the row's height (mt-3 + 24px line)
+  // so the panels under the header don't drop by 36px on a phone.
+  if (!ids) return <div className="mt-3 h-6" aria-hidden="true" data-testid="admin-test-business-toggle-pending" />;
   const hidden = ids.has(String(producerId));
 
   const onChange = async () => {

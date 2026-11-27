@@ -16,6 +16,7 @@ Two layers:
 
 import ast
 import re
+import zlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -28,7 +29,8 @@ from tests.conftest import make_producer
 
 BACKEND_APP = Path(__file__).resolve().parents[1] / "backend" / "app"
 LOGO_IMG = re.compile(
-    r'<img src="(?P<src>[^"]+)" width="120" height="\d+" alt="(?P<alt>[^"]+)"'
+    r'<img src="(?P<src>[^"]+)" '
+    rf'width="{email_branding.EMAIL_LOGO_WIDTH}" height="\d+" alt="(?P<alt>[^"]+)"'
 )
 HTML_DOC = re.compile(r"<html[\s>]", re.IGNORECASE)
 
@@ -267,15 +269,95 @@ def test_email_logo_has_no_tagline():
     )
     vb_w, vb_h = _viewbox(svg)
     png_w, png_h = _png_size(EMAIL_LOGO_PNG)
-    assert png_w == 240, f"email-logo.png is {png_w}px wide, want 240 (@2x of 120)"
+    want_w = 2 * email_branding.EMAIL_LOGO_WIDTH
+    assert png_w == want_w, f"email-logo.png is {png_w}px wide, want {want_w} (@2x)"
+    # MEH-3916: the badge keeps the lockup's 4:1, so the old 120×30 box in
+    # emails already sent shows the new file undistorted.
     assert abs(png_h / png_w - vb_h / vb_w) < 0.01, (
         f"email-logo.png {png_w}×{png_h} (h/w {png_h / png_w:.3f}) does not match "
         f"{EMAIL_LOGO_SVG.name} viewBox {vb_w}×{vb_h} (h/w {vb_h / vb_w:.3f})"
     )
     # The <img> box must keep the PNG's proportions (Outlook sizes from the attribute).
-    assert email_branding.EMAIL_LOGO_HEIGHT == round(120 * png_h / png_w), (
-        email_branding.EMAIL_LOGO_HEIGHT
+    assert email_branding.EMAIL_LOGO_HEIGHT == round(
+        email_branding.EMAIL_LOGO_WIDTH * png_h / png_w
+    ), email_branding.EMAIL_LOGO_HEIGHT
+
+
+def _png_rgba(path: Path) -> tuple[int, int, list[bytes]]:
+    """Decode an 8-bit RGBA, non-interlaced PNG into rows of RGBA bytes.
+
+    Stdlib only (the backend has no imaging dependency). Raises on any other
+    colour type, so an opaque RGB logo fails here before any pixel is read."""
+    data = path.read_bytes()
+    pos, idat, ihdr = 8, b"", None
+    while pos < len(data):
+        n = int.from_bytes(data[pos : pos + 4], "big")
+        kind, body = data[pos + 4 : pos + 8], data[pos + 8 : pos + 8 + n]
+        if kind == b"IHDR":
+            ihdr = body
+        elif kind == b"IDAT":
+            idat += body
+        pos += 12 + n
+    w, h = int.from_bytes(ihdr[0:4], "big"), int.from_bytes(ihdr[4:8], "big")
+    depth, ctype, interlace = ihdr[8], ihdr[9], ihdr[12]
+    assert (depth, ctype, interlace) == (8, 6, 0), (
+        f"{path.name}: want 8-bit RGBA non-interlaced, got depth={depth} "
+        f"colour type={ctype} interlace={interlace}"
     )
+    raw, stride, rows, prev = zlib.decompress(idat), w * 4, [], bytearray(w * 4)
+    for y in range(h):
+        f = raw[y * (stride + 1)]
+        line = bytearray(raw[y * (stride + 1) + 1 : (y + 1) * (stride + 1)])
+        for x in range(stride):
+            a = line[x - 4] if x >= 4 else 0
+            b, c = prev[x], prev[x - 4] if x >= 4 else 0
+            if f == 1:
+                line[x] = (line[x] + a) & 0xFF
+            elif f == 2:
+                line[x] = (line[x] + b) & 0xFF
+            elif f == 3:
+                line[x] = (line[x] + (a + b) // 2) & 0xFF
+            elif f == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 0xFF
+            else:
+                assert f == 0, f"{path.name}: row {y} has filter type {f}"
+        rows.append(bytes(line))
+        prev = line
+    return w, h, rows
+
+
+def _px(rows: list[bytes], x: int, y: int) -> tuple[int, int, int, int]:
+    return tuple(rows[y][x * 4 : x * 4 + 4])
+
+
+def test_email_logo_has_no_background_and_a_light_enough_wordmark():
+    """MEH-3916: Gmail's dark mode keeps images as they are, so any opaque
+    background (white, or a cream badge) is a box on the dark page. The logo
+    is the lockup alone on transparent pixels: the four corners and the band
+    above and below the lockup are clear, and most of the image is clear.
+    The wordmark is not near-black (that vanished on the dark page): its ink
+    is the brand mid green, and it is there at all (a blank PNG would pass
+    the transparency lines)."""
+    w, h, rows = _png_rgba(EMAIL_LOGO_PNG)
+    for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        assert _px(rows, x, y)[3] == 0, f"corner ({x},{y}) is not transparent"
+    for x in range(w):
+        assert _px(rows, x, 1)[3] == 0, f"top band pixel ({x},1) is not clear"
+    clear = sum(1 for y in range(h) for x in range(w) if _px(rows, x, y)[3] == 0)
+    assert clear > w * h // 2, f"only {clear}/{w * h} pixels are transparent"
+    # The wordmark: the left 60% (RTL: the text sits left of the flower).
+    ink = [
+        _px(rows, x, y)
+        for y in range(h)
+        for x in range(int(w * 0.6))
+        if _px(rows, x, y)[3] == 255
+    ]
+    assert len(ink) > 300, f"only {len(ink)} opaque wordmark pixels"
+    near_black = sum(1 for r, g, b, _ in ink if r + g + b < 150)
+    assert near_black == 0, f"{near_black} near-black wordmark pixels (vanish on dark)"
+    assert (0x5A, 0x8F, 0x73, 0xFF) in ink, "wordmark ink is not #5A8F73"
 
 
 def _logo_calls(src: str) -> int:

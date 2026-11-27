@@ -521,10 +521,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       {/* Live moderation feedback */}
       {checking && <p className="text-xs text-fg-muted">{t("checking_content")}</p>}
       {verdict?.status === "FLAGGED" && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-md p-3 text-sm">
+        <div className="bg-warning-50 border border-warning-300 text-warning-800 rounded-md p-3 text-sm">
           <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason}
           {verdict.suggestion && (
-            <p className="text-xs text-yellow-700 mt-1">
+            <p className="text-xs text-warning-700 mt-1">
               <Lightbulb size={14} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.suggestion}
             </p>
           )}

@@ -24,7 +24,7 @@ import WhatsappBlockedSection from "@/components/admin/WhatsappBlockedSection";
 
 const STATUS_COLORS = {
   failed: "bg-danger-100 text-danger-800",
-  window_expired: "bg-yellow-100 text-yellow-800",
+  window_expired: "bg-warning-100 text-warning-800",
 };
 
 export default function AdminWhatsappFailuresPage() {
@@ -69,7 +69,7 @@ export default function AdminWhatsappFailuresPage() {
         <div className="bg-surface border border-border rounded-md overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-fg-muted text-xs">
+              <tr className="bg-background text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.phone")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.kind")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.status")}</th>
@@ -81,7 +81,7 @@ export default function AdminWhatsappFailuresPage() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-t border-border hover:bg-gray-50/50">
+                <tr key={row.id} className="border-t border-border hover:bg-background/50">
                   <td className="px-5 py-3 font-mono text-xs">{row.to_phone}</td>
                   <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.kind")}>{row.kind}</td>
                   <td className="px-5 py-3" data-label={t("whatsapp_failures.columns.status")}>
