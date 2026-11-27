@@ -6722,7 +6722,7 @@
         "price_max_optional_suffix": "optional",
         "price_max_placeholder": "e.g. 60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
-        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price varies by season».",
+        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price on request».",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
         "diet_vegan": "Vegan",
@@ -8492,7 +8492,7 @@
     "pack": "per pack"
   },
   "product_price": {
-    "varies": "Price varies by season"
+    "varies": "Price on request"
   },
   "page_fill": {
     "title": "Tell us about your business",

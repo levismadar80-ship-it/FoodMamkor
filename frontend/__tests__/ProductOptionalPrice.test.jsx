@@ -50,7 +50,7 @@ const renderSheet = (extra) =>
   render(<ProductSheet product={{ id: 11, name: "לחם כוסמין", ...extra }} producer={producer} onClose={vi.fn()} />);
 
 describe("no fixed price (MEH-2924)", () => {
-  it("the sheet says the price varies by season", () => {
+  it("the sheet says «מחיר בפנייה» (MEH-3973; was «מחיר משתנה לפי עונה», MEH-2924)", () => {
     renderSheet({ price_min: null, price_max: null });
     expect(screen.getByText(he.product_price.varies)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/₪/);

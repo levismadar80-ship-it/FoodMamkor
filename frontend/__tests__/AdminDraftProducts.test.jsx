@@ -100,11 +100,24 @@ describe("DraftProductsPanel — add", () => {
 
   it("an invalid form posts nothing and says why", () => {
     wrap(<DraftProductsPanel producerId="d-1" />);
-    fill({ name: "", price_min: "" });
+    // «עד» without «מ-» is the one incomplete price.
+    fill({ name: "", price_min: "", price_max: "40" });
     fireEvent.click(screen.getByTestId("draft-product-add"));
     expect(api.post).not.toHaveBeenCalled();
     expect(screen.getByText(P.errors.name_required)).toBeInTheDocument();
     expect(screen.getByText(P.errors.price_required)).toBeInTheDocument();
+  });
+
+  it("MEH-3973: a product with no price posts price_min null («מחיר בפנייה»)", async () => {
+    api.post.mockResolvedValue({ data: { id: "00000000-0000-4000-8000-000000000003", name: "דבש", price_min: null, price_max: null, price_unit: "unit" } });
+    wrap(<DraftProductsPanel producerId="d-1" />);
+    fill({ name: "דבש", price_min: "" });
+    fireEvent.click(screen.getByTestId("draft-product-add"));
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    const [, body] = api.post.mock.calls[0];
+    expect(body.price_min).toBeNull();
+    expect(body.price_max).toBeNull();
+    expect(screen.queryByText(P.errors.price_required)).not.toBeInTheDocument();
   });
 
   it("shows the server's 409 verbatim and adds no row", async () => {
