@@ -182,6 +182,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/site.py` | Everything else the site sends or receives: users admin, static pages, profile, search, alerts, chat, stats, newsletter, contact, click tracking, delivery … |
 | `sentry.py` | MEH-500: backend Sentry SDK init. |
 | `services/account_guards.py` | MEH-3248 — who may be deleted, and through which door. |
+| `services/address_line.py` | One printed «street, city» line for every place the site shows or sends: the city is added only when the street a business typed does not already end with it, … |
 | `services/admin_audit.py` | One append-only row for every successful change an admin makes: who, what (method + route template), on what, when, from where. |
 | `services/admin_category_writes.py` | The admin's create, rename and delete of a category, with the guards that keep the taxonomy safe: a duplicate name, a seeded (system) row, a licensed row, and … |
 | `services/admin_create_duplicates.py` | Stop the admin «new business» form from opening a second page for a business we already have. … |
@@ -391,6 +392,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | קובץ | מה הוא עושה (מהכותרת) |
 |---|---|
 | `about-field-hints.js` | Find facts a business wrote only in its «אודות» text (or that contradict a field), so the admin can move each one into the field the page, the filters and the … |
+| `address-line.js` | One printed «street, city» line on every screen: the city is added only when the street a business typed does not already end with it, so «הרצל 5, חיפה» never … |
 | `admin-billing-export.js` | MEH-3189 — the monthly billing CSV for the bookkeeper: one row per business with a counted booking in the month, built from the SAME answer the /admin/billing … |
 | `admin-producers-export.js` | CSV export for the admin producers table. |
 | `admin-review-checklist.js` | The one copy helper of the pre-approval review checklist: which approve-confirm message to show (MEH-2175). |
