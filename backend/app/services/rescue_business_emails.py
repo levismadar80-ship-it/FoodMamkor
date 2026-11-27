@@ -190,7 +190,8 @@ def queue_business_refund_email(
             send_business_refund_email,
             to,
             facts,
-            deposit=(timing or (producer.payment_info or {}).get("timing")) == "deposit",
+            deposit=(timing or (producer.payment_info or {}).get("timing"))
+            == "deposit",
             test_cause=bool(producer.is_test),  # MEH-2952
             paid=paid,
         )

@@ -465,7 +465,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         # MEH-3735: unique within the group (UNIQUE + the row lock above).
         pickup_code=no_show.new_code(no_show.codes_in_use(db, group_buy_id)),
         # MEH-3897: the join keeps how it is paid as of now.
-        prepay_timing=reservation_timing(gb.producer.payment_info if gb.producer else None),
+        prepay_timing=reservation_timing(
+            gb.producer.payment_info if gb.producer else None
+        ),
     )
     db.add(commit)
     # Flush so the just-added commit is visible to the participant-email query

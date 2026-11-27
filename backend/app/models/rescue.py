@@ -216,7 +216,8 @@ class RescueOrder(Base):
             "pickup_code ~ '^[0-9]{4}$'", name="rescue_orders_pickup_code_check"
         ),
         CheckConstraint(
-            "prepay_timing IS NULL OR " + _check_in("prepay_timing", RESERVATION_TIMINGS),
+            "prepay_timing IS NULL OR "
+            + _check_in("prepay_timing", RESERVATION_TIMINGS),
             name="rescue_orders_prepay_timing_check",
         ),
         Index("ix_rescue_orders_user_id", "user_id"),
