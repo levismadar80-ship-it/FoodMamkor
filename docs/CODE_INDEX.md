@@ -646,6 +646,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 |---|---|
 | `useDialogFocus.js` | The focus half of a modal dialog's contract, in one place: focus moves into the dialog when it opens, Tab and Shift+Tab stay inside it, and focus returns to … |
 | `useFirstMoment.js` | The «רגע ראשון» due on the dashboard home right now, if any (MEH-3200 part 2). Wraps lib/first-moments.js with storage. |
+| `useOrdersLive.js` | Keep an open «הזמנות» tab current (MEH-3964): once a minute while the tab is visible, and once when it comes back into view, read the pending orders (one … |
 | `useScrollAffordance.js` | — אין כותרת — |
 | `useTabsKeyboard.js` | The W3C APG Tabs keyboard layer, in one place, for every tablist on the site. Returns the 'onKeyDown' a 'role="tablist"' element wears. |
 | `useUnsavedGuard.js` | Warns before an owner leaves a dashboard form with unsaved edits: the browser's own prompt on refresh / tab close, and a confirm on any in-app link that … |

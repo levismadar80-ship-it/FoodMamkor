@@ -42,6 +42,7 @@ import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
+import useOrdersLive from "@/hooks/useOrdersLive";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
@@ -104,6 +105,13 @@ export default function OrdersPage() {
     setFailed(false);
     setAttempt((n) => n + 1);
   };
+
+  // MEH-3964: an open tab picks up a new order, and its title counts them.
+  const fresh = useCallback(
+    (/** @type {any[]} */ orders) => setData((/** @type {any} */ old) => (old ? { ...old, orders } : old)),
+    [],
+  );
+  useOrdersLive(data?.orders ?? null, fresh);
 
   if (data && data.settings === null) notFound();
   // Until ordering is set up the settings are the first thing to do, so they
