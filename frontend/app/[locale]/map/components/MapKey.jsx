@@ -51,7 +51,7 @@ function SampleVerified() {
     <span className={`${PIN} bg-gradient-to-br from-[#c9b48a] via-[#8aa37b] to-[#4f7a5f]`} aria-hidden="true">
       {/* rtl-ok: mirrors the marker's physical bottom-right badge */}
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: the map badge is physically bottom-right in every locale */}
-      <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-white flex items-center justify-center">
+      <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-surface flex items-center justify-center">
         {/* icon-ok: an 8px tick inside the 14px legend copy of the marker's verified badge — a scale step would fill it */}
         <Check size={8} weight="bold" className="text-white" />
       </span>
@@ -62,7 +62,7 @@ function SampleVerified() {
 function SampleCluster() {
   return (
     <span
-      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-lg flex items-center justify-center text-2xs font-semibold numeric"
+      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-surface shadow-lg flex items-center justify-center text-2xs font-semibold numeric"
       aria-hidden="true"
     >
       5

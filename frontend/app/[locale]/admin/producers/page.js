@@ -69,7 +69,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           <button data-autofocus
             disabled={deleting}
             onClick={onCancel}
-            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition disabled:opacity-50"
           >
             {t("common.cancel")}
           </button>
@@ -104,7 +104,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
           </Button>
           <button data-autofocus
             onClick={onCancel}
-            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-background-alt transition"
           >
             {t("cancel")}
           </button>
