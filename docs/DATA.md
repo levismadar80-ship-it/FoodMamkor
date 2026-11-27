@@ -413,6 +413,9 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
   -- coalesce (schemas.py:849-855), because an already-resolved value cannot
   -- distinguish "overrides with the same number" from "inherits", and that
   -- distinction is exactly what the "משלוח מ-X₪" variance line consumes.
+  -- MEH-3968: a city that resolves to NULL (no override, no business fee) is
+  -- "not stated", never 0. Beside a stated city it is variance: the page top
+  -- line and the card show no single fee, each row shows its own (or none).
   -- App-validated on DeliveryAreaCreate only — no DB CHECK, same reasoning as
   -- the producer-level pair above (bad payload → clean 422, not a 500).
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
@@ -980,6 +983,8 @@ producer_staff (id uuid PK, producer_id FK→producers CASCADE,
 > **MEH-3216 gaps (18/11/2026):** `GET /producers/me/products/ordering` 👤 lists the caller's own products (`id`, `name`, `has_price`, `is_orderable`, `in_stock`, `price_unit`, `contains_alcohol`; bounded by the products cap; 404 while the flag is off) for the two switches in the orders tab. **`producer_order_settings.auto_confirm_slot_cap` is now the business's one cap per slot**, whether she confirms by hand or automatically: a slot holding that many open orders (pending · change_proposed · confirmed · ready) is not offered on the menu, so the order route answers `SLOT_GONE_DETAIL`. Auto-confirm still needs the cap. The business proposing a new time may go past her own cap. No schema change; the column keeps its stage-1 name.
 
 > **MEH-3680 (21/11/2026):** `POST /product-orders` — `code` is now optional for a logged-in buyer whose account phone is verified (`users.phone_verified`) and equals the order's `phone` in canonical form (`utils/phone.py::canonical_il_msisdn`); no code row is read or consumed for her. Everyone else, a guest included, still gets 422 (the wrong-code detail) without a valid code. From her 4th order to one phone within an hour a code is asked again, the old 3-codes-an-hour bound. A verified buyer's `code`, when sent, is ignored. `services/product_order_create.py::account_phone_verified`.
+
+> **MEH-3976 (27/11/2026):** the buyer view (`POST /product-orders/status` and its two siblings) gains `business_note`: for a `declined` or `cancelled` order, the note on the event that made that move when the actor was the business or an admin acting for it (the decline reason, the cancel note); null for a buyer or system close, a blank note and any other status. Read by `/order/[id]` under the headline.
 
 > **MEH-3620 (21/11/2026):** the buyer view (`POST /product-orders/status` and its two siblings) gains `review_url`: null unless the order is `handed` and the business is `approved`, then the same verified-review URL as `GET /producers/me/review-link` (one builder, `services/review_invite.py`). Read by `/order/[id]` for «כתבו ביקורת».
 

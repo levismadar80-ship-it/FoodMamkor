@@ -14,6 +14,8 @@
  *           MEH-3616 (buildSlotIcs: an order / bag pickup window).
  */
 
+import { addressLine } from "./address-line";
+
 const ISRAEL_TZ = "Asia/Jerusalem";
 
 /** RFC 5545 §3.3.11: escape backslash, semicolon, comma; newlines → \n. */
@@ -104,7 +106,7 @@ export function buildEventIcs(event, { url = "", now = new Date() } = {}) {
   const stamp =
     `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}` +
     `T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
-  const place = [event.location, event.city].filter(Boolean).join(", ");
+  const place = addressLine(event.location, event.city); // MEH-3959
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

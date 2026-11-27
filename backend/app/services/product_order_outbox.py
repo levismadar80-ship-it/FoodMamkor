@@ -387,6 +387,16 @@ def _review_request(
     return _Message(_mail(str(buyer.email), subject, body, test, "review_request"))
 
 
+def _owner_mobile(owner: User | None) -> str | None:
+    """MEH-3965: a shop whose public number is a landline still gets its
+    WhatsApp, on the owner's own mobile — only one she verified with a code
+    and still consents to (whatsapp_ready: «הסר» clears it). The opt-out list
+    is checked again at send time (whatsapp._recipient_opted_out)."""
+    if owner is None or not owner.whatsapp_ready:
+        return None
+    return canonical_il_msisdn(str(owner.phone or ""))
+
+
 def _compose(
     db: Session,
     row: ProductOrderNotification,
@@ -395,7 +405,13 @@ def _compose(
     now: datetime,
 ) -> _Message | str:
     """The message to send, or the skip code that says why there is none."""
-    owner = db.query(User).filter(User.producer_id == producer.id).first()
+    # MEH-3965: the earliest linked account, so the recipient is not arbitrary.
+    owner = (
+        db.query(User)
+        .filter(User.producer_id == producer.id)
+        .order_by(User.created_at, User.id)
+        .first()
+    )
     buyer = (
         db.query(User).filter(User.id == order.user_id).first()
         if order.user_id
@@ -423,7 +439,7 @@ def _compose(
             return "auto_confirmed"
         # The business's phone is stored as typed (0501234567); WhatsApp
         # needs the international form, and a landline has none.
-        msisdn = canonical_il_msisdn(str(producer.phone or ""))
+        msisdn = canonical_il_msisdn(str(producer.phone or "")) or _owner_mobile(owner)
         return _Message(_wa(f"+{msisdn}", template, test)) if msisdn else "no_address"
     link = buyer_link(order)
     if not order.customer_phone or link is None:
