@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
+import { expectTime, timeField } from "../_time-select";
 
 /**
  * Spec:     manual/dashboard-manage-events
@@ -183,7 +184,7 @@ test.describe("my events", () => {
     await expect(page.getByLabel(/^כותרת/)).toHaveValue("יום פתוח במאפייה");
     await expect(page.getByLabel(/^תיאור/)).toHaveValue("בואו לראות איך נאפה הלחם, עם טעימות לכל המשפחה.");
     await expect(page.getByLabel(/^תאריך/)).toHaveValue(A().event_date as string);
-    await expect(page.getByLabel(/^שעה/)).toHaveValue("18:00");
+    await expectTime(timeField(page, /^שעה/), "18:00");
     await expect(page.getByLabel("מיקום ספציפי", { exact: true })).toHaveValue("בחווה שלנו");
     await expect(page.getByLabel(/^עיר/)).toHaveValue("חיפה");
     // The category field shows the Hebrew label, not the key (events.categories.market).
