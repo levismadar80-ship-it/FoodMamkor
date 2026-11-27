@@ -497,10 +497,13 @@ export default function AboutPage() {
       </FadeInSection>
 
       {/* ======== MEH-3988 — About the logo (Sapir 28/11) ========
-          The five-seed mark (MEH-637) with its meaning. Sits on the same
-          background-alt run as Benefits and Values; the mark sits on a
-          background-tone panel so it reads as a mounted object. Static, no
-          chapter number: it is an aside to chapter 03, not a chapter. */}
+          The five-seed mark (MEH-637) with its meaning. Order on the page:
+          Benefits → this → the duo image band → Values, all on background-alt;
+          the mark sits on a background-tone panel so it reads as a mounted
+          object. Static, no chapter number: it is an aside to chapter 03.
+          The wordmark reuses about.comparison.col_brand on purpose — the
+          messages-hygiene guard refuses a fourth copy of «מהמקור»; if that
+          column header is ever reworded, give this caption its own key. */}
       <FadeInSection as="section" data-testid="about-logo" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12 flex flex-col md:flex-row md:items-center gap-8 md:gap-16">
           <figure className="m-0 md:flex-1 flex flex-col items-center gap-3 rounded-2xl bg-background px-4 py-7 md:py-12">
