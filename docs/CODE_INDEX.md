@@ -45,6 +45,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `models/home_products.py` | Home-kitchen products posted by neighbours, their WhatsApp clicks and ratings. |
 | `models/models.py` | The core tables every other model module points at: City, Producer, User, RetiredSlug, AdminSetting, StaticPage, Category, ProducerCategory. |
 | `models/producer_staff.py` | Who besides the owner may handle a business's orders. One row per invite; an accepted invite is the staff member's access. |
+| `models/product_order_repeats.py` | A buyer's weekly repeat of an order (MEH-3933, Fischgrund bakery 27/11): the same lines, the same weekday and time on the Israel clock, the same way to get … |
 | `models/product_orders.py` | The tables behind on-site ordering («בקשת הזמנה»): a business's ordering settings, an order, its lines, and the log of its status changes. |
 | `models/recipes.py` | Recipes a business publishes on its page, and their moderation state. |
 | `models/rescue.py` | The rescue-bags pilot: offers, orders, reviews and the typical items a business lists for its bags. |
@@ -317,6 +318,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/product_order_phone.py` | Prove that a buyer holds the phone she orders with: issue a one-time code, count wrong tries, and consume the code when the order is written. |
 | `services/product_order_privacy.py` | What happens to a buyer's orders when she deletes her account: the open ones are cancelled, and every one of them loses her name, phone, address, note and … |
 | `services/product_order_quote.py` | The price of an order before it is sent: the goods at the price the order route will store, the delivery fee for the buyer's city, and the total — so the … |
+| `services/product_order_repeat.py` | A buyer's weekly repeat of an order (MEH-3933): start one from her order, stop one (her, the business, or three skipped weeks in a row), and make next week's … |
+| `services/product_order_repeat_job.py` | Run the weekly-repeat orders (MEH-3933) every hour from 09:00 to 20:00 on the Israel clock, so a restart costs at most an hour and no email about a repeat … |
 | `services/product_order_slots.py` | Turn a business's weekly ordering windows into the concrete time slots a buyer can pick in the coming days. |
 | `services/product_order_state.py` | The one place an on-site order changes status. It says which moves are allowed, who may make each one, and writes the log row for every move it makes. |
 | `services/product_order_sweeper.py` | Close the requests nobody answered in time: a 'pending' or 'change_proposed' order past its 'expires_at' becomes 'expired', moved by the system, and the buyer … |
@@ -512,6 +515,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-again.js` | «להזמין שוב»: carry a finished order's lines from its status page to the business page, where they fill the cart again — the items still on the menu are … |
 | `order-cart.js` | What a buyer has picked on a business page before she sends an order request: the menu read, and the pure sums over her picks. |
 | `order-customers.js` | «הלקוחות שלכם» — read the business's customers and turn them into a CSV the business can open in Excel or Google Sheets. |
+| `order-repeat.js` | A buyer's weekly repeat of an order (MEH-3933): the weekday and time it repeats on, on the Israel clock, and the two ways to stop it — the buyer from her … |
 | `order-setup-draft.js` | Put a «ספרו לנו איך אתם מקבלים הזמנות» draft (MEH-3752) into the three order-setup cards: the settings numbers, the weekly hand-over windows and the products … |
 | `order-sheet.js` | What the order sheet needs that is not a screen: which ways of getting the order and which slots to offer, the cancel deadline, the request bodies, and the … |
 | `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
@@ -752,6 +756,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `NextDeliveryLine.jsx` | «המשלוח הבא: יום שלישי 24.11» under a delivery day heading, and «המשלוח הבא לחיפה: …» under the «מגיעים אלייך?» answer (MEH-3485). |
 | `OAuthTermsLine.jsx` | — אין כותרת — |
 | `OfferBadge.jsx` | Render a business's single active offer: a 'line' under the status in the business-page header (MEH #2659; … |
+| `OrderRepeatStop.jsx` | «לעצור את ההזמנה הקבועה» behind one confirm step, for the buyer's status page and the business's order card alike (MEH-3933). |
 | `OwnerRow.jsx` | OwnerRow — who runs an event or an experience, as one tappable row: initial avatar, the line, and a forward chevron (the Eventbrite «Organized by» / Airbnb … |
 | `OwnerSectionEditLink.jsx` | Owner-only per-section edit affordance on the public business page (MEH-1306) — a calm muted pencil beside a mapped section that deep-links into the matching … |
 | `PageFillPanel.jsx` | «ספרו לנו על העסק» (MEH-3483). The owner writes about her business in her own words; Claude drafts the page fields; … |
@@ -865,6 +870,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderDialogs.jsx` | The four forms an order action may need: a final price after weighing, a decline reason, a proposed change, a hand-over code, and a cancel note. … |
 | `dashboard/orders/OrderPrepList.jsx` | «מה להכין» above the order lists: for each pickup day from today for a week, how many of each product and size to prepare — confirmed, and apart from it what … |
 | `dashboard/orders/OrderProductsCard.jsx` | The business's products with the two switches on-site ordering needs every day: «פתוח להזמנה באתר» and «אזל כרגע». |
+| `dashboard/orders/OrderRepeatControl.jsx` | On the business's order card, for an order of a weekly repeat (MEH-3933): the day and time it repeats on, and the stop button. |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
@@ -919,6 +925,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `public/OrderSheetChoices.jsx` | The tap-to-pick parts of the order sheet: pickup or delivery as two buttons, the time slots as buttons (four shown, «מועדים נוספים» for the rest), and the … |
 | `public/OrderSheetDayConflict.jsx` | In the order sheet, when the products picked share no day with an offered slot (MEH-3618): names the product that limits it, with its days, and offers to … |
 | `public/OrderSheetPhone.jsx` | The phone and its WhatsApp code inside the order sheet: the number, «שליחת קוד», then the six-digit code field. … |
+| `public/OrderSheetRepeat.jsx` | «להזמין את זה שוב כל שבוע» in the order sheet (MEH-3933), with the day and time it will repeat on once a slot is picked. |
 | `public/OrderStepper.jsx` | The «הוספה» control at the inline end of one product row on a business page that takes orders: «הוספה» at zero, − n + after, «אזל להיום» when the business … |
 | `public/ProductFacts.jsx` | What the owner declared about one product (ingredients, allergens, storage) on the public product sheet. |
 | `public/ProductGroupChips.jsx` | The business page's product filter by the owner's own groups (MEH-3055) — «הכל», one chip per group that holds products, and «עוד מוצרים» for products in no … |
@@ -1050,6 +1057,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/newsletter/confirm/ConfirmClient.jsx` | — אין כותרת — |
 | `[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx` | — אין כותרת — |
 | `[locale]/order/[id]/OrderBusinessLinks.jsx` | MEH-3755 — on the buyer's order page: the business's name as a link to its page, its contact button (the channel it chose), and Waze / Google Maps for the … |
+| `[locale]/order/[id]/OrderRepeatBlock.jsx` | On the buyer's status page, for an order of a weekly repeat (MEH-3933): the day and time it repeats on, and the stop button. Once stopped, it says so. |
 | `[locale]/order/[id]/OrderStatusClient.jsx` | The buyer's status page for one on-site order: where it stands, when and where to collect it, the pickup code, what to pay, and the two things she can do — … |
 | `[locale]/owner-invite/OwnerInviteClient.jsx` | — אין כותרת — |
 | `[locale]/owner-invite/OwnerInviteConsents.jsx` | — אין כותרת — |

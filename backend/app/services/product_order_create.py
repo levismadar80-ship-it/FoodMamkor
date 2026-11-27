@@ -19,7 +19,9 @@ Related:  app/routers/product_order_buyer.py (the route),
 History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3617 (a line may
           name a size or flavour, priced from the variant row); MEH-3618 (a slot
           on a day one of the products is not made is refused); daily stock
-          (27/11: a line past its product's or variant's day limit is refused)
+          (27/11: a line past its product's or variant's day limit is refused);
+          MEH-3933 (`repeat_id`: an order the weekly-repeat job makes, with no
+          phone code; `repeat_weekly`: the buyer's first order starts one)
 """
 
 import base64
@@ -354,10 +356,14 @@ def _codeless_orders_left(db: Session, phone: str) -> bool:
 
 
 def _phone_proof(
-    db: Session, body: OrderCreateIn, user: User | None, phone: str
+    db: Session, body: OrderCreateIn, user: User | None, phone: str, repeat_id: Any
 ) -> ProductOrderPhoneCode | None:
     """The code row that proves `phone`, or None when her account already
-    does (MEH-3680). A missing code is refused without counting a wrong try."""
+    does (MEH-3680), or when it is a week of her weekly repeat (MEH-3933:
+    proved when she asked for it). A missing code is refused without
+    counting a wrong try."""
+    if repeat_id is not None:
+        return None
     if account_phone_verified(user, phone) and _codeless_orders_left(db, phone):
         return None
     if body.code is None:
@@ -366,6 +372,18 @@ def _phone_proof(
             detail=phone_codes.CODE_WRONG_DETAIL,
         )
     return phone_codes.check_code(db, phone, body.code)
+
+
+def _start_repeat_if_asked(
+    db: Session, order: ProductOrder, body: OrderCreateIn, repeat_id: Any
+) -> None:
+    """MEH-3933: the buyer's first order with «כל שבוע» starts the repeat, in
+    the order's transaction, so a capped one (409) writes no order either."""
+    if not body.repeat_weekly or repeat_id is not None:
+        return
+    from app.services.product_order_repeat import start_repeat
+
+    start_repeat(db, order, body)
 
 
 def _refuse_own_business(body: OrderCreateIn, user: User | None) -> None:
@@ -377,8 +395,14 @@ def _refuse_own_business(body: OrderCreateIn, user: User | None) -> None:
         )
 
 
-def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created:
-    """Write the order and return it with the buyer's status token."""
+def create_order(
+    db: Session, body: OrderCreateIn, user: User | None, repeat_id: Any = None
+) -> Created:
+    """Write the order and return it with the buyer's status token.
+
+    MEH-3933: `repeat_id` is the weekly-repeat job making this week's order.
+    The phone was proved when the buyer asked for the repeat, so no code is
+    asked; every other check runs as for a buyer who sends it herself."""
     # Checked first, so a refused owner spends no phone code.
     _refuse_own_business(body, user)
     phone = phone_codes.canonical_phone(body.phone)
@@ -392,7 +416,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     # Nothing is written before this line: a wrong code commits its own try.
     # MEH-3680: a logged-in buyer ordering to her own verified phone already
     # proved it; everyone else proves it with a code, as before.
-    code_row = _phone_proof(db, body, user, phone)
+    code_row = _phone_proof(db, body, user, phone, repeat_id)
 
     producer, row = _locked_business(db, body.producer_id)
     now = utc_now()
@@ -443,6 +467,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         status_token_hash=token_hash(token),
         idempotency_key=key,
         items=lines,
+        repeat_id=repeat_id,
     )
     db.add(order)
     try:
@@ -453,6 +478,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         db.rollback()
         raise _conflict(KEY_REUSED_DETAIL) from clash
     record_created(db, order, Actor("customer", user.id if user else None))  # type: ignore[arg-type]
+    _start_repeat_if_asked(db, order, body, repeat_id)
     has_estimate = any(line.price_is_estimate for line in lines)
     if _may_auto_confirm(db, row, order, has_estimate):
         apply_transition(db, order, "confirmed", SYSTEM)

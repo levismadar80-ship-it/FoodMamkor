@@ -1104,6 +1104,10 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     from app.services import staging_reset_job
 
     staging_reset_job.register(followup_scheduler)
+    # MEH-3933: weekly-repeat orders, behind the same ordering flag.
+    from app.services import product_order_repeat_job
+
+    product_order_repeat_job.register(followup_scheduler)
     # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED), and
     # MEH-3535: the email queue — both here unless the worker service owns them.
     _register_outbox_jobs(followup_scheduler)

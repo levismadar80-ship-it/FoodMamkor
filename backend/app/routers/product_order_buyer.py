@@ -14,7 +14,8 @@ Does NOT: take the status token in a URL — it travels in the POST body, and
 Related:  app/services/product_order_create.py, product_order_actions.py,
           product_order_phone.py, product_order_views.py;
           app/routers/product_orders.py (the flag gate)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3933
+          (POST /product-orders/status/repeat/stop)
 """
 
 import logging
@@ -45,6 +46,7 @@ from app.services import product_order_phone as phone_codes
 from app.services import whatsapp
 from app.services.product_order_create import create_order, token_hash
 from app.services.product_order_quote import quote_order
+from app.services.product_order_repeat import stop_repeat  # MEH-3933
 from app.services.product_order_menu import takes_orders
 from app.services.product_order_state import Actor
 from app.services.product_order_views import (
@@ -267,3 +269,24 @@ def list_own_orders(
     )
     _private(response)
     return {"orders": [buyer_view(db, order) for order in orders]}
+
+
+@router.post(
+    "/product-orders/status/repeat/stop",
+    response_model=BuyerOrderOut,
+    dependencies=_GATE,
+)
+@limiter.limit("30/hour")
+def stop_own_repeat(
+    request: Request,
+    response: Response,
+    body: BuyerRefIn,
+    user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3933: stop the weekly repeat this order belongs to."""
+    order = _own_order(db, body, user)
+    stop_repeat(db, order, "customer")
+    db.commit()
+    _private(response)
+    return buyer_view(db, order)

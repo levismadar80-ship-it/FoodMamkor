@@ -10,7 +10,7 @@
  *           a refused move comes back as a Hebrew 409 and is shown inline).
  * Related:  lib/product-orders.js (formatting), OrderActions.jsx
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps
- *           («וואטסאפ ללקוח» next to the phone)
+ *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»)
  */
 
 import { useLocale, useTranslations } from "next-intl";
@@ -22,6 +22,7 @@ import { telHref } from "@/lib/contact-method";
 import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderActions from "./OrderActions";
+import OrderRepeatControl from "./OrderRepeatControl";  // MEH-3933
 
 /** @param {{ order: any }} props */
 function OrderLines({ order }) {
@@ -57,6 +58,7 @@ function OrderFacts({ order }) {
 function OrderHead({ order }) {
   const t = useTranslations("dashboard.producer.orders");
   const tWindows = useTranslations("dashboard.producer.orders.windows");
+  const tRepeat = useTranslations("order_repeat");
   const locale = useLocale();
   return (
     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -70,9 +72,17 @@ function OrderHead({ order }) {
           })}
         </p>
       </div>
-      <span data-testid="order-status">
-        <Badge>{t(`status.${order.status}`)}</Badge>
-      </span>
+      <div className="flex flex-wrap gap-1.5">
+        <span data-testid="order-status">
+          <Badge>{t(`status.${order.status}`)}</Badge>
+        </span>
+        {/* MEH-3933: an order of a weekly repeat. */}
+        {order.repeat && (
+          <span data-testid="order-repeat-badge">
+            <Badge>{tRepeat(order.repeat === "active" ? "badge" : "badge_stopped")}</Badge>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -119,6 +129,7 @@ export default function OrderCard({ order, onChanged }) {
           {t("expires", { when: `${dayLabel(order.expires_at, locale)} ${hhmm(order.expires_at)}` })}
         </p>
       )}
+      <OrderRepeatControl order={order} onChanged={onChanged} />
       <OrderActions order={order} onChanged={onChanged} />
     </li>
   );

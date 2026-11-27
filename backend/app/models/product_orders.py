@@ -379,11 +379,19 @@ class ProductOrder(Base):
     proposed_slot_end = Column(DateTime, nullable=True)
     proposed_total_agorot = Column(Integer, nullable=True)
     proposal_note = Column(Text, nullable=True)
+    # MEH-3933: the weekly repeat this order came from or started; NULL = a
+    # one-off. SET NULL: deleting a repeat keeps its orders.
+    repeat_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_order_repeats.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
     user = relationship("User", foreign_keys=[user_id])
+    repeat = relationship("ProductOrderRepeat")  # MEH-3933
     items = relationship(
         "ProductOrderItem",
         back_populates="order",
