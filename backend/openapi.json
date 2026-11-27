@@ -10777,6 +10777,11 @@
             ],
             "title": "Admin Notes"
           },
+          "allow_duplicate": {
+            "default": false,
+            "title": "Allow Duplicate",
+            "type": "boolean"
+          },
           "as_draft": {
             "default": false,
             "title": "As Draft",

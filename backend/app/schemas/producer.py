@@ -137,6 +137,9 @@ class ProducerAdminCreate(BaseModel):
     # link, routers/producer_claim.py) — status "draft", no owner, not live.
     # False (default) = today's behaviour: pre-approved and live at once.
     as_draft: bool = False
+    # MEH-3883: True = the admin saw the 409 list of businesses that look
+    # like this one and chose to create it anyway. Not stored.
+    allow_duplicate: bool = False
     # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
     name: SanitizedBusinessNameField = Field(max_length=200)
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
