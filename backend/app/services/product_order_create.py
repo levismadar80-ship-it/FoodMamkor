@@ -56,6 +56,7 @@ from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
 from app.services import product_variants  # MEH-3617
 from app.services import product_weekdays  # MEH-3618
+from app.services import product_lead_days  # MEH-3932
 from app.services import product_daily_stock  # daily stock (27/11)
 from app.services.product_order_actions import assign_pickup_code
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
@@ -407,6 +408,8 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     lines = order_lines(db, body, bool(row.alcohol_licensed))
     # MEH-3618: a product made only on some days, on the slot's Israel day.
     product_weekdays.refuse_closed_day(db, [ln.product_id for ln in lines], slot.start)
+    # MEH-3932: a product that must be ordered some days ahead.
+    product_lead_days.refuse_too_soon(db, [ln.product_id for ln in lines], slot.start, now)
     # Daily stock: not past a product's or variant's limit for the slot's day.
     # Counted under the business row lock taken above.
     product_daily_stock.refuse_over_limit(db, producer.id, lines, slot.start)

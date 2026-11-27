@@ -32,7 +32,7 @@ export async function loadProductsOrdering() {
  * Save one product with one field changed; the rest of the row goes back
  * as it was read.
  * @param {any} product
- * @param {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} change
+ * @param {{ is_orderable?: boolean, in_stock?: boolean, daily_limit?: number | null, lead_days?: number | null, variant_limits?: { id: string, daily_limit: number | null }[] }} change
  */
 export async function saveProductOrdering(product, change) {
   const body = {

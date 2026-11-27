@@ -8348,6 +8348,17 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -9029,6 +9040,17 @@
           "in_stock": {
             "title": "In Stock",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "name": {
             "title": "Name",
@@ -19843,6 +19865,19 @@
             "title": "Is Orderable",
             "type": "boolean"
           },
+          "lead_days": {
+            "anyOf": [
+              {
+                "maximum": 14.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
           "price_unit": {
             "anyOf": [
               {
@@ -19915,6 +19950,17 @@
           "is_orderable": {
             "title": "Is Orderable",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "price_unit": {
             "enum": [
@@ -20063,6 +20109,17 @@
             "default": false,
             "title": "Is Vegetarian",
             "type": "boolean"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
           },
           "may_contain": {
             "anyOf": [

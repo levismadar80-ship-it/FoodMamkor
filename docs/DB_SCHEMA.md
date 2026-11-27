@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-70 tables, 833 columns.
+70 tables, 834 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -74,7 +74,7 @@
 | `product_order_phone_codes` | 7 | — |
 | `product_orders` | 30 | producers, users |
 | `product_variants` | 7 | products |
-| `products` | 31 | producers |
+| `products` | 32 | producers |
 | `registrations` | 16 | events, experiences |
 | `reports` | 8 | producers, users |
 | `rescue_no_show_tombstones` | 4 | — |
@@ -1436,6 +1436,7 @@
 | `contains_alcohol` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `available_weekdays` | `SMALLINT` | yes |  |  | business |
 | `daily_limit` | `SMALLINT` | yes |  |  | business |
+| `lead_days` | `SMALLINT` | yes |  |  | business |
 | `is_draft` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `source_image_url` | `TEXT` | yes |  |  | business |
 
@@ -1443,6 +1444,7 @@
 
 - `products_available_weekdays_check`: `available_weekdays >= 1 AND available_weekdays <= 127`
 - `products_daily_limit_check`: `daily_limit >= 1 AND daily_limit <= 999`
+- `products_lead_days_check`: `lead_days >= 1 AND lead_days <= 14`
 - `products_price_unit_check`: `price_unit IN ('unit', 'kg', '100g', 'bottle', 'box', 'pack')`
 
 **Indexes**

@@ -114,6 +114,8 @@ class ProductOrderingIn(BaseModel):
     variant_limits: list["VariantLimitIn"] | None = Field(
         default=None, max_length=MAX_VARIANTS_PER_PRODUCT
     )
+    # MEH-3932: days ahead it must be ordered. Omitted = keep; null = none.
+    lead_days: int | None = Field(default=None, ge=1, le=14)
 
     @field_validator("price_unit")
     @classmethod
@@ -147,6 +149,7 @@ class ProductOrderingOut(BaseModel):
     price_unit: PriceUnit
     contains_alcohol: bool
     daily_limit: int | None = None
+    lead_days: int | None = None
     variants: list[VariantLimitOut] = []
 
 
@@ -187,6 +190,9 @@ class OrderMenuProductOut(BaseModel):
     # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64;
     # NULL = every day. The sheet offers only slots on days every line is made.
     available_weekdays: int | None = None
+    # MEH-3932: the pickup day is at least today + lead_days (Israel clock);
+    # NULL = no product rule. The sheet offers only such slots.
+    lead_days: int | None = None
     # MEH-3617: empty = no choice. One = applied without a choice. Many = the
     # buyer must pick one; `in_stock` above is false when all are out.
     variants: list[OrderMenuVariantOut] = []

@@ -678,6 +678,7 @@ product_variants.product_id	business	a product a business lists
 products.allergens	business	a product a business lists
 products.available_weekdays	business	a product a business lists
 products.daily_limit	business	a product a business lists
+products.lead_days	business	a product a business lists
 products.contains_alcohol	business	a product a business lists
 products.description	business	a product a business lists
 products.gluten_detail	business	a product a business lists
