@@ -35,7 +35,9 @@ export default function GroupBuyPickupWindowFields({ start, endTime, onStart, on
     <fieldset className="sm:col-span-2 grid grid-cols-2 gap-3" data-testid="gb-pickup-window">
       <legend className="text-sm font-medium text-text mb-1">{t("pickup_window_legend")}</legend>
       {/* MEH-3955: a date and 24-hour selects, not datetime-local (AM/PM on an English phone). */}
-      <DateTimeField label={t("pickup_window_start")} ariaLabel={t("pickup_window_start")} value={start} onChange={(v) => onStart({ target: { value: v } })} />
+      <div className="col-span-2 min-w-0">
+        <DateTimeField label={t("pickup_window_start")} ariaLabel={t("pickup_window_start")} value={start} onChange={(v) => onStart({ target: { value: v } })} />
+      </div>
       <TimeOfDaySelect label={t("pickup_window_end")} ariaLabel={t("pickup_window_end")} optional value={endTime} onChange={(v) => onEnd({ target: { value: v } })} />
       <p className="col-span-2 text-xs text-fg-muted">{t("pickup_window_helper")}</p>
       {error && (

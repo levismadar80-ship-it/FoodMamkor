@@ -42,6 +42,17 @@ function split(value) {
 /** @param {{ date: string, time: string }} parts */
 const compose = (parts) => (parts.date && parts.time ? `${parts.date}T${parts.time}` : "");
 
+/**
+ * @param {{
+ *   label: import("react").ReactNode,
+ *   ariaLabel: string,
+ *   value: string,
+ *   onChange: (value: string) => void,
+ *   required?: boolean,
+ *   helperText?: import("react").ReactNode,
+ *   testId?: string,
+ * }} props
+ */
 export default function DateTimeField({ label, ariaLabel, value, onChange, required = false, helperText, testId }) {
   const id = useId();
   const [parts, setParts] = useState(() => split(value));

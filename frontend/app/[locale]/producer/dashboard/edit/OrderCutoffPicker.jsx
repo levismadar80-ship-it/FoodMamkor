@@ -44,6 +44,7 @@ export default function OrderCutoffPicker({ day, time, hint, testid, onChange })
           ))}
         </Select>
         <TimeOfDaySelect
+          optional
           value={time}
           onChange={(v) => onChange({ order_cutoff_time: v })}
           ariaLabel={t("pickup_cutoff_time_aria")}
