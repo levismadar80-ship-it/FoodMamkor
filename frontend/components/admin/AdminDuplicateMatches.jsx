@@ -17,6 +17,7 @@
 
 import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 import Link from "@/components/ui/Link";
 
 /**
@@ -43,10 +44,13 @@ export default function AdminDuplicateMatches({ matches, total = matches.length,
   const tReason = useTranslations("admin.producers.table.draft_twin.reasons");
   const tStatus = useTranslations("admin.producers.status_label");
   return (
-    <div
-      role="alert"
+    // MEH-3072: the in-place message look (role="alert", one red) is InlineMessage's.
+    <InlineMessage
+      as="div"
+      variant="box"
+      size="inherit"
       data-testid="admin-duplicate-matches"
-      className="border border-warning-300 rounded-md bg-surface p-4 space-y-3"
+      className="rounded-md p-4 space-y-3"
     >
       <p className="font-semibold">{t("title")}</p>
       <p className="text-sm text-muted">{t("intro")}</p>
@@ -88,6 +92,6 @@ export default function AdminDuplicateMatches({ matches, total = matches.length,
       >
         {t("create_anyway")}
       </Button>
-    </div>
+    </InlineMessage>
   );
 }
