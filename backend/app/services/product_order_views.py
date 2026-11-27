@@ -24,6 +24,7 @@ from app.services.producer_listing import is_business_row
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
 from app.services.review_invite import review_invite_url
 from app.utils.clock import utc_now
+from app.services.address_line import address_line  # MEH-3959
 
 # A token never expires on its own, so the page behind it stops answering a
 # while after the order closed: it holds a name and a city.
@@ -120,7 +121,7 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
     city: str | None = loc.city  # type: ignore[assignment]
     if loc.location_precision != "exact" or not address:
         return city or None
-    return ", ".join(part for part in (address, city) if part)
+    return address_line(address, city)
 
 
 def review_url(producer: Producer | None, order: ProductOrder) -> str | None:
