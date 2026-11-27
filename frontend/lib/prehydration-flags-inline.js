@@ -18,6 +18,13 @@
  *               server HTML and shows from the first paint instead of
  *               pushing the gallery down after hydration (MEH-3856). The
  *               value is lib/map-view-state.js MAP_REFERRER, written out.
+ *             data-came-from-site — a page of the site is right behind this
+ *               one in the tab's history: the same test as
+ *               components/HistoryBackLink.jsx cameFromInsideSite, so the
+ *               phone's «→ חזרה» row is in the server HTML and shows from the
+ *               first paint instead of pushing the gallery down 52px after
+ *               hydration (MEH-3944; HistoryBackBeforePaint.test.jsx pins
+ *               parity).
  *           Before, both waited for the JS bundle, and on a phone that put the
  *           LCP at 5.5s (/login) and 6.4s (/map, the banner's text).
  * Does NOT: read or trust the token's value, and it is not a security
@@ -26,7 +33,7 @@
  * Related:  lib/cookie-consent.js (key and values), lib/auth-context.js
  *           ("token" key), lib/prehydration-capture-inline.js (same idea).
  * History:  MEH-2233 (creation); MEH-3860 (data-friday-mode); MEH-3856
- *           (data-from-map).
+ *           (data-from-map); MEH-3944 (data-came-from-site).
  *
  * CSP: script-src already allows 'unsafe-inline' (next.config.js).
  */
@@ -40,4 +47,4 @@
 // with the password in the URL. React's own onSubmit still runs after
 // hydration, because preventDefault does not stop propagation.
 // guard-ok: an inline <head> script cannot import israel-date.js (MEH-3860)
-export const PREHYDRATION_FLAGS_SCRIPT = `(function(){document.addEventListener("submit",function(e){var f=e.target;if(f&&f.hasAttribute&&f.hasAttribute("data-no-native-submit"))e.preventDefault()},true);try{var d=document.documentElement,s=window.localStorage,c=s.getItem("cookieConsent");if(c==="all"||c==="essential")d.setAttribute("data-cookie-answered","");if(s.getItem("token"))d.setAttribute("data-has-token","")}catch(e){}try{if(new URLSearchParams(window.location.search).get("from")==="map")document.documentElement.setAttribute("data-from-map","")}catch(e){}try{var o=false;try{o=window.localStorage.getItem("friday_mode_override")==="1"}catch(e){}var p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Jerusalem",weekday:"short",hour:"2-digit",hourCycle:"h23"}).formatToParts(new Date()),w="",h=0;for(var i=0;i<p.length;i++){if(p[i].type==="weekday")w=p[i].value;if(p[i].type==="hour")h=parseInt(p[i].value,10)}if(o||(w==="Thu"&&h>=18)||(w==="Fri"&&h<14))document.documentElement.setAttribute("data-friday-mode","")}catch(e){}})();`;
+export const PREHYDRATION_FLAGS_SCRIPT = `(function(){document.addEventListener("submit",function(e){var f=e.target;if(f&&f.hasAttribute&&f.hasAttribute("data-no-native-submit"))e.preventDefault()},true);try{var d=document.documentElement,s=window.localStorage,c=s.getItem("cookieConsent");if(c==="all"||c==="essential")d.setAttribute("data-cookie-answered","");if(s.getItem("token"))d.setAttribute("data-has-token","")}catch(e){}try{if(new URLSearchParams(window.location.search).get("from")==="map")document.documentElement.setAttribute("data-from-map","")}catch(e){}try{var n=window.navigation,b=false;if(n&&typeof n.canGoBack==="boolean")b=n.canGoBack;else{var f=window.performance&&window.performance.getEntriesByType&&window.performance.getEntriesByType("navigation")[0];if(f&&f.name){var q=function(x){if(x==="/en"||x.indexOf("/en/")===0)x=x.slice(3);return x||"/"};b=q(new URL(f.name).pathname)!==q(window.location.pathname)}}if(b)document.documentElement.setAttribute("data-came-from-site","")}catch(e){}try{var o=false;try{o=window.localStorage.getItem("friday_mode_override")==="1"}catch(e){}var p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Jerusalem",weekday:"short",hour:"2-digit",hourCycle:"h23"}).formatToParts(new Date()),w="",h=0;for(var i=0;i<p.length;i++){if(p[i].type==="weekday")w=p[i].value;if(p[i].type==="hour")h=parseInt(p[i].value,10)}if(o||(w==="Thu"&&h>=18)||(w==="Fri"&&h<14))document.documentElement.setAttribute("data-friday-mode","")}catch(e){}})();`;
