@@ -156,7 +156,7 @@ def queue_reservation_email(
     producer = location.producer if location else None
     if not user.email or producer is None:
         return
-    address = address_line(location.address, location.city)  # type: ignore[arg-type]
+    address = address_line(location.address, location.city)
     today = clock.today
     background_tasks.add_task(
         send_reservation_email,

@@ -122,7 +122,7 @@ def _reminder_card(order: RescueOrder, now: datetime) -> ReservationEmail:
         total_agorot=offer.price_agorot * order.qty,
         pickup_from=israel_hhmm(offer.pickup_start),
         pickup_until=israel_hhmm(offer.pickup_end),
-        address=address_line(location.address, location.city),  # type: ignore[arg-type]
+        address=address_line(location.address, location.city),
         cancel_until=(
             israel_hhmm(offer.cancel_until) if offer.cancel_until > now else None
         ),
