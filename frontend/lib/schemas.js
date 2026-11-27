@@ -93,7 +93,10 @@ export const ProducerListSchema = z.object({
   categories: z.array(z.object({
     id: z.union([z.string(), z.number()]).optional(),
     name: z.string().nullable().optional(),
-    emoji: z.string().optional(),
+    // MEH-3198 hotfix (27/11): nullable like the backend's CategoryOut
+    // (`emoji: str | None`). An admin-created category with no emoji
+    // («עוגות וקינוחים», id 1523) failed the whole /map list in production.
+    emoji: z.string().nullish(),
     // MEH-1456 chunk A: seeded-row ownership flag, read-only on every
     // surface. Declared so the nested-parity guard does not strip it;
     // chunk 2b's admin UI gates rename/delete on it.
