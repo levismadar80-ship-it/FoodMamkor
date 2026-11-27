@@ -24,9 +24,12 @@ export const GLUTEN_CATEGORY_SLUGS = ["bread"];
 /** Grass-fed only means something for an animal that grazes. */
 export const GRASS_FED_CATEGORY_SLUGS = ["meat", "dairy", "eggs"];
 
-// MEH-3982: grains with gluten, or flour, named in the business's own text.
-// «ללא גלוטן» right after the word does not count («מאפים ללא גלוטן»).
-const GLUTEN_WORDS = /(קמח|דגנים|חיטה|שעורה|שיפון|כוסמין|לחם|מאפים|מאפה)(?!\s+ללא\s+גלוטן)/;
+// MEH-3982: grains with gluten, flour or baked goods named in the business's
+// own text. Not when the word is negated («ללא קמח»), and not at all when the
+// text says it is gluten-free anywhere («קמח כוסמין ללא גלוטן»): that owner
+// already knows the question, and a wrong «אצלכם כתוב» would hit exactly her.
+const GLUTEN_WORDS = /(?<!(?:ללא|בלי)\s)(קמח\S*|דגנים|חיטה|שעורה|שיפון|כוסמין|לחם|לחמ\S+|מאפ\S+|פיתות|בורקס)/;
+const GLUTEN_FREE_MENTION = /(?:ללא|בלי|נטול\S*)[\s-]+גלוטן/;
 
 /** Per axis: the answer that makes a claim, and what contradicts it. */
 const AXES = {
@@ -50,7 +53,8 @@ export function conflictingCategoryNames(axis, { scope, categories, text }) {
   const names = (categories || [])
     .filter((cat) => !!cat?.slug && rule.slugs.includes(cat.slug))
     .map((cat) => cat.name || "");
-  const word = rule.words && text ? text.match(rule.words)?.[1] : null;
+  const word =
+    rule.words && text && !GLUTEN_FREE_MENTION.test(text) ? text.match(rule.words)?.[1] : null;
   return word && names.length === 0 ? [word] : names;
 }
 

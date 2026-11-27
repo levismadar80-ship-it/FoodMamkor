@@ -186,28 +186,28 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
       </section>
 
       {/* MEH-3982: grass-fed only for a business that grazes animals (or already ticked). */}
-      {showsGrassFed({ categories: profile?.categories, checked: seed.grass_fed }) && (
-      <section
-        className="space-y-3 border-t border-border pt-4"
-        data-testid="tags-section-grass-fed"
-      >
-        <h3 className="text-sm font-bold text-primary">{tGrass("heading")}</h3>
-        {/* MEH-1539 dashboard-field standard: a "where it appears" line. */}
-        <p className="text-xs text-fg-muted">{tGrass("scope_helper")}</p>
-        {/* A single checkbox, not a yes/no pair: the column is a plain Boolean
-            defaulting to false, so "no" and "not answered" are one value. */}
-        <Checkbox
-          className="flex items-center gap-1.5 text-sm"
-          name="grass_fed"
-          checked={grassFed}
-          onChange={(e) => {
-              setGrassFed(e.target.checked);
-              setSaved(false);
-            }}
+      {showsGrassFed({ categories: profile?.categories, checked: seed.grass_fed || grassFed }) && (
+        <section
+          className="space-y-3 border-t border-border pt-4"
+          data-testid="tags-section-grass-fed"
         >
-          {tGrass("label")}
-        </Checkbox>
-      </section>
+          <h3 className="text-sm font-bold text-primary">{tGrass("heading")}</h3>
+          {/* MEH-1539 dashboard-field standard: a "where it appears" line. */}
+          <p className="text-xs text-fg-muted">{tGrass("scope_helper")}</p>
+          {/* A single checkbox, not a yes/no pair: the column is a plain Boolean
+              defaulting to false, so "no" and "not answered" are one value. */}
+          <Checkbox
+            className="flex items-center gap-1.5 text-sm"
+            name="grass_fed"
+            checked={grassFed}
+            onChange={(e) => {
+                setGrassFed(e.target.checked);
+                setSaved(false);
+              }}
+          >
+            {tGrass("label")}
+          </Checkbox>
+        </section>
       )}
 
       {errorMsg && (

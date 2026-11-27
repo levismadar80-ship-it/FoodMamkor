@@ -92,6 +92,11 @@ describe("gluten facility (MEH-3982)", () => {
     ["«מאפים ללא גלוטן», dedicated", { categories: [VEG], gluten_free_facility: "dedicated", description: "מאפים ללא גלוטן" }, null],
     ["bread category, shared", { categories: [BREAD], gluten_free_facility: "shared" }, null],
     ["no categories, dedicated", { categories: [], gluten_free_facility: "dedicated" }, null],
+    ["«ללא קמח»", { categories: [VEG], gluten_free_facility: "dedicated", description: "עוגיות ללא קמח" }, null],
+    ["«קמח כוסמין ללא גלוטן»", { categories: [VEG], gluten_free_facility: "dedicated", description: "קמח כוסמין ללא גלוטן" }, null],
+    ["«מאפים ללא-גלוטן»", { categories: [VEG], gluten_free_facility: "dedicated", description: "מאפים ללא-גלוטן" }, null],
+    ["«לחמניות»", { categories: [VEG], gluten_free_facility: "dedicated", description: "לחמניות טריות" }, "לחמניות"],
+    ["«מאפייה»", { categories: [VEG], gluten_free_facility: "dedicated", description: "מאפייה שכונתית" }, "מאפייה"],
   ])("%s", (_label, profile, quoted) => {
     renderCard(profile);
     const warning = screen.queryByTestId("diet-conflict-gluten");
