@@ -41,7 +41,7 @@ import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet"
 import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
 import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
 import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
-import { shekelsText } from "@/lib/product-orders";
+import { isWeighedUnit, shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
 import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-display-order";
@@ -615,7 +615,9 @@ export default function ProducerSections({
                       <ProductDietPills product={product} t={t} />
                       {orderable && typeof rowEstimateAgorot(orderable) === "number" && (
                         <p className="text-xs text-fg-muted mt-1" data-testid="order-estimate">
-                          {t("producer.detail.order_cart.estimate", { price: shekelsText(rowEstimateAgorot(orderable)) })}
+                          {t(isWeighedUnit(orderable.price_unit) ? "producer.detail.order_cart.estimate" : "producer.detail.order_cart.estimate_range", {
+                            price: shekelsText(rowEstimateAgorot(orderable)),
+                          })}
                         </p>
                       )}
                       {orderable?.contains_alcohol && (
