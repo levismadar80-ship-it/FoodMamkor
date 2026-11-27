@@ -235,7 +235,8 @@ const EMPTY = {
   delivery_cities: [],
   // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
   delivery_excluded_cities: [],
-  partner_stores: [], // MEH-3977
+  // MEH-3977: create only — on the edit page DeliveryCard owns it.
+  partner_stores: [],
   // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
   // availability_status during the 7-day overlap; Phase 4 drops the legacy.
   availability_state: "accepting_orders",

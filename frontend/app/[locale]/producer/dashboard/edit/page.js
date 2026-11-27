@@ -595,7 +595,8 @@ function EditPageInner() {
     kashrut: (profile.kashrut_badges || []).length > 0,
     delivery:
       profile.has_physical_location !== false ||
-      Boolean(profile.offers_delivery),
+      Boolean(profile.offers_delivery) ||
+      (profile.partner_stores || []).length > 0, // MEH-3977
     // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
     orderWindow: Object.keys(profile.order_window || {}).length > 0,
     // MEH-2264: "filled" = at least one override still ahead. Clock-derived,
@@ -1071,6 +1072,8 @@ function EditPageInner() {
                 ? tAcc(profile.by_arrangement ? "delivery_mode_arranged" : "delivery_mode_store")
                 : null,
               profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
+              // MEH-3977: «נמכר דרך חנויות אחרות».
+              (profile.partner_stores || []).length > 0 ? tAcc("delivery_mode_partner_stores") : null,
             ]
               .filter(Boolean)
               .join(" · ") || tAcc("delivery_none")

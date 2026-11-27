@@ -184,6 +184,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       ),
       storeWithHours: form.hasPhysical && !form.byArrangement && !!resolveStoreHours(profile),
       byArrangement: form.hasPhysical && form.byArrangement,
+      partnerStores: form.partnerStores.length > 0, // MEH-3977
     },
     tMap,
   );

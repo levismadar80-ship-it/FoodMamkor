@@ -133,3 +133,24 @@ describe("section nav", () => {
     );
   });
 });
+
+describe("review fixes", () => {
+  it("fulfillment tag: partner-only says «נמכר בחנויות», not «בתיאום מראש»", async () => {
+    const { fulfillmentTags } = await import("@/lib/fulfillment-tags");
+    const t = createTranslator({ locale: "he", messages: he, namespace: "map.producer_card" });
+    const only = fulfillmentTags({ partnerStores: true }, t);
+    expect(only.map((x) => x.label)).toEqual([he.map.producer_card.fulfillment.partner_stores]);
+    expect(fulfillmentTags({}, t)[0].key).toBe("arranged");
+    // With delivery the stores add no tag.
+    expect(fulfillmentTags({ delivers: true, partnerStores: true }, t).map((x) => x.key)).toEqual(["delivery_only"]);
+  });
+
+  it("completeness: partner-only is not asked for coordinates or hours", async () => {
+    const { producerCompleteness, COMPLETENESS_FIELDS } = await import("@/lib/producer-completeness");
+    const base = { city: "שעל", phone: "050", categories: [{}], images: ["x"], description: "משק" };
+    const r = producerCompleteness({ ...base, has_physical_location: false, offers_delivery: false, partner_stores: ["פארמרים"] });
+    expect(r.missing).not.toContain(COMPLETENESS_FIELDS.coords);
+    expect(r.missing).not.toContain(COMPLETENESS_FIELDS.hours);
+    expect(r.priority).not.toBe("red");
+  });
+});

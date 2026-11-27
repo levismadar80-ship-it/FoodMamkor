@@ -833,7 +833,14 @@ class ProducerUpdate(BaseModel):
         # Only validate when both are explicitly set (partial updates allowed)
         # MEH-3977: partner stores sent in the same body count; the stored
         # value is read by delivery_validation.ensure_location_mode.
-        if hp is not None and od is not None and not hp and not od and not self.partner_stores:
+        # When partner_stores is not in the body, the stored list decides
+        # (ensure_location_mode reads it), so only a sent empty list raises here.
+        if (
+            hp is False
+            and od is False
+            and "partner_stores" in self.model_fields_set
+            and not self.partner_stores
+        ):
             raise ValueError(LOCATION_MODE_MESSAGE)
         if self.by_arrangement and hp is False:
             raise ValueError("«בתיאום מראש» מסמנים רק כשיש מקום שהלקוחות מגיעים אליו")

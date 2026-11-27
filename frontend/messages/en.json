@@ -1722,7 +1722,8 @@
         "delivery_only": "Delivery",
         "pickup_only": "Self-pickup",
         "arranged": "By arrangement",
-        "on_site": "Buy on site"
+        "on_site": "Buy on site",
+        "partner_stores": "Sold in stores"
       }
     },
     "mini": {
@@ -5786,7 +5787,8 @@
         "hub_group_contact": "Contact",
         "hub_trust_card": "Certifications & documents",
         "hub_progress": "{done} of {total} completed",
-        "questions_summary_defaults": "{count, plural, one {showing 1 default question} other {showing # default questions}}"
+        "questions_summary_defaults": "{count, plural, one {showing 1 default question} other {showing # default questions}}",
+        "delivery_mode_partner_stores": "Through other stores"
       },
       "contact_channels": {
         "heading": "Contact channels",

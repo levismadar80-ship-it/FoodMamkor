@@ -771,6 +771,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `PageFillPanel.jsx` | «ספרו לנו על העסק» (MEH-3483). The owner writes about her business in her own words; Claude drafts the page fields; … |
 | `PageFillReview.jsx` | The second half of «ספרו לנו על העסק» (MEH-3483): a draft of the page fields shown field by field, each with a checkbox, and the save of only what the owner … |
 | `Pagination.jsx` | — אין כותרת — |
+| `PartnerStoresField.jsx` | The «נמכר דרך חנויות אחרות» answer (MEH-3977): a checkbox, and under it the store names, comma separated. … |
+| `PartnerStoresLine.jsx` | On the business page, name the other stores that sell its products (MEH-3977): «המוצרים נמכרים גם דרך פארמרים, הענתיות ועלה הביתה». … |
 | `PasskeyRecoveryPanel.jsx` | PasskeyRecoveryPanel — the second sign-in step when the passkey did not answer (MEH-3305): the admin cancelled the device prompt, or the device is gone. … |
 | `PasswordInput.jsx` | MEH-306 — reusable password input with live policy feedback. |
 | `PasswordStrength.jsx` | — אין כותרת — |

@@ -6322,6 +6322,7 @@ export const listProducersProducersGetResponseLocationsDefault = [];
 export const listProducersProducersGetResponseOffersDeliveryDefault = false;
 export const listProducersProducersGetResponseOffersPickupDefault = false;
 export const listProducersProducersGetResponseOrganicCertifiedDefault = false;
+export const listProducersProducersGetResponsePartnerStoresDefault = [];
 export const listProducersProducersGetResponsePhoneVerifiedDefault = false;
 export const listProducersProducersGetResponsePickupPointsDefault = false;
 export const listProducersProducersGetResponsePlanDefault = `free`;
@@ -6439,6 +6440,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseOrganicCertifiedDefault),
+  "partner_stores": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponsePartnerStoresDefault),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponsePhoneVerifiedDefault),
   "pickup_points": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponsePickupPointsDefault),
@@ -11211,6 +11213,7 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerLocationsDefault = [
 export const getFavoritesUsersMeFavoritesGetResponseProducerOffersDeliveryDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerOffersPickupDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerOrganicCertifiedDefault = false;
+export const getFavoritesUsersMeFavoritesGetResponseProducerPartnerStoresDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerPhoneVerifiedDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerPickupPointsDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerPlanDefault = `free`;
@@ -11330,6 +11333,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerOrganicCertifiedDefault),
+  "partner_stores": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerPartnerStoresDefault),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerPhoneVerifiedDefault),
   "pickup_points": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerPickupPointsDefault),

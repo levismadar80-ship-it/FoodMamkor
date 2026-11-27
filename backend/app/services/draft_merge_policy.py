@@ -117,8 +117,6 @@ DELIVERY_COLUMNS = (
     "delivery_nationwide",
     "delivery_cities",
     "delivery_excluded_cities",
-    # MEH-3977: «נמכר גם דרך» is how the products reach buyers — same set.
-    "partner_stores",
     "delivery_zones",
     "delivery_days_min",
     "delivery_days_max",
@@ -126,6 +124,10 @@ DELIVERY_COLUMNS = (
     "delivery_fee",
     "free_delivery_above",
 )
+# MEH-3977: her store list wins when she wrote one; an empty list never wipes
+# the draft's. Not in DELIVERY_COLUMNS: her_delivery reads delivery areas, and
+# a partner-only owner has none (review: her stores were silently dropped).
+PARTNER_STORES_IF_HERS = ("partner_stores",)
 # Pickup settings go with the pickup points (producer_locations).
 PICKUP_COLUMNS = (
     "has_physical_location",
@@ -266,10 +268,19 @@ def copy_fields(
     for name in FILL_IF_BLANK:
         if _blank(getattr(draft, name)) and not _blank(getattr(target, name)):
             setattr(draft, name, getattr(target, name))
+    draft_physical = draft.has_physical_location
     if her_delivery:
         _copy_group(draft, target, DELIVERY_COLUMNS)
     if her_pickup:
         _copy_group(draft, target, PICKUP_COLUMNS)
+    for name in PARTNER_STORES_IF_HERS:
+        if getattr(target, name):
+            setattr(draft, name, getattr(target, name))
+    # MEH-3977: the two groups move independently, so her «no place» can land
+    # beside the draft's «no delivery» with no store either — CHECK
+    # producer_location_mode would 500 the merge. Keep the draft's place then.
+    if not (draft.has_physical_location or draft.offers_delivery or draft.partner_stores):
+        draft.has_physical_location = draft_physical
     # Verified by code only if the number the page now shows is hers, verified.
     if not _blank(target.phone):
         draft.phone_verified = bool(  # type: ignore[assignment]

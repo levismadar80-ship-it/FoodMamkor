@@ -104,6 +104,9 @@ SENSITIVE_FIELDS = frozenset(
         # same reason whatsapp_group is here — a swapped one sends visitors to
         # a different number, and it skips phone verification by design.
         "secondary_phone",
+        # MEH-3977 (review): store names go live on the page at once — owner
+        # text no one has read, same reason as whatsapp_group.
+        "partner_stores",
     }
 )
 

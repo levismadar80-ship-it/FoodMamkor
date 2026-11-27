@@ -224,6 +224,9 @@ class ProducerListOut(BaseModel):
     # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
     # "משלוחים לכל הארץ (למעט …)". Empty unless delivery_nationwide.
     delivery_excluded_cities: list[str] = []
+    # MEH-3977: «נמכר דרך חנויות אחרות» — the page line (PartnerStoresLine)
+    # and the card's «נמכר בחנויות» tag. On the list so the card can read it.
+    partner_stores: list[str] = []
     # MEH-902: serialize the rich delivery relation so MapProducerCard's
     # "delivers to your city" pill can render — it needs per-row `city` +
     # `delivery_day`, which the flat `delivery_cities` above doesn't carry.
@@ -433,9 +436,6 @@ class ProducerDetailOut(ProducerListOut):
     # older payload) keeps the CTA rather than silently losing it -- the failure
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
-    # MEH-3977: «נמכר דרך חנויות אחרות» — public names shown on the page
-    # (DeliveryBlock). Detail only; list cards do not render it.
-    partner_stores: list[str] = []
     # MEH-2952 chunk 3 (Sapir 11/11 ruling 2): in EVERY answer — false for a
     # live business, true for a seeded test row. Read from the model property
     # `Producer.noindex` (models.py), so every builder fills it; the column

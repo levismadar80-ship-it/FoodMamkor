@@ -226,6 +226,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
               storeWithHours: !!p.sells_on_site,
               // MEH-2447: the owner's «בתיאום מראש» answer, only with a place.
               byArrangement: !!p.by_arrangement && p.has_physical_location !== false,
+              // MEH-3977: sold only through other stores.
+              partnerStores: Array.isArray(p.partner_stores) && p.partner_stores.length > 0,
             },
             t,
           ).map((tag) => (

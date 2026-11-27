@@ -15283,6 +15283,14 @@
             "title": "Organic Certified",
             "type": "boolean"
           },
+          "partner_stores": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Partner Stores",
+            "type": "array"
+          },
           "phone": {
             "anyOf": [
               {

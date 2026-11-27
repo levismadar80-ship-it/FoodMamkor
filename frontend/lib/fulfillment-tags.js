@@ -61,11 +61,18 @@ export const FULFILLMENT_ICON_PX = 13;
  * מראש», producers.by_arrangement AND has_physical_location). It is a fourth
  * service: it counts toward `solo`, so «משלוח בלבד» never sits beside it, and
  * it shows the same neutral tag the "nothing declared" cell falls back to.
+ *
+ * MEH-3977: `partnerStores` — sold only through other stores (no place, no
+ * delivery). Said only in the "nothing else" cell, as a neutral tag: «בתיאום
+ * מראש» there would be a claim nobody made, and no filter returns it.
  */
-export function fulfillmentTags({ delivers, offersPickup, storeWithHours, byArrangement }, t) {
+export function fulfillmentTags({ delivers, offersPickup, storeWithHours, byArrangement, partnerStores = false }, t) {
   const arranged = { key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true };
   const count = [delivers, offersPickup, storeWithHours, byArrangement].filter(Boolean).length;
   if (count === 0) {
+    if (partnerStores) {
+      return [{ key: "partner_stores", label: t("fulfillment.partner_stores"), Icon: null, neutral: true }];
+    }
     return [arranged];
   }
   const solo = count === 1;

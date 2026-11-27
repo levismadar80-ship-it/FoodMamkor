@@ -1722,7 +1722,8 @@
         "delivery_only": "משלוח",
         "pickup_only": "איסוף עצמי",
         "arranged": "בתיאום מראש",
-        "on_site": "קנייה במקום"
+        "on_site": "קנייה במקום",
+        "partner_stores": "נמכר בחנויות"
       }
     },
     "mini": {
@@ -5782,7 +5783,8 @@
         "hub_group_contact": "קשר",
         "hub_trust_card": "אישורים ותעודות",
         "hub_progress": "{done} מתוך {total} הושלמו",
-        "questions_summary_defaults": "{count, plural, one {מוצגת שאלת ברירת מחדל אחת} two {מוצגות שתי שאלות ברירת מחדל} other {מוצגות # שאלות ברירת מחדל}}"
+        "questions_summary_defaults": "{count, plural, one {מוצגת שאלת ברירת מחדל אחת} two {מוצגות שתי שאלות ברירת מחדל} other {מוצגות # שאלות ברירת מחדל}}",
+        "delivery_mode_partner_stores": "דרך חנויות אחרות"
       },
       "contact_channels": {
         "heading": "ערוצי קשר",

@@ -129,3 +129,35 @@ def test_admin_put_partner_stores(client, db):
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["partner_stores"] == ["הענתיות"]
+
+
+def test_store_name_without_letters_is_422(client, db):
+    user, _ = _owner(db)
+    resp = client.put(
+        "/producers/me", json={"partner_stores": ["!!!", "12"]}, headers=auth_header(user)
+    )
+    assert resp.status_code == 422, resp.text
+    assert "אותיות" in resp.text
+
+
+def test_flags_off_without_the_list_uses_the_stored_stores(client, db):
+    """Review nit: the schema cannot see the stored list, so it defers."""
+    user, producer = _owner(db)
+    producer.partner_stores = ["פארמרים"]
+    db.commit()
+    resp = client.put(
+        "/producers/me",
+        json={"has_physical_location": False, "offers_delivery": False},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+
+
+def test_flags_off_with_nothing_stored_is_still_422(client, db):
+    user, _ = _owner(db)
+    resp = client.put(
+        "/producers/me",
+        json={"has_physical_location": False, "offers_delivery": False},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text

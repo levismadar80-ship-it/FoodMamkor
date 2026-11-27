@@ -10,9 +10,10 @@ Does NOT: decide the location mode (physical OR delivery OR partner stores):
           DB CHECK producer_location_mode.
 Related:  backend/app/models/models.py (partner_stores column),
           alembic b2d4f6a8c0e3.
-History:  MEH-3977 (creation).
+History:  MEH-3977 (creation; review: letter check).
 """
 
+import re
 from typing import Any
 
 from app.limits import cap_list
@@ -29,6 +30,9 @@ LOCATION_MODE_MESSAGE = (
     "או חנויות אחרות שמוכרות את המוצרים"
 )
 PARTNER_STORES_DETAIL = f"אפשר לרשום עד {MAX_PARTNER_STORES} חנויות"
+# MEH-555 pattern (letters counted after strip), at 2 not 3: «AM» is a store.
+_LETTER = re.compile(r"[א-תa-zA-Z]")
+PARTNER_STORE_LETTERS_DETAIL = "שם חנות צריך לכלול לפחות שתי אותיות"
 PARTNER_STORE_NAME_DETAIL = (
     f"שם חנות צריך להיות באורך {MIN_PARTNER_STORE_NAME} עד {MAX_PARTNER_STORE_NAME} תווים"
 )
@@ -52,6 +56,8 @@ def normalize_partner_stores(value: Any) -> Any:
             continue
         if not MIN_PARTNER_STORE_NAME <= len(name) <= MAX_PARTNER_STORE_NAME:
             raise ValueError(PARTNER_STORE_NAME_DETAIL)
+        if len(_LETTER.findall(name)) < MIN_PARTNER_STORE_NAME:
+            raise ValueError(PARTNER_STORE_LETTERS_DETAIL)
         key = name.casefold()
         if key in seen:
             continue
