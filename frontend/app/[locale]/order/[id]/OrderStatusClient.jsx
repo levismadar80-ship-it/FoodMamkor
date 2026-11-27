@@ -174,7 +174,7 @@ export function OrderStatusView({ order, onChange, refOf }) {
       {view.toPay && (
         <p className="font-medium text-text">
           {/* MEH-3974: until the business sets the final price, the amount is the most she pays. */}
-          {t(estimateKind(order.items) && order.final_total_agorot == null ? "to_pay_estimate" : "to_pay", {
+          {t(estimateKind(order.items) && (order.final_total_agorot ?? null) === null ? "to_pay_estimate" : "to_pay", {
             total: shekelsText(toPayAgorot(order)),
           })}
         </p>
