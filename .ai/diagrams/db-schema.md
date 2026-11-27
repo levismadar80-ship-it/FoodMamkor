@@ -887,8 +887,8 @@ erDiagram
 > `rescue_orders.prepay_timing` and `group_buy_commits.prepay_timing`
 > (varchar(10) NULLable, CHECK advance|deposit|counter). Written when the
 > reservation or join is made, from the business's `payment_info`; the refund
-> notes read it, so a link removed or changed later does not change what is owed.
-> NULL = a row from before the column, which falls back to today's settings.
+> notes read it together with today's link, so a link removed later still
+> leaves a note. NULL = a row from before the column (today's settings only).
 > Adds no table → `EXPECTED_TABLES` unchanged. Migration `c5e7a9b1d3f4`.
 
 > **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly

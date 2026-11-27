@@ -13,6 +13,7 @@
 from datetime import timedelta
 
 import pytest
+from sqlalchemy import text
 
 import app.services.prepay_refunds as refunds
 from app.models.models import GroupBuyCommit, Producer
@@ -289,12 +290,21 @@ def test_the_daily_close_of_a_group_never_funded_sends_nothing(db, notes):
 
 def test_a_broken_note_never_fails_the_leave(client, db, notes, monkeypatch):
     gb, _owner, (_a, b) = _group(db, members=2, min_participants=1)
-    monkeypatch.setattr(refunds, "owner_emails", lambda *a: 1 / 0)
+    # Fails in SQL, not in Python: without the savepoint the caller's
+    # transaction is left aborted and its own commit 500s.
+    monkeypatch.setattr(
+        refunds, "owner_emails", lambda d, *_a: d.execute(text("select 1/0"))
+    )
     assert (
         client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code
         == 200
     )
     assert notes == []
+    db.expire_all()
+    assert (
+        db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id, user_id=b.id).count()
+        == 0
+    )
 
 
 # --- review round 1 ------------------------------------------------------------
@@ -478,12 +488,26 @@ def test_a_link_removed_after_reserving_still_gets_the_refund_note(
     assert "אם התשלום מראש כבר התקבל, צריך להחזיר 15 ₪" in body
 
 
-def test_a_link_added_after_reserving_asks_no_refund(
-    client, db, shop, rescue_on, outbox
-):
+def test_a_link_added_after_reserving_still_counts(client, db, shop, rescue_on, outbox):
+    # Her page and reminders show the live link, so she may have paid
+    # through it although she reserved at the counter.
     offer = _seed_offer(db, shop["location"])
     _reserve(client, db, offer, "t-added@example.com")
-    _pay(db, shop["producer"].id, ADVANCE)  # added after she reserved at the counter
+    _pay(db, shop["producer"].id, ADVANCE)
+    outbox.clear()
+    client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
+    assert [s for _to, s, _b in outbox if "מה להחזיר" in s]
+
+
+def test_a_counter_reservation_with_no_link_today_gets_no_note(
+    client, db, shop, rescue_on, outbox
+):
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    _u, order = _reserve(client, db, offer, "t-stored-counter@example.com")
+    _order(db, order["id"]).prepay_timing = "counter"
+    db.commit()
+    _pay(db, shop["producer"].id, None)
     outbox.clear()
     client.post(f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"]))
     assert not [s for _to, s, _b in outbox if "מה להחזיר" in s]
@@ -505,8 +529,24 @@ def test_a_group_note_reads_each_members_own_terms(client, db, notes):
     assert "אם התשלום מראש כבר התקבל" in body
 
 
-def test_a_member_who_joined_at_the_counter_is_left_out(client, db, notes):
+def test_a_member_who_joined_at_the_counter_is_left_out_once_the_link_is_gone(
+    client, db, notes
+):
     gb, _owner, (_a, b) = _group(db)
+    for c in gb.commits:
+        c.prepay_timing = "counter"
+    gb.producer.payment_info = None
+    db.commit()
+    assert (
+        client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code
+        == 200
+    )
+    assert notes == []
+
+
+def test_a_member_who_joined_before_the_link_is_still_listed(client, db, notes):
+    # Members see «לתשלום» only once the group is funded, from the live link.
+    gb, _owner, (_a, b) = _group(db, min_participants=1)
     for c in gb.commits:
         c.prepay_timing = "counter"
     db.commit()
@@ -514,7 +554,8 @@ def test_a_member_who_joined_at_the_counter_is_left_out(client, db, notes):
         client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b)).status_code
         == 200
     )
-    assert notes == []
+    ((_to, _s, body),) = notes
+    assert "• קוד 1001: 180 ₪" in body
 
 
 def test_joining_a_group_keeps_the_terms(client, db, notes):
@@ -529,3 +570,26 @@ def test_joining_a_group_keeps_the_terms(client, db, notes):
     db.expire_all()
     (c,) = db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).all()
     assert c.prepay_timing == "deposit"
+
+
+def test_the_column_refuses_an_unknown_terms_value(db, shop):
+    from sqlalchemy.exc import IntegrityError
+
+    _pay(db, shop["producer"].id, ADVANCE)
+    offer = _seed_offer(db, shop["location"])
+    buyer = make_user(db, email="t-check@example.com")
+    from app.models.models import RescueOrder
+
+    db.add(
+        RescueOrder(
+            offer_id=offer.id,
+            user_id=buyer.id,
+            qty=1,
+            pickup_code="9999",
+            status="reserved",
+            prepay_timing="on_pickup",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()

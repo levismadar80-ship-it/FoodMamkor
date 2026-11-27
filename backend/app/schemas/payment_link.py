@@ -86,7 +86,10 @@ def reservation_timing(info: Any) -> str:
 def refund_timing(stored: str | None, info: Any) -> str | None:
     """How a cancelled reservation may have been paid ahead: "advance",
     "deposit", or None (paid at the counter, nothing to return). The stored
-    value wins; a row from before the column falls back to today's settings."""
-    if stored is not None:
-        return stored if stored in PREPAY_TIMINGS else None
+    terms stored when it was made count, and so do today's: the buyer's page
+    and reminders read the business's live link, so a reservation made at the
+    counter may still have been paid through a link added later. Missing a
+    refund costs a buyer money; an extra note only says «אם … התקבל»."""
+    if stored in PREPAY_TIMINGS:
+        return stored
     return str(info["timing"]) if prepay_link(info) is not None else None

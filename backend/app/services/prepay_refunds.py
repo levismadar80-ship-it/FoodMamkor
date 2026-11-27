@@ -85,7 +85,7 @@ def _refund_body(intro: str, items: list[Item], path: str) -> str:
         ask = "אם התשלום מראש כבר התקבל, צריך להחזיר אותו באותה דרך שבה שולם."
     lines = []
     for code, agorot, dep in items:
-        who = f"קוד {code}" if code else "בלי קוד איסוף"
+        who = f"קוד {code}" if code else "הצטרפות בלי קוד איסוף"
         if all_deposit:
             lines.append(f"• {who}")
         else:

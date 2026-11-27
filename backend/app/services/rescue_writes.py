@@ -121,7 +121,8 @@ def issue_order(
     """
     location = offer.location
     # MEH-3897: the reservation keeps how it is paid as of now.
-    timing = reservation_timing(location.producer.payment_info if location else None)
+    producer = location.producer if location is not None else None
+    timing = reservation_timing(producer.payment_info if producer is not None else None)
     for _ in range(_CODE_ATTEMPTS):
         candidate = RescueOrder(
             offer_id=offer.id,
