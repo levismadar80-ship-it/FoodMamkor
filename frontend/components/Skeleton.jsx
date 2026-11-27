@@ -341,3 +341,79 @@ export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, classN
     </SkeletonStatus>
   );
 }
+
+/**
+ * MEH-858 F7 → MEH-3983: the event page's wait state, moved here from
+ * EventDetailClient so the client fallback and the route's loading.js draw the
+ * same frame (a second copy would drift). Full-width 360px cover, then the
+ * max-w-3xl column: category pill, title, three meta lines, body block.
+ *
+ * @param {{ label?: string, testId?: string }} props
+ */
+export function SkeletonEventDetail({ label, testId }) {
+  return (
+    // MEH-1957: aria-label needs a role to be permitted (axe aria-prohibited-attr).
+    <div role="status" aria-busy="true" aria-label={label} data-testid={testId}>
+      <SkeletonBlock as="div" className="h-[360px]" />
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <SkeletonBlock className="block w-24 h-6 rounded-full mb-3" />
+        <SkeletonBlock className="block w-3/4 h-10 rounded mb-4" />
+        <div className="flex flex-wrap gap-4 mb-6">
+          <SkeletonBlock className="w-40 h-4 rounded" />
+          <SkeletonBlock className="w-28 h-4 rounded" />
+          <SkeletonBlock className="w-20 h-4 rounded" />
+        </div>
+        <SkeletonBlock className="block w-full h-32 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * MEH-3983: the business page's frame while it renders on the server — what
+ * app/[locale]/[slug]/loading.js draws instead of the blank brand screen.
+ * Geometry measured on the real page (ProducerDetail, 390 and 1280, 28/11):
+ * max-w-6xl column with pt-6; desktop breadcrumb row 24px + mb-4; cover
+ * h-[min(78vw,340px)] edge to edge on a phone, 380px rounded from md; then
+ * mt-8 a two-column grid (1fr + 320px aside from lg): name row 40px, two
+ * 24px meta lines (mt-3, mt-2.5), and the aside's first card on desktop.
+ * `backRow`: the phone's «→ חזרה» row (44px + mb-2) that the page shows when
+ * a page of the site is behind it (HistoryBackLink) — without it the cover
+ * would sit 52px higher than the page's and jump when the page arrives.
+ *
+ * @param {{ label?: string, testId?: string, backRow?: boolean }} props
+ */
+export function SkeletonProducerPage({ label, testId, backRow = false }) {
+  return (
+    <SkeletonStatus label={label} className="max-w-6xl mx-auto px-4 pt-6 pb-6" testId={testId}>
+      {backRow && (
+        <div className="lg:hidden h-11 mb-2 flex items-center" aria-hidden="true" data-skeleton="back-row">
+          <div className="skeleton-box rounded-lg h-4 w-14" />
+        </div>
+      )}
+      <div className="hidden lg:block lg:mb-4 h-6" aria-hidden="true">
+        <div className="skeleton-box rounded-lg h-4 w-56" />
+      </div>
+      <div className="-mx-4 md:mx-0" aria-hidden="true">
+        <div className="skeleton-box h-[min(78vw,340px)] md:h-[380px] md:rounded-xl" data-skeleton="hero" />
+      </div>
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8" aria-hidden="true">
+        <div>
+          <div className="h-10 flex items-center">
+            <div className="skeleton-box rounded-lg h-8 w-2/3" />
+          </div>
+          <div className="mt-3 h-6 flex items-center">
+            <div className="skeleton-box rounded-lg h-4 w-1/2" />
+          </div>
+          <div className="mt-2.5 h-6 flex items-center">
+            <div className="skeleton-box rounded-lg h-4 w-1/3" />
+          </div>
+        </div>
+        {/* The aside's first card (contact) is 50px tall before its content loads. */}
+        <div className="hidden lg:block">
+          <div className="skeleton-box rounded-lg h-[50px]" />
+        </div>
+      </div>
+    </SkeletonStatus>
+  );
+}

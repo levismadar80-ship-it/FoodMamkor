@@ -12,7 +12,14 @@ import { layoutSettled } from "../_layout-settled";
  *
  *   (a) in no sampled frame, between the click and the detail page, is the
  *       route loader on screen while the footer is in the viewport;
- *   (b) Back returns to the scroll offset the reader left (±100 px).
+ *   (b) Back returns to the scroll offset the reader left (±100 px);
+ *   (c) MEH-3983: in no sampled frame is the SITE-WIDE loader
+ *       (data-testid route-loading) on screen. Its brand mark fades in only
+ *       after 0.4 s, so it read as a blank cream flash between a list and the
+ *       detail page (prod 28/11: 0.3–0.8 s from home to a business). Each
+ *       detail page now has its own page-shaped loading.js, which carries
+ *       `data-route-loader` like the site-wide one — so (a) and its control
+ *       count either loader, and (c) fails if the blank one comes back.
  *
  * Counted in animation frames, never milliseconds (testing.md, MEH-2972).
  * Control, per list (LISTS `loader`): where the loader appears it must
@@ -74,16 +81,19 @@ async function throttle(page: Page) {
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
 }
 
-/** Per animation frame: is the loader mounted, is the footer in the viewport. */
+/** Per animation frame: is a route loader mounted (site-wide or a page's own,
+ *  both carry data-route-loader), is it the site-wide blank one, is the footer
+ *  in the viewport. */
 async function startSampler(page: Page) {
   await page.evaluate((cap) => {
-    const w = window as unknown as { __nav: Array<{ loader: boolean; footer: boolean }> };
+    const w = window as unknown as { __nav: Array<{ loader: boolean; blank: boolean; footer: boolean }> };
     w.__nav = [];
     const tick = () => {
       const footer = document.querySelector("footer[data-site-footer]");
       const r = footer?.getBoundingClientRect();
       w.__nav.push({
-        loader: !!document.querySelector('[data-testid="route-loading"]'),
+        loader: !!document.querySelector("[data-route-loader]"),
+        blank: !!document.querySelector('[data-testid="route-loading"]'),
         footer: !!r && r.top < innerHeight && r.bottom > 0,
       });
       if (w.__nav.length < cap) requestAnimationFrame(tick);
@@ -92,7 +102,7 @@ async function startSampler(page: Page) {
   }, SAMPLE_CAP_FRAMES);
 }
 
-type Sample = { loader: boolean; footer: boolean };
+type Sample = { loader: boolean; blank: boolean; footer: boolean };
 
 async function readSamples(page: Page): Promise<Sample[]> {
   return page.evaluate(() => (window as unknown as { __nav: Sample[] }).__nav);
@@ -100,6 +110,8 @@ async function readSamples(page: Page): Promise<Sample[]> {
 
 /** Frames in which the loader was on screen. */
 const loaderFrames = (samples: Sample[]) => samples.filter((s) => s.loader).length;
+/** Frames in which the site-wide (blank-looking) loader was on screen (MEH-3983). */
+const blankFrames = (samples: Sample[]) => samples.filter((s) => s.blank).length;
 /** Frames in which the loader was on screen with the footer in the viewport. */
 const flashFrames = (samples: Sample[]) => samples.filter((s) => s.loader && s.footer).length;
 
@@ -138,10 +150,10 @@ async function waitForPrefetch(page: Page, done: Set<string>, list: List, href: 
     .toBe(true);
 }
 
-/** The click has left `fromUrl` and the route loader is gone. */
+/** The click has left `fromUrl` and every route loader is gone. */
 async function detailLoaded(page: Page, fromUrl: string): Promise<boolean> {
   const left = page.url() !== fromUrl;
-  const loaders = await page.locator('[data-testid="route-loading"]').count();
+  const loaders = await page.locator("[data-route-loader]").count();
   return left && loaders === 0;
 }
 
@@ -244,6 +256,10 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
       expectLoaderControl(list, loaderFrames(samples));
       const flash = flashFrames(samples);
       expect(flash, `${list.name}: footer in view under the route loader for ${flash} of ${samples.length} frames`).toBe(0);
+      // (c) The control above shows a loader painted; this says it was the
+      // detail page's own frame, not the blank site-wide one (MEH-3983).
+      const blank = blankFrames(samples);
+      expect(blank, `${list.name}: the site-wide blank loader was on screen for ${blank} of ${samples.length} frames — the detail page lost its own loading.js`).toBe(0);
 
       await page.goBack();
       await expect(cards.last()).toBeVisible({ timeout: 60_000 });
