@@ -30,9 +30,9 @@ import {
 } from "@/lib/order-window-editor";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
-import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
 import IconButton from "@/components/ui/IconButton";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 
 // MEH-3475: `saveUrl` — the admin edit page mounts this against
 // PUT /admin/producers/{id}.
@@ -204,20 +204,16 @@ export default function OrderWindowEditor({
                           dir="ltr" keeps the two inputs in reading order on the
                           RTL page. rtl-ok */}
                       <div className="flex items-center gap-2" dir="ltr">
-                        <Input inline size="xs"
-                          type="time"
+                        <TimeOfDaySelect
                           value={range.from}
-                          onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
-                          aria-label={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
-                          className="numeric"
+                          onChange={(v) => patchRange(i, rangeIdx, { from: v })}
+                          ariaLabel={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
-                        <Input inline size="xs"
-                          type="time"
+                        <TimeOfDaySelect
                           value={range.to}
-                          onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
-                          aria-label={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
-                          className="numeric"
+                          onChange={(v) => patchRange(i, rangeIdx, { to: v })}
+                          ariaLabel={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
                         />
                       </div>
                       {day.ranges.length > 1 && (

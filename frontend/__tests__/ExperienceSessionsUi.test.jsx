@@ -17,6 +17,7 @@ import ExperienceSessionsField, { SESSION_MAX } from "@/components/ExperienceSes
 import ExperienceForm from "@/components/ExperienceForm";
 import RegistrationCta from "@/components/RegistrationCta";
 import RegistrationsList from "@/components/RegistrationsList";
+import { timeValue } from "./helpers/time-of-day";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => (
@@ -73,7 +74,7 @@ describe("ExperienceSessionsField — the owner's dates", () => {
     unmount();
     field([date("2026-12-07"), date("2026-12-14", { time: "18:30" })]);
     expect(rows()).toHaveLength(2);
-    expect(within(rows()[1]).getByLabelText(`${N.field_time} 2`).value).toBe("18:30");
+    expect(timeValue(within(rows()[1]).getByLabelText(`${N.field_time} 2`))).toBe("18:30");
   });
 
   it("«הוספת מועד» adds an empty row", () => {
@@ -107,7 +108,10 @@ describe("ExperienceSessionsField — the owner's dates", () => {
     field([date("2026-12-07", { registered: 2 }), date("2026-12-14", { registered: 0 })]);
     const [held, free] = rows();
     expect(within(held).getByLabelText(`${N.field_date} 1`)).toBeDisabled();
-    expect(within(held).getByLabelText(`${N.field_time} 1`)).toBeDisabled();
+    // MEH-3955: the time is an hour and a minute select; both are locked.
+    const heldSelects = within(held).getByLabelText(`${N.field_time} 1`).querySelectorAll("select");
+    expect(heldSelects).toHaveLength(2);
+    for (const el of heldSelects) expect(el).toBeDisabled();
     expect(within(free).getByLabelText(`${N.field_date} 2`)).not.toBeDisabled();
   });
 
@@ -160,7 +164,7 @@ describe("ExperienceForm — sends the dates", () => {
     fireEvent.click(screen.getByRole("button", { name: N.save_cta }));
     expect(api.put).not.toHaveBeenCalled();
     expect(screen.getByTestId("experience-sessions-incomplete").textContent).toBe(S.session_required);
-    expect(document.activeElement).toBe(within(second).getByLabelText(`${N.field_time} 2`));
+    expect(document.activeElement).toBe(within(second).getByLabelText(`${N.field_time} 2`).querySelector("select"));
   });
 
   it("a one-off workshop shows no dates and sends none", async () => {

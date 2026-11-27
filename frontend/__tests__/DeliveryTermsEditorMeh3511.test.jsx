@@ -12,6 +12,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import { DeliveryCard } from "@/app/[locale]/producer/dashboard/edit/cards";
+import { setTime } from "./helpers/time-of-day";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
@@ -90,7 +91,7 @@ describe("DeliveryCard — delivery terms (MEH-3511)", () => {
     type("delivery-zone-0-time-dmin", "1");
     type("delivery-zone-0-time-dmax", "2");
     fireEvent.change(screen.getByTestId("delivery-zone-0-cutoff-day"), { target: { value: "רביעי" } });
-    type("delivery-zone-0-cutoff-time", "15:00");
+    setTime(screen.getByTestId("delivery-zone-0-cutoff-time"), "15:00"); // MEH-3955: 24-hour selects
     save();
     await waitFor(() => expect(api.put).toHaveBeenCalled());
     expect(sent().delivery_zones[0]).toMatchObject({

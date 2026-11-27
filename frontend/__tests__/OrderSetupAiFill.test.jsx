@@ -43,6 +43,7 @@ vi.mock("@/components/dashboard/orders/OrderCustomersCard", () => ({ default: ()
 
 import OrdersPage from "@/app/[locale]/producer/dashboard/orders/page";
 import { applySettingsDraft, draftProductIds, draftWindows } from "@/lib/order-setup-draft";
+import { timeFields, timeValue } from "./helpers/time-of-day";
 
 // Config shape, not behaviour: the field map is the backend's and nothing in
 // the frontend runs it, so its keys are read as data (testing.md MEH-3531).
@@ -170,7 +171,7 @@ describe("«ספרו לנו איך אתם מקבלים הזמנות» (MEH-3752)
     await waitFor(() => expect(cap().value).toBe("20"));
     expect(screen.getByLabelText(O.settings.cutoff_label, { selector: "select" })).toHaveValue("12");
     expect(rows()).toHaveLength(1);
-    expect(screen.getAllByDisplayValue("16:00")).toHaveLength(1);
+    expect(timeFields().filter((el) => timeValue(el) === "16:00")).toHaveLength(1);
     expect(apiMock.put).not.toHaveBeenCalled();
   });
 

@@ -39,6 +39,7 @@ import { Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
@@ -664,7 +665,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             required
             error={fieldErrors.event_date}
           />
-          <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
+          <TimeOfDaySelect label={t("field_time")} ariaLabel={t("field_time")} optional value={form.event_time} onChange={(v) => setField("event_time")({ target: { value: v } })} />
         </div>
       )}
       {/* MEH-3898: a course swaps the one date for its list of meetings, in
