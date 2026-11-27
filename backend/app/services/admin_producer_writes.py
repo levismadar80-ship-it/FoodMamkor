@@ -223,6 +223,18 @@ def _guard_availability_change(producer: Producer, payload: dict[str, Any]) -> N
         ) from e
 
 
+def _ensure_effective_delivery_state(
+    producer: Producer, payload: dict[str, Any]
+) -> None:
+    """The 422 guards that read the stored row plus the payload (merged state)."""
+    # MEH-1255: effective-state guard — excluded cities require nationwide.
+    ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
+    ensure_location_mode(producer, payload)  # MEH-3977
+
+
 def admin_create_producer_row(
     db: Session, data: ProducerAdminCreate, background_tasks: BackgroundTasks
 ) -> Producer:
@@ -386,12 +398,7 @@ def admin_update_producer_row(
     # MEH-3137: the grower declaration is the OWNER's to sign; an admin edit
     # never records it (same rule as declared_at, ADR-022 gate 2).
     payload.pop("farmer_declaration_accepted", None)
-    # MEH-1255: effective-state guard — excluded cities require nationwide.
-    ensure_exclusion_requires_nationwide(producer, payload)
-    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
-    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
-    ensure_nationwide_requires_delivery(producer, payload)
-    ensure_location_mode(producer, payload)  # MEH-3977
+    _ensure_effective_delivery_state(producer, payload)
 
     # MEH-3026: the MEH-2707 / MEH-999 licence gate on update is gone — adding
     # a licensed category without a licence number no longer 422s.

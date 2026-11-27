@@ -577,7 +577,7 @@ class TestPolicyCoverage:
         from app.services import draft_merge_policy as pol
 
         rules = (
-            pol.OWNER_WINS, pol.FILL_IF_BLANK, pol.DELIVERY_COLUMNS, pol.PICKUP_COLUMNS, pol.PARTNER_STORES_IF_HERS, pol.PARTNER_STORES_IF_HERS,
+            pol.OWNER_WINS, pol.FILL_IF_BLANK, pol.DELIVERY_COLUMNS, pol.PICKUP_COLUMNS, pol.PARTNER_STORES_IF_HERS,
             pol.IMAGE_OWNER_WINS, pol.SPECIAL, pol.DRAFT_KEEPS,
         )
         named = [n for group in rules for n in group]

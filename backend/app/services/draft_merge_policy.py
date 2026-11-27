@@ -259,6 +259,22 @@ def _copy_group(draft: Producer, target: Producer, names: tuple[str, ...]) -> No
         setattr(draft, name, getattr(target, name))
 
 
+def _copy_partner_stores(
+    draft: Producer, target: Producer, *, draft_physical: bool
+) -> None:
+    """Her stores win when she has any; never leave the row with no way to buy."""
+    for name in PARTNER_STORES_IF_HERS:
+        if getattr(target, name):
+            setattr(draft, name, getattr(target, name))
+    # MEH-3977: the two groups move independently, so her «no place» can land
+    # beside the draft's «no delivery» with no store either — CHECK
+    # producer_location_mode would 500 the merge. Keep the draft's place then.
+    if not (
+        draft.has_physical_location or draft.offers_delivery or draft.partner_stores
+    ):
+        draft.has_physical_location = draft_physical  # type: ignore[assignment]
+
+
 def copy_fields(
     draft: Producer, target: Producer, *, her_delivery: bool, her_pickup: bool
 ) -> None:
@@ -268,19 +284,12 @@ def copy_fields(
     for name in FILL_IF_BLANK:
         if _blank(getattr(draft, name)) and not _blank(getattr(target, name)):
             setattr(draft, name, getattr(target, name))
-    draft_physical = draft.has_physical_location
+    draft_physical = bool(draft.has_physical_location)
     if her_delivery:
         _copy_group(draft, target, DELIVERY_COLUMNS)
     if her_pickup:
         _copy_group(draft, target, PICKUP_COLUMNS)
-    for name in PARTNER_STORES_IF_HERS:
-        if getattr(target, name):
-            setattr(draft, name, getattr(target, name))
-    # MEH-3977: the two groups move independently, so her «no place» can land
-    # beside the draft's «no delivery» with no store either — CHECK
-    # producer_location_mode would 500 the merge. Keep the draft's place then.
-    if not (draft.has_physical_location or draft.offers_delivery or draft.partner_stores):
-        draft.has_physical_location = draft_physical
+    _copy_partner_stores(draft, target, draft_physical=draft_physical)
     # Verified by code only if the number the page now shows is hers, verified.
     if not _blank(target.phone):
         draft.phone_verified = bool(  # type: ignore[assignment]
