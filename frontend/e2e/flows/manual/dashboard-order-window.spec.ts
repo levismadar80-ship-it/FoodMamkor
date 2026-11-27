@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { clickSaveAfterEdit } from "../_save-after-edit";
 import { layoutSettled } from "../_layout-settled";
+import { expectTime, setTime, timeField } from "../_time-select";
 import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window-editor";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -132,8 +133,8 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
 const card = (page: Page) => page.getByTestId("accordion-hours");
 const body = (page: Page) => page.locator("#order-window");
 const dayToggle = (page: Page, day: string) => body(page).getByRole("checkbox", { name: `${day} — מקבלים הזמנות ביום זה` });
-const from = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} פתיחה ${n}`, { exact: true });
-const to = (page: Page, day: string, n: number) => body(page).getByLabel(`${day} סגירה ${n}`, { exact: true });
+const from = (page: Page, day: string, n: number) => timeField(body(page), `${day} פתיחה ${n}`);
+const to = (page: Page, day: string, n: number) => timeField(body(page), `${day} סגירה ${n}`);
 const addRange = (page: Page, i: number) => page.getByTestId(`order-window-add-range-${i}`);
 const removeBtns = (page: Page) => body(page).locator('[data-testid^="order-window-remove-"]');
 const alerts = (page: Page) => body(page).getByRole("alert");
@@ -153,8 +154,8 @@ async function openWindow(page: Page): Promise<void> {
   await expect(page).toHaveURL(/[?&]group=/);
   await layoutSettled(card(page));
   await expect(dayToggle(page, SUN), "fixture precondition: Sunday is seeded open").toBeChecked();
-  await expect(from(page, SUN, 1)).toHaveValue("09:00");
-  await expect(to(page, SUN, 1)).toHaveValue("13:00");
+  await expectTime(from(page, SUN, 1), "09:00");
+  await expectTime(to(page, SUN, 1), "13:00");
 }
 
 // ── MT:MEH-1869 — several ranges per day ───────────────────────────────────
@@ -169,8 +170,8 @@ test.describe("order-window card — several ranges per day", () => {
     await addRange(page, 0).click();
     const expected = nextOrderRange({ from: "09:00", to: "13:00" }) as { from: string; to: string };
     expect(expected, "control: the library must produce a next range for 09:00–13:00").not.toBeNull();
-    await expect(from(page, SUN, 2)).toHaveValue(expected.from);
-    await expect(to(page, SUN, 2)).toHaveValue(expected.to);
+    await expectTime(from(page, SUN, 2), expected.from);
+    await expectTime(to(page, SUN, 2), expected.to);
     expect(expected.from).toBe("13:00");
     await expect(alerts(page)).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
@@ -182,8 +183,8 @@ test.describe("order-window card — several ranges per day", () => {
     await stubEdit(page, { puts });
     await openWindow(page);
     await addRange(page, 0).click();
-    await from(page, SUN, 2).fill("16:00");
-    await to(page, SUN, 2).fill("20:00");
+    await setTime(from(page, SUN, 2), "16:00");
+    await setTime(to(page, SUN, 2), "20:00");
     await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
     await expect(page.getByTestId("order-window-save-success")).toHaveText("חלון ההזמנות נשמר");
@@ -194,8 +195,8 @@ test.describe("order-window card — several ranges per day", () => {
     // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
     // and the layout pushed /login over it (MEH-3172).
     await openWindow(page);
-    await expect(from(page, SUN, 2)).toHaveValue("16:00");
-    await expect(to(page, SUN, 2)).toHaveValue("20:00");
+    await expectTime(from(page, SUN, 2), "16:00");
+    await expectTime(to(page, SUN, 2), "20:00");
     await expect(from(page, SUN, 3)).toHaveCount(0);
   });
 
@@ -234,15 +235,15 @@ test.describe("order-window card — several ranges per day", () => {
     await layoutSettled(addRange(page, 0));
     await addRange(page, 0).click();
     await expect(from(page, SUN, 3)).toBeVisible();
-    await from(page, SUN, 3).fill("18:00");
-    await to(page, SUN, 3).fill("21:00");
+    await setTime(from(page, SUN, 3), "18:00");
+    await setTime(to(page, SUN, 3), "21:00");
 
     await layoutSettled(page.getByTestId("order-window-remove-0-1"));
     await page.getByTestId("order-window-remove-0-1").click();
     await expect(from(page, SUN, 3)).toHaveCount(0);
-    await expect(from(page, SUN, 1)).toHaveValue("09:00");
-    await expect(from(page, SUN, 2)).toHaveValue("18:00");
-    await expect(to(page, SUN, 2)).toHaveValue("21:00");
+    await expectTime(from(page, SUN, 1), "09:00");
+    await expectTime(from(page, SUN, 2), "18:00");
+    await expectTime(to(page, SUN, 2), "21:00");
 
     await layoutSettled(page.getByTestId("order-window-remove-0-1"));
     await page.getByTestId("order-window-remove-0-1").click();
@@ -256,7 +257,7 @@ test.describe("order-window card — several ranges per day", () => {
     await stubEdit(page, { puts });
     await openWindow(page);
     await addRange(page, 0).click();
-    await from(page, SUN, 2).fill("12:00");
+    await setTime(from(page, SUN, 2), "12:00");
     await expect(alerts(page)).toHaveText([OVERLAP]);
 
     await clickSaveAfterEdit(page, saveBtn(page));
@@ -275,8 +276,8 @@ test.describe("order-window card — several ranges per day", () => {
     await stubEdit(page, { puts });
     await openWindow(page);
     await addRange(page, 0).click();
-    await from(page, SUN, 2).fill("13:00");
-    await to(page, SUN, 2).fill("17:00");
+    await setTime(from(page, SUN, 2), "13:00");
+    await setTime(to(page, SUN, 2), "17:00");
     await expect(alerts(page)).toHaveCount(0);
     await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);
