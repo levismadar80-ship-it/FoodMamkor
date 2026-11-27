@@ -343,6 +343,7 @@ async def register(
             user.name,  # type: ignore[arg-type]
             verify_token,
             test_cause=bool(user.is_test),
+            claim_code=data.claim_code,  # MEH-3975
         )
         background_tasks.add_task(
             _send_welcome_email,

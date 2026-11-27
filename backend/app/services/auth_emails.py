@@ -18,6 +18,7 @@ from html import escape as html_escape
 from app.config import settings
 from app.services.email import send_email
 from app.services.email_layout import button, frame, note_row
+from app.services.share_links import looks_like_share_code  # MEH-3975
 
 logger = logging.getLogger(__name__)
 
@@ -63,15 +64,25 @@ def send_reset_email(
 
 
 def send_verify_email(
-    email: str, name: str, token: str, test_cause: bool = False
+    email: str,
+    name: str,
+    token: str,
+    test_cause: bool = False,
+    claim_code: str | None = None,
 ) -> bool:
-    """Send email-verification link via Resend. Returns True when attempted with valid config."""
+    """Send email-verification link via Resend. Returns True when attempted with valid config.
+
+    MEH-3975: `claim_code` (the short /c/ code, shape-checked) rides on the
+    link so /verify-email returns an owner who signed up from the claim page
+    to the claim, whichever browser opens the mail."""
     if not settings.resend_api_key:
         logger.error(
             "[EMAIL] verify email SKIPPED for '%s' — missing: RESEND_API_KEY", email
         )
         return False
     verify_url = f"{settings.frontend_url}/verify-email?token={token}"
+    if claim_code and looks_like_share_code(claim_code):
+        verify_url += f"&claim={claim_code}"
     # MEH-440-followup: escape name in HTML body (plain text unchanged).
     name_html = html_escape(name or "")
     body = (

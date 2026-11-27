@@ -48,6 +48,10 @@ from app.schemas.schemas import (
 )
 
 
+# MEH-3975: services/share_links.py _CODE_RE (12 letters/digits).
+_CLAIM_CODE_RE = re.compile(r"^[A-Za-z0-9]{12}$")
+
+
 class UserRegister(BaseModel):
     email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
@@ -71,11 +75,27 @@ class UserRegister(BaseModel):
     # mandatory and folded the 18+ self-declaration into the same checkbox
     # (RegisterClient.jsx:76, `required`). See _terms_must_be_accepted above.
     terms_accepted: bool
+    # MEH-3975: the short owner-claim code (/c/<code>) when she signs up from
+    # the claim page. It rides on the verification link only, so the link
+    # brings her back to the claim from any browser; it is never stored and
+    # grants nothing by itself (the claim still checks it server-side).
+    claim_code: str | None = Field(default=None, max_length=12)
 
     @field_validator("terms_accepted")
     @classmethod
     def _terms_accepted_required(cls, v: bool) -> bool:
         return _terms_must_be_accepted(v)
+
+    @field_validator("claim_code")
+    @classmethod
+    def _claim_code_shape(cls, v: str | None) -> str | None:
+        # Same shape as services/share_links.py looks_like_share_code; checked
+        # here so nothing else can be spliced into the emailed URL.
+        if v is None or v == "":
+            return None
+        if not _CLAIM_CODE_RE.match(v):
+            raise ValueError("claim_code must be a 12-character share code")
+        return v
 
 
 class ForgotPasswordRequest(BaseModel):

@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import StatusPage from "@/components/StatusPage";
 import { clearReturnPath, peekReturnPath } from "@/lib/post-auth-return";
+import { takeClaimLanding } from "@/lib/claim-return";
 
 // MEH-2492: registration never logs the owner in (MEH-328 anti-enumeration),
 // and the link is often opened in another browser or the mail app.
@@ -19,11 +20,16 @@ import { clearReturnPath, peekReturnPath } from "@/lib/post-auth-return";
 const REDIRECT_DELAY_MS = 1500;
 const LOGIN_PATH = "/login";
 
+// MEH-3975: where an owner who signed up from the claim page goes once she is
+// signed in. Set once per page load from the link's `claim` parameter
+// (lib/claim-return.js), before the verify call; null for everyone else.
+let claimLanding = null;
+
 // Where a verified, already-logged-in user goes next. MEH-3661: a customer
 // goes back to the page she signed up from (stored by /register), else "/".
 function landingAfterVerify(user) {
   if (user?.producer_id) return "/producer/dashboard";
-  return peekReturnPath() || "/";
+  return claimLanding || peekReturnPath() || "/";
 }
 
 // MEH-3661: leave for `landing`, forgetting the stored page first so a later
@@ -36,7 +42,7 @@ function leaveFor(landing) {
 // MEH-3661: «כניסה להמשך» from another browser has no stored page; from the
 // same browser without a session it carries the page on to /login.
 function loginAfterVerifyHref() {
-  const back = peekReturnPath();
+  const back = claimLanding || peekReturnPath();
   return back ? `${LOGIN_PATH}?redirect=${encodeURIComponent(back)}` : LOGIN_PATH;
 }
 
@@ -77,12 +83,14 @@ function VerifyEmailContent() {
   const t = useTranslations();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const claimParam = searchParams.get("claim"); // MEH-3975
   const [verifyState, setVerifyState] = useState("loading"); // loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
   const [linkLanding, setLinkLanding] = useState(null); // MEH-3087
   const { user, loading: authLoading } = useRedirectWhenLoggedIn(verifyState);
 
   useEffect(() => {
+    claimLanding = takeClaimLanding(claimParam);
     if (!token) {
       setVerifyState("error");
       setErrorMsg(t("auth.verifyEmail.errors.invalid_link"));
@@ -102,7 +110,7 @@ function VerifyEmailContent() {
           detailToMessage(err.response?.data?.detail) || t("auth.verifyEmail.errors.invalid_or_expired")
         );
       });
-  }, [token, t]);
+  }, [token, claimParam, t]);
 
   // MEH-2567: all three states use the shared StatusPage layout (line icon,
   // no card); the red filled X and the amber envelope are gone. Copy unchanged.

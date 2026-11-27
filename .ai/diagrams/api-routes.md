@@ -109,7 +109,7 @@ graph TD
 
 ```mermaid
 graph TD
-    SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
+    SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token<br/>MEH-3975: optional claim_code rides on the verify link]
     SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 10/hour (MEH-1635)<br/>routers/auth_register_producer.py (MEH-3293)<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> IdentityCheck[POST /producer-identity-check<br/>🌐 MEH-3884 phone / own account email vs every business, any status, owned or not<br/>returns one masked owner email, never reads an email from the body;<br/>register + submit-for-review also email the admin per suspected pair]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
