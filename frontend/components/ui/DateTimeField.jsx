@@ -34,7 +34,7 @@ import { FieldShell } from "./field";
 const TIME_LENGTH = 5;
 
 /** @param {string} value */
-function split(value) {
+function splitDateTime(value) {
   const [date = "", time = ""] = (value || "").split("T");
   return { date, time: time.slice(0, TIME_LENGTH) };
 }
@@ -55,14 +55,14 @@ const compose = (parts) => (parts.date && parts.time ? `${parts.date}T${parts.ti
  */
 export default function DateTimeField({ label, ariaLabel, value, onChange, required = false, helperText, testId }) {
   const id = useId();
-  const [parts, setParts] = useState(() => split(value));
+  const [parts, setParts] = useState(() => splitDateTime(value));
   // A value set from outside (an edit form loading, a reset) wins; a
   // half-picked field, whose value is still "", is left as it is. Derived
   // while rendering, not in an effect (react-hooks/set-state-in-effect).
   const [seen, setSeen] = useState(value);
   if (value !== seen) {
     setSeen(value);
-    if (compose(parts) !== (value || "")) setParts(split(value));
+    if (compose(parts) !== (value || "")) setParts(splitDateTime(value));
   }
   const emit = (/** @type {{ date: string, time: string }} */ next) => {
     setParts(next);
