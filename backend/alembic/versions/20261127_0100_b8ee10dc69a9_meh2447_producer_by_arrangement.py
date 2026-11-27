@@ -1,7 +1,7 @@
 """meh2447_producer_by_arrangement
 
 Revision ID: b8ee10dc69a9
-Revises: b4d6f8a0c2e3
+Revises: b3d5f7a9c1e2
 Create Date: 2026-11-27 01:00:00.000000+00:00
 
 MEH-2447: the business says for itself that customers come «בתיאום מראש»
@@ -28,7 +28,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "b8ee10dc69a9"
-down_revision: Union[str, None] = "b4d6f8a0c2e3"
+down_revision: Union[str, None] = "b3d5f7a9c1e2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

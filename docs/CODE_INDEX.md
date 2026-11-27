@@ -271,6 +271,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/newsletter_sync.py` | Mirror newsletter subscribers into Resend Contacts (MEH-2611). |
 | `services/oauth_verifiers.py` | OAuth provider verification + Google avatar re-host. |
 | `services/offer_supply.py` | Which businesses have something on today besides their products: a surprise bag today, an open group buy, an upcoming event, a listed experience (MEH-3824). … |
+| `services/onboarding_day30_numbers.py` | The numbers block of the day-30 onboarding email («חודש איתנו»): the business's last 30 days of page views, WhatsApp clicks, contact clicks and saves, so the … |
 | `services/onboarding_followup.py` | Daily-scheduler entry point for the 4 onboarding follow-up emails (Day 2 / 5 / 10 / 30 after producer registration). … |
 | `services/ops_alert.py` | Send a technical alert (a job that stopped running, pages nobody confirmed) to Sentry as one tagged warning, where the daily Claude check reads it, instead of … |
 | `services/order_access.py` | Who may handle a business's orders: its owner, or a staff member with an active 'producer_staff' row on a business that still has an owner. … |

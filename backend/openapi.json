@@ -2469,6 +2469,20 @@
           "requires_license": {
             "title": "Requires License",
             "type": "boolean"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "minLength": 2,
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
           }
         },
         "required": [
@@ -26505,6 +26519,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
@@ -26550,6 +26566,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
