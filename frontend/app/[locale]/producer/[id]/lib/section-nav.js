@@ -1,7 +1,7 @@
 // @ts-check
 import { primaryPoint } from "@/lib/producer-points";
 import { isPriceLabel } from "@/lib/utils";
-import { hasDeliverySection } from "@/lib/quick-answers";
+import { hasDeliverySection, hasPartnerStores } from "@/lib/quick-answers";
 import { parseHasLocation } from "../components/ProducerSections";
 
 /**
@@ -55,9 +55,13 @@ export function getSectionNavItems(producer, t) {
     },
     {
       id: "section-delivery",
-      label: t("producer.detail.tabs.delivery"),
+      // MEH-3977: a business sold only through other stores has no delivery
+      // section — the anchor holds its «איפה קונים» section instead.
+      label: hasDeliverySection(producer)
+        ? t("producer.detail.tabs.delivery")
+        : t("partner_stores.page_heading"),
       // The same gate the contact card's delivery question jumps on.
-      show: hasDeliverySection(producer),
+      show: hasDeliverySection(producer) || hasPartnerStores(producer),
     },
     {
       id: "section-location",

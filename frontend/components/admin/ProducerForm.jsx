@@ -35,6 +35,7 @@ import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import AdminDuplicateMatches, { duplicateMatchesOf } from "@/components/admin/AdminDuplicateMatches";
 import Checkbox from "@/components/ui/Checkbox";
+import PartnerStoresField from "@/components/PartnerStoresField"; // MEH-3977
 import { placeChecks, togglePlace } from "@/lib/fulfillment-tags";
 
 // MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
@@ -234,6 +235,7 @@ const EMPTY = {
   delivery_cities: [],
   // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
   delivery_excluded_cities: [],
+  partner_stores: [], // MEH-3977
   // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
   // availability_status during the 7-day overlap; Phase 4 drops the legacy.
   availability_state: "accepting_orders",
@@ -636,6 +638,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
       // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
       // the legacy delivery_cities column is intentionally omitted.
       delivery_area_cities: form.delivery_cities,
+      ...(producerId ? {} : { partner_stores: form.partner_stores }), // MEH-3977: create only
       // MEH-1255: exclusion list only meaningful in nationwide mode; the
       // toggle already clears it otherwise, and the backend guard enforces it.
       delivery_excluded_cities: form.delivery_nationwide
@@ -1172,9 +1175,6 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
           >
             {t("producers.form.fields.offers_delivery")}
           </Checkbox>
-          {!form.has_physical_location && !form.offers_delivery && (
-            <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
-          )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
               <Checkbox
@@ -1215,6 +1215,15 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
                 </div>
               )}
             </div>
+          )}
+          {/* MEH-3977: same control as the owner's DeliveryCard. */}
+          <PartnerStoresField
+            value={form.partner_stores}
+            onChange={(stores) => update("partner_stores", stores)}
+            testId="admin-partner-stores"
+          />
+          {!form.has_physical_location && !form.offers_delivery && form.partner_stores.length === 0 && (
+            <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
           )}
         </div>
       </Section>
@@ -1417,7 +1426,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
             // MEH-3915: a save mid-upload wrote the gallery without the photos
             // still on their way and left the page.
             gallery.busy ||
-            (!producerId && !form.has_physical_location && !form.offers_delivery) ||
+            (!producerId && !form.has_physical_location && !form.offers_delivery && form.partner_stores.length === 0) ||
             (!producerId && form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
           variant="primary" size="lg"

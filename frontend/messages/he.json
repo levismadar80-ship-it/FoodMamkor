@@ -8691,5 +8691,14 @@
   "time_of_day": {
     "hour": "שעה",
     "minute": "דקות"
+  },
+  "partner_stores": {
+    "field_label": "נמכר דרך חנויות אחרות",
+    "names_label": "שמות החנויות",
+    "names_hint": "מפרידים בפסיק. השמות יופיעו בעמוד העסק.",
+    "names_placeholder": "למשל: פארמרים, עלה הביתה",
+    "page_heading": "איפה קונים",
+    "page_line": "המוצרים נמכרים דרך {stores}",
+    "page_line_also": "המוצרים נמכרים גם דרך {stores}"
   }
 }

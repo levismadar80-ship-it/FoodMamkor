@@ -8695,5 +8695,14 @@
   "time_of_day": {
     "hour": "hour",
     "minute": "minutes"
+  },
+  "partner_stores": {
+    "field_label": "Sold through other stores",
+    "names_label": "Store names",
+    "names_hint": "Separate with commas. The names appear on the business page.",
+    "names_placeholder": "e.g. Farmers, Ale Habayta",
+    "page_heading": "Where to buy",
+    "page_line": "The products are sold through {stores}",
+    "page_line_also": "The products are also sold through {stores}"
   }
 }

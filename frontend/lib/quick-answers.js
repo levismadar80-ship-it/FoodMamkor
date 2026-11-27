@@ -108,3 +108,16 @@ export function hasDeliverySection(producer) {
       producer.pickup_points)
   );
 }
+
+/**
+ * MEH-3977: does the page name other stores that sell the products?
+ * ProducerSections renders PartnerStoresLine on it (inside «משלוחים» when
+ * hasDeliverySection, else as its own «איפה קונים» section), and
+ * section-nav.js shows a pill for that section.
+ *
+ * @param {object|null|undefined} producer
+ * @returns {boolean}
+ */
+export function hasPartnerStores(producer) {
+  return (producer?.partner_stores?.length ?? 0) > 0;
+}
