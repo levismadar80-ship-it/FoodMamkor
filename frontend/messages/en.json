@@ -6443,7 +6443,23 @@
         "preview_no_slots": "There are no hand-over hours yet, so customers can't pick a time.",
         "preview_load_failed": "We couldn't load the order form. Try refreshing the page.",
         "preview_fix_link": "Go to the orders tab",
-        "staff_note": "Handling the orders of {name}."
+        "staff_note": "Handling the orders of {name}.",
+        "share": {
+          "title": "Share what's on this week",
+          "intro": "A ready message with what can be ordered this week, the open days and the order link. Send it to customers, a group or your WhatsApp status.",
+          "send": "Send on WhatsApp",
+          "copy": "Copy the message",
+          "copied": "Message copied. Paste it into any chat.",
+          "copy_failed": "Couldn't copy. Select the text above and copy it.",
+          "empty": "Nothing in stock or no open days this week, so there is nothing to share yet.",
+          "load_error": "Couldn't load this week's menu.",
+          "message": {
+            "title": "What's on this week at {name}:",
+            "days": "Order for: {days}",
+            "order": "Order here: {url}",
+            "only": "only for {days}"
+          }
+        }
       },
       "weekly_summary": {
         "heading": "Weekly summary by email",
