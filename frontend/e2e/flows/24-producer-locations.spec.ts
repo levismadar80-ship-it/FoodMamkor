@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { stableCatalog } from "./_stable-catalog";
 
 /**
  * MEH-1432 (MEH-1388 chunk 6 — closes the producer_locations epic): end-to-end
@@ -33,7 +34,8 @@ async function fetchProducers(page: import("@playwright/test").Page): Promise<Pr
   expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
   const body = await res.json();
   expect(Array.isArray(body), "GET /producers must return an array").toBe(true);
-  return body as Producer[];
+  // MEH-3845: never another run's temporary business (_stable-catalog.ts).
+  return stableCatalog(body as Producer[]);
 }
 
 const usableCoords = (l: Loc) =>

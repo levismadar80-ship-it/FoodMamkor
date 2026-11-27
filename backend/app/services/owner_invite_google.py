@@ -72,7 +72,8 @@ def fresh_google_signin_matches(id_token: str, user: User, now: datetime) -> boo
       * the signature, audience and expiry (`verify_google_token`; None when
         Google sign-in is not configured, so an unconfigured server never
         takes this path);
-      * `email_verified` is exactly True;
+      * `email_verified` is exactly True (inside `verify_google_token` since
+        MEH-3813, for every Google consumer);
       * `sub` equals the account's linked `google_id` — not the email, so an
         account that signed up with a password and was never linked keeps the
         code (the same rule `/auth/google` uses, MEH-3104);
@@ -83,8 +84,6 @@ def fresh_google_signin_matches(id_token: str, user: User, now: datetime) -> boo
         return False
     info = verify_google_token(id_token)
     if not info:
-        return False
-    if info.get("email_verified") is not True:
         return False
     if str(info.get("sub") or "") != str(linked):
         return False

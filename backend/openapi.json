@@ -2469,6 +2469,20 @@
           "requires_license": {
             "title": "Requires License",
             "type": "boolean"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "minLength": 2,
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
           }
         },
         "required": [
@@ -10763,9 +10777,19 @@
             ],
             "title": "Admin Notes"
           },
+          "allow_duplicate": {
+            "default": false,
+            "title": "Allow Duplicate",
+            "type": "boolean"
+          },
           "as_draft": {
             "default": false,
             "title": "As Draft",
+            "type": "boolean"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
             "type": "boolean"
           },
           "category_ids": {
@@ -11154,6 +11178,11 @@
             "default": 0,
             "title": "Business Days Waiting",
             "type": "integer"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
           },
           "categories": {
             "default": [],
@@ -12403,6 +12432,17 @@
             ],
             "title": "Availability State"
           },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
+          },
           "category_ids": {
             "anyOf": [
               {
@@ -13497,6 +13537,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -14460,6 +14505,11 @@
             "default": 0,
             "title": "Avg Rating",
             "type": "number"
+          },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
           },
           "categories": {
             "default": [],
@@ -16264,6 +16314,11 @@
             "title": "Avg Rating",
             "type": "number"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "categories": {
             "default": [],
             "items": {
@@ -17636,6 +17691,11 @@
             ],
             "title": "Address"
           },
+          "by_arrangement": {
+            "default": false,
+            "title": "By Arrangement",
+            "type": "boolean"
+          },
           "category_ids": {
             "items": {
               "type": "integer"
@@ -18066,6 +18126,17 @@
               }
             ],
             "title": "Availability State"
+          },
+          "by_arrangement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Arrangement"
           },
           "category_ids": {
             "anyOf": [
@@ -26453,6 +26524,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
@@ -26498,6 +26571,8 @@
             "name": "slug",
             "required": true,
             "schema": {
+              "maxLength": 50,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
               "title": "Slug",
               "type": "string"
             }
@@ -26976,6 +27051,23 @@
               "default": false,
               "title": "Allow Unverified Phone",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
             }
           }
         ],
@@ -28857,6 +28949,23 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
             }
           }
         ],

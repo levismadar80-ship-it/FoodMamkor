@@ -531,6 +531,14 @@ class Producer(Base):
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
     has_physical_location = Column(Boolean, nullable=False, default=True)
     offers_delivery = Column(Boolean, nullable=False, default=False)
+    # MEH-2447: the owner's own answer «איסוף או ביקור בתיאום מראש». Read only
+    # AND has_physical_location (producer_queries.attach_badge_fields,
+    # producer_listing._on_site_condition): True = no walk-in, so the card says
+    # «בתיאום מראש» and never «קנייה במקום». No CHECK on purpose (migration
+    # b8ee10dc69a9): a partial update that turns the place off must not 500.
+    by_arrangement = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
     delivery_cities: Column[list[str]] = Column(ARRAY(Text), nullable=False, default=[])

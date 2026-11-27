@@ -73,6 +73,7 @@
  "kashrut_certs": [],
  "has_physical_location": false,
  "offers_delivery": true,
+ "by_arrangement": false,
  "delivery_nationwide": false,
  "delivery_cities": [],
  "delivery_excluded_cities": [],

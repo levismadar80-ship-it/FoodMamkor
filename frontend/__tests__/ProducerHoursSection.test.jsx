@@ -163,6 +163,20 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
     expect(within(location).queryByTestId("location-no-hours")).toBeNull();
   });
 
+  it("MEH-2447: by arrangement with hours → «ביקור בתיאום מראש» set + the arrangement line", () => {
+    renderPage({
+      opening_hours: EVERY_DAY_STORE,
+      has_physical_location: true,
+      by_arrangement: true,
+      city: "חיפה",
+      locations: [PIN],
+    });
+    expect(sets().map(labelOf)).toEqual([HOURS.label_visit_arranged]);
+    const location = document.querySelector("#section-location");
+    expect(within(location).getByTestId("location-by-arrangement")).toBeTruthy();
+    expect(within(location).queryByTestId("location-no-hours")).toBeNull();
+  });
+
   it("store-only, open: the weekly table opens inside the set", () => {
     renderPage({ opening_hours: EVERY_DAY_STORE });
     fireEvent.click(screen.getByTestId("visit-hours-week-toggle"));
@@ -289,12 +303,15 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
       heading: "שעות",
       label_orders: "מקבלים הזמנות",
       label_visit: "פתוח למבקרים",
+      // MEH-2447: the visit set's header when the owner answered «בתיאום מראש».
+      label_visit_arranged: "ביקור בתיאום מראש",
       label_both: "הזמנות וביקור במקום",
     });
     expect(en.producer.detail.hours).toEqual({
       heading: "Hours",
       label_orders: "Taking orders",
       label_visit: "Open to visitors",
+      label_visit_arranged: "Visits by arrangement",
       label_both: "Orders and visits",
     });
   });

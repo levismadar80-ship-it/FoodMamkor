@@ -328,7 +328,8 @@ class TestJourney2ProducerRegistration:
         producer.phone_verified = True
         db.commit()
         ok = client.post(
-            f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
+            f"/admin/producers/{producer.id}/approve?slug=test-farm",
+            headers=auth_header(admin),
         )
         assert ok.status_code == 200, ok.text
 

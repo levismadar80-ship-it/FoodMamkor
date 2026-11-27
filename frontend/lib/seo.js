@@ -565,7 +565,10 @@ export function buildJsonLd(producer, locale = "he") {
   // for exactly the businesses whose hours now live on their primary location,
   // which is a silent SEO regression: no error, no failing test, and the
   // structured data simply loses a field.
-  const openingHoursSpec = parseOpeningHoursSpec(resolveStoreHours(producer));
+  // MEH-2447: «בתיאום מראש» — no opening hours to Google, or it shows «פתוח
+  // עכשיו» for a place that takes visitors only by arrangement.
+  const byArrangement = !!producer.by_arrangement && producer.has_physical_location !== false;
+  const openingHoursSpec = byArrangement ? null : parseOpeningHoursSpec(resolveStoreHours(producer));
   if (openingHoursSpec) business.openingHoursSpecification = openingHoursSpec;
 
   // MEH-452 Gap 2: servesCuisine from the producer's categories. Omitted
