@@ -17,14 +17,14 @@ History:  MEH-3932 (creation, 27/11/2026)
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.models import Product
-from app.utils.clock import ISRAEL_TZ
+from app.services.product_daily_stock import israel_day
 
 
 def too_soon_detail(name: str, days: int) -> str:
@@ -34,12 +34,6 @@ def too_soon_detail(name: str, days: int) -> str:
         f"את «{name}» צריך להזמין לפחות {ahead} מראש. "
         "צריך לבחור מועד מאוחר יותר או להסיר אותו מההזמנה"
     )
-
-
-def israel_day(moment: datetime) -> date:
-    """The Israel-clock date of an instant (naive UTC or aware)."""
-    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
-    return aware.astimezone(ISRAEL_TZ).date()
 
 
 def days_ahead(start: datetime, now: datetime) -> int:

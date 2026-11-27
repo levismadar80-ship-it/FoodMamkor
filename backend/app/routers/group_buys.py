@@ -31,6 +31,13 @@ from app.schemas.schemas import (
     GroupBuyStatusUpdate,
 )
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
+from app.schemas.payment_link import reservation_timing  # MEH-3897
+from app.services.prepay_refunds import (  # MEH-3897
+    Mail,
+    group_buy_cancel_mails,
+    group_buy_leave_mails,
+    queue_mails,
+)
 from app.services.group_buy_goal_flap import notify_back_at_goal, notify_below_goal
 from app.services.group_buy_notifications import (
     notify_participant_joined,
@@ -457,6 +464,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         quantity=data.quantity,
         # MEH-3735: unique within the group (UNIQUE + the row lock above).
         pickup_code=no_show.new_code(no_show.codes_in_use(db, group_buy_id)),
+        # MEH-3897: the join keeps how it is paid as of now.
+        prepay_timing=reservation_timing(
+            gb.producer.payment_info if gb.producer else None
+        ),
     )
     db.add(commit)
     # Flush so the just-added commit is visible to the participant-email query
@@ -522,6 +533,7 @@ def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 
     people, _units = capacity.counts(db, group_buy_id)
     capacity.refuse_last_call_drop(gb, people - 1)
 
+    refund = group_buy_leave_mails(db, gb, commit)  # MEH-3897, read before the delete
     db.delete(commit)
     db.refresh(gb)
     # Revert to open if we drop below min_participants
@@ -537,6 +549,7 @@ def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 
     db.flush()
     capacity.offer_freed_place(db, gb, background_tasks)  # MEH-3592
     db.commit()
+    queue_mails(background_tasks, refund)
     return {"detail": "ההצטרפות בוטלה"}
 
 
@@ -742,8 +755,10 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # under the row lock, so a repeat cancel is a 409 above and never gets here.
     # An admin's cancel (admin route) sends the same email since MEH-2866.
     participant_emails: list[str] = []
+    refund: list[Mail] = []
     if data.status == "cancelled":
         participant_emails = _cancel_recipients(db, gb, current_user.id)  # type: ignore[arg-type]
+        refund = group_buy_cancel_mails(db, gb, "owner")  # MEH-3897
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
@@ -758,6 +773,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(group_buy_id))
 
+    queue_mails(background_tasks, refund)
     if participant_emails:
         background_tasks.add_task(
             send_cancelled_notifications,
@@ -820,8 +836,10 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     _refuse_unless_allowed(gb, status, expected_status, ADMIN_TRANSITIONS)
 
     participant_emails: list[str] = []
+    refund: list[Mail] = []
     if status == "cancelled":
         participant_emails = _cancel_recipients(db, gb, admin.id)  # type: ignore[arg-type]
+        refund = group_buy_cancel_mails(db, gb, "admin")  # MEH-3897
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
     producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
@@ -833,6 +851,7 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     db.commit()
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
+    queue_mails(background_tasks, refund)
     if participant_emails:
         background_tasks.add_task(
             send_cancelled_notifications,

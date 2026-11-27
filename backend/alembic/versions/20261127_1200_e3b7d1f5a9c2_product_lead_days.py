@@ -1,7 +1,7 @@
 """product_lead_days
 
 Revision ID: e3b7d1f5a9c2
-Revises: c6e2a4f8b1d9
+Revises: c5e7a9b1d3f4
 Create Date: 2026-11-27 12:00:00.000000+00:00
 
 MEH-3932 (Fischgrund bakery, 27/11): a business sets, per product, how many
@@ -24,7 +24,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "e3b7d1f5a9c2"
-down_revision: Union[str, None] = "c6e2a4f8b1d9"
+down_revision: Union[str, None] = "c5e7a9b1d3f4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

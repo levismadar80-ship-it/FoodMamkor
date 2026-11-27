@@ -11353,6 +11353,17 @@
             ],
             "title": "Address"
           },
+          "admin_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Notes"
+          },
           "ambassador": {
             "default": false,
             "title": "Ambassador",

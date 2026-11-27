@@ -426,6 +426,9 @@ class GroupBuyCommit(Base):
     # (services/group_buy_no_show.py). Both NULL = not marked yet.
     handed_at = Column(DateTime, nullable=True)
     no_show_at = Column(DateTime, nullable=True)
+    # MEH-3897: how this join is paid, as the business set it at join time
+    # (models/rescue.RESERVATION_TIMINGS). NULL = before the column.
+    prepay_timing = Column(String(10), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
@@ -439,6 +442,10 @@ class GroupBuyCommit(Base):
         CheckConstraint(
             "handed_at IS NULL OR no_show_at IS NULL",
             name="group_buy_commits_one_outcome_check",
+        ),
+        CheckConstraint(
+            "prepay_timing IS NULL OR prepay_timing IN ('advance', 'deposit', 'counter')",
+            name="group_buy_commits_prepay_timing_check",
         ),
     )
 
