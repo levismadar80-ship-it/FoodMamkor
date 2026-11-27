@@ -18,6 +18,7 @@ import AdminDeliveryPaymentPanel, {
   useUnsavedSections,
 } from "@/components/admin/AdminDeliveryPaymentPanel";
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
+import AdminAboutFieldHints from "@/components/admin/AdminAboutFieldHints"; // MEH-3953
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
 import TestBusinessToggle from "@/components/admin/TestBusinessToggle"; // MEH-2952
@@ -274,6 +275,7 @@ export default function EditProducerPage() {
       )}
       {/* MEH-3483: the owner's «ספרו לנו על העסק», saved through the admin PUT;
           a save reloads the business and remounts the forms below. */}
+      <AdminAboutFieldHints producer={producer} />
       {/* MEH-3915: `blocked` — its save remounts the panels below, which would
           drop their unsaved edits. */}
       <PageFillPanel profile={producer} owner={false} readUrl={`/admin/producers/${id}/page-fill/read`}

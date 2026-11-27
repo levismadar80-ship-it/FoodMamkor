@@ -24,9 +24,9 @@ import useDuplicateSource from "@/lib/use-duplicate-source";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
 import he from "@/messages/he.json";
 import en from "@/messages/en.json";
+import { timeFields, timeValue } from "./helpers/time-of-day";
 
-const timesOf = (i) =>
-  Array.from(screen.getByTestId(`location-hours-day-${i}`).querySelectorAll('input[type="time"]')).map((el) => el.value);
+const timesOf = (i) => timeFields(screen.getByTestId(`location-hours-day-${i}`)).map(timeValue);
 const copyButton = () => screen.queryByTestId("location-hours-copy-all");
 
 beforeEach(() => {

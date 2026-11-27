@@ -61,7 +61,8 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | «לתשלום» to the business's own prepay link (new tab, host printed under it) — a bag and a group buy (MEH-3895) | `ui/PrepayButton.jsx` (the pill look comes from `buttonLook` in `ui/Button.jsx`) | `Prepay` |
-| A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) | `ui/TimeOfDaySelect.jsx` | — |
+| A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) — every time field, `optional` for one she may leave blank | `ui/TimeOfDaySelect.jsx` | `DesignSystemLintRules` (eslint `design-system/no-html-time`, MEH-3955) |
+| A date and a 24-hour time in one field (the value of a `datetime-local`) | `ui/DateTimeField.jsx` | `DesignSystemLintRules` |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
