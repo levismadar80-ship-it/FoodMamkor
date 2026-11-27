@@ -8419,6 +8419,8 @@
     "when_pickup": "איסוף ב{day}, {from}–{until} · {address}",
     "when_pickup_no_address": "איסוף ב{day}, {from}–{until}",
     "when_delivery": "משלוח ב{day}, {from}–{until}",
+    "requested_pickup": "ביקשתם איסוף ב{day}, {from}–{until}",
+    "requested_delivery": "ביקשתם משלוח ב{day}, {from}–{until}",
     "proposal": "בית העסק מציע שינוי",
     "accept": "מתאים לי",
     "cancel": "לבטל את ההזמנה",

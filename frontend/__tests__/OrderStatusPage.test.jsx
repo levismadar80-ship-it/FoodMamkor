@@ -99,6 +99,30 @@ describe("what each status shows", () => {
     expect(screen.queryByTestId("order-code")).toBeNull();
   });
 
+  // MEH-3960: while she waits, the time she asked for is on the page — no
+  // address and no «הוספה ליומן», since the business has not agreed to it yet.
+  it("pending pickup: the time she asked for, with no address and no calendar button", () => {
+    show(order({ pickup_address: "הרצל 12, רחובות" }));
+    const asked = screen.getByTestId("order-requested").textContent;
+    // The whole line, isolates included, so a dropped placeholder goes red.
+    expect(asked).toMatch(/^ביקשתם איסוף ביום \S+ \d{1,2}\.\d{1,2}, \u206609:00–10:00\u2069$/);
+    expect(asked).not.toContain("הרצל");
+    expect(screen.queryByTestId("order-add-to-calendar")).toBeNull();
+  });
+
+  it("pending delivery: the delivery time she asked for", () => {
+    show(order({ fulfilment: "delivery" }));
+    expect(screen.getByTestId("order-requested").textContent).toMatch(/^ביקשתם משלוח ב/);
+  });
+
+  it.each(["confirmed", "declined", "expired", "cancelled", "change_proposed"])(
+    "%s: no «ביקשתם» line",
+    (status) => {
+      show(order({ status, pickup_code: status === "confirmed" ? "4821" : null }));
+      expect(screen.queryByTestId("order-requested")).toBeNull();
+    },
+  );
+
   it("confirmed pickup: when and where, the code with its line, what to pay", () => {
     show(order({ status: "confirmed", pickup_code: "4821", pickup_address: "הרצל 12, רחובות", final_total_agorot: 5600 }));
     const when = screen.getByTestId("order-when").textContent;
