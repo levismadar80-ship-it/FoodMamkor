@@ -4,7 +4,8 @@ Purpose:  Last calendar month's numbers for the one monthly owner email on the
           1st (MEH-3194, Sapir 24/11: one monthly touch, value before any
           bill): bookings through the site and their value first, then page
           views and clicks. Also the subject line those numbers lead with.
-Touches:  reads billable_events (billing_summary.summarize) and the analytics
+Touches:  reads billable_events (billing_summary.summarize), product_orders
+          (product_order_month, MEH-3980) and the analytics
           tables (producer_insights.metric_count_between). Writes nothing.
 Does NOT: send or schedule anything (services/page_freshness.py does); count
           anything itself; mention a fee, a threshold or a price — this is
@@ -12,7 +13,7 @@ Does NOT: send or schedule anything (services/page_freshness.py does); count
 Related:  backend/app/services/weekly_owner_summary.py `_rows` (same labels,
           same "hide a zero row" rule) · backend/app/utils/money.py
           `shekels_text` (the shared shekel format).
-History:  MEH-3194 (creation).
+History:  MEH-3194 (creation); MEH-3980 (product orders counted in).
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.services.billing_summary import Month, summarize
+from app.services.product_order_month import month_product_orders
 from app.services.producer_insights import metric_count_between
 from app.utils.clock import ISRAEL_TZ
 from app.utils.money import shekels_text
@@ -67,6 +69,9 @@ def month_name(month: Month) -> str:
 def month_numbers(db: Session, producer_id: UUID, month: Month) -> MonthNumbers:
     """One business, one Israel calendar month."""
     ledger = summarize(db, producer_id, month)
+    # MEH-3980: product orders are not in the ledger yet; count them as the
+    # dashboard line does, so the email and the line agree.
+    orders = month_product_orders(db, producer_id, month)
     # The analytics columns are naive UTC (producer_insights.WindowFilter).
     span = tuple(
         t.astimezone(timezone.utc).replace(tzinfo=None)
@@ -78,8 +83,9 @@ def month_numbers(db: Session, producer_id: UUID, month: Month) -> MonthNumbers:
         return metric_count_between(db, producer_id, metric, (start, end))
 
     return {
-        "bookings": int(ledger["bookings"]),
-        "value_agorot": int(ledger["value_agorot"]),
+        "bookings": int(ledger["bookings"]) + orders["product_orders"],
+        "value_agorot": int(ledger["value_agorot"])
+        + orders["product_orders_value_agorot"],
         "profile_views": count("profile_views"),
         "whatsapp_clicks": count("whatsapp_clicks"),
         "contact_clicks": count("contact_clicks"),

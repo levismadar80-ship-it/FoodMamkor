@@ -10,6 +10,9 @@ from datetime import datetime
 
 from _test_meh3263_order_route__common import Shop, stored_order
 
+from app.services import freshness_month_numbers
+from app.services.billing_summary import Month
+
 MONTH = "2026-11"
 
 
@@ -61,3 +64,21 @@ def test_the_ledger_numbers_do_not_move(client, db):
 
 def test_a_guest_is_refused(client):
     assert client.get(f"/producers/me/billing/summary?month={MONTH}").status_code == 401
+
+
+def test_a_final_total_of_zero_is_kept_not_the_estimate(client, db):
+    shop = Shop(db)
+    stored_order(db, shop, "handed", handed_at=datetime(2026, 11, 10, 9), final_total_agorot=0)
+    body = _summary(client, shop)
+    assert body["product_orders"] == 1
+    assert body["product_orders_value_agorot"] == 0
+
+
+def test_the_monthly_email_counts_them_like_the_line(db):
+    # The owner email of the 1st (MEH-3194) reads the same month numbers;
+    # it must not say 0 while the dashboard line says 1.
+    shop = Shop(db)
+    stored_order(db, shop, "handed", handed_at=datetime(2026, 11, 10, 9), final_total_agorot=4200)
+    numbers = freshness_month_numbers.month_numbers(db, shop.producer.id, Month(2026, 11))
+    assert numbers["bookings"] == 1
+    assert numbers["value_agorot"] == 4200
