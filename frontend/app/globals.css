@@ -199,6 +199,18 @@ html[dir="rtl"] {
   direction: rtl;
 }
 
+/* MEH-3927 — the site has no dark theme, so it says so.
+   `only light` is the signal Chrome's Auto Dark Theme honours: without it a
+   phone in dark mode (Chrome on Android with the "darken websites" setting,
+   some in-app browsers) inverts the cream page, the logos and the photos'
+   frames. Measured 27/11 in Chromium (forceDarkModeEnabled, the browser
+   preferring dark): the cream F5F0E8 page rendered as 29251F without this
+   line and stayed F5F0E8 with it (hex spelled without the hash: raw-color-tokens.sh scans comments). Samsung Internet's own dark mode does not reliably honour it (residual
+   risk). Guard: e2e/flows/44-light-only-color-scheme.spec.ts */
+:root {
+  color-scheme: only light;
+}
+
 html {
 
   /* MEH-1775 — THE bottom inset. Single source of truth for how much vertical

@@ -20,7 +20,7 @@
 // page's own i18n namespace.
 export const STATUS_CLASSES = {
   success: "bg-green-50 text-primary border-primary/30",
-  warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  warning: "bg-warning-100 text-warning-800 border-warning-200",
   error: "bg-danger-50 text-danger-700 border-danger-200",
   info: "bg-blue-50 text-blue-700 border-blue-200",
   neutral: "bg-gray-100 text-gray-700 border-gray-200",

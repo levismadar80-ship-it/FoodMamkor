@@ -218,7 +218,7 @@ export default function AdminRecipesPage() {
 // approved=green, rejected=red).
 const STATUS_BADGE = {
   pending: "bg-gray-100 text-gray-600",
-  needs_revision: "bg-yellow-100 text-yellow-800",
+  needs_revision: "bg-warning-100 text-warning-800",
   approved: "bg-green-50 text-primary",
   rejected: "bg-danger-50 text-danger-700",
 };

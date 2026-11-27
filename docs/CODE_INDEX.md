@@ -775,7 +775,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `PromotedServiceChips.jsx` | — אין כותרת — |
 | `RecipeForm.jsx` | RecipeForm — MEH-590 chunk 3/4 of the producer-recipes epic. |
 | `RecipeStatusBadge.jsx` | RecipeStatusBadge — MEH-590 chunk 3/4 of the producer-recipes epic. |
-| `RegisterIdentityCheck.jsx` | Under the phone field of the sign-up form: when this business already has a page (any status, with an account or without), say so before a second one is … |
+| `RegisterIdentityCheck.jsx` | Under «הבא» on the sign-up form's details step: when this business already has a page (any status, with an account or without), say so before a second one is … |
 | `RegisterNameCheck.jsx` | Under the business-name field of the sign-up form: when a live business already carries the typed name, say so and point its owner at the existing page … |
 | `RegistrationCta.jsx` | The sign-up block on a public event / workshop page, by the owner's «איך נרשמים?» choice (MEH-2768): site_form → «הרשמה לסדנה/לאירוע» opens the form below it, … |
 | `RegistrationMethodField.jsx` | «איך נרשמים?» — the owner picks how visitors sign up to an event or an experience (MEH-2762 chunk 2): on-site form (default), WhatsApp, phone, or an external … |

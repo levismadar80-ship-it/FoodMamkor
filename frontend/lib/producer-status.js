@@ -23,7 +23,7 @@ export const PRODUCER_STATUS_COLORS = {
   // Distinct from `inactive`'s `bg-gray-200` for the same reason.
   draft: "bg-slate-100 text-slate-700",
   approved: "bg-primary text-white",
-  pending: "bg-yellow-100 text-yellow-800",
+  pending: "bg-warning-100 text-warning-800",
   rejected: "bg-danger-100 text-danger-700",
   inactive: "bg-gray-200 text-gray-700",
 };

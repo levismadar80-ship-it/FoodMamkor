@@ -84,7 +84,7 @@ def frame(
     return f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"></head>
 <body style="margin:0;padding:0;background:{PAGE_BG};direction:rtl;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:{PAGE_BG};padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
   <tr><td align="center">
