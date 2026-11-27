@@ -15,7 +15,9 @@ const DISMISS_KEY = "holiday_banner_dismissed";
 // visits (localStorage), the way GitLab UI and most announcement bars persist a
 // dismissal; it was sessionStorage, so it came back on every new visit for the
 // whole two-week window. The key carries the holiday's start date, so next
-// year's Hanukkah shows again. A date-less override (admin) keys on the name.
+// year's Hanukkah shows again. An admin override (/holiday-mode) comes from the
+// same dated table, so it carries a start too; the date-less key is only a
+// fallback for a holiday object without one, and that key does not expire.
 /** @param {{ key: string, start?: string }} h */
 function dismissKey(h) {
   return `${DISMISS_KEY}_${h.key}${h.start ? `_${h.start}` : ""}`;
