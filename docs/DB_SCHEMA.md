@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-70 tables, 831 columns.
+70 tables, 833 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -73,8 +73,8 @@
 | `product_order_notifications` | 10 | product_orders |
 | `product_order_phone_codes` | 7 | — |
 | `product_orders` | 30 | producers, users |
-| `product_variants` | 6 | products |
-| `products` | 30 | producers |
+| `product_variants` | 7 | products |
+| `products` | 31 | producers |
 | `registrations` | 16 | events, experiences |
 | `reports` | 8 | producers, users |
 | `rescue_no_show_tombstones` | 4 | — |
@@ -1392,9 +1392,11 @@
 | `price_agorot` | `INTEGER` | yes |  |  | business |
 | `in_stock` | `BOOLEAN` | NOT NULL | server: `true`<br>app: `True` |  | business |
 | `position` | `INTEGER` | NOT NULL | server: `0`<br>app: `0` |  | business |
+| `daily_limit` | `SMALLINT` | yes |  |  | business |
 
 **CHECK**
 
+- `product_variants_daily_limit_check`: `daily_limit >= 1 AND daily_limit <= 999`
 - `product_variants_price_check`: `price_agorot IS NULL OR price_agorot >= 0`
 
 **Indexes**
@@ -1433,12 +1435,14 @@
 | `in_stock` | `BOOLEAN` | NOT NULL | server: `true`<br>app: `True` |  | business |
 | `contains_alcohol` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `available_weekdays` | `SMALLINT` | yes |  |  | business |
+| `daily_limit` | `SMALLINT` | yes |  |  | business |
 | `is_draft` | `BOOLEAN` | NOT NULL | server: `false`<br>app: `False` |  | business |
 | `source_image_url` | `TEXT` | yes |  |  | business |
 
 **CHECK**
 
 - `products_available_weekdays_check`: `available_weekdays >= 1 AND available_weekdays <= 127`
+- `products_daily_limit_check`: `daily_limit >= 1 AND daily_limit <= 999`
 - `products_price_unit_check`: `price_unit IN ('unit', 'kg', '100g', 'bottle', 'box', 'pack')`
 
 **Indexes**

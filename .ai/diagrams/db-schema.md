@@ -182,6 +182,7 @@ erDiagram
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
         smallint available_weekdays "MEH-3618: Sun=1..Sat=64, NULL = every day, CHECK 1..127"
+        smallint daily_limit "daily stock 27/11: units per pickup day across variants, NULL = no limit, CHECK 1..999"
     }
 
     producer_order_settings {
@@ -340,6 +341,7 @@ erDiagram
         int price_agorot "nullable = the product's price"
         boolean in_stock "default true"
         int position "order on the page"
+        smallint daily_limit "daily stock 27/11: units per pickup day, NULL = no limit, CHECK 1..999"
     }
 
     product_order_events {

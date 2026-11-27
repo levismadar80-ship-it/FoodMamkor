@@ -38,6 +38,7 @@ import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
+import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
@@ -140,6 +141,9 @@ export default function OrdersPage() {
         </div>
       )}
       {!data && !failed && <Skeleton count={3} testId="orders-loading" />}
+      {/* Daily stock (27/11): the week's «מה להכין», above the lists — what she
+          bakes from, staff included. */}
+      {data && !failed && <OrderPrepList orders={data.orders} />}
       {data?.staff && <OrdersBoard orders={data.orders} onChanged={replace} />}
       {data?.settings && (
         <>
