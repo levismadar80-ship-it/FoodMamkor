@@ -22,13 +22,16 @@ without rewriting the table, and every existing row reads '{}'. Widening a
 CHECK rejects nothing the old one accepted, so the previous container keeps
 working against the new schema.
 
-downgrade() restores the narrow CHECK as NOT VALID, so a row that relies on
-partner stores alone does not block the rollback (new writes are checked
-again), then drops the cap and the column.
+downgrade() refuses while any business relies on partner stores alone: the
+narrow CHECK cannot hold for it, and a NOT VALID constraint would still fail
+every later UPDATE of that row. Give such a business a pickup or delivery
+setting first (admin form), then roll back. Otherwise it restores the narrow
+CHECK, then drops the cap and the column.
 """
 
 from typing import Sequence, Union
 
+import sqlalchemy as sa
 from alembic import op
 
 revision: str = "b2d4f6a8c0e3"
@@ -55,10 +58,21 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    partner_only = op.get_bind().execute(
+        sa.text(
+            "SELECT count(*) FROM producers "
+            "WHERE NOT has_physical_location AND NOT offers_delivery"
+        )
+    ).scalar()
+    if partner_only:
+        raise RuntimeError(
+            f"{partner_only} producers rely on partner_stores alone; give each a "
+            "pickup or delivery setting before downgrading MEH-3977."
+        )
     op.execute("ALTER TABLE producers DROP CONSTRAINT IF EXISTS producer_location_mode;")
     op.execute(
         "ALTER TABLE producers ADD CONSTRAINT producer_location_mode "
-        "CHECK (has_physical_location OR offers_delivery) NOT VALID;"
+        "CHECK (has_physical_location OR offers_delivery);"
     )
     op.execute("ALTER TABLE producers DROP CONSTRAINT IF EXISTS producer_partner_stores_cap;")
     op.execute("ALTER TABLE producers DROP COLUMN IF EXISTS partner_stores;")

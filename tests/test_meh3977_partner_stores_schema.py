@@ -37,10 +37,16 @@ def test_none_of_the_three_is_still_rejected(db):
     db.rollback()
 
 
-def test_existing_rows_default_to_no_partner_stores(db):
+def test_a_row_written_without_the_field_has_no_partner_stores(db):
     db.add(_producer(has_physical_location=True, offers_delivery=False))
     db.commit()
     assert db.query(Producer).filter_by(name="משק שותפים").one().partner_stores == []
+
+
+def test_exactly_ten_partner_stores_is_allowed(db):
+    db.add(_producer(has_physical_location=True, offers_delivery=False, partner_stores=[f"חנות {i}" for i in range(10)]))
+    db.commit()
+    assert len(db.query(Producer).filter_by(name="משק שותפים").one().partner_stores) == 10
 
 
 def test_more_than_ten_partner_stores_is_rejected(db):

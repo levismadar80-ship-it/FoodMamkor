@@ -117,6 +117,8 @@ DELIVERY_COLUMNS = (
     "delivery_nationwide",
     "delivery_cities",
     "delivery_excluded_cities",
+    # MEH-3977: «נמכר גם דרך» is how the products reach buyers — same set.
+    "partner_stores",
     "delivery_zones",
     "delivery_days_min",
     "delivery_days_max",
