@@ -30,6 +30,7 @@ import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
+import DietaryScopeNotes from "@/components/DietaryScopeNotes";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -1088,6 +1089,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="some">{tDiet("opt_no")}</option>
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
+            {/* MEH-3982 */}
+            <DietaryScopeNotes
+              axis="vegan"
+              scope={form.vegan_scope}
+              categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+            />
           </Field>
           <Field label={tDiet("q_vegetarian")}>
             <select
@@ -1099,6 +1106,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="some">{tDiet("opt_no")}</option>
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
+            {/* MEH-3982 */}
+            <DietaryScopeNotes
+              axis="vegetarian"
+              scope={form.vegetarian_scope}
+              categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+            />
           </Field>
           <Field label={tDiet("q_gluten")}>
             <select

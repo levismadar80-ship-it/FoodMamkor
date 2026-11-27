@@ -9,6 +9,7 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Checkbox from "@/components/ui/Checkbox";
+import DietaryScopeNotes from "@/components/DietaryScopeNotes";
 
 /**
  * Module:   TagsCard
@@ -154,6 +155,8 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           options={yesNo}
           onChange={edit(setVegan)}
         />
+        {/* MEH-3982: what «טבעוני» means + a soft warning on an animal category. */}
+        <DietaryScopeNotes axis="vegan" scope={vegan} categories={profile?.categories} />
         <RadioGroup
           legend={tDiet("q_vegetarian")}
           name="vegetarian_scope"
@@ -161,6 +164,7 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           options={yesNo}
           onChange={edit(setVegetarian)}
         />
+        <DietaryScopeNotes axis="vegetarian" scope={vegetarian} categories={profile?.categories} />
         <RadioGroup
           legend={tDiet("q_gluten")}
           name="gluten_free_facility"
