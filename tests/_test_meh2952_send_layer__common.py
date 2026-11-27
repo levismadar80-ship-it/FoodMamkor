@@ -603,6 +603,18 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "a row caused by a test row is never queued (enqueue_email, MEH-2952)",
     ),
+    # --- MEH-3933: weekly repeat orders, a skipped or stopped week ---
+    # Each mails the business and the buyer; both read producer.is_test.
+    ("services/product_order_repeat.py", "_mail_skipped", "enqueue_email"): (
+        2,
+        BUS,
+        "_is_test(db, producer)",
+    ),
+    ("services/product_order_repeat.py", "_mail_stopped", "enqueue_email"): (
+        4,
+        BUS,
+        "_is_test(db, producer)",
+    ),
     # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
     ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
         1,

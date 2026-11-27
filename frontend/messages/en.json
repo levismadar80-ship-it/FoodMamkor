@@ -8634,5 +8634,19 @@
       "body": "{count, plural, one {One thing is left} other {# things are left}} before you send your page for review. The assistant can help with that, right here.",
       "cta": "Finish with the assistant"
     }
+  },
+  "order_repeat": {
+    "sheet_label": "Order this again every week",
+    "sheet_hint": "Every {day} at {time} we'll send the business the same order, and the business confirms it like any order. You can stop it any time from the order page.",
+    "sheet_hint_no_slot": "Once you pick a time, the same order is sent again every week on the same day and time.",
+    "status_active": "Weekly order: every {day} at {time}. Next week's order is sent to the business after this week's time.",
+    "status_stopped": "The weekly order was stopped. No new order will be sent from it.",
+    "stop": "Stop the weekly order",
+    "stop_confirm": "Stop the weekly order? Orders already sent stay as they are.",
+    "stop_yes": "Yes, stop it",
+    "badge": "Weekly order",
+    "badge_stopped": "Stopped weekly order",
+    "business_line": "Repeats every {day} at {time}. Next week's order is made after this week's time.",
+    "failed": "We couldn't stop it. Please try again."
   }
 }

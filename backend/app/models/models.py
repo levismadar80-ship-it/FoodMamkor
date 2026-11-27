@@ -1345,3 +1345,6 @@ import app.models.email_events  # noqa: E402,F401
 
 # MEH-3896: short preview / claim links (own module, same reason).
 import app.models.share_links  # noqa: E402,F401
+
+# MEH-3933: a buyer's weekly repeat of an order (own module, same reason).
+import app.models.product_order_repeats  # noqa: E402,F401
