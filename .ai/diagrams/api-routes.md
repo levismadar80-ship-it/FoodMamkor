@@ -60,7 +60,7 @@ graph LR
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
     App --> AdminTestBusiness[admin_test_business.router<br/>/admin/test-businesses (MEH-2952 chunk 4: «עסק בדיקה — מוסתר מהאתר», writes producers.is_test)]
-    App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner)]
+    App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner) + products/:id/price (MEH-3942)]
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]

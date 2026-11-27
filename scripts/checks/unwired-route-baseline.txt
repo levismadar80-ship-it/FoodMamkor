@@ -55,6 +55,7 @@ GET	/health/readiness	health
 #
 # --- real gaps: built on the server, no screen yet. Each has its card.
 POST	/producers/me/availability-confirm	pending-ui	MEH-2697
+PUT	/admin/producers/{_}/products/{_}/price	pending-ui	MEH-3943
 #
 # --- old spellings kept through a release, each with the card that removes it
 POST	/rescue/orders/{_}/no_show	unused	MEH-3711

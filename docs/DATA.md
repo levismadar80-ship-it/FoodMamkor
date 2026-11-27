@@ -2039,6 +2039,8 @@ PUT    /admin/producers/{producer_id}/product-groups          admin — MEH-3472
 PUT    /admin/producers/{producer_id}/product-groups/assign   admin — MEH-3477: same body and rules as PUT /producers/me/product-groups/assign, drafts included
 POST   /admin/producers/{producer_id}/product-groups/suggest  admin — MEH-3478: same as POST /producers/me/product-groups/suggest, drafts included; 30/hour
 GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
+PUT    /admin/producers/{producer_id}/products/{product_id}/price  admin — MEH-3942: {price_min, price_max, price_unit?}; null clears the price
+                                                               («מחיר משתנה לפי עונה»), any business incl. approved with no owner; 120/hour
 PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
                                                                draft, each once (else 409). The owner's route stays published-only.
                                                                One `products.position` column serves both: an owner reorder numbers
