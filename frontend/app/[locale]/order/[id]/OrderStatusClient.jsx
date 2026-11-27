@@ -14,7 +14,7 @@
  * Related:  app/[locale]/order/[id]/page.js, lib/buyer-order.js
  * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»); MEH-3620 («כתבו ביקורת» once handed);
  *           MEH-3755 (business link, contact, nav — OrderBusinessLinks.jsx);
- *           MEH-3764 («להזמין שוב» once finished)
+ *           MEH-3764 («להזמין שוב» once finished); MEH-3933 (the weekly repeat)
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -36,6 +36,7 @@ import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromH
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
+import OrderRepeatBlock from "./OrderRepeatBlock";  // MEH-3933
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -168,6 +169,8 @@ export function OrderStatusView({ order, onChange, refOf }) {
         <Proposal order={order} busy={Boolean(state.busy)} onAccept={() => run(acceptChange)} onCancel={() => setState({ asking: true })} />
       )}
       <Lines order={order} />
+      {/* MEH-3933: the weekly repeat this order belongs to, and its stop. */}
+      <OrderRepeatBlock order={order} onChange={onChange} refOf={refOf} />
       {view.toPay && <p className="font-medium text-text">{t("to_pay", { total: shekelsText(toPayAgorot(order)) })}</p>}
       {/* MEH-3755: the business page, its contact button, and nav to the pickup address. */}
       <OrderBusinessLinks producerId={order.producer_id} pickupAddress={view.when === "when_pickup" ? order.pickup_address : null} />

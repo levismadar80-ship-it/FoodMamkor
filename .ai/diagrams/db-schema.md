@@ -256,8 +256,28 @@ erDiagram
         timestamp proposed_slot_end
         int proposed_total_agorot
         text proposal_note
+        uuid repeat_id FK "MEH-3933: nullable, SET NULL; the weekly repeat it came from"
         timestamp created_at
         timestamp updated_at
+    }
+
+    product_order_repeats {
+        uuid id PK
+        uuid producer_id FK "CASCADE"
+        uuid user_id FK "nullable, SET NULL"
+        string customer_name
+        string customer_phone
+        string fulfilment "pickup|delivery"
+        string delivery_city "nullable"
+        text delivery_address "nullable"
+        text note "nullable"
+        jsonb items "[{product_id, variant_id, qty}]"
+        timestamp last_slot_start "the latest week made or skipped"
+        smallint skipped_in_row "3 → stopped"
+        string state "active|stopped"
+        string stopped_by "customer|business|system, nullable"
+        timestamp stopped_at
+        timestamp created_at
     }
 
     product_order_phone_codes {
@@ -793,6 +813,8 @@ erDiagram
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
+    product_order_repeats |o--o{ product_orders : "weekly orders made from it (MEH-3933)"
+    producers ||--o{ product_order_repeats : "CASCADE"
     product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
     products ||--o{ product_variants : "sizes or flavours, max 10 (MEH-3617)"

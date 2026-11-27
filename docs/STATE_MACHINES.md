@@ -193,6 +193,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
 | Queued email (`email_outbox.outcome`, MEH-3535) | pending → sent / skipped (a final non-send answer, or `stale` after 2 days) / failed (5 tries, a provider error or a crash on the row each spending one); a try that fails keeps it pending with a later `send_after` | the outbox dispatcher only (`services/email_outbox.py:dispatch_due`), run by the worker or the web scheduler |
 | Order staff (`producer_staff.status`, MEH-3526) | pending → active (the invited person accepts: one conditional UPDATE, `routers/producer_staff.py` `accept_staff_invite`; the token is cleared) · active → revoked (the owner removes, `remove_staff`; the staff member leaves, `leave_staff`; the account becomes a business owner through a claim, an owner invite or a business registration, `services/staff_membership.py` `end_staff_membership`) · a pending invite the owner withdraws is deleted, not revoked (`remove_staff`), so withdrawn invites leave no rows. A pending row past `expires_at` (7 days) stays pending, stops counting toward the cap of 5 and is minted again by a new invite to the same address. An active row grants order access only while the business still has an owner (`services/order_access.py`) | owner, invited person |
+| Weekly repeat of an order (`product_order_repeats.state`, MEH-3933) | active → stopped, one way. Stopped by the buyer (`POST /product-orders/status/repeat/stop`), by the business or its staff (`POST /producers/me/product-orders/{id}/repeat/stop`), or by the job after 3 weeks in a row it could not make (`stopped_by` = customer · business · system). Born active only from an order sent with `repeat_weekly`. While active, the hourly job (09:00–20:00 Israel) makes next week's order once this week's slot has begun, through `create_order`; a week the business cannot take, or last week's order declined or expired, adds one to `skipped_in_row`, a made one resets it, Shabbat for an observant business waits, weeks missed while the job did not run are passed over uncounted. Born only from a logged-in buyer's order without alcohol. Deleted, not stopped, when the buyer deletes her account | buyer, business, `services/product_order_repeat.py` |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
 ## Every status column
@@ -221,6 +222,7 @@ section above when it has transitions worth drawing.
 | `business_billing.state` | "What does not exist" (no writer) |
 | `product_orders.status` | "What does not exist" (no route yet) |
 | `product_orders.payment_status` | "What does not exist" (no route yet) |
+| `product_order_repeats.state` | 6 |
 | `product_order_events.from_status` | log of `product_orders.status` |
 | `product_order_events.to_status` | log of `product_orders.status` |
 | `home_products.moderation_status` | router not mounted (audit §8) |

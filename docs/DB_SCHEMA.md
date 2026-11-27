@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-70 tables, 836 columns.
+71 tables, 853 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -72,7 +72,8 @@
 | `product_order_items` | 11 | product_orders, product_variants, products |
 | `product_order_notifications` | 10 | product_orders |
 | `product_order_phone_codes` | 7 | — |
-| `product_orders` | 30 | producers, users |
+| `product_order_repeats` | 16 | producers, users |
+| `product_orders` | 31 | producers, product_order_repeats, users |
 | `product_variants` | 7 | products |
 | `products` | 32 | producers |
 | `registrations` | 16 | events, experiences |
@@ -1329,16 +1330,43 @@
 - `ix_product_order_phone_codes_created_at` (created_at)
 - `ix_product_order_phone_codes_phone_created` (phone, created_at)
 
+### `product_order_repeats`
+
+| column | type | null | default | key | privacy |
+|---|---|---|---|---|---|
+| `delivery_city` | `VARCHAR(100)` | yes |  |  | orders |
+| `delivery_address` | `TEXT` | yes |  |  | orders |
+| `note` | `TEXT` | yes |  |  | orders |
+| `items` | `JSONB` | NOT NULL |  |  | orders |
+| `last_slot_start` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL |  |  | orders |
+| `skipped_in_row` | `SMALLINT` | NOT NULL | server: `0`<br>app: `0` |  | orders |
+| `state` | `VARCHAR(10)` | NOT NULL | server: `'active'`<br>app: `'active'` |  | orders |
+| `stopped_by` | `VARCHAR(10)` | yes |  |  | orders |
+| `stopped_at` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
+| `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
+| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
+| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
+| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
+| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
+| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
+| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
+
+**CHECK**
+
+- `product_order_repeats_fulfilment_check`: `fulfilment IN ('pickup', 'delivery')`
+- `product_order_repeats_skipped_check`: `skipped_in_row >= 0`
+- `product_order_repeats_state_check`: `state IN ('active', 'stopped')`
+- `product_order_repeats_stopped_by_check`: `stopped_by IS NULL OR stopped_by IN ('customer', 'business', 'system')`
+
+**Indexes**
+
+- `ix_product_order_repeats_phone` (customer_phone)
+- `ix_product_order_repeats_producer_state` (producer_id, state)
+
 ### `product_orders`
 
 | column | type | null | default | key | privacy |
 |---|---|---|---|---|---|
-| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
-| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
-| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
-| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
-| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
-| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
 | `delivery_address` | `TEXT` | yes |  |  | orders |
 | `slot_start` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL |  |  | orders |
 | `slot_end` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL |  |  | orders |
@@ -1361,8 +1389,15 @@
 | `proposed_slot_end` | `TIMESTAMP WITHOUT TIME ZONE` | yes |  |  | orders |
 | `proposed_total_agorot` | `INTEGER` | yes |  |  | orders |
 | `proposal_note` | `TEXT` | yes |  |  | orders |
+| `repeat_id` | `UUID` | yes |  | FK → `product_order_repeats.id` ON DELETE SET NULL | orders |
 | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()` |  | orders |
 | `updated_at` | `TIMESTAMP WITHOUT TIME ZONE` | NOT NULL | app: `utc_now()`<br>on update: `utc_now()` |  | orders |
+| `id` | `UUID` | NOT NULL | app: `uuid4()` | PK | orders |
+| `customer_name` | `VARCHAR(120)` | NOT NULL |  |  | orders |
+| `customer_phone` | `VARCHAR(20)` | NOT NULL |  |  | orders |
+| `fulfilment` | `VARCHAR(10)` | NOT NULL |  |  | orders |
+| `producer_id` | `UUID` | NOT NULL |  | FK → `producers.id` ON DELETE CASCADE | orders |
+| `user_id` | `UUID` | yes |  | FK → `users.id` ON DELETE SET NULL | orders |
 
 **CHECK**
 
@@ -1379,6 +1414,7 @@
 - `ix_product_orders_expires_at` (expires_at)
 - `ix_product_orders_producer_slot` (producer_id, slot_start)
 - `ix_product_orders_producer_status` (producer_id, status)
+- `ix_product_orders_repeat_id` (repeat_id)
 - `ix_product_orders_user_id` (user_id)
 - `uq_product_orders_idempotency_key` UNIQUE (idempotency_key) WHERE `idempotency_key IS NOT NULL`
 - `uq_product_orders_open_pickup_code` UNIQUE (producer_id, pickup_code) WHERE `status IN ('confirmed', 'ready')`
