@@ -2382,6 +2382,22 @@
         "title": "English address for the page",
         "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
         "confirm": "Approve and publish"
+      },
+      "about_hints": {
+        "title": "Details written only in «About»",
+        "intro": "The description mentions these details, but their field is empty or says something else. Move each one into its field so it shows on the page, in filters and in search.",
+        "payment": "Payment: the description names payment methods, and «How do customers pay?» is empty.",
+        "pickup": "Pickup: the description mentions pickup, and the business is not marked as offering pickup.",
+        "kashrut": "Kashrut: the description mentions kashrut, and there is no kashrut certificate. Without a certificate, don't write «kosher».",
+        "hours_24_7": "Hours: the description says 24/7, and the opening hours field says otherwise.",
+        "no_delivery": "Delivery: the description says there is no delivery, and the business is marked as delivering.",
+        "delivery_fee": "Delivery fee: the description names a delivery amount, and the delivery fee fields are empty.",
+        "cutoff": "Order cutoff: the description names a last time to order, and no cutoff is set.",
+        "lead_time": "Delivery time: the description says how many days it takes, and «Delivery time» is empty.",
+        "order_days": "Order days: the description says which days orders are taken, and «When are orders taken» is empty.",
+        "year": "Founded: the description names a year, and «Year founded» is empty.",
+        "vegan": "Vegan: the description mentions vegan, and «Is everything the business sells vegan?» is «Unknown».",
+        "experience": "Experiences: the description mentions a workshop, picking or a tour, and no experience or event is listed."
       }
     },
     "users": {
