@@ -59,7 +59,7 @@ const RULES = [
   },
   {
     code: "delivery_fee",
-    says: /דמי משלוח|תוספת (?:משלוח )?(?:של )?\d{1,4}(?:\.\d{1,2})? ?₪|\d{1,4}(?:\.\d{1,2})? ?₪ (?:ל)?משלוח/,
+    says: /דמי משלוח|תוספת (?:משלוח )?(?:של )?[\d.]{1,7} ?₪|[\d.]{1,7} ?₪ (?:ל)?משלוח/,
     missing: (p) => Boolean(p.offers_delivery) && !isSet(p.delivery_fee) && !areas(p).some((a) => isSet(a.delivery_fee)),
   },
   {
