@@ -233,6 +233,24 @@ class KashrutApproveIn(BaseModel):
         return v
 
 
+class AdminKashrutGrantIn(KashrutApproveIn):
+    """MEH-3081: the admin attaches a certificate the business sent her and
+    turns the badge on in one step (a business with no account cannot file
+    the request herself). Same printed-expiry rules as approve."""
+
+    badge_code: str
+    cert_url: str
+
+    @field_validator("cert_url")
+    @classmethod
+    def _cert_on_cloudinary(cls, v: str) -> str:
+        # The public proxy serves only res.cloudinary.com (kashrut_cert_proxy
+        # ALLOWED_CERT_HOSTS); any other host would be a badge with a dead link.
+        if not v.startswith("https://res.cloudinary.com/"):
+            raise ValueError("יש להעלות את צילום התעודה דרך הטופס")
+        return v
+
+
 class KashrutRevokeIn(BaseModel):
     notes: str | None = Field(None, max_length=1000)
 

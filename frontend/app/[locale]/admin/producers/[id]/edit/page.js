@@ -31,6 +31,7 @@ import { SkeletonForm } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
 import AdminVerifiedPanel from "@/components/admin/AdminVerifiedPanel"; // MEH-3524
 import AdminAlcoholPanel from "@/components/admin/AdminAlcoholPanel"; // MEH-3524
+import AdminKashrutPanel from "@/components/admin/AdminKashrutPanel"; // MEH-3081
 import AdminBusinessEventsPanel from "@/components/admin/AdminBusinessEventsPanel"; // MEH-3873
 import AdminBusinessExperiencesPanel from "@/components/admin/AdminBusinessExperiencesPanel"; // MEH-3876
 
@@ -238,6 +239,14 @@ export default function EditProducerPage() {
         kind={producer.kind}
         verifiedAt={producer.verified_at}
         docType={producer.verification_doc_type}
+      />
+      {/* MEH-3081: attach a certificate the business sent (no owner account needed). */}
+      <AdminKashrutPanel
+        key={`kashrut-${id}`}
+        producerId={String(id)}
+        badges={producer.kashrut_badges}
+        verifiedAt={producer.kashrut_verified_at}
+        expiresAt={producer.kashrut_expires_at}
       />
       {/* MEH-3524: the alcohol mark; renders nothing while ordering is off. */}
       <AdminAlcoholPanel key={`alcohol-${id}`} producerId={String(id)} />

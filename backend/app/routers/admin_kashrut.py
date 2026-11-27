@@ -1,7 +1,7 @@
 """MEH-51: Admin endpoints for kashrut badge review + ambassador toggle."""
 
 from typing import Any
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -15,6 +15,7 @@ from app.rate_limit import limiter
 from app.schemas.schemas import (
     KashrutExpiryReminderOut,
     KashrutExpiryReminderRow,
+    AdminKashrutGrantIn,
     KashrutApproveIn,
     KashrutRequestOut,
     KashrutRejectIn,
@@ -25,6 +26,9 @@ from app.services.content_notifications import (
     notify_kashrut_approved,
     notify_kashrut_rejected,
 )
+from app.services.image_ownership import assert_own_new_images
+from app.services.kashrut_grant import apply_badge
+from app.services.trust_tier import VALID_BADGE_CODES
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import KashrutExpiryReminderV1
 from app.utils.pii import mask_phone
@@ -61,13 +65,6 @@ def list_kashrut_requests(
     return results
 
 
-def _certificate_expiry(expires_on: date) -> datetime:
-    """The last moment of the printed expiry day in Israel, as the naive UTC
-    the `kashrut_expires_at` column stores (it is compared against utc_now())."""
-    end_of_day = datetime.combine(expires_on, time.max, tzinfo=ISRAEL_TZ)
-    return end_of_day.astimezone(timezone.utc).replace(tzinfo=None)
-
-
 @router.post("/kashrut/{request_id}/approve", response_model=None)
 @limiter.limit("60/minute")
 def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2602 added the owner mail
@@ -93,28 +90,7 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     now = utc_now()
-    new_expiry = _certificate_expiry(body.expires_on)
-    live = producer.kashrut_expires_at is None or producer.kashrut_expires_at >= now
-    other_live_badges = live and any(
-        code != req.badge_code
-        for code in (producer.kashrut_badges or [])  # type: ignore[union-attr]
-    )
-
-    badges = list(producer.kashrut_badges or [])
-    if req.badge_code not in badges:
-        badges.append(req.badge_code)
-        producer.kashrut_badges = badges  # type: ignore[assignment]
-
-    # MEH-2518: the expiry is the date printed on the certificate, never
-    # approval + 365 days (which also stacked a year per extra badge). There is
-    # one expiry per business, so while ANOTHER badge is still live the earlier
-    # of the two dates wins — the public «תקף עד» must never outlast a
-    # certificate. Approving the business's only badge (a renewal) replaces it.
-    if other_live_badges and producer.kashrut_expires_at is not None:
-        producer.kashrut_expires_at = min(producer.kashrut_expires_at, new_expiry)  # type: ignore[arg-type]
-    else:
-        producer.kashrut_expires_at = new_expiry  # type: ignore[assignment]
-    producer.kashrut_verified_at = now  # type: ignore[assignment]
+    apply_badge(producer, req.badge_code, body.expires_on, now)  # MEH-3081: shared with grant
 
     req.status = "approved"  # type: ignore[assignment]
     req.reviewed_by = user.id
@@ -137,6 +113,46 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             test_cause=bool(producer.is_test),  # MEH-2952
         )
     return {"detail": "badge אושר"}
+
+
+@router.post("/producers/{producer_id}/kashrut", response_model=KashrutRequestOut, status_code=201)
+@limiter.limit("60/minute")
+def grant_kashrut_badge(
+    request: Request,
+    producer_id: UUID,
+    body: AdminKashrutGrantIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> KashrutRequestOut:
+    """MEH-3081: the admin attaches a certificate the business sent her and
+    turns the badge on at once. Most admin-built pages have no owner account,
+    so `POST /producers/me/kashrut-request` is out of their reach. The row is
+    stored as an approved request reviewed by this admin, so the public cert
+    proxy and the «אושרו» queue see it like any other."""
+    if body.badge_code not in VALID_BADGE_CODES:
+        raise HTTPException(status_code=400, detail="קוד תג לא תקין")
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-3247: the same ownership call every image-storing route makes (an
+    # admin passes it; kept so the route walk needs no exemption).
+    assert_own_new_images(user, body.cert_url)
+    apply_badge(producer, body.badge_code, body.expires_on, utc_now())
+    req = KashrutBadgeRequest(
+        producer_id=producer.id,
+        badge_code=body.badge_code,
+        cert_url=body.cert_url,
+        status="approved",
+        reviewed_by=user.id,
+        notes="צורף על ידי אדמין",
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    out = KashrutRequestOut.model_validate(req)
+    out.producer_name = producer.name  # type: ignore[assignment]
+    return out
 
 
 @router.post("/kashrut/{request_id}/reject", response_model=None)

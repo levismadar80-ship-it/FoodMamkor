@@ -1055,6 +1055,31 @@
         "title": "AdminExperienceUpdate",
         "type": "object"
       },
+      "AdminKashrutGrantIn": {
+        "description": "MEH-3081: the admin attaches a certificate the business sent her and\nturns the badge on in one step (a business with no account cannot file\nthe request herself). Same printed-expiry rules as approve.",
+        "properties": {
+          "badge_code": {
+            "title": "Badge Code",
+            "type": "string"
+          },
+          "cert_url": {
+            "title": "Cert Url",
+            "type": "string"
+          },
+          "expires_on": {
+            "format": "date",
+            "title": "Expires On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expires_on",
+          "badge_code",
+          "cert_url"
+        ],
+        "title": "AdminKashrutGrantIn",
+        "type": "object"
+      },
       "AdminReviewOut": {
         "properties": {
           "ai_moderation_status": {
@@ -27958,6 +27983,65 @@
         "summary": "Grant Verified",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/kashrut": {
+      "post": {
+        "description": "MEH-3081: the admin attaches a certificate the business sent her and\nturns the badge on at once. Most admin-built pages have no owner account,\nso `POST /producers/me/kashrut-request` is out of their reach. The row is\nstored as an approved request reviewed by this admin, so the public cert\nproxy and the «אושרו» queue see it like any other.",
+        "operationId": "grant_kashrut_badge_admin_producers__producer_id__kashrut_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminKashrutGrantIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KashrutRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Grant Kashrut Badge",
+        "tags": [
+          "admin-kashrut"
         ]
       }
     },

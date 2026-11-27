@@ -263,6 +263,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/job_heartbeat.py` | Give every APScheduler job a Sentry Crons heartbeat. When a job stops running (the scheduler did not start after a deploy, the thread died, a run hangs), … |
 | `services/job_staleness.py` | Free replacement for the Sentry cron monitors the $0 plan does not allow. Every @heartbeat job records its last successful run; … |
 | `services/kashrut_cert_proxy.py` | Decide which kashrut certificates a public page may show, and stream one of them from Cloudinary without ever handing out its address. |
+| `services/kashrut_grant.py` | Turn a kashrut badge on for a business, with the expiry printed on its certificate. … |
 | `services/license_validation.py` | Single source of truth for the conditional-required check on 'producer_license_number'. … |
 | `services/menu_reader.py` | Read a business's menu / price list (photos or a PDF) with Claude and return product ROWS for the owner to review. Nothing is saved here. |
 | `services/moderation_common.py` | The parts the AI pre-moderation services share: building the Anthropic client, reading the JSON verdict out of a reply, and the fast-model call with its … |
@@ -818,6 +819,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `admin/AdminDeliveryPaymentPanel.jsx` | Lets the admin fill a business's delivery (day + minimum per city), order window and payment info — the same three editors the owner uses on … |
 | `admin/AdminDuplicateMatches.jsx` | On the admin «new business» form, after the server answered 409 DUPLICATE_BUSINESS, list the businesses we already have that share a phone, email, Instagram, … |
 | `admin/AdminFeedbackModal.jsx` | The «request changes» / «reject» dialog of the admin review queues: a title, the item line, a feedback textarea, cancel and send. … |
+| `admin/AdminKashrutPanel.jsx` | Attach a kashrut certificate the business sent the admin and turn its badge on, from the business's admin edit page. … |
 | `admin/AdminLicenceExpiry.jsx` | On /admin, the approved businesses whose producer licence runs out within 30 days, so the admin can chase it before it lapses. |
 | `admin/AdminLinkPanel.jsx` | — אין כותרת — |
 | `admin/AdminLoadError.jsx` | — אין כותרת — |
