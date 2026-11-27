@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildLlmsTxt } from "@/lib/llms-txt";
 import { describe, it, expect } from "vitest";
 import { buildHomeJsonLd, buildJsonLd, buildOrganizationNode } from "@/lib/seo";
 import {
@@ -52,9 +53,9 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     expect(org.description).not.toBe(org.slogan);
   });
 
-  it("public/llms.txt carries SITE_DESCRIPTION as its summary line (single owner)", () => {
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    const llms = readFileSync(path.join(here, "..", "public", "llms.txt"), "utf8");
+  // MEH-3953: /llms.txt is built by lib/llms-txt.js, so the test runs it.
+  it("/llms.txt carries SITE_DESCRIPTION as its summary line (single owner)", () => {
+    const llms = buildLlmsTxt([]);
     const lines = llms.split("\n").map((line) => line.trim());
     // llmstxt.org: the summary is the first non-heading line after the H1.
     expect(lines[0]).toBe("# מהמקור");

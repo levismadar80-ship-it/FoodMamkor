@@ -389,9 +389,11 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 
 | קובץ | מה הוא עושה (מהכותרת) |
 |---|---|
+| `about-field-hints.js` | Find facts a business wrote only in its «אודות» text (or that contradict a field), so the admin can move each one into the field the page, the filters and the … |
 | `admin-billing-export.js` | MEH-3189 — the monthly billing CSV for the bookkeeper: one row per business with a counted booking in the month, built from the SAME answer the /admin/billing … |
 | `admin-producers-export.js` | CSV export for the admin producers table. |
 | `admin-review-checklist.js` | The one copy helper of the pre-approval review checklist: which approve-confirm message to show (MEH-2175). |
+| `all-producers.js` | Every approved business, walked page by page over GET /producers. One owner for the walk that /sitemap.xml and /llms.txt both need. |
 | `allergens.js` | — אין כותרת — |
 | `analytics.js` | MEH-435: PostHog is loaded lazily the first time a production event fires with a key configured, then reused. … |
 | `api-responses.js` | The response schemas the app's non-map call sites parse with (workflow rule 19), taken from the GENERATED schemas in lib/generated/api.zod.js under the names … |
@@ -494,6 +496,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `legal-page-metadata.js` | MEH-3623: one generateMetadata for the three legal pages (privacy, terms, accessibility) — they were three copies of the same openGraph + twitter block. … |
 | `license-required-categories.js` | MEH-530: client-side copy of backend/app/constants.py LICENSE_REQUIRED_CATEGORIES (Hebrew category NAMES). |
 | `listing-supply.js` | — אין כותרת — |
+| `llms-txt.js` | The text of /llms.txt (llmstxt.org): the site summary, the main pages, and one line per approved business, so an AI assistant finds each business page by … |
 | `map-chips.js` | Map filter chips (MEH-14). Category chips: all · meat · produce · dairy · bread (keys). … |
 | `map-city-params.js` | /map's city → GET /producers param, in one place. |
 | `map-offer-marks.js` | MEH-3824 — the small mark on a business's pin while one of the map's offer switches is on (סלי הפתעה · קבוצות רכישה · אירועים · חוויות). … |
@@ -820,6 +823,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `WhatsAppShareButton.jsx` | — אין כותרת — |
 | `WhatsAppUpdatesPill.jsx` | — אין כותרת — |
 | `WhatsThis.jsx` | Reusable tap-to-expand "מה זה?" disclosure (MEH-1115). Business owners hit domain terms ("ערוץ ראשי", "טופס הזמנות", "קבוצת רכש") with no explanation at the … |
+| `admin/AdminAboutFieldHints.jsx` | On the admin business edit page, list the facts the «אודות» text holds that a field should hold (payment, pickup, cutoffs, fees, workshops…), so the admin … |
 | `admin/AdminAlcoholPanel.jsx` | — אין כותרת — |
 | `admin/AdminBusinessEventsPanel.jsx` | On a business's admin edit page: its events, and the owner's own EventForm to add one or edit one on the business's behalf, with the «בית העסק אישר» box on … |
 | `admin/AdminBusinessExperiencesPanel.jsx` | On a business's admin edit page: its experiences (workshops), and the owner's own ExperienceForm to add one or edit one on the business's behalf, with the … |
