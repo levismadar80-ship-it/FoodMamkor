@@ -109,6 +109,17 @@ def can_price_some_city(db: Session, producer: Producer) -> bool:
     return bool(areas or producer.delivery_nationwide or producer.delivery_cities)
 
 
+def unpriced_detail(producer: Producer) -> str:
+    """The refusal for a delivery when can_price_some_city is False — the
+    same words quote() would give, so a weekly repeat that is skipped still
+    says why (fresh review of MEH-3970)."""
+    if not producer.offers_delivery:
+        return NO_DELIVERY_DETAIL
+    if producer.delivery_fee is None:
+        return FEE_NOT_PUBLISHED_DETAIL
+    return CITY_NOT_SERVED_DETAIL
+
+
 def _canonical_set(values: Any) -> frozenset[str]:
     return frozenset(canonical_city(v) or "" for v in (values or []))
 

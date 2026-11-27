@@ -116,3 +116,34 @@ def test_the_business_proposing_a_time_still_sees_delivery_slots(db):
     slots = offered_slots(db, shop.producer, row, utc_now(), as_business=True)
     kinds = {slot.fulfilment for slot in slots}
     assert kinds == {"pickup", "delivery"}
+
+
+def test_nationwide_with_no_city_listed_offers_delivery(client, db, flag_on):
+    shop = Shop(db)
+    _delivers(db, shop, fee=20, cities=())
+    shop.producer.delivery_nationwide = True
+    db.commit()
+    assert _ways(client, shop) == {"pickup", "delivery"}
+
+
+def test_an_order_for_an_unpriced_delivery_says_the_fee_is_missing(
+    client, db, flag_on, sent
+):
+    # A weekly repeat made before she removed her fee posts this directly;
+    # its skip notice must say why, not that the slot is gone.
+    shop = Shop(db)
+    _delivers(db, shop, fee=20)
+    start = route.slot_of(client, shop, fulfilment="delivery")
+    shop.producer.delivery_fee = None
+    db.commit()
+    res = route.send(
+        client,
+        shop,
+        sent,
+        fulfilment="delivery",
+        slot_start=start,
+        delivery_city="חיפה",
+        delivery_address="הרצל 1",
+    )
+    assert res.status_code == 409, res.text
+    assert res.json()["detail"] == delivery.FEE_NOT_PUBLISHED_DETAIL
