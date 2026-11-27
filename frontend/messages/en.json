@@ -2397,7 +2397,7 @@
         "order_days": "Order days: the description says which days orders are taken, and «When are orders taken» is empty.",
         "year": "Founded: the description names a year, and «Year founded» is empty.",
         "vegan": "Vegan: the description mentions vegan, and «Is everything the business sells vegan?» is «Unknown».",
-        "experience": "Experiences: the description mentions a workshop, picking or a tour, and no experience or event is listed."
+        "experience": "Experiences: the description mentions a workshop, picking or a tour. If they are not yet listed as an experience or event in the sections below, add them."
       }
     },
     "users": {

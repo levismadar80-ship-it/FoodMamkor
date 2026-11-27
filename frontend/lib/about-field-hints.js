@@ -29,7 +29,8 @@ const locs = (p) => (Array.isArray(p?.locations) ? p.locations : []);
 const RULES = [
   {
     code: "payment",
-    says: /ביט|פייבוקס|מזומן|העברה בנקאית|אשראי/,
+    // A whole word only: «ביט» inside «ביטוח» or «ביטחון» is not a payment.
+    says: /(?<![א-ת])[בו]?(?:ביט|פייבוקס|מזומן|אשראי)(?![א-ת])|העברה בנקאית/,
     missing: (p) => !(p.payment_info?.methods || []).length,
   },
   {
@@ -38,15 +39,17 @@ const RULES = [
     missing: (p) => !p.offers_pickup && !p.has_physical_location && !p.by_arrangement,
   },
   {
-    // A text that says «לא כשר» is about not being kosher (there is no field
-    // for that), even when it also says «השחיטה כשרה» — so it never fires.
+    // A text that says the business is NOT kosher («לא כשר», «אינו כשר»,
+    // «ללא כשרות») is not asking for a certificate, even when it also says
+    // «השחיטה כשרה» — so it never fires. «כשר» counts only as its own word,
+    // so «הכשרה מקצועית» (training) does not.
     code: "kashrut",
-    says: /^(?![\s\S]*לא כשר)[\s\S]*(?:כשר|בהשגחת)/,
+    says: /^(?![\s\S]*(?:לא|אינו|אינה|אינם|בלי|ללא) כשר)[\s\S]*(?:(?<![א-ת])[ו]?(?:כשר|כשרה|כשרים|כשרות)(?![א-ת])|בהשגחת)/,
     missing: (p) => !(p.kashrut_badges || []).length,
   },
   {
     code: "hours_24_7",
-    says: /24\/7|24 שעות/,
+    says: /24\/7|24 שעות ביממה|מסביב לשעון/,
     missing: (p) => Boolean(resolveStoreHours(p)) && !/00:00-23:59|00:00-24:00/.test(String(resolveStoreHours(p))),
   },
   {
@@ -56,7 +59,7 @@ const RULES = [
   },
   {
     code: "delivery_fee",
-    says: /דמי משלוח|תוספת (?:משלוח )?(?:של )?\d{1,4} ?₪|\d{1,4} ?₪ (?:ל)?משלוח/,
+    says: /דמי משלוח|תוספת (?:משלוח )?(?:של )?\d{1,4}(?:\.\d{1,2})? ?₪|\d{1,4}(?:\.\d{1,2})? ?₪ (?:ל)?משלוח/,
     missing: (p) => Boolean(p.offers_delivery) && !isSet(p.delivery_fee) && !areas(p).some((a) => isSet(a.delivery_fee)),
   },
   {
@@ -79,7 +82,7 @@ const RULES = [
   },
   {
     code: "year",
-    says: /(?:מאז|בשנת|הוקם ב|נוסד ב|באביב|בקיץ|בסתיו|בחורף)[ -]?(?:19|20)\d{2}/,
+    says: /(?:מאז|בשנת|הוקם ב|נוסד ב|באביב|בקיץ|בסתיו|בחורף)[ -]?(?:שנת )?(?:19|20)\d{2}/,
     missing: (p) => !p.established_year,
   },
   {
@@ -88,6 +91,9 @@ const RULES = [
     missing: (p) => !p.vegan_scope || p.vegan_scope === "unknown",
   },
   {
+    // GET /admin/producers/{id} carries no has_listed_experience (only the
+    // public listing does), so on the edit page this reads «not known» and
+    // the copy says «if not listed yet» instead of claiming none exists.
     code: "experience",
     says: /סדנ|קטיף עצמי|סיור/,
     missing: (p) => !p.has_listed_experience && !p.has_upcoming_event,

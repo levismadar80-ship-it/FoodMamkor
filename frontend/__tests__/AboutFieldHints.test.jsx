@@ -11,6 +11,7 @@ import { renderHe } from "./helpers/render-with-he";
 import { aboutFieldHints, ABOUT_HINT_CODES } from "@/lib/about-field-hints";
 import AdminAboutFieldHints from "@/components/admin/AdminAboutFieldHints";
 import he from "../messages/he.json";
+import en from "../messages/en.json";
 
 // tasty-v (ליקה), live 27/11.
 const TASTY = {
@@ -56,8 +57,28 @@ describe("aboutFieldHints (MEH-3953)", () => {
     expect(aboutFieldHints({ ...OHAD, offers_delivery: true })).toContain("no_delivery");
   });
 
+  it("words that only look like a fact raise nothing (review 27/11)", () => {
+    const none = (description) => expect(aboutFieldHints({ description })).toEqual([]);
+    none("עברה הכשרה מקצועית בבישול."); // «הכשרה» = training
+    none("הבשר אינו כשר."); //             not kosher, said another way
+    none("מוצרים ללא כשרות."); //
+    none("יש לנו ביטוח מלא ותחושת ביטחון."); // «ביט» inside a word
+    none("מזמינים 24 שעות מראש."); //          not 24/7
+  });
+
+  it("the same facts, written plainly, still raise their hint", () => {
+    expect(aboutFieldHints({ description: "משלמים בביט" })).toEqual(["payment"]);
+    expect(aboutFieldHints({ description: "המאפייה כשרה" })).toEqual(["kashrut"]);
+    expect(aboutFieldHints({ description: "המשק קיים מאז שנת 1990" })).toEqual(["year"]);
+    // חוות הפרא, live 27/11: a fee with agorot.
+    expect(aboutFieldHints({ description: "משלוח לירושלים בתוספת של 59.99 ₪", offers_delivery: true })).toEqual(["delivery_fee"]);
+  });
+
   it("every code has Hebrew and English copy", () => {
-    for (const code of ABOUT_HINT_CODES) expect(he.admin.producers.about_hints[code]).toBeTruthy();
+    for (const code of ABOUT_HINT_CODES) {
+      expect(he.admin.producers.about_hints[code]).toBeTruthy();
+      expect(en.admin.producers.about_hints[code]).toBeTruthy();
+    }
   });
 });
 
