@@ -4,8 +4,8 @@
  * Purpose:  generateMetadata for a static page whose copy lives in an
  *           `seo.<page>` block (title, description, og_title,
  *           og_description). MEH-3981: /join/orders would have been the
- *           third hand-written copy of this block (/join and /join/pricing
- *           carry the other two; moving them here is a separate change).
+ *           third hand-written copy of this block; /join and /join/pricing
+ *           use it too.
  * Related:  lib/guide-metadata.js (the same shape for the business guides).
  */
 import { getTranslations } from "next-intl/server";
