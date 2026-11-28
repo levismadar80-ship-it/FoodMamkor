@@ -407,6 +407,11 @@ class ProductOrder(OrderBuyerColumns, Base):
         nullable=True,
         index=True,
     )
+    # MEH-3962: when the business marked that the buyer paid it; NULL = not
+    # marked. The business's own record, not a payment: the money goes from
+    # the buyer to the business directly (`payment_status`, ADR-042 §5).
+    # Written only by services/product_order_paid.py.
+    paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

@@ -6504,6 +6504,15 @@
             "order": "Order here: {url}",
             "only": "only for {days}"
           }
+        },
+        "paid": {
+          "mark": "Mark as paid",
+          "paid": "Paid",
+          "unpaid": "Not paid",
+          "remind": "Payment reminder on WhatsApp",
+          "filter": "Not paid ({count})",
+          "reminder_text": "Hi {name}, thank you for your order. The payment of {total} ₪ has not reached us yet. You can send it the way we agreed. Thank you!",
+          "reminder_text_no_total": "Hi {name}, thank you for your order. The payment for it has not reached us yet. You can send it the way we agreed. Thank you!"
         }
       },
       "weekly_summary": {

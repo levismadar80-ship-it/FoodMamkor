@@ -258,6 +258,10 @@ class BusinessOrderOut(_OrderOut):
     delivery_address: str | None
     age_declared: bool
     has_estimate: bool
+    # MEH-3962: when the business marked the order paid; None = not marked.
+    paid_at: datetime | None = None
+    # MEH-3962: taken on and not marked paid (services/product_order_paid.is_owed).
+    owed: bool = False
 
 
 class BusinessOrdersOut(BaseModel):
@@ -283,6 +287,14 @@ class ConfirmIn(BaseModel):
 
     # Required when a line was an estimate (weighed goods, a price range).
     final_total_agorot: int | None = Field(default=None, ge=0, le=MAX_MIN_ORDER_AGOROT)
+
+
+class PaidIn(BaseModel):
+    """MEH-3962: true marks the order paid, false takes the mark back."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    paid: bool
 
 
 class NoteIn(BaseModel):

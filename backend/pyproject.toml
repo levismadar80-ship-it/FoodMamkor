@@ -437,6 +437,7 @@ files = [
     "app/models/product_order_repeats.py",
     "app/services/product_order_repeat.py",
     "app/services/product_order_repeat_job.py",
+    "app/services/product_order_paid.py",  # MEH-3962
     "app/services/push.py",
     "app/services/registration_emails.py",
     "app/services/registration_waitlist.py",

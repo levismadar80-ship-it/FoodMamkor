@@ -27,6 +27,12 @@ when the line has moved.
   `product_order_actions.release_unaccepted_orders`, which moves its
   `pending` and `change_proposed` orders to `cancelled` as the system
   (MEH-3768); `confirmed` and `ready` stay open.
+  Paid mark (MEH-3962): `product_orders.paid_at`, a timestamp beside the
+  status, not a status, and no event row. The business or its staff set it on
+  a `confirmed` / `ready` / `handed` / `no_show` order and clear it on any
+  (`POST /producers/me/product-orders/{id}/paid`,
+  `services/product_order_paid.py`, row locked). "Owed" = no mark and
+  `confirmed` / `ready`, or `handed` from 28/11/2026 (`OWED_HANDED_SINCE`).
 - **Paid subscription.** `business_billing.state` has five values
   (launch / notice / active / page_only / unpaid) and no code writes it.
   `BILLING_PHASE` is `"launch"`, so every paid tool is open to everyone.

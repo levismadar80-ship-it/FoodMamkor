@@ -8321,6 +8321,8 @@ export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/
  * The business's orders, the soonest slot first.
  * @summary List Business Orders
  */
+export const listBusinessOrdersProducersMeProductOrdersGetResponseOrdersItemOwedDefault = false;
+
 export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
   "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
@@ -8348,6 +8350,8 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listBusinessOrdersProducersMeProductOrdersGetResponseOrdersItemOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8381,6 +8385,8 @@ export const ListBusinessCustomersProducersMeProductOrdersCustomersGetResponse =
 /**
  * @summary Cancel Order
  */
+export const cancelOrderProducersMeProductOrdersOrderIdCancelPostResponseOwedDefault = false;
+
 export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8407,6 +8413,8 @@ export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#_
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), cancelOrderProducersMeProductOrdersOrderIdCancelPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8424,6 +8432,8 @@ export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#_
 /**
  * @summary Confirm Order
  */
+export const confirmOrderProducersMeProductOrdersOrderIdConfirmPostResponseOwedDefault = false;
+
 export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8450,6 +8460,8 @@ export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), confirmOrderProducersMeProductOrdersOrderIdConfirmPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8467,6 +8479,8 @@ export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*
 /**
  * @summary Decline Order
  */
+export const declineOrderProducersMeProductOrdersOrderIdDeclinePostResponseOwedDefault = false;
+
 export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8493,6 +8507,8 @@ export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), declineOrderProducersMeProductOrdersOrderIdDeclinePostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8510,6 +8526,8 @@ export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*
 /**
  * @summary Hand Order Over
  */
+export const handOrderOverProducersMeProductOrdersOrderIdHandedPostResponseOwedDefault = false;
+
 export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8536,6 +8554,8 @@ export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), handOrderOverProducersMeProductOrdersOrderIdHandedPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8553,6 +8573,8 @@ export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*
 /**
  * @summary Report No Show
  */
+export const reportNoShowProducersMeProductOrdersOrderIdNoShowPostResponseOwedDefault = false;
+
 export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8579,6 +8601,57 @@ export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), reportNoShowProducersMeProductOrdersOrderIdNoShowPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "repeat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['active', 'stopped']),/*#__PURE__*/ zod.null()])),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * MEH-3962: the business got the money (or takes the mark back). Its own
+ * record; the site moves no money.
+ * @summary Mark Order Paid
+ */
+export const markOrderPaidProducersMeProductOrdersOrderIdPaidPostResponseOwedDefault = false;
+
+export const MarkOrderPaidProducersMeProductOrdersOrderIdPaidPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int(),
+  "variant_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), markOrderPaidProducersMeProductOrdersOrderIdPaidPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8596,6 +8669,8 @@ export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#
 /**
  * @summary Propose Order Change
  */
+export const proposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostResponseOwedDefault = false;
+
 export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8622,6 +8697,8 @@ export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostR
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), proposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8639,6 +8716,8 @@ export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostR
 /**
  * @summary Ready Order
  */
+export const readyOrderProducersMeProductOrdersOrderIdReadyPostResponseOwedDefault = false;
+
 export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8665,6 +8744,8 @@ export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__P
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readyOrderProducersMeProductOrdersOrderIdReadyPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
@@ -8684,6 +8765,8 @@ export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__P
  * already made from it stay as they are.
  * @summary Stop Order Repeat
  */
+export const stopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostResponseOwedDefault = false;
+
 export const StopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostResponse = /*#__PURE__*/ zod.object({
   "age_declared": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -8710,6 +8793,8 @@ export const StopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostRespons
   "variant_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "owed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), stopOrderRepeatProducersMeProductOrdersOrderIdRepeatStopPostResponseOwedDefault),
+  "paid_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),

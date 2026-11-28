@@ -26,6 +26,7 @@ from app.models.product_orders import (
 )
 from app.services.producer_listing import is_business_row
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
+from app.services.product_order_paid import is_owed  # MEH-3962
 from app.services.review_invite import review_invite_url
 from app.utils.clock import utc_now
 from app.services.address_line import address_line  # MEH-3959
@@ -188,4 +189,7 @@ def business_view(order: ProductOrder) -> dict[str, Any]:
         "delivery_address": order.delivery_address,
         "age_declared": order.age_declared,
         "has_estimate": any(line.price_is_estimate for line in order.items),
+        # MEH-3962; the buyer's view omits both
+        "paid_at": _aware(order.paid_at),  # type: ignore[arg-type]
+        "owed": is_owed(order),
     }

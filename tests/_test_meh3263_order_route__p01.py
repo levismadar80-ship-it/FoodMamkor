@@ -87,6 +87,8 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         client.post(f"{act}/handed", json={}, headers=shop.headers),
         client.post(f"{act}/no-show", headers=shop.headers),
         client.post(f"{act}/repeat/stop", headers=shop.headers),  # MEH-3933
+        # MEH-3962
+        client.post(f"{act}/paid", json={"paid": True}, headers=shop.headers),
         client.post(
             f"{act}/propose-change",
             json={"total_agorot": 100, "note": "חסר במלאי"},

@@ -10,7 +10,8 @@
  *           a refused move comes back as a Hebrew 409 and is shown inline).
  * Related:  lib/product-orders.js (formatting), OrderActions.jsx
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps
- *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»)
+ *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»);
+ *           MEH-3962 («לא שולם» badge, OrderPaidControl)
  */
 
 import { useLocale, useTranslations } from "next-intl";
@@ -23,6 +24,8 @@ import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from 
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderActions from "./OrderActions";
 import OrderRepeatControl from "./OrderRepeatControl";  // MEH-3933
+import OrderPaidControl from "./OrderPaidControl";  // MEH-3962
+import { isOwed } from "@/lib/order-paid";  // MEH-3962
 
 /** @param {{ order: any }} props */
 function OrderLines({ order }) {
@@ -59,6 +62,7 @@ function OrderHead({ order }) {
   const t = useTranslations("dashboard.producer.orders");
   const tWindows = useTranslations("dashboard.producer.orders.windows");
   const tRepeat = useTranslations("order_repeat");
+  const tPaid = useTranslations("dashboard.producer.orders.paid");
   const locale = useLocale();
   return (
     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -76,6 +80,12 @@ function OrderHead({ order }) {
         <span data-testid="order-status">
           <Badge>{t(`status.${order.status}`)}</Badge>
         </span>
+        {/* MEH-3962: taken on and not marked paid. */}
+        {isOwed(order) && (
+          <span data-testid="order-unpaid-badge">
+            <Badge>{tPaid("unpaid")}</Badge>
+          </span>
+        )}
         {/* MEH-3933: an order of a weekly repeat. */}
         {order.repeat && (
           <span data-testid="order-repeat-badge">
@@ -130,6 +140,7 @@ export default function OrderCard({ order, onChanged }) {
         </p>
       )}
       <OrderRepeatControl order={order} onChanged={onChanged} />
+      <OrderPaidControl order={order} onChanged={onChanged} />
       <OrderActions order={order} onChanged={onChanged} />
     </li>
   );
