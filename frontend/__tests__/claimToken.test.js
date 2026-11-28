@@ -59,6 +59,15 @@ describe("redactClaimPath", () => {
     expect(redactClaimPath(url)).toBe(url);
   });
 
+  // MEH-3975: the claim code rides on the verification link.
+  it.each([
+    ["/verify-email?token=t&claim=Pk8VP2JpqGI3", "/verify-email?token=t&claim=[token]"],
+    ["/verify-email?claim=Pk8VP2JpqGI3&x=1", "/verify-email?claim=[token]&x=1"],
+    ["/login?redirect=%2Fverify-email%3Fclaim%3DPk8VP2JpqGI3", "/login?redirect=%2Fverify-email%3Fclaim%3D[token]"],
+  ])("redacts ?claim=<code>: %s", (input, expected) => {
+    expect(redactClaimPath(input)).toBe(expected);
+  });
+
   it("leaves token-less paths alone", () => {
     expect(redactClaimPath("/claim")).toBe("/claim");
     expect(redactClaimPath("/producer/dashboard")).toBe("/producer/dashboard");

@@ -419,6 +419,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `chip-copy.js` | MEH-2748 — attach the words to a filter chip at render time. lib/filter-taxonomy.js (FILTER_AXES) and lib/map-chips.js (CATEGORY_CHIPS) hold keys and wiring … |
 | `chip-gate.js` | The site rule for any chip row: a chip that would open on an empty result is not drawn (MEH-3128). … |
 | `chip-icons.js` | MEH-1418 — leading Phosphor icons for the toggle/attribute filter chips (verified · delivery · kosher · diet · quality) across the three discovery surfaces … |
+| `claim-return.js` | Bring a business owner who signs up BY EMAIL from the claim page back to the claim after she verifies the address, from whichever browser opens the mail … |
 | `claim-token.js` | Keep bearer tokens that arrive in a URL out of every URL after the first one — the owner-claim token (MEH-2321) and, since MEH-2974, the owner-INVITE token. … |
 | `client-messages.js` | MEH-2233: which message namespaces the ROOT client provider ships. |
 | `clipboard.js` | The one way to copy text on the site. It tries the Clipboard API, then the old textarea + execCommand path, and always answers true/false. … |
@@ -887,7 +888,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderRepeatControl.jsx` | On the business's order card, for an order of a weekly repeat (MEH-3933): the day and time it repeats on, and the stop button. |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
-| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בווטסאפ» (she picks the … |
+| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בוואטסאפ» (she picks the … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
 | `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |

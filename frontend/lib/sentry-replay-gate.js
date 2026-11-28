@@ -12,7 +12,10 @@
 
 /** Same pattern ClarityScript.jsx uses — one list of token paths. */
 // MEH-3896: /c/<code>, the short claim link, is the same credential.
-const TOKEN_LINK_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]/;
+// MEH-3975: /verify-email carries the verify token and, from the claim
+// page, ?claim=<code> in its query; the gate sees the path only, so the whole
+// page is off.
+const TOKEN_LINK_PATH = /\/(claim|owner-invite|staff-invite|c)\/[^/]|\/verify-email(?:$|[/?])/;
 
 /**
  * @param {string} pathname

@@ -22,6 +22,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { rememberReturnPath } from "@/lib/post-auth-return";
+import { claimCodeForSignup } from "@/lib/claim-return";
 import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
 import { trackEvent } from "@/lib/analytics";
 import SeedMark from "@/components/brand/SeedMark";
@@ -160,7 +161,14 @@ function RegisterPageBody() {
       // not a text field), so it has to be merged in explicitly — spreading
       // `form` alone is exactly how the consent was being dropped. The
       // backend stamps users.terms_accepted_at + terms_version from this.
-      await register({ ...form, terms_accepted: agreedToTerms });
+      // MEH-3975: from the claim page, the claim code rides on the verify
+      // link so the mail brings her back to the claim from any browser.
+      const claimCode = claimCodeForSignup(redirectTo);
+      await register({
+        ...form,
+        terms_accepted: agreedToTerms,
+        ...(claimCode && { claim_code: claimCode }),
+      });
       // MEH-3661: the verification link brings her back here, not to "/".
       rememberReturnPath(redirectTo);
       trackEvent("consumer_signup_submitted", { method: "email", has_redirect: isReturnablePath(redirectTo) });

@@ -22,6 +22,9 @@ describe("ClarityScript on the claim link", () => {
     // MEH-2974: the owner-invite link carries a bearer token in the same place.
     ["/owner-invite/abcDEF123_-xyz"],
     ["/en/owner-invite/abcDEF123_-xyz"],
+    // MEH-3975: the verify page carries the token and ?claim=<code>.
+    ["/verify-email"],
+    ["/en/verify-email"],
   ])("%s: not loaded", (path) => {
     pathname = path;
     render(<ClarityScript projectId="p1" />);

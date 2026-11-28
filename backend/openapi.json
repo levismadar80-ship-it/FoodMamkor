@@ -24917,6 +24917,18 @@
             ],
             "title": "City"
           },
+          "claim_code": {
+            "anyOf": [
+              {
+                "maxLength": 12,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Code"
+          },
           "email": {
             "format": "email",
             "maxLength": 200,
