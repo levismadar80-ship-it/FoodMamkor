@@ -2662,7 +2662,7 @@
       },
       "wa_templates": {
         "warm_title": "Warm",
-        "warm_body": "Hi {name},\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for real local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again.",
+        "warm_body": "Hi {name},\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again.",
         "professional_title": "Professional",
         "professional_body": "Hello {name}, I'm reaching out from Mehamakor. We present local food businesses in Israel to the people looking for them. If you're after repeat customers, we'd love to feature your business.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again.",
         "short_title": "Short",
@@ -4376,7 +4376,7 @@
   },
   "share_page": {
     "h1": "Spread the word",
-    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — real food, close to home.",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — local food, close to home.",
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
     "copy_toast": "Link copied",
@@ -4684,7 +4684,7 @@
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
-        "a": "Right now it doesn't. Mehamakor is a young project, and we're building it because we believe real, local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
+        "a": "Right now it doesn't. Mehamakor is a young project, and we're building it because we believe local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
       },
       "customer_ownership": {
         "q": "Who gets the customers — you or me?",
@@ -5192,7 +5192,7 @@
           "i6": "**Don't:** Over-saturated"
         },
         "b40": "**The reason:** a filter changes the product's color. The customer will get the product at home and see something else. Disappointment = bad review = customer who doesn't come back.",
-        "b41": "Mehamakor isn't \"Instagram aesthetics.\" We're real.",
+        "b41": "Mehamakor isn't \"Instagram aesthetics.\" We are what we are.",
         "b43": "3 angles for every product",
         "b44": "For every main product in your catalog — shoot at least 3 photos:",
         "b45": {
@@ -5244,7 +5244,7 @@
       "body": {
         "b0": "The first message from a new customer is a small moment that decides a lot.",
         "b1": "The person writing to you doesn't know you personally. Doesn't know if you'll reply. Doesn't know if you're serious. **The first three lines you send back decide whether they keep going, or look elsewhere.**",
-        "b2": "This guide isn't about being \"polite\" or \"professional.\" It's about the small things that make a real difference between a conversation that ends in an order and a conversation that ends with \"thanks, I'll get back to you\" that never comes back.",
+        "b2": "This guide isn't about being \"polite\" or \"professional.\" It's about the small things that make the difference between a conversation that ends in an order and a conversation that ends with \"thanks, I'll get back to you\" that never comes back.",
         "b4": "The first rule: response time matters more than the response itself",
         "b5": "A woman writes to you in the evening. Asks about a product. Looking for confirmation that you're available, that the product exists, that you're serious.",
         "b6": "If she didn't get a reply by the next afternoon — she's **already looked elsewhere**. Not because your product is less good. But because **she doesn't know you're still there**.",
@@ -6570,11 +6570,11 @@
       "meta_title": "Messages",
       "meta_description": "Every business on Mehamakor chooses how you reach it — WhatsApp, phone, or another channel that suits them.",
       "heading": "How communication works on Mehamakor",
-      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
+      "intro": "There's no internal chat in the app — we believe in a direct connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
       "why_heading": "Why this way?",
       "why_item_no_middlemen": "✓ You know exactly who you're buying from — you talk with the person who grew / prepared / baked it",
       "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",
-      "why_item_trust": "✓ Build real trust with the business",
+      "why_item_trust": "✓ Build trust with the business",
       "cta_map": "Discover businesses on the map",
       "cta_favorites": "My favorites"
     },
