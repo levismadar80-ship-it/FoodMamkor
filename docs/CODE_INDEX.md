@@ -405,6 +405,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `auth-context.js` | — אין כותרת — |
 | `availability.js` | One enum-first read of a business's availability, so every surface answers "is this business on vacation" from the same rule instead of four hand-rolled … |
 | `badges.js` | Badge system (MEH-18). Pure functions — no React, no DOM. |
+| `bidi.js` | MEH-3978: text a person typed (a product, a name, an address, a note) has a direction of its own. … |
 | `brand-seeds.js` | The seed layer's one source: the logo's five pomegranate seeds — shape, colours (light + on-dark), order — and a stable colour per id for single-seed marks. |
 | `bring-list.js` | The host writes «מה להביא» as free text. One item per line; a single line is split on commas («סינר, נעליים סגורות») — but not on a comma inside parentheses … |
 | `business-chat-handoff.js` | The «ask the business» link under an answer in the business-page chat (MEH-3513). Yelp and Shopify both hand a question the assistant cannot settle to the … |

@@ -76,11 +76,11 @@ describe("the link", () => {
 
 describe("one approved headline per status", () => {
   const cases = [
-    ["pending", "הבקשה נשלחה. המאפייה של רותי יאשרו בקרוב."],
+    ["pending", "הבקשה נשלחה. \u2068המאפייה של רותי\u2069 יאשרו בקרוב."],
     ["confirmed", "ההזמנה אושרה"],
     ["ready", "ההזמנה מוכנה לאיסוף"],
     ["declined", "בית העסק לא יכול למלא את ההזמנה הזאת."],
-    ["cancelled", "ההזמנה מהמאפייה של רותי בוטלה."],
+    ["cancelled", "ההזמנה מ\u2068המאפייה של רותי\u2069 בוטלה."],
     ["expired", "בית העסק לא ענה בזמן, ולכן הבקשה בוטלה. לא חויבתם."],
     ["handed", "נמסר. בתיאבון."],
   ];
@@ -128,7 +128,7 @@ describe("what each status shows", () => {
     const when = screen.getByTestId("order-when").textContent;
     expect(when.startsWith("איסוף ב")).toBe(true);
     expect(when).toContain("09:00");
-    expect(when.endsWith(" · הרצל 12, רחובות")).toBe(true);
+    expect(when.endsWith(" · \u2068הרצל 12, רחובות\u2069")).toBe(true);
     expect(screen.getByTestId("order-code").textContent).toContain("4821");
     expect(screen.getByText("אומרים את הקוד בקופה")).toBeTruthy();
     expect(screen.getByText("לתשלום לבית העסק: 56 ₪")).toBeTruthy();

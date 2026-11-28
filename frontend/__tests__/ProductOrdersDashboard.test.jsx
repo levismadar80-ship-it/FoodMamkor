@@ -166,7 +166,7 @@ describe("board: 0 / 1 / many × the four lists", () => {
     expect(within(card).getByTestId("order-total")).toHaveTextContent("לתשלום: 55 ₪");
     expect(card).toHaveTextContent("כולל משלוח 15 ₪");
     expect(card).toHaveTextContent("יש בהזמנה אלכוהול · לבקש תעודה מזהה במסירה");
-    expect(card).toHaveTextContent("כתובת למשלוח: הרצל 1");
+    expect(card).toHaveTextContent("כתובת למשלוח: \u2068הרצל 1\u2069");
     const phone = within(card).getByRole("link", { name: "טלפון" });
     expect(phone).toHaveAttribute("href", "tel:+972501234567");
     expect(phone).toHaveTextContent("050-123-4567");

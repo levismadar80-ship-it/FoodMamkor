@@ -25,6 +25,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { loadPrepList, prepDayName, prepRows } from "@/lib/daily-stock-owner";
 import { orderLineName } from "@/lib/product-variants";
+import { isolate } from "@/lib/bidi";  // MEH-3978
 
 /** @param {{ line: any }} props */
 function PrepLine({ line }) {
@@ -33,7 +34,7 @@ function PrepLine({ line }) {
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-3" data-testid="orders-prep-line">
       <span className="text-text">
-        {t("line", { count: total, name: orderLineName(line) })}
+        {t("line", { count: total, name: isolate(orderLineName(line)) })}
         {line.all && <span className="text-fg-muted"> {t("all_kinds")}</span>}
       </span>
       <span className="text-xs text-fg-muted">
