@@ -13,6 +13,7 @@ import AllergenSection from "@/components/offer-detail/AllergenSection"; // MEH-
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { addressNavLinks } from "@/lib/nav-links";
 import { israelTime } from "@/lib/rescue";
+import { addressLine } from "@/lib/address-line";
 
 // REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
 // leaflet touches window at module eval.
@@ -39,7 +40,7 @@ export default function RescueOfferDetails({ offer }) {
   const p = offer.producer;
   const cancelUntil = israelTime(offer.cancel_until);
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
-  const address = [p.location_address, p.location_city].filter(Boolean).join(", ");
+  const address = addressLine(p.location_address, p.location_city);
   const hasCoords = offer.lat !== null && offer.lat !== undefined && offer.lng !== null && offer.lng !== undefined;
   const nav = hasCoords ? null : addressNavLinks(p.location_address, p.location_city);
   const items = (offer.typical_items || []).filter(Boolean);

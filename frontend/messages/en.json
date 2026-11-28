@@ -3410,6 +3410,12 @@
       "empty_experiences_title": "New experiences on the way",
       "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
       "empty_experiences_cta": "Hosting an experience? Add it",
+      "host_gate": {
+        "title_experiences": "Adding an experience is open to businesses",
+        "title_events": "Adding an event is open to businesses",
+        "body": "Register your business on Mehamakor, and once it is approved you add experiences and events from your dashboard.",
+        "login": "Already registered? Sign in"
+      },
       "empty_browse_producers": "Meanwhile, explore the businesses",
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
@@ -6407,6 +6413,9 @@
           "cancel_title": "Cancel an order you already confirmed?",
           "cancel_lead": "The customer will get a message about it.",
           "cancel_note": "Note to the customer (optional)",
+          "no_show_title": "The customer didn't come?",
+          "no_show_lead": "The order will be closed. A customer who doesn't come twice within 90 days can't order on the site from this number.",
+          "no_show_confirm": "Yes, they didn't come",
           "failed": "That did not work. Please try again."
         },
         "products": {
@@ -8436,6 +8445,8 @@
     "cancelled": "Your order from {business_name} was cancelled.",
     "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
     "handed": "Handed over. Enjoy.",
+    "no_show": "The business marked that you didn't come to receive the order. If this is a mistake, you can contact the business.",
+    "business_note": "What the business wrote: {note}",
     "cancel_confirm": "Cancel the order? The business will be notified.",
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",

@@ -4,6 +4,8 @@ import EventsClient from "@/app/[locale]/events/EventsClient";
 import api from "@/lib/api";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import { visibleCategoryChips, presentCategories } from "@/lib/event-category-gate";
+// MEH-3969: the add CTA (components/HostAddCta.jsx) reads the session.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 
 // MEH-3124: Sapir, 14/11 — on /experiences every category chip showed, and
 // «טעימות» led to «לא נמצאו תוצאות». A chip now shows only when its category

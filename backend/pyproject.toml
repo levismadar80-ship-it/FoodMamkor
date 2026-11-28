@@ -169,6 +169,7 @@ plugins = ["pydantic.mypy"]
 files = [
     "app/schemas/payment_link.py",
     "app/services/rescue_payment.py",
+    "app/services/address_line.py",  # MEH-3959
     "app/services/producer_images.py",  # MEH-3894
     "app/services/kashrut_grant.py",  # MEH-3081
     "app/utils/money.py",
