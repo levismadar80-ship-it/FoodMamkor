@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within, act } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
+// MEH-3969: the add CTA (components/HostAddCta.jsx) reads the session. A
+// business owner, so it stays the link these tab assertions follow (a guest
+// gets a dialog button instead — __tests__/HostAddCta.test.jsx).
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: { role: "producer" }, loading: false }) }));
 
 // MEH-1131 (MEH-1085 / DISC-08): /events city + category are deep-linkable and
 // mirrored back to the URL via a single shallow history.replaceState writer

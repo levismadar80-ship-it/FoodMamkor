@@ -861,6 +861,46 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(areaFees()).toEqual(["משלוח: 20₪", "משלוח: 40₪"]);
   });
 
+  // MEH-3968: one free area beside areas with NO stated fee (and no business
+  // rate). Pre-fix the nulls were dropped, [0] read as "uniform", and the top
+  // line said «משלוח חינם» for every city.
+  it("MEH-3968 one free area + areas with no stated fee → no blanket 'משלוח חינם'; the free row says it", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "עתלית", delivery_fee: 0 },
+          { id: 2, city: "חיפה", delivery_fee: null },
+          { id: 3, city: "נשר" },
+        ]}
+        pickup={false}
+        producer={withCost(null, null)}
+      />,
+    );
+    expect(feeLine()).toBeNull();
+    expect(areaFees()).toEqual(["משלוח חינם"]);
+    expect(screen.getByText(/עתלית/)).toBeInTheDocument();
+    expect(screen.getByText(/נשר/)).toBeInTheDocument();
+  });
+
+  it("MEH-3968 partial fees keep the business threshold on the top line, alone", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "עתלית", delivery_fee: 20 },
+          { id: 2, city: "חיפה" },
+        ]}
+        pickup={false}
+        producer={withCost(null, 250)}
+      />,
+    );
+    expect(feeLine()).not.toHaveTextContent("משלוח:");
+    expect(feeLine()).not.toHaveTextContent("משלוח מ-");
+    expect(feeLine()).toHaveTextContent("250");
+    expect(areaFees()).toEqual(["משלוח: 20₪"]);
+  });
+
   // ── MEH-3473: «·» never opens (or closes) a wrapped line ─────────────────
   // jsdom has no layout, so the line-start clipping itself is measured in
   // e2e/visual/delivery-cities-wrap.spec.ts. Here: the structure that clipping

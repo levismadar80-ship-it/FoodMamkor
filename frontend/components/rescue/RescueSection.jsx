@@ -11,6 +11,7 @@ import { RESCUE_SECTION_ID, rescueOfferPath } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 import OfferCard from "@/components/ui/OfferCard";
 import { GroupBuyProgressMark } from "@/components/ui/SeedProgressMark";
+import { addressLine } from "@/lib/address-line"; // MEH-3959
 
 /**
  * Module:   RescueSection
@@ -129,10 +130,7 @@ export default function RescueSection({ producer }) {
             offer.producer?.location_address && (
               <p className="mt-0.5 flex items-start gap-1.5 text-sm text-fg-muted" data-testid="rescue-section-address">
                 <MapPin aria-hidden="true" size={16} className="shrink-0 mt-0.5" />
-                <span>
-                  {offer.producer.location_address}
-                  {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
-                </span>
+                <span>{addressLine(offer.producer.location_address, offer.producer.location_city)}</span>
               </p>
             )
           }

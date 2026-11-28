@@ -45,6 +45,8 @@ function WhenLine({ start, end, kind, address }) {
   const t = useTranslations("order_status");
   const locale = useLocale();
   const values = { day: dayLabel(start, locale), ...rangeEnds(start, end) };
+  // MEH-3960: a pending order shows the time she asked for, with no address.
+  if (kind.startsWith("requested_")) return <p data-testid="order-requested">{t(kind, values)}</p>;
   if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address })}</p>;
   if (kind === "when_pickup") return <p data-testid="order-when">{t("when_pickup_no_address", values)}</p>;
   return <p data-testid="order-when">{t("when_delivery", values)}</p>;
@@ -141,6 +143,13 @@ export function OrderStatusView({ order, onChange, refOf }) {
       <SectionHeading size="content" data-testid="order-headline">
         {t(view.headline, { business_name: order.producer_name })}
       </SectionHeading>
+      {/* MEH-3976: the reason the business wrote when it declined or cancelled. */}
+      {order.business_note && (
+        <p className="text-fg-muted" data-testid="order-business-note">{t("business_note", { note: order.business_note })}</p>
+      )}
+      {view.requested && order.slot_start && order.slot_end && (
+        <WhenLine start={order.slot_start} end={order.slot_end} kind={view.requested} />
+      )}
       {view.waiting && deadline && <p className="text-fg-muted">{t("waiting", { deadline })}</p>}
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />

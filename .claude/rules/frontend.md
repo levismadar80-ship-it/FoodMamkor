@@ -63,6 +63,7 @@ defined in more files than `duplicate-name-baseline.txt` allows fails
 | Phone call link (`tel:`) | `contact-method.js` | `telHref` |
 | Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
 | Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
+| Street + city on one line (no city printed twice) | `address-line.js` | `addressLine` |
 | Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |
 | API error → Hebrew message / toast | `errors.js` | `detailToMessage`, `showErrorToast` |
 | Toast | `toast.js` | `showToast` |

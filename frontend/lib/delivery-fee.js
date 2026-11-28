@@ -12,6 +12,13 @@
  *   - effective fees differ  → { fee: cheapest, from: true }  («משלוח מ-…»)
  *   - all areas agree        → { fee: that value, from: false }
  *   - no area states a fee   → { fee: producer rate (or null), from: false }
+ *   - SOME areas have no effective fee (no override, no producer rate)
+ *                            → { fee: null, from: false }
+ *
+ * MEH-3968: the last case used to drop the unstated areas, so [0, ∅, ∅] read
+ * as "every area agrees on 0" and the page said «משלוח חינם» for all cities.
+ * A price stated for some areas is not a price for the business; the per-area
+ * rows carry it instead (DeliveryBlock treats ∅ as a distinct value there).
  *
  * @param {number|null|undefined} producerFee
  * @param {Array<{delivery_fee?: number|null}>} areas
@@ -19,10 +26,11 @@
  */
 export function resolveDeliveryFee(producerFee, areas = []) {
   const fallback = producerFee ?? null;
-  const effective = (areas || [])
-    .filter(Boolean)
-    .map((a) => a.delivery_fee ?? fallback)
-    .filter((f) => f != null);
+  const resolved = (areas || []).filter(Boolean).map((a) => a.delivery_fee ?? fallback);
+  const effective = resolved.filter((f) => f != null);
+  if (effective.length > 0 && effective.length < resolved.length) {
+    return { fee: null, from: false };
+  }
   const distinct = new Set(effective);
   if (distinct.size > 1) return { fee: Math.min(...effective), from: true };
   if (distinct.size === 1) return { fee: effective[0], from: false };
