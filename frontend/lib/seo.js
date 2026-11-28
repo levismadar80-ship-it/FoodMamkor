@@ -350,6 +350,12 @@ function buildOfferCatalog(producer, locale = "he") {
     // each named «{product} · {variant}» at its own price. The cap counts
     // offers, so it is taken after the variants are spread.
     .flatMap((p) => (variantsOf(p).length ? variantsOf(p).map((v) => variantOffer(p, v)) : [productOffer(p)]))
+    // MEH-3973: an Offer with no price is an incomplete Offer to a parser
+    // («מחיר בפנייה» products). List the Product itself instead — schema.org
+    // allows a Product in an OfferCatalog — so no price is ever implied.
+    // An Offer that says something besides a price (a variant's OutOfStock)
+    // stays an Offer.
+    .map((offer) => (offer.priceSpecification || offer.availability ? offer : offer.itemOffered))
     .slice(0, OFFER_CATALOG_MAX);
 
   if (itemListElement.length === 0) return null;

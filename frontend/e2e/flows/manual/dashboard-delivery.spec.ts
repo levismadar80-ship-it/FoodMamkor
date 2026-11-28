@@ -170,7 +170,8 @@ const freeAboveInput = (page: Page) => body(page).getByLabel("משלוח חינ�
 
 const EXCLUDED_LABEL = "משלוחים לכל הארץ, חוץ מהערים האלה:";
 const CITIES_LABEL = "ערים שמשלוחים אליהן";
-const CITIES_REQUIRED = "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ";
+// MEH-3972: no cities is a valid save («משלוחים בתיאום מראש»); a hint, not an error.
+const CITIES_HINT = "אפשר לשמור בלי ערים. בעמוד העסק יופיע «משלוחים בתיאום מראש».";
 
 type Region = { key: string; name: string; cities: string[] };
 /** A missing key must fail with a readable control message, not a TypeError on `.cities` later. */
@@ -242,7 +243,7 @@ test.describe("delivery card — nationwide and the exclusion list", () => {
   });
 
   // MT:MEH-1255:4 — turning nationwide off drops the exclusions and brings the cities field back.
-  test("turning «לכל הארץ» off clears the exclusions and requires a city again", async ({ page }) => {
+  test("turning «לכל הארץ» off clears the exclusions and brings the cities field back", async ({ page }) => {
     const puts: Array<Record<string, unknown>> = [];
     await stubEdit(page, { profile: NATIONWIDE, puts });
     await openDelivery(page);
@@ -250,11 +251,11 @@ test.describe("delivery card — nationwide and the exclusion list", () => {
 
     await expect(body(page).getByText(EXCLUDED_LABEL)).toHaveCount(0);
     await expect(body(page).getByText(CITIES_LABEL, { exact: true })).toBeVisible();
-    await expect(body(page).getByText(CITIES_REQUIRED)).toBeVisible();
-    await expect(saveBtn(page), "no city yet — the card must block the save").toBeDisabled();
+    await expect(body(page).getByText(CITIES_HINT)).toBeVisible();
+    await expect(saveBtn(page), "no city yet — still savable (MEH-3972)").toBeEnabled();
 
     await regionChip(page, new RegExp(`^${HAIFA_REGION.name}`)).click();
-    await expect(body(page).getByText(CITIES_REQUIRED)).toHaveCount(0);
+    await expect(body(page).getByText(CITIES_HINT)).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
     await clickSaveAfterEdit(page, saveBtn(page));
     await expect.poll(() => puts.length, { message: "the PUT never left the browser" }).toBe(1);

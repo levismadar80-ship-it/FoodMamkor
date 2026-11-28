@@ -186,9 +186,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
   // chose «בתיאום מראש» herself.
   const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged" && !form.byArrangement;
   const place = placeChecks(form.hasPhysical, form.byArrangement);
-  const citiesMissing =
-    form.offersDelivery && !form.nationwide && form.cities.length === 0;
-  const blocked = neitherType || citiesMissing;
+  // MEH-3972: delivery with no cities saves — the page then reads
+  // «משלוחים בתיאום מראש» (DeliveryBlock `arranged`), not an error.
+  const blocked = neitherType;
 
   const handleSave = async () => {
     setSaving(true);
@@ -496,8 +496,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                   showRegionChips
                 />
                 {form.cities.length === 0 && (
-                  <p className="text-xs text-danger-600 mt-1">
-                    {t("delivery_cities_required")}
+                  <p className="text-xs text-fg-muted mt-1">
+                    {t("delivery_cities_optional_hint")}
                   </p>
                 )}
                 {/* MEH-1644: optional per-city dispatch day — select-from-

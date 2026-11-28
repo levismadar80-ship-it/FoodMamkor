@@ -334,7 +334,7 @@ producer_categories (producer_id FK, category_id FK, PK(both),
 products       (id, producer_id FK, name, description,
                 price_range,                        -- LEGACY free-text; drop tracked in MEH-295 follow-up
                 image_url,
-                price_min Numeric(10,2) NULL,       -- MEH-295: canonical min, Pydantic ge=1 le=10000; optional since MEH-2924 (NULL = «מחיר משתנה לפי עונה» on the page; the admin import and the menu import still require it)
+                price_min Numeric(10,2) NULL,       -- MEH-295: canonical min, Pydantic ge=1 le=10000; optional since MEH-2924 (NULL = «מחיר בפנייה» on the page, MEH-3973 — was «מחיר משתנה לפי עונה»; the admin import and the menu import still require it)
                 price_max Numeric(10,2) NULL,       -- MEH-295: canonical max, optional, validator: >= price_min
                 is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: single source of truth post column drop. EXISTS subquery powers /producers?gluten_free=true
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
@@ -2172,7 +2172,7 @@ PUT    /admin/producers/{producer_id}/product-groups/assign   admin — MEH-3477
 POST   /admin/producers/{producer_id}/product-groups/suggest  admin — MEH-3478: same as POST /producers/me/product-groups/suggest, drafts included; 30/hour
 GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
 PUT    /admin/producers/{producer_id}/products/{product_id}/price  admin — MEH-3942: {price_min, price_max, price_unit?}; null clears the price
-                                                               («מחיר משתנה לפי עונה»), any business incl. approved with no owner; 120/hour
+                                                               («מחיר בפנייה», MEH-3973), any business incl. approved with no owner; 120/hour
 PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
                                                                draft, each once (else 409). The owner's route stays published-only.
                                                                One `products.position` column serves both: an owner reorder numbers

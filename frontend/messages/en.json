@@ -2112,7 +2112,6 @@
           "delivery_cities_label": "Cities delivered to",
           "delivery_excluded_label": "Except:",
           "delivery_excluded_hint": "Optional — cities you don't deliver to",
-          "delivery_cities_required": "Select at least one city or mark nationwide delivery",
           "pickup_points": "Pickup points across the country",
           "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",
@@ -4436,8 +4435,8 @@
       "delivery_areas_more": "Delivery to: {cities} + {count} more",
       "delivery_sub_min": "Minimum {min}",
       "delivery_sub_day": "Delivery days: {day}",
-      "delivery_pickup_only": "No delivery — self-pickup in {city}",
-      "delivery_pickup_only_nocity": "No delivery — self-pickup",
+      "delivery_pickup_only": "Self-pickup in {city}",
+      "delivery_pickup_only_nocity": "Self-pickup",
       "more_questions": "More questions",
       "wa_suffix": " (WhatsApp)"
     }
@@ -5966,7 +5965,7 @@
         "delivery_cities_label": "Cities delivered to",
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
-        "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+        "delivery_cities_optional_hint": "You can save without cities. The business page will say «Delivery by arrangement».",
         "fee_label": "Delivery fee (₪)",
         "fee_hint": "Optional — shown on your business page, in the delivery section. Enter 0 if delivery is free.",
         "fee_placeholder": "35",
@@ -6758,7 +6757,7 @@
         "price_max_optional_suffix": "optional",
         "price_max_placeholder": "e.g. 60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
-        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price varies by season».",
+        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price on request».",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
         "diet_vegan": "Vegan",
@@ -8611,7 +8610,7 @@
     "pack": "per pack"
   },
   "product_price": {
-    "varies": "Price varies by season"
+    "varies": "Price on request"
   },
   "page_fill": {
     "title": "Tell us about your business",

@@ -1216,8 +1216,11 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
                     onChange={(cities) => update("delivery_cities", cities)}
                     showRegionChips
                   />
+                  {/* MEH-3972: no cities is a valid state («משלוחים בתיאום מראש»),
+                      not an error — an Instagram-only business says «יש משלוח»
+                      without saying where. */}
                   {form.delivery_cities.length === 0 && (
-                    <p className="text-xs text-danger-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
+                    <p className="text-xs text-muted mt-1">{tDelivery("delivery_cities_optional_hint")}</p>
                   )}
                 </div>
               )}
@@ -1436,8 +1439,7 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
             // MEH-3915: a save mid-upload wrote the gallery without the photos
             // still on their way and left the page.
             gallery.busy ||
-            (!producerId && !form.has_physical_location && !form.offers_delivery) ||
-            (!producerId && form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
+            (!producerId && !form.has_physical_location && !form.offers_delivery)
           }
           variant="primary" size="lg"
         >

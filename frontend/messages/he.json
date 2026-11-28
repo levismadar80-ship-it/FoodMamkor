@@ -2112,7 +2112,6 @@
           "delivery_cities_label": "ערים שמשלוחים אליהן",
           "delivery_excluded_label": "חוץ מ:",
           "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
-          "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
           "pickup_points": "נקודות איסוף ברחבי הארץ",
           "pickup_managed_in_locations": "נקודות איסוף מנוהלות בעריכת מיקומים",
           "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
@@ -4432,8 +4431,8 @@
       "delivery_areas_more": "משלוחים ל: {cities} + עוד {count}",
       "delivery_sub_min": "מינימום {min}",
       "delivery_sub_day": "ימי משלוח: {day}",
-      "delivery_pickup_only": "אין משלוחים — איסוף עצמי ב{city}",
-      "delivery_pickup_only_nocity": "אין משלוחים — איסוף עצמי",
+      "delivery_pickup_only": "איסוף עצמי ב{city}",
+      "delivery_pickup_only_nocity": "איסוף עצמי",
       "more_questions": "עוד שאלות",
       "wa_suffix": " (וואטסאפ)"
     }
@@ -5962,7 +5961,7 @@
         "delivery_cities_label": "ערים שמשלוחים אליהן",
         "delivery_excluded_label": "משלוחים לכל הארץ, חוץ מהערים האלה:",
         "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
-        "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
+        "delivery_cities_optional_hint": "אפשר לשמור בלי ערים. בעמוד העסק יופיע «משלוחים בתיאום מראש».",
         "fee_label": "עלות משלוח (₪)",
         "fee_hint": "אופציונלי — מופיע בעמוד העסק שלכם, בקטע המשלוחים. אפשר לרשום 0 אם המשלוח חינם.",
         "fee_placeholder": "35",
@@ -6754,7 +6753,7 @@
         "price_max_optional_suffix": "אופציונלי",
         "price_max_placeholder": "למשל 60",
         "price_hint": "מחיר אחיד? מלאו רק \"מ-\". טווח מחירים? מלאו גם \"עד\" (אופציונלי).",
-        "price_optional_hint": "אין מחיר קבוע? משאירים את המחיר ריק, ובעמוד יופיע «מחיר משתנה לפי עונה».",
+        "price_optional_hint": "אין מחיר קבוע? משאירים את המחיר ריק, ובעמוד יופיע «מחיר בפנייה».",
         "diet_heading": "סימוני תזונה (אופציונלי)",
         "diet_gluten_free": "ללא גלוטן",
         "diet_vegan": "טבעוני",
@@ -8607,7 +8606,7 @@
     "pack": "למארז"
   },
   "product_price": {
-    "varies": "מחיר משתנה לפי עונה"
+    "varies": "מחיר בפנייה"
   },
   "page_fill": {
     "title": "ספרו לנו על העסק",

@@ -142,7 +142,7 @@ describe("ProductsSection — no fixed price (MEH-2924)", () => {
     expect(screen.getByText(P.form.price_optional_hint)).toBeInTheDocument();
   });
 
-  it("the owner's list shows «מחיר משתנה לפי עונה», never ₪ or 0", async () => {
+  it("the owner's list shows «מחיר בפנייה» (MEH-3973), never ₪ or 0", async () => {
     api.get.mockResolvedValue({ data: [{ id: 3, name: "תפוזי עונה", price_min: null, price_max: null }] });
     renderSection();
     const row = (await screen.findByText("תפוזי עונה")).closest("li") ?? document.body;
