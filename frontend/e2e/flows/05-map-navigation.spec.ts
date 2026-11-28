@@ -204,14 +204,18 @@ test.describe("Map", () => {
         get: () => real,
         set(fn: (...a: unknown[]) => void) {
           real = function (this: unknown, ...a: unknown[]) {
-            // `$RC` calls `$RV($RB)`; `$RB` holds [placeholder, hidden copy]
-            // pairs. Record whether a delayed batch held the PAGE (an h1),
-            // not just a metadata boundary, which also streams.
-            const batch = Array.from((a[0] as Element[] | undefined) ?? []);
-            if (batch.some((n, i) => i % 2 === 1 && !!n?.querySelector?.("h1"))) {
-              w.__rvHeldH1 = true;
-            }
-            setTimeout(() => fn.apply(this, a), 1500);
+            // Record whether the PAGE (an h1) sat in a hidden server copy
+            // while this reveal was held, not just a metadata boundary, which
+            // also streams. MEH-3983: read at the moment the held reveal
+            // fires, anywhere in the DOM. With the business page's own
+            // loading.js the h1 is in a nested boundary: the held batch is
+            // the outer frame, and the h1 joins the hidden copy only after
+            // `$RV` was called, so a check of the batch at call time saw no
+            // h1 although the window was open.
+            setTimeout(() => {
+              if (document.querySelector("[hidden] h1")) w.__rvHeldH1 = true;
+              fn.apply(this, a);
+            }, 1500);
           };
         },
       });
@@ -222,7 +226,7 @@ test.describe("Map", () => {
     // delayed `$RV` (React renamed it, or the page stopped streaming), this
     // test proved nothing. Fail loudly instead of passing on a closed window.
     const held = await page.evaluate(() => (window as unknown as { __rvHeldH1: boolean }).__rvHeldH1);
-    expect(held, "the page's h1 was never in a delayed $RV batch: the window did not open").toBe(true);
+    expect(held, "the page's h1 never sat hidden behind a delayed $RV: the window did not open").toBe(true);
   });
   // ── MEH-2170 — the five diet toggles are gated on /map from the mount
   // catalog (option ב׳). Data-independent: the expected set is derived from
