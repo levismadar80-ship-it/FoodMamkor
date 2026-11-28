@@ -684,6 +684,12 @@ erDiagram
 > `?delivery_city=` consumer filter now returns nationwide producers minus
 > their exclusions.
 
+> **MEH-3977 partner stores (migration `b2d4f6a8c0e3`):** `producers.partner_stores`
+> (`TEXT[] NOT NULL DEFAULT '{}'`, CHECK `producer_partner_stores_cap` ≤ 10) names
+> other stores that sell the business's products. `producer_location_mode` is
+> widened to `has_physical_location OR offers_delivery OR cardinality(partner_stores) > 0`,
+> so a business sold only through other stores is storable. New column, no new table.
+
 ## 4. Analytics + marketing
 
 ```mermaid

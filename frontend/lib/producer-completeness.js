@@ -55,6 +55,9 @@ export function isDefaultDescription(text) {
 export function producerCompleteness(p) {
   const missing = [];
   const isDeliveryOnly = p.has_physical_location === false && p.offers_delivery;
+  // MEH-3977: no place and no delivery, sold through other stores — no
+  // coordinates and no store hours to ask for (submission-gate.js agrees).
+  const noPlace = p.has_physical_location === false && (p.offers_delivery || (p.partner_stores?.length ?? 0) > 0);
   // MEH-1938 chunk 3 / 5a: true when the producer has a usable point in a
   // producer_locations row — the only source since chunk 5a.
   const hasCoords = producerPoints(p).length > 0;
@@ -63,7 +66,7 @@ export function producerCompleteness(p) {
 
   // MEH-213: delivery-only producers intentionally have no lat/lng.
   // Flag missing coords only when there IS a physical location.
-  if (!isDeliveryOnly && !hasCoords) {
+  if (!noPlace && !hasCoords) {
     missing.push(COMPLETENESS_FIELDS.coords);
   }
 
@@ -111,12 +114,13 @@ export function producerCompleteness(p) {
   // HAS hours, and the old check would have kept telling her she did not —
   // while pointing at an editor this change removed.
   // MEH-2447: an owner who answered «בתיאום מראש» is not asked to invent hours.
-  const noHours = !resolveStoreHours(p) && !(p.by_arrangement && p.has_physical_location !== false);
+  const noHours = !resolveStoreHours(p) && !(p.by_arrangement && p.has_physical_location !== false)
+    && !(p.has_physical_location === false && !p.offers_delivery); // MEH-3977: no place, no hours
   if (noHours) missing.push(COMPLETENESS_FIELDS.hours);
 
   let priority = "green";
   const redCondition = !p.city
-    || (!isDeliveryOnly && !hasCoords)
+    || (!noPlace && !hasCoords)
     || noContact;
   if (redCondition) {
     priority = "red";

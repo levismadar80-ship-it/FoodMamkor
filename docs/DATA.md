@@ -270,6 +270,7 @@ producers (
   has_physical_location bool, offers_delivery bool,
   by_arrangement bool NOT NULL default false (MEH-2447: «איסוף או ביקור בתיאום מראש»; read only AND has_physical_location — no «קנייה במקום» / not in ?on_site; written by POST /auth/register/producer, PUT /producers/me, admin create/update; no CHECK),
   delivery_nationwide bool, delivery_excluded_cities text[] NOT NULL default '{}',
+  partner_stores text[] NOT NULL default '{}' (MEH-3977: other stores that sell its products, ≤10, CHECK producer_partner_stores_cap; satisfies producer_location_mode alone; written by POST /admin/producers, PUT /admin/producers/{id} and PUT /producers/me, names trimmed + deduped, 2–60 chars each, normalised in `backend/app/schemas/partner_stores.py`; a partial update that would leave no place, delivery or store is a 422 `location_mode_required` from `ensure_location_mode` in `backend/app/services/delivery_validation.py`; public on ProducerDetailOut),
   admin_notes, is_available_today bool (legacy column — no reader, no writer, in no response since MEH-2272; dropped by MEH-2273),
   avg_rating float, reviews_count int,
   created_at, last_active_at,

@@ -11,13 +11,15 @@ Related:  app/routers/producer_me.py (owner PUT), app/routers/admin.py
           delivery_excluded_requires_nationwide), migration d8c3f1a75e29
           (DB CHECK producer_nationwide_requires_delivery).
 History:  MEH-1255 (creation); MEH-1879 (nationwide-requires-delivery guard);
-          MEH-1943 chunk 3 (`{code, message, params}` details).
+          MEH-1943 chunk 3 (`{code, message, params}` details); MEH-3977
+          (location-mode guard: place OR delivery OR partner stores).
 """
 
 from typing import Any
 from fastapi import HTTPException
 
 from app.models.models import Producer
+from app.schemas.partner_stores import LOCATION_MODE_MESSAGE
 
 # MEH-1943 chunk 3: `{code, message, params}` (the MEH-1164 / MEH-1940 /
 # chunk-1 ONE_PRIMARY_REQUIRED_DETAIL shape). `message` is the existing Hebrew
@@ -34,6 +36,15 @@ EXCLUDED_REQUIRES_NATIONWIDE_DETAIL = {
 NATIONWIDE_REQUIRES_DELIVERY_DETAIL = {
     "code": "nationwide_requires_delivery",
     "message": '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".',
+    "params": {},
+}
+
+
+# MEH-3977: the effective-state twin of ProducerUpdate._validate_location_mode
+# (DB CHECK producer_location_mode). Same sentence as the schema ValueError.
+LOCATION_MODE_DETAIL = {
+    "code": "location_mode_required",
+    "message": LOCATION_MODE_MESSAGE,
     "params": {},
 }
 
@@ -101,3 +112,22 @@ def ensure_nationwide_requires_delivery(
             status_code=422,
             detail=NATIONWIDE_REQUIRES_DELIVERY_DETAIL,
         )
+
+
+def ensure_location_mode(producer: Producer, payload: dict[str, Any]) -> None:
+    """Raise 422 when the EFFECTIVE post-update state has no place, no
+    delivery and no partner store (MEH-3977).
+
+    A partial update (partner_stores=[] sent alone on a partner-only business,
+    or delivery switched off while the stored place is off) would otherwise
+    reach CHECK producer_location_mode as an IntegrityError 500.
+    REUSES: ensure_nationwide_requires_delivery above (effective-state shape).
+    """
+    keys = ("has_physical_location", "offers_delivery", "partner_stores")
+    if not any(k in payload for k in keys):
+        return
+    physical = payload.get("has_physical_location", producer.has_physical_location)
+    delivery = payload.get("offers_delivery", producer.offers_delivery)
+    stores = payload.get("partner_stores", producer.partner_stores or [])
+    if not physical and not delivery and not stores:
+        raise HTTPException(status_code=422, detail=LOCATION_MODE_DETAIL)

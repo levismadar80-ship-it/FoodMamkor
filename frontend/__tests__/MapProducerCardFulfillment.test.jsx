@@ -207,7 +207,7 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
   // Deliberately NOT through the component: `useTranslations` is mocked above,
   // so a component-level copy assertion would be checking the mock. These read
   // the real message files, which is where the copy actually lives.
-  it("carries all six strings, in both locales, with identical keys", async () => {
+  it("carries all seven strings, in both locales, with identical keys", async () => {
     const he = (await import("@/messages/he.json")).default.map.producer_card.fulfillment;
     const en = (await import("@/messages/en.json")).default.map.producer_card.fulfillment;
 
@@ -217,6 +217,7 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
       "delivery",
       "delivery_only",
       "on_site",
+      "partner_stores", // MEH-3977
       "pickup",
       "pickup_only",
     ]);

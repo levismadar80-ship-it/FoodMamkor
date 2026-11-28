@@ -28,6 +28,7 @@ import DeliveryBulkDay from "./DeliveryBulkDay";
 import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
 import DeliveryDefaultTerms from "./DeliveryDefaultTerms";
 import Checkbox from "@/components/ui/Checkbox";
+import PartnerStoresField from "@/components/PartnerStoresField"; // MEH-3977
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -73,6 +74,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
     // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
     excluded: profile?.delivery_excluded_cities ?? [],
+    // MEH-3977: «נמכר דרך חנויות אחרות».
+    partnerStores: profile?.partner_stores ?? [],
     // MEH-1577: structured delivery cost. Held as STRINGS in form state (an
     // <input> value must be), with "" meaning "not stated" → null on save.
     // `?? ""` and not `|| ""`: a stored 0 is a real value ("משלוח חינם") and
@@ -140,6 +143,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     form.cities.some((c, i) => c !== baseline.cities[i]) ||
     form.excluded.length !== baseline.excluded.length ||
     form.excluded.some((c, i) => c !== baseline.excluded[i]) ||
+    form.partnerStores.join("\n") !== baseline.partnerStores.join("\n") ||
     // MEH-1577: String() both sides — baseline holds numbers after a save,
     // form holds input strings, and 35 !== "35" would keep the card
     // permanently dirty (blocking the unsaved-changes guard from ever clearing).
@@ -164,7 +168,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     return () => reportDirty("delivery", false);
   }, [dirty, reportDirty]);
 
-  const neitherType = !form.hasPhysical && !form.offersDelivery;
+  // MEH-3977: other stores alone are a way to reach customers.
+  const neitherType = !form.hasPhysical && !form.offersDelivery && form.partnerStores.length === 0;
   const zoneOf = zoneOfCity(form.zones);
   // MEH-2561: the tag her /map card shows, from the SAME function the card
   // uses. Delivery reads the live form (mirrors producer_queries.py:185 —
@@ -179,6 +184,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       ),
       storeWithHours: form.hasPhysical && !form.byArrangement && !!resolveStoreHours(profile),
       byArrangement: form.hasPhysical && form.byArrangement,
+      partnerStores: form.partnerStores.length > 0, // MEH-3977
     },
     tMap,
   );
@@ -212,6 +218,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
       excluded,
+      partnerStores: form.partnerStores,
       // Cost is meaningless for a pickup-only business — cleared alongside
       // nationwide/cities above, same normalisation rule.
       fee: form.offersDelivery ? toNullableInt(form.fee) : null,
@@ -255,6 +262,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        partner_stores: normalized.partnerStores,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
         delivery_min_order: normalized.minOrder,
@@ -270,6 +278,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        partner_stores: normalized.partnerStores,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
         delivery_min_order: normalized.minOrder,
@@ -382,9 +391,6 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         >
           {t("offers_delivery")}
         </Checkbox>
-        {neitherType && (
-          <p className="text-xs text-danger-600">{t("type_validation")}</p>
-        )}
         {form.offersDelivery && (
           <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
             <Checkbox
@@ -649,6 +655,14 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
               </div>
             )}
           </div>
+        )}
+        {/* MEH-3977: after delivery's own options, so they stay under it. */}
+        <PartnerStoresField
+          value={form.partnerStores}
+          onChange={(partnerStores) => set({ partnerStores })}
+        />
+        {neitherType && (
+          <p className="text-xs text-danger-600">{t("type_validation")}</p>
         )}
       </div>
 

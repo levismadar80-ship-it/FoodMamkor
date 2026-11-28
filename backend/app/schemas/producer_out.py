@@ -224,6 +224,9 @@ class ProducerListOut(BaseModel):
     # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
     # "משלוחים לכל הארץ (למעט …)". Empty unless delivery_nationwide.
     delivery_excluded_cities: list[str] = []
+    # MEH-3977: «נמכר דרך חנויות אחרות» — the page line (PartnerStoresLine)
+    # and the card's «נמכר בחנויות» tag. On the list so the card can read it.
+    partner_stores: list[str] = []
     # MEH-902: serialize the rich delivery relation so MapProducerCard's
     # "delivers to your city" pill can render — it needs per-row `city` +
     # `delivery_day`, which the flat `delivery_cities` above doesn't carry.

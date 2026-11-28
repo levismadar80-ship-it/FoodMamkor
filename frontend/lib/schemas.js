@@ -351,6 +351,7 @@ export const ProducerListSchema = z.object({
   // stripped and a free zone read as «משלוח חינם» for the whole country.
   delivery_nationwide: z.boolean().nullable().optional(),
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
+  partner_stores: z.array(z.string()).nullable().optional(), // → MEH-3977 «נמכר בחנויות» tag, MapProducerCard.jsx
   // NOT read by ProducerCard today, so the card-derived guard below cannot
   // reach it — declared on the backend contract instead (ProducerListOut,
   // schemas.py:1725). MEH-1711's card kashrut label resolves from this array

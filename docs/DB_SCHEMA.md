@@ -15,7 +15,7 @@
 
 <!-- BEGIN GENERATED: tests/test_db_schema_doc.py -->
 
-71 tables, 853 columns.
+71 tables, 854 columns.
 
 | table | columns | FKs out |
 |---|---|---|
@@ -67,7 +67,7 @@
 | `producer_reviews` | 13 | producers, users |
 | `producer_staff` | 12 | producers, users |
 | `producer_whatsapp_clicks` | 5 | producers, users |
-| `producers` | 124 | products, users |
+| `producers` | 125 | products, users |
 | `product_order_events` | 8 | product_orders, users |
 | `product_order_items` | 11 | product_orders, product_variants, products |
 | `product_order_notifications` | 10 | product_orders |
@@ -1176,6 +1176,7 @@
 | `delivery_nationwide` | `BOOLEAN` | NOT NULL | app: `False` |  | business |
 | `delivery_cities` | `TEXT[]` | NOT NULL | app: `[]` |  | business |
 | `delivery_excluded_cities` | `TEXT[]` | NOT NULL | server: `'{}'::text[]`<br>app: `[]` |  | business |
+| `partner_stores` | `TEXT[]` | NOT NULL | server: `'{}'::text[]`<br>app: `[]` |  | business |
 | `delivery_fee` | `INTEGER` | yes |  |  | business |
 | `free_delivery_above` | `INTEGER` | yes |  |  | business |
 | `avg_rating` | `FLOAT` | yes | app: `0` |  | business |
@@ -1223,8 +1224,9 @@
 - `delivery_excluded_requires_nationwide`: `delivery_nationwide OR delivery_excluded_cities = '{}'::text[]`
 - `delivery_nationwide_xor_cities`: `NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)`
 - `producer_kind_values`: `kind IN ('producer', 'organizer')`
-- `producer_location_mode`: `has_physical_location OR offers_delivery`
+- `producer_location_mode`: `has_physical_location OR offers_delivery OR cardinality(partner_stores) > 0`
 - `producer_nationwide_requires_delivery`: `NOT (delivery_nationwide AND NOT offers_delivery)`
+- `producer_partner_stores_cap`: `cardinality(partner_stores) <= 10`
 
 **UNIQUE**
 

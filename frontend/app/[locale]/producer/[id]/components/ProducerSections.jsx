@@ -16,7 +16,8 @@ import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
-import { hasDeliverySection } from "@/lib/quick-answers"; // MEH-3460
+import { hasDeliverySection, hasPartnerStores } from "@/lib/quick-answers"; // MEH-3460, MEH-3977
+import PartnerStoresLine from "@/components/PartnerStoresLine";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import BusinessChatPrompt from "./BusinessChatPrompt";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
@@ -827,7 +828,9 @@ export default function ProducerSections({
           card's single primary CTA. */}
       {/* MEH-3460: one gate, shared with the section nav and the contact
           card's delivery question, which jumps here. */}
-      {hasDeliverySection(producer) && (
+      {/* MEH-3977: the other stores that sell the products ride this section;
+          with no delivery section they are its own «איפה קונים». */}
+      {(hasDeliverySection(producer) || hasPartnerStores(producer)) && (
         // MEH-1207: stable id = the anchor-nav's delivery target; scroll-mt
         // clears the sticky header + nav (same idiom as #reviews below).
         <div
@@ -835,13 +838,16 @@ export default function ProducerSections({
           className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
           ref={(el) => { sectionRefs.current.delivery = el; }}
         >
-          <DeliveryBlock
-            nationwide={producer.delivery_nationwide}
-            excluded={producer.delivery_excluded_cities || []}
-            areas={producer.delivery_areas || []}
-            pickup={!!producer.pickup_points}
-            producer={producer}
-          />
+          {hasDeliverySection(producer) && (
+            <DeliveryBlock
+              nationwide={producer.delivery_nationwide}
+              excluded={producer.delivery_excluded_cities || []}
+              areas={producer.delivery_areas || []}
+              pickup={!!producer.pickup_points}
+              producer={producer}
+            />
+          )}
+          <PartnerStoresLine producer={producer} standalone={!hasDeliverySection(producer)} />
         </div>
       )}
 

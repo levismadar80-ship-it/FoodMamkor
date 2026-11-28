@@ -101,6 +101,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_nationwide: true,
         delivery_areas: [],
         delivery_excluded_cities: [],
+        partner_stores: [], // MEH-3977
         // MEH-1577: the card always sends both cost fields; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
@@ -146,6 +147,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_nationwide: true,
         delivery_areas: [],
         delivery_excluded_cities: ["אילת"],
+        partner_stores: [], // MEH-3977
         delivery_fee: null,
         free_delivery_above: null,
         delivery_min_order: null,
@@ -245,6 +247,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
           { city: "עכו", delivery_day: "שלישי", delivery_days: ["שלישי"], min_order: null, delivery_fee: null },
         ],
         delivery_excluded_cities: [],
+        partner_stores: [], // MEH-3977
         // MEH-1577: every save now carries the cost pair; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
@@ -461,6 +464,7 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
           { city: "נהריה", delivery_day: null, delivery_days: [], min_order: null, delivery_fee: 20 },
         ],
         delivery_excluded_cities: [],
+        partner_stores: [], // MEH-3977
         delivery_fee: 40,
         free_delivery_above: 250,
         delivery_min_order: null,

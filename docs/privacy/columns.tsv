@@ -500,6 +500,7 @@ producers.delivery_cities	business	a business page
 producers.delivery_days_max	business	a business page
 producers.delivery_days_min	business	a business page
 producers.delivery_excluded_cities	business	a business page
+producers.partner_stores	business	a business page (MEH-3977: other stores that sell its products)
 producers.delivery_fee	business	a business page
 producers.delivery_min_order	business	a business page
 producers.delivery_nationwide	business	a business page

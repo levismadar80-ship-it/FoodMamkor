@@ -161,6 +161,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `schemas/owner_detach.py` | Request body for the admin's «ניתוק בעלים» (MEH-3256, grill retro D9). |
 | `schemas/owner_invite_existing.py` | Request bodies for accepting an owner invite on an account that already exists (MEH-3256, grill retro D8). |
 | `schemas/page_fill.py` | «ספרו לנו על העסק» (MEH-3483): the owner's free text in, a draft of the business-page fields out. Nothing is saved by the read. |
+| `schemas/partner_stores.py` | Normalise the «נמכר דרך חנויות אחרות» list (MEH-3977): the names of other stores that sell a business's products. … |
 | `schemas/password.py` | MEH-305 — Pydantic password field type. |
 | `schemas/payment_link.py` | The business's own prepay link inside producers.payment_info (MEH-3895, option A of docs/research/rescue-prepay-2026-11.md): one validator for the write, one … |
 | `schemas/producer.py` | The business page, write side: create, admin create, owner update, admin update, plus AVAILABILITY_STATES and normalize_google_place_id, which services import. |
@@ -780,6 +781,8 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `PageFillPanel.jsx` | «ספרו לנו על העסק» (MEH-3483). The owner writes about her business in her own words; Claude drafts the page fields; … |
 | `PageFillReview.jsx` | The second half of «ספרו לנו על העסק» (MEH-3483): a draft of the page fields shown field by field, each with a checkbox, and the save of only what the owner … |
 | `Pagination.jsx` | — אין כותרת — |
+| `PartnerStoresField.jsx` | The «נמכר דרך חנויות אחרות» answer (MEH-3977): a checkbox, and under it the store names, comma separated. … |
+| `PartnerStoresLine.jsx` | On the business page, name the other stores that sell its products (MEH-3977): «המוצרים נמכרים גם דרך פארמרים, הענתיות ועלה הביתה». … |
 | `PasskeyRecoveryPanel.jsx` | PasskeyRecoveryPanel — the second sign-in step when the passkey did not answer (MEH-3305): the admin cancelled the device prompt, or the device is gone. … |
 | `PasswordInput.jsx` | MEH-306 — reusable password input with live policy feedback. |
 | `PasswordStrength.jsx` | — אין כותרת — |
