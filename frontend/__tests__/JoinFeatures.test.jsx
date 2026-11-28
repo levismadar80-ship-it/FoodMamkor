@@ -156,6 +156,17 @@ describe("panel", () => {
     expect(within(panel()).getByRole("heading", { level: 3 }).textContent).toBe(BF.groups[group].label);
   });
 
+  // MEH-3981: a ✓ item with its own explainer page links to it, and only that item.
+  it("the orders item links to /join/orders; no other item has a guide link", () => {
+    renderFeatures();
+    fireEvent.click(cardButton("contact"));
+    const links = within(panel()).getAllByTestId("join-feature-guide");
+    expect(links).toHaveLength(1);
+    expect(links[0].closest("li")?.dataset.feature).toBe("product_orders");
+    expect(links[0].getAttribute("href")).toContain("/join/orders");
+    expect(links[0].textContent).toBe(he.join.guide_link);
+  });
+
   it("flag off: 3 tiles in «return», no surprise-bags tile or item", () => {
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
     renderFeatures();

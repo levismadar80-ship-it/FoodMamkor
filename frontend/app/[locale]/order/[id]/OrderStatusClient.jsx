@@ -35,6 +35,7 @@ import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
 import { dayLabel, estimateKind, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import { isolate } from "@/lib/bidi";  // MEH-3978
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 import OrderRepeatBlock from "./OrderRepeatBlock";  // MEH-3933
 
@@ -47,7 +48,7 @@ function WhenLine({ start, end, kind, address }) {
   const values = { day: dayLabel(start, locale), ...rangeEnds(start, end) };
   // MEH-3960: a pending order shows the time she asked for, with no address.
   if (kind.startsWith("requested_")) return <p data-testid="order-requested">{t(kind, values)}</p>;
-  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address })}</p>;
+  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address: isolate(address) })}</p>;
   if (kind === "when_pickup") return <p data-testid="order-when">{t("when_pickup_no_address", values)}</p>;
   return <p data-testid="order-when">{t("when_delivery", values)}</p>;
 }
@@ -58,7 +59,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: isolate(orderLineName(line)) })}</li>
       ))}
     </ul>
   );
@@ -141,7 +142,7 @@ export function OrderStatusView({ order, onChange, refOf }) {
   return (
     <div className="space-y-4" data-testid="order-status" data-status={order.status}>
       <SectionHeading size="content" data-testid="order-headline">
-        {t(view.headline, { business_name: order.producer_name })}
+        {t(view.headline, { business_name: isolate(order.producer_name) })}
       </SectionHeading>
       {/* MEH-3976: the reason the business wrote when it declined or cancelled. */}
       {order.business_note && (

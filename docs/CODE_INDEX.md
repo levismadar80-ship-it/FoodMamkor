@@ -405,6 +405,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `auth-context.js` | — אין כותרת — |
 | `availability.js` | One enum-first read of a business's availability, so every surface answers "is this business on vacation" from the same rule instead of four hand-rolled … |
 | `badges.js` | Badge system (MEH-18). Pure functions — no React, no DOM. |
+| `bidi.js` | MEH-3978: text a person typed (a product, a name, an address, a note) has a direction of its own. … |
 | `brand-seeds.js` | The seed layer's one source: the logo's five pomegranate seeds — shape, colours (light + on-dark), order — and a stable colour per id for single-seed marks. |
 | `bring-list.js` | The host writes «מה להביא» as free text. One item per line; a single line is split on commas («סינר, נעליים סגורות») — but not on a comma inside parentheses … |
 | `business-chat-handoff.js` | The «ask the business» link under an answer in the business-page chat (MEH-3513). Yelp and Shopify both hand a question the assistant cannot settle to the … |
@@ -531,6 +532,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `order-window-editor.js` | Convert between the backend 'producers.order_window' JSONB shape ({"sunday": {open, close}, …}) and the 7-row editor model the dashboard renders, plus the … |
 | `order-window-status.js` | Derive the CURRENT order-acceptance status from a producer's weekly 'order_window' (MEH-1543) — open / closing_soon / closed, plus when the window next … |
 | `orderable-products.js` | The business's own products as the «הזמנות» tab switches them (open for ordering on the site, sold out, daily stock). … |
+| `orders-guide.js` | The address of the «איך מקבלים הזמנות» page (MEH-3981) and the numbers its copy states, so the page and its entry points share one place. |
 | `owner-assistant-store.js` | Keep the owner's assistant conversation in this browser for a week, so closing the tab or reloading does not lose it. |
 | `owner-page-updated.js` | Tell the open dashboard screen that the business was saved from somewhere else on the page (the dashboard assistant's fill), so it reads the business again … |
 | `owner-pages.js` | The dashboard paths the owner assistant may link to, which screen a dashboard URL belongs to, and the function that splits an answer into text and links to … |
@@ -588,6 +590,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `sentry-environment.js` | Label every Sentry event with where it really ran. NODE_ENV is "production" in every Vercel build, staging included, so staging events used to arrive as … |
 | `sentry-replay-gate.js` | decide when the browser may record a Sentry error replay. Two conditions, both required: the visitor accepted ALL cookies (a replay is a session recording, … |
 | `sentry-sampling.js` | MEH-2887 — one place that decides the Sentry traces sample rate, so staging and previews stop burning the span quota production shares with them (≈95% of it, … |
+| `seo-page-metadata.js` | generateMetadata for a static page whose copy lives in an 'seo.<page>' block (title, description, og_title, og_description). … |
 | `seo.js` | Shared SEO helpers for producer pages (both /producer/[id] and /[slug]). |
 | `server-fetch.js` | — אין כותרת — |
 | `server-first-json.js` | — אין כותרת — |
