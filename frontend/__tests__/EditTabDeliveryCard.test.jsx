@@ -50,7 +50,29 @@ beforeEach(() => {
 });
 
 describe("Edit-tab DeliveryCard (isolation)", () => {
-  it("enabling delivery requires cities-or-nationwide, then saves the location mode", async () => {
+  it("MEH-3972: delivery with no cities saves (the page reads «בתיאום מראש»)", async () => {
+    renderCard(DeliveryCard, {
+      profile: {
+        has_physical_location: true,
+        offers_delivery: false,
+        delivery_nationwide: false,
+        delivery_areas: [],
+      },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: D.offers_delivery }));
+    expect(screen.getByText(D.delivery_cities_optional_hint)).toBeInTheDocument();
+    const saveBtn = screen.getByRole("button", { name: D.save_cta });
+    expect(saveBtn).not.toBeDisabled();
+    fireEvent.click(saveBtn);
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith(
+        "/producers/me",
+        expect.objectContaining({ offers_delivery: true, delivery_nationwide: false, delivery_areas: [] }),
+      ),
+    );
+  });
+
+  it("enabling delivery then nationwide saves the location mode", async () => {
     const { onSave } = renderCard(DeliveryCard, {
       profile: {
         has_physical_location: true,
@@ -62,10 +84,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
     // Seeded, not dirty → save disabled.
     expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
 
-    // Enable delivery → dirty, but no cities yet → blocked + hint.
     fireEvent.click(screen.getByRole("checkbox", { name: D.offers_delivery }));
-    expect(screen.getByText(D.delivery_cities_required)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
 
     // Mark nationwide → cities cleared, unblocked.
     fireEvent.click(screen.getByRole("checkbox", { name: D.delivery_nationwide }));

@@ -30,7 +30,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
  * Related:  components/ProductsSection.jsx (the owner's editor — same field
  *           labels and validation messages, reused from settings.products),
  *           app/[locale]/admin/producers/[id]/edit/page.js (gates on draft).
- * History:  MEH-2326; MEH-3456 (photo per product).
+ * History:  MEH-2326; MEH-3456 (photo per product); MEH-3973 (price optional).
  */
 const EMPTY_FORM = { name: "", description: "", price_min: "", price_max: "" };
 
@@ -38,14 +38,19 @@ function validate(f, tErr) {
   /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
+  // MEH-3973: the price may be left empty (a business that does not publish
+  // prices) — the page then says «מחיר בפנייה». Same rule as the owner's
+  // editor (ProductsSection validateProductForm): only «עד» without «מ-» is
+  // incomplete.
   const min = Number(f.price_min);
-  if (f.price_min === "") errors.price_min = tErr("price_required");
-  else if (!(min >= 1)) errors.price_min = tErr("price_min_too_low");
+  if (f.price_min === "") {
+    if (f.price_max !== "") errors.price_min = tErr("price_required");
+  } else if (!(min >= 1)) errors.price_min = tErr("price_min_too_low");
   else if (min > 10000) errors.price_min = tErr("price_too_high");
   if (f.price_max !== "") {
     const max = Number(f.price_max);
     if (max > 10000) errors.price_max = tErr("price_too_high");
-    else if (!errors.price_min && !(max >= min)) errors.price_max = tErr("price_max_below_min");
+    else if (!errors.price_min && f.price_min !== "" && !(max >= min)) errors.price_max = tErr("price_max_below_min");
   }
   return errors;
 }
@@ -78,7 +83,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
       const r = await api.post(`/admin/producers/${producerId}/products`, {
         name: form.name.trim(),
         description: form.description.trim() || null,
-        price_min: Number(form.price_min),
+        price_min: form.price_min === "" ? null : Number(form.price_min),
         price_max: form.price_max === "" ? null : Number(form.price_max),
       });
       // Rule 19: a row without an id could never be deleted from here.
@@ -225,7 +230,6 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
             value={form.price_min}
             onChange={set("price_min")}
             error={fieldErrors.price_min}
-            required
           />
           <Input
             id="draft-product-price-max"
@@ -238,6 +242,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
             error={fieldErrors.price_max}
           />
         </div>
+        <p className="text-xs text-fg-muted">{tForm("price_optional_hint")}</p>
         <Button
           type="submit"
           data-testid="draft-product-add"

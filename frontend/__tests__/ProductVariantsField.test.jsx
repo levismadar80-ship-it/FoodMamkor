@@ -115,4 +115,19 @@ describe("JSON-LD offers per variant (MEH-3617)", () => {
     expect(list.map((o) => o.priceSpecification.minPrice)).toEqual(["40", "60"]);
     expect(list[1].availability).toBe("https://schema.org/OutOfStock");
   });
+
+  it("MEH-3973: no price anywhere → a bare Product, but an out-of-stock variant stays an Offer", () => {
+    const p = producer([
+      { id: S, name: "קטנה", price_agorot: null, in_stock: true },
+      { id: L, name: "גדולה", price_agorot: null, in_stock: false },
+    ]);
+    p.products[0].price_min = null;
+    p.products[0].price_max = null;
+    const [small, large] = offers(p);
+    expect(small["@type"]).toBe("Product");
+    expect(small.name).toBe("עוגה · קטנה");
+    expect(large["@type"]).toBe("Offer");
+    expect(large.priceSpecification).toBeUndefined();
+    expect(large.availability).toBe("https://schema.org/OutOfStock");
+  });
 });

@@ -72,8 +72,8 @@ import { pickCity } from "../_pick-city";
  *      disappear". The DELIVERY-CITIES one does; card 1255 then renders a second
  *      one under «חוץ מ:» for the exclusion list. Asserted as measured: the
  *      «ערים שמשלוחים אליהן» block is gone, the «חוץ מ:» block is present.
- * D5 · MT:MEH-213:5 quotes the error as «יש לבחור לפחות עיר אחת». The live copy
- *      is «יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ» — asserted whole.
+ * D5 · MT:MEH-213:5 once quoted the error «יש לבחור לפחות עיר אחת». Since MEH-3972
+ *      it is a hint («אפשר לשמור בלי ערים…») and the save stays enabled.
  *
  * ─── Rows this chunk does NOT convert ──────────────────────────────────────
  *
@@ -442,7 +442,8 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await stubAdmin(page);
     await openNewProducer(page);
     await deliveryOnly(page);
-    await expect(saveBtn(page), "no cities yet — disabled").toBeDisabled();
+    // MEH-3972: no cities is «משלוחים בתיאום מראש», a valid save.
+    await expect(saveBtn(page), "no cities yet — still savable").toBeEnabled();
     await setChecked(nationwide(page), true);
     await expect(page.getByText("ערים שמשלוחים אליהן")).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
@@ -451,17 +452,17 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await expect(typeSection(page).getByRole("combobox"), "exactly one combobox — the exclusion one").toHaveCount(1);
   });
 
-  // MT:MEH-213:5 — unticking nationwide with no cities → inline error, save disabled. D5: the full copy.
-  test("unticking nationwide with no cities shows the at-least-one-city error and disables save", async ({ page }) => {
+  // MT:MEH-213:5 — unticking nationwide with no cities → a muted hint, save stays enabled (MEH-3972).
+  test("unticking nationwide with no cities shows the by-arrangement hint and keeps save enabled", async ({ page }) => {
     await stubAdmin(page);
     await openNewProducer(page);
     await deliveryOnly(page);
     await setChecked(nationwide(page), true);
     await setChecked(nationwide(page), false);
-    const err = page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ");
-    await expect(err).toBeVisible();
-    await expect(err).toHaveClass(/text-danger-600/);
-    await expect(saveBtn(page)).toBeDisabled();
+    const hint = page.getByText("אפשר לשמור בלי ערים. בעמוד העסק יופיע «משלוחים בתיאום מראש».");
+    await expect(hint).toBeVisible();
+    await expect(hint).not.toHaveClass(/text-danger-600/);
+    await expect(saveBtn(page)).toBeEnabled();
   });
 
   // MT:MEH-213:6 + :7 — type «תל» → the dropdown; pick one → a chip; × removes it.
@@ -480,11 +481,11 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await expect(citiesBlock(page).getByText("תל אביב-יפו")).toBeVisible();
     await expect(listbox).toHaveCount(0);
     await expect(cityInput(page)).toHaveValue("");
-    await expect(page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ")).toHaveCount(0);
+    await expect(page.getByText("אפשר לשמור בלי ערים. בעמוד העסק יופיע «משלוחים בתיאום מראש».")).toHaveCount(0);
     await expect(saveBtn(page)).toBeEnabled();
     // MT:MEH-213:7
     await removeChip(page, "תל אביב-יפו");
-    await expect(page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ")).toBeVisible();
+    await expect(page.getByText("אפשר לשמור בלי ערים. בעמוד העסק יופיע «משלוחים בתיאום מראש».")).toBeVisible();
   });
 
   // MT:MEH-213:8 — keyboard: arrows move, Enter adds, Backspace on an empty input removes the last chip.

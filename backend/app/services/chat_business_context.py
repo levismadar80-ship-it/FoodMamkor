@@ -277,7 +277,7 @@ def asked_city(question: str) -> str | None:
     return cities.pop() if len(cities) == 1 else None
 
 
-def _delivers_to(producer: Any, city: str) -> bool:
+def _delivers_to(producer: Any, city: str) -> bool | None:
     # MEH-1848: leftover area rows on a business that stopped delivering are
     # not a delivery (producer_listing's «משלוחים» filter reads it the same way).
     if not producer.offers_delivery:
@@ -286,6 +286,10 @@ def _delivers_to(producer: Any, city: str) -> bool:
     if producer.delivery_nationwide:
         excluded = {city_key(c) for c in (producer.delivery_excluded_cities or [])}
         return key not in excluded
+    # MEH-3972: «משלוחים» with no cities is «משלוחים בתיאום מראש» on the page.
+    # No list means no answer for one city — None, never a «no».
+    if not producer.delivery_areas:
+        return None
     return any(city_key(a.city) == key for a in producer.delivery_areas)
 
 
@@ -548,7 +552,8 @@ PREAMBLE = (
     "email=מייל, instagram=אינסטגרם, facebook=פייסבוק, external_order=טופס "
     "הזמנה; null=אין בעמוד דרך ליצור קשר). orders_on_the_site=true: אפשר להזמין "
     "כאן באתר, בכפתור «הוספה» ליד המוצרים. אל תזכירי ערוץ אחר ואל תנחשי. "
-    "על משלוח לעיר: delivers_to_asked_city הוא התשובה; אל תנחשי. "
+    "על משלוח לעיר: delivers_to_asked_city הוא התשובה (null = משלוחים בתיאום "
+    "מראש, בלי רשימת ערים: כתבי את זה והציעי לשאול את בית העסק); אל תנחשי. "
     "על שעות: open_now הוא התשובה (null = השעות כתובות בצורה שאי אפשר לחשב, "
     "ציטטי את opening_hours). מתי נפתחים שוב: next_opening הוא התשובה; "
     "אל תחשבי ימים או שעות בעצמך, ובדקי ב-special_hours אם יש שינוי באותו יום. "
