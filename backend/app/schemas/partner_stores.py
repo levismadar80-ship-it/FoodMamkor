@@ -33,9 +33,7 @@ PARTNER_STORES_DETAIL = f"אפשר לרשום עד {MAX_PARTNER_STORES} חנוי
 # MEH-555 pattern (letters counted after strip), at 2 not 3: «AM» is a store.
 _LETTER = re.compile(r"[א-תa-zA-Z]")
 PARTNER_STORE_LETTERS_DETAIL = "שם חנות צריך לכלול לפחות שתי אותיות"
-PARTNER_STORE_NAME_DETAIL = (
-    f"שם חנות צריך להיות באורך {MIN_PARTNER_STORE_NAME} עד {MAX_PARTNER_STORE_NAME} תווים"
-)
+PARTNER_STORE_NAME_DETAIL = f"שם חנות צריך להיות באורך {MIN_PARTNER_STORE_NAME} עד {MAX_PARTNER_STORE_NAME} תווים"
 
 
 def normalize_partner_stores(value: Any) -> Any:
