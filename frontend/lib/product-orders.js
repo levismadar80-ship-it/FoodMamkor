@@ -89,6 +89,27 @@ export function shekelsText(agorot) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+/** Price units whose amount is known only once the order is weighed (backend WEIGHED_PRICE_UNITS). */
+const WEIGHED_UNITS = new Set(["kg", "100g"]);
+
+/** @param {string | null | undefined} unit */
+export function isWeighedUnit(unit) {
+  return WEIGHED_UNITS.has(unit ?? "");
+}
+
+/**
+ * Why an order's price is not final yet (MEH-3974): "weighed" when an
+ * estimated line is sold by weight, "range" when every estimate is a price
+ * range on a unit product, null when the price is exact.
+ * @param {{ price_unit?: string, price_is_estimate?: boolean }[] | null | undefined} lines
+ * @returns {"weighed" | "range" | null}
+ */
+export function estimateKind(lines) {
+  const estimates = (lines ?? []).filter((line) => line.price_is_estimate);
+  if (estimates.length === 0) return null;
+  return estimates.some((line) => isWeighedUnit(line.price_unit)) ? "weighed" : "range";
+}
+
 /** What the buyer pays: the final total once set, else the estimate, plus delivery. */
 export function toPayAgorot(order) {
   const goods = order.final_total_agorot ?? order.estimated_total_agorot ?? 0;
