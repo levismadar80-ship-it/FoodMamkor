@@ -74,7 +74,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       aria-label={t("aria")}
       // MEH-991: VRT hides this date-dependent banner via injected CSS (e2e/visual/parity.css)
       data-testid="holiday-banner"
-      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-lg px-5 py-4 flex items-center gap-4 shadow-sm"
+      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-lg px-5 py-4 flex flex-wrap items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
       {/* MEH-1687 D: Phosphor icon, not a colour emoji — 1em of this text-2xl slot. */}
@@ -85,9 +85,12 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       </div>
       {/* MEH-1103: text-xs py-1.5 → text-sm py-2 (DESIGN.md interactive
           sizing minimums); dismiss gains a 44px hit area. */}
+      {/* MEH-3985: the row wraps and the CTA may shrink, so at 200% text on a
+          375 phone the CTA and the close button move to the next line instead of
+          pushing the page wider. At normal size it stays one row. */}
       <Link
         href={searchHref}
-        className="shrink-0 text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
+        className="max-w-full text-center text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
         style={{ backgroundColor: holiday.color }}
       >
         {tHoliday(`${holiday.key}.cta`)}
