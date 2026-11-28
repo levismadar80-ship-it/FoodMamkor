@@ -46,7 +46,10 @@ describe("canonical sentence copy (MEH-2313)", () => {
   it("the two lines that say some businesses ARE small stay as they were", () => {
     // These claim small businesses exist, not that all of them are small —
     // out of scope by the card, and a sweep must not catch them.
-    expect(he.about.consumer.story.p4).toContain("יש בתי עסק קטנים עם מוצרים מדהימים");
+    // MEH-3988 (Sapir 28/11) rewrote story.p4 on purpose; its small-business
+    // claim is now «מאפייה קטנה» (one named example), so that is what a
+    // «קטנים» sweep must leave alone.
+    expect(he.about.consumer.story.p4).toContain("מאפייה קטנה");
     expect(he.about.consumer.benefits.local.body).toContain("קטנים");
   });
 });

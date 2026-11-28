@@ -13,7 +13,8 @@
  * Related:  lib/order-window-editor.js (daysFromOrderWindow), lib/hours.js (DAY_KEYS)
  * History:  MEH-3316 (creation; stage 4 of MEH-3216) · MEH-3752 (the lead
  *           carries a «?»; an order-setup draft replaces the rows, saved
- *           with the usual button)
+ *           with the usual button) · MEH-3970 (a delivery row with no
+ *           city priced says buyers will see pickup only)
  */
 
 import { useState } from "react";
@@ -30,6 +31,7 @@ import { DAY_KEYS } from "@/lib/hours";
 import { daysFromOrderWindow } from "@/lib/order-window-editor";
 import { saveWindows } from "@/lib/product-orders";
 import { draftWindows } from "@/lib/order-setup-draft";
+import { Link } from "@/i18n/navigation";
 
 const HHMM_LENGTH = 5;
 const MAX_WINDOWS = 28;
@@ -81,11 +83,13 @@ function WindowRow({ row, onChange, onRemove }) {
 }
 
 /**
- * @param {{ windows: any[], orderWindow: any, collapsed?: boolean, onSaved?: (windows: any[]) => void, draft?: Record<string, unknown> | null }} props
+ * @param {{ windows: any[], orderWindow: any, collapsed?: boolean, onSaved?: (windows: any[]) => void, draft?: Record<string, unknown> | null, deliveryPriced?: boolean }} props
  *   collapsed: see OrderSettingsCard · onSaved: the week as saved · draft: an
- *   order-setup draft (MEH-3752); one with windows replaces the rows.
+ *   order-setup draft (MEH-3752); one with windows replaces the rows ·
+ *   deliveryPriced: false when no city can be priced for a delivery
+ *   (MEH-3970, from GET /producers/me/order-windows).
  */
-export default function OrderWindowsCard({ windows, orderWindow, collapsed = false, onSaved = undefined, draft = null }) {
+export default function OrderWindowsCard({ windows, orderWindow, collapsed = false, onSaved = undefined, draft = null, deliveryPriced = true }) {
   const t = useTranslations("dashboard.producer.orders.windows");
   const tHours = useTranslations("dashboard.producer.order_window");
   const tHelp = useTranslations("dashboard.producer.orders.help");
@@ -137,6 +141,12 @@ export default function OrderWindowsCard({ windows, orderWindow, collapsed = fal
           <WindowRow key={`${index}-${row.weekday}`} row={row} onChange={(next) => update(index, next)} onRemove={() => remove(index)} />
         ))}
       </ul>
+      {!deliveryPriced && rows.some((row) => row.fulfilment === "delivery") && (
+        <InlineMessage tone="info">
+          <span data-testid="order-windows-no-delivery-price">{t("no_delivery_price")}</span>{" "}
+          <Link href="/producer/dashboard/edit#delivery" className="font-semibold underline whitespace-nowrap">{t("no_delivery_price_link")}</Link>
+        </InlineMessage>
+      )}
       <div className="flex flex-wrap gap-2">
         {rows.length < MAX_WINDOWS && (
           <Button variant="outlined" size="sm" leadingIcon={<Plus size={16} aria-hidden="true" />} onClick={() => setRows((old) => [...old, NEW_ROW])}>

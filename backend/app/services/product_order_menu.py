@@ -10,7 +10,8 @@ Related:  app/routers/product_order_offer.py (the menu),
           app/services/product_order_create.py (the order route)
 History:  MEH-3263 (creation: lifted out of routers/product_order_offer.py so
           the order route offers exactly the slots the menu shows); MEH-3216
-          gaps (the per-slot cap hides a full slot, manual or automatic)
+          gaps (the per-slot cap hides a full slot, manual or automatic);
+          MEH-3970 (no delivery slot when no city can be priced)
 """
 
 from datetime import date, datetime
@@ -28,6 +29,7 @@ from app.models.product_orders import (
     ProductOrder,
 )
 from app.services import indexnow
+from app.services import product_order_delivery as delivery
 from app.services.product_order_slots import (
     ClosedDays,
     Slot,
@@ -123,6 +125,16 @@ def offered_slots(
         now_utc,
         closed_days(producer),
     )
+    has_delivery = any(slot.fulfilment == "delivery" for slot in slots)
+    if (
+        has_delivery
+        and not as_business
+        and not delivery.can_price_some_city(db, producer)
+    ):
+        # MEH-3970: a delivery no city can be priced for is not offered. The
+        # business proposing a time keeps them: an order made before she
+        # removed her fee still needs a delivery slot to move to.
+        slots = [slot for slot in slots if slot.fulfilment != "delivery"]
     cap = row.auto_confirm_slot_cap
     if as_business or cap is None or not slots:
         return slots

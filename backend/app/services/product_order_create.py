@@ -280,6 +280,20 @@ def _slot(slots: list[Slot], body: OrderCreateIn) -> Slot:
     raise _conflict(SLOT_GONE_DETAIL)
 
 
+def _offered_slot(
+    db: Session,
+    producer: Producer,
+    row: ProducerOrderSettings,
+    now: datetime,
+    body: OrderCreateIn,
+) -> Slot:
+    if body.fulfilment == "delivery" and not delivery.can_price_some_city(db, producer):
+        # MEH-3970: the menu offers no such slot; say why, not «slot gone» —
+        # a weekly repeat's skip notice prints this detail.
+        raise _conflict(delivery.unpriced_detail(producer))
+    return _slot(offered_slots(db, producer, row, now), body)
+
+
 def _delivery_fee(
     db: Session, producer: Producer, body: OrderCreateIn, subtotal: int
 ) -> tuple[int, str | None, str | None]:
@@ -435,7 +449,7 @@ def create_order(
     _check_phone_standing(db, phone, now, repeat_id)
     _check_business_room(db, producer.id)
 
-    slot = _slot(offered_slots(db, producer, row, now), body)
+    slot = _offered_slot(db, producer, row, now, body)
     lines = order_lines(db, body, bool(row.alcohol_licensed))
     # MEH-3618: a product made only on some days, on the slot's Israel day.
     product_weekdays.refuse_closed_day(db, [ln.product_id for ln in lines], slot.start)

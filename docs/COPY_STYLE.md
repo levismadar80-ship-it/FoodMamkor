@@ -139,18 +139,18 @@ Rule of thumb: if you could replace it with "the listing" → `בית עסק`. I
 | Term | Canonical | Status |
 |---|---|---|
 | WhatsApp (Hebrew) | **`וואטסאפ`** | **LOCKED** (Sapir, 2026-06-13) — `ווטסאפ` is non-canonical |
-| WhatsApp (Latin in copy) | TBD — allow vs always Hebraize | **PENDING Sapir** |
+| WhatsApp (Latin in copy) | Hebraize; Latin only inside a product name or the legal Meta item | **LOCKED** (Sapir, 2026-11-08, MEH-2837 — see BRAND.md) |
 | Email | **`מייל`** | **LOCKED** (Sapir, 2026-11-21, MEH-3665) — `אימייל` is non-canonical; `brand-lexicon-guard.sh` rule `email-term` |
 | `וואצאפ` / `ווצאפ` (tsadi forms) | **FORBIDDEN** | never use — not currently present, keep it that way |
 | Hebrew punctuation | gershayim `״`, geresh `׳`, em-dash `—` | per DESIGN.md |
 
 ### LOCKED — WhatsApp (Sapir, 2026-06-13)
 
-Canonical: **`וואטסאפ`**. The variant `ווטסאפ` (11× in `he.json`) and the
-tsadi forms `וואצאפ` / `ווצאפ` are **non-canonical** — normalize to `וואטסאפ`
-in the follow-up sub-MEH. **Still open:** whether Latin `WhatsApp` inside
-Hebrew copy (`he.json:260, 2722`) is allowed or must be Hebraized — separate
-Sapir decision, kept PENDING above.
+Canonical: **`וואטסאפ`**. The variant `ווטסאפ` and the tsadi forms `וואצאפ` /
+`ווצאפ` are **non-canonical**; none is left in `he.json` (MEH-3979). Latin
+`WhatsApp` is allowed only inside a product name or the legal Meta item
+(BRAND.md, MEH-2837). Both are held by
+`frontend/__tests__/WhatsAppSpellingGuard.test.js`.
 
 ### LOCKED — Email (Sapir, 2026-11-21 — replaces the 2026-06-13 lock)
 

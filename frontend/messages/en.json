@@ -1025,6 +1025,7 @@
         "remove_one": "One less: {name}",
         "sold_out": "Sold out today",
         "estimate": "About {price} ₪ · the final price is set on weighing",
+        "estimate_range": "Up to {price} ₪ · the final price is set when the business confirms",
         "alcohol": "18+ only. You will be asked to show ID at pickup.",
         "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪",
         "sold_out_days": "Sold out for the coming days",
@@ -1059,7 +1060,7 @@
         "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
         "send": "Send the request",
         "send_total": "Send the request · ₪{total}",
-        "send_total_estimate": "Send the request · about ₪{total}",
+        "send_total_estimate": "Send the request · up to ₪{total}",
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
@@ -3713,11 +3714,12 @@
         "image_aria": "Photo of Sapir, co-founder of Mehamakor",
         "image_alt": "Sapir, co-founder of Mehamakor",
         "greeting": "Why we started Mehamakor",
-        "p1": "It was always important to us to know where our food comes from. We wanted to buy better — healthier, more local.",
+        "p1": "We love good food, and even more the people behind it. It always mattered to us to know where our food comes from, and we wanted to eat better — healthier, more local.",
         "p2": "But we quickly discovered that it isn't accessible. To find truly good food, we had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
         "p3": "And then it hit us: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
-        "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
+        "p4": "A few minutes from home, a farmer picks vegetables in the morning. In the next neighborhood, a small bakery bakes sourdough. Each of them has a story, and most people have never heard it. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
+        "p5": "That's where Mehamakor was born. Our goal is simple: to give these stories a place. One place to meet the people behind them and find local food close to home. Without searching for hours.",
+        "p6": "We invite you to get to know them with us.",
         "caption1": "Co-founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
         "caption3": "The criteria — we write them from what we ourselves look for in food."
       },
@@ -3735,9 +3737,17 @@
           "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Local community",
-          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
+          "title": "A choice that supports",
+          "body": "Every choice you make goes straight to the businesses — not to a big chain, but to someone nearby."
         }
+      },
+      "logo": {
+        "eyebrow": "The story behind the mark",
+        "heading": "About the logo",
+        "image_alt": "The Mehamakor logo: five pomegranate seeds",
+        "body1": "Five pomegranate seeds, each in its own colour, touching to form one flower. The pomegranate is one of the Seven Species, a fruit of this land. Each seed stands on its own, and together they are whole.",
+        "body2": "So are the businesses here: each with its own story.",
+        "closing": "And every choice of one of them helps this flower grow."
       },
       "testimonials": {
         "heading": "The stories yet to be written here",
@@ -3747,7 +3757,7 @@
       "values": {
         "eyebrow": "Our criteria",
         "heading": "How we choose",
-        "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
+        "intro": "Behind every product there's a person, a family, a small business and a story. Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
         "transparency": {
           "title": "Transparency",
           "body": "You should know who's behind the product you're buying. We'll always tell you who runs the business, where they're located, and how they work."
@@ -3758,7 +3768,7 @@
         },
         "quality": {
           "title": "Quality",
-          "body": "Real ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
+          "body": "Ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
         },
         "safety": {
           "title": "Safety",
@@ -3794,7 +3804,7 @@
       "messages_link": "How does contacting businesses work?",
       "contact": {
         "heading": "Talk to us",
-        "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
+        "subtitle": "Know a business you love? Have a question or an idea? We'd love to hear from you.",
         "name_label": "Full name",
         "name_placeholder": "Your full name",
         "email_label": "Email",
@@ -5922,6 +5932,12 @@
         "q_vegan": "Is everything the business sells vegan?",
         "q_vegetarian": "Is everything the business sells vegetarian?",
         "q_gluten": "Is gluten present in the production facility?",
+        "definition_gluten": "“No gluten in the production facility” means no product there contains wheat, barley, rye or spelt, and no such flour comes in at all.",
+        "conflict_gluten": "Your page says “{categories}”, which usually contains gluten. If flour or a grain with gluten comes into the production facility, choose “Gluten is present in the production facility”.",
+        "definition_vegan": "Vegan means no animal ingredient at all: no meat or fish, no dairy or eggs, and no honey. It is not the same as “natural”.",
+        "definition_vegetarian": "Vegetarian means no meat and no fish. Dairy, eggs and honey are fine.",
+        "conflict_vegan": "The business is listed under {categories}, and those products are not vegan. If even one product is not vegan, choose “No”.",
+        "conflict_vegetarian": "The business is listed under {categories}, and those products are not vegetarian. If even one product is not vegetarian, choose “No”.",
         "opt_yes": "Yes",
         "opt_no": "No",
         "opt_unknown": "Not known",
@@ -6345,7 +6361,9 @@
           "pickup": "Pickup",
           "delivery": "Delivery",
           "add": "Add hours",
-          "saved": "Hours saved"
+          "saved": "Hours saved",
+          "no_delivery_price": "You have delivery hours, but you haven't set where you deliver and for how much yet. Until then, customers see pickup only.",
+          "no_delivery_price_link": "Set up delivery"
         },
         "tabs": {
           "aria": "Order lists",
@@ -6362,6 +6380,7 @@
           "slot": "{kind} on {day} {from}–{until}",
           "line": "{qty} × {name}",
           "estimate": "Estimated price, set after weighing",
+          "estimate_range": "Estimated price, set on confirming",
           "total": "To pay: {total} ₪",
           "delivery_fee": "Includes delivery {fee} ₪",
           "address": "Delivery address: {address}",
@@ -6394,6 +6413,7 @@
           "send": "Send",
           "back": "Back",
           "final_price": "Final price after weighing",
+          "final_price_range": "Final price",
           "final_price_help": "Up to {max} ₪ for the products, the amount the customer saw. For a higher amount, propose a change.",
           "decline_title": "Why decline the order?",
           "reason_stock": "Out of stock",
@@ -7734,9 +7754,9 @@
   "holidays": {
     "pesach": {
       "name": "Passover",
-      "tagline": "Find kosher-for-Passover products from local sources",
+      "tagline": "Find products for Passover from local sources",
       "cta": "Show businesses for Passover",
-      "dashboard_hint": "Passover is coming — do you have kosher-for-Passover products? Update them now"
+      "dashboard_hint": "Passover is coming — do you have products for Passover? Update them now"
     },
     "shavuot": {
       "name": "Shavuot",
@@ -8437,6 +8457,7 @@
     "ready": "Your order is ready for pickup",
     "code": "Say this code at the counter",
     "to_pay": "To pay the business: ₪{total}",
+    "to_pay_estimate": "To pay the business: up to ₪{total}. The final price is set when the business confirms.",
     "declined": "The business can't fill this order.",
     "cancelled": "Your order from {business_name} was cancelled.",
     "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
