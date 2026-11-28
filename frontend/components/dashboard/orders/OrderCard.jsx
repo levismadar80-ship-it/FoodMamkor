@@ -20,7 +20,7 @@ import { Phone, WhatsappLogo } from "@phosphor-icons/react";
 import Badge from "@/components/ui/Badge";
 import { getWhatsAppHref } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
-import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, estimateKind, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderActions from "./OrderActions";
 import OrderRepeatControl from "./OrderRepeatControl";  // MEH-3933
@@ -47,7 +47,9 @@ function OrderFacts({ order }) {
         {t("total", { total: shekelsText(toPayAgorot(order)) })}
       </p>
       {fee > 0 && <p>{t("delivery_fee", { fee: shekelsText(fee) })}</p>}
-      {order.has_estimate && (order.final_total_agorot ?? null) === null && <p>{t("estimate")}</p>}
+      {order.has_estimate && (order.final_total_agorot ?? null) === null && (
+        <p>{t(estimateKind(order.items) === "range" ? "estimate_range" : "estimate")}</p>
+      )}
       {/* MEH-3971: the city too — she may deliver to several. */}
       {order.delivery_address && <p data-testid="order-address">{t("address", { address: [order.delivery_address, order.delivery_city].filter(Boolean).join(", ") })}</p>}
       {order.note && <p>{t("note", { note: order.note })}</p>}
