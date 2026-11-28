@@ -132,7 +132,6 @@ frontend/components/FilterSheet.jsx
 frontend/components/FridayDeliveryStrip.jsx
 frontend/components/Header.jsx
 frontend/components/HeroSearch.jsx
-frontend/components/HolidayBanner.jsx
 frontend/components/HolidayIcon.jsx
 frontend/components/ImageGallery.jsx
 frontend/components/ImageWithFallback.jsx

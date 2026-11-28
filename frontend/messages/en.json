@@ -1565,9 +1565,7 @@
       "title_alt": "Businesses delivering on Friday"
     },
     "holiday_banner": {
-      "approaching": "{name} is approaching",
-      "aria": "Holiday notice",
-      "close_aria": "Close"
+      "eyebrow": "Ahead of {name}"
     },
     "faq": {
       "items": {
@@ -7786,8 +7784,9 @@
     },
     "chanuka": {
       "name": "Hanukkah",
-      "tagline": "The finest extra-virgin olive oil — light up the night",
-      "cta": "Show olive oil",
+      "shelf_heading": "This year's olive oil harvest",
+      "tagline": "Extra virgin, straight from the press. Businesses we've checked for you.",
+      "cta": "All olive oils",
       "dashboard_hint": "Hanukkah is coming — do you make olive oil? The festival of oil is your moment"
     },
     "tu_bishvat": {

@@ -67,7 +67,9 @@ describe("holidays.js — computed dates (MEH-2263, MEH-3017)", () => {
   it("every icon, colour and search term survives the computation", () => {
     const t = holidaysOn("2026-11-14");
     expect(t.pesach).toMatchObject({ icon: "Sparkle", searchParams: { q: "כשר לפסח" } });
-    expect(t.chanuka).toMatchObject({ icon: "Flame", color: "#1D4ED8" });
+    expect(t.chanuka).toMatchObject({ icon: "Flame", searchParams: { q: "שמן זית" } });
+    // MEH-3993: no colour per holiday any more — the shelf uses brand tokens.
+    expect(t.chanuka).not.toHaveProperty("color");
   });
 
   it("rosh_hashana does not sit on Yom Kippur (20–22/09), and every date is ISO and ordered", () => {

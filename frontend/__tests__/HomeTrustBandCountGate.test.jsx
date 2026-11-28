@@ -38,7 +38,7 @@ import he from "../messages/he.json";
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/LocationBanner", () => ({ default: () => null }));
-vi.mock("@/components/HolidayBanner", () => ({ default: () => null }));
+vi.mock("@/app/[locale]/home/HomeHolidayShelf", () => ({ default: () => null }));
 vi.mock("@/components/FridayDeliveryStrip", () => ({ default: () => null }));
 vi.mock("@/components/BackToTop", () => ({ default: () => null }));
 vi.mock("@/components/HomepageMiniMapSkeleton", () => ({ default: () => null }));

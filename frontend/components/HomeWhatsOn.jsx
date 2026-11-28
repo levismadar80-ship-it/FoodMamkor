@@ -28,7 +28,7 @@
  *           MEH-2962 (cards with pictures, three rows; Sapir 12/11).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { z } from "zod";
 
@@ -65,6 +65,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import StruckPrice from "@/components/ui/StruckPrice";
 import { agorotToShekels } from "@/lib/money";
 import useImageLoads from "@/lib/use-image-loads";
+import useNearViewport from "@/hooks/useNearViewport";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -607,34 +608,9 @@ export default function HomeWhatsOn() {
   const tRescue = useTranslations("rescue.home");
   const tProducerGroupBuys = useTranslations("producer.detail.sections.group_buys");
   const locale = useLocale();
-  const sentinelRef = useRef(null);
-  const [near, setNear] = useState(false);
+  // MEH-3993: the near-viewport sentinel moved to hooks/useNearViewport.js.
+  const [sentinelRef, near] = useNearViewport(WHATS_ON_PRELOAD_MARGIN);
   const [rows, setRows] = useState(EMPTY_ROWS);
-
-  useEffect(() => {
-    if (near) return undefined;
-    // Deliberately a setState in the effect, not a lazy useState initialiser:
-    // the server renders the sentinel, so deciding on the first render would
-    // be a hydration mismatch (HomepageMiniMapLazy.jsx:40-42).
-    if (typeof window.IntersectionObserver !== "function") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
-      setNear(true);
-      return undefined;
-    }
-    const el = sentinelRef.current;
-    if (!el) return undefined;
-    const observer = new window.IntersectionObserver(
-      (records) => {
-        if (records.some((record) => record.isIntersecting)) {
-          setNear(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: WHATS_ON_PRELOAD_MARGIN },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [near]);
 
   useEffect(() => {
     if (!near) return undefined;

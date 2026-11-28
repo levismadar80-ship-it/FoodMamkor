@@ -61,6 +61,11 @@ const ROUTES = ["/", "/producers", "/group-buys", "/events", "/about/process", "
 // It went red on 28/11 the hour the Hanukkah banner appeared. "/" now always
 // runs on a day the banner is up (Tuesday 8/12/2026, Hanukkah), and the test
 // requires the banner to be on screen before it measures.
+// MEH-3993: the banner is the holiday shelf now, a row of business cards that
+// shows only with 3+ businesses for «שמן זית». Whether staging has three is
+// data, not product, so the shelf's request is answered with the first three
+// businesses of the real feed (real rows, real schema), and the test scrolls to
+// the shelf (it fetches when near the viewport) before it measures.
 const HOLIDAY_DAY = new Date("2026-12-08T10:00:00+02:00");
 
 type Probe = { rootPx: number; controls: number; offscreen: string[]; overflowX: number };
@@ -120,12 +125,31 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
           ];
       await page.setViewportSize({ width: passes[0].width, height: passes[0].height });
       // eslint-disable-next-line playwright/no-conditional-in-test -- gated on the route under test (a fixture), not on anything the product renders
-      if (path === "/") await page.clock.setFixedTime(HOLIDAY_DAY);
+      if (path === "/") {
+        await page.clock.setFixedTime(HOLIDAY_DAY);
+        await page.route("**/api/producers?*", async (route) => {
+          const url = new URL(route.request().url());
+          if (!url.searchParams.has("q")) return route.fallback();
+          url.searchParams.delete("q");
+          url.searchParams.set("limit", "3");
+          return route.fulfill({ response: await route.fetch({ url: url.toString() }) });
+        });
+      }
       await page.goto(path);
       await page.waitForLoadState("domcontentloaded");
       await expect(page.locator("main").first()).toBeVisible({ timeout: 15_000 });
-      // eslint-disable-next-line playwright/no-conditional-in-test, playwright/no-conditional-expect -- same route gate: only "/" carries the holiday banner
-      if (path === "/") await expect(page.getByTestId("holiday-banner")).toBeVisible({ timeout: 15_000 });
+      // eslint-disable-next-line playwright/no-conditional-in-test -- same route gate: only "/" carries the holiday shelf
+      if (path === "/") {
+        const shelf = page.getByTestId("home-holiday-shelf");
+        // The shelf fetches only near the viewport: scroll down until it mounts.
+        await expect(async () => {
+          await page.evaluate(() => window.scrollBy(0, 1200));
+          await expect(shelf).toBeAttached({ timeout: 1_000 });
+        }).toPass({ timeout: 20_000 });
+        await shelf.scrollIntoViewIfNeeded();
+        // eslint-disable-next-line playwright/no-conditional-expect -- same route gate as above
+        await expect(shelf).toBeVisible();
+      }
       for (const p of passes) {
         const tag = `${p.width}px, ${p.scale} text`;
         await page.setViewportSize({ width: p.width, height: p.height });

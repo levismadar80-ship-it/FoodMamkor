@@ -492,6 +492,7 @@ duplicate	6	הוסיפו את העסק שלכם
 duplicate	6	היום
 duplicate	6	לפי הצהרת בית העסק
 duplicate	6	סגירה
+duplicate	6	סגרו
 duplicate	6	עריכה
 duplicate	6	תאריך
 duplicate	7	אירועים
@@ -499,7 +500,6 @@ duplicate	7	הועתק
 duplicate	7	וואטסאפ
 duplicate	7	מאומת
 duplicate	7	מוצרים
-duplicate	7	סגרו
 duplicate	7	סיסמה
 duplicate	7	שם מלא
 duplicate	8	איסוף עצמי

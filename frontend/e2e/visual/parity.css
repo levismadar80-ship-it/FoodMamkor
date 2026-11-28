@@ -9,7 +9,7 @@
  */
 
 /* Date/weekday-dependent surfaces — presence varies by calendar day. */
-[data-testid="holiday-banner"],
+[data-testid="home-holiday-shelf"],
 [data-testid="friday-delivery-strip"] {
   display: none !important;
 }

@@ -201,12 +201,6 @@ frontend/lib/dashboard-status-classes.js:border-blue-200
 frontend/lib/dashboard-status-classes.js:border-gray-200
 frontend/lib/dashboard-status-classes.js:text-blue-700
 frontend/lib/dashboard-status-classes.js:text-gray-700
-frontend/lib/holidays.js:hex:#15803d
-frontend/lib/holidays.js:hex:#15803d
-frontend/lib/holidays.js:hex:#1d4ed8
-frontend/lib/holidays.js:hex:#1d4ed8
-frontend/lib/holidays.js:hex:#b45309
-frontend/lib/holidays.js:hex:#b45309
 frontend/lib/map-chips.js:hex:#3b72ad
 frontend/lib/map-chips.js:hex:#c04040
 frontend/lib/marker-glyph.js:hex:#ffffff

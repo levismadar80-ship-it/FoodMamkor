@@ -2,7 +2,7 @@
 /**
  * MEH-55: Israel food holiday calendar.
  * Holidays include advance window (7 days before) and active period.
- * Used by: HolidayBanner (homepage), producer dashboard hint.
+ * Used by: HomeHolidayShelf (homepage), producer dashboard hint.
  *
  * MEH-1988: "today" comes from lib/israel-date, not the browser clock — see
  * todayMs below. Do NOT reintroduce a local date primitive here.
@@ -28,19 +28,21 @@ import { holidayDatesOn } from "@/lib/hebrew-holidays";
 // lib/hebrew-holidays.js, computed from the Hebrew calendar for the year in
 // force — nobody types next year's table. Key order = calendar order.
 const HOLIDAY_META = {
-  rosh_hashana: { icon: "Jar", searchParams: { q: "דבש" }, color: "#B45309" },
-  sukkot: { icon: "Leaf", searchParams: { q: "פירות" }, color: "#15803D" },
-  chanuka: { icon: "Flame", searchParams: { q: "שמן זית" }, color: "#1D4ED8" },
-  tu_bishvat: { icon: "Tree", searchParams: { q: "דבש" }, color: "#15803D" },
-  pesach: { icon: "Sparkle", searchParams: { q: "כשר לפסח" }, color: "#B45309" }, // amber-700
-  shavuot: { icon: "Cheese", searchParams: { q: "גבינות" }, color: "#1D4ED8" }, // blue-700
+  rosh_hashana: { icon: "Jar", searchParams: { q: "דבש" } },
+  sukkot: { icon: "Leaf", searchParams: { q: "פירות" } },
+  chanuka: { icon: "Flame", searchParams: { q: "שמן זית" } },
+  tu_bishvat: { icon: "Tree", searchParams: { q: "דבש" } },
+  pesach: { icon: "Sparkle", searchParams: { q: "כשר לפסח" } },
+  shavuot: { icon: "Cheese", searchParams: { q: "גבינות" } },
 };
 
 /**
  * The holiday table in force on an Israel day ("YYYY-MM-DD"): the six
  * holidays of the current Hebrew year until its Shavuot is over, then the
  * next year's. Same shape the hand-typed table had: { key: { icon, start,
- * end, searchParams, color } }. Empty when the runtime has no Hebrew calendar.
+ * end, searchParams } }. Empty when the runtime has no Hebrew calendar.
+ * MEH-3993: the per-holiday colour is gone — the banner was its only reader,
+ * and the shelf uses brand tokens.
  */
 export function holidaysOn(isoDay = israelToday()) {
   const dates = holidayDatesOn(isoDay);
@@ -51,7 +53,7 @@ export function holidaysOn(isoDay = israelToday()) {
   return out;
 }
 
-// Keys, icons and colours only — NO dates, and no computation at import (a
+// Keys, icons and queries only — NO dates, and no computation at import (a
 // date snapshot taken at import goes stale across Shavuot, and costs a cold
 // scan on every page load). Anything that needs dates calls holidaysOn(day).
 export const HOLIDAYS = HOLIDAY_META;

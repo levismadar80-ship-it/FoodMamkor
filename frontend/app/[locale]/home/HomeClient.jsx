@@ -4,7 +4,7 @@
 import { useState } from "react";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
-import HolidayBanner from "@/components/HolidayBanner";
+import HomeHolidayShelf from "./HomeHolidayShelf";
 import FridayDeliveryStrip, { FridayStripSkeleton } from "@/components/FridayDeliveryStrip";
 import BackToTop from "@/components/BackToTop";
 import HomeWhatsOn from "@/components/HomeWhatsOn";
@@ -87,12 +87,13 @@ export default function HomeClient({
   // MEH-2724: signed-in user's favorites → «המועדפים שלך» strip under the hero.
   const favoriteProducers = useFavoriteProducers();
 
-  // MEH-879: banner single-slot — at most ONE of {FridayStrip, HolidayBanner,
-  // LocationBanner} renders. Precedence Friday > Holiday > Location. Each
-  // banner keeps its own internal show-condition and reports it up; a lower-
-  // precedence banner is `suppressed` (renders null) when a higher one shows.
+  // MEH-879: banner single-slot — at most ONE of {FridayStrip,
+  // LocationBanner} renders. Precedence Friday > Location. Each banner keeps
+  // its own internal show-condition and reports it up; the lower-precedence
+  // one is `suppressed` (renders null) when the higher one shows. MEH-3993:
+  // the holiday banner left the slot — it is the holiday shelf in the content
+  // flow now, so it no longer pushes the location banner out.
   const [fridayVisible, setFridayVisible] = useState(false);
-  const [holidayVisible, setHolidayVisible] = useState(false);
 
   return (
     <div>
@@ -231,7 +232,7 @@ export default function HomeClient({
         <LocationBanner
           hasCity={!!userCity}
           onOpenModal={() => setLocationModalOpen(true)}
-          suppressed={(fridayMode && fridayVisible) || holidayVisible}
+          suppressed={fridayMode && fridayVisible}
         />
       </div>
 
@@ -241,17 +242,6 @@ export default function HomeClient({
         onClose={() => setLocationModalOpen(false)}
         onSelectCity={handleCitySelected}
       />
-
-      {/* MEH-55: holiday banner — visible 7 days before and during a holiday.
-          MEH-879: 2nd banner precedence — reports visibility (so Location
-          yields) and is suppressed when the Friday strip is showing. */}
-      {/* MEH-2635: `empty:hidden` — see the location banner slot above. */}
-      <div className="mt-4 empty:hidden">
-        <HolidayBanner
-          suppressed={fridayMode && fridayVisible}
-          onVisibilityChange={setHolidayVisible}
-        />
-      </div>
 
       {/* MEH-1080: cards are real links to /producers?category=<id> —
           no click handler, no selection state on the homepage anymore. */}
@@ -316,6 +306,11 @@ export default function HomeClient({
           the map).
           ========================= */}
       <HomeFeaturedProducer featured={featuredProducer} />
+
+      {/* MEH-3993: the holiday shelf — around a holiday, 3–5 businesses for
+          the holiday's search, with the other editorial rows. Self-hides below
+          3 businesses, like «עכשיו בעונה» right after it. */}
+      <HomeHolidayShelf />
 
       {/* MEH-1287 chunk B: the editorial seasonal strip sits with the other
           editorial content — after the single "meet a producer" pick and before

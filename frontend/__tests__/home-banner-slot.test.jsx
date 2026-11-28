@@ -1,23 +1,22 @@
 /**
  * MEH-879 / MEH-881: homepage banner single-slot precedence.
  *
- * The homepage renders AT MOST ONE of {FridayStrip, HolidayBanner,
- * LocationBanner}. Precedence: Friday > Holiday > Location. Each banner
- * keeps its own internal show-condition; higher-precedence banners report
- * visibility via `onVisibilityChange`, lower-precedence banners take a
- * `suppressed` prop that forces null.
+ * The homepage renders AT MOST ONE of {FridayStrip, LocationBanner}.
+ * Precedence: Friday > Location. Friday reports visibility via
+ * `onVisibilityChange`; Location takes a `suppressed` prop that forces null.
  *
- * This test mounts the three REAL banner components inside a harness that
- * mirrors HomePage's slot wiring (the `{fridayMode && <FridayDeliveryStrip>}`
- * + `<HolidayBanner>` + `<LocationBanner>` block), drives each banner's own
- * condition via mocked deps, and asserts the exactly-one (and none) outcomes.
+ * MEH-3993: the holiday banner left the slot. It is HomeHolidayShelf now, a
+ * content row further down the page, so a holiday must no longer push the
+ * location banner out. The harness mounts the shelf next to the two banners,
+ * as HomeClient does, so the "holiday active" cells below would go red if the
+ * shelf were wired back into the slot.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useState } from "react";
 import { render, screen, act } from "@testing-library/react";
 
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
-import HolidayBanner from "@/components/HolidayBanner";
+import HomeHolidayShelf from "@/app/[locale]/home/HomeHolidayShelf";
 import LocationBanner, { REVEAL_DELAY_MS } from "@/components/LocationBanner";
 import api from "@/lib/api";
 import { getActiveHoliday } from "@/lib/holidays";
@@ -43,31 +42,26 @@ const HOLIDAY = {
   // the key-echo next-intl mock above renders as the key path.
   key: "test",
   icon: "Sparkle",
-  color: "#abcdef",
   upcoming: false,
   searchParams: { q: "test" },
 };
 
-// Mirrors page.js's slot wiring exactly: Friday is gated by fridayMode and
-// reports visibility; Holiday is suppressed once Friday is visible; Location
-// is suppressed once Friday OR Holiday is visible.
+// Mirrors HomeClient.jsx's slot wiring: Friday is gated by fridayMode and
+// reports visibility; Location is suppressed once Friday is visible. The shelf
+// sits outside the slot and takes no slot props.
 function Slot({ fridayMode, hasCity }) {
   const [fridayVisible, setFridayVisible] = useState(false);
-  const [holidayVisible, setHolidayVisible] = useState(false);
   return (
     <>
       {fridayMode && (
         <FridayDeliveryStrip city={null} onVisibilityChange={setFridayVisible} />
       )}
-      <HolidayBanner
-        suppressed={fridayMode && fridayVisible}
-        onVisibilityChange={setHolidayVisible}
-      />
       <LocationBanner
         hasCity={hasCity}
         onOpenModal={() => {}}
-        suppressed={(fridayMode && fridayVisible) || holidayVisible}
+        suppressed={fridayMode && fridayVisible}
       />
+      <HomeHolidayShelf />
     </>
   );
 }
@@ -84,7 +78,6 @@ function setConditions({ producers = [], holiday = null }) {
 // Queries keyed to each banner's own copy (echoed t() / fixture text).
 const fridayShown = () =>
   screen.queryByText("group_buys.friday_delivery.title_alt") !== null;
-const holidayShown = () => screen.queryByText("holidays.test.name") !== null;
 const locationShown = () =>
   screen.queryByText("location.banner.choose_city") !== null;
 
@@ -116,30 +109,28 @@ afterEach(() => {
 });
 
 describe("homepage banner single-slot precedence", () => {
-  it("renders ONLY Friday when all three conditions are true", async () => {
+  it("renders ONLY Friday when Friday and Location both qualify", async () => {
     setConditions({ producers: [{ id: 1, name: "P", city: "C", images: [] }], holiday: HOLIDAY });
     await renderSlot({ fridayMode: true, hasCity: false });
 
     expect(fridayShown()).toBe(true);
-    expect(holidayShown()).toBe(false);
     expect(locationShown()).toBe(false);
   });
 
-  it("renders ONLY Holiday when Friday is off but Holiday + Location qualify", async () => {
+  it("renders Location when Friday is off, even with a holiday active (MEH-3993)", async () => {
     setConditions({ producers: [], holiday: HOLIDAY });
     await renderSlot({ fridayMode: false, hasCity: false });
 
+    expect(getActiveHoliday, "control: the holiday was resolved").toHaveBeenCalled();
     expect(fridayShown()).toBe(false);
-    expect(holidayShown()).toBe(true);
-    expect(locationShown()).toBe(false);
+    expect(locationShown()).toBe(true);
   });
 
-  it("renders ONLY Location when neither Friday nor Holiday qualify", async () => {
+  it("renders ONLY Location when neither Friday nor a holiday qualify", async () => {
     setConditions({ producers: [], holiday: null });
     await renderSlot({ fridayMode: false, hasCity: false });
 
     expect(fridayShown()).toBe(false);
-    expect(holidayShown()).toBe(false);
     expect(locationShown()).toBe(true);
   });
 
@@ -148,7 +139,6 @@ describe("homepage banner single-slot precedence", () => {
     await renderSlot({ fridayMode: false, hasCity: true });
 
     expect(fridayShown()).toBe(false);
-    expect(holidayShown()).toBe(false);
     expect(locationShown()).toBe(false);
   });
 });

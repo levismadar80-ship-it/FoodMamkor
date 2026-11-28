@@ -45,12 +45,12 @@ describe("MEH-1687 D — holiday icons are Phosphor, not emoji", () => {
     }
   });
 
-  it("the consumers no longer read `.emoji`, and the banner string has no {emoji} slot", () => {
-    for (const rel of ["components/HolidayBanner.jsx", "app/[locale]/producer/dashboard/page.js"]) {
+  it("the consumers no longer read `.emoji`, and the shelf string has no {emoji} slot", () => {
+    for (const rel of ["app/[locale]/home/HomeHolidayShelf.jsx", "app/[locale]/producer/dashboard/page.js"]) {
       expect(code(read(rel)), rel).not.toMatch(/\.emoji\b/);
     }
-    expect(he.group_buys.holiday_banner.approaching).not.toMatch(/\{emoji\}/);
-    expect(en.group_buys.holiday_banner.approaching).not.toMatch(/\{emoji\}/);
+    expect(he.group_buys.holiday_banner.eyebrow).not.toMatch(/\{emoji\}/);
+    expect(en.group_buys.holiday_banner.eyebrow).not.toMatch(/\{emoji\}/);
   });
 
   it("HolidayIcon renders a regular-weight svg in text-primary, Sparkle on an unknown name", () => {

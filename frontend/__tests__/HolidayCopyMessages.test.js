@@ -38,7 +38,8 @@ describe("holiday copy lives in messages (MEH-2741)", () => {
   // those, it does not prove neutrality of new wording.
   it("holiday copy addresses the reader in the plural (ADR-037)", () => {
     expect(he.holidays.pesach.tagline).toContain("מצאו");
-    expect(he.holidays.chanuka.tagline).toContain("הדליקו");
+    // MEH-3993: the Hanukkah subline is the holiday shelf's now, still plural.
+    expect(he.holidays.chanuka.tagline).toContain("בשבילכם");
     const SINGULAR = /(^|[\s?:—])(מצאי|הדליקי|גלי|קני|הזמיני|בחרי|חפשי|עדכני|לך|שלך)([\s?:—.,]|$)/;
     for (const k of KEYS) {
       for (const f of FIELDS) {

@@ -739,7 +739,6 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `Header.jsx` | — אין כותרת — |
 | `HeroSearch.jsx` | — אין כותרת — |
 | `HistoryBackLink.jsx` | MEH-2857 — «→ חזרה» on an item page (group buy, event, experience, recipe) that returns to the exact page the visitor came from, with its scroll and filters … |
-| `HolidayBanner.jsx` | — אין כותרת — |
 | `HolidayIcon.jsx` | — אין כותרת — |
 | `HomeWhatsOn.jsx` | MEH-2859 — one home strip for everything date-bound at the businesses: events, experiences, group buys and surprise baskets. … |
 | `HomepageMiniMap.jsx` | Lazy-loaded mini-map preview on the homepage — discovery prominence per MEH-538. Click anywhere → /map. |
@@ -1059,6 +1058,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `[locale]/home/HomeCategoryGrid.jsx` | — אין כותרת — |
 | `[locale]/home/HomeClient.jsx` | — אין כותרת — |
 | `[locale]/home/HomeHero.jsx` | — אין כותרת — |
+| `[locale]/home/HomeHolidayShelf.jsx` | The homepage holiday shelf (MEH-3993): around a holiday, an editorial row of 3–5 businesses that match the holiday's search (chanuka → «שמן זית»), with an … |
 | `[locale]/home/HomeProducersGrid.jsx` | — אין כותרת — |
 | `[locale]/home/HomeSeasonalNow.jsx` | The "עכשיו בעונה" homepage module — an editorially curated strip of businesses whose seasonal mark has not expired. … |
 | `[locale]/home/HomeStaticBlocks.jsx` | — אין כותרת — |
