@@ -655,7 +655,7 @@ def update_owner_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before, actor=user)
-    approved_edit.fire_content_edit(  # MEH-3261: one «עדכן תוכן» ping per save
+    approved_edit.fire_content_edit(  # MEH-3261/3995: «עדכן תוכן» only if FLAGGED
         background_tasks,
         producer,
         approved_edit.changed_content(content_before, producer),

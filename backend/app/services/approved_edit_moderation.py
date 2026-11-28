@@ -2,9 +2,10 @@
 Module:   approved_edit_moderation
 Purpose:  MEH-3261 — once a business is approved its public text and photos go
           live with no review. This adds the two missing signals: an AI check on
-          changed text (a REJECTED verdict refuses the save with a 422) and one
-          admin ping per save that changed the description, short description,
-          owner story or photos («עסק מאושר עדכן תוכן»).
+          changed text (a REJECTED verdict refuses the save with a 422) and an
+          admin ping («עסק מאושר עדכן תוכן») — only when the AI FLAGGED the
+          text (MEH-3995: one email per save flooded the inbox; a routine
+          edit needs no action, and a fail-open is already a Sentry event).
 Touches:  Anthropic (fast-tier Haiku, one call per save that changed text),
           WhatsApp + Resend (admin ping, BackgroundTask). No DB writes, no schema.
 Does NOT: moderate a PENDING business (the admin reads everything at approval),
@@ -16,7 +17,8 @@ Related:  routers/producer_me.py update_my_producer / create_my_product /
           `_moderate_text` (the same prompt contract and fail-open);
           services/auth_notifications.py notify_admin_producer_sensitive_edit
           (the ping this one mirrors).
-History:  MEH-3261 (creation, grill-retro decision D11).
+History:  MEH-3261 (creation, grill-retro decision D11); MEH-3995 (ping only
+          when FLAGGED).
 """
 
 from __future__ import annotations
@@ -216,8 +218,10 @@ def fire_content_edit(
     flagged: bool,
     test_cause: bool,
 ) -> None:
-    """One ping per save, only for an APPROVED business that changed something."""
-    if producer.status != "approved" or not changed:
+    """One ping per save, only for an APPROVED business whose changed text the
+    AI FLAGGED. MEH-3995: an unflagged save (photos, routine text, fail-open)
+    sends nothing — an alert is for what needs the admin to act."""
+    if producer.status != "approved" or not changed or not flagged:
         return
     background_tasks.add_task(
         _content_edit_task, str(producer.name), changed, flagged, test_cause=test_cause

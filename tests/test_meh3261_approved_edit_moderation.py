@@ -2,12 +2,12 @@
 
 | business | change                              | AI check | ping                      |
 |----------|-------------------------------------|----------|---------------------------|
-| approved | description changed                 | yes      | ONE «עדכן תוכן» — תיאור   |
+| approved | description changed, AI APPROVED    | yes      | none (MEH-3995)           |
 | approved | same text re-sent (after strip)     | no       | none                      |
-| approved | images changed                      | no       | ONE — תמונות              |
-| approved | AI FLAGGED                          | yes      | suffix « — טקסט סומן ע״י AI» |
+| approved | images changed                      | no       | none (MEH-3995)           |
+| approved | AI FLAGGED                          | yes      | ONE «עדכן תוכן», suffix « — טקסט סומן ע״י AI» |
 | approved | AI REJECTED                         | yes      | none — 422, nothing saved |
-| approved | AI fail-open (None)                 | yes      | ping, saved, no flag      |
+| approved | AI fail-open (None)                 | yes      | none, saved (Sentry has it, MEH-3995) |
 | pending  | description changed                 | no       | none                      |
 | approved | product created / renamed, FLAGGED  | yes      | «מוצרים — טקסט סומן ע״י AI» |
 | approved | product renamed, APPROVED           | yes      | none                      |
@@ -43,7 +43,8 @@ def _calls(moderate_return="APPROVED"):
     return patch(MODERATE, return_value=moderate_return), patch(NOTIFY)
 
 
-def test_changed_description_is_checked_and_pings_once(client, db):
+def test_approved_description_change_is_checked_and_not_pinged(client, db):
+    # MEH-3995: the AI passed it, so there is nothing for the admin to do.
     user, producer = _owner(db)
     m, n = _calls()
     with m as ai, n as ping:
@@ -52,7 +53,9 @@ def test_changed_description_is_checked_and_pings_once(client, db):
     ai.assert_called_once_with(
         {"description": "תיאור חדש לגמרי של המשק"}, "producer_content"
     )
-    ping.assert_called_once_with("משק התוכן", ["description"], False, test_cause=False)
+    ping.assert_not_called()
+    db.refresh(producer)
+    assert producer.description == "תיאור חדש לגמרי של המשק"
 
 
 def test_unchanged_text_after_strip_is_neither_checked_nor_pinged(client, db):
@@ -65,7 +68,7 @@ def test_unchanged_text_after_strip_is_neither_checked_nor_pinged(client, db):
     ping.assert_not_called()
 
 
-def test_images_change_pings_without_ai(client, db):
+def test_images_change_is_saved_without_ai_or_ping(client, db):
     user, _ = _owner(db)
     new = ["https://res.cloudinary.com/x/image/upload/b.jpg"]
     m, n = _calls()
@@ -73,7 +76,7 @@ def test_images_change_pings_without_ai(client, db):
         r = _put(client, user, {"images": new})
     assert r.status_code == 200, r.text
     ai.assert_not_called()
-    ping.assert_called_once_with("משק התוכן", ["images"], False, test_cause=False)
+    ping.assert_not_called()  # MEH-3995: a photo update is routine
 
 
 def test_flagged_text_saves_and_marks_the_ping(client, db):
@@ -100,15 +103,16 @@ def test_rejected_text_is_422_and_nothing_is_saved(client, db):
     assert producer.phone != "0501112233", "the whole PUT is refused"
 
 
-def test_ai_fail_open_saves_and_pings_without_flag(client, db):
+def test_ai_fail_open_saves_without_ping(client, db):
+    # MEH-3995: a fail-open is reported to Sentry (report_fail_open); no email.
     user, producer = _owner(db)
     m, n = _calls(None)
     with m, n as ping:
         r = _put(client, user, {"short_description": "ירקות אורגניים מהשדה"})
     assert r.status_code == 200, r.text
-    ping.assert_called_once_with(
-        "משק התוכן", ["short_description"], False, test_cause=False
-    )
+    ping.assert_not_called()
+    db.refresh(producer)
+    assert producer.short_description == "ירקות אורגניים מהשדה"
 
 
 def test_pending_business_is_not_checked_or_pinged(client, db):
