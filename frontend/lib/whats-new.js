@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.22 (28/11): the night train of 27-28/11 (orders, delivery, banners,
+  // staging fixes). Nothing in docs/release/whats-new-pending.md, so items: 0;
+  // business-facing copy changes ride in their own screens. Sapir's go for
+  // this version: 27/11 23:13Z («חייבת לעלות גרסה עד הבוקר»).
+  { version: "1.5.22", key: "v1_5_22", date: "2026-11-28", items: 0 },
   // 1.5.21 (27/11): three lines for businesses, moved from
   // docs/release/whats-new-pending.md: «מה יש השבוע» (#5423), how far ahead
   // each product must be ordered (#5424, MEH-3932), repeat weekly orders
