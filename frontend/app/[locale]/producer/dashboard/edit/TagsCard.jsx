@@ -9,6 +9,8 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Checkbox from "@/components/ui/Checkbox";
+import DietaryScopeNotes from "@/components/DietaryScopeNotes";
+import { showsGrassFed } from "@/lib/dietary-scope-conflict";
 
 /**
  * Module:   TagsCard
@@ -154,6 +156,8 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           options={yesNo}
           onChange={edit(setVegan)}
         />
+        {/* MEH-3982: what «טבעוני» means + a soft warning on an animal category. */}
+        <DietaryScopeNotes axis="vegan" scope={vegan} categories={profile?.categories} />
         <RadioGroup
           legend={tDiet("q_vegetarian")}
           name="vegetarian_scope"
@@ -161,6 +165,7 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           options={yesNo}
           onChange={edit(setVegetarian)}
         />
+        <DietaryScopeNotes axis="vegetarian" scope={vegetarian} categories={profile?.categories} />
         <RadioGroup
           legend={tDiet("q_gluten")}
           name="gluten_free_facility"
@@ -172,29 +177,38 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           ]}
           onChange={edit(setGluten)}
         />
+        <DietaryScopeNotes
+          axis="gluten"
+          scope={gluten}
+          categories={profile?.categories}
+          text={`${profile?.short_description ?? ""} ${profile?.description ?? ""}`}
+        />
       </section>
 
-      <section
-        className="space-y-3 border-t border-border pt-4"
-        data-testid="tags-section-grass-fed"
-      >
-        <h3 className="text-sm font-bold text-primary">{tGrass("heading")}</h3>
-        {/* MEH-1539 dashboard-field standard: a "where it appears" line. */}
-        <p className="text-xs text-fg-muted">{tGrass("scope_helper")}</p>
-        {/* A single checkbox, not a yes/no pair: the column is a plain Boolean
-            defaulting to false, so "no" and "not answered" are one value. */}
-        <Checkbox
-          className="flex items-center gap-1.5 text-sm"
-          name="grass_fed"
-          checked={grassFed}
-          onChange={(e) => {
-              setGrassFed(e.target.checked);
-              setSaved(false);
-            }}
+      {/* MEH-3982: grass-fed only for a business that grazes animals (or already ticked). */}
+      {showsGrassFed({ categories: profile?.categories, checked: seed.grass_fed || grassFed }) && (
+        <section
+          className="space-y-3 border-t border-border pt-4"
+          data-testid="tags-section-grass-fed"
         >
-          {tGrass("label")}
-        </Checkbox>
-      </section>
+          <h3 className="text-sm font-bold text-primary">{tGrass("heading")}</h3>
+          {/* MEH-1539 dashboard-field standard: a "where it appears" line. */}
+          <p className="text-xs text-fg-muted">{tGrass("scope_helper")}</p>
+          {/* A single checkbox, not a yes/no pair: the column is a plain Boolean
+              defaulting to false, so "no" and "not answered" are one value. */}
+          <Checkbox
+            className="flex items-center gap-1.5 text-sm"
+            name="grass_fed"
+            checked={grassFed}
+            onChange={(e) => {
+                setGrassFed(e.target.checked);
+                setSaved(false);
+              }}
+          >
+            {tGrass("label")}
+          </Checkbox>
+        </section>
+      )}
 
       {errorMsg && (
         <InlineMessage size="xs" className="flex items-center gap-1.5">

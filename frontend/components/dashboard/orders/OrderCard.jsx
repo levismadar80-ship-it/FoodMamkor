@@ -19,7 +19,7 @@ import { Phone, WhatsappLogo } from "@phosphor-icons/react";
 import Badge from "@/components/ui/Badge";
 import { getWhatsAppHref } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
-import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, estimateKind, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import { isolate } from "@/lib/bidi";  // MEH-3978
 import OrderActions from "./OrderActions";
@@ -47,7 +47,9 @@ function OrderFacts({ order }) {
         {t("total", { total: shekelsText(toPayAgorot(order)) })}
       </p>
       {fee > 0 && <p>{t("delivery_fee", { fee: shekelsText(fee) })}</p>}
-      {order.has_estimate && (order.final_total_agorot ?? null) === null && <p>{t("estimate")}</p>}
+      {order.has_estimate && (order.final_total_agorot ?? null) === null && (
+        <p>{t(estimateKind(order.items) === "range" ? "estimate_range" : "estimate")}</p>
+      )}
       {order.delivery_address && <p>{t("address", { address: isolate(order.delivery_address) })}</p>}
       {order.note && <p>{t("note", { note: isolate(order.note) })}</p>}
       {order.age_declared && <p>{t("age")}</p>}

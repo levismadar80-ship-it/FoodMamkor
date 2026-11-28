@@ -23,7 +23,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import { detailToMessage } from "@/lib/errors";
-import { act, agorotFromInput, dayLabel, hhmm, shekelsText } from "@/lib/product-orders";
+import { act, agorotFromInput, dayLabel, estimateKind, hhmm, shekelsText } from "@/lib/product-orders";
 
 const REASONS = /** @type {const} */ (["reason_stock", "reason_full", "reason_other"]);
 
@@ -77,14 +77,16 @@ export function ConfirmWeighedDialog({ order, onClose, onDone }) {
   const t = useTranslations("dashboard.producer.orders.actions");
   const [busy, error, run] = useAction({ order, onDone });
   const [price, setPrice] = useState(shekelsText(order.estimated_total_agorot));
+  // MEH-3974: «אחרי שקילה» only when a line is weighed; a range is just priced.
+  const title = t(estimateKind(order.items) === "range" ? "final_price_range" : "final_price");
   const submit = () => {
     const agorot = agorotFromInput(price);
     run({ action: "confirm", body: Number.isNaN(agorot) ? {} : { final_total_agorot: agorot } });
   };
   return (
-    <FormDialog id="order-confirm-dialog" title={t("final_price")} busy={busy} error={error} onClose={onClose} onSubmit={submit}>
+    <FormDialog id="order-confirm-dialog" title={title} busy={busy} error={error} onClose={onClose} onSubmit={submit}>
       <Input
-        label={t("final_price")}
+        label={title}
         inputMode="decimal"
         dir="ltr"
         value={price}

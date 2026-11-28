@@ -228,6 +228,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/delivery_waitlist_requests.py` | What the three public delivery-waitlist routes do with a request: join a business's per-city waitlist (with the «אשמח לארח» host confirmation), confirm … |
 | `services/delivery_zones.py` | Write a business's named delivery zones and copy each zone's days, minimum, fee and free-delivery threshold onto the delivery_areas rows of its cities. |
 | `services/description_writer.py` | Suggest a short Hebrew description for one product from what the owner already typed (name, group, price, current description). … |
+| `services/dietary_scope_conflict.py` | MEH-3982 — name the categories that contradict a business's «טבעוני / צמחוני: כן» answer (honey, dairy, eggs, meat, fish are animal products) or «אין גלוטן … |
 | `services/draft_merge_emails.py` | The two emails of the draft-twin flow (MEH-3865): the admin hears that a business sent for review looks like a draft she prepared, and the owner hears that … |
 | `services/draft_merge_policy.py` | What survives when an admin-prepared draft is moved to the owner who registered the same business herself (MEH-3865): column by column of 'producers', and … |
 | `services/draft_preview.py` | The signed token behind a draft business's read-only preview link (MEH-3377): mint and decode, nothing else. |
@@ -445,6 +446,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `delivery-groups.js` | Pivot a producer's delivery_areas by dispatch day (MEH-1305 A) so a shared "יוצאים בימי שישי" is stated ONCE instead of repeating on every city row (the … |
 | `delivery-time.js` | Which «מגיע תוך … ימי עסקים» line a delivery time reads as (MEH-3511): a range «3–5», an upper bound only «עד 5», or one number. Returns an i18n key + values; … |
 | `diet-pages.js` | Single owner of the six indexable diet landing pages (MEH-1935) — slug → attribute key → API filter param → page path. … |
+| `dietary-scope-conflict.js` | MEH-3982 — tell an owner (or the admin) that a «טבעוני / צמחוני: כן» answer contradicts the business's own category: honey, dairy, eggs, meat and fish are … |
 | `distance.js` | Distance helpers (MEH-12). JS port of the Haversine formula that the backend uses in raw SQL on producers.lat/lng (see CLAUDE.md "no PostGIS" decision). … |
 | `edit-accordion-chips.js` | Answer one question per edit-hub accordion card — does this card gate the submit button, or is it optional? The header chip («חובה» / «רשות») is rendered from … |
 | `edit-auto-open.js` | Which card opens by itself when the owner taps a group tile in the «עריכה» hub — so she reaches a form in one tap instead of two (MEH-3762, part 2 of the … |
@@ -627,6 +629,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `use-list-return.js` | Back from a card on an infinite-scroll list returns the reader to the pages she had loaded and to her place in them, the way the big sites do (Etsy, Airbnb, … |
 | `use-my-orders-nav-gate.js` | MEH-3525 — decide whether «ההזמנות שלי» appears in the account menus. MEH-3698: it appears only for a signed-in person who has something to see there — an … |
 | `use-order-cart.js` | The buyer's picks on one business page, held by ProducerDetail so the product rows and the order bar read the same state. |
+| `use-orders-live.js` | Keep an open «הזמנות» tab current (MEH-3964): once a minute while the tab is visible, and once when it comes back into view, read the pending orders (one … |
 | `use-orders-tab.js` | Whether the dashboard shows the «הזמנות» tab, and its counter (orders waiting for an answer). |
 | `use-rescue-reservation.js` | — אין כותרת — |
 | `use-resend-verification.js` | Shared resend-verification-email action + status state, so both the global VerifyBanner nudge and the per-form unverified-email notice drive the same POST … |
@@ -703,6 +706,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `DeliveryDayRow.jsx` | — אין כותרת — |
 | `DeliveryTerms.jsx` | The MEH-3511 delivery lines on the business page: «מגיע תוך 3–5 ימי עסקים», «מינימום 150₪», and a zone's own «מקבלים הזמנות עד יום שני 12:00». … |
 | `DeliveryWaitlistForm.jsx` | — אין כותרת — |
+| `DietaryScopeNotes.jsx` | MEH-3982 — under a «האם כל מה שהעסק מוכר טבעוני / צמחוני?» question: one line that says what the word means, and a soft warning when «כן» contradicts the … |
 | `DirectoryDisclaimer.jsx` | Directory-only disclaimer — required by Israeli consumer protection law. |
 | `EditAccordionCard.jsx` | Accordion shell for the producer edit-tab cards (MEH-1116). The edit page was one long page with 6+ expanded cards; … |
 | `EditHubCard.jsx` | Hub-view group tile for the producer edit tab (MEH-1408). The edit tab moved from one flat accordion list to hub-and-spoke: a hub of 4 group tiles, each … |
@@ -738,6 +742,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `HomepageMiniMap.jsx` | Lazy-loaded mini-map preview on the homepage — discovery prominence per MEH-538. Click anywhere → /map. |
 | `HomepageMiniMapLazy.jsx` | Fetch the homepage mini-map (Leaflet + its tiles) only when the visitor scrolls near it. … |
 | `HomepageMiniMapSkeleton.jsx` | SSR-able loading fallback for the HomepageMiniMap dynamic import on the homepage. Reserves height on first paint (before JS hydrates) so the above-the-fold … |
+| `HostAddCta.jsx` | The «הוסיפו חוויה / אירוע» call to action on a public list. A business owner goes straight to the dashboard form; … |
 | `HoursText.jsx` | MEH-2604: free-text hours as the owner typed them («א׳–ה׳ 9:00–17:00»), rendered inside the RTL page with every time RANGE isolated left-to-right. |
 | `HubAlertHint.jsx` | MEH-3117 — the way out of an empty hub tab (/rescue, /group-buys): one line saying how to hear about the next one (save a business, turn on its alert) and a … |
 | `HubFaq.jsx` | A short «שאלות נפוצות» block at the bottom of a hub list (/group-buys, /rescue): closed <details> rows and the matching FAQPage JSON-LD, both built from the … |
@@ -887,7 +892,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `dashboard/orders/OrderRepeatControl.jsx` | On the business's order card, for an order of a weekly repeat (MEH-3933): the day and time it repeats on, and the stop button. |
 | `dashboard/orders/OrderSettingsCard.jsx` | The business's on-site ordering settings: on/off, auto-confirm with its per-slot cap, the customers' cancel cutoff, Shabbat and festivals, minimum order, slot … |
 | `dashboard/orders/OrderSetupChecklist.jsx` | «מה חסר כדי לקבל הזמנות» — the four things a business needs before customers can order, each with a ✓ once done, at the top of the «הזמנות» tab. … |
-| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בווטסאפ» (she picks the … |
+| `dashboard/orders/OrderWeekShareCard.jsx` | «מה יש השבוע» in the «הזמנות» tab: a ready message with what can be ordered this week, the open days and the order link, with «שליחה בוואטסאפ» (she picks the … |
 | `dashboard/orders/OrderWindowsCard.jsx` | The weekly hand-over windows: on which days and hours a customer can collect (or get a delivery). The order slots are cut from these. |
 | `dashboard/orders/OrdersBoard.jsx` | The four order lists of the «הזמנות» tab — מחכות לטיפול / מאושרות / היום / הסתיימו — with a count on each tab, and the empty states: no order ever (approved … |
 | `dashboard/staff/StaffCard.jsx` | «צוות להזמנות» on the owner's «כלים» tab (MEH-3526): who handles the business's orders, an invite by email, remove, send again. |

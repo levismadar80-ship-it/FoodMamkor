@@ -41,7 +41,7 @@ import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Avatar from "@/components/ui/Avatar";
-import { SkeletonBlock } from "@/components/Skeleton";
+import { SkeletonEventDetail } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -108,27 +108,9 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
   }, [ownerId]);
 
   if (loading) {
-    // MEH-858 F7: geometry-matched skeleton (was a bare centered line) — mirrors
-    // the detail layout so it doesn't jump on hydrate. Cream-toned bg-border/60
-    // pulse per ADR-019, same idiom as the list SkeletonRows. aria-label keeps
-    // the SR "loading" announcement.
-    return (
-      // MEH-1957: same fix as the list skeleton — aria-label needs a role to be
-      // permitted; without it axe reports aria-prohibited-attr (serious).
-      <div role="status" aria-busy="true" aria-label={t("loading")}>
-        <SkeletonBlock as="div" className="h-[360px]" />
-        <div className="max-w-3xl mx-auto px-4 py-12">
-          <SkeletonBlock className="block w-24 h-6 rounded-full mb-3" />
-          <SkeletonBlock className="block w-3/4 h-10 rounded mb-4" />
-          <div className="flex flex-wrap gap-4 mb-6">
-            <SkeletonBlock className="w-40 h-4 rounded" />
-            <SkeletonBlock className="w-28 h-4 rounded" />
-            <SkeletonBlock className="w-20 h-4 rounded" />
-          </div>
-          <SkeletonBlock className="block w-full h-32 rounded-lg" />
-        </div>
-      </div>
-    );
+    // MEH-858 F7: geometry-matched skeleton; MEH-3983 moved it to
+    // components/Skeleton.jsx so the route's loading.js draws the same frame.
+    return <SkeletonEventDetail label={t("loading")} />;
   }
 
   if (!event) {

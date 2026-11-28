@@ -1,8 +1,11 @@
 /**
  * MEH-2714 — useHomePage restores the reader's scroll / grid size only on a
  * history return, and only when the browser's own restore fell short.
+ * MEH-3983 — and before the first paint: no animation frame may pass between
+ * the mount and the corrected position (a frame there is the "flash" on Back).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { StrictMode } from "react";
 import { renderHook, act } from "@testing-library/react";
 
 let historyReturn = false;
@@ -55,6 +58,29 @@ describe("useHomePage back-navigation restore (MEH-2714)", () => {
     setScrollY(400); // > 120px away from 1500
     const { result } = renderHook(() => useHomePage({ initialProducers: producers, initialCategories: [] }));
     await flushFrames();
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 1500);
+    expect(result.current.visibleCount).toBe(16);
+  });
+
+  it("a history return is restored before the first paint — no animation frame needed (MEH-3983)", () => {
+    historyReturn = true;
+    setScrollY(400);
+    // A frame that never comes: whatever waits for one stays undone.
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
+    const { result } = renderHook(() => useHomePage({ initialProducers: producers, initialCategories: [] }));
+    // No flush: renderHook returns after the layout effects of the mount commit.
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 1500);
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    expect(result.current.visibleCount).toBe(16);
+  });
+
+  it("StrictMode's second mount keeps the stashed target, not the first page it just wrote (MEH-3983)", () => {
+    historyReturn = true;
+    setScrollY(400);
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
+    const { result } = renderHook(() => useHomePage({ initialProducers: producers, initialCategories: [] }), {
+      wrapper: StrictMode,
+    });
     expect(scrollToSpy).toHaveBeenCalledWith(0, 1500);
     expect(result.current.visibleCount).toBe(16);
   });

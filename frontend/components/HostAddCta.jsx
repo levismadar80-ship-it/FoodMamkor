@@ -1,17 +1,6 @@
 // @ts-check
 "use client";
 
-import { useId, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { X } from "@phosphor-icons/react";
-import { Link } from "@/i18n/navigation";
-import { useAuth } from "@/lib/auth-context";
-import { loginLinkFor } from "@/lib/safe-redirect";
-import Button, { buttonLook } from "@/components/ui/Button";
-import Dialog from "@/components/ui/Dialog";
-import IconButton from "@/components/ui/IconButton";
-import SectionHeading from "@/components/ui/SectionHeading";
-
 /**
  * Module:   HostAddCta
  * Purpose:  The «הוסיפו חוויה / אירוע» call to action on a public list. A
@@ -27,7 +16,20 @@ import SectionHeading from "@/components/ui/SectionHeading";
  *           visitor used to hit from this link.
  * History:  MEH-3969 (creation — the three add links on /events and
  *           /experiences pointed every visitor at the dashboard).
- *
+ */
+
+import { useId, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { X } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { loginLinkFor } from "@/lib/safe-redirect";
+import Button, { buttonLook } from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
+import IconButton from "@/components/ui/IconButton";
+import SectionHeading from "@/components/ui/SectionHeading";
+
+/**
  * @param {{
  *   href: string,
  *   kind: "experiences" | "events",
