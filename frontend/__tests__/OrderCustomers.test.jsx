@@ -60,7 +60,7 @@ describe("OrderCustomersCard", () => {
     renderCard([customer(1)]);
     const rows = await screen.findAllByTestId("orders-customers-row");
     expect(rows).toHaveLength(1);
-    expect(rows[0].textContent).toContain("לקוח 1 · הזמנה אחת · אחרונה ב-");
+    expect(rows[0].textContent).toContain("\u2068לקוח 1\u2069 · הזמנה אחת · אחרונה ב-");
     expect(screen.queryByTestId("orders-customers-repeat")).toBeNull();
     expect(screen.getByTestId("orders-customers-csv")).toBeTruthy();
     expect(screen.queryByTestId("orders-customers-more")).toBeNull();

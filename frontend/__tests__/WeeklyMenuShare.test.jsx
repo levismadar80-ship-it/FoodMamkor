@@ -96,7 +96,7 @@ describe("weekMenuText", () => {
   it("a price per kg says so; a range reads from–to", () => {
     const m = menu({ products: [product({ price_unit: "kg", name: "גבינה" }), product({ id: PID2, name: "עוגה", price_min_agorot: 4000, price_max_agorot: 6000 })] });
     const text = weekMenuText(args(m)) ?? "";
-    expect(text).toContain(`גבינה · 32₪ ${he.price_unit.kg}`);
+    expect(text).toContain(`\u2068גבינה\u2069 · 32₪ ${he.price_unit.kg}`);
     expect(text).toMatch(/עוגה.*40.*60/);
   });
   it("a product made on some days only says so, and one made on none is left out", () => {
