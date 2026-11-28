@@ -119,10 +119,12 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
             { width: 1024, height: 768, scale: "200%" },
           ];
       await page.setViewportSize({ width: passes[0].width, height: passes[0].height });
+      // eslint-disable-next-line playwright/no-conditional-in-test -- gated on the route under test (a fixture), not on anything the product renders
       if (path === "/") await page.clock.setFixedTime(HOLIDAY_DAY);
       await page.goto(path);
       await page.waitForLoadState("domcontentloaded");
       await expect(page.locator("main").first()).toBeVisible({ timeout: 15_000 });
+      // eslint-disable-next-line playwright/no-conditional-in-test, playwright/no-conditional-expect -- same route gate: only "/" carries the holiday banner
       if (path === "/") await expect(page.getByTestId("holiday-banner")).toBeVisible({ timeout: 15_000 });
       for (const p of passes) {
         const tag = `${p.width}px, ${p.scale} text`;
