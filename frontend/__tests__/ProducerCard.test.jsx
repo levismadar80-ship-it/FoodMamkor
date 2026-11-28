@@ -370,7 +370,7 @@ describe("ProducerCard — Phase B anatomy", () => {
 
   it("never renders the legacy contact-icon row", () => {
     render(<ProducerCard producer={fullProducer} />);
-    expect(screen.queryByLabelText("שלח הודעה בווטסאפ")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("שלח הודעה בוואטסאפ")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("התקשר לבית העסק")).not.toBeInTheDocument();
   });
 
