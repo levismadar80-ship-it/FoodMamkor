@@ -82,7 +82,7 @@ describe("order-sheet helpers", () => {
   });
 });
 
-const SEND_56 = "שליחת הבקשה · 56 ₪";
+const SEND_56 = "שליחת הבקשה · 56\u00a0₪";
 const NOT_A_PARTY = "מהמקור לא המוכרת ולא צד לעסקה.";
 /** MEH-3658: ways and slots are buttons now, picked by their value. */
 const pick = (testId, value) => fireEvent.click(screen.getByTestId(testId).querySelector(`[data-value="${value}"]`));
@@ -167,7 +167,7 @@ describe("OrderSheet", () => {
     expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה");
     expect(screen.getByTestId("order-sheet-send").disabled).toBe(true);
     fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
-    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · 86 ₪"));
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · 86\u00a0₪"));
     expect(screen.getByText("משלוח: 30 ₪")).toBeTruthy();
     expect(api.post).toHaveBeenLastCalledWith("/product-orders/quote", expect.objectContaining({ delivery_city: "חיפה" }));
     expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
@@ -275,7 +275,7 @@ describe("OrderSheet", () => {
     renderSheet();
     expect(screen.getByText("טלפון נייד")).toBeTruthy();
     expect(screen.getByTestId("order-sheet-phone-help").textContent).toBe("נשלח אליו קוד ועדכונים על ההזמנה בוואטסאפ");
-    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · בערך 56 ₪"));
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · עד\u00a056\u00a0₪"));
   });
   it("moves focus to the first new slot after «מועדים נוספים», and into the note when it opens", () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });

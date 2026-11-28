@@ -525,7 +525,7 @@ export function HomeProducersGrid({
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <ProducerCard producer={p} referrer="home" />
+                <ProducerCard producer={p} referrer="home" imageDecoding={skipReveal ? "sync" : undefined} />
               </motion.div>
             ))}
           </div>
@@ -583,7 +583,7 @@ export function HomeProducersGrid({
                       ? deliveryDaysForCity(p, filters.delivery_city)
                       : null;
                   const card = (
-                    <ProducerCard producer={p} referrer="home" />
+                    <ProducerCard producer={p} referrer="home" imageDecoding={skipReveal ? "sync" : undefined} />
                   );
                   return (
                     <motion.div

@@ -210,19 +210,17 @@
 | **Why** | S8 review: old quote ranked source over food ("ומאיפה קונים — חשוב יותר" = where you buy matters more), a nutritional contradiction. New line echoes the brand idiom (newsletter heading) — good food is shared, not hoarded. |
 | **MEH** | MEH-750 |
 
-### /about — Founder story (greeting + 5 paragraphs)
+### /about — Founder story (greeting + 6 paragraphs)
 | Field | Value |
 |---|---|
-| **Current** | `greeting` `היי, אני ספיר` · `p1` `תמיד היה לי חשוב לדעת מאיפה האוכל שלי מגיע. רציתי לקנות יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גיליתי שזה לא נגיש. כדי למצוא אוכל איכותי באמת, הייתי צריכה לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנתי: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית. יש מישהי שאופה לחם מחמצת בשכונה ליד. יש בתי עסק קטנים עם מוצרים מדהימים — שרוב האנשים בכלל לא מכירים. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.` |
-| **Previous** | `p1` `לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר…` · `p2` `התחלתי לשאול. חברה הכירה אופה…` · `p3` `וזה בדיוק מה שהפריע לי…` · `p4` `אז התחלתי לבנות את המקום הזה בעצמי…` · `p5` `היום מהמקור הוא בדיוק זה…` (MEH-750 wave) |
-| **Unchanged** | `caption1` `מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.` · `caption3` `את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.` |
-| **Anchor phrase** | `בלי לחפש שעות` (canonical, COPY_BANK / MEH-719) — closes `p5`, echoes the hero sub from MEH-750 |
-| **i18n keys** | `about.consumer.story.greeting` / `.p1`–`.p5` (he + en) |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx:100-105` |
-| **Status** | ✅ (MEH-757) |
-| **Why** | Sapir's 05/06 rewrite — problem→discovery→insight→solution arc, tighter than the MEH-750 narrative, landing on the `בלי לחפש שעות` brand anchor. Copy-only swap; closing captions untouched. |
-| **Note** | `greeting` kept without a terminal period (bold heading, EN parity `Hi, I'm Sapir`), preserving the MEH-750 styling decision; MEH-757's prose block writes it with a period — flip the single char if a period is wanted. |
-| **MEH** | MEH-757 (rides MEH-750 wave) |
+| **Current** | `greeting` `למה הקמנו את מהמקור` · `p1` `אנחנו אוהבות אוכל טוב, ועוד יותר את האנשים שעומדים מאחוריו. תמיד היה לנו חשוב לדעת מאיפה האוכל שלנו מגיע, ורצינו לאכול יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גילינו שזה לא נגיש. כדי למצוא אוכל איכותי באמת, היינו צריכות לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנו: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `כמה דקות מהבית יש חקלאית שקוטפת ירקות בבוקר. בשכונה ליד יש מאפייה קטנה שאופה מחמצת. מאחורי כל אחד מהם יש סיפור, ורוב האנשים בכלל לא מכירים אותו. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. המטרה שלנו פשוטה: לתת לסיפורים האלה מקום. מקום אחד להכיר את מי שעומד מאחוריהם ולמצוא אוכל מקומי קרוב לבית. בלי לחפש שעות.` · `p6` `אנחנו מזמינות אתכם להכיר אותם איתנו.` |
+| **Previous** | (MEH-757, then plural voice) `p1` `תמיד היה לנו חשוב לדעת מאיפה האוכל שלנו מגיע. רצינו לקנות יותר טוב…` · `p4` `יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית…` · `p5` `וכאן נולדה מהמקור. מקום אחד שמרכז אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.` |
+| **Anchor phrase** | `בלי לחפש שעות` (canonical, MEH-719) — still closes `p5` |
+| **i18n keys** | `about.consumer.story.greeting` / `.p1`–`.p6` (he + en) |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (chapter 01) |
+| **Status** | ✅ (MEH-3988) |
+| **Why** | Sapir 28/11: open with love for food and the people behind it, short lines, end on an invitation; «לתת לסיפורים האלה מקום» is the stated goal. Voice inspiration: Soul to Table (ideas, not text). Plural voice kept (two founders since MEH-3323). Reader address follows BRAND.md §9 (neutral, generic plural when a pronoun is needed; the approved draft's singular-feminine «אותך/שלך/את בוחרת» normalised, MEH-3808 guard). No «אמיתי» in the new copy (Sapir); «יותר בריא, יותר מקומי» and the supermarket line kept from the old copy (Sapir 28/11; «לקנות» → «לאכול» in p1). |
+| **MEH** | MEH-3988 (previous: MEH-757) |
 
 ### /about — Sub copy paragraph 1
 | Field | Value |
@@ -240,12 +238,29 @@
 | **Heading** | `למה מהמקור` (NEW — `about.consumer.benefits.heading`) |
 | **Pillar 1** | `קרוב אלייך` · body `בתי עסק מהאזור שלך, עם שרשרת קצרה ככל האפשר. פחות דרך, יותר טריות.` |
 | **Pillar 2** | `אפשר לסמוך` · body `כל בית עסק נבדק אישית לפני שהוא עולה לאתר. אנחנו שואלות, מבררות, ולפעמים גם מבקרות — לפני שאומרות כן.` |
-| **Pillar 3** | `קהילה מקומית` · body `כל קנייה תומכת ישירות באנשים מהשכונה — לא ברשת גדולה, אלא בבעלת עסק מהאזור שלך.` |
+| **Pillar 3** | `בחירה שתומכת` · body `כל בחירה הולכת ישירות לבתי העסק — לא לרשת גדולה, אלא לאדם מהסביבה.` (MEH-3988: «קנייה» → «בחירה», less commerce register; was `קנייה שתומכת`) |
 | **Previous** | titles `אוכל אמיתי קרוב אלייך` / `לסמוך על מה שאת אוכלת` / `לעזור לעסקים הקטנים`; trust body said `רק בתי עסק מאומתים. אנחנו בודקות כל אחת...` |
 | **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Section 3) |
 | **Status** | ✅ (MEH-750 — swallows MEH-746) |
 | **Why** | S8 copy wave: tighter pillar titles + added section heading. `trust.body` drops "מאומתים" — MEH-742 gate (verified/declared lock) + MEH-579 over-claim guard. MEH-746 (same key) swallowed here. |
 | **MEH** | MEH-750 (refs MEH-742, MEH-579, MEH-746) |
+
+### /about — About the logo (MEH-3988)
+| Field | Value |
+|---|---|
+| **Current** | `eyebrow` `הסיפור מאחורי הסמל` · `heading` `על הלוגו` · `body1` `חמישה גרגירי רימון, כל אחד בצבע משלו, שנוגעים זה בזה ויוצרים פרח אחד. הרימון הוא אחד משבעת המינים, פרי של הארץ הזאת. כל גרגיר עומד בפני עצמו, ויחד הם שלם.` · `body2` `ככה גם בתי העסק שכאן: לכל אחד הסיפור שלו.` · `closing` `וכל בחירה באחד מהם עוזרת לפרח הזה לגדול.` · `image_alt` `הלוגו של מהמקור: חמישה גרגירי רימון` · wordmark reuses `about.comparison.col_brand` (messages-hygiene) |
+| **i18n keys** | `about.consumer.logo.*` (he + en) |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (`data-testid="about-logo"`, after Benefits) |
+| **Status** | ✅ (MEH-3988) |
+| **Why** | The meaning of the MEH-637 mark was nowhere a reader could see it. Closing line ties to «בחירה שתומכת». |
+
+### /about — Values intro opening + contact subtitle (MEH-3988)
+| Field | Value |
+|---|---|
+| **values.intro** | prepended `מאחורי כל מוצר יש אדם, משפחה, עסק קטן וסיפור. ` — rest unchanged. Taken almost verbatim from Soul to Table at Sapir's explicit request (one sentence). |
+| **contact.subtitle** | `מכירים בית עסק שאתם אוהבים? יש לכם שאלה או רעיון? נשמח לשמוע.` (was `שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם`). Instead of a WhatsApp button, which MEH-2832 (one contact form) rules out. |
+| **values.quality.body** | `חומרי גלם שאפשר לזהות…` (was `חומרי גלם אמיתיים שאפשר לזהות…`; Sapir 28/11, no «אמיתי» on /about) |
+| **Status** | ✅ (MEH-3988) |
 
 ### /about — Criteria admission headline — 🗑️ RETIRED
 | Field | Value |

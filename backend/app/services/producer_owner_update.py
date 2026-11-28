@@ -36,6 +36,7 @@ from app.services.delivery_validation import (
     ensure_location_mode,
     ensure_nationwide_requires_delivery,
 )
+from app.services.dietary_scope_conflict import conflict_keys  # MEH-3982
 from app.services.farmer_declaration import apply_farmer_declaration_on_update
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -146,16 +147,15 @@ def _maybe_fire_sensitive_edit(
     posts the whole card) must not ping. That is the difference between a
     signal and noise, and it is what the no-op test pins down.
     """
-    _fire_sensitive_edit(
-        background_tasks,
-        producer,
-        sorted(
-            field
-            for field in SENSITIVE_FIELDS
-            if before.get(field) != getattr(producer, field, None)
-        ),
-        actor=actor,
+    changed = sorted(
+        field
+        for field in SENSITIVE_FIELDS
+        if before.get(field) != getattr(producer, field, None)
     )
+    # MEH-3982: a «טבעוני / צמחוני: כן» on an animal category is named
+    # explicitly in the same ping, so the admin checks it. The save stands.
+    changed += conflict_keys(producer, changed)
+    _fire_sensitive_edit(background_tasks, producer, changed, actor=actor)
 
 
 def _fire_sensitive_edit(

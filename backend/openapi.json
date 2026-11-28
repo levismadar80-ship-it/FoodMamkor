@@ -9532,6 +9532,11 @@
       },
       "OrderWindowsOut": {
         "properties": {
+          "delivery_priced": {
+            "default": true,
+            "title": "Delivery Priced",
+            "type": "boolean"
+          },
           "windows": {
             "items": {
               "$ref": "#/components/schemas/OrderWindowOut"

@@ -499,6 +499,11 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     # is joined into the same comma list as the field labels above, where a bare
     # noun would read as "a field named primary location changed".
     "primary_location_removed": "נמחק המיקום האחרון — העסק בלי מיקום ראשי",
+    # MEH-3982: not columns — a «כן» saved on a category whose products cannot
+    # be vegan / vegetarian (services/dietary_scope_conflict.py).
+    "vegan_scope_animal_category": "הצהרת טבעוני על קטגוריה מן החי (דבש, חלב, ביצים, בשר או דגים) — לבדוק",
+    "vegetarian_scope_animal_category": "הצהרת צמחוני על קטגוריה של בשר או דגים — לבדוק",
+    "gluten_free_facility_bread_category": "הצהרת «אין גלוטן במקום הייצור» על קטגוריית לחמים ואפייה — לבדוק",
 }
 
 
