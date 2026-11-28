@@ -13,23 +13,23 @@
  */
 
 /** Category slugs whose products are animal-source, so never vegan. */
-export const NON_VEGAN_CATEGORY_SLUGS = ["meat", "fish", "dairy", "eggs", "honey"];
+const NON_VEGAN_CATEGORY_SLUGS = ["meat", "fish", "dairy", "eggs", "honey"];
 
 /** Category slugs whose products are never vegetarian. */
-export const NON_VEGETARIAN_CATEGORY_SLUGS = ["meat", "fish"];
+const NON_VEGETARIAN_CATEGORY_SLUGS = ["meat", "fish"];
 
 /** Category slugs whose products almost always contain gluten. */
-export const GLUTEN_CATEGORY_SLUGS = ["bread"];
+const GLUTEN_CATEGORY_SLUGS = ["bread"];
 
 /** Grass-fed only means something for an animal that grazes. */
-export const GRASS_FED_CATEGORY_SLUGS = ["meat", "dairy", "eggs"];
+const GRASS_FED_CATEGORY_SLUGS = ["meat", "dairy", "eggs"];
 
 // MEH-3982: grains with gluten, flour or baked goods named in the business's
 // own text. Not when the word is negated («ללא קמח»), and not at all when the
 // text says it is gluten-free anywhere («קמח כוסמין ללא גלוטן»): that owner
 // already knows the question, and a wrong «אצלכם כתוב» would hit exactly her.
 const GLUTEN_WORDS = /(?<!(?:ללא|בלי)\s)(קמח\S*|דגנים|חיטה|שעורה|שיפון|כוסמין|לחם|לחמ\S+|מאפ\S+|פיתות|בורקס)/;
-const GLUTEN_FREE_MENTION = /(?:ללא|בלי|נטול\S*)[\s-]+גלוטן/;
+const GLUTEN_FREE_MENTION = /(?:ללא|בלי|נטול[א-ת]*)[\s-]+גלוטן/;
 
 /** Per axis: the answer that makes a claim, and what contradicts it. */
 const AXES = {

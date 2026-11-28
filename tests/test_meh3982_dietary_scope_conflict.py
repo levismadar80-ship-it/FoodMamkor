@@ -87,7 +87,7 @@ def test_the_conflict_reads_as_hebrew_in_the_admin_email():
 def _js_list(name):
     src = Path(__file__).resolve().parents[1].joinpath("frontend/lib/dietary-scope-conflict.js").read_text()
     # Source-text read on purpose: a constant shared with a JS file that pytest cannot run.
-    m = re.search(rf"export const {name} = \[(.*?)\];", src)
+    m = re.search(rf"const {name} = \[(.*?)\];", src)
     assert m, name
     return frozenset(re.findall(r'"([a-z]+)"', m.group(1)))
 
