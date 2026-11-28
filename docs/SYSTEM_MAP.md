@@ -110,6 +110,9 @@ inventory.
    requests that hold a connection (an external call inside a route) exhaust
    it; the DB bulkhead middleware sheds load with a 503 before the process
    deadlocks. A new external call inside a route closes its DB session first.
+   An open «הזמנות» tab adds one light read a minute while it is visible
+   (MEH-3964, `frontend/lib/use-orders-live.js`), and a full board reload only
+   when the pending set changed.
    The public chat reads one business before its model calls and rolls the
    session back right after (MEH-3481), so a chat holds no connection while
    Claude answers.

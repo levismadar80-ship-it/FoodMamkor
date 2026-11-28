@@ -237,6 +237,11 @@ async function allOf(/** @type {string} */ status) {
   return orders;
 }
 
+/** MEH-3964: the first page of orders waiting for an answer — the open board's one-request check. */
+export async function loadPendingPage() {
+  return ordersPage({ status: "pending", limit: PAGE_LIMIT });
+}
+
 /** The latest page of a closed status (the list is soonest-first, so its tail). */
 async function latestOf(/** @type {string} */ status) {
   const { total } = await ordersPage({ status, limit: 1 });
