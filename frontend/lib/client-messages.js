@@ -23,6 +23,8 @@ export const SERVER_ONLY_NAMESPACES = [
   "diet_pages",
   "about_why_local",
   "organizers",
+  // MEH-3981: /join/orders, a server page.
+  "orders_guide",
 ];
 
 const OMITTED = new Set([...ROUTE_SCOPED_NAMESPACES, ...SERVER_ONLY_NAMESPACES]);

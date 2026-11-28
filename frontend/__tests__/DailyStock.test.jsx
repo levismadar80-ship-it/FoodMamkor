@@ -308,7 +308,7 @@ describe("«מה להכין» from the server", () => {
     api.get.mockResolvedValueOnce({ data: { days: [{ day: FRI, lines: [prepLine()] }] } });
     await act(async () => fireEvent.click(screen.getByTestId("orders-prep-retry")));
     expect(screen.queryByTestId("orders-prep-failed")).toBeNull();
-    expect(screen.getByTestId("orders-prep-line").textContent).toContain("3 × חלה");
+    expect(screen.getByTestId("orders-prep-line").textContent).toContain("3 × \u2068חלה\u2069");
   });
 
   it("sizes under a limit for all of them get a sum line against it", async () => {
@@ -323,7 +323,7 @@ describe("«מה להכין» from the server", () => {
     expect(prepRows([prepLine({ variant_id: V1, variant_name: "זיתים" })])).toHaveLength(1);
     await show([{ day: FRI, lines }]);
     const shown = screen.getAllByTestId("orders-prep-line");
-    expect(shown[2].textContent).toContain("6 × חלה מכל הסוגים יחד");
+    expect(shown[2].textContent).toContain("6 × \u2068חלה\u2069 מכל הסוגים יחד");
     expect(shown[2].textContent).toContain("מתוך 20 ליום");
   });
 
@@ -343,10 +343,10 @@ describe("«מה להכין» from the server", () => {
     expect(screen.queryByTestId("orders-prep-day")).toBeNull();
     const lines = screen.getAllByTestId("orders-prep-line");
     expect(lines).toHaveLength(2);
-    expect(lines[0].textContent).toContain("14 × חלה");
+    expect(lines[0].textContent).toContain("14 × \u2068חלה\u2069");
     expect(lines[0].textContent).toContain("2 מחכים לאישור");
     expect(lines[0].textContent).toContain("מתוך 20 ליום");
-    expect(lines[1].textContent).toContain("1 × עוגה");
+    expect(lines[1].textContent).toContain("1 × \u2068עוגה");
     expect(lines[1].textContent).toContain("שוקולד");
   });
 
@@ -358,11 +358,11 @@ describe("«מה להכין» from the server", () => {
     const chips = screen.getAllByTestId("orders-prep-day");
     expect(chips).toHaveLength(2);
     expect(chips[0].getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("orders-prep-line").textContent).toContain("2 × חלה");
+    expect(screen.getByTestId("orders-prep-line").textContent).toContain("2 × \u2068חלה\u2069");
     expect(screen.getByTestId("orders-prep-line").textContent).toContain("אחד מחכה לאישור");
     fireEvent.click(chips[1]);
     expect(screen.getAllByTestId("orders-prep-day")[1].getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("orders-prep-line").textContent).toContain("5 × עוגה");
+    expect(screen.getByTestId("orders-prep-line").textContent).toContain("5 × \u2068עוגה\u2069");
   });
 
   it("names today and tomorrow on the Israel clock, after 22:00 UTC too", () => {

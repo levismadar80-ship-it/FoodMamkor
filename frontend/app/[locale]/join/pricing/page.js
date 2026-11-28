@@ -19,11 +19,9 @@ import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import BackLink from "@/components/ui/BackLink";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildSeoPageMetadata } from "@/lib/seo-page-metadata";
 import { PRICING_PATH, pricingCopyKey, pricingCopyValues } from "@/lib/pricing";
 import { rescueBagsEnabled } from "@/lib/rescue";
-import { siteOgImageUrl } from "@/lib/og-site-image";
 
 /**
  * Module:   join/pricing/page
@@ -49,20 +47,7 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "seo.pricing" });
-  return {
-    title: t("title"),
-    description: t("description"),
-    openGraph: {
-      title: buildEntityTitle(t("og_title"), locale),
-      description: t("og_description"),
-      type: "website",
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-      images: [siteOgImageUrl(locale)],
-    },
-    alternates: buildAlternates(PRICING_PATH, locale),
-  };
+  return buildSeoPageMetadata(locale, { namespace: "seo.pricing", path: PRICING_PATH });
 }
 
 const CARD = "rounded-lg border border-border bg-surface-card p-5 sm:p-6";

@@ -169,6 +169,7 @@ const ROUTES = [
   ["/favorites", () => import("@/app/[locale]/favorites/page"), p()],
   ["/join", () => import("@/app/[locale]/join/page"), p()],
   ["/join/pricing", () => import("@/app/[locale]/join/pricing/page"), p()],
+  ["/join/orders", () => import("@/app/[locale]/join/orders/page"), p()],
   ["/recommend", () => import("@/app/[locale]/recommend/page"), p()],
   ["/claim", () => import("@/app/[locale]/claim/page"), p()],
   ["/messages", () => import("@/app/[locale]/messages/page"), p()],
