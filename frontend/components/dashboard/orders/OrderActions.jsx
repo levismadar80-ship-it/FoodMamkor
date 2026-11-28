@@ -22,6 +22,7 @@ import { detailToMessage } from "@/lib/errors";
 import { act, offeredSlots } from "@/lib/product-orders";
 import {
   CancelDialog,
+  NoShowDialog,
   ConfirmWeighedDialog,
   DeclineDialog,
   HandedDialog,
@@ -52,13 +53,13 @@ export function buttonsFor(order, now) {
       return [
         ...(pickup ? [{ key: "ready", action: "ready", primary: true }] : []),
         { key: "handed", dialog: "handed", primary: !pickup },
-        ...(ended ? [{ key: "no_show", action: "no-show" }] : []),
+        ...(ended ? [{ key: "no_show", dialog: "no_show" }] : []),
         { key: "cancel", dialog: "cancel" },
       ];
     case "ready":
       return [
         { key: "handed", dialog: "handed", primary: true },
-        ...(ended ? [{ key: "no_show", action: "no-show" }] : []),
+        ...(ended ? [{ key: "no_show", dialog: "no_show" }] : []),
         { key: "cancel", dialog: "cancel" },
       ];
     default:
@@ -74,6 +75,7 @@ function OpenDialog({ open, order, slots, close, done }) {
   if (open === "propose") return <ProposeDialog {...common} slots={slots} />;
   if (open === "handed") return <HandedDialog {...common} />;
   if (open === "cancel") return <CancelDialog {...common} />;
+  if (open === "no_show") return <NoShowDialog {...common} />;
   return null;
 }
 

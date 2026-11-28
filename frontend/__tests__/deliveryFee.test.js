@@ -25,6 +25,18 @@ describe("resolveDeliveryFee", () => {
     expect(resolveDeliveryFee(25, [{ delivery_fee: 0 }, {}])).toEqual({ fee: 0, from: true });
   });
 
+  // MEH-3968: a fee stated for SOME areas only is not a fee for all of them.
+  it("one free area, others with no stated fee → null, never a blanket 0", () => {
+    expect(resolveDeliveryFee(null, [{ delivery_fee: 0 }, {}, { delivery_fee: null }])).toEqual({
+      fee: null,
+      from: false,
+    });
+  });
+
+  it("one priced area, others with no stated fee → null, never that price for all", () => {
+    expect(resolveDeliveryFee(null, [{ delivery_fee: 20 }, {}])).toEqual({ fee: null, from: false });
+  });
+
   it("nothing stated anywhere → null", () => {
     expect(resolveDeliveryFee(null, [{}, { delivery_fee: null }])).toEqual({
       fee: null,
