@@ -506,7 +506,7 @@ export default function AboutPage() {
           column header is ever reworded, give this caption its own key. */}
       <FadeInSection as="section" data-testid="about-logo" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12 flex flex-col md:flex-row md:items-center gap-8 md:gap-16">
-          <figure className="m-0 md:flex-1 flex flex-col items-center gap-3 rounded-2xl bg-background px-4 py-7 md:py-12">
+          <figure className="m-0 md:flex-1 flex flex-col items-center gap-3 rounded-lg bg-background px-4 py-7 md:py-12">
             <Image
               src="/logo.svg"
               alt={t("logo.image_alt")}
