@@ -9,9 +9,8 @@
  * wording too. This file pins the approved strings themselves (workflow
  * rule 22: approved verbatim), plus the two lines that must NOT change.
  */
+import { buildLlmsTxt } from "@/lib/llms-txt";
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 import { CANONICAL_SENTENCE, SITE_DESCRIPTION } from "@/lib/constants";
@@ -30,7 +29,7 @@ describe("canonical sentence copy (MEH-2313)", () => {
   // MEH-3424 / ADR-043: llms.txt's summary line moved to SITE_DESCRIPTION.
   // The brand sentence lives on as the hero subheading and the JSON-LD slogan.
   it("llms.txt line 3 is SITE_DESCRIPTION, no longer the brand sentence", () => {
-    const lines = readFileSync(join(__dirname, "../public/llms.txt"), "utf-8").split("\n");
+    const lines = buildLlmsTxt([]).split("\n"); // MEH-3953: built, not a static file
     expect(lines[2]).toBe(SITE_DESCRIPTION);
     expect(lines[2]).not.toBe(APPROVED_HE);
   });
@@ -47,7 +46,10 @@ describe("canonical sentence copy (MEH-2313)", () => {
   it("the two lines that say some businesses ARE small stay as they were", () => {
     // These claim small businesses exist, not that all of them are small —
     // out of scope by the card, and a sweep must not catch them.
-    expect(he.about.consumer.story.p4).toContain("יש בתי עסק קטנים עם מוצרים מדהימים");
+    // MEH-3988 (Sapir 28/11) rewrote story.p4 on purpose; its small-business
+    // claim is now «מאפייה קטנה» (one named example), so that is what a
+    // «קטנים» sweep must leave alone.
+    expect(he.about.consumer.story.p4).toContain("מאפייה קטנה");
     expect(he.about.consumer.benefits.local.body).toContain("קטנים");
   });
 });

@@ -33,8 +33,9 @@ import { trackEvent } from "@/lib/analytics";  // MEH-3794
 import { canOrderAgain, stashOrderAgain } from "@/lib/order-again";
 import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
-import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, estimateKind, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
+import { isolate } from "@/lib/bidi";  // MEH-3978
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 import OrderRepeatBlock from "./OrderRepeatBlock";  // MEH-3933
 
@@ -45,7 +46,9 @@ function WhenLine({ start, end, kind, address }) {
   const t = useTranslations("order_status");
   const locale = useLocale();
   const values = { day: dayLabel(start, locale), ...rangeEnds(start, end) };
-  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address })}</p>;
+  // MEH-3960: a pending order shows the time she asked for, with no address.
+  if (kind.startsWith("requested_")) return <p data-testid="order-requested">{t(kind, values)}</p>;
+  if (kind === "when_pickup" && address) return <p data-testid="order-when">{t("when_pickup", { ...values, address: isolate(address) })}</p>;
   if (kind === "when_pickup") return <p data-testid="order-when">{t("when_pickup_no_address", values)}</p>;
   return <p data-testid="order-when">{t("when_delivery", values)}</p>;
 }
@@ -56,7 +59,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: isolate(orderLineName(line)) })}</li>
       ))}
     </ul>
   );
@@ -139,8 +142,15 @@ export function OrderStatusView({ order, onChange, refOf }) {
   return (
     <div className="space-y-4" data-testid="order-status" data-status={order.status}>
       <SectionHeading size="content" data-testid="order-headline">
-        {t(view.headline, { business_name: order.producer_name })}
+        {t(view.headline, { business_name: isolate(order.producer_name) })}
       </SectionHeading>
+      {/* MEH-3976: the reason the business wrote when it declined or cancelled. */}
+      {order.business_note && (
+        <p className="text-fg-muted" data-testid="order-business-note">{t("business_note", { note: order.business_note })}</p>
+      )}
+      {view.requested && order.slot_start && order.slot_end && (
+        <WhenLine start={order.slot_start} end={order.slot_end} kind={view.requested} />
+      )}
       {view.waiting && deadline && <p className="text-fg-muted">{t("waiting", { deadline })}</p>}
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />
@@ -171,7 +181,14 @@ export function OrderStatusView({ order, onChange, refOf }) {
       <Lines order={order} />
       {/* MEH-3933: the weekly repeat this order belongs to, and its stop. */}
       <OrderRepeatBlock order={order} onChange={onChange} refOf={refOf} />
-      {view.toPay && <p className="font-medium text-text">{t("to_pay", { total: shekelsText(toPayAgorot(order)) })}</p>}
+      {view.toPay && (
+        <p className="font-medium text-text">
+          {/* MEH-3974: until the business sets the final price, the amount is the most she pays. */}
+          {t(estimateKind(order.items) && (order.final_total_agorot ?? null) === null ? "to_pay_estimate" : "to_pay", {
+            total: shekelsText(toPayAgorot(order)),
+          })}
+        </p>
+      )}
       {/* MEH-3755: the business page, its contact button, and nav to the pickup address. */}
       <OrderBusinessLinks producerId={order.producer_id} pickupAddress={view.when === "when_pickup" ? order.pickup_address : null} />
       {state.error && !state.asking && <InlineMessage tone="error">{state.error}</InlineMessage>}

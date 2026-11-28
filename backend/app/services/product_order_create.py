@@ -61,7 +61,7 @@ from app.services import product_weekdays  # MEH-3618
 from app.services import product_lead_days  # MEH-3932
 from app.services import product_daily_stock  # daily stock (27/11)
 from app.services.product_order_actions import assign_pickup_code
-from app.services.product_order_clock import active_deadline, rest_end_if_inside
+from app.services.product_order_clock import answer_deadline, rest_end_if_inside
 from app.services.product_order_menu import offered_slots, takes_orders
 from app.services.product_order_slots import Slot
 from app.services.product_order_state import (
@@ -280,6 +280,20 @@ def _slot(slots: list[Slot], body: OrderCreateIn) -> Slot:
     raise _conflict(SLOT_GONE_DETAIL)
 
 
+def _offered_slot(
+    db: Session,
+    producer: Producer,
+    row: ProducerOrderSettings,
+    now: datetime,
+    body: OrderCreateIn,
+) -> Slot:
+    if body.fulfilment == "delivery" and not delivery.can_price_some_city(db, producer):
+        # MEH-3970: the menu offers no such slot; say why, not «slot gone» —
+        # a weekly repeat's skip notice prints this detail.
+        raise _conflict(delivery.unpriced_detail(producer))
+    return _slot(offered_slots(db, producer, row, now), body)
+
+
 def _delivery_fee(
     db: Session, producer: Producer, body: OrderCreateIn, subtotal: int
 ) -> tuple[int, str | None, str | None]:
@@ -435,7 +449,7 @@ def create_order(
     _check_phone_standing(db, phone, now, repeat_id)
     _check_business_room(db, producer.id)
 
-    slot = _slot(offered_slots(db, producer, row, now), body)
+    slot = _offered_slot(db, producer, row, now, body)
     lines = order_lines(db, body, bool(row.alcohol_licensed))
     # MEH-3618: a product made only on some days, on the slot's Israel day.
     product_weekdays.refuse_closed_day(db, [ln.product_id for ln in lines], slot.start)
@@ -475,7 +489,10 @@ def create_order(
         delivery_fee_agorot=fee,
         age_declared=bool(has_alcohol and body.age_declared),
         # MEH-3296: 24 hours counted outside Shabbat and the festivals.
-        expires_at=active_deadline(now, ANSWER_WINDOW.total_seconds() / 3600),
+        # MEH-3956: and never after the slot starts.
+        expires_at=answer_deadline(
+            now, ANSWER_WINDOW.total_seconds() / 3600, slot.start
+        ),
         status_token_hash=token_hash(token),
         idempotency_key=key,
         items=lines,

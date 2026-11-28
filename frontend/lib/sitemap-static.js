@@ -35,6 +35,8 @@ export const SITEMAP_STATIC_PAGES = Object.freeze([
   // loading placeholder.
   { path: "/join", priority: 0.7, changeFrequency: "monthly" },
   { path: "/join/pricing", priority: 0.5, changeFrequency: "monthly" },
+  // MEH-3981: how a business takes orders.
+  { path: "/join/orders", priority: 0.5, changeFrequency: "monthly" },
   { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
   // MEH-803: /register, /login, /contact intentionally NOT listed (/search
   // itself is gone — it 308s to /producers since MEH-819) —

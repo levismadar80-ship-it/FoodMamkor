@@ -133,6 +133,15 @@ describe("the owner's field", () => {
     expect(onSave).toHaveBeenLastCalledWith(null);
   });
 
+  it("the select is sized to its longest option and its row wraps, so «אין צורך להזמין מראש» is never cut (MEH-3957)", () => {
+    render(withIntl(<LeadDaysField id="x" value={null} busy={false} onSave={vi.fn()} />));
+    const select = screen.getByTestId("lead-days-x");
+    // A fixed width (w-36 = 144px) cut the option at 390; jsdom has no
+    // layout, so the class is what this can see. The 390 screenshot is in the PR.
+    expect(select.className.split(/\s+/).filter((c) => /^(w|max-w|min-w|basis)-(\d|\[)/.test(c))).toEqual([]);
+    expect(select.parentElement?.className).toContain("flex-wrap");
+  });
+
   it("the products card sends lead_days through the ordering route", async () => {
     api.put.mockResolvedValue({
       data: { id: BREAD, is_orderable: true, in_stock: true, price_unit: "unit", contains_alcohol: false, daily_limit: null, lead_days: 2, variants: [] },

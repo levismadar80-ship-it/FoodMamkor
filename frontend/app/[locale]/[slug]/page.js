@@ -150,8 +150,9 @@ export async function generateMetadata(props) {
   };
 }
 
-function ProducerJsonLd({ producer, locale }) {
-  const jsonLd = buildJsonLd(producer, locale);
+function ProducerJsonLd({ producer, locale, activities }) {
+  // MEH-3953: the page's events and experiences become `event` references.
+  const jsonLd = buildJsonLd(producer, locale, activities);
   if (!jsonLd) return null;
   return (
     <script
@@ -172,7 +173,7 @@ export default async function ProducerSlugPage(props) {
   return (
     <>
       {/* MEH-2952 chunk 3: no structured data for a test business. */}
-      {producer.noindex ? null : <ProducerJsonLd producer={producer} locale={params.locale} />}
+      {producer.noindex ? null : <ProducerJsonLd producer={producer} locale={params.locale} activities={activities} />}
       {/*
         MEH-1151: `key={params.slug}` forces a full remount on slug→slug
         navigation within this same [slug] route segment. Without it, React

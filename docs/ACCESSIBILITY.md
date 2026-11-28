@@ -91,7 +91,7 @@ The net lives at `frontend/e2e/flows/12-axe-a11y.spec.ts`. It loads 6 routes
 `critical` / `serious`** axe violations (WCAG 2a/2aa/21a/21aa tags). `moderate`/
 `minor` violations are logged to the console (for triage) but do NOT fail the
 run — the standing MODERATE backlog is tracked in the audit doc, not gated.
-The extended block (MEH-921) adds the public guest routes, and since 19/11 (MEH-3351) also the launch pages `/join` and `/join/pricing`. `/rescue` is not scanned: the E2E build runs with the rescue flag off, so the page is a 404 there.
+The extended block (MEH-921) adds the public guest routes, and since 19/11 (MEH-3351) also the launch pages `/join` and `/join/pricing`, and since 27/11 (MEH-3981) `/join/orders`. `/rescue` is not scanned: the E2E build runs with the rescue flag off, so the page is a 404 there.
 
 **Signed-in screens (MEH-3539).** Since 20/11 the net also scans 8 routes behind login, one block per role on that role's storageState from `frontend/e2e/global-setup.ts`: owner `/producer/dashboard`, `/producer/dashboard/edit`, `/settings`; admin `/admin`, `/admin/producers`, `/admin/reviews`; consumer `/favorites`, `/settings`. Same gate, same ignores. Each test fails if it lands on `/login` or has no JWT in `localStorage`, so a bounced session cannot pass by scanning the login page. A role's block is skipped only when `frontend/e2e/.auth/<role>.json` is missing **and** its `DEMO_OWNER_PASSWORD` / `DEMO_ADMIN_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset; with the password set and no fixture it fails.
 

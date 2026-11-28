@@ -76,11 +76,11 @@ describe("the link", () => {
 
 describe("one approved headline per status", () => {
   const cases = [
-    ["pending", "הבקשה נשלחה. המאפייה של רותי יאשרו בקרוב."],
+    ["pending", "הבקשה נשלחה. \u2068המאפייה של רותי\u2069 יאשרו בקרוב."],
     ["confirmed", "ההזמנה אושרה"],
     ["ready", "ההזמנה מוכנה לאיסוף"],
     ["declined", "בית העסק לא יכול למלא את ההזמנה הזאת."],
-    ["cancelled", "ההזמנה מהמאפייה של רותי בוטלה."],
+    ["cancelled", "ההזמנה מ\u2068המאפייה של רותי\u2069 בוטלה."],
     ["expired", "בית העסק לא ענה בזמן, ולכן הבקשה בוטלה. לא חויבתם."],
     ["handed", "נמסר. בתיאבון."],
   ];
@@ -99,12 +99,36 @@ describe("what each status shows", () => {
     expect(screen.queryByTestId("order-code")).toBeNull();
   });
 
+  // MEH-3960: while she waits, the time she asked for is on the page — no
+  // address and no «הוספה ליומן», since the business has not agreed to it yet.
+  it("pending pickup: the time she asked for, with no address and no calendar button", () => {
+    show(order({ pickup_address: "הרצל 12, רחובות" }));
+    const asked = screen.getByTestId("order-requested").textContent;
+    // The whole line, isolates included, so a dropped placeholder goes red.
+    expect(asked).toMatch(/^ביקשתם איסוף ביום \S+ \d{1,2}\.\d{1,2}, \u206609:00–10:00\u2069$/);
+    expect(asked).not.toContain("הרצל");
+    expect(screen.queryByTestId("order-add-to-calendar")).toBeNull();
+  });
+
+  it("pending delivery: the delivery time she asked for", () => {
+    show(order({ fulfilment: "delivery" }));
+    expect(screen.getByTestId("order-requested").textContent).toMatch(/^ביקשתם משלוח ב/);
+  });
+
+  it.each(["confirmed", "declined", "expired", "cancelled", "change_proposed"])(
+    "%s: no «ביקשתם» line",
+    (status) => {
+      show(order({ status, pickup_code: status === "confirmed" ? "4821" : null }));
+      expect(screen.queryByTestId("order-requested")).toBeNull();
+    },
+  );
+
   it("confirmed pickup: when and where, the code with its line, what to pay", () => {
     show(order({ status: "confirmed", pickup_code: "4821", pickup_address: "הרצל 12, רחובות", final_total_agorot: 5600 }));
     const when = screen.getByTestId("order-when").textContent;
     expect(when.startsWith("איסוף ב")).toBe(true);
     expect(when).toContain("09:00");
-    expect(when.endsWith(" · הרצל 12, רחובות")).toBe(true);
+    expect(when.endsWith(" · \u2068הרצל 12, רחובות\u2069")).toBe(true);
     expect(screen.getByTestId("order-code").textContent).toContain("4821");
     expect(screen.getByText("אומרים את הקוד בקופה")).toBeTruthy();
     expect(screen.getByText("לתשלום לבית העסק: 56 ₪")).toBeTruthy();

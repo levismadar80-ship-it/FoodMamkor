@@ -17,6 +17,7 @@ import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { bagDay, rescueCancelText, israelTime, shekels, worthAgorot } from "@/lib/rescue";
 import useIsraelToday from "@/lib/use-israel-today";
 import StruckPrice from "@/components/ui/StruckPrice";
+import { addressLine } from "@/lib/address-line";
 
 const STATE_KEY = {
   sold_out: "offer_page.state_sold_out",
@@ -57,7 +58,7 @@ export default function RescueOfferAction({ offer, reservation }) {
   const buttonRef = useRef(null);
   const available = !order && offer.state === "available";
   const buttonInView = useInView(buttonRef, available);
-  const pickupLine = [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null;
+  const pickupLine = addressLine(offer.producer?.location_address, offer.producer?.location_city) || null;
 
   if (order) {
     return (

@@ -808,6 +808,12 @@
       "og_title": "Price list for businesses",
       "og_description": "What is free, what costs money, and when payment starts."
     },
+    "orders_guide": {
+      "title": "How orders work · for businesses",
+      "description": "How a business takes orders ahead through Mehamakor: what the customer does, what you get, 5 steps to start, and answers. The customer pays you directly.",
+      "og_title": "Take orders ahead from your Mehamakor page",
+      "og_description": "Customers send a request, you approve it, and the customer pays you directly. 5 steps to start."
+    },
     "staff_invite": {
       "description": "Handling a business's orders on Mehamakor"
     }
@@ -1025,6 +1031,7 @@
         "remove_one": "One less: {name}",
         "sold_out": "Sold out today",
         "estimate": "About {price} ₪ · the final price is set on weighing",
+        "estimate_range": "Up to {price} ₪ · the final price is set when the business confirms",
         "alcohol": "18+ only. You will be asked to show ID at pickup.",
         "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪",
         "sold_out_days": "Sold out for the coming days",
@@ -1059,7 +1066,7 @@
         "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}. Mehamakor is not the seller and not a party to the sale.",
         "send": "Send the request",
         "send_total": "Send the request · ₪{total}",
-        "send_total_estimate": "Send the request · about ₪{total}",
+        "send_total_estimate": "Send the request · up to ₪{total}",
         "close": "Close",
         "failed": "The request was not sent. Please try again.",
         "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
@@ -2382,6 +2389,22 @@
         "title": "English address for the page",
         "intro": "This business has no Instagram and a Hebrew name, so its address isn't chosen yet. Here is our suggestion. Check it reads well and edit it if needed.",
         "confirm": "Approve and publish"
+      },
+      "about_hints": {
+        "title": "Details written only in «About»",
+        "intro": "The description mentions these details, but their field is empty or says something else. Move each one into its field so it shows on the page, in filters and in search.",
+        "payment": "Payment: the description names payment methods, and «How do customers pay?» is empty.",
+        "pickup": "Pickup: the description mentions pickup, and the business is not marked as offering pickup.",
+        "kashrut": "Kashrut: the description mentions kashrut, and there is no kashrut certificate. Without a certificate, don't write «kosher».",
+        "hours_24_7": "Hours: the description says 24/7, and the opening hours field says otherwise.",
+        "no_delivery": "Delivery: the description says there is no delivery, and the business is marked as delivering.",
+        "delivery_fee": "Delivery fee: the description names a delivery amount, and the delivery fee fields are empty.",
+        "cutoff": "Order cutoff: the description names a last time to order, and no cutoff is set.",
+        "lead_time": "Delivery time: the description says how many days it takes, and «Delivery time» is empty.",
+        "order_days": "Order days: the description says which days orders are taken, and «When are orders taken» is empty.",
+        "year": "Founded: the description names a year, and «Year founded» is empty.",
+        "vegan": "Vegan: the description mentions vegan, and «Is everything the business sells vegan?» is «Unknown».",
+        "experience": "Experiences: the description mentions a workshop, picking or a tour. If they are not yet listed as an experience or event in the sections below, add them."
       }
     },
     "users": {
@@ -3393,6 +3416,12 @@
       "empty_experiences_title": "New experiences on the way",
       "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
       "empty_experiences_cta": "Hosting an experience? Add it",
+      "host_gate": {
+        "title_experiences": "Adding an experience is open to businesses",
+        "title_events": "Adding an event is open to businesses",
+        "body": "Register your business on Mehamakor, and once it is approved you add experiences and events from your dashboard.",
+        "login": "Already registered? Sign in"
+      },
       "empty_browse_producers": "Meanwhile, explore the businesses",
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
@@ -3691,11 +3720,12 @@
         "image_aria": "Photo of Sapir, co-founder of Mehamakor",
         "image_alt": "Sapir, co-founder of Mehamakor",
         "greeting": "Why we started Mehamakor",
-        "p1": "It was always important to us to know where our food comes from. We wanted to buy better — healthier, more local.",
+        "p1": "We love good food, and even more the people behind it. It always mattered to us to know where our food comes from, and we wanted to eat better — healthier, more local.",
         "p2": "But we quickly discovered that it isn't accessible. To find truly good food, we had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
         "p3": "And then it hit us: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
-        "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
+        "p4": "A few minutes from home, a farmer picks vegetables in the morning. In the next neighborhood, a small bakery bakes sourdough. Each of them has a story, and most people have never heard it. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
+        "p5": "That's where Mehamakor was born. Our goal is simple: to give these stories a place. One place to meet the people behind them and find local food close to home. Without searching for hours.",
+        "p6": "We invite you to get to know them with us.",
         "caption1": "Co-founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
         "caption3": "The criteria — we write them from what we ourselves look for in food."
       },
@@ -3713,9 +3743,17 @@
           "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Local community",
-          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
+          "title": "A choice that supports",
+          "body": "Every choice you make goes straight to the businesses — not to a big chain, but to someone nearby."
         }
+      },
+      "logo": {
+        "eyebrow": "The story behind the mark",
+        "heading": "About the logo",
+        "image_alt": "The Mehamakor logo: five pomegranate seeds",
+        "body1": "Five pomegranate seeds, each in its own colour, touching to form one flower. The pomegranate is one of the Seven Species, a fruit of this land. Each seed stands on its own, and together they are whole.",
+        "body2": "So are the businesses here: each with its own story.",
+        "closing": "And every choice of one of them helps this flower grow."
       },
       "testimonials": {
         "heading": "The stories yet to be written here",
@@ -3725,7 +3763,7 @@
       "values": {
         "eyebrow": "Our criteria",
         "heading": "How we choose",
-        "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
+        "intro": "Behind every product there's a person, a family, a small business and a story. Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
         "transparency": {
           "title": "Transparency",
           "body": "You should know who's behind the product you're buying. We'll always tell you who runs the business, where they're located, and how they work."
@@ -3736,7 +3774,7 @@
         },
         "quality": {
           "title": "Quality",
-          "body": "Real ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
+          "body": "Ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
         },
         "safety": {
           "title": "Safety",
@@ -3772,7 +3810,7 @@
       "messages_link": "How does contacting businesses work?",
       "contact": {
         "heading": "Talk to us",
-        "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
+        "subtitle": "Know a business you love? Have a question or an idea? We'd love to hear from you.",
         "name_label": "Full name",
         "name_placeholder": "Your full name",
         "email_label": "Email",
@@ -4622,7 +4660,8 @@
       "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free to join · about 3 minutes · live within 3 business days"
+    "meta_line": "Free to join · about 3 minutes · live within 3 business days",
+    "guide_link": "How orders work"
   },
   "about_business": {
     "meta_title": "FAQ for businesses",
@@ -5900,6 +5939,12 @@
         "q_vegan": "Is everything the business sells vegan?",
         "q_vegetarian": "Is everything the business sells vegetarian?",
         "q_gluten": "Is gluten present in the production facility?",
+        "definition_gluten": "“No gluten in the production facility” means no product there contains wheat, barley, rye or spelt, and no such flour comes in at all.",
+        "conflict_gluten": "Your page says “{categories}”, which usually contains gluten. If flour or a grain with gluten comes into the production facility, choose “Gluten is present in the production facility”.",
+        "definition_vegan": "Vegan means no animal ingredient at all: no meat or fish, no dairy or eggs, and no honey. It is not the same as “natural”.",
+        "definition_vegetarian": "Vegetarian means no meat and no fish. Dairy, eggs and honey are fine.",
+        "conflict_vegan": "The business is listed under {categories}, and those products are not vegan. If even one product is not vegan, choose “No”.",
+        "conflict_vegetarian": "The business is listed under {categories}, and those products are not vegetarian. If even one product is not vegetarian, choose “No”.",
         "opt_yes": "Yes",
         "opt_no": "No",
         "opt_unknown": "Not known",
@@ -6323,7 +6368,9 @@
           "pickup": "Pickup",
           "delivery": "Delivery",
           "add": "Add hours",
-          "saved": "Hours saved"
+          "saved": "Hours saved",
+          "no_delivery_price": "You have delivery hours, but you haven't set where you deliver and for how much yet. Until then, customers see pickup only.",
+          "no_delivery_price_link": "Set up delivery"
         },
         "tabs": {
           "aria": "Order lists",
@@ -6340,6 +6387,7 @@
           "slot": "{kind} on {day} {from}–{until}",
           "line": "{qty} × {name}",
           "estimate": "Estimated price, set after weighing",
+          "estimate_range": "Estimated price, set on confirming",
           "total": "To pay: {total} ₪",
           "delivery_fee": "Includes delivery {fee} ₪",
           "address": "Delivery address: {address}",
@@ -6372,6 +6420,7 @@
           "send": "Send",
           "back": "Back",
           "final_price": "Final price after weighing",
+          "final_price_range": "Final price",
           "final_price_help": "Up to {max} ₪ for the products, the amount the customer saw. For a higher amount, propose a change.",
           "decline_title": "Why decline the order?",
           "reason_stock": "Out of stock",
@@ -6388,6 +6437,9 @@
           "cancel_title": "Cancel an order you already confirmed?",
           "cancel_lead": "The customer will get a message about it.",
           "cancel_note": "Note to the customer (optional)",
+          "no_show_title": "The customer didn't come?",
+          "no_show_lead": "The order will be closed. A customer who doesn't come twice within 90 days can't order on the site from this number.",
+          "no_show_confirm": "Yes, they didn't come",
           "failed": "That did not work. Please try again."
         },
         "products": {
@@ -7709,9 +7761,9 @@
   "holidays": {
     "pesach": {
       "name": "Passover",
-      "tagline": "Find kosher-for-Passover products from local sources",
+      "tagline": "Find products for Passover from local sources",
       "cta": "Show businesses for Passover",
-      "dashboard_hint": "Passover is coming — do you have kosher-for-Passover products? Update them now"
+      "dashboard_hint": "Passover is coming — do you have products for Passover? Update them now"
     },
     "shavuot": {
       "name": "Shavuot",
@@ -8360,6 +8412,86 @@
       "cta": "Join, free"
     }
   },
+  "orders_guide": {
+    "h1": "How orders through Mehamakor work",
+    "lead": "Customers pick products and when to get them, and send you a request. You approve it, and the customer pays you directly.",
+    "chip_pay": "The customer pays you directly",
+    "chip_approve": "You approve every order",
+    "chip_off": "Turn it off any time",
+    "fit": "For businesses that already have a page on Mehamakor. Don't have one yet? <link>Sign up here first</link>.",
+    "cta": "Start setting up",
+    "answers_label": "Three short answers",
+    "cost_body": "During the launch period every tool is free, orders included. Before we start charging we'll tell you {noticeDays} days ahead, in writing. <link>The full price list</link>.",
+    "late_title": "What if I don't answer?",
+    "late_body": "After {remindHours} hours you get a reminder. After {answerHours} hours the order is cancelled, and the customer is told.",
+    "stop_title": "What if I want to stop?",
+    "stop_body": "Turn off “Take orders on the site”, and no new orders come in.",
+    "customer_title": "What the customer does",
+    "customer_1": "Picks products on your page",
+    "customer_1_alt": "The business page, with an add button next to each product",
+    "customer_2": "Taps “Order” at the bottom",
+    "customer_2_alt": "The order button at the bottom of the screen, with the number of items and the total",
+    "customer_3": "Picks when, pickup or delivery, writes a name and phone, and sends",
+    "customer_3_alt": "The order form: products, when, name and phone",
+    "customer_3_after": "The customer gets a code on their phone and types it in, so you have a real number to call back. At the bottom of the form they see your business name and number, and that Mehamakor is not a party to the sale.",
+    "owner_title": "What you get",
+    "owner_wa_label": "A WhatsApp message, and an email",
+    "owner_wa": "Hello, a new order arrived through the Mehamakor site.\nCustomer: Dana Levi\nItems: 3\nTotal to pay: ₪92\nHow: pickup\nWhen: Sunday, between 08:00 and 09:00\nTo approve or decline the order, go to the dashboard on the site: mehamakor.co.il/…\nThanks, the Mehamakor team",
+    "owner_wa_after": "The message is always signed “the Mehamakor team”, and it never asks for a password. Tap the link and sign in to the site as usual.",
+    "owner_nav": "Sign in and tap “Orders”",
+    "owner_nav_alt": "The top row of the business screen, with Orders",
+    "owner_nav_after": "Sign in with your email and password. The number next to “Orders” tells you how many orders are waiting.",
+    "owner_order": "The order is waiting for you",
+    "owner_order_alt": "An order with the buttons to approve, propose a change, decline",
+    "action_confirm_body": "The customer gets a confirmation on WhatsApp",
+    "action_propose_body": "Another time or another price",
+    "action_decline_body": "If you can't make it",
+    "owner_estimate": "Products sold by weight show “Estimated price”. You write the final price after weighing.",
+    "after_title": "After you approve",
+    "after_body": "When the order is ready, tap <b>“Ready for pickup”</b>. When the customer has it, tap <b>“Handed over”</b>. If they didn't come, tap <b>“The customer did not come”</b> and confirm. We send the messages to the customer, and a reminder the day before.",
+    "after_wa_label": "What the customer gets when you approve",
+    "after_wa": "Hello, your order from Ruach HaSadeh Bakery was approved.\nHow: pickup\nWhen: Sunday, between 08:00 and 09:00\nTotal to pay: ₪92. Payment is made directly with the business, not through the site.",
+    "setup_title": "Getting started: 5 steps",
+    "setup_lead": "Sign in and tap “Orders” in the top row. A list of what's missing is waiting there, and every step you finish gets a check mark.",
+    "see": "What you'll see:",
+    "setup_1": "Write your business number",
+    "setup_1_alt": "The field for a business number, company number or ID number",
+    "setup_1_body": "The number is shown to the customer on the order form, next to the business name, as the law requires when selling at a distance. No business number? An ID number works, and it's shown instead. Prefer to talk it over first? <link>Write to us</link>.",
+    "setup_2": "Choose when you hand orders over",
+    "setup_2_alt": "When you hand orders over: day, pickup or delivery, hours",
+    "setup_2_body": "Which days and hours customers can pick up, or get a delivery.",
+    "setup_2_see": "Customers can choose only these hours.",
+    "setup_3": "Choose what can be ordered",
+    "setup_3_alt": "The product list, with the Open for ordering on the site switch",
+    "setup_3_body": "Tap the switch next to “Open for ordering on the site” on every product that can be ordered. Sold out? “Sold out for now”. You can leave the other fields as they are.",
+    "setup_3_see": "An “Add” button next to the product on your page.",
+    "setup_4": "Turn on “Take orders on the site”",
+    "setup_4_alt": "The Take orders on the site switch, on",
+    "setup_4_body": "Tap the switch until it turns green.",
+    "setup_4_see": "“All set. Customers can order from your page.”",
+    "setup_5": "Check it as a customer",
+    "setup_5_alt": "Preview: how customers see the order",
+    "setup_5_body": "Tap “How customers see it” and go through an order as a customer. Nothing is sent from there.",
+    "share_title": "Now tell your customers",
+    "share_body": "The same screen has a ready message called “What's on this week”: what can be ordered, on which days, and a link to your page. Tap “Send on WhatsApp” and choose who gets it, a group or your status.",
+    "faq_title": "Questions",
+    "faq_no_show_q": "A customer didn't come. What do I do?",
+    "faq_no_show_a": "Tap “The customer did not come” and confirm. A customer who doesn't come twice within 90 days can't order through the site from that number any more.",
+    "faq_cancel_q": "I need to cancel an order I already approved",
+    "faq_cancel_a": "On the order, tap “Cancel the order”. You can write the customer a short explanation. The customer is told, and sees your explanation on their order page.",
+    "faq_delivery_q": "Can I deliver too?",
+    "faq_delivery_a": "Yes. In your hand-over hours choose “Delivery”. Customers can order a delivery only to the cities in your page's delivery areas, and pay the delivery fee and minimum you set there.",
+    "faq_shabbat_q": "I keep Shabbat",
+    "faq_shabbat_a": "In the settings, turn on “No orders or messages on Shabbat and holidays”, and no orders or messages reach you on Shabbat and holidays. Even without it, Shabbat and holiday hours don't count toward your time to answer.",
+    "faq_friday_q": "Selling only on Fridays?",
+    "faq_friday_a": "In your hand-over hours choose only Friday. Next to each product you can choose how far ahead it must be ordered, for example two days.",
+    "faq_receipts_q": "Receipts and invoices?",
+    "faq_receipts_a": "Issue them as for any other sale. The site doesn't issue them for you.",
+    "faq_staff_q": "Can someone on my team answer?",
+    "faq_staff_a": "Yes, up to {maxStaff} people. Invite them by email, and they see only the orders.",
+    "contact_line": "Want us to set it up together? <link>Write to us</link>",
+    "back_link": "Back to the business page"
+  },
   "account_deleted": {
     "heading": "Account deleted",
     "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
@@ -8404,16 +8536,21 @@
     "when_pickup": "Pickup on {day}, {from}–{until} · {address}",
     "when_pickup_no_address": "Pickup on {day}, {from}–{until}",
     "when_delivery": "Delivery on {day}, {from}–{until}",
+    "requested_pickup": "You asked for pickup on {day}, {from}–{until}",
+    "requested_delivery": "You asked for delivery on {day}, {from}–{until}",
     "proposal": "The business suggests a change",
     "accept": "Works for me",
     "cancel": "Cancel the order",
     "ready": "Your order is ready for pickup",
     "code": "Say this code at the counter",
     "to_pay": "To pay the business: ₪{total}",
+    "to_pay_estimate": "To pay the business: up to ₪{total}. The final price is set when the business confirms.",
     "declined": "The business can't fill this order.",
     "cancelled": "Your order from {business_name} was cancelled.",
     "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
     "handed": "Handed over. Enjoy.",
+    "no_show": "The business marked that you didn't come to receive the order. If this is a mistake, you can contact the business.",
+    "business_note": "What the business wrote: {note}",
     "cancel_confirm": "Cancel the order? The business will be notified.",
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",
@@ -8668,5 +8805,14 @@
     "badge_stopped": "Stopped weekly order",
     "business_line": "Repeats every {day} at {time}. Next week's order is made after this week's time.",
     "failed": "We couldn't stop it. Please try again."
+  },
+  "hub_faq": {
+    "list_link": "Frequently asked questions",
+    "detail_groupBuys": "More questions: cancelling, pickup, payment",
+    "detail_rescue": "More questions: what's inside, cancelling, pickup"
+  },
+  "time_of_day": {
+    "hour": "hour",
+    "minute": "minutes"
   }
 }

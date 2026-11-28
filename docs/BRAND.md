@@ -63,7 +63,7 @@ The **tagline** is specced for: footer brand line, `/about` narrative. **Not the
 - הדף הבסיסי חינם. מחירון גלוי מהיום הראשון, גבייה מבית עסק רק אחרי סף תוצאות; מותרת עמלה על הזמנות (אירוע בתשלום, שקית הצלה, רכישה). כסף לעולם לא משפיע על דירוג/חשיפה/תגים/אימות, גם עם סימון — see docs/decisions/ADR-042-revenue-model-v3.md + docs/PRICING.md
 - Manual approval for every business
 - Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. A business without a license, cooked food included, is approved without the מאומת badge (Sapir 17/11, confirmed 24/11, MEH-3743)
-- No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
+- No `"שכנות מבשלות מהבית"` / `"מהמטבח של השכן"` in marketing. `"אוכל ביתי"` is allowed again (Sapir 27/11/2026, MEH-3951)
 - No `"יצרן"` / `"יצרנית"` in UI — מונחים per ADR-024: `"בית עסק"` (ישות) · `"בעלי עסקים"` (גנרי) · `"בעלת/בעל עסק"` (ספציפיים)
 - No `"marketplace"` / `"פלטפורמת מסחר"` copy anywhere
 - No `"מגזין"` word in UI (only in `/about` narrative)
@@ -129,7 +129,7 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 | Floating Pill Navbar | MEH-655 | Done 2026-05-22 |
 | Hero direction hierarchy (A canonical, B campaign-only) | ADR-018 + MEH-656 (canceled, content absorbed) | LOCKED |
 | ProducerCard state token compliance (opacity-on-cream + --fg-muted) | ADR-019 + MEH-656 (canceled, content absorbed) | LOCKED |
-| Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix) |
+| Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix). Meaning shown on /about since MEH-3988: five seeds, each its own colour, one flower; the pomegranate is one of the Seven Species; each business its own story, together one whole |
 | Category glyph system | ADR-013 Amendment + PR #2026 (hand-drawn MEH-683/666 archived) | LOCKED v2.1 |
 | Join page: feature groups (phone shelf / desktop list+stage), tiles, toggletip, sticky join bar | MEH-2799 | Done 2026-11-07 (#4123) |
 | Closing CTA band (site-wide, shared component) — full-green band that ends every page closing on a business call to action | MEH-2824 | In progress |
@@ -141,7 +141,7 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 Phrasings that survived to production once and must be caught in review:
 
 - `"home cooks"` (English boilerplate) — caught in `06-press-quotes-bank.md` duplicate, deleted in Phase ζ.
-- `"שכנות מבשלות"` / `"מהמטבח של השכן"` / `"אוכל ביתי"` — illegal-in-Israel framing, brand LOCK violation.
+- `"שכנות מבשלות"` / `"מהמטבח של השכן"` — illegal-in-Israel framing, brand LOCK violation. `"אוכל ביתי"` was on this list until 27/11/2026; Sapir removed it (MEH-3951), so it is allowed in copy and the guard no longer flags it.
 - `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024). **חריג (MEH-1264, Option A):** `"יצרן"` אסור בממשק ובשיווק, למעט כחלק משם רישיון רשמי (`"רישיון יצרן"`, `"מספר רישיון יצרן"`) — דיוק משפטי, lawyer brief §5.3. הצ'יפ הצרכני `"רישיון יצרן"` נשאר AS-IS (שם הרישיון הרשמי של משרד הבריאות).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
 - `"שוק"` as a discovery/sort/nav label (e.g. the old `"חדש בשוק"` sort option) — frames Mehamakor as a trade venue, DNA violation (MEH-1218). The sort label is now `"הצטרפו לאחרונה"`. **Not** forbidden: the named `"שוק שישי"` feature (MEH-50) and the event-type category `"שוק"` (a kind of listed event), which describe a real-world market, not the platform.
@@ -270,7 +270,7 @@ v1.3 קבע «רק מי שמייצר או מגדל בעצמו». ספיר תיק
 - אישור ידני של כל עסק.
 - בלי מותגי תעשייה (מסמך 07 ב-Drive, סעיף 2): חנות שעיקר המדף שלה תאגידי אינה מתאימה.
 - אמת בדף: לא מציגים מוצר של אחרים כאילו בית העסק עשה אותו.
-- אוכל מבושל: בלי ניסוח של «אוכל ביתי» (§7 · Anti-patterns; נעול גם ב-§3 · Brand LOCKs).
+- אוכל מבושל: «אוכל ביתי» מותר מ-27/11/2026 (ספיר, MEH-3951). «שכנות מבשלות» ו«מהמטבח של השכן» עדיין אסורים (§7 · Anti-patterns, §3 · Brand LOCKs).
 
 ### מה נשאר סגור גם אחרי התיקון
 

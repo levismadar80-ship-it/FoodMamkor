@@ -64,6 +64,7 @@ import { SkeletonBlock } from "@/components/Skeleton";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
 import IconButton from "@/components/ui/IconButton";
+import { addressLine } from "@/lib/address-line"; // MEH-3959
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -777,9 +778,7 @@ function LocationForm({
   // Coordinates attached to the text in the field right now — the single
   // condition that separates the three states below.
   const geocoded = String(form.lat).trim() !== "" && String(form.lng).trim() !== "";
-  const confirmLabel = [form.address, form.address_city || form.city]
-    .filter((s) => s && String(s).trim() !== "")
-    .join(", ");
+  const confirmLabel = addressLine(form.address, form.address_city || form.city); // MEH-3959
   // Typed an address but we hold no point for it. Covers both "the provider
   // returned nothing" and "she never picked from the list" — from the owner's
   // side those are one problem (no pin), and the remedy is the same.

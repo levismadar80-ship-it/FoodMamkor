@@ -44,12 +44,10 @@ import {
 } from "@/lib/hours-serialize";
 import Checkbox from "@/components/ui/Checkbox";
 import IconButton from "@/components/ui/IconButton";
+import TimeOfDaySelect from "@/components/ui/TimeOfDaySelect";
 
 // Shared by every time input: ≥44px tall (min-h-touch), numerals in reading
 // order. REUSES: HoursEditor.jsx (6f8d70e8^) input class, plus the touch floor.
-const TIME_INPUT_CLASS =
-  "numeric min-h-touch text-sm border border-border rounded-sm px-2 py-1 bg-surface";
-
 // MEH-2819: where these hours appear on the business page — by the location's
 // kind, because the place really differs: the primary location feeds «שעות»
 // (resolveStoreHours); a pickup point / market stall is listed under
@@ -178,20 +176,16 @@ export default function LocationHoursField({
                       <div key={rangeIdx} className="flex items-center gap-1">
                         {/* HH:MM–HH:MM reads left to right on the RTL page. rtl-ok */}
                         <div className="flex items-center gap-1.5" dir="ltr">
-                          <input
-                            type="time"
+                          <TimeOfDaySelect
                             value={range.from}
-                            onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
-                            aria-label={`${tDays(key)} ${t("from_label")}${nth}`}
-                            className={TIME_INPUT_CLASS}
+                            onChange={(v) => patchRange(i, rangeIdx, { from: v })}
+                            ariaLabel={`${tDays(key)} ${t("from_label")}${nth}`}
                           />
                           <span aria-hidden="true" className="text-fg-muted">–</span>
-                          <input
-                            type="time"
+                          <TimeOfDaySelect
                             value={range.to}
-                            onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
-                            aria-label={`${tDays(key)} ${t("to_label")}${nth}`}
-                            className={TIME_INPUT_CLASS}
+                            onChange={(v) => patchRange(i, rangeIdx, { to: v })}
+                            ariaLabel={`${tDays(key)} ${t("to_label")}${nth}`}
                           />
                         </div>
                         {day.ranges.length > 1 && (

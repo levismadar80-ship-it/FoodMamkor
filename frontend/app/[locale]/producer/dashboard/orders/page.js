@@ -27,7 +27,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Eye } from "@phosphor-icons/react";
+import { Eye, Question } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
 import FormFillBox from "@/components/FormFillBox";
@@ -42,8 +42,10 @@ import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
+import useOrdersLive from "@/lib/use-orders-live";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
+import { ORDERS_GUIDE_PATH } from "@/lib/orders-guide";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
@@ -57,7 +59,7 @@ async function loadStaff() {
 async function loadAll() {
   const settings = await loadSettings();
   if (settings === null) return { settings: null };
-  const [windows, orders, me] = await Promise.all([
+  const [{ windows, deliveryPriced }, orders, me] = await Promise.all([
     loadWindows(),
     loadOrders(),
     api.get("/producers/me").then((res) => res.data).catch(() => null),
@@ -65,11 +67,12 @@ async function loadAll() {
   const setUp = isSetUp(settings, windows);
   // MEH-3931: the name and page link for «מה יש השבוע».
   const business = me ? { name: me.name, slug: me.slug, id: me.id } : null;
-  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp, business };
+  return { settings, windows, deliveryPriced, orders, orderWindow: me?.order_window ?? null, setUp, business };
 }
 
 export default function OrdersPage() {
   const t = useTranslations("dashboard.producer.orders");
+  const tGuide = useTranslations("join");
   // MEH-3526: the layout already sends staff here and nowhere else.
   const { user } = useAuth();
   const staffOf = user?.role !== "producer" ? user?.staff_of ?? null : null;
@@ -105,6 +108,14 @@ export default function OrdersPage() {
     setAttempt((n) => n + 1);
   };
 
+  // MEH-3964: an open tab picks up a new order; the layout's badge and
+  // «(N) » title prefix follow through ORDERS_CHANGED_EVENT, as replace() does.
+  const fresh = useCallback((/** @type {any[]} */ orders) => {
+    setData((/** @type {any} */ old) => (old ? { ...old, orders } : old));
+    window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT));
+  }, []);
+  useOrdersLive(data?.orders ?? null, fresh);
+
   if (data && data.settings === null) notFound();
   // Until ordering is set up the settings are the first thing to do, so they
   // start open; after, closed (isSetUp). Decided at load only (loadAll), so
@@ -123,15 +134,26 @@ export default function OrdersPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6" data-testid="orders-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
+        {!staffOf && <div className="flex flex-wrap items-center gap-2">
         {/* MEH-3746: the order form as a buyer sees it, before ordering is on. */}
-        {!staffOf && <Link
+        <Link
           href="/producer/dashboard/orders/preview"
           data-testid="orders-preview-link"
           className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
         >
           <Eye size={16} aria-hidden="true" />
           {t("preview_link")}
-        </Link>}
+        </Link>
+        {/* MEH-3981: how ordering works, in plain words (/join/orders). */}
+        <Link
+          href={ORDERS_GUIDE_PATH}
+          data-testid="orders-guide-link"
+          className="inline-flex items-center gap-1.5 min-h-touch px-3 rounded-full text-sm font-medium bg-transparent hover:bg-primary/5 text-action-primary border border-action-primary transition-colors focus-ring"
+        >
+          <Question size={16} aria-hidden="true" />
+          {tGuide("guide_link")}
+        </Link>
+        </div>}
       </div>
       {staffOf && <p data-testid="orders-staff-note" className="text-sm text-fg-muted">{t("staff_note", { name: staffOf.name })}</p>}
       {failed && (
@@ -166,7 +188,7 @@ export default function OrdersPage() {
               daily orders. A draft opens the setup cards. */}
           <FormFillBox form="order_setup" title={t("fill.title")} intro={t("fill.intro")} onDraft={(next) => setDraft({ ...next })} />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={folded} draft={draft} />
-          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={folded} onSaved={(saved) => setWindowsCount(saved.length)} draft={draft} />
+          <OrderWindowsCard windows={data.windows} deliveryPriced={data.deliveryPriced} orderWindow={data.orderWindow} collapsed={folded} onSaved={(saved) => setWindowsCount(saved.length)} draft={draft} />
         </>
       )}
     </div>

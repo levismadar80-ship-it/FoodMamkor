@@ -61,14 +61,16 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | «להמשיך עם Google» — our own Google button, every Google sign-in (MEH-3690) | `ui/GoogleButton.jsx` | — |
 | «הוספה ליומן» for one timed slot (order / bag / group-buy pickup) | `ui/AddToCalendarButton.jsx` | — |
 | «לתשלום» to the business's own prepay link (new tab, host printed under it) — a bag and a group buy (MEH-3895) | `ui/PrepayButton.jsx` (the pill look comes from `buttonLook` in `ui/Button.jsx`) | `Prepay` |
-| A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) | `ui/TimeOfDaySelect.jsx` | — |
+| A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) — every time field, `optional` for one she may leave blank | `ui/TimeOfDaySelect.jsx` | `DesignSystemLintRules` (eslint `design-system/no-html-time`, MEH-3955) |
+| A date and a 24-hour time in one field (the value of a `datetime-local`) | `ui/DateTimeField.jsx` | `DesignSystemLintRules` |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
-| Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
+| Loading bar / box · spinner in a button · a detail page's frame while it loads (`SkeletonProducerPage`, `SkeletonEventDetail`, `SkeletonDetail`) | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
 | A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
 | «שאלות נפוצות» under a hub list, with FAQPage JSON-LD | `HubFaq.jsx` (questions per list: `lib/hub-faq.js`) | `HubFaq` |
+| A link to that «שאלות נפוצות», above the list or on an offer page | `HubFaqLink.jsx` | `HubFaqLink` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |

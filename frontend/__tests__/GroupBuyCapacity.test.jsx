@@ -8,6 +8,7 @@ import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailC
 import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings";
 import api from "@/lib/api";
 import { SWRConfig } from "swr";
+import { setTime, timeFields, timeValue } from "./helpers/time-of-day";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...rest }) => <a href={href} {...rest}>{children}</a>,
@@ -215,10 +216,12 @@ describe("owner settings", () => {
     render(<GroupBuyOwnerSettings gb={{ ...gb, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00" }} onSaved={vi.fn()} />);
     fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
     const box = screen.getByTestId("gb-pickup-window");
-    const [start, end] = box.querySelectorAll("input");
-    expect(start.value).toBe("2099-12-04T09:00");
-    expect(end.value).toBe("13:00");
-    fireEvent.change(end, { target: { value: "14:00" } });
+    // MEH-3955: a date + 24-hour selects for the start, 24-hour selects for the end.
+    const [startTime, end] = timeFields(box);
+    expect(box.querySelector('input[type="date"]').value).toBe("2099-12-04");
+    expect(timeValue(startTime)).toBe("09:00");
+    expect(timeValue(end)).toBe("13:00");
+    setTime(end, "14:00");
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
     await waitFor(() =>
       expect(api.patch).toHaveBeenCalledWith(
@@ -245,9 +248,9 @@ describe("owner settings", () => {
   it("clearing both fields sends nulls", async () => {
     render(<GroupBuyOwnerSettings gb={{ ...gb, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00" }} onSaved={vi.fn()} />);
     fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
-    const [start, end] = screen.getByTestId("gb-pickup-window").querySelectorAll("input");
-    fireEvent.change(start, { target: { value: "" } });
-    fireEvent.change(end, { target: { value: "" } });
+    const box = screen.getByTestId("gb-pickup-window");
+    fireEvent.change(box.querySelector('input[type="date"]'), { target: { value: "" } });
+    setTime(timeFields(box)[1], "");
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", expect.objectContaining({ pickup_starts_at: null, pickup_ends_at: null })));
   });
@@ -255,7 +258,9 @@ describe("owner settings", () => {
   it("half a window: the form says so and nothing is sent", async () => {
     render(<GroupBuyOwnerSettings gb={gb} onSaved={vi.fn()} />);
     fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
-    fireEvent.change(screen.getByTestId("gb-pickup-window").querySelectorAll("input")[0], { target: { value: "2099-12-04T09:00" } });
+    const box = screen.getByTestId("gb-pickup-window");
+    fireEvent.change(box.querySelector('input[type="date"]'), { target: { value: "2099-12-04" } });
+    setTime(timeFields(box)[0], "09:00");
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
     expect(screen.getByTestId("gb-pickup-window-error").textContent).toBe("pickup_window_both");
     expect(api.patch).not.toHaveBeenCalled();

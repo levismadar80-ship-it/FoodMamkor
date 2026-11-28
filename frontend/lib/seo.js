@@ -441,7 +441,44 @@ function applyEventCapacity(ev, item) {
   if (cap.availability && ev.offers) ev.offers.availability = cap.availability;
 }
 
-export function buildJsonLd(producer, locale = "he") {
+/**
+ * MEH-3953: the business's own events and experiences, as `event` references
+ * on its FoodEstablishment node. Each item already has its own page with a
+ * full Event node under the same `@id` (buildEventJsonLd / buildExperienceJsonLd),
+ * so this only says «this business runs these» and points at them: id, name,
+ * url, and the date when the listing has one. Cancelled items are left out.
+ * Returns [] when there is nothing to link — the caller then emits no `event`.
+ *
+ * @param {{ events?: any[], experiences?: any[] } | null | undefined} activities
+ * @returns {object[]}
+ */
+export function producerEventRefs(activities) {
+  if (!activities) return [];
+  const pick = (items, base) =>
+    (Array.isArray(items) ? items : [])
+      // MEH-3953: same condition as the event / workshop page (date + city),
+      // so every @id here resolves to an Event node, never a dangling one.
+      .filter((it) => it && it.id && it.title && it.is_active !== false)
+      .filter((it) => typeof it.event_date === "string" && ISO_DATE.test(it.event_date))
+      .filter((it) => typeof it.city === "string" && it.city.trim())
+      .map((it) => {
+        const url = `${SITE_URL}/${base}/${it.id}`;
+        return {
+          "@type": "Event",
+          "@id": `${url}#event`,
+          name: it.title,
+          url,
+          startDate: it.event_date.slice(0, 10),
+          location: {
+            "@type": "Place",
+            address: { "@type": "PostalAddress", addressLocality: it.city.trim(), addressCountry: "IL" },
+          },
+        };
+      });
+  return [...pick(activities.events, "events"), ...pick(activities.experiences, "experiences")];
+}
+
+export function buildJsonLd(producer, locale = "he", activities = null) {
   if (!producer) return null;
 
   const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
@@ -586,6 +623,12 @@ export function buildJsonLd(producer, locale = "he") {
   const offerCatalog = buildOfferCatalog(producer, locale);
   if (offerCatalog) business.hasOfferCatalog = offerCatalog;
 
+  // MEH-3953: the events and experiences this business runs. schema.org
+  // `event` is a property of Organization and Place, both of which
+  // FoodEstablishment is, so this is additive like hasOfferCatalog above.
+  const eventRefs = producerEventRefs(activities);
+  if (eventRefs.length) business.event = eventRefs;
+
   // BreadcrumbList -------------------------------------------------------
   // Structure per MEH-172: ישראל → קטגוריה → עיר → שם העסק.
   // Category and city items are skipped when the source data is missing,
@@ -652,7 +695,7 @@ export function buildJsonLd(producer, locale = "he") {
  * producers each have their own FoodEstablishment node (see buildJsonLd).
  *
  * `description` is SITE_DESCRIPTION (lib/constants.js) — the same sentence
- * public/llms.txt and every meta description carry, so every surface that
+ * /llms.txt (lib/llms-txt.js) and every meta description carry, so every surface that
  * describes the site says one thing (MEH-3424 / ADR-043). CANONICAL_SENTENCE,
  * which held this field from MEH-2192 until then, is the `slogan`.
  */

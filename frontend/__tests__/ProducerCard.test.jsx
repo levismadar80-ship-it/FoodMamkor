@@ -370,7 +370,7 @@ describe("ProducerCard — Phase B anatomy", () => {
 
   it("never renders the legacy contact-icon row", () => {
     render(<ProducerCard producer={fullProducer} />);
-    expect(screen.queryByLabelText("שלח הודעה בווטסאפ")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("שלח הודעה בוואטסאפ")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("התקשר לבית העסק")).not.toBeInTheDocument();
   });
 
@@ -771,6 +771,42 @@ describe("ProducerCard — delivery fee row (MEH-1678)", () => {
     const row = screen.getByTestId("card-delivery-fee");
     expect(row).toHaveTextContent("משלוח מ-20₪");
     expect(row).not.toHaveTextContent("25");
+  });
+
+  // MEH-3968: one free area beside areas with no stated fee is not free
+  // delivery for the business — the card must not say «משלוח חינם».
+  it("renders no fee when only some areas state one (one free, the rest unstated)", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          delivery_fee: null,
+          delivery_areas: [
+            { city: "עתלית", delivery_fee: 0 },
+            { city: "חיפה", delivery_fee: null },
+          ],
+        }}
+      />,
+    );
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  // MEH-3968: a nationwide business's areas are zones on other terms; the
+  // page's top line ignores them (MEH-3511), so the card does too.
+  it("a nationwide business states its own fee, never a free zone's", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          delivery_nationwide: true,
+          delivery_fee: 30,
+          delivery_areas: [{ city: "אילת", delivery_fee: 0 }],
+        }}
+      />,
+    );
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח: 30₪");
+    expect(row).not.toHaveTextContent("חינם");
   });
 
   it("renders no row at all when delivery_fee is null (not stated)", () => {

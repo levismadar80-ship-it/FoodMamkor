@@ -15,6 +15,7 @@ import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import DateTimeField from "@/components/ui/DateTimeField";
 import CitySearch from "@/components/CitySearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
@@ -282,14 +283,15 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
 
         {/* MEH-992 deadline helper (what the date means + Israel time) rides the
             Input helperText slot. */}
-        <Input
+        {/* MEH-3955: a date and 24-hour selects, not datetime-local. */}
+        <DateTimeField
           label={t("deadline_label")}
-          type="datetime-local"
+          ariaLabel={t("deadline_label")}
           value={form.deadline}
-          onChange={set("deadline")}
+          onChange={(v) => set("deadline")({ target: { value: v } })}
           required
           helperText={t("deadline_helper")}
-          dir="ltr"
+          testId="gb-deadline"
         />
         {/* MEH-1455: canonical CitySearch (was a free-text Input) — a group
             created with a canonical city name is findable under the /group-buys

@@ -322,7 +322,9 @@ def test_owner_saves_her_week_and_reads_it_back_in_order(client, db, flag_on):
                 "end_time": "19:00:00",
                 "fulfilment": "delivery",
             },
-        ]
+        ],
+        # MEH-3970: the business publishes no delivery fee here.
+        "delivery_priced": False,
     }
 
 

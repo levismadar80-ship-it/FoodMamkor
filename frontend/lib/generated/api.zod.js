@@ -8102,7 +8102,10 @@ export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__
 /**
  * @summary Get My Order Windows
  */
+export const getMyOrderWindowsProducersMeOrderWindowsGetResponseDeliveryPricedDefault = true;
+
 export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/ zod.object({
+  "delivery_priced": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyOrderWindowsProducersMeOrderWindowsGetResponseDeliveryPricedDefault),
   "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "end_time": /*#__PURE__*/ zod.iso.time({}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
@@ -8117,7 +8120,10 @@ export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/
  * so the table cannot grow past 28 rows a business (MEH-3022).
  * @summary Put My Order Windows
  */
+export const putMyOrderWindowsProducersMeOrderWindowsPutResponseDeliveryPricedDefault = true;
+
 export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/ zod.object({
+  "delivery_priced": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), putMyOrderWindowsProducersMeOrderWindowsPutResponseDeliveryPricedDefault),
   "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "end_time": /*#__PURE__*/ zod.iso.time({}),
   "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
@@ -10175,6 +10181,7 @@ export const GetPublicRecipeProducersSlugRecipesRecipeIdGetResponse = /*#__PURE_
  * @summary Send Order
  */
 export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),
@@ -10246,6 +10253,7 @@ export const QuoteOrderRouteProductOrdersQuotePostResponse = /*#__PURE__*/ zod.o
  * @summary Read Order Status
  */
 export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),
@@ -10291,6 +10299,7 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
  * @summary Accept Proposed Change
  */
 export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),
@@ -10336,6 +10345,7 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
  * @summary Cancel Own Order
  */
 export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),
@@ -10382,6 +10392,7 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
  * @summary Stop Own Repeat
  */
 export const StopOwnRepeatProductOrdersStatusRepeatStopPostResponse = /*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),
@@ -11451,6 +11462,7 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
  */
 export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
   "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "business_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "can_cancel": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "customer_name": /*#__PURE__*/ zod.string(),

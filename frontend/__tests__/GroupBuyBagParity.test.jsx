@@ -118,9 +118,13 @@ describe("MEH-3610 — one white card, in the bag page's order", () => {
     const card = await screen.findByTestId("group-buy-details");
     expect(card.className).toContain("bg-surface");
     expect(card.className).toContain("divide-y");
-    const ids = [...card.children].map((el) => el.getAttribute("data-testid"));
+    // MEH-3949: the card ends with one row that links to the hub's questions.
+    const rows = [...card.children];
+    const faqRow = rows.pop();
+    expect(faqRow.querySelector('[data-testid="hub-faq-link-detail"]')).not.toBeNull();
+    const ids = rows.map((el) => el.getAttribute("data-testid"));
     expect(ids).toEqual(["group-buy-fulfillment", "group-buy-allergens", "group-buy-how", "group-buy-cancel"]);
-    expect([...card.children].every((el) => el.tagName === "SECTION")).toBe(true);
+    expect(rows.every((el) => el.tagName === "SECTION")).toBe(true);
   });
 });
 

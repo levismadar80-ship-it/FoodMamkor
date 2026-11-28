@@ -8,10 +8,12 @@ import { useTranslations } from "next-intl";
 import { Bread, Info, MapPin } from "@phosphor-icons/react";
 
 import SectionHeading from "@/components/ui/SectionHeading";
+import HubFaqLink from "@/components/HubFaqLink"; // MEH-3949
 import AllergenSection from "@/components/offer-detail/AllergenSection"; // MEH-3610
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { addressNavLinks } from "@/lib/nav-links";
 import { israelTime } from "@/lib/rescue";
+import { addressLine } from "@/lib/address-line";
 
 // REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
 // leaflet touches window at module eval.
@@ -38,7 +40,7 @@ export default function RescueOfferDetails({ offer }) {
   const p = offer.producer;
   const cancelUntil = israelTime(offer.cancel_until);
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
-  const address = [p.location_address, p.location_city].filter(Boolean).join(", ");
+  const address = addressLine(p.location_address, p.location_city);
   const hasCoords = offer.lat !== null && offer.lat !== undefined && offer.lng !== null && offer.lng !== undefined;
   const nav = hasCoords ? null : addressNavLinks(p.location_address, p.location_city);
   const items = (offer.typical_items || []).filter(Boolean);
@@ -114,6 +116,9 @@ export default function RescueOfferDetails({ offer }) {
         </p>
         <p className="text-sm text-fg-muted mt-1">{t("offer_page.no_show")}</p>
       </section>
+
+      {/* MEH-3949: the rest of the questions live on the hub page. */}
+      <HubFaqLink hub="rescue" variant="detail" className="px-5 py-4" />
     </div>
   );
 }

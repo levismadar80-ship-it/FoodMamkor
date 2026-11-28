@@ -8,6 +8,7 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { isolate } from "@/lib/bidi";
 
 /**
  * Module:   OwnerDetachControl
@@ -29,9 +30,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
  */
 // An address is a left-to-right run inside a Hebrew sentence; without an
 // isolate its leading letters and the «ל-» prefix trade places (seen at 390 on
-// the preview). FSI…PDI is the plain-text twin of <bdi>.
-/** @param {string|null|undefined} s */
-const isolate = (s) => `\u2068${s || ""}\u2069`;
+// the preview). The shared isolate (lib/bidi) is the plain-text twin of <bdi>.
 
 export default function OwnerDetachControl({ producerId, business, owner, onDetached }) {
   const t = useTranslations("admin.producers.owner_invite.detach");

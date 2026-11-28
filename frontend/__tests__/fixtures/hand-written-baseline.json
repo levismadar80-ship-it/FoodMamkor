@@ -1,7 +1,6 @@
 {
   "rawTextFields": {
     "app/[locale]/login/LoginClient.jsx": 2,
-    "app/[locale]/producer/dashboard/edit/LocationHoursField.jsx": 2,
     "components/DeliveryWaitlistForm.jsx": 1,
     "components/PasswordInput.jsx": 1
   },

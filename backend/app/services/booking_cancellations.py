@@ -64,6 +64,7 @@ from app.services.product_order_actions import (  # MEH-3768
 )
 from app.services.rescue_emails import send_delisted_cancel_email
 from app.utils.clock import israel_today, utc_now
+from app.services.address_line import address_line  # MEH-3959
 
 
 def _date_text(d: date | None) -> str:
@@ -75,13 +76,13 @@ def _time_text(t: time | None) -> str:
 
 
 def _event_place(event: Event) -> str:
-    return ", ".join(p for p in (event.location, event.city) if p)  # type: ignore[misc]
+    return address_line(event.location, event.city)  # type: ignore[arg-type]
 
 
 def _experience_place(ex: Experience) -> str:
     # A home address is private (MEH-1417) — the city only.
     if ex.location_type == "public" and ex.address:
-        return ", ".join(p for p in (ex.address, ex.city) if p)  # type: ignore[misc]
+        return address_line(ex.address, ex.city)  # type: ignore[arg-type]
     return ex.city or ""  # type: ignore[return-value]
 
 
@@ -290,6 +291,15 @@ def _cancel_live_bags(
         )
         .all()
     )
+    # MEH-3897: who held each bag, read before the cancel; the reservations
+    # not marked paid get the «אם … התקבל» list (the paid ones get theirs below).
+    buyers: dict[Any, set[Any]] = {}
+    for offer_id, user_id in (
+        db.query(RescueOrder.offer_id, RescueOrder.user_id)
+        .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
+        .all()
+    ):
+        buyers.setdefault(offer_id, set()).add(user_id)
     cancelled = (
         db.query(RescueOrder)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
@@ -297,6 +307,15 @@ def _cancel_live_bags(
     )
     for offer in offers:
         offer.status = "cancelled"  # type: ignore[assignment]
+    from app.services.prepay_refunds import bag_business_cancel_mails, queue_mails
+
+    for offer in offers:
+        queue_mails(
+            background_tasks,
+            bag_business_cancel_mails(
+                db, offer, buyers.get(offer.id, set()), "delisted"
+            ),
+        )
     if paid:
         # Imported here: rescue_payment -> rescue_writes, kept off this
         # module's import graph.

@@ -30,6 +30,7 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
+import HubFaqLink from "@/components/HubFaqLink"; // MEH-3949
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -47,6 +48,7 @@ import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
 import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
 import { clearMyOrdersNavGate } from "@/lib/my-orders-nav-cache"; // MEH-3698
+import { addressLine } from "@/lib/address-line"; // MEH-3959
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -298,7 +300,7 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-3610: the time moved under the title (as the bag's); the branch, when
   // the business chose one, leads the rows and is the one pin on the map.
   const place = deliveryOnly ? null : gb.pickup_location;
-  const placeText = place && [place.label, [place.address, place.city].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
+  const placeText = place && [place.label, addressLine(place.address, place.city)].filter(Boolean).join(" — ");
   if (placeText) whereRows.unshift({ key: "place", Icon: Storefront, label: t("pickup_place_label"), text: placeText, testId: "group-buy-pickup-place" });
   const placePin = place && typeof place.lat === "number" && typeof place.lng === "number";
   const whereMap = placePin
@@ -658,6 +660,9 @@ export default function GroupBuyDetailClient({ id }) {
                   <p className="text-base text-text">{t(funded ? "cancel_body_funded" : "cancel_body_open", { date: cancelUntil || "" })}</p>
                 </section>
               )}
+
+              {/* MEH-3949: the rest of the questions live on the hub page. */}
+              <HubFaqLink hub="groupBuys" variant="detail" className="px-5 py-4" />
             </div>
 
             {/* MEH-2472: the business, as a tappable row (MEH-2538 OwnerRow);

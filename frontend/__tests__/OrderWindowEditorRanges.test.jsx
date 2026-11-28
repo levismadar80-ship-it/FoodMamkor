@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import OrderWindowEditor from "@/app/[locale]/producer/dashboard/edit/OrderWindowEditor";
 import api from "@/lib/api";
+import { getTimeField, queryTimeField, setTime } from "./helpers/time-of-day";
 
 vi.mock("next-intl", () => {
   const t = (key) => key;
@@ -44,18 +45,18 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
 
   it("prefills a stored split day with BOTH ranges", () => {
     renderEditor(SUNDAY_SPLIT);
-    expect(screen.getByDisplayValue("09:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("13:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("16:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("20:00")).toBeTruthy();
+    expect(getTimeField("09:00")).toBeTruthy();
+    expect(getTimeField("13:00")).toBeTruthy();
+    expect(getTimeField("16:00")).toBeTruthy();
+    expect(getTimeField("20:00")).toBeTruthy();
     // Two ranges → the second one is removable, the first is not shown alone.
     expect(screen.getByTestId("order-window-remove-0-1")).toBeTruthy();
   });
 
   it("prefills a LEGACY single-dict day as one range (backward compat)", () => {
     renderEditor(LEGACY);
-    expect(screen.getByDisplayValue("09:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("14:00")).toBeTruthy();
+    expect(getTimeField("09:00")).toBeTruthy();
+    expect(getTimeField("14:00")).toBeTruthy();
     // A single range offers no remove control — closing the day is the checkbox.
     expect(screen.queryByTestId("order-window-remove-0-0")).toBeNull();
   });
@@ -67,7 +68,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
     renderEditor(SUNDAY_SPLIT); // …09:00–13:00, 16:00–20:00
     fireEvent.click(screen.getByTestId("order-window-add-range-0"));
     // Starts where the evening block ended (adjacency is legal) and runs 2h.
-    expect(screen.getByDisplayValue("22:00")).toBeTruthy();
+    expect(getTimeField("22:00")).toBeTruthy();
     // …and the result is immediately saveable, which is the whole point.
     fireEvent.click(screen.getByText("save_cta"));
     expect(api.put).toHaveBeenCalledWith("/producers/me", {
@@ -85,7 +86,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
   it("clamps an appended range to the end of the day", () => {
     renderEditor({ sunday: [{ open: "20:00", close: "23:30" }] });
     fireEvent.click(screen.getByTestId("order-window-add-range-0"));
-    expect(screen.getByDisplayValue("23:59")).toBeTruthy();
+    expect(getTimeField("23:59")).toBeTruthy();
   });
 
   // Reported by the CI adversarial reviewer: a day ending at 23:59 has no room
@@ -98,7 +99,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
 
   it("names the OVERLAP reason in the top-level error, not just the row", () => {
     renderEditor(SUNDAY_SPLIT);
-    fireEvent.change(screen.getByDisplayValue("16:00"), { target: { value: "12:00" } });
+    setTime(getTimeField("16:00"), "12:00");
     fireEvent.click(screen.getByText("save_cta"));
     // Two elements now: the row message and the top-level one. Before, the
     // top-level always said "close must be after open" while the row said
@@ -121,15 +122,15 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
     renderEditor(SUNDAY_SPLIT);
     fireEvent.click(screen.getByTestId("order-window-remove-0-0"));
     // The evening range survives; the morning one is gone.
-    expect(screen.queryByDisplayValue("09:00")).toBeNull();
-    expect(screen.getByDisplayValue("16:00")).toBeTruthy();
-    expect(screen.getByDisplayValue("20:00")).toBeTruthy();
+    expect(queryTimeField("09:00")).toBeNull();
+    expect(getTimeField("16:00")).toBeTruthy();
+    expect(getTimeField("20:00")).toBeTruthy();
   });
 
   it("saves the LIST shape — even for a single range", async () => {
     renderEditor(LEGACY);
     // Make it dirty without making it invalid.
-    fireEvent.change(screen.getByDisplayValue("14:00"), { target: { value: "15:00" } });
+    setTime(getTimeField("14:00"), "15:00");
     fireEvent.click(screen.getByText("save_cta"));
     expect(api.put).toHaveBeenCalledWith("/producers/me", {
       order_window: { sunday: [{ open: "09:00", close: "15:00" }] },
@@ -139,7 +140,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
   it("blocks the save and flags OVERLAP rather than letting the API 422", () => {
     renderEditor(SUNDAY_SPLIT);
     // Drag the evening range back so it starts before the morning one ends.
-    fireEvent.change(screen.getByDisplayValue("16:00"), { target: { value: "12:00" } });
+    setTime(getTimeField("16:00"), "12:00");
     fireEvent.click(screen.getByText("save_cta"));
     expect(api.put).not.toHaveBeenCalled();
     // The message names the actual problem — not the generic close>open copy.
@@ -148,7 +149,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
 
   it("still flags a single bad range with the close>open message", () => {
     renderEditor(LEGACY);
-    fireEvent.change(screen.getByDisplayValue("14:00"), { target: { value: "08:00" } });
+    setTime(getTimeField("14:00"), "08:00");
     fireEvent.click(screen.getByText("save_cta"));
     expect(api.put).not.toHaveBeenCalled();
     expect(screen.getAllByText("invalid_range").length).toBeGreaterThan(0);
@@ -156,7 +157,7 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
 
   it("treats an adjacent pair (13:00 → 13:00) as valid, matching the backend", () => {
     renderEditor(SUNDAY_SPLIT);
-    fireEvent.change(screen.getByDisplayValue("16:00"), { target: { value: "13:00" } });
+    setTime(getTimeField("16:00"), "13:00");
     fireEvent.click(screen.getByText("save_cta"));
     expect(api.put).toHaveBeenCalledWith("/producers/me", {
       order_window: {

@@ -69,6 +69,7 @@ duplicate	2	גררו לכאן או לחצו להעלאה · JPG / PNG / WebP
 duplicate	2	דברו איתנו
 duplicate	2	דברו איתנו ←
 duplicate	2	דיווח על עסק
+duplicate	2	דקות
 duplicate	2	דרוש תיקון
 duplicate	2	האירועים שלי
 duplicate	2	האירועים שלכם
@@ -310,6 +311,7 @@ duplicate	2	שיפנו אליכם
 duplicate	2	שישי
 duplicate	2	שיתוף
 duplicate	2	שכפול
+duplicate	2	שליחה בוואטסאפ
 duplicate	2	שליחה מחדש
 duplicate	2	שליחת הודעה בוואטסאפ
 duplicate	2	שליחת קוד חדש
@@ -420,7 +422,6 @@ duplicate	3	קליקים בוואטסאפ
 duplicate	3	קרוב אליי
 duplicate	3	קרוב לבית
 duplicate	3	שאלו אותנו
-duplicate	3	שאלות נפוצות
 duplicate	3	שגיאה בשליחה
 duplicate	3	שמרו במועדפים
 duplicate	3	שעות פתיחה
@@ -463,6 +464,7 @@ duplicate	4	נשמר ✓
 duplicate	4	ספרו עלינו
 duplicate	4	צמחוני
 duplicate	4	רכיבים
+duplicate	4	שאלות נפוצות
 duplicate	4	שומרת…
 duplicate	4	שליחה
 duplicate	4	תהליך הקבלה
