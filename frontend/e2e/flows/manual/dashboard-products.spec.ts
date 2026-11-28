@@ -191,15 +191,15 @@ test.describe("products card — mount and add", () => {
     expect(writes[0].body).toMatchObject({ name: "טסט-יחיד", price_min: 45, price_max: null });
   });
 
-  // MEH-2924 — no price: the row says «מחיר משתנה לפי עונה» and the POST carries null, never 0.
-  test("adding a product with no price shows «מחיר משתנה לפי עונה» and posts price_min null", async ({ page }) => {
+  // MEH-2924 — no price: the row says «מחיר בפנייה» and the POST carries null, never 0.
+  test("adding a product with no price shows «מחיר בפנייה» and posts price_min null", async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, [product({ id: 1, name: "חלה" })], writes);
     await openProducts(page);
     await openAddForm(page);
     await addForm(page).getByLabel("שם המוצר").fill("טסט-עונה");
     await addForm(page).getByRole("button", { name: "הוסיפו מוצר" }).click();
-    await expect(rowOf(page, "טסט-עונה")).toContainText("מחיר משתנה לפי עונה");
+    await expect(rowOf(page, "טסט-עונה")).toContainText("מחיר בפנייה");
     expect(writes[0].body).toMatchObject({ name: "טסט-עונה", price_min: null, price_max: null });
   });
 
@@ -215,7 +215,7 @@ test.describe("products card — mount and add", () => {
 
 test.describe("products card — add form validation", () => {
   const cases = [
-    // MEH-2924: an empty price is allowed now («מחיר משתנה לפי עונה»); only «עד» without «מ-» is refused.
+    // MEH-2924: an empty price is allowed now («מחיר בפנייה»); only «עד» without «מ-» is refused.
     { row: 14, title: "«עד» without «מ-» is refused with «הכניסו מחיר»", min: "", max: "40", msg: ERR.required },
     { row: 15, title: "a min price below 1 is refused", min: "0", max: "", msg: ERR.tooLow },
     { row: 16, title: "a price over the 10,000 cap is refused", min: "10001", max: "", msg: ERR.tooHigh },

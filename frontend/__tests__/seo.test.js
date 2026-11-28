@@ -607,15 +607,20 @@ describe("MEH-2789 — hasOfferCatalog", () => {
     expect(getCatalog({ ...fullProducer, products: [{ id: "x", name: "   " }] })).toBeUndefined();
   });
 
-  it("is an OfferCatalog of Offers wrapping Products", () => {
+  it("is an OfferCatalog of Offers wrapping Products; a product with no price is a bare Product (MEH-3973)", () => {
     const catalog = getCatalog(withProducts);
     expect(catalog["@type"]).toBe("OfferCatalog");
     expect(catalog.itemListElement).toHaveLength(3);
-    for (const offer of catalog.itemListElement) {
+    const [cheese, labneh, yogurt] = catalog.itemListElement;
+    for (const offer of [cheese, labneh]) {
       expect(offer["@type"]).toBe("Offer");
       expect(offer.itemOffered["@type"]).toBe("Product");
       expect(offer.itemOffered.name).toBeTruthy();
     }
+    // No numeric price → no Offer at all, so nothing implies a price.
+    expect(yogurt["@type"]).toBe("Product");
+    expect(yogurt.name).toBe("יוגורט כבשים");
+    expect(yogurt.offers).toBeUndefined();
   });
 
   it("names the catalogue per locale", () => {
@@ -640,6 +645,7 @@ describe("MEH-2789 — hasOfferCatalog", () => {
     });
     // free-text price_range is NOT a price
     expect(yogurt.priceSpecification).toBeUndefined();
+    expect(yogurt["@type"]).toBe("Product");
     expect(JSON.stringify(yogurt)).not.toContain("משתנה לפי עונה");
   });
 
@@ -659,25 +665,25 @@ describe("MEH-2789 — hasOfferCatalog", () => {
         { id: "b", name: "חלה", image_url: "httpfoo.co.il/x.jpg" },
       ],
     }).itemListElement;
-    expect(rel.itemOffered.image).toBe(`${SITE_URL}/img/bread.jpg`);
-    expect(bad.itemOffered.image).toBeUndefined();
+    expect(rel.image).toBe(`${SITE_URL}/img/bread.jpg`);
+    expect(bad.image).toBeUndefined();
   });
 
   it("uses the page's order: the signature product first, deduped", () => {
     // by id (the MEH-2137 chunk 3 path)
     const byId = getCatalog({ ...withProducts, top_product_id: "p-3" });
-    expect(byId.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+    expect(byId.itemListElement.map((o) => (o.itemOffered ?? o).name)).toEqual([
       "יוגורט כבשים", "גבינת עיזים", "לאבנה",
     ]);
     // by name, only when no id is set
     const byName = getCatalog({ ...withProducts, top_product_name: "לאבנה" });
-    expect(byName.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+    expect(byName.itemListElement.map((o) => (o.itemOffered ?? o).name)).toEqual([
       "לאבנה", "גבינת עיזים", "יוגורט כבשים",
     ]);
     // an id that names a deleted product must NOT fall through to the name —
     // that is the wrong-row bug ProducerSections.jsx:217-225 exists to prevent
     const deleted = getCatalog({ ...withProducts, top_product_id: "gone", top_product_name: "לאבנה" });
-    expect(deleted.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+    expect(deleted.itemListElement.map((o) => (o.itemOffered ?? o).name)).toEqual([
       "גבינת עיזים", "לאבנה", "יוגורט כבשים",
     ]);
   });
@@ -686,8 +692,8 @@ describe("MEH-2789 — hasOfferCatalog", () => {
     const many = Array.from({ length: 45 }, (_, i) => ({ id: `m-${i}`, name: `מוצר ${i}` }));
     const catalog = getCatalog({ ...fullProducer, products: many });
     expect(catalog.itemListElement).toHaveLength(30);
-    expect(catalog.itemListElement[0].itemOffered.name).toBe("מוצר 0");
-    expect(catalog.itemListElement[29].itemOffered.name).toBe("מוצר 29");
+    expect(catalog.itemListElement[0].name).toBe("מוצר 0");
+    expect(catalog.itemListElement[29].name).toBe("מוצר 29");
   });
 
   it("is purely additive — every other field is byte-identical", () => {

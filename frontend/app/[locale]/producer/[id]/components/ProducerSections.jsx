@@ -360,10 +360,14 @@ export default function ProducerSections({
     signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
+  // MEH-3973: a signature that IS a product row with no price and no
+  // business-wide label says «מחיר בפנייה», like its grid row and its sheet,
+  // instead of no price line at all.
   const signatureFreeTextPrice = signatureNumericPrice
     ? null
     : (isPriceLabel(signatureProduct?.price_range) ? priceLabelText(signatureProduct.price_range) : null) ||
-      producerPriceLabel;
+      producerPriceLabel ||
+      (signatureProduct ? t("product_price.varies") : null);
 
   return (
     <>
@@ -534,7 +538,7 @@ export default function ProducerSections({
                   product.price_min != null
                     ? formatPriceRange(product.price_min, product.price_max)
                     : null;
-                // MEH-2924: no price at all = a seasonal price, said in words.
+                // MEH-2924 / MEH-3973: no price at all = «מחיר בפנייה».
                 const freeTextPrice = numericPrice
                   ? null
                   : priceLabelText(product.price_range) || t("product_price.varies");
