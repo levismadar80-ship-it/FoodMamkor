@@ -6361,7 +6361,9 @@
           "pickup": "Pickup",
           "delivery": "Delivery",
           "add": "Add hours",
-          "saved": "Hours saved"
+          "saved": "Hours saved",
+          "no_delivery_price": "You have delivery hours, but you haven't set where you deliver and for how much yet. Until then, customers see pickup only.",
+          "no_delivery_price_link": "Set up delivery"
         },
         "tabs": {
           "aria": "Order lists",
