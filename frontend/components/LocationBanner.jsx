@@ -59,11 +59,15 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
 
   return (
     <div
-      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-md px-4 py-3"
+      // MEH-3986: flex-wrap + a text column that keeps 10rem — at 200% text on a
+      // 375 phone the CTA row used to stay beside the text, squeeze it to one
+      // word per line and paint the button over it. Now it drops to its own line.
+      data-testid="location-banner"
+      className="mx-4 md:mx-auto max-w-3xl mb-6 flex flex-wrap items-start justify-between gap-3 rounded-md px-4 py-3"
       style={{ backgroundColor: COLOR["green-50"], color: COLOR.primary }}
       role="status"
     >
-      <div className="flex items-start gap-2 min-w-0">
+      <div className="flex items-start gap-2 min-w-0 flex-1 basis-40">
         <MapPin size={20} weight="fill" className="shrink-0 mt-0.5" aria-hidden="true" />
         {/* MEH-233: was `truncate` — clipped the Hebrew prompt next to the
             shrink-0 CTA on mobile (≤390px). Wrap to 2 lines instead. */}
@@ -71,7 +75,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
           {t("message")}
         </p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 ms-auto">
         <Button
           type="button"
           onClick={onOpenModal}
