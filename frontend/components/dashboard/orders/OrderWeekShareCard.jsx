@@ -5,7 +5,7 @@
  * Module:   OrderWeekShareCard
  * Purpose:  «מה יש השבוע» in the «הזמנות» tab: a ready message with what can
  *           be ordered this week, the open days and the order link, with
- *           «שליחה בווטסאפ» (she picks the chat, group or status) and
+ *           «שליחה בוואטסאפ» (she picks the chat, group or status) and
  *           «העתקת ההודעה».
  * Touches:  GET /producers/me/order-menu/preview (lib/order-cart.js), the
  *           same menu a buyer gets.

@@ -33,7 +33,7 @@ import { trackEvent } from "@/lib/analytics";  // MEH-3794
 import { canOrderAgain, stashOrderAgain } from "@/lib/order-again";
 import { producerPath } from "@/lib/producer-path";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/buyer-order";
-import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, estimateKind, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderBusinessLinks from "./OrderBusinessLinks";  // MEH-3755
 import OrderRepeatBlock from "./OrderRepeatBlock";  // MEH-3933
@@ -180,7 +180,14 @@ export function OrderStatusView({ order, onChange, refOf }) {
       <Lines order={order} />
       {/* MEH-3933: the weekly repeat this order belongs to, and its stop. */}
       <OrderRepeatBlock order={order} onChange={onChange} refOf={refOf} />
-      {view.toPay && <p className="font-medium text-text">{t("to_pay", { total: shekelsText(toPayAgorot(order)) })}</p>}
+      {view.toPay && (
+        <p className="font-medium text-text">
+          {/* MEH-3974: until the business sets the final price, the amount is the most she pays. */}
+          {t(estimateKind(order.items) && (order.final_total_agorot ?? null) === null ? "to_pay_estimate" : "to_pay", {
+            total: shekelsText(toPayAgorot(order)),
+          })}
+        </p>
+      )}
       {/* MEH-3755: the business page, its contact button, and nav to the pickup address. */}
       <OrderBusinessLinks producerId={order.producer_id} pickupAddress={view.when === "when_pickup" ? order.pickup_address : null} />
       {state.error && !state.asking && <InlineMessage tone="error">{state.error}</InlineMessage>}
