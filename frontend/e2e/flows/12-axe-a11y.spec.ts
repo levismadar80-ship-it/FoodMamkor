@@ -235,6 +235,7 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
   for (const [route, ready] of [
     ["/join", "h1"],
     ["/join/pricing", "h1"],
+    ["/join/orders", "h1"],
   ] as const) {
     test(route, async ({ page }) => {
       await page.goto(route);

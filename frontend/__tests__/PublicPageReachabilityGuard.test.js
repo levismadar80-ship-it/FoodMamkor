@@ -78,6 +78,9 @@ const ROUTES = {
   "/join": { kind: "indexed" },
   // Linked through the PRICING_PATH constant (lib/pricing.js), not a literal.
   "/join/pricing": { kind: "indexed", linkedFrom: ["app/[locale]/about/for-businesses/page.js", "href={PRICING_PATH}"] },
+  // MEH-3981: linked through the ORDERS_GUIDE_PATH constant (lib/orders-guide.js)
+  // from the /join tool list (the product_orders entry's `guide`).
+  "/join/orders": { kind: "indexed", linkedFrom: ["lib/business-features.js", "guide: ORDERS_GUIDE_PATH"] },
   "/map": { kind: "indexed" },
   "/privacy": { kind: "indexed" },
   "/register/producer": { kind: "indexed" },
