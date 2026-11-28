@@ -38,6 +38,12 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.23 (28/11): the «אמיתי» copy pass after the /about release (#5491),
+  // plus delivery-unset (#5468), product without a price (#5473) and «נמכר
+  // דרך חנויות אחרות» (#5475). docs/release/whats-new-pending.md is empty, so
+  // items: 0; those changes speak in their own screens. Sapir's go for this
+  // version: 28/11 09:07Z («תתקן ואז תעלה גרסה אחרי»).
+  { version: "1.5.23", key: "v1_5_23", date: "2026-11-28", items: 0 },
   // 1.5.22 (28/11): the night train of 27-28/11 (orders, delivery, banners,
   // staging fixes). Nothing in docs/release/whats-new-pending.md, so items: 0;
   // business-facing copy changes ride in their own screens. Sapir's go for
