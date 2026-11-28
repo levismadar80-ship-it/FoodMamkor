@@ -42,6 +42,7 @@ import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import OrderWeekShareCard from "@/components/dashboard/orders/OrderWeekShareCard";
 import api from "@/lib/api";
+import useOrdersLive from "@/lib/use-orders-live";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
@@ -57,7 +58,7 @@ async function loadStaff() {
 async function loadAll() {
   const settings = await loadSettings();
   if (settings === null) return { settings: null };
-  const [windows, orders, me] = await Promise.all([
+  const [{ windows, deliveryPriced }, orders, me] = await Promise.all([
     loadWindows(),
     loadOrders(),
     api.get("/producers/me").then((res) => res.data).catch(() => null),
@@ -65,7 +66,7 @@ async function loadAll() {
   const setUp = isSetUp(settings, windows);
   // MEH-3931: the name and page link for «מה יש השבוע».
   const business = me ? { name: me.name, slug: me.slug, id: me.id } : null;
-  return { settings, windows, orders, orderWindow: me?.order_window ?? null, setUp, business };
+  return { settings, windows, deliveryPriced, orders, orderWindow: me?.order_window ?? null, setUp, business };
 }
 
 export default function OrdersPage() {
@@ -104,6 +105,14 @@ export default function OrdersPage() {
     setFailed(false);
     setAttempt((n) => n + 1);
   };
+
+  // MEH-3964: an open tab picks up a new order; the layout's badge and
+  // «(N) » title prefix follow through ORDERS_CHANGED_EVENT, as replace() does.
+  const fresh = useCallback((/** @type {any[]} */ orders) => {
+    setData((/** @type {any} */ old) => (old ? { ...old, orders } : old));
+    window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT));
+  }, []);
+  useOrdersLive(data?.orders ?? null, fresh);
 
   if (data && data.settings === null) notFound();
   // Until ordering is set up the settings are the first thing to do, so they
@@ -166,7 +175,7 @@ export default function OrdersPage() {
               daily orders. A draft opens the setup cards. */}
           <FormFillBox form="order_setup" title={t("fill.title")} intro={t("fill.intro")} onDraft={(next) => setDraft({ ...next })} />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={folded} draft={draft} />
-          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={folded} onSaved={(saved) => setWindowsCount(saved.length)} draft={draft} />
+          <OrderWindowsCard windows={data.windows} deliveryPriced={data.deliveryPriced} orderWindow={data.orderWindow} collapsed={folded} onSaved={(saved) => setWindowsCount(saved.length)} draft={draft} />
         </>
       )}
     </div>

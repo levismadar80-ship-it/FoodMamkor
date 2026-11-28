@@ -91,6 +91,7 @@ This page links to those and does not repeat their numbers.
 | Answers to client-side reads made through `frontend/lib/use-api.js` (MEH-3536; SWR) | browser tab memory | one cache per tab, gone on reload; reads that depend on the signed-in account (`useUserApi`) are keyed by the user id, so the next account in the same tab never reads the previous one's entries. A logout does not empty it: the previous account's entries stay in memory, unread, until the tab reloads |
 | Which «קישור אחד לכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
 | The page a customer signed up from by email (MEH-3661) | browser `localStorage`, `post_auth_return`: an internal path and when it was stored | 24 hours (the verify link's own life); read by /verify-email to send her back, then cleared; only paths `isReturnablePath` allows (no auth screens, no token flows) |
+| Which holiday banners the visitor closed on the home page (MEH-3986) | browser `localStorage`, `holiday_banner_dismissed_<holiday key>_<start date>`: "1" | kept until the browser's storage is cleared; the start date in the key lets the same holiday show again next year; nothing about the visitor, only the holiday (`frontend/components/HolidayBanner.jsx`) |
 | The owner's conversation with the dashboard assistant (MEH-3902) | browser `localStorage`, `mehamakor:owner-assistant:<user id>`: her messages and the answers, text only | 7 days from the last message, or until «שיחה חדשה»; each signed-in user has her own key. The messages also go to the Anthropic API with each question (POST /chat/owner), which keeps nothing for the site |
 | Whether the account menus show «ההזמנות שלי» (MEH-3525; since MEH-3698: whether the person has an order, a group buy or a bag, from `GET /users/me/orders/any`) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored; dropped after an order, a group-buy join or leave, or a bag reservation (`frontend/lib/my-orders-nav-cache.js`) |
 | Who handles a business's orders besides its owner (MEH-3526) | Postgres `producer_staff`; the invite link's token only as a sha256 hash | read on every request (`services/order_access.py`), never put in the JWT; removal or leaving takes effect on the next request |
@@ -110,6 +111,9 @@ inventory.
    requests that hold a connection (an external call inside a route) exhaust
    it; the DB bulkhead middleware sheds load with a 503 before the process
    deadlocks. A new external call inside a route closes its DB session first.
+   An open «הזמנות» tab adds one light read a minute while it is visible
+   (MEH-3964, `frontend/lib/use-orders-live.js`), and a full board reload only
+   when the pending set changed.
    The public chat reads one business before its model calls and rolls the
    session back right after (MEH-3481), so a chat holds no connection while
    Claude answers.

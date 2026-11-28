@@ -7,7 +7,9 @@
  *           with no metadata of their own, so every screen used to carry the
  *           generic site title and a screen reader could not tell them apart.
  * Does NOT: decide which tab is active (DashboardLayoutClient's isActive).
- * History:  MEH-3191 (creation).
+ * History:  MEH-3191 (creation) · MEH-3964 (a «(N) » prefix while N orders
+ *           wait for an answer, on every dashboard screen, as Gmail counts
+ *           unread mail).
  */
 import { useEffect } from "react";
 import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
@@ -15,11 +17,13 @@ import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
 /**
  * @param {string | null | undefined} label  the active tab's visible label
  * @param {string} locale
+ * @param {number} [pending]  orders waiting for an answer (MEH-3964)
  * @returns {string | null}  null when there is no label (keep the page's title)
  */
-export function dashboardTitle(label, locale) {
+export function dashboardTitle(label, locale, pending = 0) {
   if (!label) return null;
-  return `${label} | ${locale === "en" ? BRAND_NAME_LATIN : BRAND_NAME}`;
+  const count = pending > 0 ? `(${pending}) ` : "";
+  return `${count}${label} | ${locale === "en" ? BRAND_NAME_LATIN : BRAND_NAME}`;
 }
 
 /**
@@ -27,10 +31,11 @@ export function dashboardTitle(label, locale) {
  * @param {string} locale
  * @param {string} pathname  re-run on every navigation (a defensive re-apply;
  *                           not observed that Next resets it)
+ * @param {number} [pending]  orders waiting for an answer (MEH-3964)
  */
-export function useDashboardTitle(label, locale, pathname) {
+export function useDashboardTitle(label, locale, pathname, pending = 0) {
   useEffect(() => {
-    const title = dashboardTitle(label, locale);
+    const title = dashboardTitle(label, locale, pending);
     if (!title) return undefined;
     const previous = document.title;
     document.title = title;
@@ -39,5 +44,5 @@ export function useDashboardTitle(label, locale, pathname) {
     return () => {
       if (document.title === title) document.title = previous;
     };
-  }, [label, locale, pathname]);
+  }, [label, locale, pathname, pending]);
 }

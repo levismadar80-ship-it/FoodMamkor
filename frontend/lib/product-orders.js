@@ -89,6 +89,27 @@ export function shekelsText(agorot) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+/** Price units whose amount is known only once the order is weighed (backend WEIGHED_PRICE_UNITS). */
+const WEIGHED_UNITS = new Set(["kg", "100g"]);
+
+/** @param {string | null | undefined} unit */
+export function isWeighedUnit(unit) {
+  return WEIGHED_UNITS.has(unit ?? "");
+}
+
+/**
+ * Why an order's price is not final yet (MEH-3974): "weighed" when an
+ * estimated line is sold by weight, "range" when every estimate is a price
+ * range on a unit product, null when the price is exact.
+ * @param {{ price_unit?: string, price_is_estimate?: boolean }[] | null | undefined} lines
+ * @returns {"weighed" | "range" | null}
+ */
+export function estimateKind(lines) {
+  const estimates = (lines ?? []).filter((line) => line.price_is_estimate);
+  if (estimates.length === 0) return null;
+  return estimates.some((line) => isWeighedUnit(line.price_unit)) ? "weighed" : "range";
+}
+
 /** What the buyer pays: the final total once set, else the estimate, plus delivery. */
 export function toPayAgorot(order) {
   const goods = order.final_total_agorot ?? order.estimated_total_agorot ?? 0;
@@ -187,9 +208,11 @@ export async function saveSettings(body) {
   return GetMyOrderSettingsProducersMeOrderSettingsGetResponse.parse(data);
 }
 
+/** The week, and whether a delivery can be priced at all (MEH-3970). */
 export async function loadWindows() {
   const { data } = await api.get("/producers/me/order-windows");
-  return GetMyOrderWindowsProducersMeOrderWindowsGetResponse.parse(data).windows;
+  const week = GetMyOrderWindowsProducersMeOrderWindowsGetResponse.parse(data);
+  return { windows: week.windows, deliveryPriced: week.delivery_priced };
 }
 
 /** @param {any[]} windows the whole week */
@@ -214,6 +237,11 @@ async function allOf(/** @type {string} */ status) {
     if (orders.length >= got.total || got.orders.length === 0) break;
   }
   return orders;
+}
+
+/** MEH-3964: the first page of orders waiting for an answer — the open board's one-request check. */
+export async function loadPendingPage() {
+  return ordersPage({ status: "pending", limit: PAGE_LIMIT });
 }
 
 /** The latest page of a closed status (the list is soonest-first, so its tail). */

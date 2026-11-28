@@ -64,7 +64,7 @@ their totals are gated by `npm run lint:ratchet`: they may only go down.
 | A clock time on a 24-hour clock (hour + minute selects; `<input type="time">` shows AM/PM on an English iPhone) — every time field, `optional` for one she may leave blank | `ui/TimeOfDaySelect.jsx` | `DesignSystemLintRules` (eslint `design-system/no-html-time`, MEH-3955) |
 | A date and a 24-hour time in one field (the value of a `datetime-local`) | `ui/DateTimeField.jsx` | `DesignSystemLintRules` |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
-| Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
+| Loading bar / box · spinner in a button · a detail page's frame while it loads (`SkeletonProducerPage`, `SkeletonEventDetail`, `SkeletonDetail`) | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
 | A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |

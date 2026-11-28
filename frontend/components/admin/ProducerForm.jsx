@@ -30,6 +30,7 @@ import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
+import DietaryScopeNotes from "@/components/DietaryScopeNotes";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -1089,6 +1090,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
           </Field>
+          {/* MEH-3982: outside the <label>, so it is not read as the select's name. */}
+          <DietaryScopeNotes
+            axis="vegan"
+            scope={form.vegan_scope}
+            categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+          />
           <Field label={tDiet("q_vegetarian")}>
             <select
               value={form.vegetarian_scope}
@@ -1100,6 +1107,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
           </Field>
+          {/* MEH-3982: outside the <label>, so it is not read as the select's name. */}
+          <DietaryScopeNotes
+            axis="vegetarian"
+            scope={form.vegetarian_scope}
+            categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+          />
           <Field label={tDiet("q_gluten")}>
             <select
               value={form.gluten_free_facility}
@@ -1111,6 +1124,12 @@ export default function ProducerForm({ initial = null, producerId = null, unsave
               <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
           </Field>
+          <DietaryScopeNotes
+            axis="gluten"
+            scope={form.gluten_free_facility}
+            categories={categories.filter((cat) => form.category_ids.includes(cat.id))}
+            text={`${form.short_description ?? ""} ${form.description ?? ""}`}
+          />
         </div>
 
         {/* MEH-530: producer-license field — required when any selected

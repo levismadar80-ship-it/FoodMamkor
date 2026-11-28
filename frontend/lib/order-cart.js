@@ -20,6 +20,7 @@ import api from "@/lib/api";
 import { GetOrderMenuProducersProducerIdOrderMenuGetResponse } from "@/lib/generated/api.zod";
 import { mostLeft } from "@/lib/daily-stock";
 import { splitKey, variantFor, variantsOf } from "@/lib/product-variants";
+import { isWeighedUnit } from "@/lib/product-orders";
 
 // Mirrors PRODUCT_ORDER_MAX_QTY_PER_ITEM / PRODUCT_ORDER_MAX_LINES
 // (backend/app/models/product_orders.py). The server refuses past them; the
@@ -182,4 +183,13 @@ export function rowEstimateAgorot(product) {
   if (variants.length > 1) return null;
   if (variants.length === 1) return variants[0].price_is_estimate ? variants[0].price_agorot : null;
   return product.price_is_estimate ? unitPriceAgorot(product) : null;
+}
+
+/**
+ * Which message the row's estimate uses (MEH-3974): weighing for a product
+ * sold by weight, «עד» for a price range on a unit product.
+ * @param {MenuProduct} product
+ */
+export function rowEstimateKey(product) {
+  return isWeighedUnit(product.price_unit) ? "producer.detail.order_cart.estimate" : "producer.detail.order_cart.estimate_range";
 }

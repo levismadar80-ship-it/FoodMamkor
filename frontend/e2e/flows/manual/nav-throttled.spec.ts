@@ -12,12 +12,22 @@ import { layoutSettled } from "../_layout-settled";
  *
  *   (a) in no sampled frame, between the click and the detail page, is the
  *       route loader on screen while the footer is in the viewport;
- *   (b) Back returns to the scroll offset the reader left (±100 px).
+ *   (b) Back returns to the scroll offset the reader left (±100 px);
+ *   (c) MEH-3983: in no sampled frame is the SITE-WIDE loader
+ *       (data-testid route-loading) on screen. Its brand mark fades in only
+ *       after 0.4 s, so it read as a blank cream flash between a list and the
+ *       detail page (prod 28/11: 0.3–0.8 s from home to a business). Each
+ *       detail page now has its own page-shaped loading.js, which carries
+ *       `data-route-loader` like the site-wide one — so (a) and its control
+ *       count either loader, and (c) fails if the blank one comes back.
  *
  * Counted in animation frames, never milliseconds (testing.md, MEH-2972).
- * Control, per list (LISTS `loader`): where the loader appears it must
- * paint in at least one frame, or the throttle did not take effect and (a)
- * would be vacuous; where it never appears, 0 frames is asserted.
+ * Control (`expectThrottled`): the detail route's own prefetch waited at
+ * least 300 ms for its first byte, so the throttle took effect on the fetches
+ * the click depends on. It used to be "the loader painted at least once"; that
+ * went red on home and /events in CI once the page was fully prefetched and
+ * opened with no loader at all, which is the good outcome, not a broken
+ * instrument (MEH-3983).
  *
  * One test per list, so a slow list fails alone, on its own timeout, and
  * does not hide the lists after it. Runs on the mobile project only: MEH-3800
@@ -36,26 +46,25 @@ import { layoutSettled } from "../_layout-settled";
  * a race, not a property of the list: /experiences painted 0 frames on a click
  * made at once and 21–26 frames on a click made 8 s later, 3/3 each, local
  * production build, mobile, throttled (MEH-3877, 26/11; the 25/11 "never"
- * reading was the fast click). With the wait, measured 3/3: it paints on home,
- * /events and /experiences, and never on /group-buys, where the list stays on
- * screen until the detail page is ready. On a "never" list no footer can
- * flash under the loader, and the check says so by asserting 0 loader frames;
- * if a loader starts to paint there, the row goes red and is moved to
- * "shows", so the flash check gets a real control.
+ * reading was the fast click). With the wait it may paint on home, /events,
+ * /experiences and /producers ("may": 0 frames is fine there, and (a) and (c)
+ * hold whatever it paints), and never on /group-buys, where the list stays on
+ * screen until the detail page is ready; a loader that starts to paint there
+ * turns the row red, and it moves to "may".
  *
  * `cards`: group buys carry a card testid. Event and experience rows
  * (EventEntryRow) carry none, so those two are scoped to `main` and the
  * detail-path prefix; a non-card link under that prefix would also open a
  * detail page, which is what the case needs.
  */
-type List = { name: string; path: string; cards: string; loader: "shows" | "never"; grows?: boolean };
+type List = { name: string; path: string; cards: string; loader: "may" | "never"; grows?: boolean };
 
 const LISTS: List[] = [
-  { name: "home", path: "/", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows" },
+  { name: "home", path: "/", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "may" },
   // `grows`: infinite scroll — the scroll to the last card loads the next page.
-  { name: "all businesses", path: "/producers", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "shows", grows: true },
-  { name: "events", path: "/events", cards: 'main a[href^="/events/"]', loader: "shows" },
-  { name: "experiences", path: "/experiences", cards: 'main a[href^="/experiences/"]', loader: "shows" },
+  { name: "all businesses", path: "/producers", cards: '[data-testid="producer-card"] a[href]:not([href^="http"])', loader: "may", grows: true },
+  { name: "events", path: "/events", cards: 'main a[href^="/events/"]', loader: "may" },
+  { name: "experiences", path: "/experiences", cards: 'main a[href^="/experiences/"]', loader: "may" },
   { name: "group buys", path: "/group-buys", cards: 'a[data-testid="group-buy-card"]', loader: "never" },
 ];
 
@@ -74,16 +83,19 @@ async function throttle(page: Page) {
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
 }
 
-/** Per animation frame: is the loader mounted, is the footer in the viewport. */
+/** Per animation frame: is a route loader mounted (site-wide or a page's own,
+ *  both carry data-route-loader), is it the site-wide blank one, is the footer
+ *  in the viewport. */
 async function startSampler(page: Page) {
   await page.evaluate((cap) => {
-    const w = window as unknown as { __nav: Array<{ loader: boolean; footer: boolean }> };
+    const w = window as unknown as { __nav: Array<{ loader: boolean; blank: boolean; footer: boolean }> };
     w.__nav = [];
     const tick = () => {
       const footer = document.querySelector("footer[data-site-footer]");
       const r = footer?.getBoundingClientRect();
       w.__nav.push({
-        loader: !!document.querySelector('[data-testid="route-loading"]'),
+        loader: !!document.querySelector("[data-route-loader]"),
+        blank: !!document.querySelector('[data-testid="route-loading"]'),
         footer: !!r && r.top < innerHeight && r.bottom > 0,
       });
       if (w.__nav.length < cap) requestAnimationFrame(tick);
@@ -92,7 +104,7 @@ async function startSampler(page: Page) {
   }, SAMPLE_CAP_FRAMES);
 }
 
-type Sample = { loader: boolean; footer: boolean };
+type Sample = { loader: boolean; blank: boolean; footer: boolean };
 
 async function readSamples(page: Page): Promise<Sample[]> {
   return page.evaluate(() => (window as unknown as { __nav: Sample[] }).__nav);
@@ -100,48 +112,101 @@ async function readSamples(page: Page): Promise<Sample[]> {
 
 /** Frames in which the loader was on screen. */
 const loaderFrames = (samples: Sample[]) => samples.filter((s) => s.loader).length;
+/** Frames in which the site-wide (blank-looking) loader was on screen (MEH-3983). */
+const blankFrames = (samples: Sample[]) => samples.filter((s) => s.blank).length;
 /** Frames in which the loader was on screen with the footer in the viewport. */
 const flashFrames = (samples: Sample[]) => samples.filter((s) => s.loader && s.footer).length;
 
-/** Control for the flash check, per list (see LISTS `loader`). */
-function expectLoaderControl(list: List, painted: number) {
-  if (list.loader === "shows") {
-    expect(
-      painted,
-      `${list.name}: the route loader never painted — the throttle did not take effect, so the flash check would be vacuous`,
-    ).toBeGreaterThan(0);
-    return;
-  }
-  expect(painted, `${list.name}: the route loader painted for ${painted} frames on a list measured as "never" — move it to "shows" in LISTS`).toBe(0);
+/** CDP latency is 400 ms, so a throttled fetch waits at least this long for
+ *  its first byte. */
+const THROTTLED_TTFB_MS = 300;
+
+/** Control for every check below: the throttle took effect on the very
+ *  fetches the click depends on, so the loader had the time to paint that a
+ *  slow phone gives it. Counting loader frames cannot be the control: once the
+ *  detail route is prefetched, a list may legitimately open it with no loader
+ *  at all (CI run 46083059311: home and /events painted 0 frames on both tries). */
+function expectThrottled(list: List, log: RscLog, href: string) {
+  const want = new URL(href, "http://x").pathname;
+  const waits = [...log.waitMs].filter(([p]) => p === want || p.endsWith(want)).map(([, ms]) => ms);
+  const slowest = Math.max(-1, ...waits);
+  expect(slowest, `${list.name}: the prefetch of ${want} got its first byte after ${slowest} ms — the throttle did not take effect, so every check here would be vacuous`).toBeGreaterThanOrEqual(THROTTLED_TTFB_MS);
 }
 
-/** Pathnames of every finished Next router prefetch, from the first request on. */
-function recordPrefetches(page: Page): Set<string> {
-  const done = new Set<string>();
-  page.on("requestfinished", (req) => {
-    if (req.headers()["next-router-prefetch"]) done.add(new URL(req.url()).pathname);
+/** On a "never" list the loader must not paint (see LISTS `loader`). */
+function expectNoLoaderWhereNever(list: List, painted: number) {
+  if (list.loader !== "never") return;
+  expect(painted, `${list.name}: the route loader painted for ${painted} frames on a list measured as "never" — move it to "may" in LISTS`).toBe(0);
+}
+
+/** Next router RSC fetches, per pathname (MEH-3983). Next 16's segment cache
+ *  prefetches a route in steps: first the route tree (`next-router-segment-
+ *  prefetch: /_tree`), then the segments or, for a dynamic route, one request
+ *  up to its loading boundary (`next-router-prefetch: 1`); a fully prefetched
+ *  route carries no prefetch header at all
+ *  (node_modules/next/dist/client/components/segment-cache/cache.js). Waiting
+ *  for the first finished prefetch was waiting for the tree only: a click made
+ *  then had no page loading.js yet and showed the site-wide loader (CI run
+ *  46083059311, shard 4: 15–22 blank frames, not reproduced locally). */
+type RscLog = { pending: Map<string, number>; tree: Set<string>; body: Set<string>; waitMs: Map<string, number> };
+
+function recordPrefetches(page: Page): RscLog {
+  const log: RscLog = { pending: new Map(), tree: new Set(), body: new Set(), waitMs: new Map() };
+  const path = (url: string) => new URL(url).pathname;
+  const isRsc = (h: Record<string, string>) => h["rsc"] === "1";
+  const bump = (p: string, by: number) => log.pending.set(p, (log.pending.get(p) ?? 0) + by);
+  page.on("request", (req) => {
+    if (isRsc(req.headers())) bump(path(req.url()), 1);
   });
-  return done;
+  const settle = (req: import("@playwright/test").Request, ok: boolean) => {
+    const h = req.headers();
+    if (!isRsc(h)) return;
+    const p = path(req.url());
+    bump(p, -1);
+    if (!ok) return;
+    // Time to first byte, for the throttle control (`expectThrottled`).
+    const ttfb = req.timing().responseStart;
+    if (ttfb > (log.waitMs.get(p) ?? -1)) log.waitMs.set(p, ttfb);
+    if (h["next-router-segment-prefetch"] === "/_tree") log.tree.add(p);
+    else log.body.add(p);
+  };
+  page.on("requestfinished", (req) => settle(req, true));
+  page.on("requestfailed", (req) => settle(req, false));
+  return log;
 }
 
-/** Wait until the prefetch of the card's detail route has finished. `href`
- *  is locale-less and may carry a query (home: `?from=home`); the prefetch
- *  URL carries the locale and `_rsc`, so only the path is compared. */
-async function waitForPrefetch(page: Page, done: Set<string>, list: List, href: string | null) {
+/** Wait until the card's detail route is prefetched past its route tree: a
+ *  request beyond the tree has finished and none is in flight, on two polls
+ *  in a row (the segment requests start only after the tree is read).
+ *  `href` is locale-less and may carry a query (home: `?from=home`); the
+ *  fetch URL carries the locale and `_rsc`, so only the path is compared. */
+async function waitForPrefetch(page: Page, log: RscLog, list: List, href: string | null) {
   expect(href, `${list.name}: the card has no href`).toBeTruthy();
-  const path = new URL(href as string, page.url()).pathname;
+  const want = new URL(href as string, page.url()).pathname;
+  const match = (p: string) => p === want || p.endsWith(want);
+  let readyBefore = false;
   await expect
-    .poll(() => [...done].some((p) => p === path || p.endsWith(path)), {
-      message: `${list.name}: Next never prefetched ${path}, so the click cannot be made at the moment the loader would show`,
-      timeout: 60_000,
-    })
+    .poll(
+      () => {
+        const body = [...log.body].some(match);
+        const inFlight = [...log.pending].some(([p, n]) => match(p) && n > 0);
+        const ready = body && !inFlight;
+        const stable = ready && readyBefore;
+        readyBefore = ready;
+        return stable;
+      },
+      {
+        message: `${list.name}: Next never finished prefetching ${want} past its route tree, so the click cannot be made at the moment the loader would show`,
+        timeout: 60_000,
+      },
+    )
     .toBe(true);
 }
 
-/** The click has left `fromUrl` and the route loader is gone. */
+/** The click has left `fromUrl` and every route loader is gone. */
 async function detailLoaded(page: Page, fromUrl: string): Promise<boolean> {
   const left = page.url() !== fromUrl;
-  const loaders = await page.locator('[data-testid="route-loading"]').count();
+  const loaders = await page.locator("[data-route-loader]").count();
   return left && loaders === 0;
 }
 
@@ -228,7 +293,9 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
       // loader at all (MEH-3877: measured 3/3 each way on /experiences). So the
       // click waits for that prefetch: a reader whose card sat on screen a
       // moment, the case MEH-3800 was, and one the control can count on.
-      await waitForPrefetch(page, prefetched, list, await card.getAttribute("href"));
+      const href = await card.getAttribute("href");
+      await waitForPrefetch(page, prefetched, list, href);
+      expectThrottled(list, prefetched, href as string);
 
       await startSampler(page);
       await card.click();
@@ -239,11 +306,13 @@ test.describe("navigation on a slow phone (MEH-3810)", () => {
         })
         .toBe(true);
       const samples = await readSamples(page);
-      // Control (see LISTS): the loader paints where it is expected to, so the
-      // flash check below is not vacuous; and does not where it never did.
-      expectLoaderControl(list, loaderFrames(samples));
+      expectNoLoaderWhereNever(list, loaderFrames(samples));
       const flash = flashFrames(samples);
       expect(flash, `${list.name}: footer in view under the route loader for ${flash} of ${samples.length} frames`).toBe(0);
+      // (c) Any loader that painted was the detail page's own frame, not the
+      // blank site-wide one (MEH-3983).
+      const blank = blankFrames(samples);
+      expect(blank, `${list.name}: the site-wide blank loader was on screen for ${blank} of ${samples.length} frames — the detail page lost its own loading.js`).toBe(0);
 
       await page.goBack();
       await expect(cards.last()).toBeVisible({ timeout: 60_000 });

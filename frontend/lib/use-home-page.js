@@ -262,21 +262,8 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     const initChips = Object.fromEntries(
       HOME_CHIP_KEYS.map((key) => [key, p.get(homeParamFor(key)) === "1"]),
     );
-    // MEH-2714: restore the expanded grid only on a history return (back /
-    // forward / reload). A fresh arrival — the logo, the bottom nav — starts
-    // at the first page, the same as it starts at the top.
-    // Guarded: consumeHistoryReturn() consumes module state, and StrictMode
-    // runs this effect twice in dev — the second call would read `false`.
-    if (historyReturnRef.current === null) historyReturnRef.current = consumeHistoryReturn();
-    const savedCount = historyReturnRef.current
-      // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
-      ? Number(window.sessionStorage?.getItem("home_visible_count"))
-      : NaN;
-    // MEH-1387: clamp a restored count to the cap — sessions saved before the
-    // cap existed (or tampered values) must not restore an over-cap grid.
-    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) {
-      setVisibleCount(Math.min(savedCount, LOAD_MORE_CAP));
-    }
+    // MEH-2714: the expanded grid and the scroll position are restored by the
+    // layout effects below (before the first paint, MEH-3983), not here.
     setFilters(initFilters);
     setChips(initChips);
 
@@ -356,32 +343,64 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     }
   }, [visibleCount]);
 
-  // Restore scroll on mount when returning from a producer page. We
-  // defer to rAF * 2 so the grid has a chance to render the expanded
-  // visibleCount before we call scrollTo.
+  // Restore the grid size and the scroll position on a history return (back /
+  // forward / reload), BEFORE the first paint.
   //
   // MEH-2714: only on a history return. The stash used to be written on
   // `pagehide` alone, which never fires on a client-side navigation, so a value
   // left by an earlier reload was restored on a plain logo click — the reader
-  // landed mid-page (measured: scrollY 1500 instead of 0).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // landed mid-page (measured: scrollY 1500 instead of 0). A fresh arrival —
+  // the logo, the bottom nav — starts at the first page and at the top.
+  //
+  // MEH-3983: both steps are layout effects. They used to run in the mount
+  // useEffect plus two requestAnimationFrames, i.e. AFTER the returning page
+  // had painted: whenever the browser's own restore fell short (Safari restores
+  // against the page being left, and a business page shorter than the grid
+  // clamps it), the reader saw a frame of the wrong place, then a jump — the
+  // "flash" on Back. A state update from a layout effect re-renders before the
+  // browser paints, so the expanded grid and the corrected position reach the
+  // screen in the same frame.
+  // DO NOT move these back to useEffect / requestAnimationFrame (MEH-3983).
+  const pendingRestoreRef = useRef(/** @type {{ y: number, count: number } | null} */ (null));
+  useIsomorphicLayoutEffect(() => {
+    // Guarded: consumeHistoryReturn() consumes module state, and StrictMode
+    // runs this effect twice in dev — the second call would read `false`.
+    // The stash is read once too: between the two runs the write effect below
+    // has already stored the first page (8), which would overwrite the target.
+    if (historyReturnRef.current !== null) return;
+    historyReturnRef.current = consumeHistoryReturn();
     if (!historyReturnRef.current) return;
     // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
-    const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
-    if (!Number.isFinite(savedY) || savedY <= 0) return;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // MEH-2714: the browser restores the position itself on a back step
-        // (Lenis, mounted in the root layout, is off on touch screens and only
-        // smooths wheel input — it does not take part in that restore);
-        // step in only when it fell short (an expanded grid it could not
-        // reach yet). Overriding a correct native restore shifted the
-        // reader's card by 24px in the 375 measurement.
-        if (Math.abs(window.scrollY - savedY) > RESTORE_TOLERANCE_PX) window.scrollTo(0, savedY);
-      });
-    });
+    const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
+    // eslint-disable-next-line no-restricted-syntax -- restores the grid and scroll on Back only, the state the visitor left (MEH-1387)
+    const savedY = Number(window.sessionStorage?.getItem("home_scroll_y"));
+    // MEH-1387: clamp a restored count to the cap — sessions saved before the
+    // cap existed (or tampered values) must not restore an over-cap grid.
+    const count = Number.isFinite(savedCount) && savedCount >= PAGE_SIZE ? Math.min(savedCount, LOAD_MORE_CAP) : PAGE_SIZE;
+    if (Number.isFinite(savedY) && savedY > 0) {
+      pendingRestoreRef.current = { y: savedY, count };
+      // The restore belongs to this mount's commits only (the re-render queued
+      // below runs before the next task). If the count never arrives — a
+      // filter reset it — drop it rather than fire it on a later «load more».
+      setTimeout(() => {
+        pendingRestoreRef.current = null;
+      }, 0);
+    }
+    if (count !== PAGE_SIZE) setVisibleCount(count);
   }, []);
+  useIsomorphicLayoutEffect(() => {
+    const pending = pendingRestoreRef.current;
+    // Wait for the commit that renders the restored grid size: scrolling
+    // against the first page only would be clamped by its shorter height.
+    if (!pending || visibleCount !== pending.count) return;
+    pendingRestoreRef.current = null;
+    // MEH-2714: the browser restores the position itself on a back step
+    // (Lenis, mounted in the root layout, is off on touch screens and only
+    // smooths wheel input — it does not take part in that restore); step in
+    // only when it fell short. Overriding a correct native restore shifted the
+    // reader's card by 24px in the 375 measurement.
+    if (Math.abs(window.scrollY - pending.y) > RESTORE_TOLERANCE_PX) window.scrollTo(0, pending.y);
+  }, [visibleCount]);
 
   // Stash scrollY just before the user navigates away (pagehide fires
   // on both bfcache + hard unload). Read-back happens on next mount.

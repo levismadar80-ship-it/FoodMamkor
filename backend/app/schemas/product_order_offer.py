@@ -92,6 +92,10 @@ class OrderWindowOut(BaseModel):
 
 class OrderWindowsOut(BaseModel):
     windows: list[OrderWindowOut]
+    # MEH-3970: False when no city can be priced for a delivery (no fee for
+    # the business, none on any city, or delivery switched off). Her
+    # delivery windows are then not offered to buyers; the tab says why.
+    delivery_priced: bool = True
 
 
 class ProductOrderingIn(BaseModel):

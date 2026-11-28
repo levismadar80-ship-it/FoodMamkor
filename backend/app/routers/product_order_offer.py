@@ -57,6 +57,7 @@ from app.schemas.product_order_offer import (
 )
 from app.services import product_daily_stock  # daily stock (27/11)
 from app.services import product_variants  # MEH-3617
+from app.services import product_order_delivery as delivery  # MEH-3970
 from app.services.order_access import OrderAccess, require_order_access
 from app.services.product_order_menu import offered_slots, takes_orders, windows
 from app.utils.clock import israel_today, utc_now
@@ -91,7 +92,7 @@ def get_my_order_windows(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> Any:
-    return {"windows": windows(db, _own_producer_id(user))}
+    return _week(db, _own_producer_id(user))
 
 
 @me_router.put(
@@ -118,7 +119,15 @@ def put_my_order_windows(
     for window in body.windows:
         db.add(ProducerOrderWindow(producer_id=producer_id, **window.model_dump()))
     db.commit()
-    return {"windows": windows(db, producer_id)}
+    return _week(db, producer_id)
+
+
+def _week(db: Session, producer_id: Any) -> dict[str, Any]:
+    producer = db.query(Producer).filter(Producer.id == producer_id).one()
+    return {
+        "windows": windows(db, producer_id),
+        "delivery_priced": delivery.can_price_some_city(db, producer),
+    }
 
 
 @me_router.get(

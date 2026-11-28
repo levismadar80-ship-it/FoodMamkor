@@ -129,7 +129,7 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 | Floating Pill Navbar | MEH-655 | Done 2026-05-22 |
 | Hero direction hierarchy (A canonical, B campaign-only) | ADR-018 + MEH-656 (canceled, content absorbed) | LOCKED |
 | ProducerCard state token compliance (opacity-on-cream + --fg-muted) | ADR-019 + MEH-656 (canceled, content absorbed) | LOCKED |
-| Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix) |
+| Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix). Meaning shown on /about since MEH-3988: five seeds, each its own colour, one flower; the pomegranate is one of the Seven Species; each business its own story, together one whole |
 | Category glyph system | ADR-013 Amendment + PR #2026 (hand-drawn MEH-683/666 archived) | LOCKED v2.1 |
 | Join page: feature groups (phone shelf / desktop list+stage), tiles, toggletip, sticky join bar | MEH-2799 | Done 2026-11-07 (#4123) |
 | Closing CTA band (site-wide, shared component) — full-green band that ends every page closing on a business call to action | MEH-2824 | In progress |

@@ -159,6 +159,12 @@ describe("product rows with ordering (MEH-3216 stage 5b)", () => {
     expect(screen.getAllByTestId("order-estimate")).toHaveLength(1);
   });
 
+  // MEH-3974: a range on a unit product is not weighed, so its row says «עד».
+  it("an estimate row names weighing only for a weighed product", () => {
+    render(<Page />);
+    expect(screen.getByTestId("order-estimate").textContent).toBe("producer.detail.order_cart.estimate_range");
+  });
+
   it("the control is a sibling of the row button, never inside it", () => {
     render(<Page />);
     for (const add of screen.getAllByTestId("order-add")) {
