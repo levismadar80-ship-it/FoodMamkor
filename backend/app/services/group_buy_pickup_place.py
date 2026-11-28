@@ -18,6 +18,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.models import ProducerLocation
+from app.services.address_line import address_line  # MEH-3959
 
 LOCATION_NOT_FOUND = "נקודת האיסוף לא נמצאה"
 
@@ -65,7 +66,7 @@ def place_line(loc: ProducerLocation | None) -> str:
     out = location_out(loc)
     if out is None:
         return ""
-    where = ", ".join(p for p in (out["address"], out["city"]) if p)
+    where = address_line(out["address"], out["city"])
     text = " — ".join(p for p in (out["label"], where) if p)
     # Free text from the business: one line in a plain-text body.
     text = " ".join(text.split())

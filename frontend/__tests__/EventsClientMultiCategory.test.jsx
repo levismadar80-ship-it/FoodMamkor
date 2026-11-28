@@ -7,6 +7,8 @@ import EventsClient from "@/app/[locale]/events/EventsClient";
 const waitForChips = () => screen.findByTestId("chip-row");
 import api from "@/lib/api";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
+// MEH-3969: the add CTA (components/HostAddCta.jsx) reads the session.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 
 // MEH-2847: the /events + /experiences category chips are MULTI-select, the
 // /producers behaviour (MEH-1465): tap toggles, «הכל» is active while nothing

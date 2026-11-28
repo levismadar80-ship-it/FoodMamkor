@@ -27,10 +27,11 @@ import { useTranslations } from "next-intl";
 import Select from "@/components/ui/Select";
 import AllergenPicker from "@/components/AllergenPicker";
 import { useUserApi } from "@/lib/use-api";
+import { addressLine } from "@/lib/address-line";
 
 /** @param {any} loc */
 function placeName(loc) {
-  const where = [loc.address, loc.city].filter(Boolean).join(", ");
+  const where = addressLine(loc.address, loc.city);
   return [loc.label, where].filter(Boolean).join(" — ") || loc.city || "";
 }
 
