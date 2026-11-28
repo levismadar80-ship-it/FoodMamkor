@@ -12,7 +12,8 @@ Does NOT: own any delivery fact. The columns stay owned by the dashboard's
           before she sends the request.
 Related:  app/models/models.py (Producer.delivery_*, DeliveryArea),
           app/services/product_order_create.py (the caller)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3971 (the minimum
+          refusal names the amounts)
 """
 
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.data.cities import canonical_city
 from app.models.models import DeliveryArea, Producer
+from app.utils.money import shekels_text
 
 AGOROT_PER_SHEKEL = 100
 
@@ -30,8 +32,17 @@ CITY_NOT_SERVED_DETAIL = "בית העסק לא עושה משלוחים לעיר 
 FEE_NOT_PUBLISHED_DETAIL = (
     "בית העסק עוד לא פרסם דמי משלוח, ולכן אפשר להזמין ממנו רק באיסוף"
 )
-# MEH-3511: no «לעיר הזאת» — the minimum may now be the business-wide one.
-AREA_MINIMUM_DETAIL = "סכום ההזמנה נמוך מהמינימום למשלוח"
+
+
+def minimum_detail(min_shekels: int, subtotal_agorot: int) -> str:
+    """MEH-3971: the minimum and what is missing, both in shekels. No «לעיר
+    הזאת» (MEH-3511): the minimum may be the business-wide one."""
+    missing = min_shekels * AGOROT_PER_SHEKEL - subtotal_agorot
+    return (
+        # A no-break space keeps «₪» with its number (it wrapped alone at 390).
+        f"המינימום להזמנה במשלוח הוא {min_shekels}\u00a0₪. "
+        f"חסרים עוד {shekels_text(missing)}\u00a0₪."
+    )
 
 
 class DeliveryRefused(Exception):
@@ -77,7 +88,7 @@ def quote(facts: DeliveryFacts, city: str, subtotal_agorot: int) -> int:
         facts.area_min_order is not None
         and subtotal_agorot < facts.area_min_order * AGOROT_PER_SHEKEL
     ):
-        raise DeliveryRefused(AREA_MINIMUM_DETAIL)
+        raise DeliveryRefused(minimum_detail(facts.area_min_order, subtotal_agorot))
     fee = facts.area_fee if facts.area_fee is not None else facts.fee
     if fee is None:
         raise DeliveryRefused(FEE_NOT_PUBLISHED_DETAIL)

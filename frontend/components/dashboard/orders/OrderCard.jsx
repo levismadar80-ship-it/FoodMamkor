@@ -10,7 +10,8 @@
  *           a refused move comes back as a Hebrew 409 and is shown inline).
  * Related:  lib/product-orders.js (formatting), OrderActions.jsx
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps
- *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»)
+ *           («וואטסאפ ללקוח» next to the phone); MEH-3933 («הזמנה קבועה»);
+ *           MEH-3971 (the delivery city beside the street)
  */
 
 import { useLocale, useTranslations } from "next-intl";
@@ -19,6 +20,7 @@ import { Phone, WhatsappLogo } from "@phosphor-icons/react";
 import Badge from "@/components/ui/Badge";
 import { getWhatsAppHref } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method";
+import { addressLine } from "@/lib/address-line";
 import { dayLabel, estimateKind, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 import OrderActions from "./OrderActions";
@@ -49,7 +51,8 @@ function OrderFacts({ order }) {
       {order.has_estimate && (order.final_total_agorot ?? null) === null && (
         <p>{t(estimateKind(order.items) === "range" ? "estimate_range" : "estimate")}</p>
       )}
-      {order.delivery_address && <p>{t("address", { address: order.delivery_address })}</p>}
+      {/* MEH-3971: the city too — she may deliver to several. */}
+      {order.delivery_address && <p data-testid="order-address">{t("address", { address: addressLine(order.delivery_address, order.delivery_city) })}</p>}
       {order.note && <p>{t("note", { note: order.note })}</p>}
       {order.age_declared && <p>{t("age")}</p>}
     </div>
