@@ -317,6 +317,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/product_order_delivery.py` | Decide whether a business delivers an order to a city, and what the delivery costs, from the delivery facts the business already keeps. |
 | `services/product_order_guards.py` | Rules about orders that other parts of the app must respect. Today one: a business with an open order cannot be hard-deleted. |
 | `services/product_order_menu.py` | The two reads that both the public order menu and the order route need: whether a business takes orders, and the slots it offers now. |
+| `services/product_order_month.py` | How many product orders a business handed over in one Israel calendar month, and their value, for the dashboard's «החודש הגיעו דרך האתר» line (MEH-3980). |
 | `services/product_order_outbox.py` | The messages an order owes: written in the same transaction as the status move that causes them, and sent later by the dispatcher, with retries, so a message … |
 | `services/product_order_phone.py` | Prove that a buyer holds the phone she orders with: issue a one-time code, count wrong tries, and consume the code when the order is written. |
 | `services/product_order_privacy.py` | What happens to a buyer's orders when she deletes her account: the open ones are cancelled, and every one of them loses her name, phone, address, note and … |

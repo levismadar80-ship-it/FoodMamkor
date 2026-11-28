@@ -23,7 +23,7 @@ from app.database import get_db
 from app.models import User
 from app.rate_limit import limiter
 from app.schemas.billing import BillingOverviewOut, BillingSummaryOut
-from app.services import billing_summary
+from app.services import billing_summary, product_order_month
 from app.services.billing_summary import Month
 
 router = APIRouter(tags=["billing"])
@@ -54,7 +54,13 @@ def my_billing_summary(
     producer_id: UUID | None = user.producer_id  # type: ignore[assignment]  # Column at type level, UUID on a loaded row
     if producer_id is None:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
-    return billing_summary.summarize(db, producer_id, _month(month))
+    month_ = _month(month)
+    # MEH-3980: product orders are not in the ledger yet; the dashboard line
+    # still counts them, as separate fields that move no fee.
+    return {
+        **billing_summary.summarize(db, producer_id, month_),
+        **product_order_month.month_product_orders(db, producer_id, month_),
+    }
 
 
 @router.get("/admin/billing/overview", response_model=BillingOverviewOut)

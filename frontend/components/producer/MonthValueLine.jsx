@@ -15,7 +15,7 @@
  *           and nothing when it fails: a missing summary is not an error the
  *           owner can act on.
  * Related:  app/[locale]/producer/dashboard/page.js (mounts it under «מה ממתין לטיפול»).
- * History:  MEH-3194 (creation).
+ * History:  MEH-3194 (creation); MEH-3980 (product orders added in).
  */
 
 import { useEffect, useState } from "react";
@@ -29,19 +29,23 @@ import { formatAgorot } from "@/lib/money";
 /**
  * The message key and its values. Sapir's table: 0 / 1 / many, and no
  * «בשווי» part when the value is 0 (free sign-ups only).
- * @param {{ bookings: number, value_agorot: number }} s
+ * MEH-3980: product orders are not in the ledger yet (their price is not
+ * set), so the summary returns them apart and the line adds them in.
+ * @param {{ bookings: number, value_agorot: number, product_orders?: number, product_orders_value_agorot?: number }} s
  * @returns {[string, Record<string, string | number>]}
  */
 function monthValueMessage(s) {
-  if (s.bookings <= 0) return ["none", {}];
-  const value = s.value_agorot > 0 ? formatAgorot(s.value_agorot) : null;
-  const base = s.bookings === 1 ? "one" : "many";
-  return value ? [`${base}_value`, { count: s.bookings, value }] : [base, { count: s.bookings }];
+  const count = s.bookings + (s.product_orders ?? 0);
+  const total = s.value_agorot + (s.product_orders_value_agorot ?? 0);
+  if (count <= 0) return ["none", {}];
+  const value = total > 0 ? formatAgorot(total) : null;
+  const base = count === 1 ? "one" : "many";
+  return value ? [`${base}_value`, { count, value }] : [base, { count }];
 }
 
 export default function MonthValueLine() {
   const t = useTranslations("dashboard.producer.month_value");
-  const [summary, setSummary] = useState(/** @type {{ bookings: number, value_agorot: number } | null} */ (null));
+  const [summary, setSummary] = useState(/** @type {{ bookings: number, value_agorot: number, product_orders?: number, product_orders_value_agorot?: number } | null} */ (null));
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {

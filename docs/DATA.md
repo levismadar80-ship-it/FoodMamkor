@@ -576,7 +576,11 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   only (the id comes from the session). `{month, phase, bookings, value_agorot,
   by_kind[{kind, bookings, value_agorot}], threshold_agorot, over_threshold,
   fee_without_subscription_agorot, fee_with_subscription_agorot, charged_agorot,
-  price_list_version}`. The two fee figures are what the month WOULD cost on each
+  price_list_version, product_orders, product_orders_value_agorot}`. The last two
+  (MEH-3980) are the month's handed product orders and their value (final total,
+  else the estimate), read from `product_orders`, not the ledger: their price is
+  not set, so they are in no fee, no `bookings` and no threshold. The dashboard
+  line adds them in. The two fee figures are what the month WOULD cost on each
   track of the current price list: plain commission, or subscription + reduced
   commission. The plain figure is the fee stored on each row (its own price
   list); the subscriber figure is recomputed per booking with the current list.
