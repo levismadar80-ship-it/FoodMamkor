@@ -78,6 +78,7 @@ NOT_FOR_ASSISTANT: Final[dict[str, str]] = {
     "/delivery-waitlist/unsubscribe": _FLOW,
     "/forgot-password": "reached from /login",
     "/freshness/confirm": _FLOW,
+    "/join/orders": "a guide page for businesses, linked from /join; the assistant points to /join",
     "/messages": "the signed-in visitor's own inbox, reached from the header",
     "/my-group-buys": "the signed-in visitor's own group buys, reached from the header menu",
     "/my-orders": "the signed-in buyer's own orders, reached from the header menu",
