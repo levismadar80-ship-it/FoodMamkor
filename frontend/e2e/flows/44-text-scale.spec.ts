@@ -56,6 +56,13 @@ const STABLE_MS = 250;
 
 const ROUTES = ["/", "/producers", "/group-buys", "/events", "/about/process", "/join"];
 
+// MEH-3985: the home holiday banner shows only around a holiday, so a check
+// that ran on whatever day the suite ran on saw it some weeks and not others.
+// It went red on 28/11 the hour the Hanukkah banner appeared. "/" now always
+// runs on a day the banner is up (Tuesday 8/12/2026, Hanukkah), and the test
+// requires the banner to be on screen before it measures.
+const HOLIDAY_DAY = new Date("2026-12-08T10:00:00+02:00");
+
 type Probe = { rootPx: number; controls: number; offscreen: string[]; overflowX: number };
 
 async function scale(page: Page, size: string): Promise<void> {
@@ -112,9 +119,13 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
             { width: 1024, height: 768, scale: "200%" },
           ];
       await page.setViewportSize({ width: passes[0].width, height: passes[0].height });
+      // eslint-disable-next-line playwright/no-conditional-in-test -- gated on the route under test (a fixture), not on anything the product renders
+      if (path === "/") await page.clock.setFixedTime(HOLIDAY_DAY);
       await page.goto(path);
       await page.waitForLoadState("domcontentloaded");
       await expect(page.locator("main").first()).toBeVisible({ timeout: 15_000 });
+      // eslint-disable-next-line playwright/no-conditional-in-test, playwright/no-conditional-expect -- same route gate: only "/" carries the holiday banner
+      if (path === "/") await expect(page.getByTestId("holiday-banner")).toBeVisible({ timeout: 15_000 });
       for (const p of passes) {
         const tag = `${p.width}px, ${p.scale} text`;
         await page.setViewportSize({ width: p.width, height: p.height });
