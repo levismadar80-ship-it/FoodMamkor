@@ -738,6 +738,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `HomepageMiniMap.jsx` | Lazy-loaded mini-map preview on the homepage — discovery prominence per MEH-538. Click anywhere → /map. |
 | `HomepageMiniMapLazy.jsx` | Fetch the homepage mini-map (Leaflet + its tiles) only when the visitor scrolls near it. … |
 | `HomepageMiniMapSkeleton.jsx` | SSR-able loading fallback for the HomepageMiniMap dynamic import on the homepage. Reserves height on first paint (before JS hydrates) so the above-the-fold … |
+| `HostAddCta.jsx` | The «הוסיפו חוויה / אירוע» call to action on a public list. A business owner goes straight to the dashboard form; … |
 | `HoursText.jsx` | MEH-2604: free-text hours as the owner typed them («א׳–ה׳ 9:00–17:00»), rendered inside the RTL page with every time RANGE isolated left-to-right. |
 | `HubAlertHint.jsx` | MEH-3117 — the way out of an empty hub tab (/rescue, /group-buys): one line saying how to hear about the next one (save a business, turn on its alert) and a … |
 | `HubFaq.jsx` | A short «שאלות נפוצות» block at the bottom of a hub list (/group-buys, /rescue): closed <details> rows and the matching FAQPage JSON-LD, both built from the … |
