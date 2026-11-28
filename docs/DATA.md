@@ -1672,8 +1672,8 @@ PUT    /producers/me                              producer — MEH-3026: no lice
                                                   owner_bio (compared after strip) goes through the AI check first
                                                   (services/approved_edit_moderation.py) — REJECTED → 422 «הטקסט אינו עומד בהנחיות
                                                   הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.» and nothing in the PUT is saved; fail-open
-                                                  saves. One admin ping «📝 עסק מאושר עדכן תוכן» per save that changed any of those
-                                                  three or the `images` set (a reorder alone does not ping), « — טקסט סומן ע״י AI» when FLAGGED.
+                                                  saves. Admin ping «📝 עסק מאושר עדכן תוכן … — טקסט סומן ע״י AI» only when the AI FLAGGED
+                                                  the changed text (MEH-3995); an APPROVED verdict, an images change or a fail-open sends none.
                                                   Product POST/PUT of an approved business get the same check on name/description/
                                                   ingredients (422 on REJECTED; ping only when FLAGGED). AI call: 10 s timeout, 1 retry.
 POST   /users/me/verify-phone                    auth      — MEH-3302 (D14): send a WhatsApp code to the user's OWN phone (3/10min burst; 3 per user and 3 per canonical phone per rolling day across accounts → 429; after the 3-per-day caps, a number whose latest inbound message is «הסר»/stop → 503 with the generic «לא הצלחנו לשלוח» text, so the route does not reveal what a number replied; no phone → 400; already verified → 200). Token in user_phone_otp_tokens, 10 min, bound to the canonical phone
