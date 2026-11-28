@@ -311,6 +311,7 @@ duplicate	2	שיפנו אליכם
 duplicate	2	שישי
 duplicate	2	שיתוף
 duplicate	2	שכפול
+duplicate	2	שליחה בוואטסאפ
 duplicate	2	שליחה מחדש
 duplicate	2	שליחת הודעה בוואטסאפ
 duplicate	2	שליחת קוד חדש
