@@ -240,7 +240,7 @@ left in v1" vs "what's planned for v2".
 | Status | Version | Feature | Where |
 |---|---|---|---|
 | ✅ | v1 | Experiences moderation: Claude Haiku pre-check + admin approval gate | `backend/app/services/experience_moderation.py`, `backend/app/routers/admin_experiences.py` |
-| ✅ | v1 | Approved-business edit check (MEH-3261): changed description / tagline / owner story and product name / description / ingredients / storage («אחסון ותוקף», MEH-3444) / cereal and nut detail (MEH-3442) go through the AI check (REJECTED → 422, nothing saved; fail-open saves); one admin ping per content save, marked when FLAGGED | `backend/app/services/approved_edit_moderation.py`, `backend/app/routers/producer_me.py` |
+| ✅ | v1 | Approved-business edit check (MEH-3261): changed description / tagline / owner story and product name / description / ingredients / storage («אחסון ותוקף», MEH-3444) / cereal and nut detail (MEH-3442) go through the AI check (REJECTED → 422, nothing saved; fail-open saves); an admin email only when the AI FLAGGED the text (MEH-3995) | `backend/app/services/approved_edit_moderation.py`, `backend/app/routers/producer_me.py` |
 | ✅ | v1 | `/admin/experiences` queue with tabs, approve / request-changes / reject + feedback modal | `frontend/app/admin/experiences/page.js` |
 | ✅ | v1 | Address autocomplete via Nominatim (street + house number) | `frontend/components/AddressSearch.jsx` |
 
